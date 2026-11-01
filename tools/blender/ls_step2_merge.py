@@ -1,10 +1,14 @@
 # Last Signal · Step 2: merge the Mixamo downloads into one game file
-# Put every FBX you downloaded from Mixamo in Downloads (one "With Skin", the rest "Without Skin"),
+# Put every FBX you downloaded from Mixamo in Downloads (best: one "With Skin", the rest "Without Skin"),
 # then in Blender: Scripting tab > Open > this file > Run Script.
-# Writes Downloads/storm_game.glb  -> send this file to Claude
-import bpy, os, glob, re
+# If every file is "Without Skin", the Mixamo skeleton is bound to storm_mixamo.fbx here with Blender's automatic weights.
+# Writes Downloads/storm_game.glb  -> copy to art/3d/storm_game.glb
+# The game locks the hips in place, so clips downloaded without "In Place" still work.
+import bpy, os, glob, re, sys
 
-DL = os.path.join(os.path.expanduser('~'), 'Downloads')
+# optional: blender -b --python ls_step2_merge.py -- <folder>   (default: Downloads)
+argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+DL = argv[0] if argv else os.path.join(os.path.expanduser('~'), 'Downloads')
 base = os.path.join(DL, 'storm_mixamo.fbx')
 t0 = os.path.getmtime(base) if os.path.exists(base) else 0
 files = [f for f in glob.glob(os.path.join(DL, '*.fbx'))
@@ -29,7 +33,7 @@ if bpy.context.object and bpy.context.object.mode != 'OBJECT':
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)
 
-char, used, acts = None, set(), []
+char, spare, used, acts = None, None, set(), []
 for f in files:
     before = set(bpy.data.objects)
     bpy.ops.import_scene.fbx(filepath=f)
@@ -45,15 +49,33 @@ for f in files:
         act.name = name
         act.use_fake_user = True
         acts.append(act)
-        print('animation:', os.path.basename(f), '->', name)
+        print('animation:', os.path.basename(f), '->', name, flush=True)
     if char is None and arm and any(o.type == 'MESH' for o in new):
         char = arm
+        continue
+    if spare is None and arm:      # kept in case there is no "With Skin" file
+        spare = (arm, new)
         continue
     for o in new:
         bpy.data.objects.remove(o, do_unlink=True)
 
-if char is None:
-    raise Exception('Could not find the "With Skin" file')
+if char is not None and spare is not None:
+    for o in spare[1]:
+        bpy.data.objects.remove(o, do_unlink=True)
+elif char is None:
+    if spare is None or not os.path.exists(base):
+        raise Exception('Could not find the "With Skin" file (or storm_mixamo.fbx to bind instead)')
+    # no "With Skin" download: bind our own mesh to the Mixamo skeleton with automatic weights
+    char = spare[0]
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=base)
+    mesh = next(o for o in bpy.data.objects if o not in before and o.type == 'MESH')
+    for o in bpy.data.objects:
+        o.select_set(o in (char, mesh))
+    bpy.context.view_layer.objects.active = char
+    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+    loose = sum(1 for v in mesh.data.vertices if not v.groups)
+    print('no "With Skin" file: bound storm_mixamo.fbx with automatic weights,', loose, 'loose vertices', flush=True)
 ad = char.animation_data or char.animation_data_create()
 ad.action = None
 for act in acts:
