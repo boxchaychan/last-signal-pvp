@@ -759,7 +759,8 @@ const $=s=>document.querySelector(s);
 const cv=$('#cv');let ctx=cv.getContext('2d');
 const mm=$('#mm'),mctx=mm.getContext('2d');
 const fogC=document.createElement('canvas'),fctx=fogC.getContext('2d');
-const MS=1.28,MK=1.5*MS,MW=4800*MS,MH=3600*MS,CELL=48,GW=MW/CELL,GH=MH/CELL;
+// WS = world scale: the whole map (buildings, roads, zones) grows with it; units and ranges keep their size
+const WS=1.25,MS=1.28*WS,MK=1.5*MS,MW=4800*MS,MH=3600*MS,CELL=48,GW=MW/CELL,GH=MH/CELL;
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const FONT='"Kanit",Tahoma,sans-serif';
@@ -2175,7 +2176,7 @@ function drawStatic(v,cx,cy){
   for(const l of LAMPS){if(!vis(l.x,l.y,20))continue;ctx.fillStyle='#16191a';ctx.beginPath();ctx.arc(l.x,l.y,6,0,6.28);ctx.fill();ctx.fillStyle=l.on?'#ffe1a0':'#4a4d4e';ctx.beginPath();ctx.arc(l.x,l.y,3.5,0,6.28);ctx.fill()}
 }
 // ---------- landmarks at the six capture zones (static ground art, never blocks movement) ----------
-const DECALS=[];{const R2=mulberry(777);for(let a=0;a<2600&&DECALS.length<420;a++){const x=R2()*MW,y=R2()*MH;if(inSolid(x,y,10))continue;const road=onRoad(x,y,0);const t=road?(R2()<.55?'skid':'oil'):(['blood','leaves','leaves','dirt','bag'][(R2()*5)|0]);if(t==='bag'&&!onRoad(x,y,40))continue;DECALS.push({x,y,t,a:R2()*6.28,s:.7+R2()*.7,r:R2()})}}
+const DECALS=[];{const R2=mulberry(777);for(let a=0;a<4200&&DECALS.length<420*WS*WS;a++){const x=R2()*MW,y=R2()*MH;if(inSolid(x,y,10))continue;const road=onRoad(x,y,0);const t=road?(R2()<.55?'skid':'oil'):(['blood','leaves','leaves','dirt','bag'][(R2()*5)|0]);if(t==='bag'&&!onRoad(x,y,40))continue;DECALS.push({x,y,t,a:R2()*6.28,s:.7+R2()*.7,r:R2()})}}
 function drawDecal(d){ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.a);
   if(d.t==='skid'){ctx.strokeStyle='rgba(10,12,14,.38)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-60*d.s,-8);ctx.quadraticCurveTo(0,-14*d.r,60*d.s,-6);ctx.moveTo(-60*d.s,8);ctx.quadraticCurveTo(0,2,60*d.s,10);ctx.stroke()}
   else if(d.t==='oil'){ctx.fillStyle='rgba(8,10,14,.45)';ctx.beginPath();ctx.ellipse(0,0,22*d.s,12*d.s,0,0,6.28);ctx.fill();ctx.fillStyle='rgba(120,90,160,.16)';ctx.beginPath();ctx.ellipse(-4,-2,10*d.s,5*d.s,0,0,6.28);ctx.fill()}
@@ -3442,12 +3443,12 @@ function drawPfx(){if(!G.pfx||!G.pfx.length)return;const sm=ctx.imageSmoothingEn
   ctx.imageSmoothingEnabled=sm}
 // ---------- capture zones (both sides fight for map control) ----------
 const ZONES=[
-  {id:'hosp',n:'โรงพยาบาล',ic:'🏥',x:1584,y:2300,hp:'ฮีโร่ฟื้นเลือด 3/วิ',zp:'ยูนิตฟื้นเลือดช้าๆ'},
-  {id:'temple',n:'วัด',ic:'🛕',x:1450,y:1120,hp:'ไม้ตายชาร์จเร็ว +25%',zp:'กระสือ/ปอบแกร่ง +25%'},
-  {id:'market',n:'ตลาด',ic:'🛒',x:3330,y:2240,hp:'เสบียง +4/วิ',zp:'ชีวมวล +4/วิ'},
-  {id:'school',n:'โรงเรียน',ic:'🏫',x:2700,y:3330,hp:'EXP +30%',zp:'ผลิตเร็วขึ้น 15%'},
-  {id:'gas',n:'ปั๊มน้ำมัน',ic:'⛽',x:5230,y:2600,hp:'ป้อมดาเมจ +15%',zp:'ระเบิดแรงขึ้น 30%'},
-  {id:'police',n:'สถานีตำรวจ',ic:'🚓',x:5470,y:1210,hp:'ดาเมจอาวุธ +10%',zp:'ยูนิตดาเมจ +10%'},
+  {id:'hosp',n:'โรงพยาบาล',ic:'🏥',x:1584*WS,y:2300*WS,hp:'ฮีโร่ฟื้นเลือด 3/วิ',zp:'ยูนิตฟื้นเลือดช้าๆ'},
+  {id:'temple',n:'วัด',ic:'🛕',x:1450*WS,y:1120*WS,hp:'ไม้ตายชาร์จเร็ว +25%',zp:'กระสือ/ปอบแกร่ง +25%'},
+  {id:'market',n:'ตลาด',ic:'🛒',x:3330*WS,y:2240*WS,hp:'เสบียง +4/วิ',zp:'ชีวมวล +4/วิ'},
+  {id:'school',n:'โรงเรียน',ic:'🏫',x:2700*WS,y:3330*WS,hp:'EXP +30%',zp:'ผลิตเร็วขึ้น 15%'},
+  {id:'gas',n:'ปั๊มน้ำมัน',ic:'⛽',x:5230*WS,y:2600*WS,hp:'ป้อมดาเมจ +15%',zp:'ระเบิดแรงขึ้น 30%'},
+  {id:'police',n:'สถานีตำรวจ',ic:'🚓',x:5470*WS,y:1210*WS,hp:'ดาเมจอาวุธ +10%',zp:'ยูนิตดาเมจ +10%'},
 ];
 for(const z of ZONES){if(inSolid(z.x,z.y,60)){let best=null,bd=1e9;for(let r=40;r<500&&!best;r+=30)for(let k=0;k<16;k++){const x=z.x+Math.cos(k/16*6.28)*r,y=z.y+Math.sin(k/16*6.28)*r;if(!inSolid(x,y,70)){const d=r;if(d<bd){bd=d;best={x,y}}}}if(best){z.x=best.x;z.y=best.y}}}
 const CAPR=230;

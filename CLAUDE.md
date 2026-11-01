@@ -29,6 +29,7 @@ Browser game, top-down map. Two sides, played against bots (online PvP is a late
 Data tables at the top of the script: `HEROES`, `HDEF` (default weapons), `WEAP`, `WCLS`/`HCLS` (gun categories), `HTW` (what each hero builds), `ZT` (unit stats; `brood:1` = spiders from eggs), `LEADERS`, `ZB` (ghost structures incl. `egg`), `TW` (human towers).
 
 ## Conventions
+- Map size: `WS` (world scale, next to `MS`) scales buildings, roads, zones and the whole map; 1.25 since 2026-11-02 (was 1.0). Anything placed in raw world units (like `ZONES`) must be multiplied by `WS`. `MW/48` and `MH/48` should stay whole numbers.
 - Keep everything in `index.html` (single file). Patch with exact string replacements; check that each anchor appears once.
 - After any edit: `bash tools/check.sh` then `node tools/sim/sim.js ults` / `boss` / `demo 3 480`.
 - Balance target: bot-vs-bot demo should be roughly even (humans win about half, matches 4–8 min). Knobs for the ghost side: `ZBAL` (leader HP factor, how fast units gain HP over time). Last check (2026-11-02, 12 runs × 660 s, 4 sims in parallel): 6–6, matches 4.4–10.6 min. Before the hero systems were added the demo already favoured humans (~11 of 12).
