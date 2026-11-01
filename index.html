@@ -273,6 +273,10 @@ kbd{font-family:var(--display);font-size:10.5px;font-weight:700;border:1px solid
 .slot span{font-family:var(--display);font-size:10px;letter-spacing:.12em;color:var(--dim)}
 .slot b{font-family:var(--display);font-size:14px}.slot small{font-size:11px;color:var(--dim)}
 .slot.mod .mi{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px dashed rgba(236,230,212,.35);font-style:normal;font-size:22px;color:var(--dim)}
+.slots.three{grid-template-columns:repeat(3,minmax(0,1fr))}.slot.mod.on{border-style:solid;border-color:#7fe08a}
+.mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px;margin-top:6px}
+.mb{display:flex;align-items:center;gap:6px;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px;padding:4px 7px;color:var(--ink);font-family:var(--body);cursor:pointer;min-width:0}
+.mb.on{border-color:#7fe08a;background:rgba(127,224,138,.12)}.mb:disabled{opacity:.45;cursor:default}.mb i{font-style:normal;font-size:18px}.mb span{display:flex;flex-direction:column;min-width:0}.mb b{font-family:var(--display);font-size:12.5px}.mb small{font-size:10.5px;line-height:1.25;color:var(--dim)}
 .slot.mod.full .mi{border-style:solid;border-color:var(--signal);color:var(--ink)}
 .isl{display:grid;place-items:center;width:26px;height:26px;margin-top:2px;border-radius:7px;border:1px dashed rgba(236,230,212,.35);background:rgba(0,0,0,.25);color:var(--dim);font-size:15px;line-height:1;padding:0;cursor:pointer;touch-action:manipulation}
 .isl.full{border-style:solid;border-color:var(--infect);color:var(--ink)}
@@ -707,7 +711,7 @@ body.bossm #mm{width:clamp(100px,20vw,150px)}
       <div class="panel"><div id="lhDetail"></div>
         <div class="sec2">อาวุธ 2 ช่อง · แตะช่องแล้วเลือกอาวุธ</div><div class="slots" id="lhSlots"></div>
         <div class="wlist" id="lhWeap"></div>
-        <div class="sec2">อัปเกรดปืน 2 ช่อง</div><div class="slots" id="lhMods"></div></div>
+        <div class="sec2">ของแต่งปืน 2 ช่อง + กระสุน 1 ช่อง · ปลดล็อกตามเลเวลตัวละคร</div><div id="lhMods"></div></div>
     </div>
     <div class="panel"><div class="sec2">เพื่อนร่วมทีม (บอท) · เลือก 2 คน · ป้อมของเพื่อนบอทจะสร้างให้เอง</div><div class="chips" id="lhMates"></div></div>
     <div class="panel"><div class="sec2">ความถนัดก่อนเกม · เลือกขั้นละ 1 อย่าง เปลี่ยนได้ทุกเกม (ทาเลนต์ในเกมได้ที่เลเวล 5/10/15)</div><div class="tal" id="lhTal"></div></div>
@@ -1011,7 +1015,7 @@ function mkHuman(key,isPlayer,i){
   const H=HEROES[key],mul=(G&&G.mul?G.mul('h',key):1)*(G&&G.tal&&G.tal.has('h_lead')&&(G.side!=='human'||!isPlayer)?1.2:1)*(G&&G.tal&&G.tal.has('h_hp')&&(G.side!=='human'||isPlayer)?1.3:1),ws=(isPlayer&&G.myWeap)?G.myWeap.slice():HDEF[key].slice(),am=ws.map(w=>WEAP[w].mag||0);
   const mods=(isPlayer&&G&&G.myMods)?G.myMods.slice():[null,null];
   const st=(isPlayer&&G&&G.side==='human')?{...heroProf(key).st}:G&&G.side!=='demo'?stBal(botHLv()):{...ST0};
-  const h={kind:'h',key,H,i,isPlayer,mul,mods,st,stealthT:0,ws,wi:0,ammoA:am.slice(),swapCd:0,swing:0,ivT:null,ivSelf:false,x:SAFE.x+90+(i-1)*44,y:SAFE.y-80+(i%2)*28,r:17,hp:H.hp*mul,maxHp:H.hp*mul,ang:-.8,ammo:am[0],xp:0,lvl:1,sp:1,tp:0,sk:{s1:0,s2:0,s3:0,ul:0},up:{},slowT:0,carry:null,ampT:0,reloadT:0,fireCd:0,cd1:0,cd2:0,cd3:0,adrT:0,invT:0,dash:null,ult:0,ultT:0,
+  const h={kind:'h',key,H,i,isPlayer,mul,mods,st,am:(isPlayer&&G&&G.myAmmo)||'std',stealthT:0,ws,wi:0,ammoA:am.slice(),swapCd:0,swing:0,ivT:null,ivSelf:false,x:SAFE.x+90+(i-1)*44,y:SAFE.y-80+(i%2)*28,r:17,hp:H.hp*mul,maxHp:H.hp*mul,ang:-.8,ammo:am[0],xp:0,lvl:1,sp:1,tp:0,sk:{s1:0,s2:0,s3:0,ul:0},up:{},slowT:0,carry:null,ampT:0,reloadT:0,fireCd:0,cd1:0,cd2:0,cd3:0,adrT:0,invT:0,dash:null,ult:0,ultT:0,
     state:'ok',bleed:0,revive:0,respawnT:0,hitT:0,calm:0,goal:null,goalT:0,field:null,fkey:-1,fT:0,kills:0};
   h.maxHp*=sHp(h);h.hp=h.maxHp;
   for(const id of mods){const I=ITEMH[id];if(I&&I.on)I.on(h)}
@@ -1021,7 +1025,7 @@ function randPick(a,n){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=(
 function newGame(side,cfg){
   cfg=cfg||{};const order=side==='human'?[cfg.hero,...cfg.mates]:randPick(HK,3);
   const leader=side==='zombie'?cfg.leader:LK[(Math.random()*LK.length)|0];let zun=side==='zombie'?cfg.units.slice():randPick(ZALL,5);if(side!=='zombie'&&!zun.includes('walker')&&!zun.includes('runner'))zun[0]='walker';zun.sort((a,b)=>ZT[a].cost-ZT[b].cost);
-  G={bm:side==='zombie'&&cfg.mode!=='rts',tal:new Set([...talIds(TALH,side==='human'?cfg.htal:randTal(TALH)),...talIds(TALZ,side==='zombie'?cfg.ztal:randTal(TALZ))]),side,leader,zun,lmode:'nest',lhome:{x:HIVE.x-70,y:HIVE.y+110},zres:Object.fromEntries(zun.map(t=>[t,1])),lcd:12,myWeap:side==='human'?cfg.weap:null,myMods:side==='human'&&cfg.mods?cfg.mods:null,zItems:side==='zombie'&&cfg.items?cfg.items:null,mul:mkMul(side),t:0,over:false,humans:[],zombies:[],zs:[],hs:[],bullets:[],nades:[],nets:[],netfx:[],fires:[],tfields:[],darts:[],zones:[],fx:[],decals:[],
+  G={bm:side==='zombie'&&cfg.mode!=='rts',tal:new Set([...talIds(TALH,side==='human'?cfg.htal:randTal(TALH)),...talIds(TALZ,side==='zombie'?cfg.ztal:randTal(TALZ))]),side,leader,zun,lmode:'nest',lhome:{x:HIVE.x-70,y:HIVE.y+110},zres:Object.fromEntries(zun.map(t=>[t,1])),lcd:12,myWeap:side==='human'?cfg.weap:null,myMods:side==='human'&&cfg.mods?cfg.mods:null,myAmmo:side==='human'&&cfg.ammo||'std',zItems:side==='zombie'&&cfg.items?cfg.items:null,mul:mkMul(side),t:0,over:false,humans:[],zombies:[],zs:[],hs:[],bullets:[],nades:[],nets:[],netfx:[],fires:[],tfields:[],darts:[],zones:[],fx:[],decals:[],
     bio:300,queue:[],slots:[],burrow:[],pfx:[],drops:[],ambs:[],boss:null,caps:ZONES.map(z=>({...z,p:0,own:0})),capF:new Map(),pf:[],corpses:[],flash:0,mines:[],flares:[],strikes:[],clouds:[],puddles:[],cash:300,build:null,lastBuild:'gun',order:'def',towersBuilt:0,shells:[],path:null,alarm:null,hai:{t:2,push:false,pushT:0,next:200},rally:{...RALLY0},rField:null,rKey:-1,hField:null,hfT:0,
     zcmd:'rally',mode:null,zxp:0,zlvl:1,zpicks:0,zup:{},offer:null,civs:[],risers:[],civT:35,rescued:0,hunted:0,bAcc:0,bPos:null,crates:[],crateT:20,acid:[],cam:{x:SAFE.x,y:SAFE.y},zoom:.8,ai:{t:2,wave:6},kills:0,uiT:0,
     nodes:NODES.map(([x,y])=>({x,y,taken:null}))};
@@ -1197,15 +1201,15 @@ const HTW={storm:['gun','cannon'],shadow:['sniper','decoy'],medic:['heal','suppl
 const WGRIP={rifle:[[22,-2],[9,3]],sniper:[[24,-2],[9,3]],pistol:[[19,-2],[19,2]],smg:[[17,-2],[8,3]],shotgun:[[22,-1],[8,3]],nail:[[18,-2],[8,4]],lmg:[[24,-3],[10,4]],gl:[[20,-2],[8,4]],knife:[[9,-10],[16,7]],machete:[[9,-10],[16,7]],hammer:[[9,-10],[16,7]],iv:[[9,-11],[15,7]],laser:[[22,-2],[10,3]],bazooka:[[20,-3],[8,4]],arc:[[18,-2],[9,3]],flamer:[[20,-2],[9,4]],cryo:[[18,-2],[9,3]],minigun:[[22,-3],[10,4]],rail:[[24,-2],[10,3]],xbow:[[16,-3],[9,3]],chainsaw:[[10,-6],[18,5]],katana:[[9,-10],[16,7]]};
 for(const k in WEAP)if(WEAP[k].look&&!WGRIP[k])WGRIP[k]=WGRIP[WEAP[k].look];
 function curW(h){return WEAP[(h.ws||HDEF[h.key])[h.wi||0]]}
-const magOf=h=>{const W=curW(h);return W.mag?Math.max(1,Math.round(W.mag*(1+.3*U(h,'mag'))*(hT(h,'h_mag')?1.4:1))):0};
+const magOf=h=>{const W=curW(h);return W.mag?Math.max(1,Math.round(W.mag*(1+.3*U(h,'mag'))*(hT(h,'h_mag')?1.4:1)*(h.mMag||1))):0};
 // fire-rate factor (Storm ult, Storm proc stacks) and whether shots cost ammo
-const fireK=h=>(h.key==='storm'&&h.ultT>0?1/(h.urF||1.5):1)/(1+.02*(h.pst||0));
+const fireK=h=>(h.key==='storm'&&h.ultT>0?1/(h.urF||1.5):1)/(1+.02*(h.pst||0))*(h.mRate||1);
 const noAmmo=h=>h.key==='storm'&&h.ultT>0;
 function swapW(h){if(!h.ws||!h.ws[1]||h.swapCd>0)return;h.bq=0;h.ammoA[h.wi]=h.ammo;h.wi=1-h.wi;h.ammo=h.ammoA[h.wi];h.reloadT=0;h.fireCd=.2;h.swapCd=.35;
   if(h.isPlayer&&G.side==='human'){sfx('ui');G.fx.push({k:'txt',x:h.x,y:h.y-36,t:curW(h).name,l:.9,c:'#ece6d4',sm:1})}}
 function shoot(h,pt){
   const w=curW(h),mz=muzzleOf(h,w.ml||34),ox=mz.x,oy=mz.y,qx=mz.qx,qy=mz.qy;
-  const dm0=h.mul*(buf(h,'dmg')?2:1)*(1+.15*U(h,'dmg'))*(hT(h,'h_gun')?1.15:1)*(HZ('police')?1.1:1)*((w===WEAP.sniper||w===WEAP.pistol)?1+.25*U(h,'hs'):1)*(h.ampT>0?1.5:1)*(h.stealthT>0?1.5:1)*(h.key==='shadow'&&h.ultT>0?2.5:1)*sDmg(h),crit=sCrit(h),cr=!w.n||w.beam||w.arc||w.cone?(Math.random()<crit?CRIT:1):1,dm=dm0*cr;
+  const dm0=h.mul*(buf(h,'dmg')?2:1)*(1+.15*U(h,'dmg'))*(hT(h,'h_gun')?1.15:1)*(HZ('police')?1.1:1)*((w===WEAP.sniper||w===WEAP.pistol)?1+.25*U(h,'hs'):1)*(h.ampT>0?1.5:1)*(h.stealthT>0?1.5:1)*(h.key==='shadow'&&h.ultT>0?2.5:1)*sDmg(h)*(h.mDmg||1),crit=sCrit(h)+(h.mCrit||0),cr=!w.n||w.beam||w.arc||w.cone?(Math.random()<crit?CRIT:1):1,dm=dm0*cr;
   if(cr>1)h.critT=.2;
   if(w.beam||w.rail){const ux=Math.cos(h.ang),uy=Math.sin(h.ang);let len=w.range;for(let d=0;d<w.range;d+=18)if(inBuilding(ox+ux*d,oy+uy*d)){len=d;break}
     const ex=ox+ux*len,ey=oy+uy*len;for(const z of G.zombies){if(z.dead||z.under)continue;const dx=z.x-ox,dy=z.y-oy,t=dx*ux+dy*uy;if(t<-z.r||t>len+z.r)continue;if(Math.abs(dx*uy-dy*ux)<z.r+(w.rail?10:5)){pfx(w.rail?'crit':'hit',z.x,z.y,h.ang,w.rail?1.15:.85);let d=w.dmg*dm;if(z.T.armor&&!w.rail)d*=z.T.armor;dealZ(z,d,h);if(w.rail&&!z.T.leader){z.x+=ux*12;z.y+=uy*12}}}
@@ -1224,16 +1228,20 @@ function shoot(h,pt){
     for(let i=0;i<2;i++){const a=h.ang+rnd(-.32,.32),v=rnd(300,420);pf({k:'fire',x:ox+qx,y:oy+qy,vx:Math.cos(a)*v+h.dx*0,vy:Math.sin(a)*v,r:rnd(5,9),l:.42,L:.42,drag:.9})}}
   else if(w.lob){const d=pt?clamp(Math.hypot(pt.x-h.x,pt.y-h.y),80,380):300,tx=h.x+Math.cos(h.ang)*d,ty=h.y+Math.sin(h.ang)*d;G.nades.push({sx:ox+qx,sy:oy+qy,tx,ty,t:0,T:d/600,owner:h,kind:'mine',dmg:w.dmg*dm,R:w.R})}
   else if(w.splash){const d=pt?clamp(Math.hypot(pt.x-h.x,pt.y-h.y),90,400):320,tx=h.x+Math.cos(h.ang)*d,ty=h.y+Math.sin(h.ang)*d;G.nades.push({sx:ox+qx,sy:oy+qy,tx,ty,t:0,T:d/650,owner:h,dmg:w.dmg*dm,R:w.splash})}
-  else for(let i=0;i<w.n;i++){const a=h.ang+rnd(-w.spr,w.spr)*sSpr(h),v=w.v*rnd(.92,1.05);
-    const bc=Math.random()<crit;G.bullets.push({x:ox,y:oy,px:ox,py:oy,qx,qy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,amp:h.ampT>0,dmg:w.dmg*dm0*(bc?CRIT:1),crit:bc,life:w.life*rnd(.9,1.1)*sRng(h),owner:h,pierce:h.key==='shadow'&&h.ultT>0?99:(w.pierce||0),slow:w.slow,cold:w.cold,knock:w.knock,rocket:w.rocket,blast:w.blast,heal:w.heal?w.heal*h.mul:0})}
+  else for(let i=0;i<w.n;i++){const a=h.ang+rnd(-w.spr,w.spr)*sSpr(h)*(h.mSpr||1),v=w.v*rnd(.92,1.05);
+    const bc=Math.random()<crit;G.bullets.push({x:ox,y:oy,px:ox,py:oy,qx,qy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,amp:h.ampT>0,dmg:w.dmg*dm0*(bc?CRIT:1),crit:bc,life:w.life*rnd(.9,1.1)*sRng(h)*(h.mRng||1),owner:h,pierce:h.key==='shadow'&&h.ultT>0?99:(w.pierce||0),slow:w.slow,cold:w.cold,knock:w.knock,rocket:w.rocket,blast:w.blast,heal:w.heal?w.heal*h.mul:0});
+    if(h.am!=='std'&&!w.rocket){const B=G.bullets[G.bullets.length-1];B.am=h.am;if(h.am==='ap'){B.pierce++;B.dmg*=.9}else if(h.am==='hollow'){B.pierce=0;B.dmg*=1.25}else if(h.am==='conc')B.knock=(B.knock||0)+10;else if(h.am==='cryo')B.cold=1}}
   if(h.key==='storm'&&skR(h,'s2')&&Math.random()<(U(h,'proc')?.07:.05)){const d=pt?clamp(Math.hypot(pt.x-h.x,pt.y-h.y),120,380):320,tx=h.x+Math.cos(h.ang)*d+rnd(-20,20),ty=h.y+Math.sin(h.ang)*d+rnd(-20,20);
     G.nades.push({sx:ox+qx,sy:oy+qy,tx,ty,t:0,T:d/700,owner:h,R:72,dmg:48*h.mul*skPow(h,'s2'),rnd:1});if(U(h,'proc')>=2){h.pst=Math.min(5,(h.pst||0)+1);h.pstT=5}}
   if(!w.cone&&!w.beam){G.fx.push({k:'flash',x:ox+qx,y:oy+qy,a:h.ang,l:.05});h.flashT=.06}
   if(!w.splash&&!w.lob&&!w.beam&&!w.rail&&!w.arc&&!w.cone&&!w.rocket)pf({k:'casing',x:h.x+Math.cos(h.ang)*10,y:h.y+Math.sin(h.ang)*10,vx:Math.cos(h.ang+1.6)*rnd(60,120),vy:Math.sin(h.ang+1.6)*rnd(60,120),z:12,vz:rnd(80,150),ang:rnd(0,6),va:rnd(-20,20),s:1.7,c:w.n>1?'#b8402f':'#d9b24a',l:1.4,L:1.4});
-  sfx(w.snd,h.x,h.y,(h.isPlayer?1:.55)*(w.quiet?.35:1));
+  sfx(w.snd,h.x,h.y,(h.isPlayer?1:.55)*(w.quiet||h.mQuiet?.35:1));
   if(w.rocket){for(let i=0;i<5;i++)pf({k:'smoke',x:h.x-Math.cos(h.ang)*14,y:h.y-Math.sin(h.ang)*14,vx:-Math.cos(h.ang)*rnd(60,140)+rnd(-30,30),vy:-Math.sin(h.ang)*rnd(60,140)+rnd(-30,30),r:8,gr:16,l:.8,L:.8,a:.45})}
   if(h.isPlayer)shake(w.rocket?6:w.rail?0:w.n>1||w.splash?4:w.beam||w.cone?.6:w.rate>.25?1.5:1);
 }
+function ammoHit(b,z,d){const A=b.am;if(A==='inc'){z.burnT=Math.max(z.burnT||0,2);z.burnD=Math.max(z.burnD||0,6*(b.owner&&b.owner.mul||1));z.burnO=b.owner}
+  else if(A==='shock'&&!z.T.leader&&Math.random()<.12){z.stunT=Math.max(z.stunT||0,.4);if(Math.random()<.5)pfx('zap',z.x,z.y,0,.5)}
+  else if(A==='exp'){for(const o of G.zombies)if(o!==z&&!o.dead&&!o.under&&Math.hypot(o.x-z.x,o.y-z.y)<38+o.r)dealZ(o,d*.25,b.owner);if(Math.random()<.3)G.fx.push({k:'boom',x:z.x,y:z.y,R:30,l:.15,L:.15})}}
 function rocketBoom(b){const R=b.blast||110;pfx('plasma',b.x,b.y,0,1.25);G.kick=Math.max(G.kick||0,.025);explode(b.x,b.y,R*.8);G.fx.push({k:'boom',x:b.x,y:b.y,R,l:.32,L:.32});G.fx.push({k:'ring',x:b.x,y:b.y,r:12,R,l:.4,L:.4,c:'#ffb347'});sfx('boom',b.x,b.y,1);
   for(const z of G.zombies){const dx=z.x-b.x,dy=z.y-b.y,d=Math.hypot(dx,dy);if(d>R+z.r||z.under)continue;dealZ(z,b.dmg*(1-.45*d/R),b.owner);if(!z.T.leader&&z.type!=='brute'&&d>1){z.x+=dx/d*38;z.y+=dy/d*38;z.stunT=Math.max(z.stunT||0,.3)}}
   for(const s2 of G.zs)if(Math.hypot(s2.x-b.x,s2.y-b.y)<R+s2.r)dealS(s2,b.dmg*.8,b.owner);shake(16*Math.max(0,1-Math.hypot(b.x-G.cam.x,b.y-G.cam.y)/800))}
@@ -1733,13 +1741,13 @@ function updHuman(h,dt){
   if(h.state==='ok'&&hT(h,'h_regen')&&G.t-(h.lastHurt||-9)>4&&h.hp<h.maxHp)h.hp=Math.min(h.maxHp,h.hp+5*dt);
   if(h.dash){updDash(h,dt);c.mx=c.my=0}
   const ml=Math.hypot(c.mx,c.my),ox0=h.x,oy0=h.y;
-  if(ml>0){h.lastMx=c.mx;h.lastMy=c.my;const k=Math.min(1,ml)/ml;const W0=curW(h),spd=h.H.spd*sSpd(h)*(h.evT>0?1.25:1)*(1+.08*U(h,'spd'))*(1+.1*U(h,'dash'))*(hT(h,'h_spd')?1.15:1)*(G.zs.some(s=>s.type==='spore'&&s.built>=1&&Math.hypot(s.x-h.x,s.y-h.y)<220)?.85:1)*(h.slowT>0?.6:1)*(h.webK||1)*(h.mechT>0?.85:1)*(h.spinT>0?.7:1)*wWt(W0)*(h.ivSelf?.6:1)*(h.adrT>0?1.3:1);h.x+=c.mx*k*spd*dt;h.y+=c.my*k*spd*dt}
+  if(ml>0){h.lastMx=c.mx;h.lastMy=c.my;const k=Math.min(1,ml)/ml;const W0=curW(h),spd=h.H.spd*sSpd(h)*(h.evT>0?1.25:1)*(1+.08*U(h,'spd'))*(1+.1*U(h,'dash'))*(hT(h,'h_spd')?1.15:1)*(G.zs.some(s=>s.type==='spore'&&s.built>=1&&Math.hypot(s.x-h.x,s.y-h.y)<220)?.85:1)*(h.slowT>0?.6:1)*(h.webK||1)*(h.mechT>0?.85:1)*(h.spinT>0?.7:1)*(1-(1-wWt(W0))*(h.mWt||1))*(h.ivSelf?.6:1)*(h.adrT>0?1.3:1);h.x+=c.mx*k*spd*dt;h.y+=c.my*k*spd*dt}
   collide(h);h.step=(h.step||0)+Math.hypot(h.x-ox0,h.y-oy0);{const md=Math.hypot(h.x-ox0,h.y-oy0);if(md>.4)h.mvA=Math.atan2(h.y-oy0,h.x-ox0);h.mvT=md>.4?.12:Math.max(0,(h.mvT||0)-dt)};
   h.ang=c.aim;
   if(c.swap)swapW(h);
   const w=curW(h),frenzy=false;h.ivT=null;h.ivSelf=false;if(h.swapCd>0)h.swapCd-=dt;if(h.swing>0)h.swing-=dt;
   if(w.cat==='gun'){if(h.reloadT>0){h.reloadT-=dt;if(h.reloadT<=0)h.ammo=magOf(h)}
-    else if((c.reload&&h.ammo<magOf(h))||(h.ammo<=0&&!frenzy))h.reloadT=w.rl*(1-.15*U(h,'mag'))*(hT(h,'h_mag')?.75:1)*sRl(h);
+    else if((c.reload&&h.ammo<magOf(h))||(h.ammo<=0&&!frenzy))h.reloadT=w.rl*(1-.15*U(h,'mag'))*(hT(h,'h_mag')?.75:1)*sRl(h)*(h.mRl||1);
     if(w.spin)h.spin=c.fire&&h.reloadT<=0?Math.min(1,(h.spin||0)+dt/.6):Math.max(0,(h.spin||0)-dt*1.5);
     const still=!(w.stand&&h.mvT>0);if(!still&&c.fire&&h.isPlayer&&G.side==='human'&&G.t>(h.standW||0)){h.standW=G.t+4;say(w.name+' ยิงได้ตอนยืนนิ่งเท่านั้น','#f2b632')}
     if(h.bq>0){h.bqT-=dt;if(h.bqT<=0){if(h.ammo>0&&h.reloadT<=0){shoot(h,c.pt);if(!buf(h,'ammo')&&!noAmmo(h))h.ammo--;h.bq--;h.bqT=w.bgap}else h.bq=0}}
@@ -1764,7 +1772,7 @@ function updZombie(z,dt){
   if(z.stunT>0){z.stunT-=dt;z.dx*=.8;z.dy*=.8;return}
   if(G.bm&&z.T.leader){updBoss(z,dt);return}
   let tgt=null,bd=1e9;
-  for(const h of G.humans)if(h.state!=='dead'&&!(h.stealthT>0&&h.state==='ok')){const d=Math.hypot(h.x-z.x,h.y-z.y)-(h.state==='downed'?60:0)-(h.huntT>0?300:0)+(curW(h).quiet?110:0);if(d<bd){bd=d;tgt=h}}
+  for(const h of G.humans)if(h.state!=='dead'&&!(h.stealthT>0&&h.state==='ok')){const d=Math.hypot(h.x-z.x,h.y-z.y)-(h.state==='downed'?60:0)-(h.huntT>0?300:0)+(curW(h).quiet||h.mQuiet?110:0);if(d<bd){bd=d;tgt=h}}
   for(const c of G.civs){const d=Math.hypot(c.x-z.x,c.y-z.y)+20;if(d<bd&&d<320){bd=d;tgt=c}}
   if(tgt)bd=Math.hypot(tgt.x-z.x,tgt.y-z.y);
   const reach=z.T.ranged||(z.type==='brute'||z.T.leader?220:150);
@@ -1956,7 +1964,7 @@ function updProjectiles(dt){
     if(b.rocket&&Math.random()<.8)pf({k:'smoke',x:b.x+(b.qx||0),y:b.y+(b.qy||0),vx:rnd(-20,20),vy:rnd(-20,20),r:6,gr:12,l:.7,L:.7,a:.38});
     if(inBuilding(b.x,b.y)){b.life=0;G.fx.push({k:'spark',x:b.x+(b.qx||0),y:b.y+(b.qy||0),vx:rnd(-40,40),vy:rnd(-40,40),l:.15,c:'#d9c58a'});continue}
     if(b.heal){let hit=null;for(const o of G.humans)if(o!==b.owner&&o.state==='ok'&&o.hp<o.maxHp&&Math.hypot(o.x-b.x,o.y-b.y)<o.r+6){hit=o;break}if(hit){healH(hit,b.heal,b.owner);pfx('healring',hit.x,hit.y,0,.35);b.life=0;continue}}
-    for(const z of G.zombies){if(z.dead)continue;if(b.hits&&b.hits.includes(z))continue;const dx=z.x-b.x,dy=z.y-b.y;if(dx*dx+dy*dy<(z.r+3)*(z.r+3)){let d=b.dmg;if(z.T.armor)d*=(z.type==='armored'&&G.zres.armored===3)?.3:z.T.armor;if(b.rocket){b.life=0;break}dealZ(z,d,b.owner);if(b.crit&&b.owner&&b.owner.isPlayer&&G.side==='human'&&G.fx.length<260)G.fx.push({k:'txt',x:z.x+rnd(-6,6),y:z.y-z.r-16,t:'คริ!',l:.5,c:'#ffb020',sm:1});{const ba=Math.atan2(b.vy,b.vx);pfx(b.cold?'zapice':(b.pierce>0||b.knock||b.dmg>=40)?'crit':'hit',z.x-Math.cos(ba)*z.r*.5,z.y-Math.sin(ba)*z.r*.5,ba,b.dmg>=40?1.1:1)}if(b.slow)z.slowT=Math.max(z.slowT||0,1.2);if(b.cold){z.slowT=Math.max(z.slowT||0,1.6);z.frz=(z.frz||0)+1;if(z.frz>=6&&!z.T.leader){z.frz=0;z.stunT=Math.max(z.stunT||0,1.5);G.fx.push({k:'ring',x:z.x,y:z.y,r:6,R:z.r+16,l:.35,L:.35,c:'#bfe8ff'})}}if(b.knock&&!z.T.leader&&z.type!=='brute'){const l=Math.hypot(b.vx,b.vy)||1;z.x+=b.vx/l*b.knock;z.y+=b.vy/l*b.knock}if(b.pierce>0){b.pierce--;(b.hits=b.hits||[]).push(z);continue}b.life=0;break}}
+    for(const z of G.zombies){if(z.dead)continue;if(b.hits&&b.hits.includes(z))continue;const dx=z.x-b.x,dy=z.y-b.y;if(dx*dx+dy*dy<(z.r+3)*(z.r+3)){let d=b.dmg;if(z.T.armor&&b.am!=='ap')d*=((z.type==='armored'&&G.zres.armored===3)?.3:z.T.armor)*(b.am==='hollow'?.7:1);if(b.am==='bless')d*=GHOSTZ.includes(z.type)?1.4:.9;if(b.rocket){b.life=0;break}dealZ(z,d,b.owner);if(b.am)ammoHit(b,z,d);if(b.crit&&b.owner&&b.owner.isPlayer&&G.side==='human'&&G.fx.length<260)G.fx.push({k:'txt',x:z.x+rnd(-6,6),y:z.y-z.r-16,t:'คริ!',l:.5,c:'#ffb020',sm:1});{const ba=Math.atan2(b.vy,b.vx);pfx(b.cold?'zapice':(b.pierce>0||b.knock||b.dmg>=40)?'crit':'hit',z.x-Math.cos(ba)*z.r*.5,z.y-Math.sin(ba)*z.r*.5,ba,b.dmg>=40?1.1:1)}if(b.slow)z.slowT=Math.max(z.slowT||0,1.2);if(b.cold){z.slowT=Math.max(z.slowT||0,1.6);z.frz=(z.frz||0)+1;if(z.frz>=6&&!z.T.leader){z.frz=0;z.stunT=Math.max(z.stunT||0,1.5);G.fx.push({k:'ring',x:z.x,y:z.y,r:6,R:z.r+16,l:.35,L:.35,c:'#bfe8ff'})}}if(b.knock&&!z.T.leader&&z.type!=='brute'){const l=Math.hypot(b.vx,b.vy)||1;z.x+=b.vx/l*b.knock;z.y+=b.vy/l*b.knock}if(b.pierce>0){b.pierce--;(b.hits=b.hits||[]).push(z);continue}b.life=0;break}}
     if(b.life>0)for(const s of G.zs){if(s.dead)continue;const dx=s.x-b.x,dy=s.y-b.y;if(dx*dx+dy*dy<s.r*s.r){if(!b.rocket)pfx('hit',b.x+(b.qx||0),b.y+(b.qy||0),Math.atan2(b.vy,b.vx));if(!b.rocket)dealS(s,b.dmg*(b.owner&&b.owner.kind==='h'?1.7:1),b.owner);b.life=0;break}}
   }
   for(const b of G.bullets)if(b.rocket&&b.life<=0&&!b.done){b.done=1;rocketBoom(b)}
@@ -2762,7 +2770,7 @@ function updHud(){
     const p=G.humans[0],H=p.H;
     $('#meHp').style.width=(p.hp/p.maxHp*100)+'%';$('#meHpT').textContent=Math.ceil(p.hp)+' / '+Math.round(p.maxHp);
     {const bf=p.buf||{};$('#buffs').innerHTML=Object.keys(bf).filter(k=>bf[k]>0).map(k=>'<i style="--c:'+DROPS[k].c+'">'+DROPS[k].ic+'<b>'+Math.ceil(bf[k])+'</b></i>').join('')}
-    const W=curW(p);$('#meWpn').textContent=W.name;for(const e of document.querySelectorAll('#bX .ws'))e.classList.toggle('on',+e.dataset.i===p.wi);
+    const W=curW(p);$('#meWpn').textContent=W.name+(p.am!=='std'&&W.cat==='gun'?' · '+AMMO[p.am].name:'');for(const e of document.querySelectorAll('#bX .ws'))e.classList.toggle('on',+e.dataset.i===p.wi);
     $('#meAmmo').textContent=p.state==='dead'?'กลับมาใน '+Math.ceil(p.respawnT):p.state==='downed'?'ล้ม · รอเพื่อน':W.cat==='melee'?'ประชิด':W.cat==='iv'?(p.ivSelf?'รักษาตัวเอง':'รักษา'):(p.key==='storm'&&p.ultT>0)?'∞':p.reloadT>0?'รีโหลด…':p.ammo+'/'+magOf(p);
     $('#meLv').textContent=p.lvl;$('#meXp').style.width=(p.lvl>=MAXLV_H?100:p.xp/needH(p.lvl)*100)+'%';
     $('#hTeam').innerHTML=G.humans.slice(1).map(o=>{const bad=o.state!=='ok';return '<div class="mate'+(bad?' bad':'')+'"><i style="background:'+o.H.col+'"></i><span>'+(o.state==='dead'?'ตาย '+Math.ceil(o.respawnT):o.state==='downed'?'ล้ม '+Math.ceil(o.bleed):o.H.name)+'</span><em>'+o.lvl+'</em><div class="mb"><b style="width:'+(o.hp/o.maxHp*100)+'%;background:'+o.H.col+'"></b></div></div>'}).join('');
@@ -3514,10 +3522,33 @@ function sideCards(side){return side==='human'?[...HK.map(k=>'h:'+k),...TWALL.ma
 function mkMul(side){const mine=side==='human'?['h','t']:side==='zombie'?['z','l']:[],ai=side==='human'?'zombie':'human';
   const ids=side==='demo'?[]:sideCards(side),avg=ids.length?ids.reduce((a,k)=>a+cardLv(k),0)/ids.length:1,aiLv=1+(avg-1)*.6;
   return(kind,key)=>side==='demo'?1:mine.includes(kind)?CMUL(cardLv(kind+':'+key)):CMUL(aiLv)}
-// items · humans: 2 gun-upgrade slots per hero · ghosts: 1 item slot per unit type
-// slots only for now; add entries here later: id:{name,desc,ico,on(o)} — on() runs on the player's hero (h) or on each spawned unit (z)
-const ITEMH={},ITEMZ={};
-function modsOf(k){const m=(PROF.h.mods||{})[k];return [0,1].map(i=>m&&ITEMH[m[i]]?m[i]:null)}
+// gun mods · humans: 2 slots per hero (ITEMH, unlocked by hero level) · ghosts: 1 item slot per unit type (ITEMZ, empty for now)
+// an item is {name,desc,ico,lv,on(o)}; on() runs on the player's hero (h) or on each spawned unit (z)
+const ITEMH={
+  scope:{name:'กล้องเล็ง',desc:'กระจาย −35% ระยะยิง +15%',ico:'🔭',lv:2,on:h=>{h.mSpr=(h.mSpr||1)*.65;h.mRng=(h.mRng||1)*1.15}},
+  extmag:{name:'แม็กขยาย',desc:'แม็ก +35% แต่รีโหลดช้าลง 10%',ico:'📦',lv:4,on:h=>{h.mMag=(h.mMag||1)*1.35;h.mRl=(h.mRl||1)*1.1}},
+  fastmag:{name:'แม็กคู่',desc:'รีโหลดเร็วขึ้น 30%',ico:'⚡',lv:6,on:h=>{h.mRl=(h.mRl||1)*.7}},
+  sling:{name:'สายสะพาย',desc:'ปืนหนักถ่วงน้อยลง 60%',ico:'🎒',lv:8,on:h=>{h.mWt=(h.mWt||1)*.4}},
+  grip:{name:'กริปจับ',desc:'กระจาย −20% ยิงเร็วขึ้น 8%',ico:'✊',lv:10,on:h=>{h.mSpr=(h.mSpr||1)*.8;h.mRate=(h.mRate||1)/1.08}},
+  supp:{name:'ตัวเก็บเสียง',desc:'ยิงเงียบ ซอมบี้ไกล ๆ ไม่ค่อยหันมา ดาเมจ −5%',ico:'🔇',lv:12,on:h=>{h.mQuiet=1;h.mDmg=(h.mDmg||1)*.95}},
+  laser:{name:'เลเซอร์ชี้เป้า',desc:'คริติคอล +8%',ico:'🔴',lv:14,on:h=>{h.mCrit=(h.mCrit||0)+.08}},
+  comp:{name:'เบรกปากลำกล้อง',desc:'ยิงเร็วขึ้น 12% กระจาย +10%',ico:'💨',lv:16,on:h=>{h.mRate=(h.mRate||1)/1.12;h.mSpr=(h.mSpr||1)*1.1}},
+},ITEMZ={};
+// ammo · 1 slot per hero, unlocked by hero level; works on guns that fire rounds (not beams, arcs, flames or grenades)
+const AMMO={
+  std:{name:'มาตรฐาน',desc:'กระสุนปกติ',ico:'•',lv:1},
+  ap:{name:'เจาะเกราะ',desc:'ไม่สนเกราะ ทะลุเพิ่ม 1 ตัว ดาเมจ −10%',ico:'🔩',lv:3},
+  hollow:{name:'หัวรู',desc:'ดาเมจ +25% แต่ตัวเกราะรับน้อยลง ไม่ทะลุ',ico:'🎯',lv:5},
+  inc:{name:'เพลิง',desc:'ซอมบี้ติดไฟ',ico:'🔥',lv:7},
+  cryo:{name:'เยือกแข็ง',desc:'ซอมบี้ช้าลง',ico:'❄',lv:9},
+  shock:{name:'ช็อต',desc:'12% ทำให้ซอมบี้นิ่ง 0.4 วิ',ico:'⚡',lv:11},
+  exp:{name:'ระเบิด',desc:'แตกโดนรอบ ๆ 25% ของดาเมจ',ico:'💥',lv:13},
+  bless:{name:'สายสิญจน์',desc:'แรง +40% กับผี (กระสือ ผีปอบ หมอผีพิษ) −10% กับตัวอื่น',ico:'🧵',lv:15},
+  conc:{name:'กระแทก',desc:'ซอมบี้กระเด็นถอยหลัง',ico:'👊',lv:17},
+};
+const AK=Object.keys(AMMO),GHOSTZ=['krasue','pop','plague'];
+function ammoOf(k){const a=(PROF.h.ammo||{})[k];return a&&AMMO[a]&&heroProf(k).lv>=AMMO[a].lv?a:'std'}
+function modsOf(k){const m=(PROF.h.mods||{})[k],lv=heroProf(k).lv;return [0,1].map(i=>m&&ITEMH[m[i]]&&lv>=ITEMH[m[i]].lv&&!(i===1&&m[0]===m[1])?m[i]:null)}
 function itemOfZ(k){const id=(PROF.z.items||{})[k];return id&&ITEMZ[id]?id:null}
 function nextItem(T,cur){const ks=[null,...Object.keys(T)];return ks[(ks.indexOf(cur)+1)%ks.length]}
 // ---------- hero stats & persistent hero level ----------
@@ -3574,7 +3605,12 @@ function renderLoadH(){
     STK.map(k=>'<div class="str"><b>'+STD[k].n+'</b><small>'+STD[k].d+'</small><button type="button" class="stb" data-st="'+k+':-1"'+(HP.st[k]?'':' disabled')+' aria-label="ลด '+STD[k].n+'">−</button><span>'+HP.st[k]+'</span><button type="button" class="stb" data-st="'+k+':1"'+(free>0&&HP.st[k]<STMAX?'':' disabled')+' aria-label="เพิ่ม '+STD[k].n+'">+</button></div>').join('')+'</div>'+
     '<ul class="sk2"><li><kbd>Q</kbd> '+H.s1.name+' — '+H.s1.desc+'</li>'+(H.s2?'<li><kbd>F</kbd> '+H.s2.name+' — '+H.s2.desc+'</li>':'')+(H.s3?'<li><kbd>SPC</kbd> '+H.s3.name+' — '+H.s3.desc+'</li>':'')+'<li><kbd>E</kbd> ไม้ตาย '+H.ul.name+' — '+H.ul.desc+'</li></ul>'+
     '<div class="sec2">ป้อมประจำตัว (ล็อกตาม'+H.name+')</div><div class="cards two">'+HTW[hk].map(t=>cardHTML('t',t,true,TW[t].name,TW[t].desc+' · '+TW[t].cost+' เสบียง','<small class="l3">'+TW[t].l3+'</small>','fixed')).join('')+'</div>';
-  $('#lhMods').innerHTML=modsOf(hk).map((id,i)=>{const I=ITEMH[id];return '<button class="slot mod'+(I?' full':'')+'" type="button" data-mod="'+i+'"><span>อัปเกรด '+(i+1)+'</span><i class="mi">'+(I?I.ico:'+')+'</i><b>'+(I?I.name:'ว่าง')+'</b><small>'+(I?I.desc:'ยังไม่มีของให้ใส่')+'</small></button>'}).join('');
+  {const md=modsOf(hk),am=ammoOf(hk),HL=heroProf(hk).lv,ms=LS.ms,A=AMMO[am];
+    const sl=(on,full,lab,ico,nm,ds,attr)=>'<button class="slot mod'+(full?' full':'')+(on?' on':'')+'" type="button" '+attr+'><span>'+lab+'</span><i class="mi">'+ico+'</i><b>'+nm+'</b><small>'+ds+'</small></button>';
+    let x='<div class="slots three">'+md.map((id,i)=>{const I=ITEMH[id];return sl(ms===i,!!I,'แต่งปืน '+(i+1),I?I.ico:'+',I?I.name:'ว่าง',I?I.desc:'แตะเพื่อเลือก','data-ms="'+i+'"')}).join('')+sl(ms==='a',am!=='std','กระสุน',A.ico,A.name,A.desc,'data-ms="a"')+'</div>';
+    if(ms!=null){const T=ms==='a'?AMMO:ITEMH,cur=ms==='a'?am:md[ms];
+      x+='<div class="mlist">'+(ms==='a'?'':'<button type="button" class="mb'+(cur?'':' on')+'" data-mp="">✕ ถอดออก</button>')+Object.keys(T).filter(k=>ms==='a'||k!==md[1-ms]).map(k=>{const I=T[k],lock=HL<I.lv;return '<button type="button" class="mb'+(cur===k?' on':'')+'" data-mp="'+k+'"'+(lock?' disabled':'')+'><i>'+I.ico+'</i><span><b>'+I.name+'</b><small>'+(lock?'🔒 ปลดล็อกที่ Lv '+I.lv:I.desc)+'</small></span></button>'}).join('')+'</div>'}
+    $('#lhMods').innerHTML=x}
   $('#lhSlots').innerHTML=ws.map((w,i)=>'<button class="slot'+(LS.slot===i?' on':'')+'" type="button" data-slot="'+i+'"><span>ช่อง '+(i+1)+'</span>'+artCanvas('w',w,44)+'<b>'+WEAP[w].name+'</b><small>'+(WEAP[w].cls?WCLS[WEAP[w].cls].n:WCAT[WEAP[w].cat])+'</small></button>').join('');
   const wgr=[...HCLS[hk].map(c=>['<div class="wcat">'+WCLS[c].n+'<small class="pc"><em>+</em> '+WCLS[c].pro+' <em class="m">−</em> '+WCLS[c].con+'</small></div>',w=>WEAP[w].cls===c]),['<div class="wcat">'+WCAT.melee+'</div>',w=>WEAP[w].cat==='melee'],...(hk==='medic'?[['<div class="wcat">'+WCAT.iv+'</div>',w=>WEAP[w].cat==='iv']]:[])];
   $('#lhWeap').innerHTML=wgr.map(([hd,f])=>hd+WK.filter(f).sort((a,b)=>(WEAP[a].rar||1)-(WEAP[b].rar||1)).map(w=>{const W=WEAP[w],ws2=weapOf(hk),Rr=RAR[W.rar||1],st=wStats(W);
@@ -3612,11 +3648,12 @@ function loadClick(e){
     if(!up.classList.contains('arm')){for(const o of document.querySelectorAll('.upb.arm')){o.classList.remove('arm');o.textContent=o.dataset.t}up.dataset.t=up.textContent;up.classList.add('arm');up.textContent='แตะอีกครั้งเพื่อยืนยัน';sfx('ui');clearTimeout(LS.armT);LS.armT=setTimeout(()=>{if(up.isConnected&&up.classList.contains('arm')){up.classList.remove('arm');up.textContent=up.dataset.t}},3000);return}
     if(upgradeCard(up.dataset.up))(LS.side==='human'?renderLoadH:renderLoadZ)();return}
   if(LS.side==='human'){const P=PROF.h;
-    const pk=e.target.closest('[data-pick]');if(pk&&!pk.classList.contains('fixed')){const [k,key]=pk.dataset.pick.split(':');if(k==='h'){P.hero=key;LS.slot=0;sfx('ui');renderLoadH()}return}
+    const pk=e.target.closest('[data-pick]');if(pk&&!pk.classList.contains('fixed')){const [k,key]=pk.dataset.pick.split(':');if(k==='h'){P.hero=key;LS.slot=0;LS.ms=null;sfx('ui');renderLoadH()}return}
     const sx=e.target.closest('[data-st]');if(sx){const p=heroProf(P.hero),v=sx.dataset.st;if(v==='reset')p.st={...ST0};else{const [k,d]=v.split(':');const n=+d,free=stPts(p.lv)-stUsed(p.st);if(n>0&&free>0&&p.st[k]<STMAX)p.st[k]++;else if(n<0&&p.st[k]>0)p.st[k]--}saveProf();sfx('ui');renderLoadH();return}
     const sb=e.target.closest('[data-slot]');if(sb){LS.slot=+sb.dataset.slot;sfx('ui');renderLoadH();return}
-    const md=e.target.closest('[data-mod]');if(md){if(!Object.keys(ITEMH).length){sfx('ui');loadHint(md.parentNode.previousElementSibling,'ยังไม่มีอัปเกรดปืนให้ใส่ · เร็วๆ นี้');return}
-      const i=+md.dataset.mod,m=modsOf(P.hero);let n=nextItem(ITEMH,m[i]);if(n&&n===m[1-i])n=nextItem(ITEMH,n);m[i]=n;(P.mods=P.mods||{})[P.hero]=m;saveProf();sfx('ui');renderLoadH();return}
+    const ms=e.target.closest('[data-ms]');if(ms){const v=ms.dataset.ms==='a'?'a':+ms.dataset.ms;LS.ms=LS.ms===v?null:v;sfx('ui');renderLoadH();return}
+    const mp=e.target.closest('[data-mp]');if(mp){if(mp.disabled)return;const k=mp.dataset.mp||null;
+      if(LS.ms==='a')(P.ammo=P.ammo||{})[P.hero]=k||'std';else{const m=modsOf(P.hero);m[LS.ms]=k;(P.mods=P.mods||{})[P.hero]=m}LS.ms=null;saveProf();sfx('ui');renderLoadH();return}
     const wb=e.target.closest('[data-w]');if(wb){const ws=weapOf(P.hero),w=wb.dataset.w,o=1-LS.slot;if(!canUseW(P.hero,w))return;if(ws[o]===w)ws[o]=ws[LS.slot];ws[LS.slot]=w;P.weap[P.hero]=ws;LS.slot=o;saveProf();sfx('ui');renderLoadH();return}
     const mb=e.target.closest('[data-mate]');if(mb){const k=mb.dataset.mate;if(P.mates.includes(k)){if(P.mates.length>1)P.mates=P.mates.filter(x=>x!==k)}else{P.mates.push(k);if(P.mates.length>2)P.mates.shift()}
       if(P.mates.length<2)P.mates.push(HK.find(x=>x!==P.hero&&!P.mates.includes(x)));saveProf();sfx('ui');renderLoadH();return}
@@ -3627,7 +3664,7 @@ function loadClick(e){
     if(k==='l')P.leader=key;else if(P.units.includes(key))P.units=P.units.filter(x=>x!==key);else if(P.units.length<5)P.units.push(key);else{say('เลือกได้ 5 ชนิด เอาตัวอื่นออกก่อน');return}
     saveProf();sfx('ui');renderLoadZ()}
 }
-function cfgFor(side){if(side==='human'){const P=PROF.h;return{hero:P.hero,mates:P.mates.slice(),weap:weapOf(P.hero),mods:modsOf(P.hero),htal:(P.tal||[0,0,0,0]).slice()}}const P=PROF.z;return{leader:P.leader,units:P.units.slice(),items:Object.fromEntries(P.units.map(u=>[u,itemOfZ(u)])),ztal:(P.tal||[0,0,0,0]).slice(),mode:P.mode||'boss'}}
+function cfgFor(side){if(side==='human'){const P=PROF.h;return{hero:P.hero,mates:P.mates.slice(),weap:weapOf(P.hero),mods:modsOf(P.hero),ammo:ammoOf(P.hero),htal:(P.tal||[0,0,0,0]).slice()}}const P=PROF.z;return{leader:P.leader,units:P.units.slice(),items:Object.fromEntries(P.units.map(u=>[u,itemOfZ(u)])),ztal:(P.tal||[0,0,0,0]).slice(),mode:P.mode||'boss'}}
 function coinReward(win){
   if(G.side==='human'){const L=leaderAlive(),lp=L?1-Math.max(0,L.hp)/L.maxHp:1;return Math.round(Math.min(420,30+G.kills*.5+G.towersBuilt*3+G.rescued*10+lp*90+(win?120:0)))}
   return Math.round(Math.min(420,30+G.hunted/12+(1-Math.max(0,G.hq.hp)/G.hq.maxHp)*130+(win?120:0)))}
