@@ -1147,27 +1147,27 @@ const magOf=h=>{const W=curW(h);return W.mag?Math.max(1,Math.round(W.mag*(1+.3*U
 function swapW(h){if(!h.ws||!h.ws[1]||h.swapCd>0)return;h.ammoA[h.wi]=h.ammo;h.wi=1-h.wi;h.ammo=h.ammoA[h.wi];h.reloadT=0;h.fireCd=.2;h.swapCd=.35;
   if(h.isPlayer&&G.side==='human'){sfx('ui');G.fx.push({k:'txt',x:h.x,y:h.y-36,t:curW(h).name,l:.9,c:'#ece6d4',sm:1})}}
 function shoot(h,pt){
-  const w=curW(h),ml0=w.ml||34,ox=h.x+Math.cos(h.ang)*ml0,oy=h.y+Math.sin(h.ang)*ml0;
+  const w=curW(h),mz=muzzleOf(h,w.ml||34),ox=mz.x,oy=mz.y,qx=mz.qx,qy=mz.qy;
   const dm=h.mul*(buf(h,'dmg')?2:1)*(1+.15*U(h,'dmg'))*(hT(h,'h_gun')?1.15:1)*(HZ('police')?1.1:1)*((w===WEAP.sniper||w===WEAP.pistol)?1+.25*U(h,'hs'):1)*(h.ampT>0?1.5:1)*(h.stealthT>0?1.5:1)*(h.key==='shadow'&&h.ultT>0?2.5:1);
   if(w.beam||w.rail){const ux=Math.cos(h.ang),uy=Math.sin(h.ang);let len=w.range;for(let d=0;d<w.range;d+=18)if(inBuilding(ox+ux*d,oy+uy*d)){len=d;break}
     const ex=ox+ux*len,ey=oy+uy*len;for(const z of G.zombies){if(z.dead||z.under)continue;const dx=z.x-ox,dy=z.y-oy,t=dx*ux+dy*uy;if(t<-z.r||t>len+z.r)continue;if(Math.abs(dx*uy-dy*ux)<z.r+(w.rail?10:5)){pfx(w.rail?'crit':'hit',z.x,z.y,h.ang,w.rail?1.15:.85);let d=w.dmg*dm;if(z.T.armor&&!w.rail)d*=z.T.armor;dealZ(z,d,h);if(w.rail&&!z.T.leader){z.x+=ux*12;z.y+=uy*12}}}
     for(const s2 of G.zs){const dx=s2.x-ox,dy=s2.y-oy,t=dx*ux+dy*uy;if(t>0&&t<len+s2.r&&Math.abs(dx*uy-dy*ux)<s2.r)dealS(s2,w.dmg*dm*(w.rail?1.2:1.5),h)}
     if(w.rail)pfx('plasma',ex,ey,0,.5);
-    G.fx.push({k:'beam',x:ox,y:oy,x2:ex,y2:ey,w:w.rail?7:3.2,c:w.rail?'#6af2ff':'#ff3a7a',l:w.rail?.24:.075,L:w.rail?.24:.075});
+    G.fx.push({k:'beam',x:ox+qx,y:oy+qy,x2:ex+qx,y2:ey+qy,w:w.rail?7:3.2,c:w.rail?'#6af2ff':'#ff3a7a',l:w.rail?.24:.075,L:w.rail?.24:.075});
     if(w.rail){G.kick=Math.max(G.kick||0,.012);for(let i=0;i<10;i++)pf({k:'ember',x:ex,y:ey,vx:rnd(-160,160),vy:rnd(-160,160),r:2,l:.4,L:.4,drag:.92,c:'#8af6ff'});if(h.isPlayer)shake(7)}else if(Math.random()<.4)pf({k:'ember',x:ex,y:ey,vx:rnd(-60,60),vy:rnd(-60,60),r:1.6,l:.25,L:.25,drag:.9,c:'#ff7aa0'})}
   else if(w.arc){let t=null,bd=w.range;for(const z of G.zombies){if(z.dead||z.under)continue;const dx=z.x-h.x,dy=z.y-h.y,d=Math.hypot(dx,dy);if(d>bd)continue;let da=Math.atan2(dy,dx)-h.ang;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)>.55||!los(h.x,h.y,z.x,z.y))continue;bd=d;t=z}
-    const pts=[{x:ox,y:oy}];if(t){const hit=[t];let cur=t;for(let k=1;k<w.chain;k++){let nb=null,nd=160;for(const z of G.zombies){if(z.dead||z.under||hit.includes(z))continue;const d=dist(z,cur);if(d<nd){nd=d;nb=z}}if(!nb)break;hit.push(nb);cur=nb}
+    const pts=[{x:ox+qx,y:oy+qy}];if(t){const hit=[t];let cur=t;for(let k=1;k<w.chain;k++){let nb=null,nd=160;for(const z of G.zombies){if(z.dead||z.under||hit.includes(z))continue;const d=dist(z,cur);if(d<nd){nd=d;nb=z}}if(!nb)break;hit.push(nb);cur=nb}
       hit.forEach((z,k)=>{const pv=k?hit[k-1]:{x:ox,y:oy};pfx('zap',z.x,z.y,Math.atan2(z.y-pv.y,z.x-pv.x),k?.7:.9);dealZ(z,w.dmg*dm*Math.pow(.85,k),h);if(!z.T.leader)z.stunT=Math.max(z.stunT||0,.35);pts.push({x:z.x,y:z.y})})}
-    else pts.push({x:ox+Math.cos(h.ang)*w.range*.55+rnd(-24,24),y:oy+Math.sin(h.ang)*w.range*.55+rnd(-24,24)});
+    else pts.push({x:ox+qx+Math.cos(h.ang)*w.range*.55+rnd(-24,24),y:oy+qy+Math.sin(h.ang)*w.range*.55+rnd(-24,24)});
     G.fx.push({k:'zap',p:pts,l:.16})}
   else if(w.cone){for(const z of G.zombies){if(z.dead||z.under)continue;const dx=z.x-h.x,dy=z.y-h.y,d=Math.hypot(dx,dy);if(d>w.range+z.r)continue;let da=Math.atan2(dy,dx)-h.ang;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)>.42)continue;
       dealZ(z,w.dmg*dm,h);z.burnT=Math.max(z.burnT||0,2.6);z.burnD=Math.max(z.burnD||0,9*dm);z.burnO=h}
     for(const s2 of G.zs){if(Math.hypot(s2.x-h.x,s2.y-h.y)-s2.r<w.range){let da=Math.atan2(s2.y-h.y,s2.x-h.x)-h.ang;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)<.5)dealS(s2,w.dmg*dm,h)}}
-    for(let i=0;i<2;i++){const a=h.ang+rnd(-.32,.32),v=rnd(300,420);pf({k:'fire',x:ox,y:oy,vx:Math.cos(a)*v+h.dx*0,vy:Math.sin(a)*v,r:rnd(5,9),l:.42,L:.42,drag:.9})}}
-  else if(w.splash){const d=pt?clamp(Math.hypot(pt.x-h.x,pt.y-h.y),90,400):320,tx=h.x+Math.cos(h.ang)*d,ty=h.y+Math.sin(h.ang)*d;G.nades.push({sx:ox,sy:oy,tx,ty,t:0,T:d/650,owner:h,dmg:w.dmg*dm,R:w.splash})}
+    for(let i=0;i<2;i++){const a=h.ang+rnd(-.32,.32),v=rnd(300,420);pf({k:'fire',x:ox+qx,y:oy+qy,vx:Math.cos(a)*v+h.dx*0,vy:Math.sin(a)*v,r:rnd(5,9),l:.42,L:.42,drag:.9})}}
+  else if(w.splash){const d=pt?clamp(Math.hypot(pt.x-h.x,pt.y-h.y),90,400):320,tx=h.x+Math.cos(h.ang)*d,ty=h.y+Math.sin(h.ang)*d;G.nades.push({sx:ox+qx,sy:oy+qy,tx,ty,t:0,T:d/650,owner:h,dmg:w.dmg*dm,R:w.splash})}
   else for(let i=0;i<w.n;i++){const a=h.ang+rnd(-w.spr,w.spr),v=w.v*rnd(.92,1.05);
-    G.bullets.push({x:ox,y:oy,px:ox,py:oy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,amp:h.ampT>0,dmg:w.dmg*dm,life:w.life*rnd(.9,1.1),owner:h,pierce:h.key==='shadow'&&h.ultT>0?99:(w.pierce||0),slow:w.slow,cold:w.cold,knock:w.knock,rocket:w.rocket,blast:w.blast})}
-  if(!w.cone&&!w.beam){G.fx.push({k:'flash',x:ox,y:oy,a:h.ang,l:.05});h.flashT=.06}
+    G.bullets.push({x:ox,y:oy,px:ox,py:oy,qx,qy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,amp:h.ampT>0,dmg:w.dmg*dm,life:w.life*rnd(.9,1.1),owner:h,pierce:h.key==='shadow'&&h.ultT>0?99:(w.pierce||0),slow:w.slow,cold:w.cold,knock:w.knock,rocket:w.rocket,blast:w.blast})}
+  if(!w.cone&&!w.beam){G.fx.push({k:'flash',x:ox+qx,y:oy+qy,a:h.ang,l:.05});h.flashT=.06}
   if(!w.splash&&!w.beam&&!w.rail&&!w.arc&&!w.cone&&!w.rocket)pf({k:'casing',x:h.x+Math.cos(h.ang)*10,y:h.y+Math.sin(h.ang)*10,vx:Math.cos(h.ang+1.6)*rnd(60,120),vy:Math.sin(h.ang+1.6)*rnd(60,120),z:12,vz:rnd(80,150),ang:rnd(0,6),va:rnd(-20,20),s:1.7,c:w.n>1?'#b8402f':'#d9b24a',l:1.4,L:1.4});
   sfx(w.snd,h.x,h.y,h.isPlayer?1:.55);
   if(w.rocket){for(let i=0;i<5;i++)pf({k:'smoke',x:h.x-Math.cos(h.ang)*14,y:h.y-Math.sin(h.ang)*14,vx:-Math.cos(h.ang)*rnd(60,140)+rnd(-30,30),vy:-Math.sin(h.ang)*rnd(60,140)+rnd(-30,30),r:8,gr:16,l:.8,L:.8,a:.45})}
@@ -1281,8 +1281,8 @@ function skillX(h,slot,pt){
   const hard=z=>z.T.leader||z.type==='brute';
   if(k==='storm2'){h.dash={vx:ux*950,vy:uy*950,t:S.tg.r/950,hits:[],hit:z=>{dealZ(z,40*mul,h);pfx('blunt',z.x,z.y,a,1);if(!hard(z)){z.x+=ux*55;z.y+=uy*55;z.stunT=Math.max(z.stunT||0,.6)}}};
     sfx('ui',h.x,h.y);shake(h.isPlayer?4:0);return done()}
-  if(k==='storm3'){const ox=h.x+ux*30,oy=h.y+uy*30,n=14,A=S.tg.a;for(let i=0;i<n;i++){const b=a-A+2*A*i/(n-1)+rnd(-.03,.03),v=1000;
-      G.bullets.push({x:ox,y:oy,px:ox,py:oy,vx:Math.cos(b)*v,vy:Math.sin(b)*v,amp:h.ampT>0,dmg:13*mul,life:.3*rnd(.9,1.1),owner:h,pierce:1})}
+  if(k==='storm3'){const mz=muzzleOf(h,30),ox=mz.x,oy=mz.y,n=14,A=S.tg.a;for(let i=0;i<n;i++){const b=a-A+2*A*i/(n-1)+rnd(-.03,.03),v=1000;
+      G.bullets.push({x:ox,y:oy,px:ox,py:oy,qx:mz.qx,qy:mz.qy,vx:Math.cos(b)*v,vy:Math.sin(b)*v,amp:h.ampT>0,dmg:13*mul,life:.3*rnd(.9,1.1),owner:h,pierce:1})}
     sfx('shotgun',h.x,h.y);if(h.isPlayer)shake(5);return done()}
   if(k==='shadow2'){let len=S.tg.r;for(let d=0;d<len;d+=16)if(inBuilding(h.x+ux*d,h.y+uy*d)){len=d;break}
     for(const z of G.zombies){if(z.dead||z.under)continue;const dx=z.x-h.x,dy=z.y-h.y,t=dx*ux+dy*uy;if(t<0||t>len+z.r)continue;if(Math.abs(dx*uy-dy*ux)<z.r+S.tg.w*.6){dealZ(z,95*mul*(h.ultT>0?1.6:1),h);z.markT=Math.max(z.markT||0,4);pfx('crit',z.x,z.y,a,.9)}}
@@ -1457,10 +1457,16 @@ function useGLB(k,g){const T=H3.T,src=g.scene,gm=toonRamp(T),mats=[],hands=[null
     for(const c of g.animations)for(const tr of c.tracks)if(tr.name===hips.name+'.position'){const v=tr.values;for(let i=0;i<v.length;i+=3)for(let a=0;a<3;a++)if(a!==up)v[i+a]=r[a]}}
   const mixer=new T.AnimationMixer(src),acts={};
   for(const c of g.animations){const a=mixer.clipAction(c);a.play();a.setEffectiveWeight(0);acts[c.name.toLowerCase().replace(/[^a-z0-9]/g,'')]=a}
+  // run-and-gun: split clips at the spine, so the legs can run (runl/walkl) while the body shoots / reloads / throws (shootu…)
+  let spine=null;src.traverse(o=>{if(!spine&&o.isBone&&/spine$/i.test(o.name))spine=o});
+  if(spine){const up=new Set();spine.traverse(o=>up.add(o.name));
+    const part=(n,u)=>{const a=acts[n];if(!a)return;const c=a.getClip(),tr=c.tracks.filter(t=>up.has(t.name.split('.')[0])===u);if(!tr.length)return;
+      const b=mixer.clipAction(new T.AnimationClip(c.name+(u?'_u':'_l'),c.duration,tr));b.play();b.setEffectiveWeight(0);acts[n+(u?'u':'l')]=b};
+    for(const n of ['run','walk'])part(n,false);for(const n of ['shoot','reload','throw'])part(n,true)}
   const old=H3.models[k],root=new T.Group();root.add(src);
   let gun=null;if(old&&old.gun){gun=old.gun.clone();gun.traverse(o=>{if(o.material&&o.material.isMeshToonMaterial)mats.push(o.material)});root.add(gun)}
   if(old)H3.scene.remove(old.root);H3.scene.add(root);
-  H3.models[k]={glb:true,root,mixer,acts,mats,gun,hands,HT,v1:new T.Vector3(),v2:new T.Vector3()};
+  H3.models[k]={glb:true,root,mixer,acts,mats,gun,hands,HT,spine,v1:new T.Vector3(),v2:new T.Vector3(),up:new T.Vector3(0,1,0),q1:new T.Quaternion(),q2:new T.Quaternion()};
   console.log('3D model',k,Object.keys(acts).join(' ')||'(no animations)');
 }
 // Box3.setFromObject is wrong for skinned meshes (it ignores the bones), so measure the skinned vertices
@@ -1474,8 +1480,14 @@ function init3D(){const T=THREE,cv=document.createElement('canvas');cv.width=cv.
   cam.position.set(0,1+Math.sin(el)*12,Math.cos(el)*12);cam.lookAt(0,1,0);cam.updateMatrixWorld();cam.updateProjectionMatrix();
   scene.add(new T.HemisphereLight(0xe6eeff,0x3a3424,.55));const d=new T.DirectionalLight(0xfff0d8,.85);d.position.set(-4,7,5);scene.add(d);
   Object.assign(H3,{T,R,scene,cam,cv});H3.models.storm=buildStorm3D(T);scene.add(H3.models.storm.root);
-  const P=y=>{const v=new T.Vector3(0,y,0).project(cam);return{u:(v.x+1)/2,v:(1-v.y)/2}};H3.foot=P(0);H3.top=P(2.05);H3.ready=true;
+  const P=y=>{const v=new T.Vector3(0,y,0).project(cam);return{u:(v.x+1)/2,v:(1-v.y)/2}};H3.foot=P(0);H3.top=P(2.05);
+  // screen (u,v) moved per metre along x, y (up) and z (toward the camera); the camera is orthographic, so this is exact
+  const Q=(x,y,z)=>{const v=new T.Vector3(x,y,z).project(cam);return[(v.x+1)/2,(1-v.y)/2]},o=Q(0,0,0),bx=Q(1,0,0),by=Q(0,1,0),bz=Q(0,0,1);
+  H3.B=[bx[0]-o[0],bx[1]-o[1],by[0]-o[0],by[1]-o[1],bz[0]-o[0],bz[1]-o[1]];H3.tip=new T.Vector3();H3.ready=true;
 }
+// model turn for an aim angle: the camera is tilted, so a plain turn by the angle looks off on screen (aim 45° shows as 30°);
+// turn until the model's forward line lands on the aim angle on screen
+function yaw3D(a){const B=H3.B;return Math.PI/2-Math.atan2(Math.sin(a)*B[0]/B[5],Math.cos(a))}
 function buildStorm3D(T){
   const gm=toonRamp(T);
   const mats=[],M=c=>{const m=new T.MeshToonMaterial({color:c,gradientMap:gm});mats.push(m);return m},OL=new T.MeshBasicMaterial({color:0x14100c,side:T.BackSide});
@@ -1505,7 +1517,7 @@ function buildStorm3D(T){
 }
 function pose3D(M,h){
   const t=G.t+(h.i||0),moving=(h.mvT||0)>0,p=(h.step||0)*.11,ca=h.castA!=null?(G.t-h.castA)/.5:9,cast=ca>=0&&ca<1;
-  M.root.rotation.set(0,Math.PI/2-(h.ang||0),0);M.root.position.set(0,0,0);
+  M.root.rotation.set(0,yaw3D(h.ang||0),0);M.root.position.set(0,0,0);
   const sw=moving?Math.sin(p):0;M.legs[0].rotation.x=sw*.75;M.legs[1].rotation.x=-sw*.75;
   M.body.position.y=moving?Math.abs(Math.sin(p))*.05:Math.sin(t*2.2)*.012;M.torso.rotation.z=moving?Math.sin(p)*.05:0;M.head.rotation.y=moving?0:Math.sin(t*.9)*.12;
   const melee=WEAP[(h.ws||HDEF[h.key])[h.wi||0]].cat!=='gun';M.gun.visible=!melee&&!cast;
@@ -1516,26 +1528,43 @@ function pose3D(M,h){
   const fl=h.hitT>0?.45:0;for(const m of M.mats)m.emissive.setRGB(fl,fl,fl);
 }
 // GLB: pick a clip from the hero's state. Time is set directly (no stored mixer clock), so several heroes can share one model.
+// Returns layers [[clip,time],…]: one clip, or legs + upper body when the hero moves while shooting / reloading / throwing.
 function clip3D(M,h){const A=M.acts,s=h._a3,du=k=>A[k].getClip().duration,loop=(k,sp=1)=>[k,((G.t+(h.i||0)*.37)*sp)%du(k)];
   if(h.flashT>0||h.swing>0)s.shot=G.t;
-  if(h.state==='downed'){if(s.down==null)s.down=G.t;if(A.die)return['die',Math.min(G.t-s.down,du('die')-.01)]}else s.down=null;
-  const ca=h.castA!=null?G.t-h.castA:9;if(A.throw){const T=Math.min(1.1,du('throw')/1.8);if(ca>=0&&ca<T)return['throw',ca/T*du('throw')]}
-  if(h.reloadT>0&&A.reload)return loop('reload');
-  if(G.t-(s.shot==null?-9:s.shot)<.35&&A.shoot)return loop('shoot');
-  if((h.mvT||0)>0&&(A.run||A.walk))return loop(A.run?'run':'walk');
-  if(A.idle)return loop('idle');const k=Object.keys(A)[0];return k?loop(k):null}
+  if(h.state==='downed'){if(s.down==null)s.down=G.t;if(A.die)return[['die',Math.min(G.t-s.down,du('die')-.01)]]}else s.down=null;
+  let up=null;const ca=h.castA!=null?G.t-h.castA:9;
+  if(A.throw){const T=Math.min(1.1,du('throw')/1.8);if(ca>=0&&ca<T)up=['throw',ca/T*du('throw')]}
+  if(!up&&h.reloadT>0&&A.reload)up=loop('reload');
+  if(!up&&G.t-(s.shot==null?-9:s.shot)<.35&&A.shoot)up=loop('shoot');
+  let legs=null;if((h.mvT||0)>0&&(A.run||A.walk)){const k=A.run?'run':'walk';legs=loop(k);
+    // moving away from where the hero faces (aiming behind while running): run backwards
+    if(h.mvA!=null&&Math.cos(h.mvA-(h.ang||0))<-.3)legs[1]=du(k)-legs[1]}
+  if(up&&legs&&A[up[0]+'u']&&A[legs[0]+'l'])return[[legs[0]+'l',legs[1]],[up[0]+'u',up[1]]];
+  if(up)return[up];if(legs)return[legs];
+  if(A.idle)return[loop('idle')];const k=Object.keys(A)[0];return k?[loop(k)]:null}
 function pose3DGLB(M,h){const s=h._a3||(h._a3={}),c=clip3D(M,h),A=M.acts;
-  M.root.rotation.set(0,Math.PI/2-(h.ang||0),0);M.root.position.set(0,0,0);
+  M.root.rotation.set(0,yaw3D(h.ang||0)-(s.dl||0),0);M.root.position.set(0,0,0);
   for(const n in A)A[n].setEffectiveWeight(0);
-  if(c){const [k,t]=c;if(s.cur!==k){s.prev=s.cur;s.prevT=s.lastT;s.cur=k;s.sw=G.t}s.lastT=t;
+  // blend .15 s from the previous layers (kept at the time they stopped) to the new ones
+  if(c){const key=c.map(l=>l[0]).join('+');if(s.cur!==key){s.prev=s.curL;s.cur=key;s.sw=G.t}s.curL=c;
     const w=Math.min(1,(G.t-s.sw)/.15),set=(n,tt,ww)=>{const a=A[n];a.enabled=true;a.time=tt;a.setEffectiveWeight(ww)};
-    set(k,t,w);if(w<1&&s.prev&&A[s.prev]&&s.prev!==k)set(s.prev,s.prevT,1-w)}
+    for(const [n,t] of c)set(n,t,w);
+    if(w<1&&s.prev)for(const [n,t] of s.prev)if(A[n]&&!c.some(l=>l[0]===n))set(n,t,1-w)}
   M.mixer.update(0);
   if(h.state==='downed'&&!A.die){M.root.rotation.set(-Math.PI/2+.25,0,Math.PI/2-(h.ang||0));M.root.position.set(0,.35,0)}
   // gun sits in the right hand and points at the left hand (rifle hold), so it follows any Mixamo clip
-  if(M.gun){const [rh,lh]=M.hands,melee=WEAP[(h.ws||HDEF[h.key])[h.wi||0]].cat!=='gun';let show=!!(rh&&lh)&&!melee&&h.state==='ok'&&s.cur!=='throw';
-    if(show){M.root.updateMatrixWorld(true);const a=rh.getWorldPosition(M.v1),b=lh.getWorldPosition(M.v2),d=a.distanceTo(b)/M.HT;show=d>.04&&d<.4;
-      if(show){M.gun.position.copy(M.root.worldToLocal(a));M.gun.lookAt(b)}}
+  if(M.gun){const [rh,lh]=M.hands,melee=WEAP[(h.ws||HDEF[h.key])[h.wi||0]].cat!=='gun';let show=!!(rh&&lh)&&!melee&&h.state==='ok'&&!/throw/.test(s.cur||''),dl=0;
+    const hands=()=>[M.root.worldToLocal(rh.getWorldPosition(M.v1)),M.root.worldToLocal(lh.getWorldPosition(M.v2))];
+    if(show){M.root.updateMatrixWorld(true);const [a,b]=hands(),d=a.distanceTo(b)/M.HT;show=d>.04&&d<.4;
+      // while firing, the barrel (right hand -> left hand) should point at the aim; the firing clip holds the rifle a bit sideways
+      if(show&&/shoot/.test(s.cur||''))dl=clamp(Math.atan2(b.x-a.x,b.z-a.z),-.9,.9)}
+    // standing: turn the whole body; moving (legs + upper body layers): twist at the spine, so the legs keep running straight
+    const mv=/\+/.test(s.cur||''),k=s.dlT==null?1:Math.min(1,Math.max(0,G.t-s.dlT)*14);s.dlT=G.t;
+    s.dl=(s.dl||0)+((mv?0:dl)-(s.dl||0))*k;s.dlS=(s.dlS||0)+((mv?dl:0)-(s.dlS||0))*k;
+    if(h.state==='ok'){M.root.rotation.y=yaw3D(h.ang||0)-s.dl;M.root.updateMatrixWorld(true);
+      if(M.spine&&Math.abs(s.dlS)>.001){const P=M.spine.parent.getWorldQuaternion(M.q1);
+        M.spine.quaternion.premultiply(P).premultiply(M.q2.setFromAxisAngle(M.up,-s.dlS)).premultiply(P.invert());M.root.updateMatrixWorld(true)}}
+    if(show){const [a,b]=hands();M.gun.position.copy(a);M.gun.lookAt(M.root.localToWorld(b))}
     M.gun.visible=show}
   const fl=h.hitT>0?.45:0;for(const m of M.mats)m.emissive.setRGB(fl,fl,fl);
 }
@@ -1546,7 +1575,15 @@ function draw3DHero(h){
   H3.R.render(H3.scene,H3.cam);
   const r=h.r,want=r*3.7,S=want/(H3.foot.v-H3.top.v),fx=h.x,fy=h.y+r*.75,sm=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=true;
   ctx.drawImage(H3.cv,fx-H3.foot.u*S,fy-H3.foot.v*S,S,S);ctx.imageSmoothingEnabled=sm;h._top=fy-want;
+  // the gun's muzzle, for muzzleOf(): ground point under it, split into along / across the aim, and its height on screen
+  if(M.gun&&M.gun.visible){const p=M.gun.localToWorld(H3.tip.set(0,.02,.7)),B=H3.B,gx=(p.x*B[0]+p.z*B[4])*S,gy=(p.x*B[1]+p.z*B[5])*S,c=Math.cos(h.ang||0),sn=Math.sin(h.ang||0);
+    h._mz={al:gx*c+gy*sn,lat:gy*c-gx*sn,oz:-p.y*B[3]*S-r*.75,t:G.t}}else h._mz=null;
 }
+// where shots start: the 3D gun's muzzle when the hero was just drawn in 3D, else ml ahead of the hero.
+// x,y = where the shot really is (on the aim line, so hits and aiming are unchanged);
+// qx,qy = how far from that it is drawn (the gun is held at chest height and a bit to the side)
+function muzzleOf(h,ml){const m=h._mz&&G.t-h._mz.t<.2?h._mz:null,c=Math.cos(h.ang),s=Math.sin(h.ang);
+  return m?{x:h.x+c*m.al,y:h.y+s*m.al,qx:-s*m.lat,qy:c*m.lat-m.oz}:{x:h.x+c*ml,y:h.y+s*ml,qx:0,qy:0}}
 function use3D(h){return H3.on&&H3.ready&&!!H3.models[h.key]}
 function setH3d(on){H3.on=on;try{localStorage.setItem('ls-h3d',on?'1':'0')}catch(_){}const b=$('#h3d');if(b)b.textContent='ตัวละคร: '+(on?'3D (ทดลอง)':'ภาพ 2D');if(on)load3D()}
 // ---------- player control ----------
@@ -1632,7 +1669,7 @@ function updHuman(h,dt){
   if(h.dash){updDash(h,dt);c.mx=c.my=0}
   const ml=Math.hypot(c.mx,c.my),ox0=h.x,oy0=h.y;
   if(ml>0){h.lastMx=c.mx;h.lastMy=c.my;const k=Math.min(1,ml)/ml;const W0=curW(h),spd=h.H.spd*(1+.08*U(h,'spd'))*(1+.1*U(h,'dash'))*(hT(h,'h_spd')?1.15:1)*(G.zs.some(s=>s.type==='spore'&&s.built>=1&&Math.hypot(s.x-h.x,s.y-h.y)<220)?.85:1)*(h.slowT>0?.6:1)*(h.webK||1)*(h.mechT>0?.85:1)*(h.spinT>0?.7:1)*(W0.heavy||1)*(h.ivSelf?.6:1)*(h.adrT>0?1.3:1);h.x+=c.mx*k*spd*dt;h.y+=c.my*k*spd*dt}
-  collide(h);h.step=(h.step||0)+Math.hypot(h.x-ox0,h.y-oy0);h.mvT=Math.hypot(h.x-ox0,h.y-oy0)>.4?.12:Math.max(0,(h.mvT||0)-dt);
+  collide(h);h.step=(h.step||0)+Math.hypot(h.x-ox0,h.y-oy0);{const md=Math.hypot(h.x-ox0,h.y-oy0);if(md>.4)h.mvA=Math.atan2(h.y-oy0,h.x-ox0);h.mvT=md>.4?.12:Math.max(0,(h.mvT||0)-dt)};
   h.ang=c.aim;
   if(c.swap)swapW(h);
   const w=curW(h),frenzy=false;h.ivT=null;h.ivSelf=false;if(h.swapCd>0)h.swapCd-=dt;if(h.swing>0)h.swing-=dt;
@@ -1849,10 +1886,10 @@ function zAI(dt){
 function updProjectiles(dt){
   for(const b of G.bullets){
     b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
-    if(b.rocket&&Math.random()<.8)pf({k:'smoke',x:b.x,y:b.y,vx:rnd(-20,20),vy:rnd(-20,20),r:6,gr:12,l:.7,L:.7,a:.38});
-    if(inBuilding(b.x,b.y)){b.life=0;G.fx.push({k:'spark',x:b.x,y:b.y,vx:rnd(-40,40),vy:rnd(-40,40),l:.15,c:'#d9c58a'});continue}
+    if(b.rocket&&Math.random()<.8)pf({k:'smoke',x:b.x+(b.qx||0),y:b.y+(b.qy||0),vx:rnd(-20,20),vy:rnd(-20,20),r:6,gr:12,l:.7,L:.7,a:.38});
+    if(inBuilding(b.x,b.y)){b.life=0;G.fx.push({k:'spark',x:b.x+(b.qx||0),y:b.y+(b.qy||0),vx:rnd(-40,40),vy:rnd(-40,40),l:.15,c:'#d9c58a'});continue}
     for(const z of G.zombies){if(z.dead)continue;if(b.hits&&b.hits.includes(z))continue;const dx=z.x-b.x,dy=z.y-b.y;if(dx*dx+dy*dy<(z.r+3)*(z.r+3)){let d=b.dmg;if(z.T.armor)d*=(z.type==='armored'&&G.zres.armored===3)?.3:z.T.armor;if(b.rocket){b.life=0;break}dealZ(z,d,b.owner);{const ba=Math.atan2(b.vy,b.vx);pfx(b.cold?'zapice':(b.pierce>0||b.knock||b.dmg>=40)?'crit':'hit',z.x-Math.cos(ba)*z.r*.5,z.y-Math.sin(ba)*z.r*.5,ba,b.dmg>=40?1.1:1)}if(b.slow)z.slowT=Math.max(z.slowT||0,1.2);if(b.cold){z.slowT=Math.max(z.slowT||0,1.6);z.frz=(z.frz||0)+1;if(z.frz>=6&&!z.T.leader){z.frz=0;z.stunT=Math.max(z.stunT||0,1.5);G.fx.push({k:'ring',x:z.x,y:z.y,r:6,R:z.r+16,l:.35,L:.35,c:'#bfe8ff'})}}if(b.knock&&!z.T.leader&&z.type!=='brute'){const l=Math.hypot(b.vx,b.vy)||1;z.x+=b.vx/l*b.knock;z.y+=b.vy/l*b.knock}if(b.pierce>0){b.pierce--;(b.hits=b.hits||[]).push(z);continue}b.life=0;break}}
-    if(b.life>0)for(const s of G.zs){if(s.dead)continue;const dx=s.x-b.x,dy=s.y-b.y;if(dx*dx+dy*dy<s.r*s.r){if(!b.rocket)pfx('hit',b.x,b.y,Math.atan2(b.vy,b.vx));if(!b.rocket)dealS(s,b.dmg*(b.owner&&b.owner.kind==='h'?1.7:1),b.owner);b.life=0;break}}
+    if(b.life>0)for(const s of G.zs){if(s.dead)continue;const dx=s.x-b.x,dy=s.y-b.y;if(dx*dx+dy*dy<s.r*s.r){if(!b.rocket)pfx('hit',b.x+(b.qx||0),b.y+(b.qy||0),Math.atan2(b.vy,b.vx));if(!b.rocket)dealS(s,b.dmg*(b.owner&&b.owner.kind==='h'?1.7:1),b.owner);b.life=0;break}}
   }
   for(const b of G.bullets)if(b.rocket&&b.life<=0&&!b.done){b.done=1;rocketBoom(b)}
   G.bullets=G.bullets.filter(b=>b.life>0);
@@ -3607,10 +3644,11 @@ function drawCorpse(c){
 function drawFxAdd(v){
   const vis=(x,y,m)=>x>v.x1-m&&x<v.x2+m&&y>v.y1-m&&y<v.y2+m;
   ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
-  for(const b of G.bullets){if(!vis(b.x,b.y,20))continue;const tx=b.x-b.vx*.028,ty=b.y-b.vy*.028;
-    ctx.strokeStyle=b.amp?'rgba(255,110,40,.35)':b.cold?'rgba(120,200,255,.35)':'rgba(255,200,100,.26)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(b.x,b.y);ctx.stroke();
-    ctx.strokeStyle=b.amp?'#ffc090':b.cold?'#d8f2ff':'#fff2c8';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(b.x,b.y);ctx.stroke()}
-  for(const b of G.bullets)if(b.rocket&&vis(b.x,b.y,30)){glowAt(b.x,b.y,30,'#ffb050',.8);glowAt(b.x-b.vx*.04,b.y-b.vy*.04,22,'#ff7030',.5)}
+  // b.qx,b.qy: shot from a 3D hero's gun is drawn at the gun (chest height, a bit to the side), not on its ground line
+  for(const b of G.bullets){if(!vis(b.x,b.y,20))continue;const bx=b.x+(b.qx||0),by=b.y+(b.qy||0),tx=bx-b.vx*.028,ty=by-b.vy*.028;
+    ctx.strokeStyle=b.amp?'rgba(255,110,40,.35)':b.cold?'rgba(120,200,255,.35)':'rgba(255,200,100,.26)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(bx,by);ctx.stroke();
+    ctx.strokeStyle=b.amp?'#ffc090':b.cold?'#d8f2ff':'#fff2c8';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(bx,by);ctx.stroke()}
+  for(const b of G.bullets)if(b.rocket&&vis(b.x,b.y,30)){const bx=b.x+(b.qx||0),by=b.y+(b.qy||0);glowAt(bx,by,30,'#ffb050',.8);glowAt(bx-b.vx*.04,by-b.vy*.04,22,'#ff7030',.5)}
   for(const a of G.acid)if(vis(a.x,a.y,20))glowAt(a.x,a.y,18,'#8ef04a',.55);
   for(const d of G.darts)glowAt(d.x,d.y,16,'#7fe0b9',.6);
   for(const sh of G.shells){const k=clamp(sh.t/sh.T,0,1),x=sh.sx+(sh.tx-sh.sx)*k,y=sh.sy+(sh.ty-sh.sy)*k-Math.sin(k*Math.PI)*70;glowAt(x,y,12,'#ffb050',.6)}
