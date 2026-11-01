@@ -30,11 +30,13 @@ if(mode==='boss'){const LDR=A3||'queen',TT=+A4||300;
     step(1/60);
     if(((t*60)|0)%(60*30)===0){const L2=leaderAlive();console.log((t|0)+'s queen',L2?L2.hp|0:'dead','nests',nests().length,'bio',G.bio|0,'army',G.zombies.length,'eggs',G.zs.filter(s=>s.type==='egg').length,'hq',G.hq.hp|0)}}
   console.log('over',G.over,'t',G.t|0)}
-if(mode==='guns'){for(const w of WK.filter(w=>WEAP[w].cat==='gun')){const k=HK.find(k=>canUseW(k,w));const cfg=cfgFor('human');cfg.hero=k;cfg.mates=HK.filter(x=>x!==k).slice(0,2);cfg.weap=[w,'knife'];
-  newGame('human',cfg);onResize();const p=G.humans[0];p.x=MW/2;p.y=MH/2;for(const o of G.humans.slice(1)){o.x=p.x-60;o.y=p.y+30;o.hp=o.maxHp*.5}
-  for(let i=0;i<10;i++)spawnZ('walker',p.x+rnd(150,300),p.y+rnd(-60,60));const k0=G.kills,h0=G.humans[1].hp;mouse.active=true;mouse.down=true;
-  for(let t=0;t<4;t+=1/60){const z=G.zombies.find(z=>!z.dead&&!z.T.leader);if(z){mouse.x=VW/2+(z.x-G.cam.x)*G.scale;mouse.y=VH/2+(z.y-G.cam.y)*G.scale}step(1/60)}
-  mouse.down=false;console.log(w.padEnd(8),'ammo',p.ammo,p.reloadT.toFixed(1),p.fireCd.toFixed(2),p.state,k.padEnd(7),'kills',G.kills-k0,'mines',G.mines.length,'mateHeal',(G.humans[1].hp-h0)|0)}}
+if(mode==='guns'){const pc0=playerCtl;playerCtl=function(h){const c=pc0(h),z=G.zombies.filter(z=>!z.dead&&!z.T.leader).sort((a,b)=>dist(a,h)-dist(b,h))[0];if(z){c.aim=Math.atan2(z.y-h.y,z.x-h.x);c.fire=true;c.pt={x:z.x,y:z.y}}return c};
+  for(const w of WK.filter(w=>WEAP[w].cat==='gun')){const k=HK.find(k=>canUseW(k,w));const cfg=cfgFor('human');cfg.hero=k;cfg.mates=HK.filter(x=>x!==k).slice(0,2);cfg.weap=[w,'knife'];
+  newGame('human',cfg);onResize();const p=G.humans[0];p.x=MW/2;p.y=MH/2;for(const o of G.humans.slice(1)){o.x=p.x-400;o.y=p.y+300}
+  for(let i=0;i<10;i++)spawnZ('walker',p.x+rnd(150,300),p.y+rnd(-60,60));let dmg=0;const d0=dealZ;dealZ=function(z,d,o){if(o===p)dmg+=d;return d0(z,d,o)};
+  for(let t=0;t<4;t+=1/60)step(1/60);dealZ=d0;
+  console.log(w.padEnd(8),k.padEnd(7),'damage in 4s',dmg|0,'mines',G.mines.length)}
+  playerCtl=pc0}
 if(mode==='ults'){for(const k of ['storm','shadow','medic','volt','eng','trap']){const cfg=cfgFor('human');cfg.hero=k;cfg.mates=HK.filter(x=>x!==k).slice(0,2);cfg.weap=weapOf(k);
   newGame('human',cfg);onResize();const p=G.humans[0];p.x=MW/2;p.y=MH/2;for(const o of G.humans.slice(1)){o.x=p.x+60;o.y=p.y+30}
   for(let i=0;i<14;i++)spawnZ(['walker','runner','brute'][i%3],p.x+rnd(-260,260),p.y+rnd(-260,260));
