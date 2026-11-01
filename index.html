@@ -1466,7 +1466,7 @@ function useGLB(k,g){const T=H3.T,src=g.scene,gm=toonRamp(T),mats=[],hands=[null
   const old=H3.models[k],root=new T.Group();root.add(src);
   let gun=null;if(old&&old.gun){gun=old.gun.clone();gun.traverse(o=>{if(o.material&&o.material.isMeshToonMaterial)mats.push(o.material)});root.add(gun)}
   if(old)H3.scene.remove(old.root);H3.scene.add(root);
-  H3.models[k]={glb:true,root,mixer,acts,mats,gun,hands,HT,spine,v1:new T.Vector3(),v2:new T.Vector3(),up:new T.Vector3(0,1,0),q1:new T.Quaternion(),q2:new T.Quaternion()};
+  H3.models[k]={glb:true,root,mixer,acts,mats,gun,hands,HT,spine,v1:new T.Vector3(),v2:new T.Vector3(),up:new T.Vector3(0,1,0),q1:new T.Quaternion(),q2:new T.Quaternion(),sq:new T.Quaternion(),sqOn:false};
   console.log('3D model',k,Object.keys(acts).join(' ')||'(no animations)');
 }
 // Box3.setFromObject is wrong for skinned meshes (it ignores the bones), so measure the skinned vertices
@@ -1550,6 +1550,8 @@ function pose3DGLB(M,h){const s=h._a3||(h._a3={}),c=clip3D(M,h),A=M.acts;
     const w=Math.min(1,(G.t-s.sw)/.15),set=(n,tt,ww)=>{const a=A[n];a.enabled=true;a.time=tt;a.setEffectiveWeight(ww)};
     for(const [n,t] of c)set(n,t,w);
     if(w<1&&s.prev)for(const [n,t] of s.prev)if(A[n]&&!c.some(l=>l[0]===n))set(n,t,1-w)}
+  // undo last frame's spine twist: the mixer skips bones whose value did not change, which would twist twice
+  if(M.sqOn){M.spine.quaternion.copy(M.sq);M.sqOn=false}
   M.mixer.update(0);
   if(h.state==='downed'&&!A.die){M.root.rotation.set(-Math.PI/2+.25,0,Math.PI/2-(h.ang||0));M.root.position.set(0,.35,0)}
   // gun sits in the right hand and points at the left hand (rifle hold), so it follows any Mixamo clip
@@ -1557,12 +1559,12 @@ function pose3DGLB(M,h){const s=h._a3||(h._a3={}),c=clip3D(M,h),A=M.acts;
     const hands=()=>[M.root.worldToLocal(rh.getWorldPosition(M.v1)),M.root.worldToLocal(lh.getWorldPosition(M.v2))];
     if(show){M.root.updateMatrixWorld(true);const [a,b]=hands(),d=a.distanceTo(b)/M.HT;show=d>.04&&d<.4;
       // while firing, the barrel (right hand -> left hand) should point at the aim; the firing clip holds the rifle a bit sideways
-      if(show&&/shoot/.test(s.cur||''))dl=clamp(Math.atan2(b.x-a.x,b.z-a.z),-.9,.9)}
+      if(show&&/shoot/.test(s.cur||''))dl=clamp(Math.atan2(b.x-a.x,b.z-a.z),-1.2,1.2)}
     // standing: turn the whole body; moving (legs + upper body layers): twist at the spine, so the legs keep running straight
     const mv=/\+/.test(s.cur||''),k=s.dlT==null?1:Math.min(1,Math.max(0,G.t-s.dlT)*14);s.dlT=G.t;
     s.dl=(s.dl||0)+((mv?0:dl)-(s.dl||0))*k;s.dlS=(s.dlS||0)+((mv?dl:0)-(s.dlS||0))*k;
     if(h.state==='ok'){M.root.rotation.y=yaw3D(h.ang||0)-s.dl;M.root.updateMatrixWorld(true);
-      if(M.spine&&Math.abs(s.dlS)>.001){const P=M.spine.parent.getWorldQuaternion(M.q1);
+      if(M.spine&&Math.abs(s.dlS)>.001){const P=M.spine.parent.getWorldQuaternion(M.q1);M.sq.copy(M.spine.quaternion);M.sqOn=true;
         M.spine.quaternion.premultiply(P).premultiply(M.q2.setFromAxisAngle(M.up,-s.dlS)).premultiply(P.invert());M.root.updateMatrixWorld(true)}}
     if(show){const [a,b]=hands();M.gun.position.copy(a);M.gun.lookAt(M.root.localToWorld(b))}
     M.gun.visible=show}
