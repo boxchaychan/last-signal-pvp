@@ -38,5 +38,5 @@ if(mode==='guns'){for(const w of WK.filter(w=>WEAP[w].cat==='gun')){const k=HK.f
 if(mode==='ults'){for(const k of ['storm','shadow','medic','volt','eng','trap']){const cfg=cfgFor('human');cfg.hero=k;cfg.mates=HK.filter(x=>x!==k).slice(0,2);cfg.weap=weapOf(k);
   newGame('human',cfg);onResize();const p=G.humans[0];p.x=MW/2;p.y=MH/2;for(const o of G.humans.slice(1)){o.x=p.x+60;o.y=p.y+30}
   for(let i=0;i<14;i++)spawnZ(['walker','runner','brute'][i%3],p.x+rnd(-260,260),p.y+rnd(-260,260));
-  const k0=G.kills;p.ult=100;P.cast={slot:'e',pt:{x:p.x+150,y:p.y},ang:0};for(let t=0;t<7;t+=1/60)step(1/60);console.log(k,'kills in 7s',G.kills-k0)}}
+  const k0=G.kills;p.lvl=6;p.sk.ul=1;p.ult=100;P.cast={slot:'e',pt:{x:p.x+150,y:p.y},ang:0};for(let t=0;t<7;t+=1/60)step(1/60);console.log(k,'kills in 7s',G.kills-k0)}}
 `);
