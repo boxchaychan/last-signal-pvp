@@ -83,10 +83,10 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
   <div class="kids" id="kidsRow"></div>
   <p>คืน "สัญญาณสุดท้าย" ราชาฝันร้ายลากผู้ใหญ่ทั้งโลกไปขังไว้ เหลือแต่เด็กกับสัตว์ สัตว์ผู้พิทักษ์ให้พลังเด็กผ่าน<b>ชุดสัตว์</b> คำทำนายบอกว่า แก๊งที่ยืนหยัดเป็นคนสุดท้ายจะได้ไปประภาคาร และพาพ่อแม่กลับบ้าน</p>
   <ul>
-    <li>5 แก๊งแข่งกัน ปีศาจหลุดถึงฐานลับ = เสีย HP · HP หมด = ตกรอบ · คนสุดท้ายชนะ</li>
+    <li>5 แก๊งแข่งกัน ปีศาจเดินวนรอบลานเด็ก · ปีศาจบนสนามห้ามเกินโควต้า (เริ่ม 100 ตัว) เกิน = ตกรอบ · คนสุดท้ายชนะ</li>
     <li><b>เรียกเด็ก</b> สุ่ม 6 คลาส · แตะเด็กแล้ว <b>รวมร่าง</b> 3 ตัวเหมือนกัน = โตขึ้น (ขาว → เขียว → ม่วง → แดง) · ลากเพื่อย้ายช่อง</li>
     <li><b>นกหวีด</b> ส่งปีศาจ 1 ตัวไปทุกบ้านพร้อมกัน (ปีศาจที่ถูกส่งมา ฆ่าแล้วไม่ได้เงิน) ส่งแล้วรายได้ต่อระลอกเพิ่ม · แตะชื่อด้านขวาเพื่อดูสนามคนอื่น</li>
-    <li>บอสทุก 5 ระลอก</li>
+    <li>บอสทุก 10 ระลอก</li>
   </ul>
   <button class="big" id="go" type="button">เริ่มเกม</button>
 </div></div>
@@ -100,20 +100,22 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
 'use strict';
 const HAS_DOM=typeof document!=='undefined'&&!(typeof window!=='undefined'&&window.BB_HEADLESS);
 // ---------- data ----------
-const BW=960,BH=540,MAXHP=20,NSLOT=16;
-// the path snakes from the portal (top left) to the hideout (bottom right); kids stand on the 16 pads between its rows
-const PATH=[[-30,72],[902,72],[902,270],[58,270],[58,468],[990,468]];
+const BW=960,BH=540,CAP0=100,COLS=6,ROWS=3,NSLOT=COLS*ROWS;
+// one closed loop around the yard (like Lucky Defense, one board only): demons appear on it and walk round and round, no gate, no exit.
+// A player's HP is a quota: when the demons alive on the loop reach it, that player is out (starts at 100).
+const PATH=[[70,62],[890,62],[890,478],[70,478],[70,62]];
 const SEG=[];let PLEN=0;for(let i=0;i<PATH.length-1;i++){const [x0,y0]=PATH[i],[x1,y1]=PATH[i+1],l=Math.hypot(x1-x0,y1-y0);SEG.push({x0,y0,x1,y1,l,d:PLEN});PLEN+=l}
-function pathPos(d){for(const s of SEG)if(d<=s.d+s.l){const k=(d-s.d)/s.l;return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:Math.sign(s.x1-s.x0)}}const s=SEG[SEG.length-1];return{x:s.x1,y:s.y1,dx:1}}
-const SLOTS=[];for(let r=0;r<2;r++)for(let c=0;c<8;c++)SLOTS.push({x:152+c*94,y:171+r*198});
+function pathPos(d){d=((d%PLEN)+PLEN)%PLEN;for(const s of SEG)if(d<=s.d+s.l){const k=(d-s.d)/s.l;return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:Math.sign(s.x1-s.x0)}}const s=SEG[SEG.length-1];return{x:s.x1,y:s.y1,dx:1}}
+// the yard inside the loop: 6 x 3 pads
+const YARD={x:98,y:90,w:764,h:360},SLOTS=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)SLOTS.push({x:YARD.x+YARD.w/COLS*(c+.5),y:YARD.y+YARD.h/ROWS*(r+.5)+14});
 const TIER=[{n:'ขาว',age:'1 ขวบ',c:'#f2f2f2',m:1,sc:.96},{n:'เขียว',age:'2–3 ขวบ',c:'#5fe05f',m:3.3,sc:1.04},{n:'ม่วง',age:'4–5 ขวบ',c:'#b77bff',m:11,sc:1.12},{n:'แดง',age:'6–7 ขวบ',c:'#ff5050',m:36,sc:1.2}];
 const CLS={
   warrior:{n:'นักรบ',a:'ชุดหมี',col:'#e08a3a',rng:118,dmg:15,rate:1.05,splash:58,atk:'ทุบเป็นวง ระยะใกล้',pas:'ตัวเลือดเกินครึ่งโดนแรงขึ้น 40%',proc:'15% กระแทกพื้นวงใหญ่ x2',ult:'แผ่นดินไหว: ปีศาจทั้งสนามมึน 1.5 วิ'},
   assassin:{n:'นักฆ่า',a:'ชุดแมวดำ',col:'#a08ad8',rng:108,dmg:8,rate:.45,crit:.2,atk:'ฟันเร็ว คริ 20%',pas:'ตัวเลือดต่ำกว่าครึ่งโดนแรงขึ้น 60%',proc:'15% ฟันซ้อน 3 ครั้ง',ult:'เงาพริ้ว: ฟัน 6 ตัวที่เลือดเยอะสุด แรงมาก'},
-  hunter:{n:'ฮันเตอร์',a:'ชุดเหยี่ยว',col:'#e0a840',rng:270,dmg:12,rate:.85,atk:'ยิงไกลตัวที่ใกล้ฐานสุด',pas:'ยิงไกลขึ้น 20%',proc:'10% ลูกศรทะลุทั้งแนว',ult:'พาวเวอร์ช็อต: ยิงตัวเลือดเยอะสุดแรงมาก'},
-  mage:{n:'นักเวทย์',a:'ชุดนกฮูก',col:'#8a6aff',rng:205,dmg:9,rate:1.25,splash:72,slow:.35,atk:'ลูกไฟเป็นวง ทำให้ช้า',pas:'ตัวที่ช้าอยู่โดนแรงขึ้น 30%',proc:'12% แช่แข็ง 1 วิ',ult:'ฝนดาวตก: ถล่มทั้งสนาม'},
-  support:{n:'ซัพพอร์ต',a:'ชุดกระต่าย',col:'#ff9ac0',rng:195,dmg:5,rate:.9,atk:'ยิงแครอทเบา ๆ',pas:'เพื่อนช่องข้าง ๆ ตีเร็วขึ้น 25%',proc:'8% ได้เงิน +1',ult:'ปาร์ตี้กระต่าย: ทุกตัวตีเร็วขึ้น 60% 6 วิ'},
-  curse:{n:'สาปแช่ง',a:'ชุดอีกา',col:'#9a6ad8',rng:195,dmg:5,rate:1,atk:'ยิงคำสาปเบา ๆ',pas:'ฆ่าแล้ว 15% ส่งผีจิ๋วไปหาเป้าฟรี',proc:'10% ขโมยเงินเป้า 1',ult:'คำสาปใหญ่: เด็กของเป้ายิงช้าลงครึ่งหนึ่ง 6 วิ'},
+  hunter:{n:'ฮันเตอร์',a:'ชุดเหยี่ยว',col:'#e0a840',rng:285,dmg:12,rate:.85,atk:'ยิงไกลตัวที่ใกล้ฐานสุด',pas:'ยิงไกลขึ้น 20%',proc:'10% ลูกศรทะลุทั้งแนว',ult:'พาวเวอร์ช็อต: ยิงตัวเลือดเยอะสุดแรงมาก'},
+  mage:{n:'นักเวทย์',a:'ชุดนกฮูก',col:'#8a6aff',rng:225,dmg:9,rate:1.25,splash:72,slow:.35,atk:'ลูกไฟเป็นวง ทำให้ช้า',pas:'ตัวที่ช้าอยู่โดนแรงขึ้น 30%',proc:'12% แช่แข็ง 1 วิ',ult:'ฝนดาวตก: ถล่มทั้งสนาม'},
+  support:{n:'ซัพพอร์ต',a:'ชุดกระต่าย',col:'#ff9ac0',rng:220,dmg:5,rate:.9,atk:'ยิงแครอทเบา ๆ',pas:'เพื่อนช่องข้าง ๆ ตีเร็วขึ้น 25%',proc:'8% ได้เงิน +1',ult:'ปาร์ตี้กระต่าย: ทุกตัวตีเร็วขึ้น 60% 6 วิ'},
+  curse:{n:'สาปแช่ง',a:'ชุดอีกา',col:'#9a6ad8',rng:220,dmg:5,rate:1,atk:'ยิงคำสาปเบา ๆ',pas:'ฆ่าแล้ว 15% ส่งผีจิ๋วไปหาเป้าฟรี',proc:'10% ขโมยเงินเป้า 1',ult:'คำสาปใหญ่: เด็กของเป้ายิงช้าลงครึ่งหนึ่ง 6 วิ'},
 };
 const CK=Object.keys(CLS);
 const MON={
@@ -126,7 +128,7 @@ const MON={
   brute:{n:'ผียักษ์',hp:420,spd:44,leak:3,gold:0,s:2.6,sent:1},
   boss:{n:'ฝันร้ายร่างโต',hp:1000,spd:38,leak:6,gold:30,s:3,boss:1},
 };
-const WAVE_T=20,BOSS_EVERY=5;
+const WAVE_T=20,BOSS_EVERY=10;
 // the whistle sends ONE demon to EVERY other house at once
 const SEND=[{id:'imp',n:'ผีจิ๋ว',cost:30,inc:3,mon:'imp'},{id:'brute',n:'ผียักษ์',cost:90,inc:9,mon:'brute'}];
 const NAMES=['แก๊งเสือน้อย','แก๊งลูกหมู','แก๊งนกกระจิบ','แก๊งปลาทอง'];
@@ -138,7 +140,7 @@ const upCost=lv=>50*(lv+1),UPK=.25;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 // ---------- state ----------
 let G=null;
-function mkPlayer(i,name,human){return{i,name,human,hp:MAXHP,gold:100,inc:0,nSum:0,units:Array(NSLOT).fill(null),mons:[],spawnQ:[],shots:[],fx:[],nums:[],alive:true,rank:0,
+function mkPlayer(i,name,human){return{i,name,human,hp:CAP0,gold:100,inc:0,nSum:0,units:Array(NSLOT).fill(null),mons:[],spawnQ:[],shots:[],fx:[],nums:[],alive:true,rank:0,
   lv:Object.fromEntries(CK.map(k=>[k,0])),curseT:0,partyT:0,quakeT:0,kills:0,ai:{t:rnd(.5,1.5)}}}
 function newGame(){
   G={t:0,wave:0,waveT:3,players:[mkPlayer(0,'คุณ',true),...NAMES.map((n,i)=>mkPlayer(i+1,n,false))],view:0,over:false,spd:1,out:0,sel:-1,popup:null};
@@ -160,7 +162,7 @@ function startWave(){
   for(const p of alive()){p.gold+=BAL.inc0+BAL.incW*w+p.inc;for(const e of L)p.spawnQ.push({m:e.m,t:e.t,hp:hpScale(w)})}
   if(HAS_DOM)banner(w%BOSS_EVERY===0?'บอสมาแล้ว!':'ระลอกที่ '+w,w%BOSS_EVERY===0?MON.boss.n:'',w%BOSS_EVERY===0?'#ff6a6a':null);
 }
-function spawn(p,m,hpk){const M=MON[m],hp=M.hp*hpk;p.mons.push({m,M,d:0,hp,maxHp:hp,slowT:0,slowK:1,stunT:0,hitT:0,x:PATH[0][0],y:PATH[0][1],dx:1,wob:rnd(0,6)})}
+function spawn(p,m,hpk){const M=MON[m],hp=M.hp*hpk;const st=rnd(0,40);p.mons.push({m,M,d:st,hp,maxHp:hp,slowT:0,slowK:1,stunT:0,hitT:0,x:PATH[0][0]+st,y:PATH[0][1],dx:1,wob:rnd(0,6)});if(HAS_DOM&&p.i===G.view&&p.fx.length<30)addFx(p,'poof',PATH[0][0]+st,PATH[0][1],.45)}
 function sendMonsters(from,opt){
   const S=SEND.find(s=>s.id===opt),to=alive().filter(q=>q!==from);if(!S||!to.length||from.gold<S.cost)return false;from.gold-=S.cost;from.inc+=S.inc;
   for(const q of to){q.spawnQ.push({m:S.mon,t:1.5,hp:hpScale(Math.max(1,G.wave))});if(HAS_DOM&&q.human)say(from.name+' ส่ง'+MON[S.mon].n+'มาหาคุณ!','#ff8a8a')}
@@ -179,7 +181,7 @@ const sellValue=u=>8*Math.pow(3,u.t);
 function sell(p,s){const u=p.units[s];if(!u)return;p.gold+=sellValue(u);p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
 function upgrade(p,k){const c=upCost(p.lv[k]);if(p.gold<c||p.lv[k]>=10)return false;p.gold-=c;p.lv[k]++;return true}
 function rateOf(p,s,u){let r=CLS[u.c].rate;
-  const nb=[s-1,s+1,s-8,s+8].filter(i=>i>=0&&i<NSLOT&&!(Math.abs((i%8)-(s%8))>1));for(const i of nb){const v=p.units[i];if(v&&v.c==='support'&&v.t>=1){r/=1.25;break}}
+  const nb=[s-1,s+1,s-COLS,s+COLS].filter(i=>i>=0&&i<NSLOT&&Math.abs((i%COLS)-(s%COLS))<=1&&(i===s-COLS||i===s+COLS||((i/COLS)|0)===((s/COLS)|0)));for(const i of nb){const v=p.units[i];if(v&&v.c==='support'&&v.t>=1){r/=1.25;break}}
   if(p.partyT>0)r/=1.6;if(p.curseT>0)r*=2;return r}
 function dmgOf(p,u){return CLS[u.c].dmg*TIER[u.t].m*(1+UPK*p.lv[u.c])}
 function rangeOf(u){return CLS[u.c].rng*(u.c==='hunter'&&u.t>=1?1.2:1)}
@@ -215,8 +217,9 @@ function stepBoard(p,dt){
   if(p.curseT>0)p.curseT-=dt;if(p.partyT>0)p.partyT-=dt;if(p.quakeT>0)p.quakeT-=dt;
   for(const m of p.mons){if(m.dead)continue;m.hitT-=dt;if(m.stunT>0){m.stunT-=dt;continue}let k=1;if(m.slowT>0){m.slowT-=dt;k=m.slowK}
     m.d+=m.M.spd*k*dt;const q=pathPos(m.d);m.x=q.x;m.y=q.y;m.dx=q.dx;
-    if(m.d>=PLEN){m.dead=true;m.leak=true;p.hp-=m.M.leak;if(HAS_DOM&&p.human){flashT=.25;say(m.M.n+'หลุดเข้าฐาน! -'+m.M.leak+' HP','#ff6a6a')}}}
+  }
   p.mons=p.mons.filter(m=>!m.dead);
+  if(HAS_DOM&&p.human&&p.alive&&p.mons.length>=p.hp*.8&&G.t>(p.warnT||0)){p.warnT=G.t+4;flashT=.25;say('ปีศาจใกล้เต็มโควต้า! '+p.mons.length+'/'+p.hp,'#ff6a6a')}
   for(let s=0;s<NSLOT;s++){const u=p.units[s];if(!u)continue;u.cd-=dt;if(u.kick>0)u.kick-=dt;if(u.flash>0)u.flash-=dt;if(u.cd>0)continue;
     const S=SLOTS[s],tg=nearestTarget(p,S.x,S.y-20,rangeOf(u));if(!tg)continue;u.cd=rateOf(p,s,u);attack(p,s,u,tg)}
   for(const sh of p.shots){sh.t+=dt;if(sh.t<sh.T||sh.done)continue;sh.done=true;const x=sh.m&&!sh.m.dead?sh.m.x:sh.tx,y=sh.m&&!sh.m.dead?sh.m.y:sh.ty;
@@ -227,7 +230,7 @@ function stepBoard(p,dt){
     else if(sh.k==='carrot'){if(sh.m&&!sh.m.dead)hitMon(p,sh.m,sh.d,sh.u,'#ffd0a0')}
     else if(sh.k==='meteor'){splash(p,x,y,80,sh.d,sh.u,'#ffb04a');addFx(p,'plasma',x,y,1.1)}}
   p.shots=p.shots.filter(s=>!s.done);
-  if(p.hp<=0&&p.alive){p.hp=0;p.alive=false;p.rank=alive().length+1;p.mons=[];p.spawnQ=[];p.shots=[];if(HAS_DOM)onOut(p)}
+  if(p.mons.length>=p.hp&&p.alive){p.alive=false;p.rank=alive().length+1;p.mons=[];p.spawnQ=[];p.shots=[];if(HAS_DOM)onOut(p)}
 }
 // bots play differently so they don't all fall at the same time
 const STYLES={balanced:{n:'สมดุล',think:[.6,1.2],send:.45,sendGold:100,merge:1,up:1},rush:{n:'สายป่วน',think:[.6,1.1],send:.75,sendGold:70,merge:1,up:.5},
@@ -275,12 +278,18 @@ function onResize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=innerWidth;VH=
   const side=VW<700?132:154,bar=VH<420?54:62,top=30,aw=VW-side-12,ah=VH-bar-top-6;SC=Math.min(aw/BW,ah/BH);OX=Math.max(4,(aw-BW*SC)/2);OY=top+Math.max(0,(ah-BH*SC)/2)}
 function makeBg(){const c=document.createElement('canvas');c.width=BW/4;c.height=BH/4;const g=c.getContext('2d'),W=c.width,H=c.height;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const n=(Math.sin(x*12.9898+y*78.233)*43758.5)%1;g.fillStyle=n>.8?'#1e2a26':n>.4?'#1a2522':'#17201e';g.fillRect(x,y,1,1)}
-  // the path, 1 px = 4 board units
-  g.lineCap='square';g.lineJoin='miter';const P=PATH.map(([x,y])=>[x/4,y/4]);
-  const line=(w,c)=>{g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(P[0][0],P[0][1]);for(const q of P)g.lineTo(q[0],q[1]);g.stroke()};
-  line(15,'#3a2e24');line(12,'#6a5640');line(9,'#7e6a50');
-  for(let i=0;i<500;i++){const d=Math.random()*PLEN,q=pathPos(d);g.fillStyle=Math.random()<.5?'#8e7a5e':'#6a5640';g.fillRect(Math.round(q.x/4+rnd(-4,4)),Math.round(q.y/4+rnd(-4,4)),1,1)}
-  for(const s of SLOTS){const x=Math.round(s.x/4),y=Math.round(s.y/4);g.fillStyle='#2a3836';g.fillRect(x-9,y-5,18,10);g.fillStyle='#3e5250';g.fillRect(x-8,y-4,16,8);g.fillStyle='#4e6664';g.fillRect(x-8,y-4,16,2)}
+  // 1 px = 4 board units. Night forest around, a sandy loop, a raised grass yard with 6x3 tiles inside
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))};
+  const lx=PATH[0][0]/4,ly=PATH[0][1]/4,rx=PATH[1][0]/4,by=PATH[2][1]/4,hw=7;
+  R(lx-hw-1,ly-hw-1,rx-lx+2*hw+2,by-ly+2*hw+2,'#2e2418');R(lx-hw,ly-hw,rx-lx+2*hw,by-ly+2*hw,'#8a7350');
+  for(let i=0;i<900;i++){const d=Math.random()*PLEN,q=pathPos(d);R(q.x/4+rnd(-6,6),q.y/4+rnd(-6,6),1,1,Math.random()<.5?'#a08860':'#76603e')}
+  const yx=YARD.x/4,yy=YARD.y/4,yw=YARD.w/4,yh=YARD.h/4;
+  R(yx-1,yy-1,yw+2,yh+4,'#1c2a16');R(yx,yy+yh,yw,3,'#3a3020');R(yx,yy,yw,yh,'#3e6a34');
+  for(let i=0;i<700;i++)R(yx+Math.random()*yw,yy+Math.random()*yh,1,1,Math.random()<.5?'#4a7a3e':'#36602c');
+  for(let c=1;c<COLS;c++)R(yx+yw/COLS*c,yy+2,1,yh-4,'rgba(20,40,16,.45)');for(let r=1;r<ROWS;r++)R(yx+2,yy+yh/ROWS*r,yw-4,1,'rgba(20,40,16,.45)');
+  // trees and bushes outside the loop
+  const tree=(x,y,s)=>{R(x-1,y,2,3*s,'#3a2414');g.fillStyle='#14301e';g.beginPath();g.arc(x,y,4*s,0,6.28);g.fill();g.fillStyle='#1e4a2a';g.beginPath();g.arc(x-s,y-s,3*s,0,6.28);g.fill();g.fillStyle='#2a6038';g.fillRect(Math.round(x-2*s),Math.round(y-3*s),Math.ceil(s),Math.ceil(s))};
+  for(let i=0;i<70;i++){const x=Math.random()*W,y=Math.random()*H;if(x>lx-hw-6&&x<rx+hw+6&&y>ly-hw-6&&y<by+hw+6)continue;tree(x,y,rnd(.8,1.4))}
   bgC=c}
 function drawFx(f){const m=FXM&&FXM[f.k],im=FXI[f.k];if(!m||!im||!im.complete)return;const i=Math.min(m.n-1,(f.t*m.fps)|0),c=i%m.cols,r=(i/m.cols)|0,s=f.s*1.6;
   ctx.drawImage(im,c*m.w,r*m.h,m.w,m.h,f.x-m.ax*s,f.y-m.ay*s,m.w*s,m.h*s)}
@@ -310,9 +319,6 @@ function draw(){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#0d0f1a';ctx.fillRect(0,0,cv.width,cv.height);if(!G)return;
   const p=G.players[G.view],shk=p.quakeT>0?rnd(-4,4):0;ctx.setTransform(SC*DPR,0,0,SC*DPR,(OX+shk)*DPR,OY*DPR);ctx.imageSmoothingEnabled=false;
   if(!bgC)makeBg();ctx.drawImage(bgC,0,0,BW,BH);
-  // portal and hideout
-  ctx.fillStyle='#5a2a8a';ctx.fillRect(-4,44,26,56);ctx.fillStyle='#b77bff';ctx.fillRect(2,52,14,40);ctx.fillStyle='#ffffff';ctx.fillRect(6+Math.sin(G.t*4)*3,70,4,4);
-  ctx.fillStyle='#6a4a2a';ctx.fillRect(930,430,30,56);ctx.fillStyle='#3a8a3a';ctx.fillRect(922,412,46,24);ctx.fillStyle='#ffd75a';ctx.fillRect(940,450,10,12);
   if(G.view===0&&G.sel>=0){const S=SLOTS[G.sel],u=p.units[G.sel];if(u){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(S.x,S.y-20,rangeOf(u),0,6.28);ctx.stroke();ctx.setLineDash([])}}
   // back-to-front: monsters on the top row first, kids by row
   const items=[];for(const m of p.mons)items.push([m.y,()=>drawMon(m)]);for(let s=0;s<NSLOT;s++){const u=p.units[s];if(u&&!(drag&&drag.s===s&&drag.moved))items.push([SLOTS[s].y+6,()=>drawKid(p,s,u)])}
@@ -331,11 +337,11 @@ function buildSide(){const el=$('#side');el.innerHTML=G.players.map(q=>'<button 
   for(const b of el.querySelectorAll('.op'))b.addEventListener('click',()=>{const i=+b.dataset.p;setView(i)})}
 function setView(i){G.view=i;G.sel=-1;hidePop();$('#bHome').hidden=i===0;for(const q of G.players){q.fx=[];q.nums=[]}updHud()}
 function updHud(){if(!G)return;const me=G.players[0],v=G.players[G.view];
-  $('#wv').innerHTML='ระลอก <b>'+Math.max(1,G.wave)+'</b> · <b>'+Math.ceil(G.waveT)+'</b> วิ';$('#hpP').innerHTML='❤ <b>'+me.hp+'</b>';$('#gdP').innerHTML='💰 <b>'+me.gold+'</b>';
+  $('#wv').innerHTML='ระลอก <b>'+Math.max(1,G.wave)+'</b> · <b>'+Math.ceil(G.waveT)+'</b> วิ';$('#hpP').innerHTML='💀 <b>'+me.mons.length+'</b>/'+me.hp;$('#hpP').style.borderColor=me.mons.length>=me.hp*.8?'#ff5050':'';$('#gdP').innerHTML='💰 <b>'+me.gold+'</b>';
   const vi=$('#viewing');vi.hidden=G.view===0;if(G.view!==0)vi.textContent='กำลังดูสนาม '+v.name+' · คำสาปของอีกาจะไปหาเขา';
   $('#sumC').textContent='💰 '+sumCost(me);$('#bSum').classList.toggle('hint',me.nSum<3&&me.alive);$('#bSum').classList.toggle('poor',me.gold<sumCost(me)||!me.units.some(u=>!u));$('#bWh').classList.toggle('poor',me.gold<SEND[0].cost);
   const ops=$('#side').querySelectorAll('.op');G.players.forEach((q,k)=>{const b=ops[k];if(!b)return;b.classList.toggle('on',G.view===q.i);b.classList.toggle('me',q.human);b.classList.toggle('out',!q.alive);
-    b.querySelector('b').textContent=(q.human?'⭐ ':'')+q.name;b.querySelector('u').style.width=(q.hp/MAXHP*100)+'%';b.querySelector('small').textContent=q.alive?'HP '+q.hp+' · ปีศาจ '+q.mons.length:'ตกรอบ อันดับ '+q.rank});
+    b.querySelector('b').textContent=(q.human?'⭐ ':'')+q.name;b.querySelector('u').style.width=Math.min(100,q.mons.length/q.hp*100)+'%';b.querySelector('small').textContent=q.alive?'💀 ปีศาจ '+q.mons.length+'/'+q.hp:'ตกรอบ อันดับ '+q.rank});
   if(G.popup==='unit'&&G.sel>=0)unitPop(G.sel,true)}
 function hidePop(){if(!HAS_DOM)return;$('#pop').hidden=true;if(G){G.popup=null;G.sel=-1}}
 function unitPop(s,refresh){const p=G.players[0],u=p.units[s];if(!u){hidePop();return}const C=CLS[u.c],T=TIER[u.t],mg=mates(p,s).length;
@@ -351,14 +357,14 @@ function whPop(){const p=G.players[0],n=alive().length-1;G.popup='wh';G.sel=-1;
   $('#pop').innerHTML='<button class="x" type="button" data-a="x">×</button><h3>นกหวีด · ส่งปีศาจ 1 ตัวไปทุกบ้าน ('+n+' บ้าน)</h3><p style="margin:0 0 6px;color:var(--dim)">ปีศาจที่ส่งไป ฆ่าแล้วไม่ได้เงิน · ส่งแล้วรายได้ต่อระลอกของเราเพิ่ม (ตอนนี้ +'+p.inc+')</p><div class="row">'+SEND.map(s=>'<button type="button" data-w="'+s.id+'"'+(p.gold<s.cost||!n?' disabled':'')+'>'+s.n+' ×'+n+' บ้าน<br><small>💰 '+s.cost+' · รายได้ +'+s.inc+'</small></button>').join('')+'</div>';$('#pop').dataset.k='';$('#pop').hidden=false}
 function say(t,c){if(!HAS_DOM)return;const b=$('#banner');if(G&&G.bannerT>0&&!c)return;b.innerHTML='<small style="color:'+(c||'#fff')+'">'+t+'</small>';b.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>b.classList.remove('show'),1600)}
 function banner(t,sub,c){const b=$('#banner');b.innerHTML='<span style="color:'+(c||'var(--gold)')+'">'+t+'</span>'+(sub?'<small>'+sub+'</small>':'');b.classList.add('show');G.bannerT=1.6;clearTimeout(say.t);say.t=setTimeout(()=>b.classList.remove('show'),1600)}
-function onOut(p){if(p.human){$('#endT').textContent='ตกรอบ · อันดับ '+p.rank;$('#endP').textContent='ความกล้าหมดแล้ว แก๊งของคุณถอยไปที่พักเด็ก ระลอกที่ไปถึง: '+G.wave;$('#watch').hidden=false;$('#end').hidden=false}
+function onOut(p){if(p.human){$('#endT').textContent='ตกรอบ · อันดับ '+p.rank;$('#endP').textContent='ปีศาจล้นลานเด็กเกินโควต้า แก๊งของคุณถอยไปที่พักเด็ก ระลอกที่ไปถึง: '+G.wave;$('#watch').hidden=false;$('#end').hidden=false}
   else say(p.name+' ตกรอบ! (อันดับ '+p.rank+')','#ffd75a')}
 function onEnd(){const me=G.players[0];$('#endT').textContent=me.rank===1?'🏆 ชนะ! ได้ไปประภาคาร':'จบเกม · อันดับ '+me.rank;
   $('#endP').textContent=me.rank===1?'แก๊งของคุณยืนหยัดเป็นแก๊งสุดท้าย แสงประภาคารส่องลงมา… ระลอกที่ '+G.wave:'ผู้ชนะ: '+G.players.find(p=>p.rank===1).name+' · ระลอกที่ '+G.wave;$('#watch').hidden=true;$('#end').hidden=false}
 // ---------- input ----------
 let drag=null;
 function toBoard(e){return{x:(e.clientX-OX)/SC,y:(e.clientY-OY)/SC}}
-function slotAt(b){let best=-1,bd=50*50;SLOTS.forEach((S,i)=>{const d=(S.x-b.x)**2+(S.y-30-b.y)**2;if(d<bd){bd=d;best=i}});return best}
+function slotAt(b){let best=-1,bd=60*60;SLOTS.forEach((S,i)=>{const d=(S.x-b.x)**2+(S.y-30-b.y)**2;if(d<bd){bd=d;best=i}});return best}
 if(HAS_DOM){
   addEventListener('resize',onResize);onResize();
   cv.addEventListener('pointerdown',e=>{if(!G||G.view!==0)return;const b=toBoard(e),s=slotAt(b);if(s<0){hidePop();return}const u=G.players[0].units[s];
