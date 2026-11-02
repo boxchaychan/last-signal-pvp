@@ -4,11 +4,11 @@ The owner speaks Thai. Reply in Thai, short and plain (they are not a programmer
 
 ## What the game is
 Browser game, top-down map. Two sides, played against bots (online PvP is a later goal):
-- **Humans** — 3-hero squad (player + 2 bots), twin-stick shooter with MOBA skills (Q, F, Space, ultimate E; hold to aim, release to cast), tower defense, capture zones, rescue civilians. Win: destroy the ghost base (รังแม่, `G.zbase`, a `hive` at `HIVE`, 6000 HP, shoots acid, regenerates when left alone). The ghost leader respawns 20 s after dying (boss mode: 15 s at a nest, else at the base).
+- **Humans** — 3-hero squad (player + 2 bots), twin-stick shooter with MOBA skills (Q, F, Space, ultimate E; hold to aim, release to cast), tower defense, capture zones, rescue civilians. Win: hold the HQ until the rescue helicopter at `SURV` (480 s, timer `#tmr` top-left), or, optionally, destroy the ghost base early (รังแม่, `G.zbase`, a `hive` at `HIVE`, shoots acid, heals when left alone). The last 90 s (`FINAL = SURV-90`) are the final battle. The ghost leader respawns 20 s after dying (boss mode: 15 s at a nest, else at the base). Human bots defend; now and then one bot raids the nearest ghost building (`G.hai.raid`, `pushTarget`) or caps a zone, then comes back.
 - **Ghosts/zombies** — two play styles chosen in the loadout:
   - `boss` (default): the player *is* the leader (Spider Queen / Alpha / Plague doctor), walks like a hero, 4 skills, builds nests (B), nests auto-produce 5 unit types, each type has an order: patrol / defend the flag (V) / attack. Queen dies → respawns at a nest (or the base); the base destroyed → lose.
   - `rts`: old commander mode (top-down camera, build/produce/send waves).
-- Win for ghosts: destroy the human HQ. The mission panel (`#obj`) is hidden since 2026-11-02 (owner: just destroy the other side's base).
+- Win for ghosts: destroy the human HQ before the timer runs out. The mission panel (`#obj`) is hidden since 2026-11-02 (owner: just destroy the other side's base).
 
 ## Files
 - `index.html` — the whole game (HTML + CSS + one big `<script>`), ~4k lines, no build step. Open it through a local web server (art is loaded by relative path), e.g. `python -m http.server` in the repo root, then http://localhost:8000.
