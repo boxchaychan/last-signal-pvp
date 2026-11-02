@@ -23,7 +23,7 @@
 | คลาส | ชุด | บทบาท |
 |---|---|---|
 | นักรบ | หมี | ตีใกล้ แรง เป็นวง |
-| นักฆ่า | แมวดำ | ตีเร็ว คริแรง เก็บตัวเลือดน้อย/บอส |
+| นักฆ่า | เสือดำ | ตีเร็ว คริแรง เก็บตัวเลือดน้อย/บอส |
 | ฮันเตอร์ | เหยี่ยว | ยิงไกล ทะลุแนว ล็อกเป้า |
 | นักเวทย์ | นกฮูก | เวทธาตุเป็นวง ช้า/แช่แข็ง เกจไม้ตายเต็มเร็ว |
 | ซัพพอร์ต | กระต่าย | บัฟเพื่อน เพิ่มเงิน เติมเกจ |
@@ -95,6 +95,13 @@
 | สาปแช่ง อีกา | น้องดำ · ตุ๊กตาผ้าสาป | น้องกา · กระดิ่งผี | พี่หมอก · ไม้เท้าลูกแก้ว | พี่ฝันร้าย · ไม้เท้าตาเรืองแสง | อีการาตรีทอง · ปีกดำขลิบทอง · ไม้ตาย ฝูงอีกาบินไปบ้านคู่แข่ง ป้อมเขายิงช้า |
 - ภาพ 30 ตัว · ลำดับ: เจนทอง 6 ตัวก่อน (ล็อกหน้าตา/สีหลักของคลาส) แล้วระดับล่างแนบรูปทองไปด้วย สั่ง "เด็กคนใหม่ อายุ X ชุดเดียวกันแต่เรียบกว่า อาวุธ Y"
 
+## แก้ล่าสุด (เจ้าของเกม 2026-11-03): คลาสละ 1 คน + นักฆ่าเป็นเสือดำ
+- **แต่ละคลาสมีเด็กคนเดียวตั้งแต่ขาวถึงทอง** แต่ละระดับเปลี่ยนแค่ช่วงอายุกับรูปที่เจน (เด็กคนเดิมโตขึ้น) — แทนตารางเด็กคนละคนด้านบน
+- ตัวละคร (ชื่อเปลี่ยนได้): นักรบหมี **แทน** (ชาย) · นักฆ่า**เสือดำ** **นิล** (หญิง) · ฮันเตอร์เหยี่ยว **ฟ้า** (หญิง, หน้าจากภาพ GPT แรก) · นักเวทย์นกฮูก **ราตรี** · ซัพพอร์ตกระต่าย **จันทร์** · สาปแช่งอีกา **หมอก**
+- อายุ: ขาว 2 · เขียว 4 · ม่วง 6 · แดง 7 · ทอง 8
+- เจน: ทองก่อน (แนบภาพนักธนูพิกเซล) แล้วระดับล่าง แนบรูปทอง สั่ง "The SAME girl/boy … but younger: [อายุ]. [ชุด/อาวุธของระดับนั้น]"
+- นิล (เสือดำ): ทอง = ชุดเสือดำขลิบทอง ฮู้ดหูกลม ตาเสือทองเรืองแสง ผ้าคลุมดำขอบทอง ถุงมือกรงเล็บทอง มีดโค้งคู่ทอง · แดง = ขลิบแดง ผ้าพันคอแดง มีดเหล็กคู่ · ม่วง = ผ้าคลุมม่วงสั้น มีดเหล็ก 1 เล่ม · เขียว = ผ้าปิดปากเขียวแบบนินจา มีดไม้ · ขาว = ชุดนอนเสือดำนุ่มฟู มีดพลาสติก จุกหลอก
+
 ## คำสั่งเจนภาพเด็ก (ระดับขาว 1 ขวบ) ให้แนวเดียวกับนักธนูเหยี่ยว
 วิธีที่ได้ภาพเข้าชุดกันที่สุด: **แนบรูปนักธนูเหยี่ยว (ภาพพิกเซลที่ได้แล้ว) ไปด้วยทุกครั้ง** แล้วพิมพ์คำสั่งด้านล่าง ได้ภาพแล้วส่งให้ Claude แปลงเป็นพิกเซลจริงสูง 76 (`art/bb/kid_<คลาส>.png`)
 
@@ -103,7 +110,7 @@
 Same art style, size and proportions as the attached hawk archer: chibi 1-year-old toddler, big head, kigurumi animal costume with the animal face on the hood, pixel art on a 64x80 pixel grid, every pixel a perfect square of the same size, no anti-aliasing, no blur, limited palette of about 24 colors, dark 1-pixel outline, full body, standing, facing right, solid plain white background, no text.
 ```
 - **นักรบ (หมี):** `A toddler boy warrior in a honey-brown bear kigurumi (round ears, little snout on the hood), holding a chunky red toy hammer over his shoulder, brave grin.`
-- **นักฆ่า (แมวดำ):** `A toddler girl assassin in a black cat kigurumi (pointy ears with pink insides, whiskers on the hood), holding a small toy dagger in a reverse grip, sly cat smile.`
+- **นักฆ่า (เสือดำ):** `A toddler girl assassin in a black panther kigurumi (round ears, sleek panther face with yellow eyes on the hood), holding a small toy dagger in a reverse grip, sly smile.`
 - **นักเวทย์ (นกฮูก):** `A toddler girl mage in a purple owl kigurumi (ear tufts, big round owl eyes and a small orange beak on the hood), holding a toy wand with a yellow star, sleepy wise face.`
 - **ซัพพอร์ต (กระต่าย):** `A toddler boy support in a white and pink rabbit kigurumi (long floppy ears), holding a big carrot like a staff, cheerful smile.`
 - **สาปแช่ง (อีกา):** `A toddler girl curse-caster in a dark navy crow kigurumi (black feathers, grey beak on the hood, purple glow), holding a small staff with a glowing purple eye orb, mischievous smirk.`
