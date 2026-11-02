@@ -19,7 +19,7 @@ const mode = process.argv[2] || 'demo', A3 = process.argv[3], A4 = process.argv[
 eval(code.replace("if(G.side==='demo'&&G.t>540){newGame('demo');return}", '') + `
 if(mode==='demo'){const N=+A3||3,T=+A4||480;
   for(let run=0;run<N;run++){newGame('demo');onResize();let minHq=1e9;for(let t=0;t<T&&!G.over;t+=1/60){step(1/60);minHq=Math.min(minHq,G.hq.hp)}
-    const L=leaderAlive();console.log('run',run,'t',G.t|0,G.over?'END':'timeout','minHq',minHq|0,'leader',G.leader,L?L.hp|0:0,G.humans.map(h=>h.key+h.lvl).join(','),'kills',G.kills)}}
+    const L=leaderAlive();console.log('run',run,'t',G.t|0,G.over?(G.hq.hp<=0?'GHOSTS WIN':'HUMANS WIN'):'timeout','minHq',minHq|0,'hive',G.zbase?Math.max(0,G.zbase.hp)|0:0,'leader',G.leader,L?L.hp|0:0,G.humans.map(h=>h.key+h.lvl).join(','),'kills',G.kills)}}
 if(mode==='boss'){const LDR=A3||'queen',TT=+A4||300;
   newGame('zombie',{leader:LDR,units:['walker','runner','spitter','dog','brute'],ztal:[0,0,0,0],mode:'boss'});onResize();usingTouch=true;
   for(let t=0;t<TT&&!G.over;t+=1/60){const L=leaderAlive();
