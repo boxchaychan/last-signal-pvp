@@ -60,3 +60,18 @@
 - ภาพ: ฮันเตอร์ = ภาพ GPT ของเจ้าของเกม · อีก 5 คลาสเป็นภาพชั่วคราว (วาดด้วยโค้ดแล้วแปลงพิกเซล) อยู่ใน `art/bb/kid_<คลาส>.png` วางไฟล์ใหม่ทับได้เลย (สูง ~78 พิกเซล หันขวา พื้นโปร่ง)
 - ปีศาจ: ซอมบี้/กระสือพิกเซลเดิม + ผีพิกเซลวาดด้วยโค้ด · เอฟเฟกต์จาก `fx/`
 - ตัวเลขสมดุลอยู่ใน `BAL` · ทดสอบ: `node tools/sim/bb_sim.js 10` (บอท 5 ตัว ล่าสุด ~9–10 นาที ระลอก ~28–32)
+
+## คำสั่งเจนภาพเด็ก (ระดับขาว 1 ขวบ) ให้แนวเดียวกับนักธนูเหยี่ยว
+วิธีที่ได้ภาพเข้าชุดกันที่สุด: **แนบรูปนักธนูเหยี่ยว (ภาพพิกเซลที่ได้แล้ว) ไปด้วยทุกครั้ง** แล้วพิมพ์คำสั่งด้านล่าง ได้ภาพแล้วส่งให้ Claude แปลงเป็นพิกเซลจริงสูง 76 (`art/bb/kid_<คลาส>.png`)
+
+ส่วนท้ายที่ใช้ทุกตัว (ต่อท้ายทุกคำสั่ง):
+```
+Same art style, size and proportions as the attached hawk archer: chibi 1-year-old toddler, big head, kigurumi animal costume with the animal face on the hood, pixel art on a 64x80 pixel grid, every pixel a perfect square of the same size, no anti-aliasing, no blur, limited palette of about 24 colors, dark 1-pixel outline, full body, standing, facing right, solid plain white background, no text.
+```
+- **นักรบ (หมี):** `A toddler boy warrior in a honey-brown bear kigurumi (round ears, little snout on the hood), holding a chunky red toy hammer over his shoulder, brave grin.`
+- **นักฆ่า (แมวดำ):** `A toddler girl assassin in a black cat kigurumi (pointy ears with pink insides, whiskers on the hood), holding a small toy dagger in a reverse grip, sly cat smile.`
+- **นักเวทย์ (นกฮูก):** `A toddler girl mage in a purple owl kigurumi (ear tufts, big round owl eyes and a small orange beak on the hood), holding a toy wand with a yellow star, sleepy wise face.`
+- **ซัพพอร์ต (กระต่าย):** `A toddler boy support in a white and pink rabbit kigurumi (long floppy ears), holding a big carrot like a staff, cheerful smile.`
+- **สาปแช่ง (อีกา):** `A toddler girl curse-caster in a dark navy crow kigurumi (black feathers, grey beak on the hood, purple glow), holding a small staff with a glowing purple eye orb, mischievous smirk.`
+
+ร่างโต (ทำทีหลัง): ส่งรูประดับขาวกลับไปแล้วสั่ง `same kid, now about 3 years old (green tier) / 5 years old (purple) / 7 years old (red): taller, more confident pose, costume and weapon a bit fancier, keep the same face and colors` ทีละขั้น
