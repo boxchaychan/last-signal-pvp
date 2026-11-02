@@ -133,12 +133,12 @@ const WAVE_T=20,BOSS_EVERY=10;
 // talents after every boss (TFT-style augments): pick 1 of 3. Tile talents are strong but only for the kid standing on that tile;
 // team talents are weaker but hit every kid; plus class focus and economy cards.
 const TALS={
-  fire:{k:'tile',ic:'🔥',n:'ช่องเร่งไฟ',d:'เด็กที่ยืนช่องนี้ตีเร็วขึ้น 60%'},
-  power:{k:'tile',ic:'💪',n:'ช่องพลัง',d:'เด็กที่ยืนช่องนี้แรงขึ้น 70%'},
-  eye:{k:'tile',ic:'🦅',n:'ช่องตาเหยี่ยว',d:'เด็กที่ยืนช่องนี้ยิงไกลขึ้น 40%'},
-  luck:{k:'tile',ic:'🍀',n:'ช่องนำโชค',d:'เด็กที่ยืนช่องนี้ คริ 25% แรง x2.5'},
-  mana:{k:'tile',ic:'🔋',n:'ช่องไม้ตาย',d:'เด็กแดงที่ยืนช่องนี้ หลอดไม้ตายเต็มเร็ว 2 เท่า'},
-  frost:{k:'tile',ic:'❄️',n:'ช่องหิมะ',d:'เด็กที่ยืนช่องนี้ ตีโดนแล้วปีศาจช้าลง 35%'},
+  fire:{k:'tile',col:'#ff7a2a',ic:'🔥',n:'ช่องเร่งไฟ',d:'เด็กที่ยืนช่องนี้ตีเร็วขึ้น 60%'},
+  power:{k:'tile',col:'#ff4a5a',ic:'💪',n:'ช่องพลัง',d:'เด็กที่ยืนช่องนี้แรงขึ้น 70%'},
+  eye:{k:'tile',col:'#ffd75a',ic:'🦅',n:'ช่องตาเหยี่ยว',d:'เด็กที่ยืนช่องนี้ยิงไกลขึ้น 40%'},
+  luck:{k:'tile',col:'#5fe05f',ic:'🍀',n:'ช่องนำโชค',d:'เด็กที่ยืนช่องนี้ คริ 25% แรง x2.5'},
+  mana:{k:'tile',col:'#4ab8ff',ic:'🔋',n:'ช่องไม้ตาย',d:'เด็กแดงที่ยืนช่องนี้ หลอดไม้ตายเต็มเร็ว 2 เท่า'},
+  frost:{k:'tile',col:'#bfe8ff',ic:'❄️',n:'ช่องหิมะ',d:'เด็กที่ยืนช่องนี้ ตีโดนแล้วปีศาจช้าลง 35%'},
   tspeed:{k:'team',ic:'⚡',n:'ทั้งทีมเร็ว',d:'เด็กทุกตัวตีเร็วขึ้น 12%'},
   tpower:{k:'team',ic:'⚔️',n:'ทั้งทีมแรง',d:'เด็กทุกตัวแรงขึ้น 15%'},
   trange:{k:'team',ic:'🔭',n:'ทั้งทีมสายตาดี',d:'เด็กทุกตัวยิงไกลขึ้น 10%'},
@@ -355,8 +355,13 @@ function draw(){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#0d0f1a';ctx.fillRect(0,0,cv.width,cv.height);if(!G)return;
   const p=G.players[G.view],shk=p.quakeT>0?rnd(-4,4):0;ctx.setTransform(SC*DPR,0,0,SC*DPR,(OX+shk)*DPR,OY*DPR);ctx.imageSmoothingEnabled=false;
   if(!bgC)makeBg();ctx.drawImage(bgC,0,0,BW,BH);
-  ctx.font='20px sans-serif';ctx.textAlign='left';for(let s=0;s<NSLOT;s++){const L=p.tiles[s];if(!L.length)continue;const S=SLOTS[s],w=YARD.w/COLS,h=YARD.h/ROWS,x0=S.x-w/2,y0=S.y-14-h/2;
-    ctx.fillStyle='rgba(255,215,90,'+(.1+.05*Math.sin(G.t*3+s))+')';ctx.fillRect(x0+3,y0+3,w-6,h-6);ctx.strokeStyle='rgba(255,215,90,.55)';ctx.lineWidth=2;ctx.strokeRect(x0+3,y0+3,w-6,h-6);L.forEach((id,k)=>ctx.fillText(TALS[id].ic,x0+6+k*22,y0+24))}
+  // talent tiles glow in the talent's colour with a light pillar, so they stand out on the yard
+  for(let s=0;s<NSLOT;s++){const L=p.tiles[s];if(!L.length)continue;const S=SLOTS[s],w=YARD.w/COLS,h=YARD.h/ROWS,x0=S.x-w/2,y0=S.y-14-h/2,col=TALS[L[L.length-1]].col,pu=.5+.5*Math.sin(G.t*3+s);
+    const gr=ctx.createRadialGradient(S.x,S.y+4,6,S.x,S.y+4,w*.62);gr.addColorStop(0,col+'aa');gr.addColorStop(1,col+'00');ctx.fillStyle=gr;ctx.fillRect(x0+2,y0+2,w-4,h-4);
+    const pil=ctx.createLinearGradient(0,S.y+8,0,y0-30);pil.addColorStop(0,col+Math.round(90+70*pu).toString(16));pil.addColorStop(1,col+'00');ctx.fillStyle=pil;ctx.fillRect(S.x-w*.32,y0-30,w*.64,S.y+8-(y0-30));
+    ctx.strokeStyle=col;ctx.globalAlpha=.65+.35*pu;ctx.lineWidth=4;ctx.strokeRect(x0+4,y0+4,w-8,h-8);ctx.globalAlpha=1;
+    for(let k=0;k<3;k++){const t=(G.t*.7+k/3+s*.13)%1;ctx.fillStyle=col;ctx.globalAlpha=1-t;ctx.fillRect(S.x-w*.28+((k*37+s*11)%(w*.56)),S.y+4-t*(h+20),4,4)}ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(10,12,22,.75)';ctx.fillRect(x0+6,y0+6,8+L.length*26,30);ctx.font='22px sans-serif';ctx.textAlign='left';L.forEach((id,k)=>ctx.fillText(TALS[id].ic,x0+9+k*26,y0+29))}
   if(G.placing&&G.view===0){ctx.strokeStyle='rgba(127,224,138,'+(.5+.4*Math.sin(G.t*8))+')';ctx.lineWidth=3;for(const S of SLOTS){const w=YARD.w/COLS,h=YARD.h/ROWS;ctx.strokeRect(S.x-w/2+4,S.y-14-h/2+4,w-8,h-8)}}
   if(G.view===0&&G.sel>=0){const S=SLOTS[G.sel],u=p.units[G.sel];if(u){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(S.x,S.y-20,rangeOf(p,G.sel,u),0,6.28);ctx.stroke();ctx.setLineDash([])}}
   // back-to-front: monsters on the top row first, kids by row
