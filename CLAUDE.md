@@ -2,6 +2,10 @@
 
 The owner speaks Thai. Reply in Thai, short and plain (they are not a programmer). They test on a phone (landscape) and on a Windows PC.
 
+## >>> Current project: Babies & Beasts (`bb.html`) <<<
+Since 2026-11-03 the owner works on the new game **Babies & Beasts: สัญญาณสุดท้าย** — a 5-player elimination tower defense (kids in animal costumes vs nightmare demons). Design, decisions and GPT prompts: `docs/babies-and-beasts.md` (read it first). Code: `bb.html` (single file, same rules as below: exact-string patches, Thai UI). Balance check: `node tools/sim/bb_sim.js 10` (5 bots; knobs in `BAL`, bot styles in `STYLES`). Kid art: `art/bb/kid_<class>.png` (pixel art ~78 px tall, facing right; the owner makes them with GPT, then they are snapped to a true pixel grid). Live: https://boxchaychan.github.io/last-signal-pvp/bb.html (GitHub Pages from `main`).
+**The old city game (`index.html`, everything below this section) is frozen** (owner: "อันเก่าคงไม่ทำแล้ว"). Keep its files; don't develop it unless asked.
+
 ## What the game is
 Browser game, top-down map. Two sides, played against bots (online PvP is a later goal):
 - **Humans** — 3-hero squad (player + 2 bots), twin-stick shooter with MOBA skills (Q, F, Space, ultimate E; hold to aim, release to cast), tower defense, capture zones, rescue civilians. Win (since 2026-11-02, owner's design): build signal relays (`TW.relay`, in every hero's build bar, only on the 6 marked 📡 spots `G.relays` from `PART_SPOTS`, far from the HQ); `RELAY_N` (4) standing at once sends the signal (`G.sig`): the ghost leader comes out (healed, +30% HP), no longer respawns, and killing it wins. Destroying the ghost base (รังแม่, `G.zbase`, a `hive` at `HIVE`) also wins at any time. Before the signal the leader respawns 20 s after dying (boss mode: 15 s at a nest, else at the base). AI ghosts send packs at standing relays every 20 s (`sendCap`). Human bots defend; one bot at a time goes to build a relay (`relayAI`, `G.hai.raid`). HUD counter `#tmr` top-left (📡 n/4). No time limit.
