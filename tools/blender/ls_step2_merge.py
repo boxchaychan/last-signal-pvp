@@ -1,18 +1,22 @@
 # Last Signal · Step 2: merge the Mixamo downloads into one game file
 # Put every FBX you downloaded from Mixamo in Downloads (best: one "With Skin", the rest "Without Skin"),
 # then in Blender: Scripting tab > Open > this file > Run Script.
-# If every file is "Without Skin", the Mixamo skeleton is bound to storm_mixamo.fbx here with Blender's automatic weights.
-# Writes Downloads/storm_game.glb  -> copy to art/3d/storm_game.glb
+# If every file is "Without Skin", the Mixamo skeleton is bound to <HERO>_mixamo.fbx here with Blender's automatic weights.
+# Writes Downloads/<HERO>_game.glb  -> copy to art/3d/<HERO>_game.glb (the game loads it by itself)
+# HERO: change the line below in Blender (storm, shadow, medic, volt, eng, trap, tank)
 # The game locks the hips in place, so clips downloaded without "In Place" still work.
 import bpy, os, glob, re, sys
 
-# optional: blender -b --python ls_step2_merge.py -- <folder>   (default: Downloads)
+# optional: blender -b --python ls_step2_merge.py -- <hero> [folder]   (default: storm, Downloads)
+HERO = 'storm'
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-DL = argv[0] if argv else os.path.join(os.path.expanduser('~'), 'Downloads')
-base = os.path.join(DL, 'storm_mixamo.fbx')
+if argv:
+    HERO = argv[0]
+DL = argv[1] if len(argv) > 1 else os.path.join(os.path.expanduser('~'), 'Downloads')
+base = os.path.join(DL, HERO + '_mixamo.fbx')
 t0 = os.path.getmtime(base) if os.path.exists(base) else 0
 files = [f for f in glob.glob(os.path.join(DL, '*.fbx'))
-         if os.path.basename(f) != 'storm_mixamo.fbx' and os.path.getmtime(f) >= t0]
+         if os.path.basename(f) != HERO + '_mixamo.fbx' and os.path.getmtime(f) >= t0]
 if not files:
     raise Exception('No Mixamo FBX files in ' + DL)
 files.sort(key=os.path.getsize, reverse=True)   # the "With Skin" file is the biggest
@@ -64,7 +68,7 @@ if char is not None and spare is not None:
         bpy.data.objects.remove(o, do_unlink=True)
 elif char is None:
     if spare is None or not os.path.exists(base):
-        raise Exception('Could not find the "With Skin" file (or storm_mixamo.fbx to bind instead)')
+        raise Exception('Could not find the "With Skin" file (or ' + HERO + '_mixamo.fbx to bind instead)')
     # no "With Skin" download: bind our own mesh to the Mixamo skeleton with automatic weights
     char = spare[0]
     before = set(bpy.data.objects)
@@ -75,7 +79,7 @@ elif char is None:
     bpy.context.view_layer.objects.active = char
     bpy.ops.object.parent_set(type='ARMATURE_AUTO')
     loose = sum(1 for v in mesh.data.vertices if not v.groups)
-    print('no "With Skin" file: bound storm_mixamo.fbx with automatic weights,', loose, 'loose vertices', flush=True)
+    print('no "With Skin" file: bound ' + HERO + '_mixamo.fbx with automatic weights,', loose, 'loose vertices', flush=True)
 ad = char.animation_data or char.animation_data_create()
 ad.action = None
 for act in acts:
@@ -83,7 +87,7 @@ for act in acts:
     tr.name = act.name
     tr.strips.new(act.name, int(act.frame_range[0]), act)
 
-out = os.path.join(DL, 'storm_game.glb')
+out = os.path.join(DL, HERO + '_game.glb')
 kw = dict(filepath=out, export_format='GLB', export_animations=True, export_image_format='JPEG')
 try:
     bpy.ops.export_scene.gltf(export_animation_mode='NLA_TRACKS', **kw)

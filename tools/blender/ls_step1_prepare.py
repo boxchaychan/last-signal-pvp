@@ -2,7 +2,9 @@
 # Blender: Scripting tab > Open > this file > Run Script (the play button)
 #   or headless: blender -b --factory-startup --python tools/blender/ls_step1_prepare.py
 # Uses the newest .glb in your Downloads folder.
-# Writes Downloads/storm_mixamo.fbx (upload this to mixamo.com) and Downloads/storm_basecolor.png
+# Writes Downloads/<HERO>_mixamo.fbx (upload this to mixamo.com) and Downloads/<HERO>_basecolor.png
+# HERO: change the line below in Blender (storm, shadow, medic, volt, eng, trap, tank)
+#   or headless: blender -b --factory-startup --python ls_step1_prepare.py -- tank
 #
 # How: the model is joined, cleaned (stray objects and any rig that came with it are dropped, Mixamo
 # rigs it again), scaled to 1.8 m, then a low-poly copy gets fresh UVs and its colours are baked from
@@ -14,6 +16,10 @@ TARGET_FACES = 20000      # low poly for phones
 TEX_SIZE = 1024           # texture size
 HEIGHT = 1.8              # metres
 
+HERO = 'storm'
+import sys
+if '--' in sys.argv and sys.argv[sys.argv.index('--') + 1:]:
+    HERO = sys.argv[sys.argv.index('--') + 1]
 DL = os.path.join(os.path.expanduser('~'), 'Downloads')
 glbs = glob.glob(os.path.join(DL, '*.glb'))
 if not glbs:
@@ -88,7 +94,7 @@ for mat in hi.data.materials:
 # low-poly copy
 lo = hi.copy()
 lo.data = hi.data.copy()
-lo.name = lo.data.name = 'storm'
+lo.name = lo.data.name = HERO
 sc.collection.objects.link(lo)
 n = len(lo.data.polygons)
 for o in sc.objects:
@@ -110,8 +116,8 @@ if n > TARGET_FACES:
 print('faces:', n, '->', len(lo.data.polygons), flush=True)
 
 # new material: one colour texture
-img = bpy.data.images.new('storm_basecolor', TEX_SIZE, TEX_SIZE, alpha=False)
-mat = bpy.data.materials.new('storm')
+img = bpy.data.images.new(HERO + '_basecolor', TEX_SIZE, TEX_SIZE, alpha=False)
+mat = bpy.data.materials.new(HERO)
 try:
     mat.use_nodes = True
 except Exception:
@@ -144,7 +150,7 @@ for o in sc.objects:
 bpy.context.view_layer.objects.active = lo
 bpy.ops.object.bake(type='DIFFUSE', pass_filter={'COLOR'}, use_selected_to_active=True,
                     cage_extrusion=0.015, max_ray_distance=0.04, margin=8)
-out = os.path.join(DL, 'storm_basecolor.png')
+out = os.path.join(DL, HERO + '_basecolor.png')
 img.filepath_raw = out
 img.file_format = 'PNG'
 img.save()
@@ -153,7 +159,7 @@ print('texture:', out, flush=True)
 bpy.data.objects.remove(hi, do_unlink=True)
 for o in sc.objects:
     o.select_set(o is lo)
-fbx = os.path.join(DL, 'storm_mixamo.fbx')
+fbx = os.path.join(DL, HERO + '_mixamo.fbx')
 bpy.ops.export_scene.fbx(filepath=fbx, use_selection=True, object_types={'MESH'},
                          path_mode='COPY', embed_textures=True, apply_scale_options='FBX_SCALE_UNITS')
 print('DONE ->', fbx, round(os.path.getsize(fbx) / 1e6, 2), 'MB', flush=True)
