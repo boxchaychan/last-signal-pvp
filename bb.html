@@ -514,6 +514,8 @@ const IMG={},SPR={};
 // kid pictures: one kid per class who grows up. A tier can have its own picture art/bb/kid_<class>_<tier>.png;
 // KART lists the ones that exist. A tier without one uses the nearest tier that has one, else kid_<class>.png.
 // Every picture is drawn KH*T.sc tall whatever its pixel size (GPT pictures come in different grids).
+// demon pictures that exist as art/bb/mon_<key>.png (else the code-drawn pixel sprite); prompts in docs/bb-prompts.html
+const MART=[];
 const TKEY=['white','green','purple','red','gold'],KH=78,KART={assassin:['white','green','purple','red','gold']};
 // a kid picture on a small canvas: crop=true gives a square head shot (avatars), else the whole kid with room around
 function fitCanvas(cv,im,crop){const draw=()=>{const w=im.naturalWidth,h=im.naturalHeight,g=cv.getContext('2d');
@@ -525,6 +527,7 @@ function kidImg(c,t){const L=KART[c];if(!L||!L.length)return IMG[c];let b=null,b
 if(HAS_DOM){
   $=s=>document.querySelector(s);cv=$('#cv');ctx=cv.getContext('2d');
   for(const k of CK){IMG[k]=new Image();IMG[k].src='art/bb/kid_'+k+'.png';for(const t of KART[k]||[]){const n=k+'_'+t;IMG[n]=new Image();IMG[n].src='art/bb/kid_'+n+'.png'}}
+  for(const k of MART){IMG['m_'+k]=new Image();IMG['m_'+k].src='art/bb/mon_'+k+'.png'}
   IMG.zwalk=new Image();IMG.zwalk.src='art/px/z_walker_walk.png';IMG.krasue=new Image();IMG.krasue.src='art/px/z_krasue.png';
   fetch('fx/manifest.json').then(r=>r.json()).then(m=>{FXM=m;for(const k in m){FXI[k]=new Image();FXI[k].src='fx/'+k+'.png'}}).catch(()=>{});
   buildPixelSprites();
@@ -648,7 +651,8 @@ function drawMon(m){const M=m.M,flip=m.dx<0;ctx.save();ctx.translate(Math.round(
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,4,M.boss?34:14,M.boss?8:4,0,0,6.28);ctx.fill();
   if(flip)ctx.scale(-1,1);if(m.hitT>0)ctx.filter='brightness(2.2)';
   const bob=Math.sin(G.t*8+m.wob)*2;
-  if(m.m==='zombie'&&IMG.zwalk.complete){const f=((G.t*10+m.wob)|0)%6;ctx.drawImage(IMG.zwalk,f*72,0,72,84,-36*M.s,-83*M.s,72*M.s,84*M.s)}
+  const mi=IMG['m_'+m.m];if(mi&&mi.complete&&mi.naturalWidth){const H=(SPR[m.m]?SPR[m.m].height:m.m==='zombie'?84:64)*M.s,W=mi.naturalWidth*H/mi.naturalHeight;ctx.drawImage(mi,-W/2,-H+bob,W,H)}
+  else if(m.m==='zombie'&&IMG.zwalk.complete){const f=((G.t*10+m.wob)|0)%6;ctx.drawImage(IMG.zwalk,f*72,0,72,84,-36*M.s,-83*M.s,72*M.s,84*M.s)}
   else if(m.m==='krasue'&&IMG.krasue.complete){ctx.drawImage(IMG.krasue,-72*M.s,-60*M.s+bob,96*M.s,64*M.s)}
   else{const S=SPR[m.m]||SPR.shadow;ctx.drawImage(S,-S.width*M.s/2,-S.height*M.s+bob,S.width*M.s,S.height*M.s)}
   ctx.filter='none';

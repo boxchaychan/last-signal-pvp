@@ -123,12 +123,32 @@ KIDS.forEach((K,i)=>{const b=document.createElement('button');b.className='tab';
   else{h+='<p style="color:var(--dim);margin:6px 0 0">'+(K.ref==='hawk'?'ร่างทองให้แนบ<b>รูปฟ้า (เหยี่ยว)</b> เป็นต้นแบบหน้า':'ร่างทองให้แนบ<b>รูปนิลร่างทอง</b> เป็นตัวอย่างสไตล์')+' · ระดับอื่นพิมพ์ต่อในแชตเดิม</p></div>';
     for(const T of TIERS){const ok=done.includes(T.k);h+='<div class="tier"><div><b class="t" style="background:'+T.c+'">'+T.n+'</b> '+T.age+' ขวบ'+(ok?'<img class="done" src="../art/bb/kid_'+K.cls+'_'+T.k+'.png"><span class="st ok">✓ มีแล้ว</span>':'<span class="st">ยังไม่มีรูป</span>')+'</div><p>'+(K.tt?K.tt[T.k]:'')+'</p><pre>'+prompt(K,T)+'</pre><button class="copy" type="button">คัดลอกคำสั่ง ('+T.n+')</button></div>'}}
   d.innerHTML=h;box.appendChild(d)});
+// demons: one picture each (the game flips them when they walk left). Now drawn by code; send pictures and they replace the code ones.
+const MONS=[
+ {n:'เงาดำ',d:'ผีเงาตัวเล็ก มาทุกระลอก',p:'a small round shadow ghost, dark purple-black body with a wavy bottom edge, two big white eyes and a tiny red mouth'},
+ {n:'ตุ๊กตาผี',d:'วิ่งเร็ว',p:'a creepy porcelain doll girl walking, cracked white face, black button eyes, messy brown hair, a dirty pink dress, small and fast'},
+ {n:'ซอมบี้',d:'ช้า เลือดหนา',p:'a chubby cartoon zombie in torn pajamas, green-grey skin, arms stretched forward, one eye bigger than the other, a silly scary smile'},
+ {n:'กระสือ',d:'ผีไทยลอยได้',p:'a cute-creepy Thai Krasue ghost: a floating girl head with long black hair and glowing red eyes, glowing red and green strands dangling below the head (cartoon, not gory)'},
+ {n:'ผีจิ๋ว',d:'ผีที่แก๊งอื่นเป่านกหวีดส่งมา',p:'a tiny red imp ghost with two small horns, angry eyes and sharp little teeth, a round body with a wavy bottom'},
+ {n:'ผียักษ์',d:'ถูกส่งมา ใหญ่ ช้า เลือดหนามาก',p:'a big hulking purple ogre demon with two horns, yellow eyes, a wide grin full of teeth and huge fists'},
+ {n:'เงาลูก',d:'แตกออกมาจากบอสเงาแยกร่าง',p:'a small purple shadow ghost with pale lilac eyes, a wispy body and a wavy bottom edge'},
+ {n:'บอส · ฝันร้ายร่างโต',d:'ระลอก 10 · เลือดหนา',big:1,p:'a huge nightmare demon boss: a tall black shadow giant in a dark purple cloak, glowing red eyes, a jagged orange mouth and big claws'},
+ {n:'บอส · ราชินีตุ๊กตา',d:'ระลอก 20 · เรียกตุ๊กตาผี',big:1,p:'a doll queen boss: a big porcelain doll with a golden crown, a cracked face, black button eyes, a red royal dress with white lace, holding a small sceptre'},
+ {n:'บอส · เงาแยกร่าง',d:'ระลอก 30 · ตายแล้วแตกเป็น 3',big:1,p:'a split shade boss: a big purple shadow blob with three glowing eyes and a zigzag mouth, a glowing crack down the middle of its body as if about to split in three'},
+ {n:'บอส · ราชาฝันร้าย',d:'ระลอก 40 · มีโล่ คลั่งเมื่อเลือดน้อย',big:1,p:'the Nightmare King boss: a tall dark demon king with long curved horns, a golden crown, glowing red eyes, a skull grin and a purple-black royal cape'},
+];
+const MTAIL='Pixel art game monster, chibi proportions, every pixel a perfect square of the same size, no blur, about 20 colors, 1-pixel dark outline, full body, facing right, plain white background, no text. Spooky but cute, for a kids game.';
+{const b=document.createElement('button');b.className='tab';b.type='button';b.textContent='👹 ปีศาจ';const i=KIDS.length;b.onclick=()=>show(i);tabs.appendChild(b);
+  const d=document.createElement('div');d.className='kid';
+  d.innerHTML='<div class="box"><h2>👹 ปีศาจ + บอส</h2><p style="color:var(--dim);margin:4px 0 0">ตอนนี้ในเกมวาดด้วยโค้ด · แนบ<b>รูปฟ้า (เหยี่ยว)</b> เป็นตัวอย่างสไตล์ทุกครั้ง · ตัวละ 1 รูป หันขวา (เกมกลับด้านเองตอนเดินซ้าย) · บอสให้ใหญ่กว่าตัวธรรมดาราว 2 เท่า · ส่งมาแล้ว Claude ใส่ให้</p></div>'+
+    MONS.map(M=>'<div class="tier"><div><b class="t" style="background:'+(M.big?'#ff6a6a':'#c29aff')+'">'+(M.big?'บอส':'ปีศาจ')+'</b> '+M.n+'</div><p>'+M.d+'</p><pre>Use the attached image ONLY as a reference for the pixel art style and outline. Draw a game monster: '+M.p+(M.big?'. It is a boss, about twice as big as a normal monster':'')+'. '+MTAIL+'</pre><button class="copy" type="button">คัดลอกคำสั่ง ('+M.n+')</button></div>').join('');
+  box.appendChild(d)}
 box.addEventListener('click',e=>{const b=e.target.closest('.copy');if(!b)return;const t=b.previousElementSibling.textContent;
   const done=()=>{b.classList.add('did');const o=b.textContent;b.textContent='คัดลอกแล้ว ✓ ไปวางใน ChatGPT';setTimeout(()=>{b.classList.remove('did');b.textContent=o},2200)};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,()=>fallback(t,done));else fallback(t,done)});
 function fallback(t,done){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');done()}catch(_){}a.remove()}
 function show(i){[...tabs.children].forEach((b,j)=>b.classList.toggle('on',i===j));[...box.children].forEach((d,j)=>d.classList.toggle('on',i===j));try{localStorage.setItem('bbp.kid',i)}catch(_){}}
-let s0=0;try{s0=+localStorage.getItem('bbp.kid')||0}catch(_){}show(Math.min(s0,KIDS.length-1));
+let s0=0;try{s0=+localStorage.getItem('bbp.kid')||0}catch(_){}show(Math.min(s0,KIDS.length));
 </script>
 </body>
 </html>
