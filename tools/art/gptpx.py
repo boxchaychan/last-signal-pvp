@@ -13,6 +13,12 @@ sizes=nd.sum(near,lab,range(1,n+1))
 bg=np.zeros((H,W),bool)
 for i in range(1,n+1):
     if i in edge or sizes[i-1]>2500:bg|=lab==i   # outside + very big enclosed holes; eye whites stay
+# GPTPX_HALO=1: also cut a pale glow round the figure (light, low-saturation pixels joined to the border)
+import os
+if os.environ.get('GPTPX_HALO'):
+    mx=A.max(2);pale=(mx>196)&(A.min(2)>120)&((mx-A.min(2))/np.maximum(mx,1)<.45)
+    l2,n2=nd.label(pale);e2=set(np.unique(np.r_[l2[0],l2[-1],l2[:,0],l2[:,-1]]))-{0}
+    for i in e2:bg|=l2==i
 fig=~bg
 # drop small separate bits (sparkles); keep parts bigger than 2% of the main body
 fl,fn=nd.label(fig);fs=nd.sum(fig,fl,range(1,fn+1));keep=fs>fs.max()*.02
