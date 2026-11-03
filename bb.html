@@ -121,6 +121,7 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
 .mbtn{height:clamp(40px,11vh,56px);border-radius:12px;border:3px solid #1c2440;background:linear-gradient(#4a68aa,#28396a);color:#fff;font-weight:700;font-size:clamp(14px,4vh,20px);box-shadow:0 3px 0 #0a1020;padding:0 14px}
 .mbtn.gold{background:linear-gradient(#ffe27a,#e0a010);color:#3a2200;border-color:#4a2a00}
 .mbtn.red{background:linear-gradient(#e0605a,#9a2a2a)}
+.mbtn:disabled{opacity:.42;filter:grayscale(.7);box-shadow:none}
 .mrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .mrow .mbtn{flex:1}
 .nm{width:100%;box-sizing:border-box;height:44px;border-radius:10px;border:2px solid #3b4a8a;background:#0d1024;color:#fff;font:600 18px var(--font);padding:0 10px}
@@ -163,6 +164,11 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
 /* end screen */
 #end{background:rgba(6,8,20,.74)}
 .endc{text-align:center}
+.est .mvp{display:flex;align-items:center;gap:6px;text-align:left;border-color:#ffd75a}
+.est .mvp canvas{width:clamp(30px,9vh,44px);height:clamp(30px,9vh,44px);image-rendering:pixelated;border-radius:8px;background:#232a4a}
+.est .mvp b{font-size:clamp(13px,3.8vh,18px);color:#ffd75a}
+.ms{display:flex;gap:10px;align-items:center;background:#151a36;border:2px solid #2c355e;border-radius:12px;padding:6px 10px;margin:6px 0}
+.ms>div{flex:1}.ms.ok{border-color:#ffd75a}.ms.got{opacity:.55}.ms .kbar{margin-top:4px}.ms .mbtn{min-width:96px}
 .gain{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;margin:2px 0 4px;font-size:clamp(11px,3.2vh,15px);color:var(--dim)}
 .gain span{display:inline-flex;align-items:center;gap:3px;background:#151a36;border:2px solid #2c355e;border-radius:10px;padding:1px 8px 1px 2px;color:#ffd75a;font-weight:700}
 .gain canvas{width:24px;height:24px;image-rendering:pixelated;border-radius:6px}
@@ -212,7 +218,7 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
   <div class="lb lmenu">
     <button class="lbtn" type="button" data-m="kids">🧸<span>เด็กของฉัน</span></button>
     <button class="lbtn" type="button" data-m="how">📖<span>วิธีเล่น</span></button>
-    <button class="lbtn" type="button" data-m="story">🌙<span>เรื่องราว</span></button>
+    <button class="lbtn" type="button" data-m="miss">📅<span>ภารกิจ</span></button>
     <button class="lbtn" type="button" data-m="set">⚙️<span>ตั้งค่า</span></button>
   </div>
   <div class="lb lplay">
@@ -298,7 +304,7 @@ const TK=Object.keys(TALS);
 function offerTalents(p){const L=TK.slice().sort(()=>Math.random()-.5).slice(0,3);return L.map(id=>({id,cls:id==='focus'?CK[(Math.random()*CK.length)|0]:null}))}
 const tileN=(p,s,id)=>s==null?0:p.tiles[s].filter(x=>x===id).length;
 function takeTalent(p,o,s){const T=TALS[o.id];
-  if(T.k==='tile'){if(s==null)return false;p.tiles[s].push(o.id)}
+  if(T.k==='tile'){if(s==null)return false;p.tiles[s].push(o.id);if(p.human)mprog('tile')}
   else if(o.id==='focus')p.cls[o.cls]=(p.cls[o.cls]||0)+1;
   else if(o.id==='quota')p.hp+=12;
   else if(o.id==='gift'){for(let i=0;i<2;i++){const free=p.units.map((u,j)=>u?-1:j).filter(j=>j>=0);if(free.length){const j=free[(Math.random()*free.length)|0];p.units[j]={c:CK[(Math.random()*CK.length)|0],t:1,cd:.3,mana:0,kick:0,flash:.6};addFx(p,'ultgr',SLOTS[j].x,SLOTS[j].y,.8)}else p.gold+=40}}
@@ -351,7 +357,7 @@ function spawn(p,m,hpk,at,abs){const M=MON[m],hp=abs||M.hp*hpk;const st=at!=null
 function sendMonsters(from,opt){
   const S=SEND.find(s=>s.id===opt),to=alive().filter(q=>q!==from);if(!S||!to.length||from.gold<S.cost)return false;from.gold-=S.cost;from.inc+=S.inc;
   for(const q of to){q.spawnQ.push({m:S.mon,t:1.5,hp:hpScale(Math.max(1,G.wave))});if(HAS_DOM&&q.human)SFX.play('incoming',.5);if(HAS_DOM&&q.human)say(from.name+' ส่ง'+MON[S.mon].n+'มาหาคุณ!','#ff8a8a')}
-  if(HAS_DOM&&from.human)SFX.play('whistle');if(HAS_DOM&&from.human)say('ส่ง'+MON[S.mon].n+'ไปทุกบ้าน '+to.length+' บ้าน','#d8b8ff');return true}
+  if(HAS_DOM&&from.human){SFX.play('whistle');mprog('wh')}if(HAS_DOM&&from.human)say('ส่ง'+MON[S.mon].n+'ไปทุกบ้าน '+to.length+' บ้าน','#d8b8ff');return true}
 // ---------- kids ----------
 function summon(p){const c=sumCost(p),free=p.units.map((u,i)=>u?-1:i).filter(i=>i>=0);if(p.gold<c||!free.length)return null;
   p.gold-=c;p.nSum++;const s=free[(Math.random()*free.length)|0],k=CK[(Math.random()*CK.length)|0];
@@ -360,7 +366,7 @@ function summon(p){const c=sumCost(p),free=p.units.map((u,i)=>u?-1:i).filter(i=>
   addFx(p,t?'ultgr':'poof',SLOTS[s].x,SLOTS[s].y,.8);if(HAS_DOM&&p.human)SFX.play(t?'lucky':'summon');if(HAS_DOM&&p.human&&t)say('โชคดี! ได้'+CLS[k].n+'สี'+TIER[t].n+'เลย','#5fe05f');return s}
 function mates(p,s){const u=p.units[s];return u?p.units.map((v,i)=>v&&i!==s&&v.c===u.c&&v.t===u.t?i:-1).filter(i=>i>=0):[]}
 function canMerge(p,s){const u=p.units[s];return !!u&&u.t<3&&mates(p,s).length>=2}
-function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).sort((a,b)=>b-a);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25)}
+function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).sort((a,b)=>b-a);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25);if(u.t>=3)mprog('red')}
   addFx(p,'poof',SLOTS[m[0]].x,SLOTS[m[0]].y,.7);addFx(p,'poof',SLOTS[m[1]].x,SLOTS[m[1]].y,.7);addFx(p,['ultb','ultgr','ultb','ultr'][u.t],SLOTS[s].x,SLOTS[s].y+20,.8);return true}
 const sellValue=u=>8*Math.pow(3,u.t);
 function sell(p,s){const u=p.units[s];if(!u)return;if(HAS_DOM&&p.human)SFX.play('coin');p.gold+=sellValue(u);p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
@@ -374,8 +380,9 @@ function rangeOf(p,s,u){return CLS[u.c].rng*(perk(p,u.c,9)?1.08:1)*(u.c==='hunte
 function hitMon(p,m,amt,u,col){
   if(m.dead)return;if(u&&u.c==='mage'&&u.t>=1&&m.slowT>0)amt*=1+.3*pk6(p,'mage');if(u&&u.c==='warrior'&&u.t>=1&&m.hp>m.maxHp*.5)amt*=1+.4*pk6(p,'warrior');if(u&&u.c==='assassin'&&u.t>=1&&m.hp<m.maxHp*.5)amt*=1+.6*pk6(p,'assassin');
   if(m.shOn){amt*=m.M.shield.k;col='#8ab8ff'}
+  if(u){const dl=Math.min(amt,Math.max(0,m.hp));u.dmg=(u.dmg||0)+dl;p.dmg=(p.dmg||0)+dl}
   m.hp-=amt;m.hitT=.1;if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:m.x+rnd(-8,8),y:m.y-28,v:Math.round(amt),l:.7,c:col||'#fff'});
-  if(m.hp<=0){m.dead=true;if(m.M.split){for(let i=0;i<m.M.split.n;i++)p.spawnQ.push({m:m.M.split.m,t:.05+i*.15,at:m.d,abs:m.maxHp*m.M.split.k});if(HAS_DOM&&p.i===G.view)addFx(p,'ultb',m.x,m.y-20,1)}if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;if(HAS_DOM&&p.i===G.view)SFX.play('pop',.07);
+  if(m.hp<=0){m.dead=true;if(m.M.boss&&p.human)mprog('boss');if(m.M.split){for(let i=0;i<m.M.split.n;i++)p.spawnQ.push({m:m.M.split.m,t:.05+i*.15,at:m.d,abs:m.maxHp*m.M.split.k});if(HAS_DOM&&p.i===G.view)addFx(p,'ultb',m.x,m.y-20,1)}if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;if(HAS_DOM&&p.i===G.view)SFX.play('pop',.07);
     if(u&&u.c==='curse'&&u.t>=1&&Math.random()<.15*pk6(p,'curse')){const t=targetOf(p);if(t)t.spawnQ.push({m:'imp',t:.5,hp:hpScale(Math.max(1,G.wave))})}}}
 function nearestTarget(p,x,y,r){let b=null,bd=-1;for(const m of p.mons){if(m.dead)continue;if((m.x-x)**2+(m.y-y)**2>r*r)continue;if(m.d>bd){bd=m.d;b=m}}return b}
 function splash(p,x,y,R,amt,u,col){for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<R*R)hitMon(p,m,amt,u,col)}
@@ -455,7 +462,17 @@ const canLv=k=>LOB.prog.lv[k]<KLV.max&&LOB.prog.sh[k]>=KLV.need(LOB.prog.lv[k]);
 if(!MAPS.some(m=>m.id===LOB.map))LOB.map='camp';if(!CLS[LOB.fav])LOB.fav='assassin';
 const OPT={fs:LS.get('fs',true),vib:LS.get('vib',true)};
 const buzz=ms=>{if(OPT.vib&&typeof navigator!=='undefined'&&navigator.vibrate)try{navigator.vibrate(ms)}catch(_){}};
+// ---------- daily missions: 3 a day from this pool (same 3 all day), reward = shards for your profile kid ----------
+const MISS={win:{n:'ชนะ 1 เกม',g:1,r:15},top3:{n:'ติด 3 อันดับแรก 2 เกม',g:2,r:12},red:{n:'รวมร่างได้เด็กสีแดง 2 ตัว',g:2,r:12},boss:{n:'ปราบบอส 2 ตัว',g:2,r:12},
+  wh:{n:'เป่านกหวีด 8 ครั้ง',g:8,r:10},kill:{n:'ปราบปีศาจ 400 ตัว',g:400,r:10},play:{n:'เล่น 3 เกม',g:3,r:10},w25:{n:'อยู่รอดถึงระลอก 25',g:1,r:12},tile:{n:'ใส่ทาเลนต์ช่อง 2 ใบ',g:2,r:10}};
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+function daily(){let D=LS.get('daily',null);const t=today();if(!D||D.day!==t){const K=Object.keys(MISS);let s=7;for(const c of t)s=(s*31+c.charCodeAt(0))>>>0;const ids=[];
+    while(ids.length<3){s=(Math.imul(s,1103515245)+12345)>>>0;const k=K[(s>>>8)%K.length];if(!ids.includes(k))ids.push(k)}D={day:t,ids,p:{},c:{}};LS.set('daily',D)}return D}
+function mprog(id,n){if(!HAS_DOM)return;const D=daily(),M=MISS[id];if(!D.ids.includes(id)||D.c[id])return;const was=(D.p[id]||0)>=M.g;D.p[id]=Math.min(M.g,(D.p[id]||0)+(n||1));LS.set('daily',D);
+  if(!was&&D.p[id]>=M.g&&G){G.mdone=(G.mdone||[]).concat(id);say('📅 ภารกิจสำเร็จ: '+M.n,'#ffd75a',2600)}}
+const mReady=()=>{const D=daily();return D.ids.some(id=>!D.c[id]&&(D.p[id]||0)>=MISS[id].g)};
 function recordResult(rank){if(!G||G.rec)return;G.rec=1;const s=LOB.st;s.games++;if(rank===1)s.wins++;s.best=s.best?Math.min(s.best,rank):rank;s.wave=Math.max(s.wave||0,G.wave);LS.set('stats',s);
+  mprog('play');if(rank===1)mprog('win');if(rank<=3)mprog('top3');if(G.wave>=25)mprog('w25');mprog('kill',G.players[0].kills);
   const me=G.players[0],w={},g={},S=KLV.rank[rank]||8;for(const k of CK)w[k]=1;for(const u of me.units)if(u)w[u.c]+=Math.pow(3,u.t);const W=CK.reduce((a,k)=>a+w[k],0);let left=S;
   for(const k of CK){g[k]=Math.floor(S*w[k]/W);left-=g[k]}const ord=CK.slice().sort((a,b)=>w[b]-w[a]);for(let i=0;left>0;i++,left--)g[ord[i%ord.length]]++;
   for(const k of CK)LOB.prog.sh[k]+=g[k];LS.set('prog',LOB.prog);G.gain=g}
@@ -722,8 +739,10 @@ function tipCheck(){const me=G.players[0];if(!me.alive||G.view!==0||G.t<(G.tipT|
   for(const [id,ok,msg] of T)if(!G.tips[id]&&ok()){G.tips[id]=1;G.tipT=G.t+7;say(msg,'#7fe08a',3800);return}}
 function banner(t,sub,c){const b=$('#banner');b.innerHTML='<span style="color:'+(c||'var(--gold)')+'">'+t+'</span>'+(sub?'<small>'+sub+'</small>':'');b.classList.add('show');G.bannerT=1.6;clearTimeout(say.t);say.t=setTimeout(()=>b.classList.remove('show'),1600)}
 function endScreen(rank,title,text){const me=G.players[0];$('#endR').textContent=['','🏆','🥈','🥉'][rank]||'💔';$('#endT').textContent=title;$('#endP').textContent=text;
-  $('#endS').innerHTML='<div><b>'+rank+'/'+G.players.length+'</b>อันดับ</div><div><b>'+G.wave+'</b>ระลอก</div><div><b>'+me.kills+'</b>ปีศาจที่ปราบ</div>';$('#end').hidden=false;recordResult(rank);const g=G.gain||{};
-  $('#endG').innerHTML='ได้ชิ้นส่วน '+CK.filter(k=>g[k]).sort((a,b)=>g[b]-g[a]).map(k=>'<span><canvas data-k="'+k+'"></canvas>+'+g[k]+'</span>').join('')+(CK.some(canLv)?' <em>⬆ อัปเลเวลได้ที่ล็อบบี้</em>':'');$('#endG').querySelectorAll('canvas').forEach(c=>fitCanvas(c,kidImg(c.dataset.k,4),true))}
+  const mv=me.units.filter(Boolean).sort((a,b)=>(b.dmg||0)-(a.dmg||0))[0];
+  $('#endS').innerHTML='<div><b>'+rank+'/'+G.players.length+'</b>อันดับ</div><div><b>'+G.wave+'</b>ระลอก</div><div><b>'+me.kills+'</b>ปีศาจที่ปราบ</div>'+(mv&&me.dmg?'<div class="mvp"><canvas data-k="'+mv.c+'" data-t="'+mv.t+'"></canvas><span><b>⭐ '+CLS[mv.c].kid+'</b>MVP สี'+TIER[mv.t].n+' · '+Math.round(100*(mv.dmg||0)/me.dmg)+'% ดาเมจ</span></div>':'');
+  $('#endS').querySelectorAll('canvas').forEach(c=>fitCanvas(c,kidImg(c.dataset.k,+c.dataset.t),true));$('#end').hidden=false;recordResult(rank);const g=G.gain||{};
+  $('#endG').innerHTML='ได้ชิ้นส่วน '+CK.filter(k=>g[k]).sort((a,b)=>g[b]-g[a]).map(k=>'<span><canvas data-k="'+k+'"></canvas>+'+g[k]+'</span>').join('')+(CK.some(canLv)?' <em>⬆ อัปเลเวลได้ที่ล็อบบี้</em>':'');if(G.mdone&&G.mdone.length)$('#endG').insertAdjacentHTML('beforeend',' <em>📅 ภารกิจสำเร็จ '+G.mdone.length+'</em>');$('#endG').querySelectorAll('canvas').forEach(c=>fitCanvas(c,kidImg(c.dataset.k,4),true))}
 function onOut(p){if(p.human){SFX.play('lose');buzz([300,100,300]);endScreen(p.rank,'ตกรอบ · อันดับ '+p.rank,'ปีศาจล้นลานเกินโควต้า แก๊งของคุณถอยไปที่พักเด็ก · กด "ดูต่อ" เพื่อดูแก๊งอื่นสู้กันต่อ');$('#watch').hidden=false}
   else{SFX.play('out');say(p.name+' ตกรอบ! (อันดับ '+p.rank+')','#ffd75a')}}
 function onEnd(){const me=G.players[0];if(me.rank===1){SFX.play('win');buzz([80,60,80,60,240])}if(me.rank===1)endScreen(1,'ชนะ! ได้ไปประภาคาร','แก๊งของคุณยืนหยัดเป็นแก๊งสุดท้าย แสงประภาคารส่องลงมา…');
@@ -799,7 +818,7 @@ if(HAS_DOM){
   // profile, map choice, windows
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   function kidsBadge(){const b=document.querySelector('.lbtn[data-m=kids]');if(b)b.classList.toggle('dot',CK.some(canLv))}
-  function profUI(){kidsBadge();const s=LOB.st;$('#profN').textContent=LOB.name;$('#profS').textContent='🏆 ชนะ '+s.wins+' · เล่น '+s.games+(s.best?' · ดีสุดอันดับ '+s.best:'');fitCanvas($('#profAv'),kidImg(LOB.fav,4),true)}
+  function profUI(){kidsBadge();{const b=document.querySelector('.lbtn[data-m=miss]');if(b)b.classList.toggle('dot',mReady())}const s=LOB.st;$('#profN').textContent=LOB.name;$('#profS').textContent='🏆 ชนะ '+s.wins+' · เล่น '+s.games+(s.best?' · ดีสุดอันดับ '+s.best:'');fitCanvas($('#profAv'),kidImg(LOB.fav,4),true)}
   function mapUI(){const m=MAPS.find(m=>m.id===LOB.map)||MAPS[0];$('#mapN').textContent=m.ic+' '+m.n}
   const turnMap=d=>{const i=MAPS.findIndex(m=>m.id===LOB.map);LOB.map=MAPS[(i+d+MAPS.length)%MAPS.length].id;LS.set('map',LOB.map);mapUI()};
   $('#mapL').addEventListener('click',()=>turnMap(-1));$('#mapR').addEventListener('click',()=>turnMap(1));
@@ -818,19 +837,25 @@ if(HAS_DOM){
     const B=$('#mB');B.querySelectorAll('canvas[data-h]').forEach(c=>fitCanvas(c,kidImg(c.dataset.h,4),true));B.querySelectorAll('canvas[data-t]').forEach(c=>fitCanvas(c,kidImg(sel,+c.dataset.t)));fitCanvas(B.querySelector('canvas[data-big]'),kidImg(sel,4));
     B.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.k)kidsModal(b.dataset.k);if(b.dataset.lvup){const k=b.dataset.lvup,L=LOB.prog.lv[k];if(canLv(k)){LOB.prog.sh[k]-=KLV.need(L);LOB.prog.lv[k]=L+1;LS.set('prog',LOB.prog);SFX.play('mergeBig');const q=PERK.find(q=>q.lv===L+1);kidsBadge();kidsModal(k,'⬆ '+CLS[k].kid+' Lv.'+(L+1)+(q?' · ปลด '+q.ic+' '+q.n:' · แรงขึ้น '+Math.round(KLV.dmg*100)+'%'))}}if(b.dataset.fav){LOB.fav=b.dataset.fav;LS.set('fav',LOB.fav);profUI();kidsModal(LOB.fav)}}}
   function howModal(){const rl=CK.slice().sort((a,b)=>rangeStars(b)-rangeStars(a)).map(k=>CLS[k].n+' '+rangeStars(k)).join(' · ');
-    openModal('📖 วิธีเล่น','<h4>🎯 เป้าหมาย</h4><p>5 แก๊งแข่งกัน แต่ละบ้านมีลานเด็กของตัวเอง ปีศาจเดินวนรอบลาน · ปีศาจบนสนามห้ามถึง<b>โควต้า</b> (เริ่ม 100 ตัว) ถึงเมื่อไหร่ = ตกรอบ · แก๊งสุดท้ายที่เหลือชนะ</p>'+
+    openModal('📖 วิธีเล่น','<div class="mrow" style="margin:0 0 4px"><button class="mbtn" type="button" data-a="story">🌙 อ่านเรื่องราว</button></div><h4>🎯 เป้าหมาย</h4><p>5 แก๊งแข่งกัน แต่ละบ้านมีลานเด็กของตัวเอง ปีศาจเดินวนรอบลาน · ปีศาจบนสนามห้ามถึง<b>โควต้า</b> (เริ่ม 100 ตัว) ถึงเมื่อไหร่ = ตกรอบ · แก๊งสุดท้ายที่เหลือชนะ</p>'+
       '<h4>🧸 เรียกเด็ก + รวมร่าง</h4><ul><li>กด <b>เรียกเด็ก</b> ได้เด็กสุ่ม 1 ใน 6 คลาส ลงช่องว่างบนลาน</li><li>แตะเด็ก → <b>รวมร่าง</b> 3 ตัวคลาสเดียวกัน สีเดียวกัน = โตขึ้น 1 ระดับ (ขาว → เขียว → ม่วง → แดง) ยิ่งโตยิ่งเก่ง และปลดสกิลใหม่</li><li>ลากเด็กเพื่อย้ายช่อง · ขายได้</li></ul>'+
       '<h4>💪 อัปพลัง</h4><p>ใช้เงินอัปคลาส ทุกตัวในคลาสนั้นแรงขึ้น 25% ต่อขั้น</p>'+
       '<h4>📣 นกหวีด</h4><p>ส่งปีศาจ 1 ตัวไปทุกบ้านพร้อมกัน ปีศาจที่ถูกส่งไปฆ่าแล้วไม่ได้เงิน · ยิ่งส่ง รายได้ต่อระลอกยิ่งเพิ่ม · แตะชื่อแก๊งด้านขวาเพื่อดูสนามคนอื่น</p>'+
       '<h4>👹 บอส + ทาเลนต์</h4><p>บอสมาทุก 10 ระลอก ผลัดกัน 4 ตัว: '+BOSSES.map(b=>MON[b].n+' ('+MON[b].ab+')').join(' · ')+' · หลังบอสเลือกทาเลนต์ 1 ใน 3 ใบ: ใบ<b>ช่อง</b>แรงแต่ได้เฉพาะเด็กที่ยืนช่องนั้น (ช่องจะมีแสงสี) ใบ<b>ทั้งทีม</b>เบากว่าแต่ได้ทุกตัว</p>'+
       '<h4>🏹 ระยะยิง (เต็ม 10)</h4><p>'+rl+' · ตัวระยะใกล้ควรวางช่องริมทางเดิน</p>'+
-      '<h4>🌟 เลเวลเด็ก (ติดตัวข้ามเกม)</h4><p>จบเกมได้<b>ชิ้นส่วน</b> (อันดับดีได้มาก แบ่งตามคลาสที่อยู่บนลาน) ไปที่ 🧸 เด็กของฉัน → อัปเลเวล 1–20 · ทุกเลเวลแรงขึ้น · เลเวล 3 6 9 12 15 18 20 ปลดความสามารถ (6 15 20 จุดใหญ่) · แก๊งบอทมีเลเวลใกล้ ๆ คุณ</p>')}
+      '<h4>🌟 เลเวลเด็ก (ติดตัวข้ามเกม)</h4><p>จบเกมได้<b>ชิ้นส่วน</b> (อันดับดีได้มาก แบ่งตามคลาสที่อยู่บนลาน) ไปที่ 🧸 เด็กของฉัน → อัปเลเวล 1–20 · ทุกเลเวลแรงขึ้น · เลเวล 3 6 9 12 15 18 20 ปลดความสามารถ (6 15 20 จุดใหญ่) · แก๊งบอทมีเลเวลใกล้ ๆ คุณ</p>'+
+      '<h4>📅 ภารกิจประจำวัน</h4><p>วันละ 3 ภารกิจ ทำสำเร็จแล้วกดรับชิ้นส่วนที่ล็อบบี้ (ได้ให้เด็กรูปโปรไฟล์)</p>');howClick()}
+  function howClick(){$('#mB').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.a==='story')storyModal()}}
+  function missModal(){const D=daily(),now=new Date(),left=Math.max(0,new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now),hh=Math.floor(left/36e5),mm=Math.floor(left%36e5/6e4);
+    openModal('📅 ภารกิจประจำวัน','<p style="color:var(--dim);margin:0">รางวัล = ชิ้นส่วนของ <b style="color:#ffd75a">'+CLS[LOB.fav].kid+'</b> (เด็กรูปโปรไฟล์ เปลี่ยนได้ที่ 🧸 เด็กของฉัน) · ภารกิจใหม่ในอีก '+hh+' ชม. '+mm+' นาที</p>'+
+      D.ids.map(id=>{const M=MISS[id],v=D.p[id]||0,ok=v>=M.g,c=D.c[id];return '<div class="ms'+(c?' got':ok?' ok':'')+'"><div><b>'+M.n+'</b><div class="kbar"><u style="width:'+Math.min(100,v/M.g*100)+'%"></u><span>'+v+'/'+M.g+'</span></div></div><button class="mbtn'+(ok&&!c?' gold':'')+'" type="button" data-claim="'+id+'"'+(ok&&!c?'':' disabled')+'>'+(c?'รับแล้ว ✓':'🎁 +'+M.r)+'</button></div>'}).join(''));
+    $('#mB').onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled||!b.dataset.claim)return;const D=daily(),id=b.dataset.claim;if((D.p[id]||0)>=MISS[id].g&&!D.c[id]){D.c[id]=1;LS.set('daily',D);LOB.prog.sh[LOB.fav]+=MISS[id].r;LS.set('prog',LOB.prog);SFX.play('lucky');missModal();profUI()}}}
   function storyModal(){openModal('🌙 เรื่องราว','<p>คืน <b>"สัญญาณสุดท้าย"</b> ราชาฝันร้ายลากผู้ใหญ่ทั้งโลกไปขังไว้ในฝันร้าย เหลือแต่เด็ก ๆ กับสัตว์</p><p>สัตว์ผู้พิทักษ์มอบพลังให้เด็กผ่าน<b>ชุดสัตว์</b> ยิ่งเด็กโต ชุดยิ่งทรงพลัง</p>'+
       '<p>คำทำนายบอกว่า แก๊งที่ยืนหยัดเป็นแก๊งสุดท้ายจะได้ไปถึง<b>ประภาคาร</b> กลายเป็นเด็กผู้ถูกเลือก และพาพ่อแม่กลับบ้าน</p><h4>เด็กทั้ง 6</h4><ul>'+CK.map(k=>'<li><b>'+CLS[k].kid+'</b> · '+CLS[k].n+' '+CLS[k].a+'</li>').join('')+'</ul>')}
   function renameModal(){openModal('✏️ ชื่อแก๊ง','<p>ชื่อนี้จะขึ้นในเกม (แถบชื่อด้านขวา)</p><input class="nm" id="nmI" maxlength="16" value="'+esc(LOB.name)+'"><div class="mrow"><button class="mbtn gold" type="button" data-a="save">บันทึก</button></div>',true);
     $('#mB').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.a==='save'){const v=$('#nmI').value.trim().slice(0,16);if(v){LOB.name=v;LS.set('name',v);profUI()}closeModal()}}}
   $('#prof').addEventListener('click',renameModal);
-  for(const b of document.querySelectorAll('.lbtn'))b.addEventListener('click',()=>{const m=b.dataset.m;if(m==='kids')kidsModal(LOB.fav);if(m==='how')howModal();if(m==='story')storyModal();if(m==='set')setModal()});
+  for(const b of document.querySelectorAll('.lbtn'))b.addEventListener('click',()=>{const m=b.dataset.m;if(m==='kids')kidsModal(LOB.fav);if(m==='how')howModal();if(m==='story')storyModal();if(m==='miss')missModal();if(m==='set')setModal()});
   function setModal(back){const b=(k,ic,n)=>{const on=k in SFX.st?SFX.st[k]:OPT[k];return '<button class="mbtn'+(on?' gold':'')+'" type="button" data-s="'+k+'">'+ic+' '+n+': '+(on?'เปิด':'ปิด')+'</button>'};
     openModal('⚙️ ตั้งค่า','<div class="mrow">'+b('mu','🎵','เพลง')+b('fx','🔊','เสียงเอฟเฟกต์')+'</div><div class="mrow">'+b('fs','⛶','เต็มจอตอนเล่น')+b('vib','📳','สั่น')+'</div><p style="color:var(--dim)">ชื่อแก๊ง รูปโปรไฟล์ แมพ และสถิติ เก็บในเครื่องนี้เท่านั้น</p>'+(back?'<div class="mrow"><button class="mbtn" type="button" data-a="back">◀ กลับ</button></div>':''),true);
     $('#mB').onclick=e=>{const x=e.target.closest('button');if(!x)return;if(x.dataset.s){const k=x.dataset.s;if(k in SFX.st){SFX.init();SFX.set(k,!SFX.st[k])}else{OPT[k]=!OPT[k];LS.set(k,OPT[k]);if(k==='vib'&&OPT.vib)buzz(60)}setModal(back)}if(x.dataset.a==='back')pauseModal()}}
