@@ -11,8 +11,16 @@ lab,n=nd.label(near)
 edge=set(np.unique(np.r_[lab[0],lab[-1],lab[:,0],lab[:,-1]]))-{0}
 sizes=nd.sum(near,lab,range(1,n+1))
 bg=np.zeros((H,W),bool)
+# Enclosed white areas over 2500 px are cut as holes only when they look like the background (bright, no tint):
+# white fur in a costume (Chan) is faintly pink/grey and stays. Eye whites are small and stay.
+# GPTPX_HOLE=<px> instead cuts every enclosed white area bigger than <px> (the old rule).
+import os
+HOLE=int(os.environ.get('GPTPX_HOLE','0'))
+mn=A.min(2);sat=A.max(2)-mn
+mmin=nd.mean(mn,lab,range(1,n+1));msat=nd.mean(sat,lab,range(1,n+1))
 for i in range(1,n+1):
-    if i in edge or sizes[i-1]>2500:bg|=lab==i   # outside + very big enclosed holes; eye whites stay
+    s=sizes[i-1]
+    if i in edge or (HOLE and s>HOLE) or (not HOLE and s>2500 and mmin[i-1]>249 and msat[i-1]<3):bg|=lab==i
 # GPTPX_HALO=1: also cut a pale glow round the figure (light, low-saturation pixels joined to the border)
 import os
 if os.environ.get('GPTPX_HALO'):
