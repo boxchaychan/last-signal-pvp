@@ -103,6 +103,13 @@
 - นิล (เสือดำ): ทอง = ชุดเสือดำขลิบทอง ฮู้ดหูกลม ตาเสือทองเรืองแสง ผ้าคลุมดำขอบทอง ถุงมือกรงเล็บทอง มีดโค้งคู่ทอง · แดง = ขลิบแดง ผ้าพันคอแดง มีดเหล็กคู่ · ม่วง = ผ้าคลุมม่วงสั้น มีดเหล็ก 1 เล่ม · เขียว = ผ้าปิดปากเขียวแบบนินจา มีดไม้ · ขาว = ชุดนอนเสือดำนุ่มฟู มีดพลาสติก จุกหลอก
 - **นิลทองได้แล้ว (2026-11-03)**: `art/bb/kid_assassin_gold.png` (79×103 พิกเซลจริง แปลงจากภาพ GPT) ตอนนี้ใช้แทนนิลทุกระดับไปก่อน จนกว่าจะได้รูปอายุ 2/4/6/7
 
+### คำสั่งเจนนิลระดับล่าง (แนบรูปนิลทอง หรือพิมพ์ต่อในแชตเดิม) ส่งทีละอัน
+ส่วนท้ายทุกอัน: `Keep her face, short black bob hair and golden eyes exactly the same. Chibi, big head, pixel art, every pixel a perfect square of the same size, no blur, about 24 colors, 1-pixel dark outline, full body, standing, facing right, plain white background, no sparkles, no text.`
+- ขาว 2 ขวบ: `The SAME girl as the attached picture (Nin), but now a 2-year-old toddler: chubby, very short legs. Soft fluffy black panther pajama kigurumi with round ears and a cute sleepy panther face on the hood. A pacifier on a string around her neck. She holds a small yellow plastic toy dagger. No cape, no gold.`
+- เขียว 4 ขวบ: `… but now 4 years old. Black panther kigurumi with round ears and a panther face on the hood. A green ninja cloth mask over her nose and mouth (eyes fully visible). She holds a wooden toy dagger in a reverse grip. No cape, no gold.`
+- ม่วง 6 ขวบ: `… but now 6 years old. Black panther kigurumi with round ears and a panther face on the hood. A short purple cape. She holds one steel dagger in a reverse grip, ready pose. No gold.`
+- แดง 7 ขวบ: `… but now 7 years old. Black panther kigurumi with red trims, round ears and a panther face with red eyes on the hood. A long red scarf. She holds two steel daggers in a reverse grip, confident smile. No gold.`
+
 ## รูปเด็กแต่ละระดับในเกม (ทำแล้ว 2026-11-03)
 - ไฟล์ `art/bb/kid_<คลาส>_<ระดับ>.png` ระดับ = `white green purple red gold` แล้วเพิ่มชื่อระดับใน `KART` ใน `bb.html` (เช่น `KART={assassin:['gold']}`)
 - ระดับที่ยังไม่มีรูป ใช้รูปของระดับที่ใกล้สุด ถ้าคลาสไม่มีเลยใช้ `kid_<คลาส>.png`
