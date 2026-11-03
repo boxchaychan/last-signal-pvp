@@ -240,13 +240,13 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
 'use strict';
 const HAS_DOM=typeof document!=='undefined'&&!(typeof window!=='undefined'&&window.BB_HEADLESS);
 // ---------- data ----------
-const BW=960,BH=540,CAP0=100,COLS=6,ROWS=3,NSLOT=COLS*ROWS;
+const BW=960,BH=540,CAP0=100,COLS=7,ROWS=3,NSLOT=COLS*ROWS;
 // one closed loop around the yard (like Lucky Defense, one board only): demons appear on it and walk round and round, no gate, no exit.
 // A player's HP is a quota: when the demons alive on the loop reach it, that player is out (starts at 100).
 const PATH=[[70,62],[890,62],[890,478],[70,478],[70,62]];
 const SEG=[];let PLEN=0;for(let i=0;i<PATH.length-1;i++){const [x0,y0]=PATH[i],[x1,y1]=PATH[i+1],l=Math.hypot(x1-x0,y1-y0);SEG.push({x0,y0,x1,y1,l,d:PLEN});PLEN+=l}
 function pathPos(d){d=((d%PLEN)+PLEN)%PLEN;for(const s of SEG)if(d<=s.d+s.l){const k=(d-s.d)/s.l;return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:Math.sign(s.x1-s.x0)}}const s=SEG[SEG.length-1];return{x:s.x1,y:s.y1,dx:1}}
-// the yard inside the loop: 6 x 3 pads
+// the yard inside the loop: 7 x 3 pads (owner: 7 per row)
 const YARD={x:98,y:90,w:764,h:360},SLOTS=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)SLOTS.push({x:YARD.x+YARD.w/COLS*(c+.5),y:YARD.y+YARD.h/ROWS*(r+.5)+14});
 const TIER=[{n:'ขาว',age:'2 ขวบ',c:'#f2f2f2',m:1,sc:.96},{n:'เขียว',age:'4 ขวบ',c:'#5fe05f',m:3.3,sc:1.04},{n:'ม่วง',age:'6 ขวบ',c:'#b77bff',m:11,sc:1.12},{n:'แดง',age:'7 ขวบ',c:'#ff5050',m:36,sc:1.2}];
 const CLS={
@@ -319,7 +319,7 @@ const NAMES=['แก๊งเสือน้อย','แก๊งลูกหม
 // maps change only the look (same loop and yard): chosen in the lobby
 const MAPS=[{id:'camp',n:'ค่ายกลางป่า',ic:'🏕️'},{id:'park',n:'สนามเด็กเล่นร้าง',ic:'🛝'},{id:'beach',n:'หาดประภาคาร',ic:'🌊'}];
 // balance knobs (tools/sim/bb_sim.js runs 5 bots to check them)
-const BAL={hpG:1.17,sdW:18,sdG:1.12,luck:[.86,.12,.02],inc0:10,incW:2,killW:6,sum0:20,sumK:1,sumMax:60};
+const BAL={hpG:1.18,sdW:18,sdG:1.12,luck:[.86,.12,.02],inc0:10,incW:2,killW:6,sum0:20,sumK:1,sumMax:60};
 const hpScale=w=>Math.pow(BAL.hpG,w-1)*(w>BAL.sdW?Math.pow(BAL.sdG,w-BAL.sdW):1);
 const sumCost=p=>Math.max(10,Math.min(BAL.sumMax,BAL.sum0+BAL.sumK*p.nSum)-5*((p.tal&&p.tal.cheap)||0));
 const upCost=lv=>50*(lv+1),UPK=.25;
@@ -903,7 +903,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-03d',NEWS=['🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-03e',NEWS=['🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
