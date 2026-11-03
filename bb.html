@@ -333,6 +333,8 @@ function botTalent(p,offer){const o=offer[(Math.random()*offer.length)|0];let s=
   if(TALS[o.id].k==='tile'){let best=-1;p.units.forEach((u,i)=>{if(u&&(best<0||u.t>p.units[best].t||(u.t===p.units[best].t&&Math.random()<.4)))best=i});s=best>=0?best:(Math.random()*NSLOT)|0}
   takeTalent(p,o,s)}
 // the whistle sends ONE demon to EVERY other house at once
+// kid animation (code-driven, one still picture per kid): attack move length per class
+const ANIM={warrior:.34,assassin:.22,hunter:.26,mage:.36,support:.32,curse:.36};
 const SEND=[{id:'imp',n:'ผีจิ๋ว',cost:30,inc:3,mon:'imp'},{id:'brute',n:'ผียักษ์',cost:90,inc:9,mon:'brute'}];
 const NAMES=['แก๊งเสือน้อย','แก๊งลูกหมู','แก๊งนกกระจิบ','แก๊งปลาทอง'];
 // maps change only the look (same loop and yard): chosen in the lobby
@@ -346,7 +348,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 // ---------- state ----------
 let G=null;
 function mkPlayer(i,name,human){return{i,name,human,hp:CAP0,gold:100,tiles:Array.from({length:NSLOT},()=>[]),tal:{},cls:{},offer:null,inc:0,nSum:0,units:Array(NSLOT).fill(null),mons:[],spawnQ:[],shots:[],fx:[],nums:[],alive:true,rank:0,
-  lv:Object.fromEntries(CK.map(k=>[k,0])),klv:Object.fromEntries(CK.map(k=>[k,1])),curseT:0,partyT:0,quakeT:0,moonT:0,ampT:0,stopT:0,zones:[],kills:0,ai:{t:rnd(.5,1.5)}}}
+  lv:Object.fromEntries(CK.map(k=>[k,0])),klv:Object.fromEntries(CK.map(k=>[k,1])),curseT:0,partyT:0,quakeT:0,moonT:0,ampT:0,stopT:0,zones:[],fly:[],dying:[],kills:0,ai:{t:rnd(.5,1.5)}}}
 function newGame(o){o=o||{};
   G={t:0,wave:0,waveT:3,map:o.map||'camp',paused:false,players:[mkPlayer(0,o.me||'คุณ',true),...(o.names||NAMES).map((n,i)=>mkPlayer(i+1,n,false))].map((q,i)=>(q.av=(o.avs||[])[i]||CK[(Math.random()*CK.length)|0],q)),view:0,over:false,spd:1,out:0,sel:-1,popup:null,placing:null};
   const st=['balanced','rush','build','newbie'].sort(()=>Math.random()-.5);G.players.slice(1).forEach((p,i)=>p.ai.style=st[i]);
@@ -384,21 +386,22 @@ function sendTo(from,q,m){const back=from&&from!==q&&hasGold(q,'curse')&&Math.ra
 function summon(p){const c=sumCost(p),free=p.units.map((u,i)=>u?-1:i).filter(i=>i>=0);if(p.gold<c||!free.length)return null;
   p.gold-=c;p.nSum++;const s=free[(Math.random()*free.length)|0],k=CK[(Math.random()*CK.length)|0];
   // luck: most summons are white, some come out green or even purple
-  const r=Math.random(),t=r<BAL.luck[0]?0:r<BAL.luck[0]+BAL.luck[1]?1:2;p.units[s]={c:k,t,cd:rnd(0,.5),mana:0,kick:0,flash:t?.6:0};
+  const r=Math.random(),t=r<BAL.luck[0]?0:r<BAL.luck[0]+BAL.luck[1]?1:2;p.units[s]={c:k,t,cd:rnd(0,.5),mana:0,kick:0,flash:t?.6:0,drop:.45};
   addFx(p,t?'ultgr':'poof',SLOTS[s].x,SLOTS[s].y,.8);if(HAS_DOM&&p.human)SFX.play(t?'lucky':'summon');if(HAS_DOM&&p.human&&t)say('โชคดี! ได้'+CLS[k].n+'สี'+TIER[t].n+'เลย','#5fe05f');return s}
 // merge rule (owner 2026-11-03: "same colour merges, too few slots"): any 3 kids of the same colour merge. The kid you tap grows up,
 // the other two are used up, same class first so a pure merge still happens when it can.
 function mates(p,s){const u=p.units[s];if(!u)return[];return p.units.map((v,i)=>v&&i!==s&&v.t===u.t?i:-1).filter(i=>i>=0).sort((a,b)=>(p.units[b].c===u.c)-(p.units[a].c===u.c))}
 function canMerge(p,s){const u=p.units[s];return !!u&&u.t<3&&mates(p,s).length>=2}
-function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).slice(0,2);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25);if(u.t>=3)mprog('red')}
+function flyKid(p,v,a,b){if(HAS_DOM&&p.i===G.view&&v)p.fly.push({c:v.c,tr:v.t,x0:SLOTS[a].x,y0:SLOTS[a].y+6,x1:SLOTS[b].x,y1:SLOTS[b].y+6,t:0,T:.32})}
+function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).slice(0,2);flyKid(p,p.units[m[0]],m[0],s);flyKid(p,p.units[m[1]],m[1],s);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;u.pop=.5;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25);if(u.t>=3)mprog('red')}
   addFx(p,'poof',SLOTS[m[0]].x,SLOTS[m[0]].y,.7);addFx(p,'poof',SLOTS[m[1]].x,SLOTS[m[1]].y,.7);addFx(p,['ultb','ultgr','ultb','ultr'][u.t],SLOTS[s].x,SLOTS[s].y+20,.8);return true}
 // gold fusion: the recipe kids are picked purple first, a red one only when there is no purple of that class
 function fuseParts(p,s){const u=p.units[s];if(!u||u.t!==3||hasGold(p,u.c))return null;const used=[s],out=[];
   for(const c of GOLD[u.c].rec){let b=-1;p.units.forEach((v,i)=>{if(!v||used.includes(i)||v.c!==c||v.t<2||v.t>3)return;if(b<0||v.t<p.units[b].t)b=i});out.push(b);if(b>=0)used.push(b)}
   return out}
 function canFuse(p,s){const f=fuseParts(p,s);return !!f&&f.every(i=>i>=0)}
-function fuse(p,s){if(!canFuse(p,s))return false;const f=fuseParts(p,s),u=p.units[s];for(const i of f){addFx(p,'poof',SLOTS[i].x,SLOTS[i].y,.8);p.units[i]=null}
-  u.t=4;u.mana=50;u.flash=1;if(u.c==='warrior')p.hp+=20;addFx(p,'ultg',SLOTS[s].x,SLOTS[s].y+20,1.3);
+function fuse(p,s){if(!canFuse(p,s))return false;const f=fuseParts(p,s),u=p.units[s];for(const i of f){flyKid(p,p.units[i],i,s);addFx(p,'poof',SLOTS[i].x,SLOTS[i].y,.8);p.units[i]=null}
+  u.t=4;u.mana=50;u.flash=1;u.pop=.5;if(u.c==='warrior')p.hp+=20;addFx(p,'ultg',SLOTS[s].x,SLOTS[s].y+20,1.3);
   if(HAS_DOM&&p.human){SFX.play('mergeBig');buzz([40,40,40,40,160]);say('✨ '+CLS[u.c].kid+'ร่างทอง · '+GOLD[u.c].n+'!','#ffd75a',3000);mprog('gold')}return true}
 const sellValue=u=>u.t===4?400:8*Math.pow(3,u.t);
 function sell(p,s){const u=p.units[s];if(!u)return;if(HAS_DOM&&p.human)SFX.play('coin');p.gold+=sellValue(u);if(u.t===4&&u.c==='warrior')p.hp-=20;p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
@@ -416,12 +419,12 @@ function hitMon(p,m,amt,u,col){
   if(u&&u.c==='assassin'&&u.t===4&&!m.M.boss&&m.hp>amt&&m.hp-amt<m.maxHp*.15){amt=m.hp;col='#ff4a6a'}
   if(u){const dl=Math.min(amt,Math.max(0,m.hp));u.dmg=(u.dmg||0)+dl;p.dmg=(p.dmg||0)+dl}
   m.hp-=amt;m.hitT=.1;if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:m.x+rnd(-8,8),y:m.y-28,v:Math.round(amt),l:.7,c:col||'#fff'});
-  if(m.hp<=0){m.dead=true;if(HAS_DOM&&p.i===G.view)addFx(p,'poof',m.x,m.y-12,m.M.boss?1.7:.75);if(m.M.boss&&p.human)mprog('boss');if(m.M.split){for(let i=0;i<m.M.split.n;i++)p.spawnQ.push({m:m.M.split.m,t:.05+i*.15,at:m.d,abs:m.maxHp*m.M.split.k});if(HAS_DOM&&p.i===G.view)addFx(p,'ultb',m.x,m.y-20,1)}if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;if(u&&u.c==='curse'&&u.t===4)p.gold+=2;if(HAS_DOM&&p.i===G.view)SFX.play('pop',.07);
+  if(m.hp<=0){m.dead=true;if(HAS_DOM&&p.i===G.view&&p.dying.length<30)p.dying.push({m,t:0});if(HAS_DOM&&p.i===G.view)addFx(p,'poof',m.x,m.y-12,m.M.boss?1.7:.75);if(m.M.boss&&p.human)mprog('boss');if(m.M.split){for(let i=0;i<m.M.split.n;i++)p.spawnQ.push({m:m.M.split.m,t:.05+i*.15,at:m.d,abs:m.maxHp*m.M.split.k});if(HAS_DOM&&p.i===G.view)addFx(p,'ultb',m.x,m.y-20,1)}if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;if(u&&u.c==='curse'&&u.t===4)p.gold+=2;if(HAS_DOM&&p.i===G.view)SFX.play('pop',.07);
     if(u&&u.c==='curse'&&u.t>=1&&Math.random()<.15*pk6(p,'curse')){const t=targetOf(p);if(t)sendTo(p,t,'imp')}}}
 function nearestTarget(p,x,y,r){let b=null,bd=-1;for(const m of p.mons){if(m.dead)continue;if((m.x-x)**2+(m.y-y)**2>r*r)continue;if(m.d>bd){bd=m.d;b=m}}return b}
 function splash(p,x,y,R,amt,u,col){for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<R*R)hitMon(p,m,amt,u,col)}
 function attack(p,s,u,tg){
-  const C=CLS[u.c],S=SLOTS[s],proc=u.t>=2&&Math.random()/(perk(p,u.c,12)?1.3:1);let d=dmgOf(p,u,s);u.kick=.15;u.face=tg.x<S.x-6?-1:1;u.mana+=u.t>=3?(u.c==='mage'?14:9)*(1+tileN(p,s,'mana'))*(perk(p,u.c,15)?1.25:1):0;
+  const C=CLS[u.c],S=SLOTS[s],proc=u.t>=2&&Math.random()/(perk(p,u.c,12)?1.3:1);let d=dmgOf(p,u,s);u.kick=.15;u.at=ANIM[u.c];u.ax=tg.x-S.x;u.ay=tg.y-(S.y-30);u.face=tg.x<S.x-6?-1:1;u.mana+=u.t>=3?(u.c==='mage'?14:9)*(1+tileN(p,s,'mana'))*(perk(p,u.c,15)?1.25:1):0;
   if(tileN(p,s,'luck')&&Math.random()<.25){d*=2.5;if(HAS_DOM&&p.i===G.view)SFX.play('crit',.12);if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:S.x,y:S.y-90,v:'คริ!',l:.6,c:'#7fe08a'})}
   if(tileN(p,s,'frost')&&!tg.M.boss){tg.slowT=Math.max(tg.slowT,1.5);tg.slowK=Math.min(tg.slowK||1,.65)}
   if(u.c==='warrior'){const big=proc!==false&&proc<.15,R=big?C.splash*1.8:C.splash;splash(p,tg.x,tg.y,R,d*(big?2:1),u);addFx(p,big?'crit':'blunt',tg.x,tg.y,big?1.1:.8);
@@ -436,7 +439,7 @@ function attack(p,s,u,tg){
   else if(u.c==='curse'){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,col:'#c88aff'});if(proc!==false&&proc<.1){const t=targetOf(p);if(t&&t.gold>0){t.gold--;p.gold++}}}
   if(u.t>=3&&u.mana>=100){u.mana=0;castUlt(p,s,u)}
 }
-function castUlt(p,s,u){const S=SLOTS[s],d=dmgOf(p,u,s)*(perk(p,u.c,15)?1.5:1);u.flash=.5;
+function castUlt(p,s,u){const S=SLOTS[s],d=dmgOf(p,u,s)*(perk(p,u.c,15)?1.5:1);u.flash=.5;u.ua=.7;
   if(HAS_DOM&&p.human&&G.view===0&&G.t>(G.cutCd||0)){G.cut={c:u.c,t:u.t,t0:G.t,n:(u.t===4?GOLD[u.c]:CLS[u.c]).ult.split(':')[0]};G.cutCd=G.t+3}if(perk(p,u.c,20))u.goldT=8;if(HAS_DOM&&p.i===G.view)SFX.play('ult',.25);
   if(u.t===4){goldUlt(p,s,u,d);return}
   if(u.c==='warrior'){for(const m of p.mons)if(!m.dead){m.stunT=Math.max(m.stunT,1.5);hitMon(p,m,d*2,u,'#ffb04a')}p.quakeT=.5;addFx(p,'ultr',S.x,S.y,1.4)}
@@ -470,7 +473,7 @@ function stepBoard(p,dt){
   }
   p.mons=p.mons.filter(m=>!m.dead);
   if(HAS_DOM&&p.human&&p.alive&&p.mons.length>=p.hp*.8&&G.t>(p.warnT||0)){p.warnT=G.t+4;flashT=.25;SFX.play('alarm');say('ปีศาจใกล้เต็มโควต้า! '+p.mons.length+'/'+p.hp,'#ff6a6a')}
-  for(let s=0;s<NSLOT;s++){const u=p.units[s];if(!u)continue;u.cd-=dt;if(u.kick>0)u.kick-=dt;if(u.flash>0)u.flash-=dt;if(u.goldT>0)u.goldT-=dt;
+  for(let s=0;s<NSLOT;s++){const u=p.units[s];if(!u)continue;u.cd-=dt;if(u.kick>0)u.kick-=dt;if(u.at>0)u.at-=dt;if(u.ua>0)u.ua-=dt;if(u.pop>0)u.pop-=dt;if(u.drop>0)u.drop-=dt;if(u.flash>0)u.flash-=dt;if(u.goldT>0)u.goldT-=dt;
     if(u.t===4&&u.c==='mage'){u.metT=(u.metT==null?6:u.metT)-dt;if(u.metT<=0){u.metT=6;const m=densest(p);if(m)p.shots.push({k:'meteor',x:m.x-120,y:m.y-260,tx:m.x,ty:m.y,m:null,t:0,T:.45,d:dmgOf(p,u,s)*3,u})}}
     if(u.cd>0)continue;
     const S=SLOTS[s],tg=nearestTarget(p,S.x,S.y-20,rangeOf(p,s,u));if(!tg)continue;u.cd=rateOf(p,s,u);attack(p,s,u,tg)}
@@ -504,7 +507,7 @@ function botThink(p,dt){
 }
 function step(dt){
   if(!G||G.over)return;G.t+=dt;G.waveT-=dt;if(G.waveT<=0)startWave();
-  for(const p of G.players){if(!p.alive)continue;if(!p.human)botThink(p,dt);stepBoard(p,dt);for(const f of p.fx)f.t+=dt;p.fx=p.fx.filter(f=>f.t<f.T);for(const n of p.nums){n.l-=dt;n.y-=30*dt}p.nums=p.nums.filter(n=>n.l>0)}
+  for(const p of G.players){if(!p.alive)continue;if(!p.human)botThink(p,dt);stepBoard(p,dt);for(const f of p.fx)f.t+=dt;p.fx=p.fx.filter(f=>f.t<f.T);for(const f of p.fly)f.t+=dt;p.fly=p.fly.filter(f=>f.t<f.T);for(const f of p.dying)f.t+=dt;p.dying=p.dying.filter(f=>f.t<.4);for(const n of p.nums){n.l-=dt;n.y-=30*dt}p.nums=p.nums.filter(n=>n.l>0)}
   const L=alive();if(L.length<=1&&!G.over){G.over=true;if(L[0])L[0].rank=1;if(HAS_DOM)onEnd()}
 }
 // ---------- effects (pixelfx sheets from fx/) ----------
@@ -764,9 +767,11 @@ function drawMapFx(map){const bg=BGC[map];if(!bg)return;const t=G.t;
   }}
 function drawFx(f){const m=FXM&&FXM[f.k],im=FXI[f.k];if(!m||!im||!im.complete)return;const i=Math.min(m.n-1,(f.t*m.fps)|0),c=i%m.cols,r=(i/m.cols)|0,s=f.s*1.6;
   ctx.drawImage(im,c*m.w,r*m.h,m.w,m.h,f.x-m.ax*s,f.y-m.ay*s,m.w*s,m.h*s)}
-function drawMon(m){const M=m.M,flip=m.dx<0;ctx.save();ctx.translate(Math.round(m.x),Math.round(m.y));
+function drawMon(m,die){const M=m.M,flip=m.dx<0;ctx.save();ctx.translate(Math.round(m.x),Math.round(m.y));if(die!=null)ctx.globalAlpha=1-die;
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,4,M.boss?34:14,M.boss?8:4,0,0,6.28);ctx.fill();
-  if(flip)ctx.scale(-1,1);if(m.hitT>0)ctx.filter='brightness(2.2)';
+  const wk=die!=null||m.stunT>0||(G.players[G.view]||{}).stopT>0?0:Math.sin(G.t*9+m.wob);ctx.rotate(die!=null?(flip?-1:1)*die*1.3:wk*(M.boss?.035:.075));
+  if(die!=null)ctx.scale(1-die*.5,1-die*.7);else if(m.hitT>0)ctx.scale(1.12,.9);else ctx.scale(1,1+Math.abs(wk)*.05);
+  if(flip)ctx.scale(-1,1);if(m.hitT>0||(die!=null&&die<.25))ctx.filter='brightness(2.2)';
   const bob=Math.sin(G.t*8+m.wob)*2;
   const mi=IMG['m_'+m.m];if(mi&&mi.complete&&mi.naturalWidth){const H=(SPR[m.m]?SPR[m.m].height:m.m==='zombie'?84:64)*M.s,W=mi.naturalWidth*H/mi.naturalHeight;ctx.drawImage(mi,-W/2,-H+bob,W,H)}
   else if(m.m==='zombie'&&IMG.zwalk.complete){const f=((G.t*10+m.wob)|0)%6;ctx.drawImage(IMG.zwalk,f*72,0,72,84,-36*M.s,-83*M.s,72*M.s,84*M.s)}
@@ -776,19 +781,38 @@ function drawMon(m){const M=m.M,flip=m.dx<0;ctx.save();ctx.translate(Math.round(
   if(m.shOn){ctx.fillStyle='rgba(138,184,255,.16)';ctx.strokeStyle='rgba(170,210,255,'+(.6+.3*Math.sin(G.t*12))+')';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,-36,46,48,0,0,6.28);ctx.fill();ctx.stroke()}
   if(M.rage&&m.hp<m.maxHp*.5){ctx.fillStyle='rgba(255,60,60,'+(.18+.1*Math.sin(G.t*14))+')';ctx.beginPath();ctx.ellipse(0,-30,40,42,0,0,6.28);ctx.fill()}
   ctx.restore();
+  if(die!=null)return;
   if(m.stunT>0){ctx.fillStyle='#bfe8ff';ctx.fillRect(m.x-6,m.y-(M.boss?80:40),3,3);ctx.fillRect(m.x+3,m.y-(M.boss?82:42),3,3)}
   if(m.markT>0){const y=m.y-(M.boss?92:50)+Math.sin(G.t*6)*2;ctx.fillStyle='#2a0a10';ctx.fillRect(m.x-5,y-5,10,10);ctx.fillStyle='#ff4a5a';ctx.fillRect(m.x-3,y-3,6,6);ctx.fillStyle='#ffd0d0';ctx.fillRect(m.x-1,y-1,2,2)}
   if(m.hp<m.maxHp){const w=M.boss?70:26;ctx.fillStyle='#000';ctx.fillRect(m.x-w/2-1,m.y-(M.boss?76:38)-1,w+2,5);ctx.fillStyle=M.boss?'#ff4a6a':'#ff8a5a';ctx.fillRect(m.x-w/2,m.y-(M.boss?76:38),w*Math.max(0,m.hp/m.maxHp),3)}}
-function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.t),sc=T.sc*KH*kidF(im)/(im&&im.naturalHeight||KH);const x=S.x,y=S.y+6;
-  ctx.fillStyle=T.c;ctx.globalAlpha=.35+(u.t===3?.2*Math.sin(G.t*5):0);ctx.beginPath();ctx.ellipse(x,y,27,8,0,0,6.28);ctx.fill();ctx.globalAlpha=1;
+// a kid's pose this frame: breathing, a class attack move, ult jump, grow pop after a merge, drop-in after a summon
+function kidPose(u,s){const f=u.face||1;let dx=0,dy=0,rot=0,sx=1,sy=1;const br=Math.sin(G.t*2.4+s*1.3)*.022;sy+=br;sx-=br*.6;
+  if(u.t===4)dy-=3+Math.sin(G.t*2+s)*2;
+  if(u.at>0){const a=1-u.at/(ANIM[u.c]||.3),si=Math.sin(Math.PI*a);
+    if(u.c==='warrior'){if(a<.5)rot=-.26*f*(a/.5);else if(a<.66){rot=.2*f;sx*=1.14;sy*=.84}else rot=.2*f*(1-(a-.66)/.34)}
+    else if(u.c==='assassin'){const l=Math.hypot(u.ax||0,u.ay||0)||1,D=Math.min(24,l*.3)*si;dx=(u.ax||f)/l*D;dy=(u.ay||0)/l*D*.6;sx*=1+.1*si;sy*=1-.08*si}
+    else if(u.c==='hunter'){dx=-f*6*si;rot=-.08*f*si}
+    else if(u.c==='mage'){dy-=9*si;sy*=1+.06*si;sx*=1-.04*si}
+    else if(u.c==='support'){const hh=Math.sin(Math.PI*Math.min(1,a*1.25));dy-=12*hh;if(a>.8){sy*=.88;sx*=1.1}}
+    else if(u.c==='curse'){rot=.13*f*Math.sin(Math.PI*2*a);dy-=6*si}}
+  if(u.ua>0){const a=1-u.ua/.7,si=Math.sin(Math.PI*a);dy-=28*si;sx*=1+.12*si;sy*=1+.12*si}
+  if(u.pop>0){const a=1-u.pop/.5,e=a<.45?1+.32*Math.sin(Math.PI*a/.45):1-.06*Math.sin(Math.PI*(a-.45)/.55);sx*=e;sy*=e}
+  if(u.drop>0){const a=1-u.drop/.45;dy-=(1-a)*(1-a)*80;if(a>.8){sy*=.86;sx*=1.12}}
+  return{f,dx,dy,rot,sx,sy}}
+function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.t),sc=T.sc*KH*kidF(im)/(im&&im.naturalHeight||KH);const x=S.x,y=S.y+6,P=kidPose(u,s),air=Math.min(1,-P.dy/60);
+  ctx.fillStyle=T.c;ctx.globalAlpha=(.35+(u.t===3?.2*Math.sin(G.t*5):0))*(1-air*.5);ctx.beginPath();ctx.ellipse(x,y,27*(1-air*.3),8*(1-air*.3),0,0,6.28);ctx.fill();ctx.globalAlpha=1;
   ctx.strokeStyle=T.c;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,27,8,0,0,6.28);ctx.stroke();
   if(im&&im.complete&&im.naturalWidth){const w=im.naturalWidth*sc,h=im.naturalHeight*sc,bob=Math.round(Math.sin(G.t*3+s)*1.2),k=u.kick>0?-4:0;
     if(u.goldT>0){glow(x,y-40,80,'255,210,90',.35+.15*Math.sin(G.t*10));ctx.filter='sepia(.7) saturate(2.4) brightness(1.15)'}if(u.flash>0)ctx.filter='brightness('+(1+u.flash*2.5)+')';if(p.curseT>0)ctx.filter='saturate(.3) hue-rotate(220deg)';
     if(u.t===2)glow(x,y-28,48,'183,123,255',.16+.05*Math.sin(G.t*3+s));
     if(u.t===4){glow(x,y-38,72,'255,215,90',.24+.08*Math.sin(G.t*4+s));for(let i=0;i<5;i++){const ph=(G.t*.7+i/5+s*.13)%1;ctx.globalAlpha=1-ph;ctx.fillStyle=i%2?'#fff6c0':'#ffd75a';ctx.fillRect(x-22+((i*11+s*5)%44),y-ph*90,3,3)}ctx.globalAlpha=1}
     if(u.t===3){glow(x,y-32,58,'255,80,80',.2+.08*Math.sin(G.t*5+s));for(let i=0;i<3;i++){const ph=(G.t*.8+i/3+s*.17)%1;ctx.globalAlpha=1-ph;ctx.fillStyle='#ff9a6a';ctx.fillRect(x-14+((i*13+s*7)%28),y-ph*70,3,3)}ctx.globalAlpha=1}
-    // face the target, small squash + recoil on each attack
-    const f=u.face||1,sq=u.kick>0?1+u.kick*.6:1;ctx.save();ctx.translate(Math.round(x+k*f),Math.round(y+bob+2));if(sc*SC*DPR<.95){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f*sq,1/sq);ctx.drawImage(im,-Math.round(w/2),-Math.round(h),w,h);ctx.restore();ctx.filter='none';
+    // pose (kidPose): face the target, class attack move, jumps and pops
+    const f=P.f,sm=sc*SC*DPR<.95;
+    if(u.ua>0){const a=1-u.ua/.7;ctx.strokeStyle=u.t===4?'#ffd75a':CLS[u.c].col;ctx.globalAlpha=1-a;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x,y,20+90*a,6+28*a,0,0,6.28);ctx.stroke();ctx.globalAlpha=1}
+    if(u.at>0&&u.c==='assassin')for(const g of [.35,.7]){ctx.save();ctx.globalAlpha=.22;ctx.translate(Math.round(x+P.dx*g),Math.round(y+P.dy*g+bob+2));if(sm){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f,1);ctx.drawImage(im,-Math.round(w/2),-Math.round(h),w,h);ctx.restore()}
+    if(u.at>0&&(u.c==='mage'||u.c==='curse')){const a=1-u.at/ANIM[u.c];glow(x+P.dx+f*w*.38,y+P.dy-h*.78,20+14*Math.sin(Math.PI*a),u.c==='mage'?'255,170,80':'200,138,255',.55*Math.sin(Math.PI*a))}
+    ctx.save();ctx.translate(Math.round(x+P.dx),Math.round(y+P.dy+bob+2));ctx.rotate(P.rot);if(sm){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f*P.sx,P.sy);ctx.drawImage(im,-Math.round(w/2),-Math.round(h),w,h);ctx.restore();ctx.filter='none';
     // green arrow over kids that can merge right now
     if(!drag&&G.view===0&&p===G.players[0]&&u.t>=1&&canMerge(p,s)){const ay=Math.round(y-h-8+Math.sin(G.t*6)*3);ctx.fillStyle='#0b2a10';ctx.beginPath();ctx.moveTo(x,ay-19);ctx.lineTo(x-15,ay+1);ctx.lineTo(x+15,ay+1);ctx.fill();ctx.fillRect(x-7,ay,14,13);
       ctx.fillStyle='#7fe08a';ctx.beginPath();ctx.moveTo(x,ay-14);ctx.lineTo(x-10,ay-2);ctx.lineTo(x+10,ay-2);ctx.fill();ctx.fillRect(x-4,ay-3,8,13)}
@@ -797,9 +821,9 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.
   for(let i=0;i<=u.t;i++){ctx.fillStyle='#000';ctx.fillRect(x-u.t*5-3+i*10,y+10,8,8);ctx.fillStyle=T.c;ctx.fillRect(x-u.t*5-2+i*10,y+11,6,6)}
   if(u.t>=3){ctx.fillStyle='#000';ctx.fillRect(x-26,y+21,52,6);ctx.fillStyle='#5ad0ff';ctx.fillRect(x-25,y+22,50*Math.min(1,u.mana/100),4)}}
 function drawShot(sh){if(sh.t<0||sh.k==='quake'||sh.k==='slash')return;const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
-  if(sh.k==='arrow'||sh.k==='rain'){const a=Math.atan2(sh.ty-sh.y,sh.tx-sh.x);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#6a4a2a';ctx.fillRect(-16,-1.5,16,3);ctx.fillStyle=sh.big?'#fff3a0':'#ffd75a';ctx.fillRect(0,-3,(sh.big?10:6),6);ctx.restore()}
-  else if(sh.k==='carrot'){ctx.fillStyle='#ff9a2a';ctx.fillRect(x-4,y-4,8,8);ctx.fillStyle='#4aaa3a';ctx.fillRect(x-6,y-6,3,3)}
-  else{const r=sh.k==='meteor'?12:6;ctx.fillStyle=sh.k==='meteor'?'#ff7a2a':sh.col;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.fillStyle='#fff6d0';ctx.fillRect(x-r/2,y-r/2,r,r)}}
+  if(sh.k==='arrow'||sh.k==='rain'){const k0=Math.max(0,k-.3);ctx.strokeStyle='rgba(255,245,200,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sh.x+(sh.tx-sh.x)*k0,sh.y+(sh.ty-sh.y)*k0);ctx.lineTo(x,y);ctx.stroke();const a=Math.atan2(sh.ty-sh.y,sh.tx-sh.x);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#6a4a2a';ctx.fillRect(-16,-1.5,16,3);ctx.fillStyle=sh.big?'#fff3a0':'#ffd75a';ctx.fillRect(0,-3,(sh.big?10:6),6);ctx.restore()}
+  else if(sh.k==='carrot'){ctx.save();ctx.translate(x,y);ctx.rotate(sh.t*18);ctx.fillStyle='#ff9a2a';ctx.fillRect(-4,-4,8,8);ctx.fillStyle='#4aaa3a';ctx.fillRect(-6,-6,3,3);ctx.restore()}
+  else{const r=sh.k==='meteor'?12:6;glow(x,y,r*3,sh.k==='meteor'||sh.col==='#ff9a3a'?'255,150,60':'200,138,255',.45);if(sh.k==='meteor'){ctx.strokeStyle='rgba(255,200,120,.5)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(x-(sh.tx-sh.x)*.18,y-(sh.ty-sh.y)*.18);ctx.lineTo(x,y);ctx.stroke()}ctx.fillStyle=sh.k==='meteor'?'#ff7a2a':sh.col;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.fillStyle='#fff6d0';ctx.fillRect(x-r/2,y-r/2,r,r)}}
 function draw(){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#0d0f1a';ctx.fillRect(0,0,cv.width,cv.height);if(!G)return;
   const p=G.players[G.view],shk=p.quakeT>0?rnd(-4,4):0;ctx.setTransform(SC*DPR,0,0,SC*DPR,(OX+shk)*DPR,OY*DPR);ctx.imageSmoothingEnabled=false;
@@ -817,10 +841,13 @@ function draw(){
   for(const z of p.zones){const a=Math.min(1,z.t*1.5);ctx.globalAlpha=.22*a;ctx.fillStyle='#ff6a1a';ctx.beginPath();ctx.ellipse(z.x,z.y,z.r,z.r*.42,0,0,6.28);ctx.fill();ctx.globalAlpha=a;
     for(let i=0;i<7;i++){const ph=(G.t*1.6+i/7)%1,fx=z.x+Math.cos(i*2.4)*z.r*.62,fy=z.y+Math.sin(i*2.4)*z.r*.26-ph*18;ctx.fillStyle=ph<.35?'#fff2a0':ph<.7?'#ffa03a':'#c8401a';ctx.fillRect(Math.round(fx)-2,Math.round(fy)-2,4,4)}}ctx.globalAlpha=1;
   // back-to-front: monsters on the top row first, kids by row
-  const items=[];for(const m of p.mons)items.push([m.y,()=>drawMon(m)]);for(let s=0;s<NSLOT;s++){const u=p.units[s];if(u&&!(drag&&drag.s===s&&drag.moved))items.push([SLOTS[s].y+6,()=>drawKid(p,s,u)])}
+  const items=[];for(const m of p.mons)items.push([m.y,()=>drawMon(m)]);for(const d of p.dying)items.push([d.m.y,()=>drawMon(d.m,d.t/.4)]);for(let s=0;s<NSLOT;s++){const u=p.units[s];if(u&&!(drag&&drag.s===s&&drag.moved))items.push([SLOTS[s].y+6,()=>drawKid(p,s,u)])}
   items.sort((a,b)=>a[0]-b[0]);for(const it of items)it[1]();
   if(G.view===0&&drag&&drag.moved){const u=p.units[drag.s];if(u){ctx.globalAlpha=.85;drawKid(p,drag.s,u,{x:drag.x,y:drag.y});ctx.globalAlpha=1}}
   if(G.view===0&&G.sel>=0&&p.units[G.sel]){const S=SLOTS[G.sel];ctx.strokeStyle='#ffd75a';ctx.lineWidth=3;ctx.strokeRect(S.x-40,S.y-70,80,96)}
+  // kids used up in a merge fly into the one that grows
+  for(const f of p.fly){const k=f.t/f.T,im=kidImg(f.c,f.tr);if(!im||!im.complete||!im.naturalWidth)continue;const T=TIER[f.tr],hh=T.sc*KH*kidF(im)*(1-.65*k),ww=im.naturalWidth*hh/im.naturalHeight,fx=f.x0+(f.x1-f.x0)*k,fy=f.y0+(f.y1-f.y0)*k-50*Math.sin(Math.PI*k);
+    ctx.save();ctx.globalAlpha=1-k*.5;ctx.filter='brightness('+(1+k*1.5)+')';ctx.imageSmoothingEnabled=true;ctx.drawImage(im,fx-ww/2,fy-hh,ww,hh);ctx.restore();ctx.filter='none'}
   for(const sh of p.shots)drawShot(sh);for(const f of p.fx)drawFx(f);
   ctx.font='700 18px Kanit, monospace';ctx.textAlign='center';for(const n of p.nums){ctx.globalAlpha=Math.min(1,n.l*2);ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.strokeText(n.v,n.x,n.y);ctx.fillStyle=n.c;ctx.fillText(n.v,n.x,n.y)}ctx.globalAlpha=1;
   // ultimate cut-in: a band across the board with the kid sliding in and the ult name
@@ -1033,7 +1060,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-03m',NEWS=['✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-03n',NEWS=['🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
