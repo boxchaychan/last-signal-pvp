@@ -23,6 +23,9 @@ h2{margin:0;font-size:20px}
 .refs figcaption{font-size:13px;color:var(--dim)}
 .rules li{margin:2px 0}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;position:sticky;top:0;background:var(--bg);z-index:2}
+.refs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.refs a{display:flex;flex-direction:column;align-items:center;gap:2px;width:84px;padding:4px;border-radius:10px;background:#fff;color:#1a1f36;font:600 13px Kanit,sans-serif;text-decoration:none}
+.refs img{width:76px;height:76px;object-fit:contain;image-rendering:pixelated}
+.dlall{display:inline-block;padding:8px 14px;border-radius:12px;background:#ffd75a;color:#3a2200;font:700 15px Kanit,sans-serif;text-decoration:none}
 .tab{flex:none;border:2px solid var(--edge);background:var(--pnl);color:var(--ink);border-radius:12px;padding:5px 12px;font:600 15px Kanit,sans-serif}
 .tab.on{border-color:var(--gold);color:var(--gold)}
 .kid{display:none}.kid.on{display:block}
@@ -150,12 +153,36 @@ const MTAIL='Pixel art game monster, chibi proportions, every pixel a perfect sq
   d.innerHTML='<div class="box"><h2>👹 ปีศาจ + บอส</h2><p style="color:var(--dim);margin:4px 0 0">ตอนนี้ในเกมวาดด้วยโค้ด · แนบ<b>รูปฟ้า (เหยี่ยว)</b> เป็นตัวอย่างสไตล์ทุกครั้ง · ตัวละ 1 รูป หันขวา (เกมกลับด้านเองตอนเดินซ้าย) · บอสให้ใหญ่กว่าตัวธรรมดาราว 2 เท่า · ส่งมาแล้ว Claude ใส่ให้</p></div>'+
     MONS.map(M=>'<div class="tier"><div><b class="t" style="background:'+(M.big?'#ff6a6a':'#c29aff')+'">'+(M.big?'บอส':'ปีศาจ')+'</b> '+M.n+'</div><p>'+M.d+'</p><pre>Use the attached image ONLY as a reference for the pixel art style and outline. Draw a game monster: '+M.p+(M.big?'. It is a boss, about twice as big as a normal monster':'')+'. '+MTAIL+'</pre><button class="copy" type="button">คัดลอกคำสั่ง ('+M.n+')</button></div>').join('');
   box.appendChild(d)}
+// 🎬 animation sheets (owner 2026-11-04: "many poses, many rows, so it's easier"): one GPT picture per kid per tier,
+// 3 rows x 4 frames (idle, attack, special). Attach that tier's reference from docs/ref/anim, paste the prompt.
+const IDLE='1) standing ready; 2) breathing in, shoulders slightly up; 3) standing ready; 4) a small blink, the weapon or item shifted a little';
+const ANIMK=[
+ {no:1,en:'Tan',n:'แทน',item:'weapon',atk:'1) weapon raised high over his head, leaning back; 2) swinging it forward and down; 3) weapon slammed into the ground in front of him, body low, knees bent, battle shout; 4) recovering, lifting the weapon back up',
+  sp:'1) crouching low, gathering power; 2) leaping up with the weapon raised high; 3) slamming it down with both hands; 4) landing in a strong, proud pose'},
+ {no:2,en:'Nin',n:'นิล',item:'blade',note:'Hold the blade exactly like in the attached picture in every frame.',atk:'1) crouching low, blade pulled back; 2) dashing forward, body stretched out; 3) slashing across in front, arm fully extended; 4) back to a ready stance',
+  sp:'1) dropping into a low crouch; 2) spinning with the blade; 3) a wide sweeping slash; 4) landing, blade held back, calm face'},
+ {no:3,en:'Fah',n:'ฟ้า',item:'bow',atk:'1) nocking an arrow and starting to draw; 2) full draw, the string at her cheek, aiming forward; 3) the arrow released, the string snapped forward; 4) lowering the bow a little, back to ready',
+  sp:'1) aiming high at the sky; 2) drawing hard, the bow bent deeply; 3) releasing, leaning back; 4) watching the sky, ready'},
+ {no:4,en:'Ratri',n:'ราตรี',item:'staff',tiers:[3,4,5],atk:'1) raising the staff up, a tiny glow at the tip; 2) swinging it overhead, cape lifting; 3) thrusting it forward with one arm, the other hand open, a small glow at the tip; 4) back to a ready stance',
+  sp:'1) both hands raising the staff high; 2) staff overhead, eyes closed, hair floating; 3) pointing the staff to the sky, a small glow at the tip; 4) bringing it down, cape flowing'},
+ {no:5,en:'Chan',n:'จันทร์',item:'carrot item',atk:'1) crouching with knees bent, item held close; 2) jumping up, both feet off the ground, item raised; 3) at the top of the jump, arms up, big smile; 4) landing softly, knees bent',
+  sp:'1) holding the item up and cheering; 2) spinning around happily; 3) jumping with both arms up; 4) landing with a wink'},
+ {no:6,en:'Mok',n:'หมอก',item:'item in her hand',atk:'1) pulling the staff or item back to her chest; 2) leaning in, starting to point it forward; 3) pointing it fully forward, a small purple glow at the tip; 4) straightening back to a sly ready stance',
+  sp:'1) hood shadowing her face, sly grin; 2) raising the item high; 3) arms spread wide, cape spreading like wings, a small purple glow; 4) back to a sly pose'}];
+const ATN=['','white','green','purple','red','gold'],ATH=['','ขาว','เขียว','ม่วง','แดง','ทอง'];
+function animPrompt(K){return 'Use the attached character as the exact reference: same kid, same costume, same '+K.item+', same colours, same pixel art style and the same pixel size. Draw a sprite sheet on a plain white background: 3 rows x 4 columns = 12 frames of this same character, every frame the same size, evenly spaced in a neat grid with white space between frames, all facing right, full body, feet on the same ground line in each row (except while jumping), no text, no numbers, no borders, no grid lines. Row 1, idle loop: '+IDLE+'. Row 2, attack: '+K.atk+'. Row 3, special move: '+K.sp+'. Keep the face and costume identical in all 12 frames.'+(K.note?' '+K.note:'')+' No effects except a small glow where stated.'}
+{const b=document.createElement('button');b.className='tab';b.type='button';b.textContent='🎬 ท่าขยับ';const i=KIDS.length+1;b.onclick=()=>show(i);tabs.appendChild(b);
+  const d=document.createElement('div');d.className='kid';
+  d.innerHTML='<div class="box"><h2>🎬 ท่าขยับ (12 เฟรมในรูปเดียว)</h2><p style="color:var(--dim);margin:4px 0 0">เด็ก 1 ตัว 1 ระดับ = รูปเดียว: แถว 1 ยืนขยับ · แถว 2 ตี · แถว 3 ท่าพิเศษ · <b>แนบรูปต้นแบบระดับนั้น</b> (กดปุ่ม ⬇ โหลด) แล้ววางคำสั่งของตัวนั้น · ลองแทนแดงรูปเดียวก่อน ส่งมาให้ Claude ดูว่าใช้ได้ แล้วค่อยเจนที่เหลือ · หันขวาอย่างเดียว เกมกลับด้านเอง</p>'+
+    '<p style="margin:8px 0 0"><a class="dlall" href="ref/anim/BB_refs.zip" download>⬇ โหลดรูปต้นแบบทั้งหมด (zip 28 รูป)</a></p></div>'+
+    ANIMK.map(K=>'<div class="tier"><div><b class="t" style="background:#7fd8ff">'+K.n+'</b> '+K.en+'</div><div class="refs">'+(K.tiers||[1,2,3,4,5]).map(t=>{const f='ref/anim/'+K.no+'_'+K.en+'_'+t+'_'+ATN[t]+'.png';return '<a href="'+f+'" download><img src="'+f+'" alt="">⬇ '+ATH[t]+'</a>'}).join('')+'</div><pre>'+animPrompt(K)+'</pre><button class="copy" type="button">คัดลอกคำสั่ง ('+K.n+')</button></div>').join('');
+  box.appendChild(d)}
 box.addEventListener('click',e=>{const b=e.target.closest('.copy');if(!b)return;const t=b.previousElementSibling.textContent;
   const done=()=>{b.classList.add('did');const o=b.textContent;b.textContent='คัดลอกแล้ว ✓ ไปวางใน ChatGPT';setTimeout(()=>{b.classList.remove('did');b.textContent=o},2200)};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,()=>fallback(t,done));else fallback(t,done)});
 function fallback(t,done){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');done()}catch(_){}a.remove()}
 function show(i){[...tabs.children].forEach((b,j)=>b.classList.toggle('on',i===j));[...box.children].forEach((d,j)=>d.classList.toggle('on',i===j));try{localStorage.setItem('bbp.kid',i)}catch(_){}}
-let s0=0;try{s0=+localStorage.getItem('bbp.kid')||0}catch(_){}show(Math.min(s0,KIDS.length));
+let s0=0;try{s0=+localStorage.getItem('bbp.kid')||0}catch(_){}if(location.hash==='#anim')s0=KIDS.length+1;show(Math.min(s0,KIDS.length+1));
 </script>
 </body>
 </html>
