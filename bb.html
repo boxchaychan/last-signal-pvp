@@ -54,6 +54,7 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
 .bt.poor{filter:grayscale(.7) brightness(.8)}
 .bt.hint{animation:hint 1s ease-in-out infinite}@keyframes hint{50%{transform:translateY(-4px);box-shadow:0 0 0 4px #fff6b0,0 3px 0 #0a1020}}
 .bt.sm{min-width:44px;font-size:13px}
+.bt.ul{background:linear-gradient(#4ab8ff,#2a6ab0)}.bt.ul.on{background:linear-gradient(#ffd75a,#e0a010);color:#3a2200}.bt.ul.on small{color:#3a2200}
 #pop{left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 64px * var(--hs,1));transform:translateX(-50%) scale(var(--hs,1));transform-origin:50% 100%;width:min(420px,calc(100vw - 180px));background:rgba(16,18,30,.94);border:2px solid var(--edge);border-radius:14px;padding:8px 10px;font-size:13px}
 #pop h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:6px}
 #pop .tier{font-size:11px;border-radius:6px;padding:0 6px;color:#111;font-weight:700}
@@ -211,6 +212,7 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
   <button class="bt sum" id="bSum" type="button">🧸 เรียกเด็ก<small id="sumC"></small></button>
   <button class="bt" id="bUp" type="button">💪 อัปพลัง<small>6 คลาส</small></button>
   <button class="bt wh" id="bWh" type="button">📣 นกหวีด<small>ส่งปีศาจ</small></button>
+  <button class="bt sm ul" id="bAuto" type="button">⚡<small>กดเอง</small></button>
   <button class="bt sm" id="bSpd" type="button">x1</button>
   <button class="bt sm" id="bHome" type="button" hidden>กลับ<br>บ้าน</button>
   <div id="bossB" hidden><b id="bossN"></b><i><u id="bossU"></u></i></div>
@@ -350,12 +352,12 @@ let G=null;
 function mkPlayer(i,name,human){return{i,name,human,hp:CAP0,gold:100,tiles:Array.from({length:NSLOT},()=>[]),tal:{},cls:{},offer:null,inc:0,nSum:0,units:Array(NSLOT).fill(null),mons:[],spawnQ:[],shots:[],fx:[],nums:[],alive:true,rank:0,
   lv:Object.fromEntries(CK.map(k=>[k,0])),klv:Object.fromEntries(CK.map(k=>[k,1])),curseT:0,partyT:0,quakeT:0,moonT:0,ampT:0,stopT:0,zones:[],fly:[],dying:[],kills:0,ai:{t:rnd(.5,1.5)}}}
 function newGame(o){o=o||{};
-  G={t:0,wave:0,waveT:3,map:o.map||'camp',paused:false,players:[mkPlayer(0,o.me||'คุณ',true),...(o.names||NAMES).map((n,i)=>mkPlayer(i+1,n,false))].map((q,i)=>(q.av=(o.avs||[])[i]||CK[(Math.random()*CK.length)|0],q)),view:0,over:false,spd:1,out:0,sel:-1,popup:null,placing:null};
+  G={autoUlt:HAS_DOM?LS.get('autoUlt',false):true,t:0,wave:0,waveT:3,map:o.map||'camp',paused:false,players:[mkPlayer(0,o.me||'คุณ',true),...(o.names||NAMES).map((n,i)=>mkPlayer(i+1,n,false))].map((q,i)=>(q.av=(o.avs||[])[i]||CK[(Math.random()*CK.length)|0],q)),view:0,over:false,spd:1,out:0,sel:-1,popup:null,placing:null};
   const st=['balanced','rush','build','newbie'].sort(()=>Math.random()-.5);G.players.slice(1).forEach((p,i)=>p.ai.style=st[i]);
   // your kid levels; bots get levels near yours (a bit lower) so matches stay close
   if(o.klv){const me=G.players[0];for(const k of CK)me.klv[k]=Math.max(1,Math.min(KLV.max,o.klv[k]||1));const avg=CK.reduce((a,k)=>a+me.klv[k],0)/CK.length;
     for(const q of G.players.slice(1))for(const k of CK)q.klv[k]=Math.max(1,Math.min(KLV.max,Math.round(avg*.8+rnd(-1.5,1.5))))}
-  if(HAS_DOM){hidePop();$('#end').hidden=true;$('#bSpd').textContent='x1';SFX.duck(.14);buildSide();updHud();{const m=MAPS.find(m=>m.id===G.map)||MAPS[0];banner(m.ic+' '+m.n,'กด "🧸 เรียกเด็ก" ด้านล่าง · เด็กสีเดียวกัน 3 ตัว แตะแล้วรวมร่าง',null)}}
+  if(HAS_DOM){hidePop();$('#end').hidden=true;$('#bSpd').textContent='x1';SFX.duck(.14);buildSide();updHud();{const b=$('#bAuto');b.classList.toggle('on',!!G.autoUlt);b.innerHTML='⚡<small>'+(G.autoUlt?'ออโต้':'กดเอง')+'</small>'}{const m=MAPS.find(m=>m.id===G.map)||MAPS[0];banner(m.ic+' '+m.n,'กด "🧸 เรียกเด็ก" ด้านล่าง · เด็กสีเดียวกัน 3 ตัว แตะแล้วรวมร่าง',null)}}
 }
 const alive=()=>G.players.filter(p=>p.alive);
 function targetOf(p){
@@ -437,8 +439,10 @@ function attack(p,s,u,tg){
   else if(u.c==='support'){p.shots.push({k:'carrot',x:S.x+14,y:S.y-26,tx:tg.x,ty:tg.y,m:tg,t:0,T:.25,d,u});if(proc!==false&&proc<.08)p.gold+=1;
     if(u.t===4&&Math.random()<.1){p.gold+=3;for(const v of p.units)if(v&&v!==u&&v.t>=3)v.mana+=5;if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:S.x,y:S.y-96,v:'+3 💰',l:.7,c:'#ffd75a'})}}
   else if(u.c==='curse'){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,col:'#c88aff'});if(proc!==false&&proc<.1){const t=targetOf(p);if(t&&t.gold>0){t.gold--;p.gold++}}}
-  if(u.t>=3&&u.mana>=100){u.mana=0;castUlt(p,s,u)}
+  if(u.t>=3&&u.mana>=100){if(p.human&&!G.autoUlt){u.mana=100;if(!u.rdy){u.rdy=1;if(HAS_DOM)SFX.play('beep',.5)}}else{u.mana=0;u.rdy=0;castUlt(p,s,u)}}
 }
+// the player's ults wait for a tap on the kid (owner 2026-11-03: too few active skills)
+function castReady(p,s){const u=p.units[s];if(!u||u.t<3||u.mana<100)return false;u.mana=0;u.rdy=0;castUlt(p,s,u);return true}
 function castUlt(p,s,u){const S=SLOTS[s],d=dmgOf(p,u,s)*(perk(p,u.c,15)?1.5:1);u.flash=.5;u.ua=.7;
   if(HAS_DOM&&p.human&&G.view===0&&G.t>(G.cutCd||0)){G.cut={c:u.c,t:u.t,t0:G.t,n:(u.t===4?GOLD[u.c]:CLS[u.c]).ult.split(':')[0]};G.cutCd=G.t+3}if(perk(p,u.c,20))u.goldT=8;if(HAS_DOM&&p.i===G.view)SFX.play('ult',.25);
   if(u.t===4){goldUlt(p,s,u,d);return}
@@ -819,7 +823,10 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.
     if(!drag&&G.view===0&&p===G.players[0]&&u.t===3&&canFuse(p,s)){const ay=Math.round(y-h-8+Math.sin(G.t*6)*3);ctx.fillStyle='#3a2200';ctx.beginPath();ctx.moveTo(x,ay-19);ctx.lineTo(x-15,ay+1);ctx.lineTo(x+15,ay+1);ctx.fill();ctx.fillRect(x-7,ay,14,13);
       ctx.fillStyle=Math.sin(G.t*10)>0?'#ffd75a':'#fff3a0';ctx.beginPath();ctx.moveTo(x,ay-14);ctx.lineTo(x-10,ay-2);ctx.lineTo(x+10,ay-2);ctx.fill();ctx.fillRect(x-4,ay-3,8,13)}}
   for(let i=0;i<=u.t;i++){ctx.fillStyle='#000';ctx.fillRect(x-u.t*5-3+i*10,y+10,8,8);ctx.fillStyle=T.c;ctx.fillRect(x-u.t*5-2+i*10,y+11,6,6)}
-  if(u.t>=3){ctx.fillStyle='#000';ctx.fillRect(x-26,y+21,52,6);ctx.fillStyle='#5ad0ff';ctx.fillRect(x-25,y+22,50*Math.min(1,u.mana/100),4)}}
+  const rdy=u.t>=3&&u.mana>=100&&p.human&&!G.autoUlt&&!drag;
+  if(u.t>=3){ctx.fillStyle='#000';ctx.fillRect(x-26,y+21,52,6);ctx.fillStyle=rdy&&Math.sin(G.t*12)>0?'#fff':'#5ad0ff';ctx.fillRect(x-25,y+22,50*Math.min(1,u.mana/100),4)}
+  if(rdy){const pu=.5+.5*Math.sin(G.t*7);ctx.strokeStyle='rgba(120,220,255,'+(.5+.5*pu)+')';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,30+6*pu,10+2*pu,0,0,6.28);ctx.stroke();
+    const bx=x+26,by=y-66-4*pu;glow(bx,by,40,u.t===4?'255,215,90':'90,208,255',.35+.3*pu);ctx.fillStyle='#0b1a2a';ctx.beginPath();ctx.arc(bx,by,19,0,6.28);ctx.fill();ctx.fillStyle=u.t===4?'#ffd75a':'#5ad0ff';ctx.beginPath();ctx.arc(bx,by,16,0,6.28);ctx.fill();ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText('⚡',bx,by+8)}}
 function drawShot(sh){if(sh.t<0||sh.k==='quake'||sh.k==='slash')return;const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
   if(sh.k==='arrow'||sh.k==='rain'){const k0=Math.max(0,k-.3);ctx.strokeStyle='rgba(255,245,200,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sh.x+(sh.tx-sh.x)*k0,sh.y+(sh.ty-sh.y)*k0);ctx.lineTo(x,y);ctx.stroke();const a=Math.atan2(sh.ty-sh.y,sh.tx-sh.x);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#6a4a2a';ctx.fillRect(-16,-1.5,16,3);ctx.fillStyle=sh.big?'#fff3a0':'#ffd75a';ctx.fillRect(0,-3,(sh.big?10:6),6);ctx.restore()}
   else if(sh.k==='carrot'){ctx.save();ctx.translate(x,y);ctx.rotate(sh.t*18);ctx.fillStyle='#ff9a2a';ctx.fillRect(-4,-4,8,8);ctx.fillStyle='#4aaa3a';ctx.fillRect(-6,-6,3,3);ctx.restore()}
@@ -901,6 +908,7 @@ function say(t,c,ms){if(!HAS_DOM)return;const b=$('#banner');if(G&&G.bannerT>0&&
 // short tips during the first 3 matches, one at a time, each once per match
 function tipCheck(){const me=G.players[0];if(!me.alive||G.view!==0||G.popup||G.t<(G.tipT||0))return;G.tips=G.tips||{};
   const T=[['merge',()=>me.units.some((u,s)=>u&&canMerge(me,s)),'💡 มีเด็กสีเดียวกัน 3 ตัวแล้ว! แตะตัวที่อยากให้โต แล้วกด "รวมร่าง" (คลาสไหนก็ได้)'],
+    ['ult',()=>!G.autoUlt&&me.units.some(u=>u&&u.t>=3&&u.mana>=100),'⚡ ไม้ตายพร้อมแล้ว! แตะเด็กที่มีสายฟ้าเพื่อปล่อย เลือกจังหวะเอง (เช่น เก็บไว้ตอนบอส) · ปุ่ม ⚡ ด้านล่างเปลี่ยนเป็นออโต้ได้'],
     ['fuse',()=>me.units.some((u,s)=>u&&canFuse(me,s)),'✨ ของครบสูตรแล้ว! แตะเด็กแดงที่มีลูกศรทอง แล้วกด "ผสมทอง"'],
     ['red',()=>me.units.some(u=>u&&u.t===3),'💡 ได้เด็กแดงแล้ว! แตะดูสูตรร่างทอง (ใช้เด็กม่วงตามสูตร 2 ตัว)'],
     ['full',()=>!me.units.some(u=>!u),'💡 ลานเต็มแล้ว: รวมร่าง หรือแตะเด็กแล้วกด "ขาย" ตัวที่ไม่ได้ใช้'],
@@ -930,7 +938,7 @@ if(HAS_DOM){
     if(u){drag={s,x:b.x,y:b.y,sx:e.clientX,sy:e.clientY,moved:false,id:e.pointerId};try{cv.setPointerCapture(e.pointerId)}catch(_){}}else hidePop()});
   cv.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const b=toBoard(e);drag.x=b.x;drag.y=b.y+40;if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>10)drag.moved=true});
   const endDrag=e=>{if(!drag||drag.id!==e.pointerId)return;const p=G.players[0],d=drag;drag=null;
-    if(!d.moved){unitPop(d.s);return}const t=slotAt(toBoard(e));if(t>=0&&t!==d.s){const a=p.units[d.s];p.units[d.s]=p.units[t];p.units[t]=a;hidePop()}};
+    if(!d.moved){if(!G.autoUlt&&castReady(p,d.s)){hidePop();return}unitPop(d.s);return}const t=slotAt(toBoard(e));if(t>=0&&t!==d.s){const a=p.units[d.s];p.units[d.s]=p.units[t];p.units[t]=a;hidePop()}};
   cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',e=>{drag=null});
   $('#pop').addEventListener('click',e=>{const p=G.players[0],b=e.target.closest('button');if(!b||b.disabled)return;
     if(b.dataset.t!=null&&p.offer){const o=p.offer[+b.dataset.t];if(TALS[o.id].k==='tile'){G.placing=o;p.offer=null;hidePop();banner('แตะช่องบนลาน','ใส่ '+TALS[o.id].ic+' '+TALS[o.id].n+' ถาวร · เด็กที่ยืนช่องนั้นได้บัฟ','#7fe08a')}else{takeTalent(p,o);p.offer=null;hidePop();say('ได้ทาเลนต์ '+TALS[o.id].ic+' '+TALS[o.id].n,'#7fe08a')}return}
@@ -943,6 +951,8 @@ if(HAS_DOM){
   $('#bSum').addEventListener('click',()=>{const p=G.players[0];if(G.view!==0)setView(0);const s=summon(p);if(s==null)say(p.units.some(u=>!u)?'เงินไม่พอ':'ช่องเต็ม รวมร่างหรือขายก่อน');updHud()});
   $('#bUp').addEventListener('click',()=>{if(G.popup==='up')hidePop();else upPop()});
   $('#bWh').addEventListener('click',()=>{if(G.popup==='wh')hidePop();else whPop()});
+  const autoUI=()=>{const b=$('#bAuto');b.classList.toggle('on',!!G.autoUlt);b.innerHTML='⚡<small>'+(G.autoUlt?'ออโต้':'กดเอง')+'</small>'};
+  $('#bAuto').addEventListener('click',()=>{if(!G)return;G.autoUlt=!G.autoUlt;LS.set('autoUlt',G.autoUlt);autoUI();say(G.autoUlt?'⚡ ไม้ตายออโต้: เกจเต็มแล้วปล่อยเอง':'⚡ ไม้ตายกดเอง: เกจเต็มแล้วแตะเด็กที่มีสายฟ้า','#7fd8ff',2600)});
   $('#bSpd').addEventListener('click',()=>{G.spd=G.spd===1?2:G.spd===2?4:1;$('#bSpd').textContent='x'+G.spd});
   $('#bHome').addEventListener('click',()=>setView(0));
   // ---------- lobby ----------
@@ -1010,7 +1020,7 @@ if(HAS_DOM){
     B.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.k)kidsModal(b.dataset.k);if(b.dataset.lvup){const k=b.dataset.lvup,L=LOB.prog.lv[k];if(canLv(k)){LOB.prog.sh[k]-=KLV.need(L);LOB.prog.lv[k]=L+1;LS.set('prog',LOB.prog);SFX.play('mergeBig');const q=PERK.find(q=>q.lv===L+1);kidsBadge();kidsModal(k,'⬆ '+CLS[k].kid+' Lv.'+(L+1)+(q?' · ปลด '+q.ic+' '+q.n:' · แรงขึ้น '+Math.round(KLV.dmg*100)+'%'))}}if(b.dataset.fav){LOB.fav=b.dataset.fav;LS.set('fav',LOB.fav);profUI();kidsModal(LOB.fav)}}}
   function howModal(){const rl=CK.slice().sort((a,b)=>rangeStars(b)-rangeStars(a)).map(k=>CLS[k].n+' '+rangeStars(k)).join(' · ');
     openModal('📖 วิธีเล่น','<div class="mrow" style="margin:0 0 4px"><button class="mbtn" type="button" data-a="story">🌙 อ่านเรื่องราว</button></div><h4>🎯 เป้าหมาย</h4><p>5 แก๊งแข่งกัน แต่ละบ้านมีลานเด็กของตัวเอง ปีศาจเดินวนรอบลาน · ปีศาจบนสนามห้ามถึง<b>โควต้า</b> (เริ่ม 100 ตัว) ถึงเมื่อไหร่ = ตกรอบ · แก๊งสุดท้ายที่เหลือชนะ</p>'+
-      '<h4>🧸 เรียกเด็ก + รวมร่าง</h4><ul><li>กด <b>เรียกเด็ก</b> ได้เด็กสุ่ม 1 ใน 6 คลาส ลงช่องว่างบนลาน</li><li>แตะเด็ก → <b>รวมร่าง</b> 3 ตัว<b>สีเดียวกัน</b> (คลาสไหนก็ได้) = ตัวที่แตะโตขึ้น 1 ระดับ (ขาว → เขียว → ม่วง → แดง) อีก 2 ตัวหายไป (ใช้คลาสเดียวกันก่อน) · ยิ่งโตยิ่งเก่ง และปลดสกิลใหม่</li><li>✨ <b>ร่างทอง</b>: เด็กแดง + เด็กม่วง 2 ตัวตามสูตรของคลาสนั้น (แตะเด็กแดงดูสูตร) → กลายเป็นร่างทอง ได้สกิลทองใหม่ 3 อย่าง · คลาสละ 1 ตัวต่อลาน</li><li>ลากเด็กเพื่อย้ายช่อง · ขายได้</li></ul>'+
+      '<h4>🧸 เรียกเด็ก + รวมร่าง</h4><ul><li>กด <b>เรียกเด็ก</b> ได้เด็กสุ่ม 1 ใน 6 คลาส ลงช่องว่างบนลาน</li><li>แตะเด็ก → <b>รวมร่าง</b> 3 ตัว<b>สีเดียวกัน</b> (คลาสไหนก็ได้) = ตัวที่แตะโตขึ้น 1 ระดับ (ขาว → เขียว → ม่วง → แดง) อีก 2 ตัวหายไป (ใช้คลาสเดียวกันก่อน) · ยิ่งโตยิ่งเก่ง และปลดสกิลใหม่</li><li>✨ <b>ร่างทอง</b>: เด็กแดง + เด็กม่วง 2 ตัวตามสูตรของคลาสนั้น (แตะเด็กแดงดูสูตร) → กลายเป็นร่างทอง ได้สกิลทองใหม่ 3 อย่าง · คลาสละ 1 ตัวต่อลาน</li><li>⚡ <b>ไม้ตาย</b> (เด็กแดงและทอง): หลอดฟ้าใต้ตัวเต็มแล้วจะมีสายฟ้าขึ้น <b>แตะเด็กเพื่อปล่อย</b> เลือกจังหวะเอง · ปุ่ม ⚡ ด้านล่างสลับ กดเอง/ออโต้</li><li>ลากเด็กเพื่อย้ายช่อง · ขายได้</li></ul>'+
       '<h4>💪 อัปพลัง</h4><p>ใช้เงินอัปคลาส ทุกตัวในคลาสนั้นแรงขึ้น 25% ต่อขั้น</p>'+
       '<h4>📣 นกหวีด</h4><p>ส่งปีศาจ 1 ตัวไปทุกบ้านพร้อมกัน ปีศาจที่ถูกส่งไปฆ่าแล้วไม่ได้เงิน · ยิ่งส่ง รายได้ต่อระลอกยิ่งเพิ่ม · แตะชื่อแก๊งด้านขวาเพื่อดูสนามคนอื่น</p>'+
       '<h4>👹 บอส + ทาเลนต์</h4><p>บอสมาทุก 10 ระลอก ผลัดกัน 4 ตัว: '+BOSSES.map(b=>MON[b].n+' ('+MON[b].ab+')').join(' · ')+' · หลังบอสเลือกทาเลนต์ 1 ใน 3 ใบ: ใบ<b>ช่อง</b>แรงแต่ได้เฉพาะเด็กที่ยืนช่องนั้น (ช่องจะมีแสงสี) ใบ<b>ทั้งทีม</b>เบากว่าแต่ได้ทุกตัว</p>'+
@@ -1060,7 +1070,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-03n',NEWS=['🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-03o',NEWS=['⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
