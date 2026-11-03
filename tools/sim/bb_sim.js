@@ -1,12 +1,12 @@
 // Headless run of Babies & Beasts (bb.html): 5 bots play until one is left.
-// Usage (repo root): node tools/sim/bb_sim.js [games=5]
+// Usage (repo root): node tools/sim/bb_sim.js [games=5] [--klv N]   (--klv: player 0 has kid level N in every class; bots get levels near it)
 const fs=require('fs'),path=require('path'),vm=require('vm');
 const html=fs.readFileSync(path.join(__dirname,'..','..','bb.html'),'utf8');
 const js=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).sort((a,b)=>b.length-a.length)[0];
-const N=+process.argv[2]||5,rows=[];
+const N=+process.argv[2]||5,rows=[],ki=process.argv.indexOf('--klv'),KL=ki>0?+process.argv[ki+1]:0;
 for(let g=0;g<N;g++){
   const ctx={window:{BB_HEADLESS:true},module:{exports:{}},console,Math,JSON};vm.createContext(ctx);vm.runInContext(js,ctx);
-  const B=ctx.module.exports;B.newGame();const G=B.G;G.players[0].human=false;
+  const B=ctx.module.exports;B.newGame(KL?{klv:Object.fromEntries(B.CK.map(k=>[k,KL]))}:{});const G=B.G;G.players[0].human=false;
   const out=[];let t=0;const dt=1/30;
   while(!G.over&&t<3600){B.step(dt);t+=dt;for(const p of G.players)if(!p.alive&&!out.includes(p.i)){out.push(p.i);p.outW=G.wave;p.outT=t}}
   const win=G.players.find(p=>p.rank===1);
