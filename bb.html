@@ -108,7 +108,7 @@ const SEG=[];let PLEN=0;for(let i=0;i<PATH.length-1;i++){const [x0,y0]=PATH[i],[
 function pathPos(d){d=((d%PLEN)+PLEN)%PLEN;for(const s of SEG)if(d<=s.d+s.l){const k=(d-s.d)/s.l;return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:Math.sign(s.x1-s.x0)}}const s=SEG[SEG.length-1];return{x:s.x1,y:s.y1,dx:1}}
 // the yard inside the loop: 6 x 3 pads
 const YARD={x:98,y:90,w:764,h:360},SLOTS=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)SLOTS.push({x:YARD.x+YARD.w/COLS*(c+.5),y:YARD.y+YARD.h/ROWS*(r+.5)+14});
-const TIER=[{n:'ขาว',age:'1 ขวบ',c:'#f2f2f2',m:1,sc:.96},{n:'เขียว',age:'2–3 ขวบ',c:'#5fe05f',m:3.3,sc:1.04},{n:'ม่วง',age:'4–5 ขวบ',c:'#b77bff',m:11,sc:1.12},{n:'แดง',age:'6–7 ขวบ',c:'#ff5050',m:36,sc:1.2}];
+const TIER=[{n:'ขาว',age:'2 ขวบ',c:'#f2f2f2',m:1,sc:.96},{n:'เขียว',age:'4 ขวบ',c:'#5fe05f',m:3.3,sc:1.04},{n:'ม่วง',age:'6 ขวบ',c:'#b77bff',m:11,sc:1.12},{n:'แดง',age:'7 ขวบ',c:'#ff5050',m:36,sc:1.2}];
 const CLS={
   warrior:{n:'นักรบ',a:'ชุดหมี',col:'#e08a3a',rng:118,dmg:15,rate:1.05,splash:58,atk:'ทุบเป็นวง ระยะใกล้',pas:'ตัวเลือดเกินครึ่งโดนแรงขึ้น 40%',proc:'15% กระแทกพื้นวงใหญ่ x2',ult:'แผ่นดินไหว: ปีศาจทั้งสนามมึน 1.5 วิ'},
   assassin:{n:'นักฆ่า',a:'ชุดเสือดำ',col:'#a08ad8',rng:108,dmg:8,rate:.45,crit:.2,atk:'ฟันเร็ว คริ 20%',pas:'ตัวเลือดต่ำกว่าครึ่งโดนแรงขึ้น 60%',proc:'15% ฟันซ้อน 3 ครั้ง',ult:'เงาพริ้ว: ฟัน 6 ตัวที่เลือดเยอะสุด แรงมาก'},
@@ -292,9 +292,15 @@ function addFx(p,k,x,y,s){if(!HAS_DOM||p.i!==G.view||p.fx.length>40)return;const
 // ---------- rendering ----------
 let $,cv,ctx,VW=0,VH=0,DPR=1,SC=1,OX=0,OY=0,flashT=0,last=0,bgC=null;
 const IMG={},SPR={};
+// kid pictures: one kid per class who grows up. A tier can have its own picture art/bb/kid_<class>_<tier>.png;
+// KART lists the ones that exist. A tier without one uses the nearest tier that has one, else kid_<class>.png.
+// Every picture is drawn KH*T.sc tall whatever its pixel size (GPT pictures come in different grids).
+const TKEY=['white','green','purple','red','gold'],KH=78,KART={assassin:['gold']};
+function kidImg(c,t){const L=KART[c];if(!L||!L.length)return IMG[c];let b=null,bd=99;
+  for(const k of L){const i=TKEY.indexOf(k),d=Math.abs(i-t)+(i>t?.5:0);if(d<bd){bd=d;b=k}}return IMG[c+'_'+b]}
 if(HAS_DOM){
   $=s=>document.querySelector(s);cv=$('#cv');ctx=cv.getContext('2d');
-  for(const k of CK){IMG[k]=new Image();IMG[k].src='art/bb/kid_'+k+'.png'}
+  for(const k of CK){IMG[k]=new Image();IMG[k].src='art/bb/kid_'+k+'.png';for(const t of KART[k]||[]){const n=k+'_'+t;IMG[n]=new Image();IMG[n].src='art/bb/kid_'+n+'.png'}}
   IMG.zwalk=new Image();IMG.zwalk.src='art/px/z_walker_walk.png';IMG.krasue=new Image();IMG.krasue.src='art/px/z_krasue.png';
   fetch('fx/manifest.json').then(r=>r.json()).then(m=>{FXM=m;for(const k in m){FXI[k]=new Image();FXI[k].src='fx/'+k+'.png'}}).catch(()=>{});
   buildPixelSprites();
@@ -339,7 +345,7 @@ function drawMon(m){const M=m.M,flip=m.dx<0;ctx.save();ctx.translate(Math.round(
   ctx.filter='none';ctx.restore();
   if(m.stunT>0){ctx.fillStyle='#bfe8ff';ctx.fillRect(m.x-6,m.y-(M.boss?80:40),3,3);ctx.fillRect(m.x+3,m.y-(M.boss?82:42),3,3)}
   if(m.hp<m.maxHp){const w=M.boss?70:26;ctx.fillStyle='#000';ctx.fillRect(m.x-w/2-1,m.y-(M.boss?76:38)-1,w+2,5);ctx.fillStyle=M.boss?'#ff4a6a':'#ff8a5a';ctx.fillRect(m.x-w/2,m.y-(M.boss?76:38),w*Math.max(0,m.hp/m.maxHp),3)}}
-function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=IMG[u.c],sc=T.sc*1.0;const x=S.x,y=S.y+6;
+function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.t),sc=T.sc*KH/(im&&im.naturalHeight||KH);const x=S.x,y=S.y+6;
   ctx.fillStyle=T.c;ctx.globalAlpha=.35+(u.t===3?.2*Math.sin(G.t*5):0);ctx.beginPath();ctx.ellipse(x,y,34,10,0,0,6.28);ctx.fill();ctx.globalAlpha=1;
   ctx.strokeStyle=T.c;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,34,10,0,0,6.28);ctx.stroke();
   if(im&&im.complete&&im.naturalWidth){const w=im.naturalWidth*sc,h=im.naturalHeight*sc,bob=Math.round(Math.sin(G.t*3+s)*1.2),k=u.kick>0?-4:0;
@@ -439,7 +445,7 @@ if(HAS_DOM){
   $('#again').addEventListener('click',()=>{$('#end').hidden=true;newGame()});
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   // menu: the six kids
-  const row=$('#kidsRow');for(const k of CK){const c=document.createElement('canvas');c.width=60;c.height=80;row.appendChild(c);const im=IMG[k];const go=()=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(im,(60-im.naturalWidth)/2,80-im.naturalHeight)};if(im.complete&&im.naturalWidth)go();else im.onload=go}
+  const row=$('#kidsRow');for(const k of CK){const c=document.createElement('canvas');c.width=60;c.height=80;row.appendChild(c);const im=kidImg(k,4);const go=()=>{const g=c.getContext('2d'),f=Math.min(1,78/im.naturalHeight,60/im.naturalWidth),w=im.naturalWidth*f,h=im.naturalHeight*f;g.imageSmoothingEnabled=f<1;g.drawImage(im,(60-w)/2,80-h,w,h)};if(im.complete&&im.naturalWidth)go();else im.onload=go}
   let hudT=0;
   function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;
     if(G&&!G.over){for(let i=0;i<G.spd;i++)step(dt)}else if(G)for(const p of G.players){for(const f of p.fx)f.t+=dt;p.fx=p.fx.filter(f=>f.t<f.T)}
