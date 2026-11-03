@@ -870,8 +870,9 @@ if(HAS_DOM){
   $('#prof').addEventListener('click',renameModal);
   for(const b of document.querySelectorAll('.lbtn'))b.addEventListener('click',()=>{const m=b.dataset.m;if(m==='kids')kidsModal(LOB.fav);if(m==='how')howModal();if(m==='story')storyModal();if(m==='miss')missModal();if(m==='set')setModal()});
   function setModal(back){const b=(k,ic,n)=>{const on=k in SFX.st?SFX.st[k]:OPT[k];return '<button class="mbtn'+(on?' gold':'')+'" type="button" data-s="'+k+'">'+ic+' '+n+': '+(on?'เปิด':'ปิด')+'</button>'};
-    openModal('⚙️ ตั้งค่า','<div class="mrow">'+b('mu','🎵','เพลง')+b('fx','🔊','เสียงเอฟเฟกต์')+'</div><div class="mrow">'+b('fs','⛶','เต็มจอตอนเล่น')+b('vib','📳','สั่น')+'</div><p style="color:var(--dim)">ชื่อแก๊ง รูปโปรไฟล์ แมพ และสถิติ เก็บในเครื่องนี้เท่านั้น</p>'+(back?'<div class="mrow"><button class="mbtn" type="button" data-a="back">◀ กลับ</button></div>':''),true);
+    openModal('⚙️ ตั้งค่า','<div class="mrow">'+b('mu','🎵','เพลง')+b('fx','🔊','เสียงเอฟเฟกต์')+'</div><div class="mrow">'+b('fs','⛶','เต็มจอตอนเล่น')+b('vib','📳','สั่น')+'</div><p style="color:var(--dim)">ชื่อแก๊ง รูปโปรไฟล์ แมพ และสถิติ เก็บในเครื่องนี้เท่านั้น · <a href="#" data-a="news" style="color:#8ec5ff">📰 มีอะไรใหม่</a></p>'+(back?'<div class="mrow"><button class="mbtn" type="button" data-a="back">◀ กลับ</button></div>':''),true);
     $('#mB').onclick=e=>{const x=e.target.closest('button');if(!x)return;if(x.dataset.s){const k=x.dataset.s;if(k in SFX.st){SFX.init();SFX.set(k,!SFX.st[k])}else{OPT[k]=!OPT[k];LS.set(k,OPT[k]);if(k==='vib'&&OPT.vib)buzz(60)}setModal(back)}if(x.dataset.a==='back')pauseModal()}}
+  $('#modal').addEventListener('click',e=>{const a=e.target.closest('a[data-a=news]');if(a){e.preventDefault();newsModal()}});
   document.addEventListener('pointerdown',()=>{SFX.init();SFX.wake()},true);
   document.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled&&b.id!=='go'&&b.id!=='bSum')SFX.play('click',.03)},true);
   // matchmaking: the 4 other gangs drop in, then 3-2-1
@@ -899,7 +900,13 @@ if(HAS_DOM){
   $('#again').addEventListener('click',()=>{toLobby();startMatch()});
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
-  profUI();mapUI();
+  // "what's new": opens once per update (bump VER and NEWS together)
+  const VER='2026-11-03c',NEWS=['🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+    '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
+    '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
+    '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
+  function newsModal(){openModal('📰 มีอะไรใหม่','<ul>'+NEWS.map(n=>'<li>'+n+'</li>').join('')+'</ul><div class="mrow"><button class="mbtn gold" type="button" data-a="ok">เยี่ยม! ไปเล่นกัน</button></div>');$('#mB').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.a==='ok')closeModal()}}
+  profUI();mapUI();if(LS.get('ver','')!==VER){LS.set('ver',VER);setTimeout(newsModal,400)}
   let hudT=0;
   function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;
     if(G&&!G.over&&!G.paused){for(let i=0;i<G.spd;i++)step(dt)}else if(G)for(const p of G.players){for(const f of p.fx)f.t+=dt;p.fx=p.fx.filter(f=>f.t<f.T)}
