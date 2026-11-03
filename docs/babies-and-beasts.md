@@ -139,6 +139,18 @@
 - บอทผสมทองก่อนรวมร่าง · sim: บอทได้ร่างทอง 2–8 ตัวต่อเกม (นับตอนจบ) · เกมยาวขึ้นเป็น ~13.3 นาที → ปรับ `BAL.sdG` 1.12 → 1.17 (หลังระลอก 18 ปีศาจอึดขึ้นเร็วขึ้น ช่วงต้นเกมเหมือนเดิม) sim 10 เกมเฉลี่ย 12.0 นาที ระลอก 28–42
 - โค้ด: `GOLD` (ข้อมูล) `hasGold` `fuseParts`/`canFuse`/`fuse` `goldUlt` `densest` `sendTo` (ส่งผี + เด้งกลับ) · `p.zones` ไฟบนพื้น · `p.moonT` `p.ampT` `p.stopT` `m.markT` · ยิงช้าแบบมีจังหวะใช้ `p.shots` ที่ `t` ติดลบ (`quake` `slash` `rain`)
 
+## งานค้าง (ส่งต่อ 2026-11-03 เจ้าของเกมย้ายไปทำต่อที่ PC)
+1. **ภาพท่าตี** (เจ้าของเกมจะเจนใน GPT, หันขวาอย่างเดียว เกมกลับด้านเอง): 1 ภาพต่อเด็กต่อระดับ = 30 ภาพ · ทำในแชตเดิมของเด็กแต่ละตัว แนบภาพระดับนั้น แล้ววางคำสั่งด้านล่าง · ให้ลองทีละรูปก่อน (เช่น แทนแดง) · ตอนรูปมา: แปลง `gptpx.py` ให้สูงเท่ารูปยืนระดับเดียวกัน → `art/bb/kid_<คลาส>_<ระดับ>_atk.png` → โค้ด (ยังไม่ได้ทำ) ให้ `drawKid` ใช้รูปท่าตีช่วงกลางของ `u.at` (ท่าขยับ `kidPose` ยังทำงานต่อ) · ส่วนท้ายทุกคำสั่ง: `Same kid, same costume, same weapon, same colours and the same pixel art style as the attached picture: same pixel size, same character size and proportions, full body, facing right, plain white background, no text. Only change the pose: <ท่า>. Feet stay on the ground at the same spot. No effects, no motion lines, no sparkles.`
+   - แทน: `mid-swing of a big overhead smash, his weapon brought down hard in front of him with both hands, body leaning forward, knees bent, mouth open in a battle shout`
+   - นิล: `a fast forward slash, lunging forward in a low stance, the front arm swept forward with the blade, the back arm behind her. Hold the blade exactly like in the attached picture`
+   - ฟ้า: `the moment the arrow is released, bow arm straight forward, the string hand snapped back past her cheek, the arrow just leaving the bow, determined face`
+   - ราตรี: `casting a spell, the staff or wand thrust forward with one arm, the other hand open, cape and hair blown back, a small soft glow only at the tip`
+   - จันทร์: `a happy hop, both feet just off the ground, the carrot item raised high above the head, big smile` (ไม่ต้องมีประโยคเท้าติดพื้น)
+   - หมอก: `casting a curse, the staff or item pointed forward with one arm, leaning in with a sly smile, a small purple glow only at the tip`
+2. **ราตรีร่างขาว + เขียว**: เจ้าของเกมเจนแล้วแต่ไฟล์ไม่เข้ามาในแชตคลาวด์ ให้ส่งใหม่ (ตอนนี้ยังเป็นรูปโค้ด `KTEMP.mage`)
+3. **สกิลแก๊ง 3 ปุ่ม** (เสนอแล้ว เจ้าของเกมตอบว่าอยากได้สกิลกดเองและเอาจาก pixelfx แต่ยังไม่ได้สั่งทำชัด ๆ ถามก่อน): ⚡ ฟ้าผ่าจุดที่แตะ (pixelfx `lightning/lightning-strike`) · ❄️ แช่แข็งทั้งสนาม 2–3 วิ (`ice/frost-nova`) · 📯 ปลุกใจเด็กทั้งลานตีเร็ว (`holy/blessing` หรือ `status/haste`) · มีคูลดาวน์ บอทใช้ด้วย · ต้องรันเครื่องมือ pixelfx ซึ่งต้องให้เจ้าของเกมอนุญาต
+4. **คุมคอมเจนรูปแทน**: เจ้าของเกมถามว่าลงใน PC แล้วให้ Claude เจนใน ChatGPT เองได้ไหม → ได้ถ้ามี Claude in Chrome หรือแอป Claude (เบราว์เซอร์ในแอป) และเปิดแชตที่เชื่อมกับเครื่อง · ต้องกดอนุญาตแอปตอนแรก · ติดโควต้ารูปของ ChatGPT
+
 ## เอฟเฟกต์สกิลจาก pixelfx (ทำแล้ว 2026-11-03, เจ้าของเกม: "เอาสกิลจาก pixelfx ได้ไหม" "อันไหนใช้ได้เอามาใช้เลย")
 - pixelfx (https://github.com/patch-gg/pixelfx, MIT, 244 เอฟเฟกต์) = ชุดเดียวกับ 13 อันเดิมใน `fx/` · เพิ่ม 17 อัน 637 KB: `slash2` `flurry` (นิล) · `smash` `quake` (แทน) · `spark` `critx` (ฟ้า/คริ/ปิดฉาก) · `boom` (ดาวตกแดง, บอสตาย) `starfall` (ดาวนำทางทอง ดาเมจตอนตกถึงพื้น `land`) `tstop` (หยุดเวลา) `firering` (ไฟบนพื้น) (ราตรี) · `healaoe` `feather` (จันทร์) · `hex` `darkx` `parry` (หมอก/กระจกสาป) · `mburst` (รวมร่าง) `pillar` (ผสมทอง)
 - ไม่เอา: heal, curse, freeze, disintegrate, shatter-death (มีรูปคนติดมาในเอฟเฟกต์) · coin-collect (มีตัวเลข x12)
