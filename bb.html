@@ -382,7 +382,7 @@ function sendMonsters(from,opt){
   for(const q of to){const t=sendTo(from,q,S.mon);if(t===q&&HAS_DOM&&q.human){SFX.play('incoming',.5);say(from.name+' ส่ง'+MON[S.mon].n+'มาหาคุณ!','#ff8a8a')}}
   if(HAS_DOM&&from.human){SFX.play('whistle');mprog('wh')}if(HAS_DOM&&from.human)say('ส่ง'+MON[S.mon].n+'ไปทุกบ้าน '+to.length+' บ้าน','#d8b8ff');return true}
 // one demon from 'from' to q; q's gold Mok bounces 30% of them back to the sender
-function sendTo(from,q,m){const back=from&&from!==q&&hasGold(q,'curse')&&Math.random()<.3,t=back?from:q;t.spawnQ.push({m,t:1.5,hp:hpScale(Math.max(1,G.wave))});
+function sendTo(from,q,m){const back=from&&from!==q&&hasGold(q,'curse')&&Math.random()<.3,t=back?from:q;if(back)addFx(q,'parry',BW/2,BH/2-40,1.6);t.spawnQ.push({m,t:1.5,hp:hpScale(Math.max(1,G.wave))});
   if(HAS_DOM&&back&&(q.human||from.human))say(q.human?'🪞 กระจกสาปเด้ง'+MON[m].n+'กลับไปหา '+from.name+'!':'🪞 '+q.name+' เด้ง'+MON[m].n+'กลับมาหาคุณ!',q.human?'#d8b8ff':'#ff8a8a');return t}
 // ---------- kids ----------
 function summon(p){const c=sumCost(p),free=p.units.map((u,i)=>u?-1:i).filter(i=>i>=0);if(p.gold<c||!free.length)return null;
@@ -396,14 +396,14 @@ function mates(p,s){const u=p.units[s];if(!u)return[];return p.units.map((v,i)=>
 function canMerge(p,s){const u=p.units[s];return !!u&&u.t<3&&mates(p,s).length>=2}
 function flyKid(p,v,a,b){if(HAS_DOM&&p.i===G.view&&v)p.fly.push({c:v.c,tr:v.t,x0:SLOTS[a].x,y0:SLOTS[a].y+6,x1:SLOTS[b].x,y1:SLOTS[b].y+6,t:0,T:.32})}
 function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).slice(0,2);flyKid(p,p.units[m[0]],m[0],s);flyKid(p,p.units[m[1]],m[1],s);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;u.pop=.5;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25);if(u.t>=3)mprog('red')}
-  addFx(p,'poof',SLOTS[m[0]].x,SLOTS[m[0]].y,.7);addFx(p,'poof',SLOTS[m[1]].x,SLOTS[m[1]].y,.7);addFx(p,['ultb','ultgr','ultb','ultr'][u.t],SLOTS[s].x,SLOTS[s].y+20,.8);return true}
+  addFx(p,'poof',SLOTS[m[0]].x,SLOTS[m[0]].y,.7);addFx(p,'poof',SLOTS[m[1]].x,SLOTS[m[1]].y,.7);addFx(p,['ultb','ultgr','ultb','ultr'][u.t],SLOTS[s].x,SLOTS[s].y+20,.8);addFx(p,'mburst',SLOTS[s].x,SLOTS[s].y-30,.6);return true}
 // gold fusion: the recipe kids are picked purple first, a red one only when there is no purple of that class
 function fuseParts(p,s){const u=p.units[s];if(!u||u.t!==3||hasGold(p,u.c))return null;const used=[s],out=[];
   for(const c of GOLD[u.c].rec){let b=-1;p.units.forEach((v,i)=>{if(!v||used.includes(i)||v.c!==c||v.t<2||v.t>3)return;if(b<0||v.t<p.units[b].t)b=i});out.push(b);if(b>=0)used.push(b)}
   return out}
 function canFuse(p,s){const f=fuseParts(p,s);return !!f&&f.every(i=>i>=0)}
 function fuse(p,s){if(!canFuse(p,s))return false;const f=fuseParts(p,s),u=p.units[s];for(const i of f){flyKid(p,p.units[i],i,s);addFx(p,'poof',SLOTS[i].x,SLOTS[i].y,.8);p.units[i]=null}
-  u.t=4;u.mana=50;u.flash=1;u.pop=.5;if(u.c==='warrior')p.hp+=20;addFx(p,'ultg',SLOTS[s].x,SLOTS[s].y+20,1.3);
+  u.t=4;u.mana=50;u.flash=1;u.pop=.5;if(u.c==='warrior')p.hp+=20;addFx(p,'pillar',SLOTS[s].x,SLOTS[s].y+6,.75);
   if(HAS_DOM&&p.human){SFX.play('mergeBig');buzz([40,40,40,40,160]);say('✨ '+CLS[u.c].kid+'ร่างทอง · '+GOLD[u.c].n+'!','#ffd75a',3000);mprog('gold')}return true}
 const sellValue=u=>u.t===4?400:8*Math.pow(3,u.t);
 function sell(p,s){const u=p.units[s];if(!u)return;if(HAS_DOM&&p.human)SFX.play('coin');p.gold+=sellValue(u);if(u.t===4&&u.c==='warrior')p.hp-=20;p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
@@ -418,10 +418,10 @@ function hitMon(p,m,amt,u,col){
   if(m.dead)return;if(u&&u.c==='mage'&&u.t>=1&&m.slowT>0)amt*=1+.3*pk6(p,'mage');if(u&&u.c==='warrior'&&u.t>=1&&m.hp>m.maxHp*.5)amt*=1+.4*pk6(p,'warrior');if(u&&u.c==='assassin'&&u.t>=1&&m.hp<m.maxHp*.5)amt*=1+.6*pk6(p,'assassin');
   if(m.markT>0)amt*=1.3;if(p.ampT>0)amt*=1.5;
   if(m.shOn){amt*=m.M.shield.k;col='#8ab8ff'}
-  if(u&&u.c==='assassin'&&u.t===4&&!m.M.boss&&m.hp>amt&&m.hp-amt<m.maxHp*.15){amt=m.hp;col='#ff4a6a'}
+  if(u&&u.c==='assassin'&&u.t===4&&!m.M.boss&&m.hp>amt&&m.hp-amt<m.maxHp*.15){amt=m.hp;col='#ff4a6a';addFx(p,'critx',m.x,m.y-16,.55)}
   if(u){const dl=Math.min(amt,Math.max(0,m.hp));u.dmg=(u.dmg||0)+dl;p.dmg=(p.dmg||0)+dl}
   m.hp-=amt;m.hitT=.1;if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:m.x+rnd(-8,8),y:m.y-28,v:Math.round(amt),l:.7,c:col||'#fff'});
-  if(m.hp<=0){m.dead=true;if(HAS_DOM&&p.i===G.view&&p.dying.length<30)p.dying.push({m,t:0});if(HAS_DOM&&p.i===G.view)addFx(p,'poof',m.x,m.y-12,m.M.boss?1.7:.75);if(m.M.boss&&p.human)mprog('boss');if(m.M.split){for(let i=0;i<m.M.split.n;i++)p.spawnQ.push({m:m.M.split.m,t:.05+i*.15,at:m.d,abs:m.maxHp*m.M.split.k});if(HAS_DOM&&p.i===G.view)addFx(p,'ultb',m.x,m.y-20,1)}if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;if(u&&u.c==='curse'&&u.t===4)p.gold+=2;if(HAS_DOM&&p.i===G.view)SFX.play('pop',.07);
+  if(m.hp<=0){m.dead=true;if(HAS_DOM&&p.i===G.view&&p.dying.length<30)p.dying.push({m,t:0});if(HAS_DOM&&p.i===G.view){if(m.M.boss)addFx(p,'boom',m.x,m.y+6,1);else addFx(p,'poof',m.x,m.y-12,.75)}if(m.M.boss&&p.human)mprog('boss');if(m.M.split){for(let i=0;i<m.M.split.n;i++)p.spawnQ.push({m:m.M.split.m,t:.05+i*.15,at:m.d,abs:m.maxHp*m.M.split.k});if(HAS_DOM&&p.i===G.view)addFx(p,'darkx',m.x,m.y-20,.7)}if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;if(u&&u.c==='curse'&&u.t===4)p.gold+=2;if(HAS_DOM&&p.i===G.view)SFX.play('pop',.07);
     if(u&&u.c==='curse'&&u.t>=1&&Math.random()<.15*pk6(p,'curse')){const t=targetOf(p);if(t)sendTo(p,t,'imp')}}}
 function nearestTarget(p,x,y,r){let b=null,bd=-1;for(const m of p.mons){if(m.dead)continue;if((m.x-x)**2+(m.y-y)**2>r*r)continue;if(m.d>bd){bd=m.d;b=m}}return b}
 function splash(p,x,y,R,amt,u,col){for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<R*R)hitMon(p,m,amt,u,col)}
@@ -429,10 +429,10 @@ function attack(p,s,u,tg){
   const C=CLS[u.c],S=SLOTS[s],proc=u.t>=2&&Math.random()/(perk(p,u.c,12)?1.3:1);let d=dmgOf(p,u,s);u.kick=.15;u.at=ANIM[u.c];u.ax=tg.x-S.x;u.ay=tg.y-(S.y-30);u.face=tg.x<S.x-6?-1:1;u.mana+=u.t>=3?(u.c==='mage'?14:9)*(1+tileN(p,s,'mana'))*(perk(p,u.c,15)?1.25:1):0;
   if(tileN(p,s,'luck')&&Math.random()<.25){d*=2.5;if(HAS_DOM&&p.i===G.view)SFX.play('crit',.12);if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:S.x,y:S.y-90,v:'คริ!',l:.6,c:'#7fe08a'})}
   if(tileN(p,s,'frost')&&!tg.M.boss){tg.slowT=Math.max(tg.slowT,1.5);tg.slowK=Math.min(tg.slowK||1,.65)}
-  if(u.c==='warrior'){const big=proc!==false&&proc<.15,R=big?C.splash*1.8:C.splash;splash(p,tg.x,tg.y,R,d*(big?2:1),u);addFx(p,big?'crit':'blunt',tg.x,tg.y,big?1.1:.8);
+  if(u.c==='warrior'){const big=proc!==false&&proc<.15,R=big?C.splash*1.8:C.splash;splash(p,tg.x,tg.y,R,d*(big?2:1),u);addFx(p,'smash',tg.x,tg.y+6,big?.75:.5);if(big)addFx(p,'critx',tg.x,tg.y-14,.6);
     if(u.t===4)for(const m of p.mons)if(!m.dead&&(m.x-tg.x)**2+(m.y-tg.y)**2<R*R)m.stunT=Math.max(m.stunT,m.M.boss?.15:.4)}
-  else if(u.c==='assassin'){const n=proc!==false&&proc<.15?3:1;for(let i=0;i<n;i++){const cr=Math.random()<C.crit;if(cr&&HAS_DOM&&p.i===G.view)SFX.play('crit',.12);hitMon(p,tg,d*(cr?2.5:1),u,cr?'#ffd75a':'#fff')}addFx(p,n>1?'crit':'hit',tg.x,tg.y,.8);
-    if(u.t===4&&Math.random()<.25)for(const m of p.mons.filter(m=>!m.dead&&m!==tg&&(m.x-tg.x)**2+(m.y-tg.y)**2<170*170).sort((a,b)=>((a.x-tg.x)**2+(a.y-tg.y)**2)-((b.x-tg.x)**2+(b.y-tg.y)**2)).slice(0,3)){hitMon(p,m,d*.8,u,'#c8a8ff');addFx(p,'hit',m.x,m.y,.7)}}
+  else if(u.c==='assassin'){const n=proc!==false&&proc<.15?3:1;for(let i=0;i<n;i++){const cr=Math.random()<C.crit;if(cr&&HAS_DOM&&p.i===G.view)SFX.play('crit',.12);hitMon(p,tg,d*(cr?2.5:1),u,cr?'#ffd75a':'#fff')}addFx(p,n>1?'flurry':'slash2',tg.x,tg.y-16,n>1?.7:.55);
+    if(u.t===4&&Math.random()<.25)for(const m of p.mons.filter(m=>!m.dead&&m!==tg&&(m.x-tg.x)**2+(m.y-tg.y)**2<170*170).sort((a,b)=>((a.x-tg.x)**2+(a.y-tg.y)**2)-((b.x-tg.x)**2+(b.y-tg.y)**2)).slice(0,3)){hitMon(p,m,d*.8,u,'#c8a8ff');addFx(p,'slash2',m.x,m.y-16,.45)}}
   else if(u.c==='hunter'){const pierce=proc!==false&&proc<.1,L=u.t===4?[tg,...p.mons.filter(m=>!m.dead&&m!==tg).sort((a,b)=>b.d-a.d).slice(0,2)]:[tg];
     for(const m of L){const cr=u.t===4&&Math.random()<.25;p.shots.push({k:'arrow',x:S.x+16,y:S.y-26,tx:m.x,ty:m.y,m,t:0,T:.18,d:d*(cr?2.5:1),u,pierce,crit:cr})}}
   else if(u.c==='mage'){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,freeze:proc!==false&&proc<.12,burn:u.t===4,col:'#ff9a3a'})}
@@ -446,22 +446,24 @@ function castReady(p,s){const u=p.units[s];if(!u||u.t<3||u.mana<100)return false
 function castUlt(p,s,u){const S=SLOTS[s],d=dmgOf(p,u,s)*(perk(p,u.c,15)?1.5:1);u.flash=.5;u.ua=.7;
   if(HAS_DOM&&p.human&&G.view===0&&G.t>(G.cutCd||0)){G.cut={c:u.c,t:u.t,t0:G.t,n:(u.t===4?GOLD[u.c]:CLS[u.c]).ult.split(':')[0]};G.cutCd=G.t+3}if(perk(p,u.c,20))u.goldT=8;if(HAS_DOM&&p.i===G.view)SFX.play('ult',.25);
   if(u.t===4){goldUlt(p,s,u,d);return}
-  if(u.c==='warrior'){for(const m of p.mons)if(!m.dead){m.stunT=Math.max(m.stunT,1.5);hitMon(p,m,d*2,u,'#ffb04a')}p.quakeT=.5;addFx(p,'ultr',S.x,S.y,1.4)}
-  if(u.c==='assassin'){const L=p.mons.filter(m=>!m.dead).sort((a,b)=>b.hp-a.hp).slice(0,6);for(const m of L){hitMon(p,m,d*9,u,'#ffd75a');addFx(p,'crit',m.x,m.y,1)}}
+  if(u.c==='warrior'){for(const m of p.mons)if(!m.dead){m.stunT=Math.max(m.stunT,1.5);hitMon(p,m,d*2,u,'#ffb04a')}p.quakeT=.5;addFx(p,'ultr',S.x,S.y,1.4);quakeFx(p)}
+  if(u.c==='assassin'){const L=p.mons.filter(m=>!m.dead).sort((a,b)=>b.hp-a.hp).slice(0,6);for(const m of L){hitMon(p,m,d*9,u,'#ffd75a');addFx(p,'flurry',m.x,m.y-16,.8)}}
   if(u.c==='hunter'){const m=p.mons.filter(m=>!m.dead).sort((a,b)=>b.hp-a.hp)[0];if(m){p.shots.push({k:'arrow',x:S.x+16,y:S.y-26,tx:m.x,ty:m.y,m,t:0,T:.12,d:d*28,u,big:1});addFx(p,'ultg',S.x,S.y,1)}}
   if(u.c==='mage'){const L=p.mons.filter(m=>!m.dead);for(let i=0;i<8&&L.length;i++){const m=L[(Math.random()*L.length)|0];p.shots.push({k:'meteor',x:m.x-120,y:m.y-260,tx:m.x,ty:m.y,m:null,t:-i*.12,T:.45,d:d*4,u})}addFx(p,'ultb',S.x,S.y,1)}
-  if(u.c==='support'){p.partyT=6;addFx(p,'healring',S.x,S.y,1.4)}
-  if(u.c==='curse'){const t0=targetOf(p),t=t0&&hasGold(t0,'curse')?p:t0;if(t){t.curseT=6;addFx(t,'toxic',BW/2,BH/2,2.2);if(HAS_DOM&&t.human)say(t===p?'🪞 '+t0.name+' มีกระจกสาป คำสาปเด้งกลับ! ยิงช้าลง 6 วิ':p.name+' สาปเด็กของคุณ! ยิงช้าลง 6 วิ','#c88aff')}addFx(p,'toxic',S.x,S.y,1)}
+  if(u.c==='support'){p.partyT=6;addFx(p,'healaoe',S.x,S.y+6,1.3)}
+  if(u.c==='curse'){const t0=targetOf(p),t=t0&&hasGold(t0,'curse')?p:t0;if(t){t.curseT=6;addFx(t,'hex',BW/2,BH/2,2.2);if(t===p)addFx(t0,'parry',BW/2,BH/2-40,1.6);if(HAS_DOM&&t.human)say(t===p?'🪞 '+t0.name+' มีกระจกสาป คำสาปเด้งกลับ! ยิงช้าลง 6 วิ':p.name+' สาปเด็กของคุณ! ยิงช้าลง 6 วิ','#c88aff')}addFx(p,'toxic',S.x,S.y,1)}
 }
 // gold ults (GOLD[c].ult); delayed hits ride on p.shots with a negative start time
 function goldUlt(p,s,u,d){const S=SLOTS[s],L=p.mons.filter(m=>!m.dead);addFx(p,'ultg',S.x,S.y,1.6);
   if(u.c==='warrior')for(let i=0;i<3;i++)p.shots.push({k:'quake',x:S.x,y:S.y,tx:S.x,ty:S.y,t:-i*.7,T:0,d:d*2.5,u});
   else if(u.c==='assassin')for(let i=0;i<24;i++)p.shots.push({k:'slash',x:S.x,y:S.y,tx:S.x,ty:S.y,t:-i*.085,T:0,d:d*4,u});
   else if(u.c==='hunter'){if(L.length)for(let i=0;i<30;i++){const m=L[(Math.random()*L.length)|0];p.shots.push({k:'rain',x:m.x-50,y:m.y-300,tx:m.x,ty:m.y,m,t:-i*.1,T:.25,d:d*3,u})}}
-  else if(u.c==='mage'){for(const m of L)m.stunT=Math.max(m.stunT,m.M.boss?1.5:3);p.ampT=3;p.stopT=3}
-  else if(u.c==='support'){p.moonT=8;p.curseT=0;addFx(p,'healring',S.x,S.y,2)}
-  else if(u.c==='curse'){for(const q of alive()){if(q===p)continue;const t=hasGold(q,'curse')?p:q;t.curseT=6;addFx(t,'toxic',BW/2,BH/2,2.2);sendTo(p,q,'brute');
-      if(HAS_DOM&&t.human)say(t===p?'🪞 คำสาปเด้งกลับ! เด็กของคุณยิงช้าลง 6 วิ':p.name+' ปล่อยฝันร้ายระบาด! ยิงช้าลง 6 วิ','#c88aff')}addFx(p,'toxic',S.x,S.y,1.2)}}
+  else if(u.c==='mage'){for(const m of L)m.stunT=Math.max(m.stunT,m.M.boss?1.5:3);p.ampT=3;p.stopT=3;addFx(p,'tstop',BW/2,BH/2,2.4)}
+  else if(u.c==='support'){p.moonT=8;p.curseT=0;addFx(p,'healaoe',BW/2,BH/2+60,2.6);addFx(p,'feather',S.x,S.y-40,1)}
+  else if(u.c==='curse'){for(const q of alive()){if(q===p)continue;const t=hasGold(q,'curse')?p:q;t.curseT=6;addFx(t,'darkx',BW/2,BH/2-20,1.5);if(t===p)addFx(q,'parry',BW/2,BH/2-40,1.6);sendTo(p,q,'brute');
+      if(HAS_DOM&&t.human)say(t===p?'🪞 คำสาปเด้งกลับ! เด็กของคุณยิงช้าลง 6 วิ':p.name+' ปล่อยฝันร้ายระบาด! ยิงช้าลง 6 วิ','#c88aff')}addFx(p,'darkx',S.x,S.y-30,.7)}}
+// ground cracks along the top and bottom of the loop
+function quakeFx(p){for(const [x,y] of [[270,72],[690,72],[270,488],[690,488]])addFx(p,'quake',x,y,1)}
 // the mage's gold passive: a meteor on the thickest group
 function densest(p){let b=null,bn=0;for(const m of p.mons){if(m.dead)continue;let n=0;for(const o of p.mons)if(!o.dead&&(o.x-m.x)**2+(o.y-m.y)**2<80*80)n++;if(n>bn){bn=n;b=m}}return b}
 // ---------- tick ----------
@@ -478,19 +480,20 @@ function stepBoard(p,dt){
   p.mons=p.mons.filter(m=>!m.dead);
   if(HAS_DOM&&p.human&&p.alive&&p.mons.length>=p.hp*.8&&G.t>(p.warnT||0)){p.warnT=G.t+4;flashT=.25;SFX.play('alarm');say('ปีศาจใกล้เต็มโควต้า! '+p.mons.length+'/'+p.hp,'#ff6a6a')}
   for(let s=0;s<NSLOT;s++){const u=p.units[s];if(!u)continue;u.cd-=dt;if(u.kick>0)u.kick-=dt;if(u.at>0)u.at-=dt;if(u.ua>0)u.ua-=dt;if(u.pop>0)u.pop-=dt;if(u.drop>0)u.drop-=dt;if(u.flash>0)u.flash-=dt;if(u.goldT>0)u.goldT-=dt;
-    if(u.t===4&&u.c==='mage'){u.metT=(u.metT==null?6:u.metT)-dt;if(u.metT<=0){u.metT=6;const m=densest(p);if(m)p.shots.push({k:'meteor',x:m.x-120,y:m.y-260,tx:m.x,ty:m.y,m:null,t:0,T:.45,d:dmgOf(p,u,s)*3,u})}}
+    if(u.t===4&&u.c==='mage'){u.metT=(u.metT==null?6:u.metT)-dt;if(u.metT<=0){u.metT=6;const m=densest(p);if(m){const L=(FXM&&FXM.starfall&&FXM.starfall.land)||.87;addFx(p,'starfall',m.x,m.y+4,.75);p.shots.push({k:'land',x:m.x,y:m.y,tx:m.x,ty:m.y,m:null,t:-L,T:0,d:dmgOf(p,u,s)*3,u})}}}
     if(u.cd>0)continue;
     const S=SLOTS[s],tg=nearestTarget(p,S.x,S.y-20,rangeOf(p,s,u));if(!tg)continue;u.cd=rateOf(p,s,u);attack(p,s,u,tg)}
   for(const sh of p.shots){sh.t+=dt;if(sh.k==='rain'&&sh.m&&!sh.m.dead){sh.tx=sh.m.x;sh.ty=sh.m.y}if(sh.t<sh.T||sh.done)continue;sh.done=true;const x=sh.m&&!sh.m.dead?sh.m.x:sh.tx,y=sh.m&&!sh.m.dead?sh.m.y:sh.ty;
-    if(sh.k==='arrow'){if(sh.pierce||sh.big){const ux=x-sh.x,uy=y-sh.y,l=Math.hypot(ux,uy)||1;for(const m of p.mons){if(m.dead)continue;const t=((m.x-sh.x)*ux+(m.y-sh.y)*uy)/l;if(t<0||t>l+500)continue;if(Math.abs((m.x-sh.x)*uy-(m.y-sh.y)*ux)/l<26)hitMon(p,m,sh.d*(sh.big&&m!==sh.m?.25:1),sh.u,sh.big?'#ffd75a':'#fff')}addFx(p,sh.big?'crit':'hit',x,y,sh.big?1.3:.9)}
-      else if(sh.m&&!sh.m.dead){hitMon(p,sh.m,sh.d,sh.u,sh.crit?'#ffd75a':undefined);addFx(p,sh.crit?'crit':'hit',x,y,.7)}}
-    else if(sh.k==='orb'){if(sh.u.c==='mage'){const C=CLS.mage;for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<C.splash**2){m.slowT=1.6;m.slowK=1-C.slow;if(sh.freeze&&!m.M.boss)m.stunT=Math.max(m.stunT,1)}splash(p,x,y,C.splash,sh.d,sh.u,'#ffc890');addFx(p,sh.freeze?'zapice':'plasma',x,y,.55);if(sh.burn)p.zones.push({x,y,r:62,t:3,tick:.25,d:sh.d*.25,u:sh.u})}
+    if(sh.k==='arrow'){if(sh.pierce||sh.big){const ux=x-sh.x,uy=y-sh.y,l=Math.hypot(ux,uy)||1;for(const m of p.mons){if(m.dead)continue;const t=((m.x-sh.x)*ux+(m.y-sh.y)*uy)/l;if(t<0||t>l+500)continue;if(Math.abs((m.x-sh.x)*uy-(m.y-sh.y)*ux)/l<26)hitMon(p,m,sh.d*(sh.big&&m!==sh.m?.25:1),sh.u,sh.big?'#ffd75a':'#fff')}addFx(p,sh.big?'critx':'spark',x,y-10,sh.big?1.1:.7)}
+      else if(sh.m&&!sh.m.dead){hitMon(p,sh.m,sh.d,sh.u,sh.crit?'#ffd75a':undefined);addFx(p,sh.crit?'critx':'spark',x,y-10,sh.crit?.55:.6)}}
+    else if(sh.k==='orb'){if(sh.u.c==='mage'){const C=CLS.mage;for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<C.splash**2){m.slowT=1.6;m.slowK=1-C.slow;if(sh.freeze&&!m.M.boss)m.stunT=Math.max(m.stunT,1)}splash(p,x,y,C.splash,sh.d,sh.u,'#ffc890');addFx(p,sh.freeze?'zapice':'plasma',x,y,.55);if(sh.burn){p.zones.push({x,y,r:62,t:3,tick:.25,d:sh.d*.25,u:sh.u});addFx(p,'firering',x,y+6,.42)}}
       else{if(sh.m&&!sh.m.dead)hitMon(p,sh.m,sh.d,sh.u,'#e0c0ff');addFx(p,'toxic',x,y,.35)}}
     else if(sh.k==='carrot'){if(sh.m&&!sh.m.dead)hitMon(p,sh.m,sh.d,sh.u,'#ffd0a0')}
-    else if(sh.k==='meteor'){splash(p,x,y,80,sh.d,sh.u,'#ffb04a');addFx(p,'plasma',x,y,1.1)}
-    else if(sh.k==='quake'){for(const m of p.mons)if(!m.dead){m.stunT=Math.max(m.stunT,1);hitMon(p,m,sh.d,sh.u,'#ffb04a')}p.quakeT=.45;addFx(p,'ultr',BW/2,BH/2,2.2);if(HAS_DOM&&p.i===G.view)SFX.play('wave',.3)}
-    else if(sh.k==='slash'){const L=p.mons.filter(m=>!m.dead);if(L.length){const m=L[(Math.random()*L.length)|0];hitMon(p,m,sh.d,sh.u,'#ffd75a');addFx(p,'crit',m.x,m.y,.9);if(HAS_DOM&&p.i===G.view)SFX.play('crit',.1)}}
-    else if(sh.k==='rain'){if(sh.m&&!sh.m.dead){hitMon(p,sh.m,sh.d,sh.u,'#ffd75a');sh.m.markT=6}addFx(p,'hit',x,y,.8)}}
+    else if(sh.k==='meteor'){splash(p,x,y,80,sh.d,sh.u,'#ffb04a');addFx(p,'boom',x,y+10,.5)}
+    else if(sh.k==='land'){splash(p,x,y,80,sh.d,sh.u,'#d8b8ff');if(HAS_DOM&&p.i===G.view)SFX.play('crit',.15)}
+    else if(sh.k==='quake'){for(const m of p.mons)if(!m.dead){m.stunT=Math.max(m.stunT,1);hitMon(p,m,sh.d,sh.u,'#ffb04a')}p.quakeT=.45;quakeFx(p);if(HAS_DOM&&p.i===G.view)SFX.play('wave',.3)}
+    else if(sh.k==='slash'){const L=p.mons.filter(m=>!m.dead);if(L.length){const m=L[(Math.random()*L.length)|0];hitMon(p,m,sh.d,sh.u,'#ffd75a');addFx(p,'flurry',m.x,m.y-16,.65);if(HAS_DOM&&p.i===G.view)SFX.play('crit',.1)}}
+    else if(sh.k==='rain'){if(sh.m&&!sh.m.dead){hitMon(p,sh.m,sh.d,sh.u,'#ffd75a');sh.m.markT=6}addFx(p,'spark',x,y-10,.6)}}
   for(const z of p.zones){z.t-=dt;z.tick-=dt;if(z.tick<=0){z.tick=.5;splash(p,z.x,z.y,z.r,z.d,z.u,'#ff9a3a')}}p.zones=p.zones.filter(z=>z.t>0);
   p.shots=p.shots.filter(s=>!s.done);
   if(p.mons.length>=p.hp&&p.alive){p.alive=false;p.rank=alive().length+1;p.mons=[];p.spawnQ=[];p.shots=[];p.zones=[];if(HAS_DOM)onOut(p)}
@@ -827,7 +830,7 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.
   if(u.t>=3){ctx.fillStyle='#000';ctx.fillRect(x-26,y+21,52,6);ctx.fillStyle=rdy&&Math.sin(G.t*12)>0?'#fff':'#5ad0ff';ctx.fillRect(x-25,y+22,50*Math.min(1,u.mana/100),4)}
   if(rdy){const pu=.5+.5*Math.sin(G.t*7);ctx.strokeStyle='rgba(120,220,255,'+(.5+.5*pu)+')';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,30+6*pu,10+2*pu,0,0,6.28);ctx.stroke();
     const bx=x+26,by=y-66-4*pu;glow(bx,by,40,u.t===4?'255,215,90':'90,208,255',.35+.3*pu);ctx.fillStyle='#0b1a2a';ctx.beginPath();ctx.arc(bx,by,19,0,6.28);ctx.fill();ctx.fillStyle=u.t===4?'#ffd75a':'#5ad0ff';ctx.beginPath();ctx.arc(bx,by,16,0,6.28);ctx.fill();ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText('⚡',bx,by+8)}}
-function drawShot(sh){if(sh.t<0||sh.k==='quake'||sh.k==='slash')return;const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
+function drawShot(sh){if(sh.t<0||sh.k==='quake'||sh.k==='slash'||sh.k==='land')return;const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
   if(sh.k==='arrow'||sh.k==='rain'){const k0=Math.max(0,k-.3);ctx.strokeStyle='rgba(255,245,200,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sh.x+(sh.tx-sh.x)*k0,sh.y+(sh.ty-sh.y)*k0);ctx.lineTo(x,y);ctx.stroke();const a=Math.atan2(sh.ty-sh.y,sh.tx-sh.x);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#6a4a2a';ctx.fillRect(-16,-1.5,16,3);ctx.fillStyle=sh.big?'#fff3a0':'#ffd75a';ctx.fillRect(0,-3,(sh.big?10:6),6);ctx.restore()}
   else if(sh.k==='carrot'){ctx.save();ctx.translate(x,y);ctx.rotate(sh.t*18);ctx.fillStyle='#ff9a2a';ctx.fillRect(-4,-4,8,8);ctx.fillStyle='#4aaa3a';ctx.fillRect(-6,-6,3,3);ctx.restore()}
   else{const r=sh.k==='meteor'?12:6;glow(x,y,r*3,sh.k==='meteor'||sh.col==='#ff9a3a'?'255,150,60':'200,138,255',.45);if(sh.k==='meteor'){ctx.strokeStyle='rgba(255,200,120,.5)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(x-(sh.tx-sh.x)*.18,y-(sh.ty-sh.y)*.18);ctx.lineTo(x,y);ctx.stroke()}ctx.fillStyle=sh.k==='meteor'?'#ff7a2a':sh.col;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.fillStyle='#fff6d0';ctx.fillRect(x-r/2,y-r/2,r,r)}}
@@ -846,7 +849,7 @@ function draw(){
   if(G.view===0&&G.sel>=0){const S=SLOTS[G.sel],u=p.units[G.sel];if(u){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(S.x,S.y-20,rangeOf(p,G.sel,u),0,6.28);ctx.stroke();ctx.setLineDash([])}}
   // gold Ratri's burning ground
   for(const z of p.zones){const a=Math.min(1,z.t*1.5);ctx.globalAlpha=.22*a;ctx.fillStyle='#ff6a1a';ctx.beginPath();ctx.ellipse(z.x,z.y,z.r,z.r*.42,0,0,6.28);ctx.fill();ctx.globalAlpha=a;
-    for(let i=0;i<7;i++){const ph=(G.t*1.6+i/7)%1,fx=z.x+Math.cos(i*2.4)*z.r*.62,fy=z.y+Math.sin(i*2.4)*z.r*.26-ph*18;ctx.fillStyle=ph<.35?'#fff2a0':ph<.7?'#ffa03a':'#c8401a';ctx.fillRect(Math.round(fx)-2,Math.round(fy)-2,4,4)}}ctx.globalAlpha=1;
+    if(!FXM)for(let i=0;i<7;i++){const ph=(G.t*1.6+i/7)%1,fx=z.x+Math.cos(i*2.4)*z.r*.62,fy=z.y+Math.sin(i*2.4)*z.r*.26-ph*18;ctx.fillStyle=ph<.35?'#fff2a0':ph<.7?'#ffa03a':'#c8401a';ctx.fillRect(Math.round(fx)-2,Math.round(fy)-2,4,4)}}ctx.globalAlpha=1;
   // back-to-front: monsters on the top row first, kids by row
   const items=[];for(const m of p.mons)items.push([m.y,()=>drawMon(m)]);for(const d of p.dying)items.push([d.m.y,()=>drawMon(d.m,d.t/.4)]);for(let s=0;s<NSLOT;s++){const u=p.units[s];if(u&&!(drag&&drag.s===s&&drag.moved))items.push([SLOTS[s].y+6,()=>drawKid(p,s,u)])}
   items.sort((a,b)=>a[0]-b[0]);for(const it of items)it[1]();
@@ -1070,7 +1073,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-03o',NEWS=['⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-03p',NEWS=['💥 เอฟเฟกต์สกิลใหม่ 17 แบบ (จากชุด pixelfx): แทนทุบค้อน พื้นแตก · นิลฟันคู่ ฟันรัว · ฟ้าประกายศร คริ · ราตรีดาวตก ระเบิด นาฬิกาหยุดเวลา วงไฟ · จันทร์วงฮีลใหญ่ ขนนก · หมอกตราสาป ระเบิดมืด · รวมร่างแสงพลัง · ผสมทองเสาแสง · บอสตายระเบิด','⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
