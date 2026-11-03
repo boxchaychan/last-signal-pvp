@@ -7,13 +7,13 @@ const st=(w)=>` stroke="${O}" stroke-width="${w||4}" stroke-linejoin="round" str
 const TIERS=['white','green','purple','red','gold'];
 function kid(K,ti){
   const T=TIERS[ti],age=[0,.25,.5,.75,1][ti],gold=T==='gold',red=T==='red',pur=T==='purple',grn=T==='green',wht=T==='white';
-  const f=K.f,trim=gold?'#ffd24a':red?'#e0303a':null;
+  const f=K.f,trim=gold?'#ffd24a':red?'#e0303a':pur?'#a77aff':grn?'#4ec46a':null;
   const bodyH=48+age*44,legH=7+age*19,top=40;      // hood top y
   const headCY=top+66,neckY=top+122,bodyY=neckY,bodyB=bodyY+bodyH,footY=bodyB+legH;
   let back='',front='',hoodDeco='',acc='',hat='';
   // ----- back: capes, wings, scarf tails
   if(gold&&K.wings)back+=`<path d="M70 ${bodyY+6} Q10 ${bodyY-30} 6 ${bodyY+40} Q24 ${bodyY+34} 30 ${bodyY+60} Q46 ${bodyY+46} 56 ${bodyY+66} Z" fill="#1a1428"${st(4)}/><path d="M66 ${bodyY+10} Q18 ${bodyY-18} 14 ${bodyY+34}" fill="none" stroke="#ffd24a" stroke-width="4"/>`;
-  if(pur||red||gold){const cc=gold?K.capeG||'#2a2040':red?K.capeR||'#3a1a24':'#5a3a8a',edge=gold?'#ffd24a':red?'#e0303a':'#8a6ac8';
+  if(pur||red||gold){const cc=gold?K.capeG||'#2a2040':red?'#b02a34':'#6a4aa8',edge=gold?'#ffd24a':red?'#e0303a':'#8a6ac8';
     back+=`<path d="M78 ${bodyY} Q40 ${bodyY+bodyH*.6} 44 ${bodyB+(gold?18:6)} L86 ${bodyB+(gold?10:2)} L100 ${bodyY+10} Z" fill="${cc}"${st()}/><path d="M48 ${bodyB+(gold?14:3)} L84 ${bodyB+(gold?7:0)}" stroke="${edge}" stroke-width="5"/>`}
   if(red)back+=`<path d="M94 ${neckY+6} Q72 ${neckY+12} 54 ${neckY+30} Q66 ${neckY+28} 66 ${neckY+40} Q80 ${neckY+22} 96 ${neckY+18} Z" fill="#d8303a"${st()}/>`;
   // ----- tail
@@ -46,6 +46,12 @@ function kid(K,ti){
   if(red)acc+=`<path d="M78 ${neckY} Q106 ${neckY+16} 134 ${neckY-2} L132 ${neckY+12} Q106 ${neckY+28} 80 ${neckY+12} Z" fill="#d8303a"${st(3.5)}/>`;
   if(gold)acc+=`<path d="M84 ${neckY+2} Q106 ${neckY+14} 128 ${neckY+2}" fill="none" stroke="#ffd24a" stroke-width="4"/><path d="M100 ${neckY+10} L106 ${neckY+24} L112 ${neckY+10} Z" fill="#ffd24a"${st(2.5)}/>`;
   if(pur&&K.bag)acc+=K.bag(bodyY,bodyH);
+  // shoulder guards and cuffs: green cuffs, purple one guard, red two guards + forearm guard, gold ornate guards
+  const sx=102+bw/2-6,sy=bodyY+8,pad=(x,c,e,r)=>`<ellipse cx="${x}" cy="${sy}" rx="${r||13}" ry="${(r||13)*.62}" fill="${c}"${st(3.5)}/><path d="M${x-(r||13)+2} ${sy+3} Q${x} ${sy+9} ${x+(r||13)-2} ${sy+3}" fill="none" stroke="${e}" stroke-width="3"/>`;
+  if(grn)acc+=`<rect x="152" y="${bodyY+20}" width="9" height="10" rx="2" fill="#3ea85a"${st(2.5)}/>`;
+  if(pur)acc+=pad(sx,'#9a9ab0','#a77aff');
+  if(red)acc+=pad(102-bw/2+6,'#a8acb8','#e0303a')+pad(sx,'#b8bcc8','#e0303a',15)+`<rect x="148" y="${bodyY+16}" width="14" height="12" rx="3" fill="#a8acb8"${st(3)}/><rect x="148" y="${bodyY+25}" width="14" height="3" fill="#e0303a"/>`;
+  if(gold)acc+=pad(102-bw/2+6,'#ffd24a','#fff2a0',14)+pad(sx,'#ffd24a','#fff2a0',16);
   if(K.hat&&gold)hat=K.hat(top);
   // ----- front arm + weapon
   const wp=K.weapon(T,bodyY,bodyH);
