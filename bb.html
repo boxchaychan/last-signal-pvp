@@ -319,7 +319,7 @@ const NAMES=['แก๊งเสือน้อย','แก๊งลูกหม
 // maps change only the look (same loop and yard): chosen in the lobby
 const MAPS=[{id:'camp',n:'ค่ายกลางป่า',ic:'🏕️'},{id:'park',n:'สนามเด็กเล่นร้าง',ic:'🛝'},{id:'beach',n:'หาดประภาคาร',ic:'🌊'}];
 // balance knobs (tools/sim/bb_sim.js runs 5 bots to check them)
-const BAL={hpG:1.13,sdW:24,sdG:1.1,luck:[.86,.12,.02],inc0:10,incW:2,killW:6,sum0:20,sumK:1,sumMax:60};
+const BAL={hpG:1.17,sdW:18,sdG:1.12,luck:[.86,.12,.02],inc0:10,incW:2,killW:6,sum0:20,sumK:1,sumMax:60};
 const hpScale=w=>Math.pow(BAL.hpG,w-1)*(w>BAL.sdW?Math.pow(BAL.sdG,w-BAL.sdW):1);
 const sumCost=p=>Math.max(10,Math.min(BAL.sumMax,BAL.sum0+BAL.sumK*p.nSum)-5*((p.tal&&p.tal.cheap)||0));
 const upCost=lv=>50*(lv+1),UPK=.25;
@@ -334,7 +334,7 @@ function newGame(o){o=o||{};
   // your kid levels; bots get levels near yours (a bit lower) so matches stay close
   if(o.klv){const me=G.players[0];for(const k of CK)me.klv[k]=Math.max(1,Math.min(KLV.max,o.klv[k]||1));const avg=CK.reduce((a,k)=>a+me.klv[k],0)/CK.length;
     for(const q of G.players.slice(1))for(const k of CK)q.klv[k]=Math.max(1,Math.min(KLV.max,Math.round(avg*.8+rnd(-1.5,1.5))))}
-  if(HAS_DOM){hidePop();$('#end').hidden=true;$('#bSpd').textContent='x1';SFX.duck(.14);buildSide();updHud();{const m=MAPS.find(m=>m.id===G.map)||MAPS[0];banner(m.ic+' '+m.n,'กด "🧸 เรียกเด็ก" ด้านล่าง · ได้ 3 ตัวเหมือนกัน แตะแล้วรวมร่าง',null)}}
+  if(HAS_DOM){hidePop();$('#end').hidden=true;$('#bSpd').textContent='x1';SFX.duck(.14);buildSide();updHud();{const m=MAPS.find(m=>m.id===G.map)||MAPS[0];banner(m.ic+' '+m.n,'กด "🧸 เรียกเด็ก" ด้านล่าง · เด็กสีเดียวกัน 3 ตัว แตะแล้วรวมร่าง',null)}}
 }
 const alive=()=>G.players.filter(p=>p.alive);
 function targetOf(p){
@@ -364,9 +364,11 @@ function summon(p){const c=sumCost(p),free=p.units.map((u,i)=>u?-1:i).filter(i=>
   // luck: most summons are white, some come out green or even purple
   const r=Math.random(),t=r<BAL.luck[0]?0:r<BAL.luck[0]+BAL.luck[1]?1:2;p.units[s]={c:k,t,cd:rnd(0,.5),mana:0,kick:0,flash:t?.6:0};
   addFx(p,t?'ultgr':'poof',SLOTS[s].x,SLOTS[s].y,.8);if(HAS_DOM&&p.human)SFX.play(t?'lucky':'summon');if(HAS_DOM&&p.human&&t)say('โชคดี! ได้'+CLS[k].n+'สี'+TIER[t].n+'เลย','#5fe05f');return s}
-function mates(p,s){const u=p.units[s];return u?p.units.map((v,i)=>v&&i!==s&&v.c===u.c&&v.t===u.t?i:-1).filter(i=>i>=0):[]}
+// merge rule (owner 2026-11-03: "same colour merges, too few slots"): any 3 kids of the same colour merge. The kid you tap grows up,
+// the other two are used up, same class first so a pure merge still happens when it can.
+function mates(p,s){const u=p.units[s];if(!u)return[];return p.units.map((v,i)=>v&&i!==s&&v.t===u.t?i:-1).filter(i=>i>=0).sort((a,b)=>(p.units[b].c===u.c)-(p.units[a].c===u.c))}
 function canMerge(p,s){const u=p.units[s];return !!u&&u.t<3&&mates(p,s).length>=2}
-function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).sort((a,b)=>b-a);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25);if(u.t>=3)mprog('red')}
+function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).slice(0,2);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25);if(u.t>=3)mprog('red')}
   addFx(p,'poof',SLOTS[m[0]].x,SLOTS[m[0]].y,.7);addFx(p,'poof',SLOTS[m[1]].x,SLOTS[m[1]].y,.7);addFx(p,['ultb','ultgr','ultb','ultr'][u.t],SLOTS[s].x,SLOTS[s].y+20,.8);return true}
 const sellValue=u=>8*Math.pow(3,u.t);
 function sell(p,s){const u=p.units[s];if(!u)return;if(HAS_DOM&&p.human)SFX.play('coin');p.gold+=sellValue(u);p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
@@ -669,7 +671,7 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.
     // face the target, small squash + recoil on each attack
     const f=u.face||1,sq=u.kick>0?1+u.kick*.6:1;ctx.save();ctx.translate(Math.round(x+k*f),Math.round(y+bob+2));ctx.scale(f*sq,1/sq);ctx.drawImage(im,-Math.round(w/2),-Math.round(h),w,h);ctx.restore();ctx.filter='none';
     // green arrow over kids that can merge right now
-    if(!drag&&G.view===0&&p===G.players[0]&&canMerge(p,s)){const ay=Math.round(y-h-8+Math.sin(G.t*6)*3);ctx.fillStyle='#0b2a10';ctx.beginPath();ctx.moveTo(x,ay-19);ctx.lineTo(x-15,ay+1);ctx.lineTo(x+15,ay+1);ctx.fill();ctx.fillRect(x-7,ay,14,13);
+    if(!drag&&G.view===0&&p===G.players[0]&&u.t>=1&&canMerge(p,s)){const ay=Math.round(y-h-8+Math.sin(G.t*6)*3);ctx.fillStyle='#0b2a10';ctx.beginPath();ctx.moveTo(x,ay-19);ctx.lineTo(x-15,ay+1);ctx.lineTo(x+15,ay+1);ctx.fill();ctx.fillRect(x-7,ay,14,13);
       ctx.fillStyle='#7fe08a';ctx.beginPath();ctx.moveTo(x,ay-14);ctx.lineTo(x-10,ay-2);ctx.lineTo(x+10,ay-2);ctx.fill();ctx.fillRect(x-4,ay-3,8,13)}}
   for(let i=0;i<=u.t;i++){ctx.fillStyle='#000';ctx.fillRect(x-u.t*5-3+i*10,y+10,8,8);ctx.fillStyle=T.c;ctx.fillRect(x-u.t*5-2+i*10,y+11,6,6)}
   if(u.t===3){ctx.fillStyle='#000';ctx.fillRect(x-26,y+21,52,6);ctx.fillStyle='#5ad0ff';ctx.fillRect(x-25,y+22,50*Math.min(1,u.mana/100),4)}}
@@ -732,7 +734,7 @@ function unitPop(s,refresh){const p=G.players[0],u=p.units[s];if(!u){hidePop();r
   $('#pop').innerHTML='<button class="x" type="button" data-a="x">×</button><h3>'+C.n+' <small style="color:var(--dim);font-weight:500">Lv.'+klv(p,u.c)+' · '+C.a+'</small><span class="tier" style="background:'+T.c+'">'+T.n+' · '+T.age+'</span></h3>'+
     '<div style="font-size:12px;color:var(--dim)">ระยะยิง <b style="color:#ffd75a;letter-spacing:1px">'+'●'.repeat(rs)+'<span style="opacity:.3">'+'●'.repeat(10-rs)+'</span></b> '+rs+'/10'+(tl.length?' · ช่องนี้: '+tl.map(id=>TALS[id].ic+' '+TALS[id].n).join(', '):'')+'</div>'+
     '<ul>'+L.map(([n,d,t])=>'<li class="'+(u.t>=t?'':'off')+'"><b>'+n+':</b> '+d+(u.t>=t?'':' (ปลดที่'+TIER[t].n+')')+'</li>').join('')+'</ul>'+
-    '<div class="row"><button type="button" class="go" data-a="m"'+(u.t<3&&mg>=2?'':' disabled')+'>'+(u.t>=3?'ระดับสูงสุด':'รวมร่าง (มี '+(mg+1)+'/3)')+'</button><button type="button" data-a="s">ขาย +'+sellValue(u)+'</button></div>';
+    '<div class="row"><button type="button" class="go" data-a="m"'+(u.t<3&&mg>=2?'':' disabled')+'>'+(u.t>=3?'ระดับสูงสุด':'รวมร่าง (สีเดียวกัน '+(mg+1)+'/3)')+'</button><button type="button" data-a="s">ขาย +'+sellValue(u)+'</button></div>';
   $('#pop').hidden=false;G.popup='unit';G.sel=s}
 function talPop(){const p=G.players[0];if(!p.offer||!p.alive)return;if(G.view!==0)setView(0);G.popup='tal';G.sel=-1;
   $('#pop').innerHTML='<h3>🎁 ทาเลนต์หลังบอส · เลือก 1 ใบ</h3><p style="margin:0 0 6px;color:var(--dim)">ใบ "ช่อง" แรงแต่ได้เฉพาะเด็กที่ยืนช่องนั้น (เลือกแล้วแตะช่องบนลาน) · ใบ "ทั้งทีม" เบากว่าแต่ได้ทุกตัว</p><div class="row">'+
@@ -743,8 +745,8 @@ function whPop(){const p=G.players[0],n=alive().length-1;G.popup='wh';G.sel=-1;
   $('#pop').innerHTML='<button class="x" type="button" data-a="x">×</button><h3>นกหวีด · ส่งปีศาจ 1 ตัวไปทุกบ้าน ('+n+' บ้าน)</h3><p style="margin:0 0 6px;color:var(--dim)">ปีศาจที่ส่งไป ฆ่าแล้วไม่ได้เงิน · ส่งแล้วรายได้ต่อระลอกของเราเพิ่ม (ตอนนี้ +'+p.inc+')</p><div class="row">'+SEND.map(s=>'<button type="button" data-w="'+s.id+'"'+(p.gold<s.cost||!n?' disabled':'')+'>'+s.n+' ×'+n+' บ้าน<br><small>💰 '+s.cost+' · รายได้ +'+s.inc+'</small></button>').join('')+'</div>';$('#pop').dataset.k='';$('#pop').hidden=false}
 function say(t,c,ms){if(!HAS_DOM)return;const b=$('#banner');if(G&&G.bannerT>0&&!c)return;b.innerHTML='<small style="color:'+(c||'#fff')+'">'+t+'</small>';b.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>b.classList.remove('show'),ms||1600)}
 // short tips during the first 3 matches, one at a time, each once per match
-function tipCheck(){const me=G.players[0];if(!me.alive||G.view!==0||G.t<(G.tipT||0))return;G.tips=G.tips||{};
-  const T=[['merge',()=>me.units.some((u,s)=>u&&canMerge(me,s)),'💡 มีเด็กเหมือนกัน 3 ตัวแล้ว! แตะตัวที่มีลูกศรเขียว แล้วกด "รวมร่าง"'],
+function tipCheck(){const me=G.players[0];if(!me.alive||G.view!==0||G.popup||G.t<(G.tipT||0))return;G.tips=G.tips||{};
+  const T=[['merge',()=>me.units.some((u,s)=>u&&canMerge(me,s)),'💡 มีเด็กสีเดียวกัน 3 ตัวแล้ว! แตะตัวที่อยากให้โต แล้วกด "รวมร่าง" (คลาสไหนก็ได้)'],
     ['full',()=>!me.units.some(u=>!u),'💡 ลานเต็มแล้ว: รวมร่าง หรือแตะเด็กแล้วกด "ขาย" ตัวที่ไม่ได้ใช้'],
     ['up',()=>G.wave>=4&&me.gold>=150&&CK.every(k=>me.lv[k]===0),'💡 เงินเหลือเยอะ ลองกด 💪 อัปพลัง คลาสที่มีเด็กเยอะสุด'],
     ['wh',()=>G.wave>=6&&me.inc===0&&me.gold>=60,'💡 กด 📣 นกหวีด ส่งปีศาจไปป่วนทุกบ้าน แล้วได้เงินต่อระลอกเพิ่ม'],
@@ -851,7 +853,7 @@ if(HAS_DOM){
     B.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.k)kidsModal(b.dataset.k);if(b.dataset.lvup){const k=b.dataset.lvup,L=LOB.prog.lv[k];if(canLv(k)){LOB.prog.sh[k]-=KLV.need(L);LOB.prog.lv[k]=L+1;LS.set('prog',LOB.prog);SFX.play('mergeBig');const q=PERK.find(q=>q.lv===L+1);kidsBadge();kidsModal(k,'⬆ '+CLS[k].kid+' Lv.'+(L+1)+(q?' · ปลด '+q.ic+' '+q.n:' · แรงขึ้น '+Math.round(KLV.dmg*100)+'%'))}}if(b.dataset.fav){LOB.fav=b.dataset.fav;LS.set('fav',LOB.fav);profUI();kidsModal(LOB.fav)}}}
   function howModal(){const rl=CK.slice().sort((a,b)=>rangeStars(b)-rangeStars(a)).map(k=>CLS[k].n+' '+rangeStars(k)).join(' · ');
     openModal('📖 วิธีเล่น','<div class="mrow" style="margin:0 0 4px"><button class="mbtn" type="button" data-a="story">🌙 อ่านเรื่องราว</button></div><h4>🎯 เป้าหมาย</h4><p>5 แก๊งแข่งกัน แต่ละบ้านมีลานเด็กของตัวเอง ปีศาจเดินวนรอบลาน · ปีศาจบนสนามห้ามถึง<b>โควต้า</b> (เริ่ม 100 ตัว) ถึงเมื่อไหร่ = ตกรอบ · แก๊งสุดท้ายที่เหลือชนะ</p>'+
-      '<h4>🧸 เรียกเด็ก + รวมร่าง</h4><ul><li>กด <b>เรียกเด็ก</b> ได้เด็กสุ่ม 1 ใน 6 คลาส ลงช่องว่างบนลาน</li><li>แตะเด็ก → <b>รวมร่าง</b> 3 ตัวคลาสเดียวกัน สีเดียวกัน = โตขึ้น 1 ระดับ (ขาว → เขียว → ม่วง → แดง) ยิ่งโตยิ่งเก่ง และปลดสกิลใหม่</li><li>ลากเด็กเพื่อย้ายช่อง · ขายได้</li></ul>'+
+      '<h4>🧸 เรียกเด็ก + รวมร่าง</h4><ul><li>กด <b>เรียกเด็ก</b> ได้เด็กสุ่ม 1 ใน 6 คลาส ลงช่องว่างบนลาน</li><li>แตะเด็ก → <b>รวมร่าง</b> 3 ตัว<b>สีเดียวกัน</b> (คลาสไหนก็ได้) = ตัวที่แตะโตขึ้น 1 ระดับ (ขาว → เขียว → ม่วง → แดง) อีก 2 ตัวหายไป (ใช้คลาสเดียวกันก่อน) · ยิ่งโตยิ่งเก่ง และปลดสกิลใหม่</li><li>ลากเด็กเพื่อย้ายช่อง · ขายได้</li></ul>'+
       '<h4>💪 อัปพลัง</h4><p>ใช้เงินอัปคลาส ทุกตัวในคลาสนั้นแรงขึ้น 25% ต่อขั้น</p>'+
       '<h4>📣 นกหวีด</h4><p>ส่งปีศาจ 1 ตัวไปทุกบ้านพร้อมกัน ปีศาจที่ถูกส่งไปฆ่าแล้วไม่ได้เงิน · ยิ่งส่ง รายได้ต่อระลอกยิ่งเพิ่ม · แตะชื่อแก๊งด้านขวาเพื่อดูสนามคนอื่น</p>'+
       '<h4>👹 บอส + ทาเลนต์</h4><p>บอสมาทุก 10 ระลอก ผลัดกัน 4 ตัว: '+BOSSES.map(b=>MON[b].n+' ('+MON[b].ab+')').join(' · ')+' · หลังบอสเลือกทาเลนต์ 1 ใน 3 ใบ: ใบ<b>ช่อง</b>แรงแต่ได้เฉพาะเด็กที่ยืนช่องนั้น (ช่องจะมีแสงสี) ใบ<b>ทั้งทีม</b>เบากว่าแต่ได้ทุกตัว</p>'+
@@ -901,7 +903,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-03c',NEWS=['🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-03d',NEWS=['🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
