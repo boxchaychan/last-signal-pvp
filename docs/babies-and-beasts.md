@@ -23,7 +23,7 @@
 | คลาส | ชุด | บทบาท |
 |---|---|---|
 | นักรบ | หมี | ตีใกล้ แรง เป็นวง |
-| นักฆ่า | แมวดำ | ตีเร็ว คริแรง เก็บตัวเลือดน้อย/บอส |
+| นักฆ่า | เสือดำ | ตีเร็ว คริแรง เก็บตัวเลือดน้อย/บอส |
 | ฮันเตอร์ | เหยี่ยว | ยิงไกล ทะลุแนว ล็อกเป้า |
 | นักเวทย์ | นกฮูก | เวทธาตุเป็นวง ช้า/แช่แข็ง เกจไม้ตายเต็มเร็ว |
 | ซัพพอร์ต | กระต่าย | บัฟเพื่อน เพิ่มเงิน เติมเกจ |
@@ -61,6 +61,65 @@
 - ปีศาจ: ซอมบี้/กระสือพิกเซลเดิม + ผีพิกเซลวาดด้วยโค้ด · เอฟเฟกต์จาก `fx/`
 - ตัวเลขสมดุลอยู่ใน `BAL` · ทดสอบ: `node tools/sim/bb_sim.js 10` (บอท 5 ตัว ล่าสุด ~9–10 นาที ระลอก ~28–32)
 
+## เปลี่ยนแมพ (เจ้าของเกม 2026-11-03 เช้า)
+- ทางเดินเป็น**วงสี่เหลี่ยมวงเดียวรอบลานเด็ก** แบบ Lucky Defense (แต่สนามเดียว) ไม่มีประตูเข้า ไม่มีปลายทาง ปีศาจโผล่บนวงแล้วเดินวนไปเรื่อย ๆ
+- **เลือด = โควต้าปีศาจ:** เริ่ม 100 = ปีศาจบนสนามห้ามถึง 100 ตัว ถึงเมื่อไหร่ตกรอบ (HUD 💀 n/100 · ใกล้เต็ม 80% มีเตือน)
+- ลานเด็ก 6×3 = 18 ช่อง · แถวกลางไกลจากทาง ต้องใช้ตัวยิงไกล (นักรบ/นักฆ่าวางขอบ)
+- **บอสทุก 10 ระลอก**
+- **ยังไม่ทำ (ไว้คิดต่อ):** ใครฆ่าบอสได้ บอสตาย → คนที่เหลือเลือด (โควต้า) ลดตามส่วนต่าง · จบบอสแล้วได้เลือกทาเลนต์แบบ Teamfight Tactics (augment)
+- จำลองบอท 6 เกม: ~11–12 นาที (ระลอก 33–36) ตกรอบกระจายระลอก 28–36
+
+## ระยะยิง + ทาเลนต์หลังบอส (ทำแล้ว 2026-11-03)
+- ระยะยิง (เต็ม 10, โชว์ในหน้าข้อมูลเด็ก): ฮันเตอร์ 10 · นักเวทย์ 8 · ซัพพอร์ต 7 · สาปแช่ง 7 · นักรบ 4 · นักฆ่า 4 → แถวกลางของลานต้องใช้ตัว 7 ขึ้นไป ตัว 4 วางขอบลาน
+- **ทาเลนต์:** ระลอกถัดจากบอสทุกตัว (11, 21, 31…) สุ่มการ์ด 3 ใบให้เลือก 1 (ไม่หยุดเกม บอทเลือกเอง)
+  - **ใบช่อง (แรง เฉพาะเด็กที่ยืนช่องนั้น เลือกแล้วแตะช่องบนลาน ติดถาวร ซ้อนได้):** 🔥 ตีเร็ว +60% · 💪 แรง +70% · 🦅 ไกล +40% · 🍀 คริ 25% x2.5 · 🔋 หลอดไม้ตาย x2 · ❄️ ตีแล้วช้า 35%
+  - **ใบทั้งทีม (เบากว่า ได้ทุกตัว):** ⚡ ตีเร็ว +12% · ⚔️ แรง +15% · 🔭 ไกล +10%
+  - **ใบคลาส:** 🎯 คลาสที่สุ่มมาแรง +40%
+  - **ใบเศรษฐกิจ:** 💰 เงิน +10/ระลอก · 🎟️ เรียกเด็กถูกลง 5 · 🛡️ โควต้า +12 · 🎁 เด็กเขียวสุ่ม 2 ตัว
+  - ตัวเลขอยู่ใน `TALS` + `rateOf`/`dmgOf`/`rangeOf`/`attack` · จำลอง 8 เกม: 10.6–12.8 นาที
+- ยังไม่ทำ: ฆ่าบอสได้ → คนอื่นโควต้าลดตามส่วนต่าง
+
+## ตัวละครแต่ละระดับ = เด็กคนละคน (เจ้าของเกม 2026-11-03)
+- ทุกระดับในคลาสเป็นเด็กคนละคน อายุไล่ขึ้น (ปรับได้): ขาว 2 · เขียว 4 · ม่วง 6 · แดง 7 · **ทอง 8 (ชุดฟิวชัน ใส่ชุดสัตว์ ไม่แปลงร่าง)** · สายรุ้ง (ทีหลัง)
+- ออกแบบจาก**ร่างทองก่อน** แล้วตัดลงมา: อาวุธ ของเล่น → ไม้ → เหล็ก → ของจริงจัง → ทอง · ชุด ชุดนอนตุ๊กตา → +ผ้าพันคอ → +เกราะชิ้นเล็ก → ชุดรบขอบแดง → ชุดฟิวชันทอง · สกิล โจมตี → +พาสซีฟ → +ติดตอนตี → +ไม้ตาย → ไม้ตายร่างเต็ม (วิญญาณสัตว์โผล่จากชุด)
+- **นักฆ่า (แมวดำ) และฮันเตอร์ (เหยี่ยว) เป็นเด็กผู้หญิงทุกระดับ** (เจ้าของเกม)
+- ชื่อตั้งไว้ก่อน เปลี่ยนได้
+
+| คลาส | ขาว 2 | เขียว 4 | ม่วง 6 | แดง 7 | ทอง 8 |
+|---|---|---|---|---|---|
+| นักรบ หมี | น้องหมีปุ๊ก · ค้อนยางปี๊บ | น้องโม่ง · กระบองไม้ | พี่ต้น · ค้อนเหล็ก เกราะไหล่ | พี่แทน · ค้อนสงคราม | ขุนพลหมีทอง · ค้อนทอง ถุงมืออุ้งเท้า · ไม้ตาย วิญญาณหมียักษ์ตบพื้นทั้งสนาม |
+| นักฆ่า แมวดำ (หญิง) | น้องเหมียว · มีดพลาสติก | น้องมิว · มีดไม้ ผ้าปิดปาก | พี่ลิลลี่ · มีดเหล็ก ผ้าคลุมสั้น | พี่นิล · มีดคู่ ชุดขอบแดง | เงาแมวทอง · มีดคู่ทอง ผ้าคลุมยาว · ไม้ตาย แยกเงาแมว 6 ตัวฟันพร้อมกัน |
+| ฮันเตอร์ เหยี่ยว (หญิง) | น้องฟ้า (ภาพ GPT แรก) · ธนูของเล่นหัวจุก | น้องขนนก · ธนูไม้ ซองศร | พี่พลอย · หน้าไม้เหล็ก แว่นนักบิน | พี่เตย · ธนูยาว ชุดหนังขอบแดง | เหยี่ยวทองฟ้าคราม · ธนูยาวทอง ปีกทอง · ไม้ตาย เหยี่ยวทองพุ่งเป็นลูกศรยักษ์ |
+| นักเวทย์ นกฮูก | น้องฮูก · ไม้กายสิทธิ์ดาวของเล่น | น้องดาว · ไม้กายสิทธิ์ไม้ หนังสือเวท | พี่มิ้นท์ · คทาผลึก ผ้าคลุมดาว | พี่ราตรี · คทาไฟ | นกฮูกจันทร์ทอง · หมวกพ่อมด คทาดวงจันทร์ · ไม้ตาย นกฮูกยักษ์กางปีก ดาวตกทั้งสนาม |
+| ซัพพอร์ต กระต่าย | น้องปุยฝ้าย · แครอทตุ๊กตา | น้องแครอท · ตะกร้าแครอท | พี่ขิม · ไม้เท้าแครอท กระเป๋าพยาบาล | พี่จันทร์ · พิณเล็ก | กระต่ายจันทร์ทอง · คทาแครอทคริสตัล · ไม้ตาย กระต่ายจันทร์โปรยแสง ทั้งทีมแรง+เร็ว |
+| สาปแช่ง อีกา | น้องดำ · ตุ๊กตาผ้าสาป | น้องกา · กระดิ่งผี | พี่หมอก · ไม้เท้าลูกแก้ว | พี่ฝันร้าย · ไม้เท้าตาเรืองแสง | อีการาตรีทอง · ปีกดำขลิบทอง · ไม้ตาย ฝูงอีกาบินไปบ้านคู่แข่ง ป้อมเขายิงช้า |
+- ภาพ 30 ตัว · ลำดับ: เจนทอง 6 ตัวก่อน (ล็อกหน้าตา/สีหลักของคลาส) แล้วระดับล่างแนบรูปทองไปด้วย สั่ง "เด็กคนใหม่ อายุ X ชุดเดียวกันแต่เรียบกว่า อาวุธ Y"
+
+## แก้ล่าสุด (เจ้าของเกม 2026-11-03): คลาสละ 1 คน + นักฆ่าเป็นเสือดำ
+- **แต่ละคลาสมีเด็กคนเดียวตั้งแต่ขาวถึงทอง** แต่ละระดับเปลี่ยนแค่ช่วงอายุกับรูปที่เจน (เด็กคนเดิมโตขึ้น) — แทนตารางเด็กคนละคนด้านบน
+- ตัวละคร (ชื่อเปลี่ยนได้): นักรบหมี **แทน** (ชาย) · นักฆ่า**เสือดำ** **นิล** (หญิง) · ฮันเตอร์เหยี่ยว **ฟ้า** (หญิง, หน้าจากภาพ GPT แรก) · นักเวทย์นกฮูก **ราตรี** · ซัพพอร์ตกระต่าย **จันทร์** · สาปแช่งอีกา **หมอก**
+- อายุ: ขาว 2 · เขียว 4 · ม่วง 6 · แดง 7 · ทอง 8
+- เจน: ทองก่อน (แนบภาพนักธนูพิกเซล) แล้วระดับล่าง แนบรูปทอง สั่ง "The SAME girl/boy … but younger: [อายุ]. [ชุด/อาวุธของระดับนั้น]"
+- นิล (เสือดำ): ทอง = ชุดเสือดำขลิบทอง ฮู้ดหูกลม ตาเสือทองเรืองแสง ผ้าคลุมดำขอบทอง ถุงมือกรงเล็บทอง มีดโค้งคู่ทอง · แดง = ขลิบแดง ผ้าพันคอแดง มีดเหล็กคู่ · ม่วง = ผ้าคลุมม่วงสั้น มีดเหล็ก 1 เล่ม · เขียว = ผ้าปิดปากเขียวแบบนินจา มีดไม้ · ขาว = ชุดนอนเสือดำนุ่มฟู มีดพลาสติก จุกหลอก
+- **นิลทองได้แล้ว (2026-11-03)**: `art/bb/kid_assassin_gold.png` (79×103 พิกเซลจริง แปลงจากภาพ GPT) ตอนนี้ใช้แทนนิลทุกระดับไปก่อน จนกว่าจะได้รูปอายุ 2/4/6/7
+
+### คำสั่งเจนนิลระดับล่าง (แนบรูปนิลทอง หรือพิมพ์ต่อในแชตเดิม) ส่งทีละอัน
+ส่วนท้ายทุกอัน: `Keep her face, short black bob hair and golden eyes exactly the same. Chibi, big head, pixel art, every pixel a perfect square of the same size, no blur, about 24 colors, 1-pixel dark outline, full body, standing, facing right, plain white background, no sparkles, no text.`
+- ขาว 2 ขวบ: `The SAME girl as the attached picture (Nin), but now a 2-year-old toddler: chubby, very short legs. Soft fluffy black panther pajama kigurumi with round ears and a cute sleepy panther face on the hood. A pacifier on a string around her neck. She holds a small yellow plastic toy dagger. No cape, no gold.`
+- เขียว 4 ขวบ: `… but now 4 years old. Black panther kigurumi with round ears and a panther face on the hood. A green ninja cloth mask over her nose and mouth (eyes fully visible). She holds a wooden toy dagger like a karambit in a reverse grip, exactly like the gold Nin: ring at the top of her fist, the curved blade comes out of the BOTTOM of her fist (not from her sleeve) and curves back toward her body. No cape, no gold.`
+- ม่วง 6 ขวบ: `… but now 6 years old. Black panther kigurumi with round ears and a panther face on the hood. A short purple cape. She holds one steel dagger like a karambit in a reverse grip, exactly like the gold Nin: ring at the top of her fist, the curved blade comes out of the BOTTOM of her fist (not from her sleeve) and curves back toward her body, ready pose. No gold.`
+- แดง 7 ขวบ: `… but now 7 years old. Black panther kigurumi with red trims, round ears and a panther face with red eyes on the hood. A long red scarf. She holds two steel daggers like a karambit in a reverse grip, exactly like the gold Nin: ring at the top of her fists, the curved blade come out of the BOTTOM of her fists (not from her sleeve) and curves back toward her body, confident smile. No gold.`
+- **นิลม่วง + แดงได้แล้ว (2026-11-03)**: `kid_assassin_purple.png` (77×103) `kid_assassin_red.png` (83×111) · `KART.assassin=['purple','red','gold']` (ขาว/เขียวใช้รูปม่วงไปก่อน)
+- **ปัญหามือถือมีด:** สั่ง "reverse grip" แล้ว GPT วาดใบมีดโผล่จากแขนเสื้อใต้ข้อมือ (เจ้าของเกม: "มือมันถือมีดผิด") → แก้ในภาพพิกเซล `tools/art/nin_fixgrip.py`: ลบใบมีดใต้แขนเสื้อกับห่วงด้ามบนกำปั้น (ลองให้ใบชี้ขึ้นแล้ว เจ้าของเกมไม่เอา: "ดูของร่างชุดดำ มันโค้งเข้าตัว ไม่ใช่ออกข้าง") → แบบที่ใช้ (`revm`): ถือกลับด้านเหมือนนิลทอง ห่วงอยู่บนกำปั้น ใบมีดออกจากใต้กำปั้น (ทับข้อมือ) และกลับซ้ายขวาให้ปลายโค้งเข้าหาตัว · คำสั่งต่อไปบอกให้เหมือนนิลทอง: ห่วงบนกำปั้น ใบออกจากใต้กำปั้น โค้งเข้าหาตัว
+- แปลงภาพ: `python3 tools/art/gptpx.py <ภาพ GPT> <ออก.png> 14` (ใส่ `noline` ท้ายถ้าจะแก้ภาพก่อนใส่ขอบ)
+
+## รูปเด็กแต่ละระดับในเกม (ทำแล้ว 2026-11-03)
+- ไฟล์ `art/bb/kid_<คลาส>_<ระดับ>.png` ระดับ = `white green purple red gold` แล้วเพิ่มชื่อระดับใน `KART` ใน `bb.html` (เช่น `KART={assassin:['gold']}`)
+- ระดับที่ยังไม่มีรูป ใช้รูปของระดับที่ใกล้สุด ถ้าคลาสไม่มีเลยใช้ `kid_<คลาส>.png`
+- ทุกรูปถูกย่อ/ขยายให้สูง 78 × `TIER.sc` (ขาว .96 → แดง 1.2) จะเจนมาขนาดไหนก็ได้
+- แปลงภาพ GPT: หาตารางเม็ดพิกเซลของภาพเอง (ภาพนิลเม็ดละ ~12 px) เลือกสีที่เยอะสุดในแต่ละเม็ด รวมเฉดที่ใกล้กันมาก ๆ (เหลือ ~74 สี) ตัดพื้นขาว เก็บตาขาว ลบประกายดาวที่ลอยแยก ใส่ขอบเข้ม 1 พิกเซล
+- อายุบนป้ายในเกมเปลี่ยนเป็น ขาว 2 · เขียว 4 · ม่วง 6 · แดง 7 ขวบ แล้ว
+
 ## คำสั่งเจนภาพเด็ก (ระดับขาว 1 ขวบ) ให้แนวเดียวกับนักธนูเหยี่ยว
 วิธีที่ได้ภาพเข้าชุดกันที่สุด: **แนบรูปนักธนูเหยี่ยว (ภาพพิกเซลที่ได้แล้ว) ไปด้วยทุกครั้ง** แล้วพิมพ์คำสั่งด้านล่าง ได้ภาพแล้วส่งให้ Claude แปลงเป็นพิกเซลจริงสูง 76 (`art/bb/kid_<คลาส>.png`)
 
@@ -69,7 +128,7 @@
 Same art style, size and proportions as the attached hawk archer: chibi 1-year-old toddler, big head, kigurumi animal costume with the animal face on the hood, pixel art on a 64x80 pixel grid, every pixel a perfect square of the same size, no anti-aliasing, no blur, limited palette of about 24 colors, dark 1-pixel outline, full body, standing, facing right, solid plain white background, no text.
 ```
 - **นักรบ (หมี):** `A toddler boy warrior in a honey-brown bear kigurumi (round ears, little snout on the hood), holding a chunky red toy hammer over his shoulder, brave grin.`
-- **นักฆ่า (แมวดำ):** `A toddler girl assassin in a black cat kigurumi (pointy ears with pink insides, whiskers on the hood), holding a small toy dagger in a reverse grip, sly cat smile.`
+- **นักฆ่า (เสือดำ):** `A toddler girl assassin in a black panther kigurumi (round ears, sleek panther face with yellow eyes on the hood), holding a small toy dagger in a reverse grip, sly smile.`
 - **นักเวทย์ (นกฮูก):** `A toddler girl mage in a purple owl kigurumi (ear tufts, big round owl eyes and a small orange beak on the hood), holding a toy wand with a yellow star, sleepy wise face.`
 - **ซัพพอร์ต (กระต่าย):** `A toddler boy support in a white and pink rabbit kigurumi (long floppy ears), holding a big carrot like a staff, cheerful smile.`
 - **สาปแช่ง (อีกา):** `A toddler girl curse-caster in a dark navy crow kigurumi (black feathers, grey beak on the hood, purple glow), holding a small staff with a glowing purple eye orb, mischievous smirk.`
