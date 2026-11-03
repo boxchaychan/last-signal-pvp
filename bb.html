@@ -180,6 +180,7 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
     <button class="lbtn" type="button" data-m="kids">🧸<span>เด็กของฉัน</span></button>
     <button class="lbtn" type="button" data-m="how">📖<span>วิธีเล่น</span></button>
     <button class="lbtn" type="button" data-m="story">🌙<span>เรื่องราว</span></button>
+    <button class="lbtn" type="button" data-m="set">⚙️<span>ตั้งค่า</span></button>
   </div>
   <div class="lb lplay">
     <div class="mapsel"><button type="button" id="mapL">◀</button><span><small>แมพ</small><b id="mapN"></b></span><button type="button" id="mapR">▶</button></div>
@@ -278,7 +279,7 @@ function mkPlayer(i,name,human){return{i,name,human,hp:CAP0,gold:100,tiles:Array
 function newGame(o){o=o||{};
   G={t:0,wave:0,waveT:3,map:o.map||'camp',paused:false,players:[mkPlayer(0,o.me||'คุณ',true),...(o.names||NAMES).map((n,i)=>mkPlayer(i+1,n,false))].map((q,i)=>(q.av=(o.avs||[])[i]||CK[(Math.random()*CK.length)|0],q)),view:0,over:false,spd:1,out:0,sel:-1,popup:null,placing:null};
   const st=['balanced','rush','build','newbie'].sort(()=>Math.random()-.5);G.players.slice(1).forEach((p,i)=>p.ai.style=st[i]);
-  if(HAS_DOM){hidePop();$('#end').hidden=true;$('#bSpd').textContent='x1';buildSide();updHud();{const m=MAPS.find(m=>m.id===G.map)||MAPS[0];banner(m.ic+' '+m.n,'กด "🧸 เรียกเด็ก" ด้านล่าง · ได้ 3 ตัวเหมือนกัน แตะแล้วรวมร่าง',null)}}
+  if(HAS_DOM){hidePop();$('#end').hidden=true;$('#bSpd').textContent='x1';SFX.duck(.14);buildSide();updHud();{const m=MAPS.find(m=>m.id===G.map)||MAPS[0];banner(m.ic+' '+m.n,'กด "🧸 เรียกเด็ก" ด้านล่าง · ได้ 3 ตัวเหมือนกัน แตะแล้วรวมร่าง',null)}}
 }
 const alive=()=>G.players.filter(p=>p.alive);
 function targetOf(p){
@@ -292,28 +293,29 @@ function waveList(w){
   for(let i=0;i<n;i++)L.push({m:pool[i%pool.length],t:1+i*(13/n)});return L}
 function startWave(){
   G.wave++;G.waveT=WAVE_T;const w=G.wave,L=waveList(w);
-  if(w>1&&(w-1)%BOSS_EVERY===0)for(const p of alive()){const o=offerTalents(p);if(p.human){p.offer=o;if(HAS_DOM)talPop()}else botTalent(p,o)}
+  if(w>1&&(w-1)%BOSS_EVERY===0)for(const p of alive()){const o=offerTalents(p);if(p.human){p.offer=o;if(HAS_DOM){talPop();SFX.play('chime')}}else botTalent(p,o)}
   for(const p of alive()){p.gold+=BAL.inc0+BAL.incW*w+p.inc+10*(p.tal.gold||0);for(const e of L)p.spawnQ.push({m:e.m,t:e.t,hp:hpScale(w)})}
+  if(HAS_DOM)SFX.play(w%BOSS_EVERY===0?'boss':'wave');
   if(HAS_DOM)banner(w%BOSS_EVERY===0?'บอสมาแล้ว!':'ระลอกที่ '+w,w%BOSS_EVERY===0?MON.boss.n:'',w%BOSS_EVERY===0?'#ff6a6a':null);
 }
 function spawn(p,m,hpk){const M=MON[m],hp=M.hp*hpk;const st=rnd(0,40);p.mons.push({m,M,d:st,hp,maxHp:hp,slowT:0,slowK:1,stunT:0,hitT:0,x:PATH[0][0]+st,y:PATH[0][1],dx:1,wob:rnd(0,6)});if(HAS_DOM&&p.i===G.view&&p.fx.length<30)addFx(p,'poof',PATH[0][0]+st,PATH[0][1],.45)}
 function sendMonsters(from,opt){
   const S=SEND.find(s=>s.id===opt),to=alive().filter(q=>q!==from);if(!S||!to.length||from.gold<S.cost)return false;from.gold-=S.cost;from.inc+=S.inc;
-  for(const q of to){q.spawnQ.push({m:S.mon,t:1.5,hp:hpScale(Math.max(1,G.wave))});if(HAS_DOM&&q.human)say(from.name+' ส่ง'+MON[S.mon].n+'มาหาคุณ!','#ff8a8a')}
-  if(HAS_DOM&&from.human)say('ส่ง'+MON[S.mon].n+'ไปทุกบ้าน '+to.length+' บ้าน','#d8b8ff');return true}
+  for(const q of to){q.spawnQ.push({m:S.mon,t:1.5,hp:hpScale(Math.max(1,G.wave))});if(HAS_DOM&&q.human)SFX.play('incoming',.5);if(HAS_DOM&&q.human)say(from.name+' ส่ง'+MON[S.mon].n+'มาหาคุณ!','#ff8a8a')}
+  if(HAS_DOM&&from.human)SFX.play('whistle');if(HAS_DOM&&from.human)say('ส่ง'+MON[S.mon].n+'ไปทุกบ้าน '+to.length+' บ้าน','#d8b8ff');return true}
 // ---------- kids ----------
 function summon(p){const c=sumCost(p),free=p.units.map((u,i)=>u?-1:i).filter(i=>i>=0);if(p.gold<c||!free.length)return null;
   p.gold-=c;p.nSum++;const s=free[(Math.random()*free.length)|0],k=CK[(Math.random()*CK.length)|0];
   // luck: most summons are white, some come out green or even purple
   const r=Math.random(),t=r<BAL.luck[0]?0:r<BAL.luck[0]+BAL.luck[1]?1:2;p.units[s]={c:k,t,cd:rnd(0,.5),mana:0,kick:0,flash:t?.6:0};
-  addFx(p,t?'ultgr':'poof',SLOTS[s].x,SLOTS[s].y,.8);if(HAS_DOM&&p.human&&t)say('โชคดี! ได้'+CLS[k].n+'สี'+TIER[t].n+'เลย','#5fe05f');return s}
+  addFx(p,t?'ultgr':'poof',SLOTS[s].x,SLOTS[s].y,.8);if(HAS_DOM&&p.human)SFX.play(t?'lucky':'summon');if(HAS_DOM&&p.human&&t)say('โชคดี! ได้'+CLS[k].n+'สี'+TIER[t].n+'เลย','#5fe05f');return s}
 function mates(p,s){const u=p.units[s];return u?p.units.map((v,i)=>v&&i!==s&&v.c===u.c&&v.t===u.t?i:-1).filter(i=>i>=0):[]}
 function canMerge(p,s){const u=p.units[s];return !!u&&u.t<3&&mates(p,s).length>=2}
-function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).sort((a,b)=>b-a);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;
+function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).sort((a,b)=>b-a);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human)SFX.play(u.t>=3?'mergeBig':'merge');
   addFx(p,'poof',SLOTS[m[0]].x,SLOTS[m[0]].y,.7);addFx(p,'poof',SLOTS[m[1]].x,SLOTS[m[1]].y,.7);addFx(p,['ultb','ultgr','ultb','ultr'][u.t],SLOTS[s].x,SLOTS[s].y+20,.8);return true}
 const sellValue=u=>8*Math.pow(3,u.t);
-function sell(p,s){const u=p.units[s];if(!u)return;p.gold+=sellValue(u);p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
-function upgrade(p,k){const c=upCost(p.lv[k]);if(p.gold<c||p.lv[k]>=10)return false;p.gold-=c;p.lv[k]++;return true}
+function sell(p,s){const u=p.units[s];if(!u)return;if(HAS_DOM&&p.human)SFX.play('coin');p.gold+=sellValue(u);p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
+function upgrade(p,k){const c=upCost(p.lv[k]);if(p.gold<c||p.lv[k]>=10)return false;p.gold-=c;p.lv[k]++;if(HAS_DOM&&p.human)SFX.play('up');return true}
 function rateOf(p,s,u){let r=CLS[u.c].rate;
   const nb=[s-1,s+1,s-COLS,s+COLS].filter(i=>i>=0&&i<NSLOT&&Math.abs((i%COLS)-(s%COLS))<=1&&(i===s-COLS||i===s+COLS||((i/COLS)|0)===((s/COLS)|0)));for(const i of nb){const v=p.units[i];if(v&&v.c==='support'&&v.t>=1){r/=1.25;break}}
   r/=1+.6*tileN(p,s,'fire')+.12*(p.tal.tspeed||0);
@@ -323,23 +325,23 @@ function rangeOf(p,s,u){return CLS[u.c].rng*(u.c==='hunter'&&u.t>=1?1.2:1)*(1+.4
 function hitMon(p,m,amt,u,col){
   if(m.dead)return;if(u&&u.c==='mage'&&u.t>=1&&m.slowT>0)amt*=1.3;if(u&&u.c==='warrior'&&u.t>=1&&m.hp>m.maxHp*.5)amt*=1.4;if(u&&u.c==='assassin'&&u.t>=1&&m.hp<m.maxHp*.5)amt*=1.6;
   m.hp-=amt;m.hitT=.1;if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:m.x+rnd(-8,8),y:m.y-28,v:Math.round(amt),l:.7,c:col||'#fff'});
-  if(m.hp<=0){m.dead=true;if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;
+  if(m.hp<=0){m.dead=true;if(m.M.gold)p.gold+=m.M.gold+Math.floor(G.wave/BAL.killW);p.kills++;if(HAS_DOM&&p.i===G.view)SFX.play('pop',.07);
     if(u&&u.c==='curse'&&u.t>=1&&Math.random()<.15){const t=targetOf(p);if(t)t.spawnQ.push({m:'imp',t:.5,hp:hpScale(Math.max(1,G.wave))})}}}
 function nearestTarget(p,x,y,r){let b=null,bd=-1;for(const m of p.mons){if(m.dead)continue;if((m.x-x)**2+(m.y-y)**2>r*r)continue;if(m.d>bd){bd=m.d;b=m}}return b}
 function splash(p,x,y,R,amt,u,col){for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<R*R)hitMon(p,m,amt,u,col)}
 function attack(p,s,u,tg){
   const C=CLS[u.c],S=SLOTS[s],proc=u.t>=2&&Math.random();let d=dmgOf(p,u,s);u.kick=.15;u.mana+=u.t>=3?(u.c==='mage'?14:9)*(1+tileN(p,s,'mana')):0;
-  if(tileN(p,s,'luck')&&Math.random()<.25){d*=2.5;if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:S.x,y:S.y-90,v:'คริ!',l:.6,c:'#7fe08a'})}
+  if(tileN(p,s,'luck')&&Math.random()<.25){d*=2.5;if(HAS_DOM&&p.i===G.view)SFX.play('crit',.12);if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:S.x,y:S.y-90,v:'คริ!',l:.6,c:'#7fe08a'})}
   if(tileN(p,s,'frost')&&!tg.M.boss){tg.slowT=Math.max(tg.slowT,1.5);tg.slowK=Math.min(tg.slowK||1,.65)}
   if(u.c==='warrior'){const big=proc!==false&&proc<.15;splash(p,tg.x,tg.y,big?C.splash*1.8:C.splash,d*(big?2:1),u);addFx(p,big?'crit':'blunt',tg.x,tg.y,big?1.1:.8)}
-  else if(u.c==='assassin'){const n=proc!==false&&proc<.15?3:1;for(let i=0;i<n;i++){const cr=Math.random()<C.crit;hitMon(p,tg,d*(cr?2.5:1),u,cr?'#ffd75a':'#fff')}addFx(p,n>1?'crit':'hit',tg.x,tg.y,.8)}
+  else if(u.c==='assassin'){const n=proc!==false&&proc<.15?3:1;for(let i=0;i<n;i++){const cr=Math.random()<C.crit;if(cr&&HAS_DOM&&p.i===G.view)SFX.play('crit',.12);hitMon(p,tg,d*(cr?2.5:1),u,cr?'#ffd75a':'#fff')}addFx(p,n>1?'crit':'hit',tg.x,tg.y,.8)}
   else if(u.c==='hunter'){const pierce=proc!==false&&proc<.1;p.shots.push({k:'arrow',x:S.x+16,y:S.y-26,tx:tg.x,ty:tg.y,m:tg,t:0,T:.18,d,u,pierce})}
   else if(u.c==='mage'){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,freeze:proc!==false&&proc<.12,col:'#ff9a3a'})}
   else if(u.c==='support'){p.shots.push({k:'carrot',x:S.x+14,y:S.y-26,tx:tg.x,ty:tg.y,m:tg,t:0,T:.25,d,u});if(proc!==false&&proc<.08)p.gold+=1}
   else if(u.c==='curse'){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,col:'#c88aff'});if(proc!==false&&proc<.1){const t=targetOf(p);if(t&&t.gold>0){t.gold--;p.gold++}}}
   if(u.t>=3&&u.mana>=100){u.mana=0;castUlt(p,s,u)}
 }
-function castUlt(p,s,u){const S=SLOTS[s],d=dmgOf(p,u,s);u.flash=.5;
+function castUlt(p,s,u){const S=SLOTS[s],d=dmgOf(p,u,s);u.flash=.5;if(HAS_DOM&&p.i===G.view)SFX.play('ult',.25);
   if(u.c==='warrior'){for(const m of p.mons)if(!m.dead){m.stunT=Math.max(m.stunT,1.5);hitMon(p,m,d*2,u,'#ffb04a')}p.quakeT=.5;addFx(p,'ultr',S.x,S.y,1.4)}
   if(u.c==='assassin'){const L=p.mons.filter(m=>!m.dead).sort((a,b)=>b.hp-a.hp).slice(0,6);for(const m of L){hitMon(p,m,d*9,u,'#ffd75a');addFx(p,'crit',m.x,m.y,1)}}
   if(u.c==='hunter'){const m=p.mons.filter(m=>!m.dead).sort((a,b)=>b.hp-a.hp)[0];if(m){p.shots.push({k:'arrow',x:S.x+16,y:S.y-26,tx:m.x,ty:m.y,m,t:0,T:.12,d:d*28,u,big:1});addFx(p,'ultg',S.x,S.y,1)}}
@@ -356,7 +358,7 @@ function stepBoard(p,dt){
     m.d+=m.M.spd*k*dt;const q=pathPos(m.d);m.x=q.x;m.y=q.y;m.dx=q.dx;
   }
   p.mons=p.mons.filter(m=>!m.dead);
-  if(HAS_DOM&&p.human&&p.alive&&p.mons.length>=p.hp*.8&&G.t>(p.warnT||0)){p.warnT=G.t+4;flashT=.25;say('ปีศาจใกล้เต็มโควต้า! '+p.mons.length+'/'+p.hp,'#ff6a6a')}
+  if(HAS_DOM&&p.human&&p.alive&&p.mons.length>=p.hp*.8&&G.t>(p.warnT||0)){p.warnT=G.t+4;flashT=.25;SFX.play('alarm');say('ปีศาจใกล้เต็มโควต้า! '+p.mons.length+'/'+p.hp,'#ff6a6a')}
   for(let s=0;s<NSLOT;s++){const u=p.units[s];if(!u)continue;u.cd-=dt;if(u.kick>0)u.kick-=dt;if(u.flash>0)u.flash-=dt;if(u.cd>0)continue;
     const S=SLOTS[s],tg=nearestTarget(p,S.x,S.y-20,rangeOf(p,s,u));if(!tg)continue;u.cd=rateOf(p,s,u);attack(p,s,u,tg)}
   for(const sh of p.shots){sh.t+=dt;if(sh.t<sh.T||sh.done)continue;sh.done=true;const x=sh.m&&!sh.m.dead?sh.m.x:sh.tx,y=sh.m&&!sh.m.dead?sh.m.y:sh.ty;
@@ -397,6 +399,39 @@ const LS={get(k,d){try{const v=localStorage.getItem('bb.'+k);return v==null?d:JS
 const LOB={map:LS.get('map','camp'),fav:LS.get('fav','assassin'),name:LS.get('name','แก๊งของฉัน'),st:LS.get('stats',{games:0,wins:0,best:0,wave:0})};
 if(!MAPS.some(m=>m.id===LOB.map))LOB.map='camp';if(!CLS[LOB.fav])LOB.fav='assassin';
 function recordResult(rank){if(!G||G.rec)return;G.rec=1;const s=LOB.st;s.games++;if(rank===1)s.wins++;s.best=s.best?Math.min(s.best,rank):rank;s.wave=Math.max(s.wave||0,G.wave);LS.set('stats',s)}
+// ---------- sound: a tiny synth, no sound files. Starts on the first tap (browsers need a tap before audio). ----------
+const SFX=(()=>{let A=null,FXG=null,MUG=null,NB=null,mt=null,mStep=0,mNext=0;const st={fx:LS.get('sfx',true),mu:LS.get('music',true)},last={};
+  const N=n=>440*Math.pow(2,(n-69)/12);
+  function init(){if(A||typeof window==='undefined')return;const C=window.AudioContext||window.webkitAudioContext;if(!C)return;try{A=new C()}catch(_){return}
+    const M=A.createGain();M.gain.value=.8;M.connect(A.destination);FXG=A.createGain();FXG.gain.value=st.fx?1:0;FXG.connect(M);MUG=A.createGain();MUG.gain.value=st.mu?.3:0;MUG.connect(M);
+    NB=A.createBuffer(1,A.sampleRate,A.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;music(true)}
+  function tone(f,d,type,vol,when,slide,dest){const t=A.currentTime+(when||0),o=A.createOscillator(),g=A.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g);g.connect(dest||FXG);o.start(t);o.stop(t+d+.05)}
+  function noise(d,vol,when,fq,q,type){const t=A.currentTime+(when||0),s=A.createBufferSource(),f=A.createBiquadFilter(),g=A.createGain();s.buffer=NB;f.type=type||'bandpass';f.frequency.value=fq||1200;f.Q.value=q||1;
+    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);s.connect(f);f.connect(g);g.connect(FXG);s.start(t,Math.random()*.5);s.stop(t+d+.05)}
+  function whistle(){const t=A.currentTime,o=A.createOscillator(),l=A.createOscillator(),lg=A.createGain(),g=A.createGain();o.frequency.value=2050;l.frequency.value=26;lg.gain.value=110;l.connect(lg);lg.connect(o.frequency);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.02);g.gain.setValueAtTime(.1,t+.3);g.gain.exponentialRampToValueAtTime(.001,t+.45);o.connect(g);g.connect(FXG);o.start(t);l.start(t);o.stop(t+.5);l.stop(t+.5)}
+  function growl(){const t=A.currentTime,o=A.createOscillator(),l=A.createOscillator(),lg=A.createGain(),f=A.createBiquadFilter(),g=A.createGain();o.type='sawtooth';o.frequency.setValueAtTime(70,t);o.frequency.exponentialRampToValueAtTime(42,t+1.2);
+    l.frequency.value=9;lg.gain.value=12;l.connect(lg);lg.connect(o.frequency);f.type='lowpass';f.frequency.value=420;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.32,t+.08);g.gain.exponentialRampToValueAtTime(.001,t+1.3);
+    o.connect(f);f.connect(g);g.connect(FXG);o.start(t);l.start(t);o.stop(t+1.4);l.stop(t+1.4);tone(70,.6,'sine',.4,0,35);noise(.4,.15,0,300,.7)}
+  const S={click:()=>tone(1100,.05,'square',.035),summon:()=>{tone(320,.14,'sine',.22,0,900);noise(.05,.06,0,3000,2)},lucky:()=>[76,79,83,88].forEach((n,i)=>tone(N(n),.3,'triangle',.16,i*.06)),
+    merge:()=>{[72,76,79,84].forEach((n,i)=>tone(N(n),.3,'triangle',.17,i*.07));noise(.3,.04,.05,6000,1,'highpass')},mergeBig:()=>{[72,76,79,84,88,91].forEach((n,i)=>tone(N(n),.45,'triangle',.17,i*.06));[48,55,64].forEach(n=>tone(N(n),1,'sine',.13,.36))},
+    coin:()=>{tone(N(88),.08,'square',.06);tone(N(93),.25,'square',.06,.07)},up:()=>tone(400,.2,'square',.07,0,1200),whistle,incoming:()=>tone(N(45),.35,'sawtooth',.07,0,N(38)),
+    wave:()=>{tone(95,.35,'sine',.32,0,45);noise(.15,.1,0,1800,.8);tone(95,.3,'sine',.25,.22,45)},boss:growl,ult:()=>{noise(.5,.16,0,900,.7);tone(N(36),.6,'sine',.28,.05,N(30))},
+    crit:()=>{tone(N(96),.07,'square',.04);noise(.05,.05,0,5000,2)},pop:()=>tone(N(86)+Math.random()*90,.06,'sine',.05),alarm:()=>{tone(880,.12,'square',.06);tone(660,.12,'square',.06,.14)},
+    out:()=>{tone(N(62),.2,'triangle',.11);tone(N(57),.3,'triangle',.11,.15)},lose:()=>[67,63,60,55].forEach((n,i)=>tone(N(n),.5,'triangle',.16,i*.22)),
+    win:()=>{[72,76,79,84,79,84,88].forEach((n,i)=>tone(N(n),.3,'square',.07,i*.11));[60,64,67].forEach(n=>tone(N(n),1.3,'triangle',.11,.8))},
+    beep:()=>tone(N(72),.12,'square',.08),go:()=>{tone(N(84),.35,'square',.1);tone(N(79),.35,'square',.06)},chime:()=>[79,83,86,91].forEach((n,i)=>tone(N(n),.7,'sine',.1,i*.09)),
+    place:()=>{tone(N(72),.2,'triangle',.14);tone(N(79),.4,'triangle',.14,.08)}};
+  // music box: a short lullaby in A minor, loops; quieter during a match
+  const MEL=[69,0,72,76,74,0,72,0,69,0,67,69,72,0,0,0,69,0,72,76,79,0,76,74,72,0,74,72,69,0,0,0],BASS=[45,41,43,40],STEP=.3;
+  function tick(){if(!A||!st.mu)return;while(mNext<A.currentTime+.3){const n=MEL[mStep%MEL.length],w=mNext-A.currentTime;if(n){tone(N(n),.9,'triangle',.1,w,0,MUG);tone(N(n+12),.45,'sine',.03,w,0,MUG)}
+      if(mStep%8===0)tone(N(BASS[(mStep/8|0)%BASS.length]),2.2,'sine',.12,w,0,MUG);mStep++;mNext+=STEP}}
+  function music(on){if(!A)return;clearInterval(mt);mt=null;if(on&&st.mu){mNext=Math.max(mNext,A.currentTime+.05);mt=setInterval(tick,100)}}
+  return{init,N,st,play(k,gap){if(!A||!st.fx||!S[k])return;if(A.state==='suspended')A.resume();const t=A.currentTime;if(gap&&last[k]&&t-last[k]<gap)return;last[k]=t;try{S[k]()}catch(_){}},
+    duck(v){if(MUG&&st.mu)MUG.gain.setTargetAtTime(v,A.currentTime,.3)},
+    set(k,v){st[k]=v;LS.set(k==='fx'?'sfx':'music',v);if(!A)return;if(k==='fx')FXG.gain.value=v?1:0;else{MUG.gain.value=v?.3:0;music(v)}},
+    wake(){if(A&&A.state==='suspended')A.resume()}}})();
 const IMG={},SPR={};
 // kid pictures: one kid per class who grows up. A tier can have its own picture art/bb/kid_<class>_<tier>.png;
 // KART lists the ones that exist. A tier without one uses the nearest tier that has one, else kid_<class>.png.
@@ -603,9 +638,9 @@ function say(t,c){if(!HAS_DOM)return;const b=$('#banner');if(G&&G.bannerT>0&&!c)
 function banner(t,sub,c){const b=$('#banner');b.innerHTML='<span style="color:'+(c||'var(--gold)')+'">'+t+'</span>'+(sub?'<small>'+sub+'</small>':'');b.classList.add('show');G.bannerT=1.6;clearTimeout(say.t);say.t=setTimeout(()=>b.classList.remove('show'),1600)}
 function endScreen(rank,title,text){const me=G.players[0];$('#endR').textContent=['','🏆','🥈','🥉'][rank]||'💔';$('#endT').textContent=title;$('#endP').textContent=text;
   $('#endS').innerHTML='<div><b>'+rank+'/'+G.players.length+'</b>อันดับ</div><div><b>'+G.wave+'</b>ระลอก</div><div><b>'+me.kills+'</b>ปีศาจที่ปราบ</div>';$('#end').hidden=false;recordResult(rank)}
-function onOut(p){if(p.human){endScreen(p.rank,'ตกรอบ · อันดับ '+p.rank,'ปีศาจล้นลานเกินโควต้า แก๊งของคุณถอยไปที่พักเด็ก · กด "ดูต่อ" เพื่อดูแก๊งอื่นสู้กันต่อ');$('#watch').hidden=false}
-  else say(p.name+' ตกรอบ! (อันดับ '+p.rank+')','#ffd75a')}
-function onEnd(){const me=G.players[0];if(me.rank===1)endScreen(1,'ชนะ! ได้ไปประภาคาร','แก๊งของคุณยืนหยัดเป็นแก๊งสุดท้าย แสงประภาคารส่องลงมา…');
+function onOut(p){if(p.human){SFX.play('lose');endScreen(p.rank,'ตกรอบ · อันดับ '+p.rank,'ปีศาจล้นลานเกินโควต้า แก๊งของคุณถอยไปที่พักเด็ก · กด "ดูต่อ" เพื่อดูแก๊งอื่นสู้กันต่อ');$('#watch').hidden=false}
+  else{SFX.play('out');say(p.name+' ตกรอบ! (อันดับ '+p.rank+')','#ffd75a')}}
+function onEnd(){const me=G.players[0];if(me.rank===1)SFX.play('win');if(me.rank===1)endScreen(1,'ชนะ! ได้ไปประภาคาร','แก๊งของคุณยืนหยัดเป็นแก๊งสุดท้าย แสงประภาคารส่องลงมา…');
   else endScreen(me.rank,'จบเกม · อันดับ '+me.rank,'ผู้ชนะ: '+G.players.find(p=>p.rank===1).name);$('#watch').hidden=true}
 // ---------- input ----------
 let drag=null;
@@ -614,7 +649,7 @@ function slotAt(b){let best=-1,bd=60*60;SLOTS.forEach((S,i)=>{const d=(S.x-b.x)*
 if(HAS_DOM){
   addEventListener('resize',onResize);onResize();
   cv.addEventListener('pointerdown',e=>{if(!G||G.view!==0)return;const b=toBoard(e),s=slotAt(b);
-    if(G.placing){if(s>=0){takeTalent(G.players[0],G.placing,s);say('ใส่ '+TALS[G.placing.id].ic+' '+TALS[G.placing.id].n+' ที่ช่องนี้แล้ว','#7fe08a');addFx(G.players[0],'healring',SLOTS[s].x,SLOTS[s].y,1);G.placing=null}return}
+    if(G.placing){if(s>=0){takeTalent(G.players[0],G.placing,s);SFX.play('place');say('ใส่ '+TALS[G.placing.id].ic+' '+TALS[G.placing.id].n+' ที่ช่องนี้แล้ว','#7fe08a');addFx(G.players[0],'healring',SLOTS[s].x,SLOTS[s].y,1);G.placing=null}return}
     if(s<0){hidePop();return}const u=G.players[0].units[s];
     if(u){drag={s,x:b.x,y:b.y,sx:e.clientX,sy:e.clientY,moved:false,id:e.pointerId};try{cv.setPointerCapture(e.pointerId)}catch(_){}}else hidePop()});
   cv.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const b=toBoard(e);drag.x=b.x;drag.y=b.y+40;if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>10)drag.moved=true});
@@ -653,7 +688,7 @@ if(HAS_DOM){
     for(let i=0;i<lh;i++){const w=6-Math.floor(i/(lh/3));R(lx-Math.floor(w/2),lb-1-i,w,1,Math.floor(i/4)%2?'#b83a3a':'#e8e2d6')}
     R(lx-3,lb-lh-4,7,4,'#2a2a3a');R(lx-2,lb-lh-3,5,2,'#fff2b0');R(lx-3,lb-lh-5,7,1,'#5a2a2a');R(lx-2,lb-lh-6,5,1,'#5a2a2a');R(lx-1,lb-lh-7,3,1,'#5a2a2a');LB.lamp={x:lx+.5,y:lb-lh-2};
     // campfire: stones and logs
-    const fx=Math.round(W*.42);LB.fire={x:fx,y:gy+3};for(const [dx,dy] of [[-4,0],[-3,1],[-1,2],[1,2],[3,1],[4,0]])R(fx+dx,gy+3+dy,2,1,'#5a5662');R(fx-3,gy+2,7,1,'#5a3a22');R(fx-2,gy+1,5,1,'#4a2e1a');
+    const fx=Math.round(W*.45);LB.fire={x:fx,y:gy+3};for(const [dx,dy] of [[-4,0],[-3,1],[-1,2],[1,2],[3,1],[4,0]])R(fx+dx,gy+3+dy,2,1,'#5a5662');R(fx-3,gy+2,7,1,'#5a3a22');R(fx-2,gy+1,5,1,'#4a2e1a');
     LB.ff=[];for(let i=0;i<16;i++)LB.ff.push({x:Math.random()*W,y:rnd(H*.45,H*.95),ph:rnd(0,6),sp:rnd(.4,1)});
     LB.sc=c}
   const LKIDS=['warrior','assassin','hunter','mage','support','curse'],LOFF=[[-195,-4],[-132,-14],[-70,-2],[70,-2],[132,-14],[195,-4]];
@@ -705,7 +740,12 @@ if(HAS_DOM){
   function renameModal(){openModal('✏️ ชื่อแก๊ง','<p>ชื่อนี้จะขึ้นในเกม (แถบชื่อด้านขวา)</p><input class="nm" id="nmI" maxlength="16" value="'+esc(LOB.name)+'"><div class="mrow"><button class="mbtn gold" type="button" data-a="save">บันทึก</button></div>',true);
     $('#mB').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.a==='save'){const v=$('#nmI').value.trim().slice(0,16);if(v){LOB.name=v;LS.set('name',v);profUI()}closeModal()}}}
   $('#prof').addEventListener('click',renameModal);
-  for(const b of document.querySelectorAll('.lbtn'))b.addEventListener('click',()=>{const m=b.dataset.m;if(m==='kids')kidsModal(LOB.fav);if(m==='how')howModal();if(m==='story')storyModal()});
+  for(const b of document.querySelectorAll('.lbtn'))b.addEventListener('click',()=>{const m=b.dataset.m;if(m==='kids')kidsModal(LOB.fav);if(m==='how')howModal();if(m==='story')storyModal();if(m==='set')setModal()});
+  function setModal(back){const b=(k,ic,n)=>'<button class="mbtn'+(SFX.st[k]?' gold':'')+'" type="button" data-s="'+k+'">'+ic+' '+n+': '+(SFX.st[k]?'เปิด':'ปิด')+'</button>';
+    openModal('⚙️ ตั้งค่า','<div class="mrow">'+b('mu','🎵','เพลง')+b('fx','🔊','เสียงเอฟเฟกต์')+'</div><p style="color:var(--dim)">ชื่อแก๊ง รูปโปรไฟล์ แมพ และสถิติ เก็บในเครื่องนี้เท่านั้น</p>'+(back?'<div class="mrow"><button class="mbtn" type="button" data-a="back">◀ กลับ</button></div>':''),true);
+    $('#mB').onclick=e=>{const x=e.target.closest('button');if(!x)return;if(x.dataset.s){SFX.init();SFX.set(x.dataset.s,!SFX.st[x.dataset.s]);setModal(back)}if(x.dataset.a==='back')pauseModal()}}
+  document.addEventListener('pointerdown',()=>{SFX.init();SFX.wake()},true);
+  document.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled&&b.id!=='go'&&b.id!=='bSum')SFX.play('click',.03)},true);
   // matchmaking: the 4 other gangs drop in, then 3-2-1
   const GANGS=['แก๊งเสือน้อย','แก๊งลูกหมู','แก๊งนกกระจิบ','แก๊งปลาทอง','แก๊งหมีแพนด้า','แก๊งกระต่ายส้ม','แก๊งจิ้งจอกจิ๋ว','แก๊งเป็ดน้อย','แก๊งช้างน้อย','แก๊งแมวส้ม','แก๊งลิงซน','แก๊งนกฮูกตาโต','แก๊งหมาป่าน้อย','แก๊งเต่าทอง'];
   let MM=null;
@@ -713,18 +753,18 @@ if(HAS_DOM){
     row.innerHTML=[{n:LOB.name,me:1},...names.map(n=>({n}))].map(s=>'<div class="mms'+(s.me?' me ok':' wait')+'"><canvas></canvas><b>'+(s.me?'⭐ '+esc(s.n):'กำลังหา…')+'</b><small>'+(s.me?'พร้อม ✓':'…')+'</small></div>').join('');
     row.querySelectorAll('canvas').forEach((c,i)=>fitCanvas(c,kidImg(i?av[i-1]:LOB.fav,4),true));
     $('#mmT').textContent='กำลังหาแก๊ง…';$('#cd').textContent='';$('#mmX').hidden=false;$('#mm').hidden=false;MM=[];let tt=450;
-    names.forEach((n,i)=>{tt+=rnd(300,700);MM.push(setTimeout(()=>{const el=row.children[i+1];el.classList.remove('wait');el.classList.add('ok');el.querySelector('b').textContent=n;el.querySelector('small').textContent='พร้อม ✓'},tt))});
+    names.forEach((n,i)=>{tt+=rnd(300,700);MM.push(setTimeout(()=>{const el=row.children[i+1];el.classList.remove('wait');el.classList.add('ok');el.querySelector('b').textContent=n;el.querySelector('small').textContent='พร้อม ✓';SFX.play('pop')},tt))});
     tt+=350;MM.push(setTimeout(()=>{$('#mmT').textContent='เจอครบ 5 แก๊ง! · '+(MAPS.find(m=>m.id===LOB.map)||MAPS[0]).n;$('#mmX').hidden=true},tt));
-    ['3','2','1','ไป!'].forEach((s,i)=>MM.push(setTimeout(()=>{$('#cd').textContent=s},tt+250+i*600)));
+    ['3','2','1','ไป!'].forEach((s,i)=>MM.push(setTimeout(()=>{$('#cd').textContent=s;SFX.play(i<3?'beep':'go')},tt+250+i*600)));
     MM.push(setTimeout(()=>{MM=null;$('#mm').hidden=true;MENU.hidden=true;newGame({names,map:LOB.map,me:LOB.name,avs:[LOB.fav,...av]})},tt+250+3*600+450))}
   $('#mmX').addEventListener('click',()=>{if(!MM)return;MM.forEach(clearTimeout);MM=null;$('#mm').hidden=true});
   $('#go').addEventListener('click',startMatch);
   // pause, leaving, end screen
-  function pauseModal(){const me=G.players[0];openModal('⏸ หยุดเกม','<p>ระลอก '+Math.max(1,G.wave)+' · ปีศาจในลาน '+me.mons.length+'/'+me.hp+' · ยังเหลือ '+alive().length+' แก๊ง</p><div class="mrow"><button class="mbtn gold" type="button" data-a="res">▶ เล่นต่อ</button><button class="mbtn" type="button" data-a="how">📖 วิธีเล่น</button><button class="mbtn red" type="button" data-a="quit">ออกไปล็อบบี้</button></div>',true);
-    $('#mB').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;if(a==='res')closeModal();if(a==='how')howModal();if(a==='quit'){if(G&&!G.over&&G.players[0].alive)recordResult(alive().length);toLobby()}}}
+  function pauseModal(){const me=G.players[0];openModal('⏸ หยุดเกม','<p>ระลอก '+Math.max(1,G.wave)+' · ปีศาจในลาน '+me.mons.length+'/'+me.hp+' · ยังเหลือ '+alive().length+' แก๊ง</p><div class="mrow"><button class="mbtn gold" type="button" data-a="res">▶ เล่นต่อ</button><button class="mbtn" type="button" data-a="how">📖 วิธีเล่น</button><button class="mbtn" type="button" data-a="set">⚙️ เสียง</button><button class="mbtn red" type="button" data-a="quit">ออกไปล็อบบี้</button></div>',true);
+    $('#mB').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;if(a==='res')closeModal();if(a==='how')howModal();if(a==='set')setModal(true);if(a==='quit'){if(G&&!G.over&&G.players[0].alive)recordResult(alive().length);toLobby()}}}
   $('#bPause').addEventListener('click',()=>{if(!G||G.over)return;G.paused=true;pauseModal()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&G&&!G.over&&!G.paused&&MENU.hidden){G.paused=true;pauseModal()}});
-  function toLobby(){$('#modal').hidden=true;$('#end').hidden=true;hidePop();G=null;drag=null;MENU.hidden=false;profUI();mapUI()}
+  function toLobby(){$('#modal').hidden=true;$('#end').hidden=true;hidePop();G=null;drag=null;MENU.hidden=false;SFX.duck(.3);profUI();mapUI()}
   $('#again').addEventListener('click',()=>{toLobby();startMatch()});
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
