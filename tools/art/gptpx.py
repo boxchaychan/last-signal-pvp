@@ -31,10 +31,12 @@ fig=~bg
 # drop small separate bits (sparkles); keep parts bigger than 2% of the main body
 fl,fn=nd.label(fig);fs=nd.sum(fig,fl,range(1,fn+1));keep=fs>fs.max()*.02
 fig=np.isin(fl,np.where(keep)[0]+1);print('parts kept',keep.sum(),'of',fn)
-# grid
+# grid: GPT's block size is searched in 9-16 px. Some pictures use a finer grid (~6-7 px; the search then lands on
+# twice that and small details like a held doll turn to mush): GPTPX_GRID=5.5,8 searches that range instead.
+GR=[float(v) for v in os.environ.get('GPTPX_GRID','9,16').split(',')]
 def fit(ax):
     d=np.abs(np.diff(A,axis=ax)).sum(2)>60;prof=d.sum(axis=1-ax).astype(float);xs=np.arange(len(prof))+1;best=None
-    for p in np.arange(9,16,0.01):
+    for p in np.arange(GR[0],GR[1],0.01):
         z=(prof*np.exp(2j*np.pi*xs/p)).sum();s=abs(z)
         if best is None or s>best[0]:best=(s,p,(np.angle(z)/(2*np.pi)*p)%p)
     return best[1],best[2]
