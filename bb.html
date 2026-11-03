@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Babies & Beasts · สัญญาณสุดท้าย</title>
+<link rel="manifest" href="bb.webmanifest">
+<meta name="theme-color" content="#0b0d22">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Babies & Beasts">
+<link rel="apple-touch-icon" href="art/bb/icon-192.png">
+<link rel="icon" type="image/png" href="art/bb/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&display=swap">
 <style>
@@ -325,7 +333,7 @@ function startWave(){
   G.wave++;G.waveT=WAVE_T;const w=G.wave,L=waveList(w);
   if(w>1&&(w-1)%BOSS_EVERY===0)for(const p of alive()){const o=offerTalents(p);if(p.human){p.offer=o;if(HAS_DOM){talPop();SFX.play('chime')}}else botTalent(p,o)}
   for(const p of alive()){p.gold+=BAL.inc0+BAL.incW*w+p.inc+10*(p.tal.gold||0);for(const e of L)p.spawnQ.push({m:e.m,t:e.t,hp:hpScale(w)})}
-  if(HAS_DOM)SFX.play(w%BOSS_EVERY===0?'boss':'wave');
+  if(HAS_DOM)SFX.play(w%BOSS_EVERY===0?'boss':'wave');if(HAS_DOM&&w%BOSS_EVERY===0)buzz([120,60,220]);
   if(HAS_DOM)banner(w%BOSS_EVERY===0?'บอสมาแล้ว!':'ระลอกที่ '+w,w%BOSS_EVERY===0?MON.boss.n:'',w%BOSS_EVERY===0?'#ff6a6a':null);
 }
 function spawn(p,m,hpk){const M=MON[m],hp=M.hp*hpk;const st=rnd(0,40);p.mons.push({m,M,d:st,hp,maxHp:hp,slowT:0,slowK:1,stunT:0,hitT:0,x:PATH[0][0]+st,y:PATH[0][1],dx:1,wob:rnd(0,6)});if(HAS_DOM&&p.i===G.view&&p.fx.length<30)addFx(p,'poof',PATH[0][0]+st,PATH[0][1],.45)}
@@ -341,7 +349,7 @@ function summon(p){const c=sumCost(p),free=p.units.map((u,i)=>u?-1:i).filter(i=>
   addFx(p,t?'ultgr':'poof',SLOTS[s].x,SLOTS[s].y,.8);if(HAS_DOM&&p.human)SFX.play(t?'lucky':'summon');if(HAS_DOM&&p.human&&t)say('โชคดี! ได้'+CLS[k].n+'สี'+TIER[t].n+'เลย','#5fe05f');return s}
 function mates(p,s){const u=p.units[s];return u?p.units.map((v,i)=>v&&i!==s&&v.c===u.c&&v.t===u.t?i:-1).filter(i=>i>=0):[]}
 function canMerge(p,s){const u=p.units[s];return !!u&&u.t<3&&mates(p,s).length>=2}
-function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).sort((a,b)=>b-a);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human)SFX.play(u.t>=3?'mergeBig':'merge');
+function merge(p,s){if(!canMerge(p,s))return false;const m=mates(p,s).sort((a,b)=>b-a);p.units[m[0]]=null;p.units[m[1]]=null;const u=p.units[s];u.t++;u.mana=0;u.flash=.6;if(HAS_DOM&&p.human){SFX.play(u.t>=3?'mergeBig':'merge');buzz(u.t>=3?[40,40,90]:25)}
   addFx(p,'poof',SLOTS[m[0]].x,SLOTS[m[0]].y,.7);addFx(p,'poof',SLOTS[m[1]].x,SLOTS[m[1]].y,.7);addFx(p,['ultb','ultgr','ultb','ultr'][u.t],SLOTS[s].x,SLOTS[s].y+20,.8);return true}
 const sellValue=u=>8*Math.pow(3,u.t);
 function sell(p,s){const u=p.units[s];if(!u)return;if(HAS_DOM&&p.human)SFX.play('coin');p.gold+=sellValue(u);p.units[s]=null;addFx(p,'poof',SLOTS[s].x,SLOTS[s].y,.6)}
@@ -430,6 +438,8 @@ const LOB={prog:LS.get('prog',{sh:{},lv:{}}),map:LS.get('map','camp'),fav:LS.get
 for(const k of CK){LOB.prog.sh[k]=LOB.prog.sh[k]||0;LOB.prog.lv[k]=Math.max(1,Math.min(KLV.max,LOB.prog.lv[k]||1))}
 const canLv=k=>LOB.prog.lv[k]<KLV.max&&LOB.prog.sh[k]>=KLV.need(LOB.prog.lv[k]);
 if(!MAPS.some(m=>m.id===LOB.map))LOB.map='camp';if(!CLS[LOB.fav])LOB.fav='assassin';
+const OPT={fs:LS.get('fs',true),vib:LS.get('vib',true)};
+const buzz=ms=>{if(OPT.vib&&typeof navigator!=='undefined'&&navigator.vibrate)try{navigator.vibrate(ms)}catch(_){}};
 function recordResult(rank){if(!G||G.rec)return;G.rec=1;const s=LOB.st;s.games++;if(rank===1)s.wins++;s.best=s.best?Math.min(s.best,rank):rank;s.wave=Math.max(s.wave||0,G.wave);LS.set('stats',s);
   const me=G.players[0],w={},g={},S=KLV.rank[rank]||8;for(const k of CK)w[k]=1;for(const u of me.units)if(u)w[u.c]+=Math.pow(3,u.t);const W=CK.reduce((a,k)=>a+w[k],0);let left=S;
   for(const k of CK){g[k]=Math.floor(S*w[k]/W);left-=g[k]}const ord=CK.slice().sort((a,b)=>w[b]-w[a]);for(let i=0;left>0;i++,left--)g[ord[i%ord.length]]++;
@@ -688,9 +698,9 @@ function banner(t,sub,c){const b=$('#banner');b.innerHTML='<span style="color:'+
 function endScreen(rank,title,text){const me=G.players[0];$('#endR').textContent=['','🏆','🥈','🥉'][rank]||'💔';$('#endT').textContent=title;$('#endP').textContent=text;
   $('#endS').innerHTML='<div><b>'+rank+'/'+G.players.length+'</b>อันดับ</div><div><b>'+G.wave+'</b>ระลอก</div><div><b>'+me.kills+'</b>ปีศาจที่ปราบ</div>';$('#end').hidden=false;recordResult(rank);const g=G.gain||{};
   $('#endG').innerHTML='ได้ชิ้นส่วน '+CK.filter(k=>g[k]).sort((a,b)=>g[b]-g[a]).map(k=>'<span><canvas data-k="'+k+'"></canvas>+'+g[k]+'</span>').join('')+(CK.some(canLv)?' <em>⬆ อัปเลเวลได้ที่ล็อบบี้</em>':'');$('#endG').querySelectorAll('canvas').forEach(c=>fitCanvas(c,kidImg(c.dataset.k,4),true))}
-function onOut(p){if(p.human){SFX.play('lose');endScreen(p.rank,'ตกรอบ · อันดับ '+p.rank,'ปีศาจล้นลานเกินโควต้า แก๊งของคุณถอยไปที่พักเด็ก · กด "ดูต่อ" เพื่อดูแก๊งอื่นสู้กันต่อ');$('#watch').hidden=false}
+function onOut(p){if(p.human){SFX.play('lose');buzz([300,100,300]);endScreen(p.rank,'ตกรอบ · อันดับ '+p.rank,'ปีศาจล้นลานเกินโควต้า แก๊งของคุณถอยไปที่พักเด็ก · กด "ดูต่อ" เพื่อดูแก๊งอื่นสู้กันต่อ');$('#watch').hidden=false}
   else{SFX.play('out');say(p.name+' ตกรอบ! (อันดับ '+p.rank+')','#ffd75a')}}
-function onEnd(){const me=G.players[0];if(me.rank===1)SFX.play('win');if(me.rank===1)endScreen(1,'ชนะ! ได้ไปประภาคาร','แก๊งของคุณยืนหยัดเป็นแก๊งสุดท้าย แสงประภาคารส่องลงมา…');
+function onEnd(){const me=G.players[0];if(me.rank===1){SFX.play('win');buzz([80,60,80,60,240])}if(me.rank===1)endScreen(1,'ชนะ! ได้ไปประภาคาร','แก๊งของคุณยืนหยัดเป็นแก๊งสุดท้าย แสงประภาคารส่องลงมา…');
   else endScreen(me.rank,'จบเกม · อันดับ '+me.rank,'ผู้ชนะ: '+G.players.find(p=>p.rank===1).name);$('#watch').hidden=true}
 // ---------- input ----------
 let drag=null;
@@ -795,15 +805,18 @@ if(HAS_DOM){
     $('#mB').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.a==='save'){const v=$('#nmI').value.trim().slice(0,16);if(v){LOB.name=v;LS.set('name',v);profUI()}closeModal()}}}
   $('#prof').addEventListener('click',renameModal);
   for(const b of document.querySelectorAll('.lbtn'))b.addEventListener('click',()=>{const m=b.dataset.m;if(m==='kids')kidsModal(LOB.fav);if(m==='how')howModal();if(m==='story')storyModal();if(m==='set')setModal()});
-  function setModal(back){const b=(k,ic,n)=>'<button class="mbtn'+(SFX.st[k]?' gold':'')+'" type="button" data-s="'+k+'">'+ic+' '+n+': '+(SFX.st[k]?'เปิด':'ปิด')+'</button>';
-    openModal('⚙️ ตั้งค่า','<div class="mrow">'+b('mu','🎵','เพลง')+b('fx','🔊','เสียงเอฟเฟกต์')+'</div><p style="color:var(--dim)">ชื่อแก๊ง รูปโปรไฟล์ แมพ และสถิติ เก็บในเครื่องนี้เท่านั้น</p>'+(back?'<div class="mrow"><button class="mbtn" type="button" data-a="back">◀ กลับ</button></div>':''),true);
-    $('#mB').onclick=e=>{const x=e.target.closest('button');if(!x)return;if(x.dataset.s){SFX.init();SFX.set(x.dataset.s,!SFX.st[x.dataset.s]);setModal(back)}if(x.dataset.a==='back')pauseModal()}}
+  function setModal(back){const b=(k,ic,n)=>{const on=k in SFX.st?SFX.st[k]:OPT[k];return '<button class="mbtn'+(on?' gold':'')+'" type="button" data-s="'+k+'">'+ic+' '+n+': '+(on?'เปิด':'ปิด')+'</button>'};
+    openModal('⚙️ ตั้งค่า','<div class="mrow">'+b('mu','🎵','เพลง')+b('fx','🔊','เสียงเอฟเฟกต์')+'</div><div class="mrow">'+b('fs','⛶','เต็มจอตอนเล่น')+b('vib','📳','สั่น')+'</div><p style="color:var(--dim)">ชื่อแก๊ง รูปโปรไฟล์ แมพ และสถิติ เก็บในเครื่องนี้เท่านั้น</p>'+(back?'<div class="mrow"><button class="mbtn" type="button" data-a="back">◀ กลับ</button></div>':''),true);
+    $('#mB').onclick=e=>{const x=e.target.closest('button');if(!x)return;if(x.dataset.s){const k=x.dataset.s;if(k in SFX.st){SFX.init();SFX.set(k,!SFX.st[k])}else{OPT[k]=!OPT[k];LS.set(k,OPT[k]);if(k==='vib'&&OPT.vib)buzz(60)}setModal(back)}if(x.dataset.a==='back')pauseModal()}}
   document.addEventListener('pointerdown',()=>{SFX.init();SFX.wake()},true);
   document.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled&&b.id!=='go'&&b.id!=='bSum')SFX.play('click',.03)},true);
   // matchmaking: the 4 other gangs drop in, then 3-2-1
   const GANGS=['แก๊งเสือน้อย','แก๊งลูกหมู','แก๊งนกกระจิบ','แก๊งปลาทอง','แก๊งหมีแพนด้า','แก๊งกระต่ายส้ม','แก๊งจิ้งจอกจิ๋ว','แก๊งเป็ดน้อย','แก๊งช้างน้อย','แก๊งแมวส้ม','แก๊งลิงซน','แก๊งนกฮูกตาโต','แก๊งหมาป่าน้อย','แก๊งเต่าทอง'];
   let MM=null;
-  function startMatch(){if(MM)return;$('#modal').hidden=true;const names=GANGS.slice().sort(()=>Math.random()-.5).slice(0,4),av=names.map(()=>CK[(Math.random()*CK.length)|0]),row=$('#mmRow');
+  // phones: full screen + landscape when a match starts (needs the tap, so it runs from the Play button)
+  function goFull(){if(!OPT.fs||!matchMedia('(pointer:coarse)').matches||document.fullscreenElement||document.webkitFullscreenElement)return;const el=document.documentElement,f=el.requestFullscreen||el.webkitRequestFullscreen;
+    if(!f)return;try{const r=f.call(el,{navigationUI:'hide'});const lock=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(_){}};if(r&&r.then)r.then(lock,()=>{});else lock()}catch(_){}}
+  function startMatch(){if(MM)return;goFull();$('#modal').hidden=true;const names=GANGS.slice().sort(()=>Math.random()-.5).slice(0,4),av=names.map(()=>CK[(Math.random()*CK.length)|0]),row=$('#mmRow');
     row.innerHTML=[{n:LOB.name,me:1},...names.map(n=>({n}))].map(s=>'<div class="mms'+(s.me?' me ok':' wait')+'"><canvas></canvas><b>'+(s.me?'⭐ '+esc(s.n):'กำลังหา…')+'</b><small>'+(s.me?'พร้อม ✓':'…')+'</small></div>').join('');
     row.querySelectorAll('canvas').forEach((c,i)=>fitCanvas(c,kidImg(i?av[i-1]:LOB.fav,4),true));
     $('#mmT').textContent='กำลังหาแก๊ง…';$('#cd').textContent='';$('#mmX').hidden=false;$('#mm').hidden=false;MM=[];let tt=450;MM.push(setTimeout(()=>bgFor(LOB.map),300));
