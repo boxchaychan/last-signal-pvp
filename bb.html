@@ -389,6 +389,11 @@ function sendMonsters(from,opt){
   const S=SEND.find(s=>s.id===opt),to=alive().filter(q=>q!==from);if(!S||!to.length||from.gold<S.cost)return false;from.gold-=S.cost;from.inc+=S.inc;
   for(const q of to){const t=sendTo(from,q,S.mon);if(t===q&&HAS_DOM&&q.human){SFX.play('incoming',.5);say(from.name+' ส่ง'+MON[S.mon].n+'มาหาคุณ!','#ff8a8a')}}
   if(HAS_DOM&&from.human){SFX.play('whistle');mprog('wh')}if(HAS_DOM&&from.human)say('ส่ง'+MON[S.mon].n+'ไปทุกบ้าน '+to.length+' บ้าน','#d8b8ff');return true}
+// the arrow that pierces flies along the lane the target walks on (the loop is 4 straight sides): every demon on that side
+// within `len` of the target, plus the two ends of the streak to draw
+function laneHits(p,tg,len){const d0=((tg.d%PLEN)+PLEN)%PLEN,S=SEG.find(s=>d0<=s.d+s.l)||SEG[0],ux=(S.x1-S.x0)/S.l,uy=(S.y1-S.y0)/S.l,o=(tg.x-S.x0)*ux+(tg.y-S.y0)*uy;
+  const a=Math.max(0,o-len*.35),b=Math.min(S.l,o+len*.65),mons=p.mons.filter(m=>{if(m.dead)return false;const t=(m.x-S.x0)*ux+(m.y-S.y0)*uy,n=Math.abs((m.x-S.x0)*uy-(m.y-S.y0)*ux);return n<34&&t>=a-8&&t<=b+8}).sort((m,n)=>Math.abs((m.x-tg.x)+(m.y-tg.y))-Math.abs((n.x-tg.x)+(n.y-tg.y)));
+  return{mons,x0:S.x0+ux*a,y0:S.y0+uy*a-14,x1:S.x0+ux*b,y1:S.y0+uy*b-14}}
 // one demon from 'from' to q; q's gold Mok bounces 30% of them back to the sender
 function sendTo(from,q,m){const back=from&&from!==q&&hasGold(q,'curse')&&Math.random()<.3,t=back?from:q;if(back)addFx(q,'parry',BW/2,BH/2-40,1.6);t.spawnQ.push({m,t:1.5,hp:hpScale(Math.max(1,G.wave))});
   if(HAS_DOM&&back&&(q.human||from.human))say(q.human?'🪞 กระจกสาปเด้ง'+MON[m].n+'กลับไปหา '+from.name+'!':'🪞 '+q.name+' เด้ง'+MON[m].n+'กลับมาหาคุณ!',q.human?'#d8b8ff':'#ff8a8a');return t}
@@ -476,13 +481,15 @@ function quakeFx(p){for(const [x,y] of [[270,72],[690,72],[270,488],[690,488]])a
 function densest(p){let b=null,bn=0;for(const m of p.mons){if(m.dead)continue;let n=0;for(const o of p.mons)if(!o.dead&&(o.x-m.x)**2+(o.y-m.y)**2<80*80)n++;if(n>bn){bn=n;b=m}}return b}
 // gang skills: 3 buttons every gang has, each with a cooldown (owner 2026-11-03: too few active skills, use pixelfx-style skills).
 // Bots use them too. cd = cooldown in seconds, c0 = cooldown at the start of a match.
+// GSK_ON: the owner took the gang-skill buttons out (2026-11-04: "keep them for other characters"); the code stays.
+const GSK_ON=false;
 const GSK={bolt:{ic:'🌩️',n:'ฟ้าผ่า',cd:20,c0:6,d:'แตะปุ่มแล้วแตะบนทางเดิน: ฟ้าผ่าลงตรงนั้น แรงมาก ปีศาจแถวนั้นมึน 1 วิ'},
   freeze:{ic:'❄️',n:'แช่แข็ง',cd:45,c0:20,d:'ปีศาจทั้งสนามหยุด 2.5 วิ (บอส 1 วิ)'},
   rally:{ic:'📯',n:'ปลุกใจ',cd:35,c0:15,d:'เด็กทั้งลานตีเร็วขึ้น 50% 6 วิ'}};
 // nearest point on the demons' loop
 function onLoop(x,y){const [x0,y0]=PATH[0],x1=PATH[1][0],y1=PATH[2][1],cx=Math.max(x0,Math.min(x1,x)),cy=Math.max(y0,Math.min(y1,y));
   const C=[[cx,y0],[cx,y1],[x0,cy],[x1,cy]];return C.sort((a,b)=>((a[0]-x)**2+(a[1]-y)**2)-((b[0]-x)**2+(b[1]-y)**2))[0]}
-function useGsk(p,k,x,y){if(!p.alive||!GSK[k]||p.gsk[k]>0)return false;p.gsk[k]=GSK[k].cd;const me=HAS_DOM&&p.i===G.view;
+function useGsk(p,k,x,y){if(!GSK_ON||!p.alive||!GSK[k]||p.gsk[k]>0)return false;p.gsk[k]=GSK[k].cd;const me=HAS_DOM&&p.i===G.view;
   // lightning hits like 12 blows of your strongest kid, so it helps most early and your kids still carry the late game
   if(k==='bolt'){const [bx,by]=onLoop(x,y);let best=10;p.units.forEach((u,s)=>{if(u)best=Math.max(best,dmgOf(p,u,s))});const dm=12*best;
     for(const m of p.mons)if(!m.dead&&(m.x-bx)**2+(m.y-by)**2<95*95){m.stunT=Math.max(m.stunT,m.M.boss?.4:1);hitMon(p,m,dm,null,'#ffe14a')}
@@ -508,7 +515,8 @@ function stepBoard(p,dt){
     if(u.cd>0)continue;
     const S=SLOTS[s],tg=nearestTarget(p,S.x,S.y-20,rangeOf(p,s,u));if(!tg)continue;u.cd=rateOf(p,s,u);attack(p,s,u,tg)}
   for(const sh of p.shots){sh.t+=dt;if(sh.k==='rain'&&sh.m&&!sh.m.dead){sh.tx=sh.m.x;sh.ty=sh.m.y}if(sh.t<sh.T||sh.done)continue;sh.done=true;const x=sh.m&&!sh.m.dead?sh.m.x:sh.tx,y=sh.m&&!sh.m.dead?sh.m.y:sh.ty;
-    if(sh.k==='arrow'){if(sh.pierce||sh.big){const ux=x-sh.x,uy=y-sh.y,l=Math.hypot(ux,uy)||1;for(const m of p.mons){if(m.dead)continue;const t=((m.x-sh.x)*ux+(m.y-sh.y)*uy)/l;if(t<0||t>l+500)continue;if(Math.abs((m.x-sh.x)*uy-(m.y-sh.y)*ux)/l<26)hitMon(p,m,sh.d*(sh.big&&m!==sh.m?.25:1),sh.u,sh.big?'#ffd75a':'#fff')}addFx(p,sh.big?'critx':'spark',x,y-10,sh.big?1.1:.7)}
+    if(sh.k==='arrow'){if(sh.pierce||sh.big){const L=laneHits(p,sh.m&&!sh.m.dead?sh.m:{x,y,d:sh.m?sh.m.d:0},sh.big?520:380);for(const m of L.mons)hitMon(p,m,sh.d*(sh.big&&m!==sh.m?.25:1),sh.u,sh.big?'#ffd75a':'#fff');
+        for(const m of L.mons.slice(0,8))addFx(p,'spark',m.x,m.y-10,.55);addFx(p,sh.big?'critx':'spark',x,y-10,sh.big?1.1:.7);p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,t:0,T:.22,big:sh.big})}
       else if(sh.m&&!sh.m.dead){hitMon(p,sh.m,sh.d,sh.u,sh.crit?'#ffd75a':undefined);addFx(p,sh.crit?'critx':'spark',x,y-10,sh.crit?.55:.6)}}
     else if(sh.k==='orb'){if(sh.u.c==='mage'){const C=CLS.mage;for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<C.splash**2){m.slowT=1.6;m.slowK=1-C.slow;if(sh.freeze&&!m.M.boss)m.stunT=Math.max(m.stunT,1)}splash(p,x,y,C.splash,sh.d,sh.u,'#ffc890');addFx(p,sh.freeze?'zapice':'plasma',x,y,.55);if(sh.burn){p.zones.push({x,y,r:62,t:3,tick:.25,d:sh.d*.25,u:sh.u});addFx(p,'firering',x,y+6,.42)}}
       else{if(sh.m&&!sh.m.dead)hitMon(p,sh.m,sh.d,sh.u,'#e0c0ff');addFx(p,'toxic',x,y,.35)}}
@@ -528,7 +536,7 @@ const STYLES={balanced:{n:'สมดุล',think:[.6,1.2],send:.45,sendGold:100
 function botThink(p,dt){
   const A=p.ai,St=STYLES[A.style||'balanced'];A.t-=dt;if(A.t>0)return;A.t=rnd(St.think[0],St.think[1]);
   // gang skills: freeze when close to the quota, lightning on a big group, rally when there is a crowd and strong kids
-  if(Math.random()<St.merge){if(p.gsk.freeze<=0&&p.mons.length>=p.hp*.55)useGsk(p,'freeze');
+  if(GSK_ON&&Math.random()<St.merge){if(p.gsk.freeze<=0&&p.mons.length>=p.hp*.55)useGsk(p,'freeze');
     if(p.gsk.bolt<=0){const m=densest(p);if(m&&p.mons.filter(o=>!o.dead&&(o.x-m.x)**2+(o.y-m.y)**2<95*95).length>=5)useGsk(p,'bolt',m.x,m.y)}
     if(p.gsk.rally<=0&&p.mons.length>=12&&p.units.filter(u=>u&&u.t>=2).length>=2)useGsk(p,'rally')}
   if(Math.random()<St.merge)for(let s=0;s<NSLOT;s++)if(canFuse(p,s)){fuse(p,s);return}
@@ -709,12 +717,21 @@ function makeBg(map){
   const LIGHTS=[];let AMB=.86,VIG=.5,OL=[22,14,18];
   // ---- shared props
   const rock=(x,y,s)=>prop(y,()=>{disc(x,y-2*s,4*s,'#4e4a58',.7);disc(x-s,y-3*s,2.6*s,'#686474',.7);rect(x-2*s,y-4*s,s,s,'#8a8696')});
+  // owner 2026-11-04: prettier maps -> brighter, more colour, more small things to look at
+  const bunting=(x0,x1,y,cols)=>prop(y+2,()=>{const n=Math.floor((x1-x0)/7);for(let i=0;i<=n;i++){const x=x0+i*7,sag=Math.sin(i/n*Math.PI)*4;rect(x,y+sag,7,1,'#d8d0c0');if(i<n)poly([[x+1,y+sag+1],[x+6,y+sag+1],[x+3.5,y+sag+6]],cols[i%cols.length])}});
+  const flowers=(x,y,col)=>prop(y,()=>{for(let k=0;k<6;k++){const fx2=x+((k*5)%13)-6,fy=y-((k*3)%5);rect(fx2,fy-2,1,2,'#2e6a32');rect(fx2-1,fy-3,3,1,col);rect(fx2,fy-4,1,3,col);rect(fx2,fy-3,1,1,'#fff6a0')}});
+  const tuft=(x,y,c1,c2)=>prop(y,()=>{rect(x,y-3,1,3,c1);rect(x+1,y-4,1,4,c2);rect(x+2,y-2,1,2,c1);rect(x-1,y-2,1,2,c2)});
   const lampPost=(x,y,col)=>{prop(y,()=>{rect(x,y-22,2,22,'#3e4250');rect(x-1,y-2,4,2,'#2e3240');rect(x-3,y-25,8,3,'#3e4250');rect(x-2,y-24,6,2,col||'#fff0b0')});LIGHTS.push({x:x+1,y:y-20,r:46,c:[255,206,130],k:.42});fx.push({k:'lamp',...toB(x+1,y-23)})};
   if(map==='park'){
     // ---------------- abandoned playground: asphalt, paving slabs, rubber mats ----------------
-    AMB=.8;VIG=.55;OL=[16,12,22];
-    ground(['#1c1a24','#201e29','#24212e','#282533','#2c2938'],30,(x,y,n)=>n+.12*(vn(x,y,7)-.5));
-    paint(0,0,W,H,(x,y,r,gg,b)=>{const k=vn(x,y,40);if(k>.78&&!nearLoop(x,y,-4))return [32,42,66];if(k>.74&&!nearLoop(x,y,-4))return [26,32,50];return null});  // puddles
+    AMB=.92;VIG=.32;OL=[16,12,22];
+    ground(['#33313f','#383646','#3d3b4c','#434152','#484658'],30,(x,y,n)=>n+.12*(vn(x,y,7)-.5));
+    // grass verges with flowers where the asphalt gives way
+    paint(0,0,W,H,(x,y)=>{if(nearLoop(x,y,10))return null;const k=vn(x+300,y,46);if(k<.42){const h=hs(x,y);if(h>.985)return [[240,220,110],[240,140,170],[160,200,250]][(x+y)%3];return h>.8?[66,118,62]:h<.15?[42,84,46]:[54,102,54]}if(k<.44)return [74,90,60];return null});
+    paint(0,0,W,H,(x,y,r,gg,b)=>{const k=vn(x,y,40);if(k>.85&&!nearLoop(x,y,-4))return hs(x,y)>.985?[120,150,200]:[52,68,102];if(k>.83&&!nearLoop(x,y,-4))return [42,54,82];return null});  // small puddles that catch the sky
+    // hopscotch painted on the asphalt left of the yard: 1 · 2 · 1 · 2 · 1 squares
+    {g.fillStyle='#d6cfb6';const hx=ox-112,hy=oy+120,Z=13;[[0],[-1,1],[0],[-1,1],[0]].forEach((row,k)=>row.forEach(o=>{const X=hx+o*Z/2-Z/2,Y=hy+k*Z;g.fillRect(X,Y,Z,1);g.fillRect(X,Y+Z,Z,1);g.fillRect(X,Y,1,Z);g.fillRect(X+Z,Y,1,Z+1)}));
+      g.fillStyle='#e0a050';g.fillRect(hx-3,hy+2*Z+4,5,5)}
     for(let i=0;i<70;i++){let x=Math.random()*W,y=Math.random()*H;if(nearLoop(x,y,2))continue;pg.fillStyle='#14121a';for(let k=0;k<14;k++){pg.fillRect(x|0,y|0,1,1);x+=Math.random()<.5?1:-1;y+=Math.random()<.65?1:0}}
     ring((x,y,a,al,hz,o)=>{if(a<2)return a?[128,124,140]:[150,146,162];if(a>2*hw-3)return [70,66,80];const s=Math.floor(al/10),t=Math.floor((a-2)/8),j=(al%10===0)||((a-2)%8===0);if(j)return [74,71,86];
       const base=[98,94,110],v=(hs(s,t)-.5)*14+(hs(x,y)-.5)*8;if(hs(x*3,y*7)>.985)return [60,57,70];return [base[0]+v|0,base[1]+v|0,base[2]+v|0]});
@@ -737,17 +754,24 @@ function makeBg(map){
     swing(ox-80,oy+120);slide(ox-70,oy+210);merry(ox-50,oy+300);sandbox(W-ox+18,oy+140);seesaw(W-ox+22,oy+230);swing(W-ox+30,oy+330);
     bench(ox-40,oy+170);bin(W-ox+70,oy+190);teddy(ox-20,oy+250);balloon(lx-hw-14,ly-hw-9,'#d84a5a');balloon(rx+hw+10,by+hw+5,'#4a9ad8');
     for(const [x,y] of [[ox-30,oy+60],[W-ox+40,oy+80],[ox-60,oy+390],[W-ox+60,oy+400],[lx+120,ly-hw-14],[rx-120,by+hw+22]])lampPost(x,y);
+    const ptree=(x,y,s)=>prop(y,()=>{rect(x-1,y-10*s,3,10*s,'#5a3a22');disc(x,y-17*s,9*s,'#2e6a3a');disc(x-5*s,y-14*s,6*s,'#2a6236');disc(x+5*s,y-15*s,6*s,'#2e6a3a');disc(x-2*s,y-20*s,6*s,'#3e8048');disc(x-4*s,y-22*s,3*s,'#5a9a5a')});
+    const grassy=(x,y)=>vn(x+300,y,46)<.39;
+    spots(16,24,(x,y,r)=>ptree(x,y,.9+r*.5),grassy);spots(30,8,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8'][Math.floor(r*3)]),grassy);spots(60,4,(x,y)=>tuft(x,y,'#4a8a4a','#6aa85a'),grassy);
     spots(40,10,(x,y)=>prop(y,()=>{rect(x,y-2,1,2,'#3a5a3a');rect(x+1,y-3,1,3,'#4a6a3a');rect(x+2,y-2,1,2,'#3a5a3a')}));
-    fx.push({k:'fog',c:'150,130,190'});
+    bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f0c040','#4a9ad8','#5ab85a','#b878e0']);
+    fx.push({k:'fog',c:'150,130,190'});fx.push({k:'flies',c:'255,220,160'});
   }else if(map==='beach'){
     // ---------------- lighthouse beach: sea, boardwalk, sand court ----------------
-    AMB=.86;VIG=.45;OL=[24,16,14];
+    AMB=.94;VIG=.28;OL=[24,16,14];
     const sea=ly-hw-6,mx=ox+300;
-    ground(['#463b29','#4e422e','#564933','#5e5038','#66563c'],24,(x,y,n)=>n+.1*Math.sin((y+vn(x,y,14)*10)*.7)+(y<sea+16?-.25*(1-(y-sea)/16):0));
+    ground(['#7a6644','#84704a','#8e7950','#988256','#a28b5c'],24,(x,y,n)=>n+.1*Math.sin((y+vn(x,y,14)*10)*.7)+(y<sea+16?-.25*(1-(y-sea)/16):0));
     paint(0,0,W,sea+3,(x,y)=>{const w=Math.sin(x*.18+y*.9)*.5+.5,t=y/(sea+3);if(y>=sea-1+Math.round(Math.sin(x*.21)*1.5))return null;
-      const deep=[10,24,44],near=[20,52,86];let c0=[deep[0]+(near[0]-deep[0])*t,deep[1]+(near[1]-deep[1])*t,deep[2]+(near[2]-deep[2])*t];if(w>.93&&hs(x>>2,y)>.4)c0=shade(c0,1.5);
+      const deep=[18,44,80],near=[34,96,140];let c0=[deep[0]+(near[0]-deep[0])*t,deep[1]+(near[1]-deep[1])*t,deep[2]+(near[2]-deep[2])*t];if(w>.93&&hs(x>>2,y)>.4)c0=shade(c0,1.5);
       if(Math.abs(x-mx)<8+((y*7)%5)&&hs(x,y)>.72&&(y%2===0))c0=[96,128,168];return c0.map(v=>v|0)});
-    paint(0,sea-4,W,sea+6,(x,y)=>{const e=sea-1+Math.round(Math.sin(x*.21)*1.5);if(y===e)return [200,220,230];if(y===e+1&&hs(x,1)>.3)return [140,160,170];if(y>e+1&&y<e+4)return [70,62,46];return null});
+    paint(0,sea-4,W,sea+6,(x,y)=>{const e=sea-1+Math.round(Math.sin(x*.21)*1.5);if(y===e)return [200,220,230];if(y===e+1&&hs(x,1)>.3)return [140,160,170];if(y>e+1&&y<e+4)return [104,90,64];return null});
+    // wet sand line and shells / footprints in the sand
+    paint(0,sea+3,W,sea+12,(x,y,r,gg,b)=>{const e=sea+4+Math.round(Math.sin(x*.07)*2);if(y<e+3&&y>=e)return [Math.max(0,r-18),Math.max(0,gg-16),Math.max(0,b-8)];return null});
+    for(let i=0;i<4;i++){let x=Math.random()<.5?rnd2(ox-160,lx-hw-20):rnd2(rx+hw+20,W-ox+160),y=rnd2(sea+20,H-oy+60);for(let k=0;k<9;k++){g.fillStyle='rgba(90,70,40,.55)';g.fillRect((x+(k%2)*3)|0,y|0,2,2);x+=2;y+=6}}
     ring((x,y,a,al,hz,o)=>{if(a<1||a>2*hw-2)return [46,30,18];const p=Math.floor(al/4),g0=al%4===0;if(g0)return [58,38,22];const base=[[122,86,52],[110,76,46],[134,96,58]][p%3],v=(hs(p,0)-.5)*14;
       if((a===3||a===2*hw-4)&&al%4===2)return [52,36,24];return [base[0]+v|0,base[1]+v|0,base[2]+v|0]});
     yard((x,y,ci,ri,u,v)=>{if((u<1||v<1)&&(ci>0||u>=1)&&(ri>0||v>=1))return [232,224,200];if(u<2&&ci>0||v<2&&ri>0)return [150,124,82];const n=hs(x,y)*.12+vn(x,y,8)*.1;return [184*(.9+n)|0,154*(.9+n)|0,100*(.9+n)|0]});
@@ -765,21 +789,27 @@ function makeBg(map){
     const star=(x,y)=>prop(y,()=>{rect(x-2,y-1,5,1,'#e8784a');rect(x,y-3,1,5,'#e8784a');rect(x-1,y-2,3,3,'#e8784a')});
     const boat=(x,y)=>prop(y,()=>{poly([[x,y-8],[x+34,y-8],[x+28,y],[x+6,y]],'#7a3a2a');rect(x+2,y-9,30,2,'#a85a3a');rect(x+16,y-34,2,26,'#8a6a4a');poly([[x+18,y-32],[x+30,y-12],[x+18,y-12]],'#e8e0d0')});
     palm(ox-60,oy+180,1.2);palm(ox-30,oy+330,1);palm(W-ox+30,oy+230,1.1);palm(W-ox+70,oy+380,1.25);palm(ox-90,oy+430,1);palm(lx+40,by+hw+40,.9);palm(rx-60,by+hw+44,1);
+    const towel=(x,y,c1,c2)=>prop(y,()=>{for(let k=0;k<5;k++)rect(x,y-10+k*2,22,2,k%2?c1:c2);rect(x,y-11,22,1,'#f8f4ea')});towel(ox-110,oy+300,'#e84a5a','#f8f4ea');towel(W-ox+90,oy+260,'#4a9ad8','#f0d060');
+    spots(24,6,(x,y)=>tuft(x,y,'#6a8a3a','#8aaa4a'),(x,y)=>y>sea+40&&hs(x,y)>.6);
+    bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f8f4ea','#4a9ad8','#f0c040']);
     umbrella(ox-70,oy+260,'#e84a5a','#f2ecd8');umbrella(W-ox+60,oy+310,'#4a9ad8','#f2ecd8');castle(W-ox+20,oy+160);boat(ox-110,oy+110);
     for(let i=0;i<10;i++){const x=Math.random()<.5?rnd2(ox-150,lx-hw-8):rnd2(rx+hw+8,W-ox+150),y=rnd2(sea+12,H-oy+80);(i%3?star:i%2?crab:rock)(x,y,1)}
     spots(30,8,(x,y)=>prop(y,()=>rect(x,y-1,2,1,hs(x,y)>.5?'#efe4cc':'#e8a8a0')),(x,y)=>y>sea+8);
     fx.push({k:'sea',y:(sea-oy)*Q});fx.push({k:'fog',c:'140,170,210'});
   }else{
     // ---------------- forest camp: grass, dirt road, raised lawn ----------------
-    AMB=.84;VIG=.5;OL=[12,18,14];
-    ground(['#142218','#18281c','#1c2e20','#203424','#253a28'],26,(x,y,n)=>n+.1*(vn(x,y,6)-.5));
-    paint(0,0,W,H,(x,y)=>{if(nearLoop(x,y,1))return null;const h=hs(x,y);if(h>.992)return [[232,216,90],[232,120,150],[140,180,240]][(x+y)%3];if(h>.95)return [46,74,46];return null});
+    AMB=.93;VIG=.3;OL=[12,18,14];
+    ground(['#23402a','#284830','#2d5034','#33583a','#3a6040'],26,(x,y,n)=>n+.1*(vn(x,y,6)-.5));
+    // a pond with lily pads (left, below the fire)
+    const pdx=ox-96,pdy=oy+62;paint(pdx-50,pdy-22,pdx+50,pdy+22,(x,y)=>{const q=((x-pdx)/46)**2+((y-pdy)/18)**2+.08*(vn(x,y,6)-.5);if(q>1)return null;if(q>.86)return [86,72,48];const w=Math.sin(x*.3+y*.8)*.5+.5;let c0=[40,90,120];if(w>.9)c0=[90,150,180];if(hs(x>>2,y>>1)>.97)c0=[60,130,70];return c0});
+    fx.push({k:'pond',...toB(pdx,pdy)});
+    paint(0,0,W,H,(x,y)=>{if(nearLoop(x,y,1))return null;const h=hs(x,y);if(h>.992)return [[240,224,100],[240,130,160],[150,190,250]][(x+y)%3];if(h>.95)return [74,116,68];if(h<.03)return [30,56,34];return null});
     ring((x,y,a,al,hz,o)=>{if(a<2&&hs(x,y)>.35)return hs(x,1)>.5?[52,86,46]:[40,70,38];if(a===2)return [70,54,36];if(a>2*hw-3)return [74,58,40];
       const rut=Math.abs(a-8)<1.5||Math.abs(a-(2*hw-9))<1.5,n=hs(x,y);if(n>.97)return [168,146,108];if(n>.93)return [96,78,54];const b0=rut?[104,84,58]:[126,104,72],v=(vn(x,y,9)-.5)*18;return [b0[0]+v|0,b0[1]+v|0,b0[2]+v|0]});
     yard((x,y,ci,ri,u,v)=>{const lt=(ci+ri)%2?[72,118,58]:[64,108,52];if(u<1||v<1)return shade(lt,1.25);if(u>=cw-1||v>=ch-1)return shade(lt,.62);const n=hs(x,y);if(n>.985)return [[236,226,120],[236,150,170],[250,250,250]][(x*3+y)%3];if(n>.9)return shade(lt,1.18);if(n<.08)return shade(lt,.85);return shade(lt,.97+.06*vn(x,y,5))});
     wall((u,v)=>v===0?[120,98,64]:((u+(v>2?5:0))%10===0||v===3?[58,46,30]:[92,74,50]));
-    const pine=(x,y,s)=>prop(y,()=>{rect(x-1,y-8*s,3,8*s,'#4a2e1a');for(let k=0;k<4;k++){const ty=y-8*s-k*9*s,w=(16-k*3.4)*s;poly([[x-w,ty],[x+1,ty-13*s],[x+w+1,ty]],k%2?'#1e4a2c':'#1a4228');line(x-w+2,ty-1,x,ty-12*s,'#2e6a3a')}});
-    const tree=(x,y,s)=>prop(y,()=>{rect(x-1,y-10*s,3,10*s,'#4a2e1a');disc(x,y-16*s,9*s,'#1c4a2a');disc(x-5*s,y-14*s,6*s,'#1c4a2a');disc(x+5*s,y-14*s,6*s,'#1a4426');disc(x-2*s,y-19*s,6*s,'#2a6038');disc(x-4*s,y-21*s,3*s,'#3a7a46')});
+    const pine=(x,y,s)=>prop(y,()=>{rect(x-1,y-8*s,3,8*s,'#5a3820');for(let k=0;k<4;k++){const ty=y-8*s-k*9*s,w=(16-k*3.4)*s;poly([[x-w,ty],[x+1,ty-13*s],[x+w+1,ty]],k%2?'#2a6038':'#245632');line(x-w+2,ty-1,x,ty-12*s,'#3e7e48')}});
+    const tree=(x,y,s)=>prop(y,()=>{rect(x-1,y-10*s,3,10*s,'#5a3820');disc(x,y-16*s,9*s,'#2a6038');disc(x-5*s,y-14*s,6*s,'#2a6038');disc(x+5*s,y-14*s,6*s,'#245632');disc(x-2*s,y-19*s,6*s,'#3a7a46');disc(x-4*s,y-21*s,3*s,'#5a9a5a')});
     const bush=(x,y)=>prop(y,()=>{disc(x-3,y-3,4,'#1e4a2a',.8);disc(x+3,y-3,4,'#1a4426',.8);disc(x,y-5,4,'#2a5e36',.8);rect(x-1,y-7,2,1,'#3a7a46')});
     const mush=(x,y)=>prop(y,()=>{rect(x,y-3,2,3,'#e8e0d0');disc(x+1,y-4,3,'#c83a3a',.6);rect(x,y-5,1,1,'#fff');rect(x+2,y-4,1,1,'#fff')});
     const tent=(x,y,c1,c2)=>{prop(y,()=>{poly([[x-18,y],[x,y-26],[x+1,y-26],[x+19,y]],c1);poly([[x+1,y-26],[x+19,y],[x+1,y]],c2);poly([[x-5,y],[x,y-14],[x+5,y]],'#1a120c');line(x,y-26,x-22,y+2,'#c8b890');line(x+1,y-26,x+23,y+2,'#c8b890');rect(x-1,y-29,3,3,'#5a3a22')});LIGHTS.push({x,y:y-6,r:22,c:[255,170,90],k:.25})};
@@ -789,7 +819,9 @@ function makeBg(map){
     tent(ox-70,oy+150,'#c8603a','#8a3a22');tent(ox-50,oy+300,'#d8b04a','#9a7a2a');tent(W-ox+40,oy+190,'#4a8ac8','#2a5a8a');tent(W-ox+60,oy+340,'#6aaa5a','#3a7a3a');
     const fxp=ox-50,fyp=oy+225;logs(fxp,fyp);LIGHTS.push({x:fxp,y:fyp-6,r:60,c:[255,150,70],k:.55});fx.push({k:'fire',...toB(fxp,fyp-5)});sign(W-ox+20,oy+110);
     for(const [x,y] of [[lx-hw-8,ly-hw-6],[rx+hw+8,ly-hw-6],[lx-hw-8,by+hw+14],[rx+hw+8,by+hw+14]])lampPost(x,y,'#ffd27a');
-    spots(70,14,(x,y,r)=>(r<.5?pine:tree)(x,y,.9+r*.6));spots(40,6,(x,y)=>bush(x,y));spots(24,4,(x,y)=>mush(x,y));spots(10,8,(x,y)=>stump(x,y));spots(12,6,(x,y)=>rock(x,y,1));
+    const offPond=(x,y)=>((x-pdx)/62)**2+((y-pdy)/30)**2>1;spots(70,14,(x,y,r)=>(r<.5?pine:tree)(x,y,.9+r*.6),offPond);spots(40,6,(x,y)=>bush(x,y));spots(24,4,(x,y)=>mush(x,y));spots(10,8,(x,y)=>stump(x,y));spots(12,6,(x,y)=>rock(x,y,1));
+    spots(26,6,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8','#f8f4ea'][Math.floor(r*4)]),(x,y)=>((x-pdx)/70)**2+((y-pdy)/32)**2>1);spots(90,3,(x,y)=>tuft(x,y,'#3e7e44','#5a9a52'),(x,y)=>((x-pdx)/64)**2+((y-pdy)/28)**2>1);
+    bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f0c040','#4a9ad8','#5ab85a','#f08aa8']);
     fx.push({k:'flies'});fx.push({k:'fog',c:'150,180,200'});
   }
   // props: sort, draw, outline, shadow, then onto the map
@@ -804,14 +836,15 @@ function makeBg(map){
   return c}
 function glow(x,y,r,rgb,a){const gr=ctx.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba('+rgb+','+a+')');gr.addColorStop(1,'rgba('+rgb+',0)');ctx.fillStyle=gr;ctx.fillRect(x-r,y-r,r*2,r*2)}
 function drawMapFx(map){const bg=BGC[map];if(!bg)return;const t=G.t;
-  {const cx=BW/2,cy=BH/2,R=Math.hypot(BW/2+EX,BH/2+EY),gr=ctx.createRadialGradient(cx,cy,R*.22,cx,cy,R);gr.addColorStop(0,'rgba(4,6,18,'+(1-bg.amb).toFixed(2)+')');gr.addColorStop(1,'rgba(4,6,18,'+Math.min(.9,1-bg.amb+bg.vig*.75).toFixed(2)+')');ctx.fillStyle=gr;ctx.fillRect(-EX,-EY,BW+2*EX,BH+2*EY)}
+  {const cx=BW/2,cy=BH/2,R=Math.hypot(BW/2+EX,BH/2+EY),gr=ctx.createRadialGradient(cx,cy,R*.34,cx,cy,R);gr.addColorStop(0,'rgba(4,6,18,'+(1-bg.amb).toFixed(2)+')');gr.addColorStop(1,'rgba(4,6,18,'+Math.min(.9,1-bg.amb+bg.vig*.75).toFixed(2)+')');ctx.fillStyle=gr;ctx.fillRect(-EX,-EY,BW+2*EX,BH+2*EY)}
   for(const f of bg.fx){
     if(f.k==='lamp'){const off=map==='park'&&Math.sin(t*23+f.x)>.95;glow(f.x,f.y,map==='park'?100:70,'255,206,120',off?.03:.2+.05*Math.sin(t*9+f.x));if(!off){ctx.fillStyle='#fff3c0';ctx.fillRect(f.x-4,f.y-2,8,4)}}
     else if(f.k==='fire'){glow(f.x,f.y,80,'255,140,60',.32+.08*Math.sin(t*13));for(let i=0;i<9;i++){const ph=(t*2.4+i*.29)%1,s=(1-ph)*8+2;ctx.fillStyle=ph<.35?'#fff2a0':ph<.7?'#ffa030':'#d8401a';ctx.fillRect(f.x-10+((i*7)%18)+Math.sin(t*6+i)*3,f.y-ph*34,s,s)}}
     else if(f.k==='beam'){const a=Math.PI*.8+Math.sin(t*.45)*.5,L=1500,w=.07;ctx.save();const gr=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,L);gr.addColorStop(0,'rgba(255,244,190,.22)');gr.addColorStop(1,'rgba(255,244,190,0)');ctx.fillStyle=gr;
       ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+Math.cos(a-w)*L,f.y+Math.sin(a-w)*L);ctx.lineTo(f.x+Math.cos(a+w)*L,f.y+Math.sin(a+w)*L);ctx.closePath();ctx.fill();ctx.restore();glow(f.x,f.y,60,'255,240,180',.55)}
     else if(f.k==='sea'){for(let i=0;i<22;i++){const x=((i*97+t*(14+i%4*6))%(BW+2*EX))-EX,y=f.y-10-((i*53)%(EY+20));ctx.fillStyle='rgba(170,210,240,'+(.16+.12*Math.sin(t*2+i))+')';ctx.fillRect(x,y,10+(i%3)*8,2)}}
-    else if(f.k==='flies'){for(let i=0;i<16;i++){const x=((i*173+t*(8+i%3*5))%(BW+2*EX))-EX,y=20+((i*89)%500)+Math.sin(t*.9+i)*24,a=.5+.5*Math.sin(t*3+i*2);ctx.fillStyle='rgba(216,255,138,'+a+')';ctx.fillRect(x,y,4,4)}}
+    else if(f.k==='pond'){for(let i=0;i<5;i++){const a=.25+.25*Math.sin(t*2.2+i*1.7);ctx.fillStyle='rgba(200,235,255,'+a+')';ctx.fillRect(f.x-60+((i*41+t*6)%110),f.y-16+((i*13)%30),12,2)}}
+    else if(f.k==='flies'){const fc=f.c||'216,255,138';for(let i=0;i<16;i++){const x=((i*173+t*(8+i%3*5))%(BW+2*EX))-EX,y=20+((i*89)%500)+Math.sin(t*.9+i)*24,a=.5+.5*Math.sin(t*3+i*2);ctx.fillStyle='rgba('+fc+','+a+')';ctx.fillRect(x,y,4,4)}}
     else if(f.k==='fog'){for(let i=0;i<6;i++){const R=260+(i%3)*60,x=((i*331+t*(9+i%3*4))%(BW+2*EX+2*R))-EX-R,y=-20+i*110+Math.sin(t*.12+i)*30,gr=ctx.createRadialGradient(x,y,0,x,y,R);
       gr.addColorStop(0,'rgba('+f.c+',.07)');gr.addColorStop(1,'rgba('+f.c+',0)');ctx.fillStyle=gr;ctx.fillRect(x-R,y-R,R*2,R*2)}}
   }}
@@ -882,7 +915,8 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=kidImg(u.c,u.
   if(u.t>=3){ctx.fillStyle='#000';ctx.fillRect(x-26,y+21,52,6);ctx.fillStyle=rdy&&Math.sin(G.t*12)>0?'#fff':'#5ad0ff';ctx.fillRect(x-25,y+22,50*Math.min(1,u.mana/100),4)}
   if(rdy){const pu=.5+.5*Math.sin(G.t*7);ctx.strokeStyle='rgba(120,220,255,'+(.5+.5*pu)+')';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,30+6*pu,10+2*pu,0,0,6.28);ctx.stroke();
     const bx=x+26,by=y-66-4*pu;glow(bx,by,40,u.t===4?'255,215,90':'90,208,255',.35+.3*pu);ctx.fillStyle='#0b1a2a';ctx.beginPath();ctx.arc(bx,by,19,0,6.28);ctx.fill();ctx.fillStyle=u.t===4?'#ffd75a':'#5ad0ff';ctx.beginPath();ctx.arc(bx,by,16,0,6.28);ctx.fill();ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText('⚡',bx,by+8)}}
-function drawShot(sh){if(sh.t<0||sh.k==='quake'||sh.k==='slash'||sh.k==='land')return;const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
+function drawShot(sh){if(sh.t<0||sh.k==='quake'||sh.k==='slash'||sh.k==='land')return;
+  if(sh.k==='streak'){const k=Math.min(1,sh.t/sh.T);ctx.globalAlpha=1-k;ctx.strokeStyle=sh.big?'#fff3a0':'#ffe8b0';ctx.lineWidth=sh.big?7:4;ctx.beginPath();ctx.moveTo(sh.x,sh.y);ctx.lineTo(sh.tx,sh.ty);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=sh.big?2:1;ctx.stroke();ctx.globalAlpha=1;return}const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
   if(sh.k==='arrow'||sh.k==='rain'){const k0=Math.max(0,k-.3);ctx.strokeStyle='rgba(255,245,200,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sh.x+(sh.tx-sh.x)*k0,sh.y+(sh.ty-sh.y)*k0);ctx.lineTo(x,y);ctx.stroke();const a=Math.atan2(sh.ty-sh.y,sh.tx-sh.x);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#6a4a2a';ctx.fillRect(-16,-1.5,16,3);ctx.fillStyle=sh.big?'#fff3a0':'#ffd75a';ctx.fillRect(0,-3,(sh.big?10:6),6);ctx.restore()}
   else if(sh.k==='carrot'){ctx.save();ctx.translate(x,y);ctx.rotate(sh.t*18);ctx.fillStyle='#ff9a2a';ctx.fillRect(-4,-4,8,8);ctx.fillStyle='#4aaa3a';ctx.fillRect(-6,-6,3,3);ctx.restore()}
   else{const r=sh.k==='meteor'?12:6;glow(x,y,r*3,sh.k==='meteor'||sh.col==='#ff9a3a'?'255,150,60':'200,138,255',.45);if(sh.k==='meteor'){ctx.strokeStyle='rgba(255,200,120,.5)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(x-(sh.tx-sh.x)*.18,y-(sh.ty-sh.y)*.18);ctx.lineTo(x,y);ctx.stroke()}ctx.fillStyle=sh.k==='meteor'?'#ff7a2a':sh.col;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.fillStyle='#fff6d0';ctx.fillRect(x-r/2,y-r/2,r,r)}}
@@ -936,7 +970,7 @@ function updHud(){if(!G)return;const me=G.players[0],v=G.players[G.view];
   if(nb&&G.waveT<5&&G.bossWarnW!==G.wave&&!G.over){G.bossWarnW=G.wave;say('⚠️ บอสกำลังมาใน 5 วิ!','#ff8a8a')}$('#hpP').innerHTML='💀 <b>'+me.mons.length+'</b>/'+me.hp;$('#hpP').style.borderColor=me.mons.length>=me.hp*.8?'#ff5050':'';$('#gdP').innerHTML='💰 <b>'+me.gold+'</b>';
   const vi=$('#viewing');vi.hidden=G.view===0;if(G.view!==0)vi.textContent='กำลังดูสนาม '+v.name+' · คำสาปของอีกาจะไปหาเขา';
   $('#sumC').textContent='💰 '+sumCost(me);$('#bSum').classList.toggle('hint',me.nSum<3&&me.alive);$('#bSum').classList.toggle('poor',me.gold<sumCost(me)||!me.units.some(u=>!u));$('#bWh').classList.toggle('poor',me.gold<SEND[0].cost);
-  for(const k in GSK){const b=$('#gs_'+k),c=Math.max(0,me.gsk[k]);b.querySelector('i').style.height=(c/GSK[k].cd*100)+'%';b.querySelector('small').textContent=c>0?Math.ceil(c):'';b.classList.toggle('rdy',c<=0&&me.alive);b.classList.toggle('aim',G.aim===k)}
+  for(const k in GSK){const b=$('#gs_'+k);b.hidden=!GSK_ON;if(!GSK_ON)continue;const c=Math.max(0,me.gsk[k]);b.querySelector('i').style.height=(c/GSK[k].cd*100)+'%';b.querySelector('small').textContent=c>0?Math.ceil(c):'';b.classList.toggle('rdy',c<=0&&me.alive);b.classList.toggle('aim',G.aim===k)}
   const ops=$('#side').querySelectorAll('.op');G.players.forEach((q,k)=>{const b=ops[k];if(!b)return;b.classList.toggle('on',G.view===q.i);b.classList.toggle('me',q.human);b.classList.toggle('out',!q.alive);
     b.querySelector('b').textContent=(q.human?'⭐ ':'')+q.name;b.querySelector('u').style.width=Math.min(100,q.mons.length/q.hp*100)+'%';b.querySelector('small').textContent=q.alive?'💀 ปีศาจ '+q.mons.length+'/'+q.hp:'ตกรอบ อันดับ '+q.rank});
   // boss bar (bottom row) for the board you are looking at
@@ -965,7 +999,7 @@ function say(t,c,ms){if(!HAS_DOM)return;const b=$('#banner');if(G&&G.bannerT>0&&
 // short tips during the first 3 matches, one at a time, each once per match
 function tipCheck(){const me=G.players[0];if(!me.alive||G.view!==0||G.popup||G.t<(G.tipT||0))return;G.tips=G.tips||{};
   const T=[['merge',()=>me.units.some((u,s)=>u&&canMerge(me,s)),'💡 มีเด็กสีเดียวกัน 3 ตัวแล้ว! แตะตัวที่อยากให้โต แล้วกด "รวมร่าง" (คลาสไหนก็ได้)'],
-    ['gsk',()=>G.wave>=2&&me.alive,'💡 ปุ่ม 🌩️ ❄️ 📯 ด้านล่าง = สกิลแก๊ง ใช้ได้ทุกเกม แล้วรอคูลดาวน์ · 🌩️ แตะปุ่มแล้วแตะบนทางเดินตรงที่ปีศาจเยอะ'],
+    ['gsk',()=>GSK_ON&&G.wave>=2&&me.alive,'💡 ปุ่ม 🌩️ ❄️ 📯 ด้านล่าง = สกิลแก๊ง ใช้ได้ทุกเกม แล้วรอคูลดาวน์ · 🌩️ แตะปุ่มแล้วแตะบนทางเดินตรงที่ปีศาจเยอะ'],
     ['ult',()=>!G.autoUlt&&me.units.some(u=>u&&u.t>=3&&u.mana>=100),'⚡ ไม้ตายพร้อมแล้ว! แตะเด็กที่มีสายฟ้าเพื่อปล่อย เลือกจังหวะเอง (เช่น เก็บไว้ตอนบอส) · ปุ่ม ⚡ ด้านล่างเปลี่ยนเป็นออโต้ได้'],
     ['fuse',()=>me.units.some((u,s)=>u&&canFuse(me,s)),'✨ ของครบสูตรแล้ว! แตะเด็กแดงที่มีลูกศรทอง แล้วกด "ผสมทอง"'],
     ['red',()=>me.units.some(u=>u&&u.t===3),'💡 ได้เด็กแดงแล้ว! แตะดูสูตรร่างทอง (ใช้เด็กม่วงตามสูตร 2 ตัว)'],
@@ -1083,7 +1117,7 @@ if(HAS_DOM){
     B.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.k)kidsModal(b.dataset.k);if(b.dataset.lvup){const k=b.dataset.lvup,L=LOB.prog.lv[k];if(canLv(k)){LOB.prog.sh[k]-=KLV.need(L);LOB.prog.lv[k]=L+1;LS.set('prog',LOB.prog);SFX.play('mergeBig');const q=PERK.find(q=>q.lv===L+1);kidsBadge();kidsModal(k,'⬆ '+CLS[k].kid+' Lv.'+(L+1)+(q?' · ปลด '+q.ic+' '+q.n:' · แรงขึ้น '+Math.round(KLV.dmg*100)+'%'))}}if(b.dataset.fav){LOB.fav=b.dataset.fav;LS.set('fav',LOB.fav);profUI();kidsModal(LOB.fav)}}}
   function howModal(){const rl=CK.slice().sort((a,b)=>rangeStars(b)-rangeStars(a)).map(k=>CLS[k].n+' '+rangeStars(k)).join(' · ');
     openModal('📖 วิธีเล่น','<div class="mrow" style="margin:0 0 4px"><button class="mbtn" type="button" data-a="story">🌙 อ่านเรื่องราว</button></div><h4>🎯 เป้าหมาย</h4><p>5 แก๊งแข่งกัน แต่ละบ้านมีลานเด็กของตัวเอง ปีศาจเดินวนรอบลาน · ปีศาจบนสนามห้ามถึง<b>โควต้า</b> (เริ่ม 100 ตัว) ถึงเมื่อไหร่ = ตกรอบ · แก๊งสุดท้ายที่เหลือชนะ</p>'+
-      '<h4>🧸 เรียกเด็ก + รวมร่าง</h4><ul><li>กด <b>เรียกเด็ก</b> ได้เด็กสุ่ม 1 ใน 6 คลาส ลงช่องว่างบนลาน</li><li>แตะเด็ก → <b>รวมร่าง</b> 3 ตัว<b>สีเดียวกัน</b> (คลาสไหนก็ได้) = ตัวที่แตะโตขึ้น 1 ระดับ (ขาว → เขียว → ม่วง → แดง) อีก 2 ตัวหายไป (ใช้คลาสเดียวกันก่อน) · ยิ่งโตยิ่งเก่ง และปลดสกิลใหม่</li><li>✨ <b>ร่างทอง</b>: เด็กแดง + เด็กม่วง 2 ตัวตามสูตรของคลาสนั้น (แตะเด็กแดงดูสูตร) → กลายเป็นร่างทอง ได้สกิลทองใหม่ 3 อย่าง · คลาสละ 1 ตัวต่อลาน</li><li>⚡ <b>ไม้ตาย</b> (เด็กแดงและทอง): หลอดฟ้าใต้ตัวเต็มแล้วจะมีสายฟ้าขึ้น <b>แตะเด็กเพื่อปล่อย</b> เลือกจังหวะเอง · ปุ่ม ⚡ ด้านล่างสลับ กดเอง/ออโต้</li><li>🌩️ ❄️ 📯 <b>สกิลแก๊ง</b> (ปุ่มด้านล่าง ทุกแก๊งมีเหมือนกัน): ฟ้าผ่า (แตะปุ่มแล้วแตะบนทางเดิน) · แช่แข็งปีศาจทั้งสนาม · ปลุกใจเด็กทั้งลานตีเร็ว · ใช้แล้วรอคูลดาวน์</li><li>ลากเด็กเพื่อย้ายช่อง · ขายได้</li></ul>'+
+      '<h4>🧸 เรียกเด็ก + รวมร่าง</h4><ul><li>กด <b>เรียกเด็ก</b> ได้เด็กสุ่ม 1 ใน 6 คลาส ลงช่องว่างบนลาน</li><li>แตะเด็ก → <b>รวมร่าง</b> 3 ตัว<b>สีเดียวกัน</b> (คลาสไหนก็ได้) = ตัวที่แตะโตขึ้น 1 ระดับ (ขาว → เขียว → ม่วง → แดง) อีก 2 ตัวหายไป (ใช้คลาสเดียวกันก่อน) · ยิ่งโตยิ่งเก่ง และปลดสกิลใหม่</li><li>✨ <b>ร่างทอง</b>: เด็กแดง + เด็กม่วง 2 ตัวตามสูตรของคลาสนั้น (แตะเด็กแดงดูสูตร) → กลายเป็นร่างทอง ได้สกิลทองใหม่ 3 อย่าง · คลาสละ 1 ตัวต่อลาน</li><li>⚡ <b>ไม้ตาย</b> (เด็กแดงและทอง): หลอดฟ้าใต้ตัวเต็มแล้วจะมีสายฟ้าขึ้น <b>แตะเด็กเพื่อปล่อย</b> เลือกจังหวะเอง · ปุ่ม ⚡ ด้านล่างสลับ กดเอง/ออโต้</li><li>ลากเด็กเพื่อย้ายช่อง · ขายได้</li></ul>'+
       '<h4>💪 อัปพลัง</h4><p>ใช้เงินอัปคลาส ทุกตัวในคลาสนั้นแรงขึ้น 25% ต่อขั้น</p>'+
       '<h4>📣 นกหวีด</h4><p>ส่งปีศาจ 1 ตัวไปทุกบ้านพร้อมกัน ปีศาจที่ถูกส่งไปฆ่าแล้วไม่ได้เงิน · ยิ่งส่ง รายได้ต่อระลอกยิ่งเพิ่ม · แตะชื่อแก๊งด้านขวาเพื่อดูสนามคนอื่น</p>'+
       '<h4>👹 บอส + ทาเลนต์</h4><p>บอสมาทุก 10 ระลอก ผลัดกัน 4 ตัว: '+BOSSES.map(b=>MON[b].n+' ('+MON[b].ab+')').join(' · ')+' · หลังบอสเลือกทาเลนต์ 1 ใน 3 ใบ: ใบ<b>ช่อง</b>แรงแต่ได้เฉพาะเด็กที่ยืนช่องนั้น (ช่องจะมีแสงสี) ใบ<b>ทั้งทีม</b>เบากว่าแต่ได้ทุกตัว</p>'+
@@ -1133,7 +1167,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-04a',NEWS=['🎬 แทนขยับจริงแล้ว (ขาว เขียว ม่วง แดง): ยืนหายใจ กะพริบตา · ตีเงื้อค้อนทุบ 4 จังหวะ · ไม้ตายกระโดดทุบ · ตัวอื่นตามมา','🎬 เด็กขยับมากขึ้น: ยืนโยกตัว หายใจ ท่าตีเหวี่ยงแรงขึ้นทุกตัว (ภาพท่าหลายเฟรมกำลังตามมา)','🌩️ ❄️ 📯 สกิลแก๊ง 3 ปุ่มใหม่ (ด้านล่าง): ฟ้าผ่าตรงที่แตะ · แช่แข็งปีศาจทั้งสนาม · ปลุกใจเด็กทั้งลานตีเร็ว · ใช้แล้วรอคูลดาวน์ บอทก็ใช้','🔨 แทนมีท่าทุบแล้ว (ร่างขาว เขียว ม่วง แดง) · ตอนตีจะเปลี่ยนเป็นท่าเหวี่ยงค้อนจริง ๆ · เด็กตัวอื่นตามมาเร็ว ๆ นี้','💥 เอฟเฟกต์สกิลใหม่ 17 แบบ (จากชุด pixelfx): แทนทุบค้อน พื้นแตก · นิลฟันคู่ ฟันรัว · ฟ้าประกายศร คริ · ราตรีดาวตก ระเบิด นาฬิกาหยุดเวลา วงไฟ · จันทร์วงฮีลใหญ่ ขนนก · หมอกตราสาป ระเบิดมืด · รวมร่างแสงพลัง · ผสมทองเสาแสง · บอสตายระเบิด','⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-04b',NEWS=['🗺️ แมพสวยขึ้น สว่างขึ้น: ค่ายมีบ่อน้ำ ดอกไม้ ธงราว · สนามเด็กเล่นมีสนามหญ้า ต้นไม้ ตารางกระโดด · ชายหาดทรายสว่าง ผ้าเช็ดตัว รอยเท้า','🏹 ฟ้า: ลูกศรทะลุกับพาวเวอร์ช็อตพุ่งไปตามทางเดินปีศาจ (เดิมพุ่งขึ้นแนวตั้ง โดนตัวเดียว)','🌩️ เอาปุ่มสกิลแก๊งออกก่อน (เก็บไว้ใส่ให้ตัวละครอื่น)','🎬 แทนขยับจริงแล้ว (ขาว เขียว ม่วง แดง): ยืนหายใจ กะพริบตา · ตีเงื้อค้อนทุบ 4 จังหวะ · ไม้ตายกระโดดทุบ · ตัวอื่นตามมา','🎬 เด็กขยับมากขึ้น: ยืนโยกตัว หายใจ ท่าตีเหวี่ยงแรงขึ้นทุกตัว (ภาพท่าหลายเฟรมกำลังตามมา)','🌩️ ❄️ 📯 สกิลแก๊ง 3 ปุ่มใหม่ (ด้านล่าง): ฟ้าผ่าตรงที่แตะ · แช่แข็งปีศาจทั้งสนาม · ปลุกใจเด็กทั้งลานตีเร็ว · ใช้แล้วรอคูลดาวน์ บอทก็ใช้','🔨 แทนมีท่าทุบแล้ว (ร่างขาว เขียว ม่วง แดง) · ตอนตีจะเปลี่ยนเป็นท่าเหวี่ยงค้อนจริง ๆ · เด็กตัวอื่นตามมาเร็ว ๆ นี้','💥 เอฟเฟกต์สกิลใหม่ 17 แบบ (จากชุด pixelfx): แทนทุบค้อน พื้นแตก · นิลฟันคู่ ฟันรัว · ฟ้าประกายศร คริ · ราตรีดาวตก ระเบิด นาฬิกาหยุดเวลา วงไฟ · จันทร์วงฮีลใหญ่ ขนนก · หมอกตราสาป ระเบิดมืด · รวมร่างแสงพลัง · ผสมทองเสาแสง · บอสตายระเบิด','⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
