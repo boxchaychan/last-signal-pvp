@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""An animation GIF (white background, a "pixel art" character resized to a non-whole scale, e.g. the owner's
+"""An animation GIF (white or see-through background, a "pixel art" character resized to a non-whole scale, e.g. the owner's
 Cleopatra_Attack_4_Directions_GIF) -> one strip of true pixel frames for the game.
 
   python3 -I tools/art/gif_anim.py <in.gif> <out.png> [grid range, default 1.8,4]
@@ -18,15 +18,23 @@ from scipy import ndimage as nd
 
 src, out = sys.argv[1], sys.argv[2]
 GR = [float(v) for v in (sys.argv[3] if len(sys.argv) > 3 else '1.8,4').split(',')]
-frames = [np.array(f.convert('RGB')).astype(int) for f in ImageSequence.Iterator(Image.open(src))]
+raw = [np.array(f.convert('RGBA')).astype(int) for f in ImageSequence.Iterator(Image.open(src))]
+# a see-through background (e.g. Wukong's GIF) is used as it is; the colours sit on white for the grid search
+CLEAR = all((r[:, :, 3] < 128).mean() > .2 for r in raw)
+frames = [np.where(r[:, :, 3:] > 127, r[:, :, :3], 255) for r in raw]
 H, W, _ = frames[0].shape
 
 
-def figure(A):
+def figure(A, R):
+    if CLEAR:
+        return keep_big(R[:, :, 3] > 127)
     near = (A.min(2) > 226) & (A.max(2) - A.min(2) < 26)
     lab, n = nd.label(near)
     edge = set(np.unique(np.r_[lab[0], lab[-1], lab[:, 0], lab[:, -1]])) - {0}
-    fig = ~np.isin(lab, list(edge))
+    return keep_big(~np.isin(lab, list(edge)))
+
+
+def keep_big(fig):
     fl, fn = nd.label(fig)
     if fn:
         fs = nd.sum(fig, fl, range(1, fn + 1))
@@ -35,7 +43,7 @@ def figure(A):
     return fig
 
 
-figs = [figure(A) for A in frames]
+figs = [figure(A, R) for A, R in zip(frames, raw)]
 
 
 def fit(ax):
