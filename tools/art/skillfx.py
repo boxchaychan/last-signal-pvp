@@ -262,9 +262,9 @@ def mx(*a):
 FX = {}
 
 
-def effect(key, W, H, ax, ay, n, fps):
+def effect(key, W, H, ax, ay, n, fps, loop=False):
     def deco(fn):
-        FX[key] = (W, H, ax, ay, n, fps, fn)
+        FX[key] = (W, H, ax, ay, n, fps, fn, loop)
         return fn
     return deco
 
@@ -619,15 +619,148 @@ def glight(F, t, i, rng):
     F.add(bo, 'bolt')
 
 
+# ---------- tier looks (owner 2026-11-05: "each tier should look clearly stronger, rainbow the fiercest") ----------
+# looping sheets: ground sigils under the kid (sg_*) and auras behind the kid (au_*); t runs 0..1 and wraps
+RB = ['fire', 'gold', 'green', 'aqua', 'purple', 'pink']
+
+
+def by_angle(F, cx, cy, light, t, sq=1.0, k=6, spin=1.0):
+    """split a light field into k angle sectors (turning with t) so each can get its own ramp (rainbow)"""
+    _, th = polar(F, cx, cy, sq)
+    a = np.mod(th / TAU + t * spin, 1.0)
+    return [light * ((a >= i / k) & (a < (i + 1) / k)) for i in range(k)]
+
+
+def sigil(F, cx, cy, R, t, rings, spokes=0, dots=0, sq=.4, spin=1.0, ray_in=.55, ray_out=.84):
+    r, th = polar(F, cx, cy, sq)
+    out = F.zero()
+    for rr, w, v in rings:
+        out = mx(out, ring(F, cx, cy, R * rr, w, sq=sq) * v)
+    if spokes:
+        a = th - TAU * t * spin / spokes
+        band = sstep(R * ray_in, R * ray_in + 2, r) * (1 - sstep(R * ray_out - 2, R * ray_out, r))
+        out = mx(out, (0.5 + 0.5 * np.cos(spokes * a)) ** 10 * band * .9)
+    for j in range(dots):
+        a = TAU * (j / max(1, dots) + t * spin / max(1, dots))
+        x, y = cx + math.cos(a) * R * .92, cy + math.sin(a) * R * .92 * sq
+        out = mx(out, star(F, x, y, 3.2, .8, 0))
+    return out
+
+
+@effect('sg_green', 72, 32, 36, 16, 12, 10, loop=True)
+def sg_green(F, t, i, rng):
+    F.add(sigil(F, 36, 16, 30, t, [(1, 1.1, .55)], dots=4), 'green')
+
+
+@effect('sg_purple', 76, 34, 38, 17, 12, 10, loop=True)
+def sg_purple(F, t, i, rng):
+    F.add(sigil(F, 38, 17, 33, t, [(1, 1.3, .7), (.74, .9, .5)], dots=6, spin=-1), 'purple')
+
+
+@effect('sg_red', 80, 36, 40, 18, 12, 12, loop=True)
+def sg_red(F, t, i, rng):
+    L = sigil(F, 40, 18, 34, t, [(1, 1.5, .85), (.8, 1, .6)], spokes=8, spin=1.5, ray_in=.82, ray_out=1.0)
+    F.add(L, 'fire')
+
+
+@effect('sg_gold', 86, 38, 43, 19, 16, 12, loop=True)
+def sg_gold(F, t, i, rng):
+    pulse = .85 + .15 * math.sin(TAU * t * 2)
+    L = sigil(F, 43, 19, 38, t, [(1, 1.6, pulse), (.84, 1, .7), (.56, .9, .6)], spokes=12, dots=4, spin=1)
+    F.add(L, 'gold')
+
+
+@effect('sg_rb', 96, 42, 48, 21, 16, 12, loop=True)
+def sg_rb(F, t, i, rng):
+    pulse = .9 + .1 * math.sin(TAU * t * 2)
+    L = sigil(F, 48, 21, 43, t, [(1, 1.8, pulse), (.86, 1.1, .8), (.62, .9, .7), (.4, .7, .5)], spokes=16, dots=6, spin=1)
+    for part, ramp in zip(by_angle(F, 48, 21, L, t, sq=.4), RB):
+        F.add(part, ramp)
+
+
+@effect('sg_bz', 86, 38, 43, 19, 16, 12, loop=True)
+def sg_bz(F, t, i, rng):
+    L = mx(sigil(F, 43, 19, 38, t, [(1, 1.5, .85), (.7, .9, .6)], dots=3, spin=-1), spiral(F, 43, 19, 6, 30, 3, 1.4, t * TAU, sq=.4, sharp=4) * .7)
+    F.add(L, 'aqua')
+
+
+@effect('au_red', 64, 84, 32, 78, 12, 14, loop=True)
+def au_red(F, t, i, rng):
+    """red tier: a ring of flame tongues rising behind the kid"""
+    L = F.zero()
+    for j in range(7):
+        x = 32 + (j - 3) * 7.5
+        ph = (t + j * .37) % 1
+        h = (24 + 22 * (1 - abs(j - 3) / 3.5)) * (.75 + .25 * math.sin(TAU * ph))
+        L = mx(L, flame(F, x, 78, h, 7.5, t * 3, j, lean=(j - 3) * .06) * .95)
+    for j in range(5):
+        ph = (t * 1.5 + j * .21) % 1
+        L = mx(L, star(F, 32 + math.sin(j * 2.1 + ph * 3) * 20, 76 - ph * 74, 2.2 * (1 - ph) + .6, .7, 0))
+    F.add(L, 'fire', .9)
+
+
+def rays(F, cx, cy, n, t, r0, r1, sharp=8, spin=1.0):
+    r, th = polar(F, cx, cy)
+    a = th - TAU * t * spin / n
+    return (0.5 + 0.5 * np.cos(n * a)) ** sharp * sstep(r0, r0 + 4, r) * (1 - sstep(r1 * .7, r1, r))
+
+
+@effect('au_gold', 76, 96, 38, 90, 16, 12, loop=True)
+def au_gold(F, t, i, rng):
+    """gold tier: a fan of light rays behind the body, a soft pillar and a halo ring"""
+    L = rays(F, 38, 50, 10, t, 8, 40) * .8
+    dx = np.abs(F.X - 38)
+    pillar = np.clip(1 - dx / 9, 0, 1) ** 1.5 * (F.Y / 96) ** 1.2 * (.55 + .1 * math.sin(TAU * t * 2))
+    L = mx(L, pillar, ring(F, 38, 24, 13, 1.3, sq=.35) * .9)
+    for j in range(5):
+        ph = (t + j * .2) % 1
+        L = mx(L, star(F, 38 + math.sin(j * 1.7) * 26, 86 - ph * 80, 3.5 * math.sin(math.pi * ph), .8))
+    F.add(L, 'gold', .85)
+
+
+@effect('au_rb', 88, 108, 44, 102, 16, 12, loop=True)
+def au_rb(F, t, i, rng):
+    """rainbow form: rainbow rays + prismatic flames + a bright pillar, the fiercest look"""
+    R0 = rays(F, 44, 56, 14, t, 8, 46, sharp=6) * .85
+    for part, ramp in zip(by_angle(F, 44, 56, R0, t * .5), RB):
+        F.add(part, ramp, .85)
+    fl = []
+    for j in range(9):
+        x = 44 + (j - 4) * 7.5
+        ph = (t * 2 + j * .29) % 1
+        h = (30 + 30 * (1 - abs(j - 4) / 4.5)) * (.8 + .2 * math.sin(TAU * ph))
+        fl.append((flame(F, x, 102, h, 7, t * 4, j, lean=(j - 4) * .05), RB[(j + int(t * 6)) % 6]))
+    for L, ramp in fl:
+        F.add(L * .9, ramp, .9)
+    dx = np.abs(F.X - 44)
+    F.add(np.clip(1 - dx / 7, 0, 1) ** 1.2 * (F.Y / 108) ** 1.1 * .75, 'gold', .8)
+    S = F.zero()
+    for j in range(7):
+        ph = (t * 1.3 + j * .143) % 1
+        S = mx(S, star(F, 44 + math.sin(j * 2.3) * 34, 100 - ph * 96, 4 * math.sin(math.pi * ph), .9))
+    F.add(S, 'gold')
+
+
+@effect('au_bz', 76, 96, 38, 90, 16, 12, loop=True)
+def au_bz(F, t, i, rng):
+    """legendary beast: wind ribbons spiralling up round the body"""
+    L = F.zero()
+    for j in range(5):
+        k = (t + j / 5) % 1
+        a = j * 1.9 + t * TAU * 2
+        L = mx(L, crescent(F, 38, 88 - k * 80, 26 * (1 - .4 * k), a, a + 2.6, 4.5 * math.sin(math.pi * k) + .3, sq=.4, glow=.5))
+    F.add(L, 'aqua', .9)
+
+
 def build(key, outdir):
-    W, H, ax, ay, n, fps, fn = FX[key]
+    W, H, ax, ay, n, fps, fn, loop = FX[key]
     cols = min(n, 6)
     rows = (n + cols - 1) // cols
     sheet = Image.new('RGBA', (W * cols, H * rows), (0, 0, 0, 0))
     for i in range(n):
         F = Frame(W, H)
         rng = np.random.default_rng(1000 + sum(map(ord, key)))
-        fn(F, i / (n - 1), i, rng)
+        fn(F, i / n if loop else i / (n - 1), i, rng)
         sheet.paste(F.render(), ((i % cols) * W, (i // cols) * H))
     sheet.save(f'{outdir}/{key}.png', optimize=True)
     return {'w': W, 'h': H, 'fps': fps, 'n': n, 'cols': cols, 'ax': ax, 'ay': ay}

@@ -261,12 +261,17 @@ const HAS_DOM=typeof document!=='undefined'&&!(typeof window!=='undefined'&&wind
 const BW=960,BH=540,CAP0=100,COLS=7,ROWS=3,NSLOT=COLS*ROWS;
 // one closed loop around the yard (like Lucky Defense, one board only): demons appear on it and walk round and round, no gate, no exit.
 // A player's HP is a quota: when the demons alive on the loop reach it, that player is out (starts at 100).
-const PATH=[[70,62],[890,62],[890,478],[70,478],[70,62]];
-const SEG=[];let PLEN=0;for(let i=0;i<PATH.length-1;i++){const [x0,y0]=PATH[i],[x1,y1]=PATH[i+1],l=Math.hypot(x1-x0,y1-y0);SEG.push({x0,y0,x1,y1,l,d:PLEN});PLEN+=l}
-function pathPos(d){d=((d%PLEN)+PLEN)%PLEN;for(const s of SEG)if(d<=s.d+s.l){const k=(d-s.d)/s.l;return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:Math.sign(s.x1-s.x0)}}const s=SEG[SEG.length-1];return{x:s.x1,y:s.y1,dx:1}}
+// the loop the demons walk: straight sides round the yard (owner 2026-11-05: the wavy version was not it, "ทางทำตรง ๆ ดีแล้ว").
+// Clockwise, so the right-hand side of the walking direction faces the yard. More layouts (paths through the middle) may come.
+const PATH=[[166,108],[796,108],[796,440],[166,440],[166,108]];  // hugs the yard (YARD + its wall), like the old loop did round the old yard
+const SEG=[];let PLEN=0;for(let i=0;i<PATH.length-1;i++){const [x0,y0]=PATH[i],[x1,y1]=PATH[i+1],l=Math.hypot(x1-x0,y1-y0)||.01;SEG.push({x0,y0,x1,y1,l,d:PLEN,fx:Math.abs(x1-x0)>.35*l?Math.sign(x1-x0):0});PLEN+=l}
+function pathPos(d){d=((d%PLEN)+PLEN)%PLEN;let lo=0,hi=SEG.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(d<=SEG[mid].d+SEG[mid].l)hi=mid;else lo=mid+1}
+  const s=SEG[lo],k=Math.min(1,(d-s.d)/s.l);return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:s.fx}}
+// n points spread evenly along the loop (for effects that used to sit at fixed spots on the old straight sides)
+const lanePts=(n,o)=>Array.from({length:n},(_,i)=>{const q=pathPos(PLEN*(i+(o||0))/n);return [q.x,q.y]});
 // the yard inside the loop: 7 x 3 pads (owner: 7 per row)
-const YARD={x:98,y:90,w:764,h:360},SLOTS=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)SLOTS.push({x:YARD.x+YARD.w/COLS*(c+.5),y:YARD.y+YARD.h/ROWS*(r+.5)+14});
-const TIER=[{n:'ขาว',age:'2 ขวบ',c:'#f2f2f2',m:1,sc:.96},{n:'เขียว',age:'4 ขวบ',c:'#5fe05f',m:3.3,sc:1.04},{n:'ม่วง',age:'6 ขวบ',c:'#b77bff',m:11,sc:1.12},{n:'แดง',age:'7 ขวบ',c:'#ff5050',m:36,sc:1.2},{n:'ทอง',age:'8 ขวบ',c:'#ffd75a',m:100,sc:1.22},{n:'รุ้ง',age:'ฟอร์ม',c:'#ff8ad8',m:260,sc:1.02},{n:'ตำนาน',age:'สัตว์ในตำนาน',c:'#3ee8c0',m:110,sc:1.26}];
+const YARD={x:194,y:136,w:574,h:268},SLOTS=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)SLOTS.push({x:YARD.x+YARD.w/COLS*(c+.5),y:YARD.y+YARD.h/ROWS*(r+.5)+14});
+const TIER=[{n:'ขาว',age:'2 ขวบ',c:'#f2f2f2',m:1,sc:.96},{n:'เขียว',age:'4 ขวบ',c:'#5fe05f',m:3.3,sc:1.04},{n:'ม่วง',age:'6 ขวบ',c:'#b77bff',m:11,sc:1.12},{n:'แดง',age:'7 ขวบ',c:'#ff5050',m:36,sc:1.2},{n:'ทอง',age:'8 ขวบ',c:'#ffd75a',m:100,sc:1.22},{n:'รุ้ง',age:'ฟอร์ม',c:'#ff8ad8',m:260,sc:1.16},{n:'ตำนาน',age:'สัตว์ในตำนาน',c:'#3ee8c0',m:110,sc:1.26}];
 const CLS={
   warrior:{n:'นักรบ',kid:'แทน',a:'ชุดหมี',col:'#e08a3a',rng:118,dmg:15,rate:1.05,splash:58,atk:'ทุบเป็นวง ระยะใกล้',pas:'ตัวเลือดเกินครึ่งโดนแรงขึ้น 40%',proc:'15% กระแทกพื้นวงใหญ่ x2',ult:'หมีกระโดดทุบ: กระโดดออกไปทุบกลุ่มปีศาจที่หนาสุด แรงมาก มึน 2 วิ · ตัวอื่นทั้งสนามมึน 0.6 วิ'},
   assassin:{n:'นักฆ่า',kid:'นิล',a:'ชุดเสือดำ',col:'#a08ad8',rng:108,dmg:8,rate:.45,crit:.2,atk:'ฟันเร็ว คริ 20%',pas:'ตัวเลือดต่ำกว่าครึ่งโดนแรงขึ้น 60%',proc:'15% ฟันซ้อน 3 ครั้ง',ult:'เงาพริ้ว: ฟัน 6 ตัวที่เลือดเยอะสุด แรงมาก'},
@@ -466,9 +471,10 @@ function sendMonsters(from,opt){
   if(HAS_DOM&&from.human){SFX.play('whistle');mprog('wh')}if(HAS_DOM&&from.human)say('ส่ง'+MON[S.mon].n+'ไปทุกบ้าน '+to.length+' บ้าน','#d8b8ff');return true}
 // the arrow that pierces flies along the lane the target walks on (the loop is 4 straight sides): every demon on that side
 // within `len` of the target, plus the two ends of the streak to draw
-function laneHits(p,tg,len){const d0=((tg.d%PLEN)+PLEN)%PLEN,S=SEG.find(s=>d0<=s.d+s.l)||SEG[0],ux=(S.x1-S.x0)/S.l,uy=(S.y1-S.y0)/S.l,o=(tg.x-S.x0)*ux+(tg.y-S.y0)*uy;
-  const a=Math.max(0,o-len*.35),b=Math.min(S.l,o+len*.65),mons=p.mons.filter(m=>{if(m.dead)return false;const t=(m.x-S.x0)*ux+(m.y-S.y0)*uy,n=Math.abs((m.x-S.x0)*uy-(m.y-S.y0)*ux);return n<34&&t>=a-8&&t<=b+8}).sort((m,n)=>Math.abs((m.x-tg.x)+(m.y-tg.y))-Math.abs((n.x-tg.x)+(n.y-tg.y)));
-  return{mons,x0:S.x0+ux*a,y0:S.y0+uy*a-14,x1:S.x0+ux*b,y1:S.y0+uy*b-14}}
+function laneHits(p,tg,len){const d0=((tg.d%PLEN)+PLEN)%PLEN,a=d0-len*.35,b=d0+len*.65,sp=b-a+8;
+  const mons=p.mons.filter(m=>{if(m.dead)return false;const dd=(((m.d-a)%PLEN)+PLEN)%PLEN;return dd<=sp||dd>PLEN-8}).sort((m,n)=>Math.abs(m.d-tg.d)-Math.abs(n.d-tg.d)),pts=[];
+  for(let i=0;i<=14;i++){const q=pathPos(a+(b-a)*i/14);pts.push([q.x,q.y-14])}
+  return{mons,x0:pts[0][0],y0:pts[0][1],x1:pts[14][0],y1:pts[14][1],pts}}
 // one demon from 'from' to q; q's gold Mok bounces 30% of them back to the sender
 function sendTo(from,q,m){const back=from&&from!==q&&hasGold(q,'curse')&&Math.random()<.3,t=back?from:q;if(back)addFx(q,'parry',BW/2,BH/2-40,1.6);t.spawnQ.push({m,t:1.5,hp:hpScale(Math.max(1,G.wave))});
   if(HAS_DOM&&back&&(q.human||from.human))say(q.human?'🪞 กระจกสาปเด้ง'+MON[m].n+'กลับไปหา '+from.name+'!':'🪞 '+q.name+' เด้ง'+MON[m].n+'กลับมาหาคุณ!',q.human?'#d8b8ff':'#ff8a8a');return t}
@@ -533,7 +539,7 @@ function attack(p,s,u,tg){
   if(tileN(p,s,'frost')&&!tg.M.boss){tg.slowT=Math.max(tg.slowT,1.5);tg.slowK=Math.min(tg.slowK||1,.65)}
   if(u.b){beastAtk(p,s,u,tg,d,proc);ultCheck(p,s,u);return}
   if(u.f==='wukong'){for(const o of p.mons.filter(o=>!o.dead&&o!==tg&&(o.x-S.x)**2+(o.y-S.y)**2<rangeOf(p,s,u)**2).sort(()=>Math.random()-.5).slice(0,2)){hitMon(p,o,d*.4,u,'#ffd75a');addFx(p,'smash',o.x,o.y+6,.35)}
-    if(Math.random()<.2){const L=laneHits(p,tg,420);for(const o of L.mons)hitMon(p,o,d*1.5,u,'#ffb04a');p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,t:0,T:.22,big:1})}}
+    if(Math.random()<.2){const L=laneHits(p,tg,420);for(const o of L.mons)hitMon(p,o,d*1.5,u,'#ffb04a');p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,pts:L.pts,t:0,T:.22,big:1})}}
   if(u.f==='hanzo'&&Math.random()<.3)for(const o of p.mons.filter(o=>!o.dead&&o!==tg).sort(()=>Math.random()-.5).slice(0,4))p.shots.push({k:'arrow',x:S.x+12,y:S.y-30,tx:o.x,ty:o.y,m:o,t:0,T:.16,d:d*.8,u});
   if(u.c==='warrior'){const big=proc!==false&&proc<.15,R=big?C.splash*1.8:C.splash;splash(p,tg.x,tg.y,R,d*(big?2:1),u);addFx(p,'smash',tg.x,tg.y+6,big?.75:.5);if(big)addFx(p,'critx',tg.x,tg.y-14,.6);
     if(u.t===4)for(const m of p.mons)if(!m.dead&&(m.x-tg.x)**2+(m.y-tg.y)**2<R*R)m.stunT=Math.max(m.stunT,m.M.boss?.15:.4)}
@@ -544,7 +550,7 @@ function attack(p,s,u,tg){
     for(const m of L){const cr=u.t===4&&Math.random()<.25;p.shots.push({k:'arrow',x:S.x+16,y:S.y-26,tx:m.x,ty:m.y,m,t:0,T:.18,d:d*(cr?2.5:1),u,pierce,crit:cr})}}
   else if(u.c==='mage'&&u.f==='merlin'&&Math.random()<.15){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,col:'#9ad8ff'});for(const o of p.mons)if(!o.dead&&(o.x-tg.x)**2+(o.y-tg.y)**2<80*80)o.stunT=Math.max(o.stunT,o.M.boss?.6:2);addFx(p,'ibloom',tg.x,tg.y+8,.78)}
   else if(u.c==='mage'){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,freeze:proc!==false&&proc<.12,burn:u.t===4,col:'#ff9a3a'})}
-  else if(u.c==='support'&&u.f==='kongming'&&Math.random()<.15){const L=laneHits(p,tg,480);for(const o of L.mons){o.burnT=Math.max(o.burnT||0,3);o.burnD=Math.max(o.burnD||0,d*.35);o.burnU=u;o.poison=0;addFx(p,'spark',o.x,o.y-10,.5)}p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,t:0,T:.3,big:1})}
+  else if(u.c==='support'&&u.f==='kongming'&&Math.random()<.15){const L=laneHits(p,tg,480);for(const o of L.mons){o.burnT=Math.max(o.burnT||0,3);o.burnD=Math.max(o.burnD||0,d*.35);o.burnU=u;o.poison=0;addFx(p,'spark',o.x,o.y-10,.5)}p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,pts:L.pts,t:0,T:.3,big:1})}
   else if(u.c==='support'){p.shots.push({k:'carrot',x:S.x+14,y:S.y-26,tx:tg.x,ty:tg.y,m:tg,t:0,T:.25,d,u});if(proc!==false&&proc<.08)p.gold+=1;
     if(u.t===4&&Math.random()<.1){p.gold+=3;for(const v of p.units)if(v&&v!==u&&v.t>=3)v.mana+=5;if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:S.x,y:S.y-96,v:'+3 💰',l:.7,c:'#ffd75a'})}}
   else if(u.c==='curse'){p.shots.push({k:'orb',x:S.x+14,y:S.y-34,tx:tg.x,ty:tg.y,m:tg,t:0,T:.3,d,u,col:'#c88aff'});if(proc!==false&&proc<.1){const t=targetOf(p);if(t&&t.gold>0){t.gold--;p.gold++}}}
@@ -554,9 +560,9 @@ function ultCheck(p,s,u){if(u.t>=3&&u.mana>=100){if(p.human&&!G.autoUlt){u.mana=
 function castReady(p,s){const u=p.units[s];if(!u||u.t<3||u.mana<100)return false;u.mana=0;u.rdy=0;castUlt(p,s,u);return true}
 function beastAtk(p,s,u,tg,d,proc){const B=BEAST[u.b],S=SLOTS[s],pr=proc!==false?proc:1;
   if(u.b==='dino'){splash(p,tg.x,tg.y,B.splash,d,u);addFx(p,'smash',tg.x,tg.y+6,.75);
-    if(pr<.2){const L=laneHits(p,tg,420);for(const o of L.mons)hitMon(p,o,d*1.5,u,'#8ae05a');p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,t:0,T:.22,big:1});addFx(p,'quake',tg.x,tg.y+4,.7)}}
+    if(pr<.2){const L=laneHits(p,tg,420);for(const o of L.mons)hitMon(p,o,d*1.5,u,'#8ae05a');p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,pts:L.pts,t:0,T:.22,big:1});addFx(p,'quake',tg.x,tg.y+4,.7)}}
   else if(u.b==='dragon'){const L=laneHits(p,tg,240);for(const o of L.mons){hitMon(p,o,d,u,'#ff9a3a');if(!o.dead){o.burnT=Math.max(o.burnT||0,2);o.burnD=Math.max(o.burnD||0,d*.2);o.burnU=u;o.poison=0}}
-    p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,t:0,T:.25,fire:1});addFx(p,'firering',tg.x,tg.y+6,.4);
+    p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,pts:L.pts,t:0,T:.25,fire:1});addFx(p,'firering',tg.x,tg.y+6,.4);
     if(pr<.15){splash(p,tg.x,tg.y,110,d*2,u,'#ffb04a');addFx(p,'blast',tg.x,tg.y-4,.9)}}
   else if(u.b==='fox'){const A=p.mons.filter(m=>!m.dead&&m!==tg),L=[tg,...A.sort((a,b)=>((a.x-tg.x)**2+(a.y-tg.y)**2)-((b.x-tg.x)**2+(b.y-tg.y)**2)).slice(0,1)];
     if(pr<.2)for(let i=0;i<9&&A.length;i++)L.push(A[(Math.random()*A.length)|0]);
@@ -564,7 +570,7 @@ function beastAtk(p,s,u,tg,d,proc){const B=BEAST[u.b],S=SLOTS[s],pr=proc!==false
 function beastUlt(p,s,u,d){const S=SLOTS[s],L=p.mons.filter(m=>!m.dead);addFx(p,'ultg',S.x,S.y,1.4);
   if(u.b==='dino'){const m=densest(p);if(m)p.shots.push({k:'bigmet',x:m.x-170,y:m.y-360,tx:m.x,ty:m.y,m,t:0,T:.65,d:d*9,u})}
   else if(u.b==='dragon'){for(const m of L){hitMon(p,m,d*2,u,'#ff9a3a');if(!m.dead){m.burnT=Math.max(m.burnT||0,5);m.burnD=Math.max(m.burnD||0,d*.5);m.burnU=u;m.poison=0}}
-    for(const [x,y] of [[270,62],[690,62],[270,478],[690,478],[70,270],[890,270]])addFx(p,'fswirl',x,y,.9,Math.random()*.25);punch(p,.15,.06,.4)}
+    for(const [x,y] of lanePts(6,.08))addFx(p,'fswirl',x,y,.9,Math.random()*.25);punch(p,.15,.06,.4)}
   else if(u.b==='fox'){for(const m of L.filter(m=>!m.M.boss).sort((a,b)=>b.hp-a.hp).slice(0,9))charm(p,m,5,d*2,u);
     for(const m of L.slice(0,30))p.shots.push({k:'fox',x:S.x+10,y:S.y-34,tx:m.x,ty:m.y,m,t:-Math.random()*.4,T:.3,d:d*1.5,u})}}
 function castUlt(p,s,u){const S=SLOTS[s],d=dmgOf(p,u,s)*(perk(p,u.c,15)?1.5:1);u.flash=.5;u.ua=.7;
@@ -585,7 +591,7 @@ function formUlt(p,s,u,d){const S=SLOTS[s];addFx(p,'ultg',S.x,S.y,1.6);addFx(p,'
   else if(u.f==='wukong'){u.ua=0;startLeap(p,s,u,{n:5,d:d*4,stun:1.8,all:.5})}
   else if(u.f==='hanzo'){for(let i=0;i<40;i++)p.shots.push({k:'slash',x:S.x,y:S.y,tx:S.x,ty:S.y,t:-i*.06,T:0,d:d*4,u});addFx(p,'poof',S.x,S.y-20,1.6)}
   else if(u.f==='merlin'){for(let i=0;i<20;i++){const q=pathPos(Math.random()*PLEN);p.shots.push({k:'meteor',x:q.x-120,y:q.y-260,tx:q.x,ty:q.y,m:null,t:-i*.12,T:.45,d:d*5,u})}addFx(p,'tstop',BW/2,BH/2,2)}
-  else if(u.f==='kongming'){p.mons.filter(m=>!m.dead).sort((a,b)=>b.hp-a.hp).slice(0,6).forEach((m,i)=>addFx(p,'glight',m.x,m.y+4,.8,i*.1));for(const m of p.mons)if(!m.dead){m.burnT=6;m.burnD=Math.max(m.burnD||0,d*1.4);m.burnU=u;m.poison=0}quakeFx(p);for(const [x,y] of [[270,62],[690,62],[270,478],[690,478]])addFx(p,'firering',x,y,.8)}
+  else if(u.f==='kongming'){p.mons.filter(m=>!m.dead).sort((a,b)=>b.hp-a.hp).slice(0,6).forEach((m,i)=>addFx(p,'glight',m.x,m.y+4,.8,i*.1));for(const m of p.mons)if(!m.dead){m.burnT=6;m.burnD=Math.max(m.burnD||0,d*1.4);m.burnU=u;m.poison=0}quakeFx(p);for(const [x,y] of lanePts(4,.12))addFx(p,'firering',x,y,.8)}
   else if(u.f==='cleo'){addFx(p,'ddome',S.x,S.y+8,.9);for(const q of alive()){if(q===p)continue;const t=hasGold(q,'curse')?p:q;t.curseT=8;addFx(t,'hex',BW/2,BH/2,2.2);const a=Math.min(10,q.gold);q.gold-=a;p.gold+=a;if(HAS_DOM&&t.human)say(t===p?'🪞 คำสาปเด้งกลับ!':p.name+' (คลีโอพัตรา) สาปและขโมยเงินคุณ!','#c88aff')}}}
 // gold ults (GOLD[c].ult); delayed hits ride on p.shots with a negative start time
 function goldUlt(p,s,u,d){const S=SLOTS[s],L=p.mons.filter(m=>!m.dead);addFx(p,'ultg',S.x,S.y,1.6);
@@ -610,7 +616,7 @@ function stepLeap(p,s,u,dt){const L=u.leap;L.t+=dt;if(!L.hit&&L.t<LEAP.out&&L.m&
     p.quakeT=.45;punch(p,.2,.09,.5);addFx(p,'fswirl',x,y+6,1.05);addFx(p,'smash',x,y+8,1);quakeFx(p);if(HAS_DOM&&p.i===G.view){SFX.play('wave',.2);buzz(40)}}
   if(L.t>=LEAP.out+LEAP.hold+LEAP.back){if(L.n>1){const o=L.o;startLeap(p,s,u,o);if(u.leap){u.leap.n=L.n-1}}else u.leap=null}}
 // ground cracks along the top and bottom of the loop
-function quakeFx(p){for(const [x,y] of [[270,72],[690,72],[270,488],[690,488]])addFx(p,'quake',x,y,1)}
+function quakeFx(p){for(const [x,y] of lanePts(4,.12))addFx(p,'quake',x,y+10,1)}
 // the mage's gold passive: a meteor on the thickest group
 function densest(p){let b=null,bn=0;for(const m of p.mons){if(m.dead)continue;let n=0;for(const o of p.mons)if(!o.dead&&(o.x-m.x)**2+(o.y-m.y)**2<80*80)n++;if(n>bn){bn=n;b=m}}return b}
 // gang skills: 3 buttons every gang has, each with a cooldown (owner 2026-11-03: too few active skills, use pixelfx-style skills).
@@ -621,8 +627,7 @@ const GSK={bolt:{ic:'🌩️',n:'ฟ้าผ่า',cd:20,c0:6,d:'แตะป�
   freeze:{ic:'❄️',n:'แช่แข็ง',cd:45,c0:20,d:'ปีศาจทั้งสนามหยุด 2.5 วิ (บอส 1 วิ)'},
   rally:{ic:'📯',n:'ปลุกใจ',cd:35,c0:15,d:'เด็กทั้งลานตีเร็วขึ้น 50% 6 วิ'}};
 // nearest point on the demons' loop
-function onLoop(x,y){const [x0,y0]=PATH[0],x1=PATH[1][0],y1=PATH[2][1],cx=Math.max(x0,Math.min(x1,x)),cy=Math.max(y0,Math.min(y1,y));
-  const C=[[cx,y0],[cx,y1],[x0,cy],[x1,cy]];return C.sort((a,b)=>((a[0]-x)**2+(a[1]-y)**2)-((b[0]-x)**2+(b[1]-y)**2))[0]}
+function onLoop(x,y){let b=PATH[0],bd=1e18;for(const q of PATH){const d=(q[0]-x)**2+(q[1]-y)**2;if(d<bd){bd=d;b=q}}return [b[0],b[1]]}
 function useGsk(p,k,x,y){if(!GSK_ON||!p.alive||!GSK[k]||p.gsk[k]>0)return false;p.gsk[k]=GSK[k].cd;const me=HAS_DOM&&p.i===G.view;
   // lightning hits like 12 blows of your strongest kid, so it helps most early and your kids still carry the late game
   if(k==='bolt'){const [bx,by]=onLoop(x,y);let best=10;p.units.forEach((u,s)=>{if(u)best=Math.max(best,dmgOf(p,u,s))});const dm=12*best;
@@ -654,7 +659,7 @@ function stepBoard(p,dt){
     const S=SLOTS[s],tg=nearestTarget(p,S.x,S.y-20,rangeOf(p,s,u));if(!tg)continue;u.cd=rateOf(p,s,u);attack(p,s,u,tg)}
   for(const sh of p.shots){sh.t+=dt;if(sh.re&&sh.t>-.02&&(!sh.m||sh.m.dead)){const L=p.mons.filter(m=>!m.dead);if(L.length){sh.m=L[(Math.random()*L.length)|0];sh.x=sh.m.x-50;sh.y=sh.m.y-300}else sh.re=0}if(sh.k==='rain'&&sh.m&&!sh.m.dead){sh.tx=sh.m.x;sh.ty=sh.m.y}if(sh.t<sh.T||sh.done)continue;sh.done=true;const x=sh.m&&!sh.m.dead?sh.m.x:sh.tx,y=sh.m&&!sh.m.dead?sh.m.y:sh.ty;
     if(sh.k==='arrow'){if(sh.pierce||sh.big){const L=laneHits(p,sh.m&&!sh.m.dead?sh.m:{x,y,d:sh.m?sh.m.d:0},sh.big?520:380);for(const m of L.mons)hitMon(p,m,sh.d*(sh.big&&m!==sh.m?.25:1),sh.u,sh.big?'#ffd75a':'#fff');
-        for(const m of L.mons.slice(0,8))addFx(p,'spark',m.x,m.y-10,.55);if(sh.eb){addFx(p,'ebhit',x,y-12,1.5);punch(p,.13,.07,.32)}else addFx(p,sh.big?'critx':'spark',x,y-10,sh.big?1.1:.7);p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,t:0,T:.22,big:sh.big&&!sh.eb,eb:sh.eb})}
+        for(const m of L.mons.slice(0,8))addFx(p,'spark',m.x,m.y-10,.55);if(sh.eb){addFx(p,'ebhit',x,y-12,1.5);punch(p,.13,.07,.32)}else addFx(p,sh.big?'critx':'spark',x,y-10,sh.big?1.1:.7);p.shots.push({k:'streak',x:L.x0,y:L.y0,tx:L.x1,ty:L.y1,pts:L.pts,t:0,T:.22,big:sh.big&&!sh.eb,eb:sh.eb})}
       else if(sh.m&&!sh.m.dead){hitMon(p,sh.m,sh.d,sh.u,sh.crit?'#ffd75a':undefined);addFx(p,sh.crit?'critx':'spark',x,y-10,sh.crit?.55:.6)}}
     else if(sh.k==='orb'){if(sh.u.c==='mage'){const C=CLS.mage;for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<C.splash**2){m.slowT=1.6;m.slowK=1-C.slow;if(sh.freeze&&!m.M.boss)m.stunT=Math.max(m.stunT,1)}splash(p,x,y,C.splash,sh.d,sh.u,'#ffc890');if(sh.freeze)addFx(p,'ibloom',x,y+8,.62);else addFx(p,'plasma',x,y,.55);if(sh.burn){p.zones.push({x,y,r:62,t:3,tick:.25,d:sh.d*.25,u:sh.u});addFx(p,'firering',x,y+6,.42)}}
       else{if(sh.m&&!sh.m.dead)hitMon(p,sh.m,sh.d,sh.u,'#e0c0ff');addFx(p,'toxic',x,y,.35)}}
@@ -836,19 +841,29 @@ function makeBg(map){
   const vn=(x,y,s)=>{const X=x/s,Y=y/s,i=Math.floor(X),j=Math.floor(Y),u0=X-i,v0=Y-j,a=hs(i,j),b=hs(i+1,j),cc=hs(i,j+1),d=hs(i+1,j+1),u=u0*u0*(3-2*u0),v=v0*v0*(3-2*v0);return a+(b-a)*u+(cc-a)*v+(a-b-cc+d)*u*v};
   const hex=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),pick=(P,n)=>P[Math.max(0,Math.min(P.length-1,Math.floor(n*P.length)))];
   const rnd2=(a,b)=>a+Math.random()*(b-a);
-  const lx=PATH[0][0]/Q+ox,ly=PATH[0][1]/Q+oy,rx=PATH[1][0]/Q+ox,by=PATH[2][1]/Q+oy,hw=28/Q;
+  const PXS=PATH.map(q=>q[0]),PYS=PATH.map(q=>q[1]),lx=Math.min(...PXS)/Q+ox,ly=Math.min(...PYS)/Q+oy,rx=Math.max(...PXS)/Q+ox,by=Math.max(...PYS)/Q+oy,hw=28/Q;
+  // road field (winding path): PF = across the road, 0 at the outer edge .. 2hw-1 at the yard side (-1 = not road), PA = distance along,
+  // PH = 1 where the road runs left-right; PN = a wider band round the road (keeps decorations off it)
+  const PF=new Int16Array(W*H).fill(-1),PA=new Float32Array(W*H),PH=new Uint8Array(W*H),PN=new Uint8Array(W*H),PP=PATH.map(q=>[q[0]/Q+ox,q[1]/Q+oy]);
+  for(const sg of SEG){const n=Math.ceil(sg.l/Q*2),ux=(sg.x1-sg.x0)/sg.l,uy=(sg.y1-sg.y0)/sg.l,hz=Math.abs(ux)>Math.abs(uy)?1:0;
+    for(let i=0;i<n;i++){const t=i/n,cx=(sg.x0+(sg.x1-sg.x0)*t)/Q+ox,cy=(sg.y0+(sg.y1-sg.y0)*t)/Q+oy,al=(sg.d+sg.l*t)/Q;
+      for(let k=-hw-6;k<=hw+6;k+=.5){const x=Math.round(cx-uy*k),y=Math.round(cy+ux*k);if(x<0||y<0||x>=W||y>=H)continue;const j=y*W+x;PN[j]=1;if(Math.abs(k)>hw)continue;
+        const a=Math.max(0,Math.min(2*hw-1,Math.round(k+hw))),cur=PF[j];if(cur<0||Math.abs(k)<Math.abs(cur-hw)){PF[j]=a;PA[j]=al;PH[j]=hz}}}}
+  for(const [qx,qy] of PATH){const cx=qx/Q+ox,cy=qy/Q+oy;for(let y=Math.floor(cy-hw-6);y<=cy+hw+6;y++)for(let x=Math.floor(cx-hw-6);x<=cx+hw+6;x++){if(x<0||y<0||x>=W||y>=H)continue;const r=Math.hypot(x-cx,y-cy),j=y*W+x;if(r<=hw+6)PN[j]=1;
+    if(r<=hw&&PF[j]<0){PF[j]=Math.max(0,Math.min(2*hw-1,Math.round(hw-r)));PA[j]=0;PH[j]=1}}}
+  const inLoop=(x,y)=>{let c=false;for(let i=0,j=PP.length-1;i<PP.length;j=i++){const [xi,yi]=PP[i],[xj,yj]=PP[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c};
   const yx=YARD.x/Q+ox,yy=YARD.y/Q+oy,yw=YARD.w/Q,yh=YARD.h/Q,cw=yw/COLS,ch=yh/ROWS,WALL=6;
   const toB=(x,y)=>({x:(x-ox)*Q,y:(y-oy)*Q});
-  const onPath=(x,y)=>x>=lx-hw&&x<rx+hw&&y>=ly-hw&&y<by+hw&&!(x>=lx+hw&&x<rx-hw&&y>=ly+hw&&y<by-hw);
+  const onPath=(x,y)=>PF[(y|0)*W+(x|0)]>=0;
   const nearLoop=(x,y,m)=>x>lx-hw-m&&x<rx+hw+m&&y>ly-hw-m&&y<by+hw+m;
   // pixel painters: fn returns [r,g,b] or null
   const paint=(x0,y0,x1,y1,fn)=>{x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(W,Math.ceil(x1));y1=Math.min(H,Math.ceil(y1));
     const id=g.getImageData(x0,y0,x1-x0,y1-y0),d=id.data,w=x1-x0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=((y-y0)*w+(x-x0))*4,c0=fn(x,y,d[i],d[i+1],d[i+2]);if(c0){d[i]=c0[0];d[i+1]=c0[1];d[i+2]=c0[2];d[i+3]=255}}g.putImageData(id,x0,y0)};
   const ground=(pal,sc,f)=>{const P=pal.map(hex);paint(0,0,W,H,(x,y)=>{let n=.62*vn(x,y,sc)+.38*hs(x,y);if(f)n=f(x,y,n);return pick(P,n)})};
   // the ring: acr = 0 at the outer edge .. 2hw-1 at the yard edge, al = position along the path, hz = top/bottom stretch
-  const ring=fn=>paint(lx-hw,ly-hw,rx+hw,by+hw,(x,y,r,gg,b)=>{if(!onPath(x,y))return null;const hz=y<ly+hw||y>=by-hw,acr=hz?(y<ly+hw?y-(ly-hw):by+hw-1-y):(x<lx+hw?x-(lx-hw):rx+hw-1-x);return fn(x,y,acr,hz?x:y,hz,[r,gg,b])});
+  const ring=fn=>paint(lx-hw-1,ly-hw-1,rx+hw+2,by+hw+2,(x,y,r,gg,b)=>{const j=y*W+x,a=PF[j];if(a<0)return null;return fn(x,y,a,PA[j]|0,PH[j]===1,[r,gg,b])});
   // the yard: tile index k, local u/v inside the tile
-  const yard=fn=>paint(yx,yy,yx+yw,yy+yh,(x,y)=>{const ci=Math.min(COLS-1,Math.floor((x-yx)/cw)),ri=Math.min(ROWS-1,Math.floor((y-yy)/ch)),u=x-yx-ci*cw,v=y-yy-ri*ch;return fn(x,y,ci,ri,u,v)});
+  const yard=fn=>paint(yx,yy,yx+yw,yy+yh,(x,y)=>{const ci=Math.max(0,Math.min(COLS-1,Math.floor((x-yx)/cw))),ri=Math.max(0,Math.min(ROWS-1,Math.floor((y-yy)/ch))),u=x-yx-ci*cw,v=y-yy-ri*ch;return fn(x,y,ci,ri,u,v)});
   const wall=fn=>paint(yx,yy+yh,yx+yw,yy+yh+WALL+3,(x,y,r,gg,b)=>{const v=y-(yy+yh);if(v>=WALL){const k=v===WALL?.55:v===WALL+1?.68:.82;return [r*k|0,gg*k|0,b*k|0]}return fn(x-yx,v)});
   const shade=(c0,k)=>[Math.min(255,c0[0]*k|0),Math.min(255,c0[1]*k|0),Math.min(255,c0[2]*k|0)];
   // props layer: pixel shapes, outlined and shadowed together, drawn back to front
@@ -861,6 +876,8 @@ function makeBg(map){
   const line=(x0,y0,x1,y1,col,w)=>{pg.fillStyle=col;w=w||1;const n=Math.max(1,Math.round(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));for(let i=0;i<=n;i++){const t=i/n;pg.fillRect(Math.round(x0+(x1-x0)*t-(w-1)/2),Math.round(y0+(y1-y0)*t-(w-1)/2),w,w)}};
   const spots=(n,m,f,ok)=>{for(let i=0,k=0;i<n&&k<n*60;k++){const x=Math.random()*W,y=Math.random()*H;if(nearLoop(x,y,m)||(ok&&!ok(x,y)))continue;f(x,y,Math.random());i++}};
   const LIGHTS=[];let AMB=.86,VIG=.5,OL=[22,14,18];
+  const inner=(n,f)=>{for(let i=0,k=0;i<n&&k<n*80;k++){const x=lx+Math.random()*(rx-lx),y=ly+Math.random()*(by-ly);if(PN[(y|0)*W+(x|0)]||!inLoop(x,y))continue;
+    if(x>yx-8&&x<yx+yw+8&&y>yy-8&&y<yy+yh+WALL+12)continue;f(x,y,Math.random());i++}};
   // ---- shared props
   const rock=(x,y,s)=>prop(y,()=>{disc(x,y-2*s,4*s,'#4e4a58',.7);disc(x-s,y-3*s,2.6*s,'#686474',.7);rect(x-2*s,y-4*s,s,s,'#8a8696')});
   // owner 2026-11-04: prettier maps -> brighter, more colour, more small things to look at
@@ -905,6 +922,7 @@ function makeBg(map){
     spots(16,24,(x,y,r)=>ptree(x,y,.9+r*.5),grassy);spots(30,8,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8'][Math.floor(r*3)]),grassy);spots(60,4,(x,y)=>tuft(x,y,'#4a8a4a','#6aa85a'),grassy);
     spots(40,10,(x,y)=>prop(y,()=>{rect(x,y-2,1,2,'#3a5a3a');rect(x+1,y-3,1,3,'#4a6a3a');rect(x+2,y-2,1,2,'#3a5a3a')}));
     bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f0c040','#4a9ad8','#5ab85a','#b878e0']);
+    inner(14,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8'][Math.floor(r*3)]));inner(22,(x,y)=>tuft(x,y,'#4a8a4a','#6aa85a'));inner(3,(x,y)=>teddy(x,y));inner(4,(x,y)=>balloon(x,y,['#d84a5a','#4a9ad8','#f0c040'][(x|0)%3]));
     fx.push({k:'fog',c:'150,130,190'});fx.push({k:'flies',c:'255,220,160'});
   }else if(map==='beach'){
     // ---------------- lighthouse beach: sea, boardwalk, sand court ----------------
@@ -938,6 +956,7 @@ function makeBg(map){
     const towel=(x,y,c1,c2)=>prop(y,()=>{for(let k=0;k<5;k++)rect(x,y-10+k*2,22,2,k%2?c1:c2);rect(x,y-11,22,1,'#f8f4ea')});towel(ox-110,oy+300,'#e84a5a','#f8f4ea');towel(W-ox+90,oy+260,'#4a9ad8','#f0d060');
     spots(24,6,(x,y)=>tuft(x,y,'#6a8a3a','#8aaa4a'),(x,y)=>y>sea+40&&hs(x,y)>.6);
     bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f8f4ea','#4a9ad8','#f0c040']);
+    inner(10,(x,y,r)=>(r<.4?star:r<.7?crab:rock)(x,y,1));inner(18,(x,y)=>tuft(x,y,'#6a8a3a','#8aaa4a'));inner(24,(x,y)=>prop(y,()=>rect(x,y-1,2,1,hs(x,y)>.5?'#efe4cc':'#e8a8a0')));
     umbrella(ox-70,oy+260,'#e84a5a','#f2ecd8');umbrella(W-ox+60,oy+310,'#4a9ad8','#f2ecd8');castle(W-ox+20,oy+160);boat(ox-110,oy+110);
     for(let i=0;i<10;i++){const x=Math.random()<.5?rnd2(ox-150,lx-hw-8):rnd2(rx+hw+8,W-ox+150),y=rnd2(sea+12,H-oy+80);(i%3?star:i%2?crab:rock)(x,y,1)}
     spots(30,8,(x,y)=>prop(y,()=>rect(x,y-1,2,1,hs(x,y)>.5?'#efe4cc':'#e8a8a0')),(x,y)=>y>sea+8);
@@ -968,6 +987,7 @@ function makeBg(map){
     const offPond=(x,y)=>((x-pdx)/62)**2+((y-pdy)/30)**2>1;spots(70,14,(x,y,r)=>(r<.5?pine:tree)(x,y,.9+r*.6),offPond);spots(40,6,(x,y)=>bush(x,y));spots(24,4,(x,y)=>mush(x,y));spots(10,8,(x,y)=>stump(x,y));spots(12,6,(x,y)=>rock(x,y,1));
     spots(26,6,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8','#f8f4ea'][Math.floor(r*4)]),(x,y)=>((x-pdx)/70)**2+((y-pdy)/32)**2>1);spots(90,3,(x,y)=>tuft(x,y,'#3e7e44','#5a9a52'),(x,y)=>((x-pdx)/64)**2+((y-pdy)/28)**2>1);
     bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f0c040','#4a9ad8','#5ab85a','#f08aa8']);
+    inner(16,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8','#f8f4ea'][Math.floor(r*4)]));inner(26,(x,y)=>tuft(x,y,'#3e7e44','#5a9a52'));inner(8,(x,y)=>mush(x,y));inner(5,(x,y)=>rock(x,y,1));inner(4,(x,y)=>bush(x,y));
     fx.push({k:'flies'});fx.push({k:'fog',c:'150,180,200'});
   }
   // props: sort, draw, outline, shadow, then onto the map
@@ -1038,9 +1058,20 @@ function kidPose(u,s,an,lh){const f=u.face||1;let dx=0,dy=-(lh||0),rot=an?0:Math
   return{f,dx,dy,rot,sx,sy}}
 const formImg=f=>{const im=f&&IMG['form_'+f];return im&&im.complete&&im.naturalWidth?im:null};
 const beastImg=b=>{const im=b&&IMG['beast_'+b];return im&&im.complete&&im.naturalWidth?im:null};
+// tier look (owner 2026-11-05: "each tier should look stronger, step by step, rainbow the fiercest"): a turning ground sigil from
+// green up, a coloured outline from purple up, an aura behind the kid from red up (flames → light rays → rainbow rays + flames)
+const TSG=[null,'sg_green','sg_purple','sg_red','sg_gold','sg_rb','sg_bz'],TAU_=[null,null,null,'au_red','au_gold','au_rb','au_bz'],
+  TOL=[null,null,['#b77bff',1.3],['#ff5a4a',1.4],['#ffd75a',1.8],['rb',1.9],['#3ee8c0',1.8]],OFF4=[[1,0],[-1,0],[0,1],[0,-1]],OFF8=[[1,0],[-1,0],[0,1],[0,-1],[.7,.7],[-.7,.7],[.7,-.7],[-.7,-.7]];
+function drawLoop(k,x,y,s,ph){const m=FXM&&FXM[k],im=FXI[k];if(!m||!im||!im.complete)return;const i=Math.floor((G.t+(ph||0))*m.fps)%m.n,c=i%m.cols,r=(i/m.cols)|0;
+  ctx.drawImage(im,c*m.w,r*m.h,m.w,m.h,Math.round(x-m.ax*s),Math.round(y-m.ay*s),m.w*s,m.h*s)}
+// one-colour silhouette of a picture (cached per picture and colour), drawn round the kid as an outline
+const SILW=new WeakMap();function silOf(im,col){let M=SILW.get(im);if(!M){M={};SILW.set(im,M)}if(M[col])return M[col];const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
+  const g=c.getContext('2d');g.drawImage(im,0,0);g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,c.width,c.height);return M[col]=c}
+function olCol(u,s){const o=TOL[u.t];if(!o)return null;return [o[0]==='rb'?'rgb('+hsl2((Math.floor(G.t*4+s)%12)*30)+')':o[0],o[1],u.t>=4?OFF8:OFF4]}
 function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=formImg(u.f)||beastImg(u.b)||kidImg(u.c,u.b?3:u.t),sc=T.sc*KH*kidF(im)/(im&&im.naturalHeight||KH);const x=S.x,y=S.y+6,AN=animOf(u.c,u.t),P=kidPose(u,s,AN,drag&&drag.lh),air=Math.min(1,-P.dy/60);
   ctx.fillStyle=T.c;ctx.globalAlpha=(.35+(u.t===3?.2*Math.sin(G.t*5):0))*(1-air*.5);ctx.beginPath();ctx.ellipse(x,y,27*(1-air*.3),8*(1-air*.3),0,0,6.28);ctx.fill();ctx.globalAlpha=1;
   ctx.strokeStyle=T.c;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,27,8,0,0,6.28);ctx.stroke();
+  if(TSG[u.t])drawLoop(TSG[u.t],x,y+1,1,s*.37);
   if(im&&im.complete&&im.naturalWidth){const w=im.naturalWidth*sc,h=im.naturalHeight*sc,bob=Math.round(Math.sin(G.t*3+s)*2.2),k=u.kick>0?-4:0;
     if(u.goldT>0){glow(x,y-40,80,'255,210,90',.35+.15*Math.sin(G.t*10));ctx.filter='sepia(.7) saturate(2.4) brightness(1.15)'}if(u.flash>0)ctx.filter='brightness('+(1+u.flash*2.5)+')';if(p.curseT>0)ctx.filter='saturate(.3) hue-rotate(220deg)';
     if(u.t===2)glow(x,y-28,48,'183,123,255',.16+.05*Math.sin(G.t*3+s));
@@ -1050,8 +1081,9 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=formImg(u.f)|
     if(u.t===4){glow(x,y-38,72,'255,215,90',.24+.08*Math.sin(G.t*4+s));for(let i=0;i<5;i++){const ph=(G.t*.7+i/5+s*.13)%1;ctx.globalAlpha=1-ph;ctx.fillStyle=i%2?'#fff6c0':'#ffd75a';ctx.fillRect(x-22+((i*11+s*5)%44),y-ph*90,3,3)}ctx.globalAlpha=1}
     if(u.t===6){const B=BEAST[u.b];glow(x,y-40,84,'62,232,192',.24+.08*Math.sin(G.t*4+s));glow(x,y-34,52,B.rgb,.2);for(let i=0;i<6;i++){const ph=(G.t*.75+i/6+s*.13)%1;ctx.globalAlpha=1-ph;ctx.fillStyle=i%2?'#7ff0d0':B.col;ctx.fillRect(x-24+((i*11+s*5)%48),y-ph*96,3,3)}ctx.globalAlpha=1}
     if(u.t===3){glow(x,y-32,58,'255,80,80',.2+.08*Math.sin(G.t*5+s));for(let i=0;i<3;i++){const ph=(G.t*.8+i/3+s*.17)%1;ctx.globalAlpha=1-ph;ctx.fillStyle='#ff9a6a';ctx.fillRect(x-14+((i*13+s*7)%28),y-ph*70,3,3)}ctx.globalAlpha=1}
+    if(TAU_[u.t]){ctx.save();ctx.globalAlpha=1-air*.6;drawLoop(TAU_[u.t],Math.round(x+P.dx*.4),y+2,1,s*.29);ctx.restore()}
     // pose (kidPose): face the target, class attack move, jumps and pops
-    const f=P.f,sm=sc*SC*DPR<.95;
+    const f=P.f,sm=sc*SC*DPR<.95,OL=olCol(u,s);
     if(u.ua>0){const a=1-u.ua/.7;ctx.strokeStyle=u.b?BEAST[u.b].col:u.t===5?'rgb('+hsl2((G.t*300)%360)+')':u.t===4?'#ffd75a':CLS[u.c].col;ctx.globalAlpha=1-a;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x,y,20+90*a,6+28*a,0,0,6.28);ctx.stroke();ctx.globalAlpha=1}
     if(u.at>0&&u.c==='assassin')for(const g of [.35,.7]){ctx.save();ctx.globalAlpha=.22;ctx.translate(Math.round(x+P.dx*g),Math.round(y+P.dy*g+bob+2));if(sm){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f,1);ctx.drawImage(im,-Math.round(w/2),-Math.round(h),w,h);ctx.restore()}
     if(u.at>0&&(u.c==='mage'||u.c==='curse')){const a=1-u.at/ANIM[u.c];glow(x+P.dx+f*w*.38,y+P.dy-h*.78,20+14*Math.sin(Math.PI*a),u.c==='mage'?'255,170,80':'200,138,255',.55*Math.sin(Math.PI*a))}
@@ -1061,8 +1093,8 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=formImg(u.f)|
     if(AN){// animation sheet: idle loop, attack row while u.at runs, special row during the ult jump
       const A=AN.A,ka=T.sc*KH/A.h0;let r=0,fi=IDLE_SEQ[Math.floor(G.t*3.5+s*1.7)%IDLE_SEQ.length];
       if(drag&&drag.leap){r=2;fi=drag.ph===0?1:drag.ph===1?(u.leap.t<LEAP.out+.1?2:3):(drag.lh>20?1:0)}else if(u.ua>0){r=2;fi=Math.min(3,Math.floor((1-u.ua/.7)*4))}else if(u.at>0){r=1;fi=Math.min(3,Math.floor((1-u.at/(ANIM[u.c]||.3))*4))}
-      ctx.save();ctx.translate(Math.round(x+P.dx),Math.round(y+P.dy+2));if(ka*SC*DPR<.95){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f*P.sx,P.sy);ctx.drawImage(AN.im,fi*A.cw,r*A.ch,A.cw,A.ch,-A.cw/2*ka,-(A.ch-2)*ka,A.cw*ka,A.ch*ka);ctx.restore();ctx.filter='none'}
-    else{ctx.save();ctx.translate(Math.round(x+P.dx),Math.round(y+P.dy+bob+2));ctx.rotate(P.rot);if(sm){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f*P.sx,P.sy);ctx.drawImage(di,ox,-Math.round(dh),dw,dh);ctx.restore();ctx.filter='none'}
+      ctx.save();ctx.translate(Math.round(x+P.dx),Math.round(y+P.dy+2));if(ka*SC*DPR<.95){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f*P.sx,P.sy);if(OL){const sl=silOf(AN.im,OL[0]);for(const [a,b] of OL[2])ctx.drawImage(sl,fi*A.cw,r*A.ch,A.cw,A.ch,-A.cw/2*ka+a*OL[1],-(A.ch-2)*ka+b*OL[1],A.cw*ka,A.ch*ka)}ctx.drawImage(AN.im,fi*A.cw,r*A.ch,A.cw,A.ch,-A.cw/2*ka,-(A.ch-2)*ka,A.cw*ka,A.ch*ka);ctx.restore();ctx.filter='none'}
+    else{ctx.save();ctx.translate(Math.round(x+P.dx),Math.round(y+P.dy+bob+2));ctx.rotate(P.rot);if(sm){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high'}ctx.scale(f*P.sx,P.sy);if(OL){const sl=silOf(di,OL[0]);for(const [a,b] of OL[2])ctx.drawImage(sl,ox+a*OL[1],-Math.round(dh)+b*OL[1],dw,dh)}ctx.drawImage(di,ox,-Math.round(dh),dw,dh);ctx.restore();ctx.filter='none'}
     // until a beast has its own picture: its main kid's red picture + the beast emoji over the head
     if(u.b&&!beastImg(u.b)){ctx.font='24px sans-serif';ctx.textAlign='center';ctx.fillText(BEAST[u.b].ic,x+f*14,Math.round(y-h-4+Math.sin(G.t*3+s)*2))}
     // green arrow over kids that can merge right now
@@ -1080,7 +1112,7 @@ function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=formImg(u.f)|
   if(rdy){const pu=.5+.5*Math.sin(G.t*7);ctx.strokeStyle='rgba(120,220,255,'+(.5+.5*pu)+')';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,30+6*pu,10+2*pu,0,0,6.28);ctx.stroke();
     const bx=x+26,by=y-66-4*pu;glow(bx,by,40,u.t===4?'255,215,90':'90,208,255',.35+.3*pu);ctx.fillStyle='#0b1a2a';ctx.beginPath();ctx.arc(bx,by,19,0,6.28);ctx.fill();ctx.fillStyle=u.t===4?'#ffd75a':'#5ad0ff';ctx.beginPath();ctx.arc(bx,by,16,0,6.28);ctx.fill();ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText('⚡',bx,by+8)}}
 function drawShot(sh){if(sh.t<0||sh.k==='quake'||sh.k==='slash'||sh.k==='land')return;
-  if(sh.k==='streak'){const k=Math.min(1,sh.t/sh.T);ctx.globalAlpha=1-k;ctx.strokeStyle=sh.fire?'#ff5a1a':sh.zap?'#7ad0ff':sh.eb?'#ffc23a':sh.big?'#fff3a0':'#ffe8b0';ctx.lineWidth=sh.fire?11:sh.zap||sh.eb?3:sh.big?7:4;ctx.beginPath();ctx.moveTo(sh.x,sh.y);ctx.lineTo(sh.tx,sh.ty);ctx.stroke();ctx.strokeStyle=sh.fire?'#ffd44c':'#fff';ctx.lineWidth=sh.fire?4:sh.big?2:1;ctx.stroke();ctx.globalAlpha=1;return}const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
+  if(sh.k==='streak'){const k=Math.min(1,sh.t/sh.T);ctx.globalAlpha=1-k;ctx.strokeStyle=sh.fire?'#ff5a1a':sh.zap?'#7ad0ff':sh.eb?'#ffc23a':sh.big?'#fff3a0':'#ffe8b0';ctx.lineWidth=sh.fire?11:sh.zap||sh.eb?3:sh.big?7:4;ctx.lineJoin='round';ctx.beginPath();if(sh.pts){ctx.moveTo(sh.pts[0][0],sh.pts[0][1]);for(const q of sh.pts)ctx.lineTo(q[0],q[1])}else{ctx.moveTo(sh.x,sh.y);ctx.lineTo(sh.tx,sh.ty)}ctx.stroke();ctx.strokeStyle=sh.fire?'#ffd44c':'#fff';ctx.lineWidth=sh.fire?4:sh.big?2:1;ctx.stroke();ctx.globalAlpha=1;return}const k=Math.min(1,sh.t/sh.T),x=sh.x+(sh.tx-sh.x)*k,y=sh.y+(sh.ty-sh.y)*k;
   if(sh.eb){const m=FXM&&FXM.ebolt,im=FXI.ebolt;if(m&&im&&im.complete){const s=1.7;ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(sh.ty-sh.y,sh.tx-sh.x)+.16);ctx.drawImage(im,0,0,m.w,m.h,-m.ax*s,-m.ay*s,m.w*s,m.h*s);ctx.restore();return}}
   if(sh.k==='arrow'||sh.k==='rain'){const k0=Math.max(0,k-.3);ctx.strokeStyle='rgba(255,245,200,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sh.x+(sh.tx-sh.x)*k0,sh.y+(sh.ty-sh.y)*k0);ctx.lineTo(x,y);ctx.stroke();const a=Math.atan2(sh.ty-sh.y,sh.tx-sh.x);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#6a4a2a';ctx.fillRect(-16,-1.5,16,3);ctx.fillStyle=sh.big?'#fff3a0':'#ffd75a';ctx.fillRect(0,-3,(sh.big?10:6),6);ctx.restore()}
   else if(sh.k==='carrot'){ctx.save();ctx.translate(x,y);ctx.rotate(sh.t*18);ctx.fillStyle='#ff9a2a';ctx.fillRect(-4,-4,8,8);ctx.fillStyle='#4aaa3a';ctx.fillRect(-6,-6,3,3);ctx.restore()}
@@ -1098,7 +1130,7 @@ function draw(){
     ctx.strokeStyle=col;ctx.globalAlpha=.65+.35*pu;ctx.lineWidth=4;ctx.strokeRect(x0+4,y0+4,w-8,h-8);ctx.globalAlpha=1;
     for(let k=0;k<3;k++){const t=(G.t*.7+k/3+s*.13)%1;ctx.fillStyle=col;ctx.globalAlpha=1-t;ctx.fillRect(S.x-w*.28+((k*37+s*11)%(w*.56)),S.y+4-t*(h+20),4,4)}ctx.globalAlpha=1;
     ctx.fillStyle='rgba(10,12,22,.75)';ctx.fillRect(x0+6,y0+6,8+L.length*26,30);ctx.font='22px sans-serif';ctx.textAlign='left';L.forEach((id,k)=>ctx.fillText(TALS[id].ic,x0+9+k*26,y0+29))}
-  if(G.aim&&G.view===0){ctx.strokeStyle='rgba(255,225,74,'+(.35+.35*Math.sin(G.t*8))+')';ctx.lineWidth=12;ctx.strokeRect(PATH[0][0],PATH[0][1],PATH[1][0]-PATH[0][0],PATH[2][1]-PATH[0][1])}
+  if(G.aim&&G.view===0){ctx.strokeStyle='rgba(255,225,74,'+(.35+.35*Math.sin(G.t*8))+')';ctx.lineWidth=12;ctx.beginPath();PATH.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.stroke()}
   if(G.placing&&G.view===0){ctx.strokeStyle='rgba(127,224,138,'+(.5+.4*Math.sin(G.t*8))+')';ctx.lineWidth=3;for(const S of SLOTS){const w=YARD.w/COLS,h=YARD.h/ROWS;ctx.strokeRect(S.x-w/2+4,S.y-14-h/2+4,w-8,h-8)}}
   if(G.view===0&&G.sel>=0){const S=SLOTS[G.sel],u=p.units[G.sel];if(u){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(S.x,S.y-20,rangeOf(p,G.sel,u),0,6.28);ctx.stroke();ctx.setLineDash([])}}
   // gold Ratri's burning ground
@@ -1343,7 +1375,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-05c',NEWS=['🐾 ตัวใหม่! สัตว์ในตำนาน 3 ตัว ผสมจากเด็กแดง 2 ตัว: 🦖 ไดโนเสาร์ = แทน + จันทร์ (กระทืบพื้น คำรามให้เพื่อนตีเร็ว ไม้ตายอุกกาบาตยักษ์) · 🐉 มังกร = ราตรี + ฟ้า (พ่นไฟตามทาง ไม้ตายพายุเพลิง) · 🦊 จิ้งจอกเก้าหาง = นิล + หมอก (ไฟจิ้งจอก ทำให้ปีศาจหลงตีกันเอง) · แตะเด็กแดงดูสูตร · รูปจริงกำลังมา','💥 มันส์ขึ้นแบบในคลิป: เลขดาเมจตัวใหญ่เอียง ไล่สี โดนแรงเลขยิ่งใหญ่ ตีรัวเลขซ้อนเป็นแถว · ไม้ตายจอสั่น แสงวาบ ภาพค้างแวบหนึ่ง (แทนลงพื้น พาวเวอร์ช็อต บอสตายแรงสุด)','✨ สกิลแบบพิกเซลชุดใหม่ แนวคลิปที่ส่งมา: แทนลงพื้นเป็นวังวนไฟ · นิลฟันกากบาทม่วง · ราตรีแช่แข็งเป็นดอกน้ำแข็ง ร่างทองเป็นโดมน้ำวน · จันทร์ริบบิ้นชมพูหมุนขึ้น · หมอกร่างทอง/คลีโอเป็นโดมมืด · ขงเบ้งฟ้าผ่าทอง · ฝนธนูมีผลึกเขียว','💥 ของที่คุณทำใน PixelLab เข้าเกมแล้ว: ระเบิด (ดาวตก บอสตาย) · ลูกพลังทอง (พาวเวอร์ช็อตของฟ้า) · ลูกพลาสมา (ราตรียิง) · หมอกพิษ (ไม้ตายหมอก)','📏 เด็กทุกตัวตัวเล็กลงอีก ลานดูโล่งขึ้น','📏 ฟอร์มวีรชนตัวเล็กลง พอดีช่อง ขนาดใกล้ร่างทอง','🎨 ฟอร์มวีรชนมีรูปครบทั้ง 6 ตัวแล้ว: ซุนหงอคง · ฮันโซ · โรบินฮู้ด · เมอร์ลิน · ขงเบ้ง · คลีโอพัตรา','🌈 ฟอร์มสายรุ้งครบ 6 ตัว (ชุดวีรชนที่ทุกคนรู้จัก): แทน → ซุนหงอคง · นิล → ฮัตโตริ ฮันโซ · ฟ้า → โรบินฮู้ด · ราตรี → เมอร์ลิน · จันทร์ → ขงเบ้ง · หมอก → คลีโอพัตรา · ปลดที่ 🧸 เด็กของฉัน','🌈 ฟอร์มสายรุ้งแรก: ฟ้า → โรบินฮู้ด · ปลดที่ 🧸 เด็กของฉัน (ชิ้นส่วนฟ้า 40) · ในเกม ฟ้าแดง 2 ตัว + ตัวที่แตะยิงครบ 500 ดอก → เปลี่ยนฟอร์ม · ปล้นเงินแก๊งที่รวยสุด ยิงทะลุทั้งแนว ฝนธนู 50 ดอก','🎁 ทาเลนต์หลังบอสชุดใหม่ 23 ใบ มีระดับ เงิน ทอง รุ้ง (บอสหลัง ๆ ได้ใบดีขึ้น): ช่องเพลิงลุก สายฟ้าโซ่ ปิดบัญชี เงาแฝด ช่องเติบโต มือทอง · เรียกแฝด กาชาโชคดี ดอกเบี้ย · ปีศาจระเบิดต่อกัน ราชาลาน ช่องรุ้งเจ็ดสี ฯลฯ','⏱️ เกมยาวขึ้น (ประมาณ 16 นาที เดิม 12) ช่วงต้นเหมือนเดิม ปีศาจเก่งขึ้นช้าลงตอนกลางเกม','🐻 ไม้ตายใหม่ของแทน: กระโดดออกจากช่อง ไปทุบกลุ่มปีศาจที่หนาสุดบนทาง แล้วกระโดดกลับ · ร่างทองกระโดดทุบ 3 กลุ่มติดกัน','🗺️ แมพสวยขึ้น สว่างขึ้น: ค่ายมีบ่อน้ำ ดอกไม้ ธงราว · สนามเด็กเล่นมีสนามหญ้า ต้นไม้ ตารางกระโดด · ชายหาดทรายสว่าง ผ้าเช็ดตัว รอยเท้า','🏹 ฟ้า: ลูกศรทะลุกับพาวเวอร์ช็อตพุ่งไปตามทางเดินปีศาจ (เดิมพุ่งขึ้นแนวตั้ง โดนตัวเดียว)','🌩️ เอาปุ่มสกิลแก๊งออกก่อน (เก็บไว้ใส่ให้ตัวละครอื่น)','🎬 แทนขยับจริงแล้ว (ขาว เขียว ม่วง แดง): ยืนหายใจ กะพริบตา · ตีเงื้อค้อนทุบ 4 จังหวะ · ไม้ตายกระโดดทุบ · ตัวอื่นตามมา','🎬 เด็กขยับมากขึ้น: ยืนโยกตัว หายใจ ท่าตีเหวี่ยงแรงขึ้นทุกตัว (ภาพท่าหลายเฟรมกำลังตามมา)','🌩️ ❄️ 📯 สกิลแก๊ง 3 ปุ่มใหม่ (ด้านล่าง): ฟ้าผ่าตรงที่แตะ · แช่แข็งปีศาจทั้งสนาม · ปลุกใจเด็กทั้งลานตีเร็ว · ใช้แล้วรอคูลดาวน์ บอทก็ใช้','🔨 แทนมีท่าทุบแล้ว (ร่างขาว เขียว ม่วง แดง) · ตอนตีจะเปลี่ยนเป็นท่าเหวี่ยงค้อนจริง ๆ · เด็กตัวอื่นตามมาเร็ว ๆ นี้','💥 เอฟเฟกต์สกิลใหม่ 17 แบบ (จากชุด pixelfx): แทนทุบค้อน พื้นแตก · นิลฟันคู่ ฟันรัว · ฟ้าประกายศร คริ · ราตรีดาวตก ระเบิด นาฬิกาหยุดเวลา วงไฟ · จันทร์วงฮีลใหญ่ ขนนก · หมอกตราสาป ระเบิดมืด · รวมร่างแสงพลัง · ผสมทองเสาแสง · บอสตายระเบิด','⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-05d',NEWS=['🌈 เด็กแต่ละระดับดูเก่งขึ้นเป็นขั้น: เขียวมีวงเวท · ม่วงมีขอบเรือง · แดงมีไฟลุกหลังตัว · ทองมีรัศมีแสงกับวงเวททอง · รุ้งมีรัศมีสายรุ้ง ไฟหลากสี ขอบเปลี่ยนสี ตัวใหญ่ขึ้น · สัตว์ในตำนานมีลมหมุนสีเขียวมรกต','🗺️ ช่องเล็กลง ทางเดินเข้ามาชิดลาน มุมทางมนขึ้น · รอบลานมีวิวแมพมากขึ้น','🐾 ตัวใหม่! สัตว์ในตำนาน 3 ตัว ผสมจากเด็กแดง 2 ตัว: 🦖 ไดโนเสาร์ = แทน + จันทร์ (กระทืบพื้น คำรามให้เพื่อนตีเร็ว ไม้ตายอุกกาบาตยักษ์) · 🐉 มังกร = ราตรี + ฟ้า (พ่นไฟตามทาง ไม้ตายพายุเพลิง) · 🦊 จิ้งจอกเก้าหาง = นิล + หมอก (ไฟจิ้งจอก ทำให้ปีศาจหลงตีกันเอง) · แตะเด็กแดงดูสูตร · รูปจริงกำลังมา','💥 มันส์ขึ้นแบบในคลิป: เลขดาเมจตัวใหญ่เอียง ไล่สี โดนแรงเลขยิ่งใหญ่ ตีรัวเลขซ้อนเป็นแถว · ไม้ตายจอสั่น แสงวาบ ภาพค้างแวบหนึ่ง (แทนลงพื้น พาวเวอร์ช็อต บอสตายแรงสุด)','✨ สกิลแบบพิกเซลชุดใหม่ แนวคลิปที่ส่งมา: แทนลงพื้นเป็นวังวนไฟ · นิลฟันกากบาทม่วง · ราตรีแช่แข็งเป็นดอกน้ำแข็ง ร่างทองเป็นโดมน้ำวน · จันทร์ริบบิ้นชมพูหมุนขึ้น · หมอกร่างทอง/คลีโอเป็นโดมมืด · ขงเบ้งฟ้าผ่าทอง · ฝนธนูมีผลึกเขียว','💥 ของที่คุณทำใน PixelLab เข้าเกมแล้ว: ระเบิด (ดาวตก บอสตาย) · ลูกพลังทอง (พาวเวอร์ช็อตของฟ้า) · ลูกพลาสมา (ราตรียิง) · หมอกพิษ (ไม้ตายหมอก)','📏 เด็กทุกตัวตัวเล็กลงอีก ลานดูโล่งขึ้น','📏 ฟอร์มวีรชนตัวเล็กลง พอดีช่อง ขนาดใกล้ร่างทอง','🎨 ฟอร์มวีรชนมีรูปครบทั้ง 6 ตัวแล้ว: ซุนหงอคง · ฮันโซ · โรบินฮู้ด · เมอร์ลิน · ขงเบ้ง · คลีโอพัตรา','🌈 ฟอร์มสายรุ้งครบ 6 ตัว (ชุดวีรชนที่ทุกคนรู้จัก): แทน → ซุนหงอคง · นิล → ฮัตโตริ ฮันโซ · ฟ้า → โรบินฮู้ด · ราตรี → เมอร์ลิน · จันทร์ → ขงเบ้ง · หมอก → คลีโอพัตรา · ปลดที่ 🧸 เด็กของฉัน','🌈 ฟอร์มสายรุ้งแรก: ฟ้า → โรบินฮู้ด · ปลดที่ 🧸 เด็กของฉัน (ชิ้นส่วนฟ้า 40) · ในเกม ฟ้าแดง 2 ตัว + ตัวที่แตะยิงครบ 500 ดอก → เปลี่ยนฟอร์ม · ปล้นเงินแก๊งที่รวยสุด ยิงทะลุทั้งแนว ฝนธนู 50 ดอก','🎁 ทาเลนต์หลังบอสชุดใหม่ 23 ใบ มีระดับ เงิน ทอง รุ้ง (บอสหลัง ๆ ได้ใบดีขึ้น): ช่องเพลิงลุก สายฟ้าโซ่ ปิดบัญชี เงาแฝด ช่องเติบโต มือทอง · เรียกแฝด กาชาโชคดี ดอกเบี้ย · ปีศาจระเบิดต่อกัน ราชาลาน ช่องรุ้งเจ็ดสี ฯลฯ','⏱️ เกมยาวขึ้น (ประมาณ 16 นาที เดิม 12) ช่วงต้นเหมือนเดิม ปีศาจเก่งขึ้นช้าลงตอนกลางเกม','🐻 ไม้ตายใหม่ของแทน: กระโดดออกจากช่อง ไปทุบกลุ่มปีศาจที่หนาสุดบนทาง แล้วกระโดดกลับ · ร่างทองกระโดดทุบ 3 กลุ่มติดกัน','🗺️ แมพสวยขึ้น สว่างขึ้น: ค่ายมีบ่อน้ำ ดอกไม้ ธงราว · สนามเด็กเล่นมีสนามหญ้า ต้นไม้ ตารางกระโดด · ชายหาดทรายสว่าง ผ้าเช็ดตัว รอยเท้า','🏹 ฟ้า: ลูกศรทะลุกับพาวเวอร์ช็อตพุ่งไปตามทางเดินปีศาจ (เดิมพุ่งขึ้นแนวตั้ง โดนตัวเดียว)','🌩️ เอาปุ่มสกิลแก๊งออกก่อน (เก็บไว้ใส่ให้ตัวละครอื่น)','🎬 แทนขยับจริงแล้ว (ขาว เขียว ม่วง แดง): ยืนหายใจ กะพริบตา · ตีเงื้อค้อนทุบ 4 จังหวะ · ไม้ตายกระโดดทุบ · ตัวอื่นตามมา','🎬 เด็กขยับมากขึ้น: ยืนโยกตัว หายใจ ท่าตีเหวี่ยงแรงขึ้นทุกตัว (ภาพท่าหลายเฟรมกำลังตามมา)','🌩️ ❄️ 📯 สกิลแก๊ง 3 ปุ่มใหม่ (ด้านล่าง): ฟ้าผ่าตรงที่แตะ · แช่แข็งปีศาจทั้งสนาม · ปลุกใจเด็กทั้งลานตีเร็ว · ใช้แล้วรอคูลดาวน์ บอทก็ใช้','🔨 แทนมีท่าทุบแล้ว (ร่างขาว เขียว ม่วง แดง) · ตอนตีจะเปลี่ยนเป็นท่าเหวี่ยงค้อนจริง ๆ · เด็กตัวอื่นตามมาเร็ว ๆ นี้','💥 เอฟเฟกต์สกิลใหม่ 17 แบบ (จากชุด pixelfx): แทนทุบค้อน พื้นแตก · นิลฟันคู่ ฟันรัว · ฟ้าประกายศร คริ · ราตรีดาวตก ระเบิด นาฬิกาหยุดเวลา วงไฟ · จันทร์วงฮีลใหญ่ ขนนก · หมอกตราสาป ระเบิดมืด · รวมร่างแสงพลัง · ผสมทองเสาแสง · บอสตายระเบิด','⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
