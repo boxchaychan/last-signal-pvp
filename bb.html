@@ -547,7 +547,7 @@ function dmgNum(p,m,v,col){if(!HAS_DOM||p.i!==G.view||p.nums.length>=70)return;v
 function punch(p,f,h,q){if(!HAS_DOM||p.i!==G.view)return;G.wf=Math.max(G.wf||0,f);G.hs=Math.min(.14,Math.max(G.hs||0,h));p.quakeT=Math.max(p.quakeT,q)}
 function splash(p,x,y,R,amt,u,col){for(const m of p.mons)if(!m.dead&&(m.x-x)**2+(m.y-y)**2<R*R)hitMon(p,m,amt,u,col)}
 function attack(p,s,u,tg){
-  const C=CLS[u.c],S=SLOTS[s],proc=u.t>=2&&Math.random()/(perk(p,u.c,12)?1.3:1);let d=dmgOf(p,u,s);u.shots=(u.shots||0)+1;u.tl=p.tiles[s].length?p.tiles[s]:null;u.kick=.15;u.at=ANIM[u.c];if(u.f&&FANIM[u.f]){const F=FANIM[u.f],k=Math.min(1,u.cd*.95/(F.lead+F.post));u.atL=F.lead*k;u.at=u.atP=F.post*k;u.lt=G.t}u.ax=tg.x-S.x;u.ay=tg.y-(S.y-30);u.face=tg.x<S.x-6?-1:1;u.mana+=u.t>=3?(u.c==='mage'?14:9)*(1+tileN(p,s,'mana'))*(perk(p,u.c,15)?1.25:1)*(1+.35*(p.tal.tmana||0)):0;if(u.tl&&tHas(u.tl,'twin')&&Math.random()<.35)u.cd*=.12;
+  const C=CLS[u.c],S=SLOTS[s],proc=u.t>=2&&Math.random()/(perk(p,u.c,12)?1.3:1);let d=dmgOf(p,u,s);u.shots=(u.shots||0)+1;u.tl=p.tiles[s].length?p.tiles[s]:null;u.kick=.15;u.at=ANIM[u.c];if(FANIM[fanimKey(u)]){const F=FANIM[fanimKey(u)],k=Math.min(1,u.cd*.95/(F.lead+F.post));u.atL=F.lead*k;u.at=u.atP=F.post*k;u.lt=G.t}u.ax=tg.x-S.x;u.ay=tg.y-(S.y-30);u.face=tg.x<S.x-6?-1:1;u.mana+=u.t>=3?(u.c==='mage'?14:9)*(1+tileN(p,s,'mana'))*(perk(p,u.c,15)?1.25:1)*(1+.35*(p.tal.tmana||0)):0;if(u.tl&&tHas(u.tl,'twin')&&Math.random()<.35)u.cd*=.12;
   if(tileN(p,s,'luck')&&Math.random()<.25){d*=2.5;if(HAS_DOM&&p.i===G.view)SFX.play('crit',.12);if(HAS_DOM&&p.i===G.view&&p.nums.length<60)p.nums.push({x:S.x,y:S.y-90,v:'คริ!',l:.6,c:'#7fe08a'})}
   if(tileN(p,s,'frost')&&!tg.M.boss){tg.slowT=Math.max(tg.slowT,1.5);tg.slowK=Math.min(tg.slowK||1,.65)}
   if(u.b){beastAtk(p,s,u,tg,d,proc);ultCheck(p,s,u);return}
@@ -828,7 +828,8 @@ const TKEY=['white','green','purple','red','gold'],KH=54,ALL5=['white','green','
   // on the feet by tools/art/anim_sheet.py: cw/ch = cell size, feet at (cw/2, ch-2), h0 = first idle frame's height (drawn as
   // tall as the standing picture). When a sheet exists it replaces the standing picture and the code-made pose moves.
   ANIMS={warrior:{white:{cw:97,ch:118,h0:99},green:{cw:117,ch:113,h0:97},purple:{cw:131,ch:110,h0:96},red:{cw:120,ch:109,h0:93}}},IDLE_SEQ=[0,1,0,1,0,1,2,3],
-  // form attack animations from the owner's GIFs (tools/art/gif_anim.py): one strip art/bb/fanim_<form>.png, n frames of cw x ch,
+  // attack animations from the owner's GIFs (tools/art/gif_anim.py): one strip art/bb/fanim_<key>.png, key = form (cleo), beast (dino)
+  // or class_tier (curse_gold); n frames of cw x ch,
   // feet at (fx, fy), h0 = frame 1's height (drawn as tall as the form picture). Frame 0 = standing; frames before `hit` wind up
   // during the last `lead` s before a shot, the rest play for `post` s after it (both shrink when the kid shoots faster)
   FANIM={cleo:{n:16,cw:78,ch:81,fx:36,fy:81,h0:80,hit:9,lead:.5,post:.45}},
@@ -1107,6 +1108,7 @@ function kidPose(u,s,an,lh){const f=u.face||1;let dx=0,dy=-(lh||0),rot=an?0:Math
   if(u.pop>0){const a=1-u.pop/.5,e=a<.45?1+.32*Math.sin(Math.PI*a/.45):1-.06*Math.sin(Math.PI*(a-.45)/.55);sx*=e;sy*=e}
   if(u.drop>0){const a=1-u.drop/.45;dy-=(1-a)*(1-a)*80;if(a>.8){sy*=.86;sx*=1.12}}
   return{f,dx,dy,rot,sx,sy}}
+const fanimKey=u=>u.f||u.b||u.c+'_'+TKEY[u.t];
 function fanimOf(f){const A=f&&FANIM[f],im=A&&IMG['fanim_'+f];return A&&im&&im.complete&&im.naturalWidth?{A,im}:null}
 // which frame of a form animation: whole clip during the ult jump, strike part after a shot, wind-up just before the next one
 function fanimFrame(u,A){if(u.ua>0)return Math.min(A.n-1,Math.floor((1-u.ua/.7)*A.n));if(u.at>0&&u.atP)return Math.min(A.n-1,A.hit+Math.floor((1-u.at/u.atP)*(A.n-A.hit)));
@@ -1123,7 +1125,7 @@ function drawLoop(k,x,y,s,ph){const m=FXM&&FXM[k],im=FXI[k];if(!m||!im||!im.comp
 const SILW=new WeakMap();function silOf(im,col){let M=SILW.get(im);if(!M){M={};SILW.set(im,M)}if(M[col])return M[col];const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
   const g=c.getContext('2d');g.drawImage(im,0,0);g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,c.width,c.height);return M[col]=c}
 function olCol(u,s){const o=TOL[u.t];if(!o)return null;return [o[0]==='rb'?'rgb('+hsl2((Math.floor(G.t*4+s)%12)*30)+')':o[0],o[1],u.t>=4?OFF8:OFF4]}
-function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=formImg(u.f)||beastImg(u.b)||kidImg(u.c,u.b?3:u.t),sc=T.sc*KH*kidF(im)/(im&&im.naturalHeight||KH);const x=S.x,y=S.y+6,FA=fanimOf(u.f),AN=FA?null:animOf(u.c,u.t),P=kidPose(u,s,AN||FA,drag&&drag.lh),air=Math.min(1,-P.dy/60);if(PXG){P.rot=0;P.sx=1;P.sy=1}
+function drawKid(p,s,u,drag){const S=drag||SLOTS[s],T=TIER[u.t],im=formImg(u.f)||beastImg(u.b)||kidImg(u.c,u.b?3:u.t),sc=T.sc*KH*kidF(im)/(im&&im.naturalHeight||KH);const x=S.x,y=S.y+6,FA=fanimOf(fanimKey(u)),AN=FA?null:animOf(u.c,u.t),P=kidPose(u,s,AN||FA,drag&&drag.lh),air=Math.min(1,-P.dy/60);if(PXG){P.rot=0;P.sx=1;P.sy=1}
   ctx.fillStyle=T.c;ctx.globalAlpha=(.35+(u.t===3?.2*Math.sin(G.t*5):0))*(1-air*.5);ctx.beginPath();ctx.ellipse(x,y,27*(1-air*.3),8*(1-air*.3),0,0,6.28);ctx.fill();ctx.globalAlpha=1;
   ctx.strokeStyle=T.c;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,27,8,0,0,6.28);ctx.stroke();
   if(TSG[u.t])drawLoop(TSG[u.t],x,y+1,1,s*.37);
