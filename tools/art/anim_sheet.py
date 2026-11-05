@@ -1,5 +1,7 @@
 # GPT animation sheet (3 rows x 4 frames, already snapped to pixels with gptpx.py) -> game sheet.
-# usage: python3 tools/art/anim_sheet.py <pixel sheet.png> <out.png>
+# usage: python3 tools/art/anim_sheet.py <pixel sheet.png> <out.png> [rows x cols, default 3x4] [strip]
+#   strip: one attack animation (e.g. ChatGPT's 2x4 = 8 frames, read left to right, top row first) -> one strip for
+#   FANIM in bb.html (prints n, cw, ch, fx, fy, h0 and a guess for hit = the frame reaching furthest forward)
 #   1) GPTPX_GRID=2.8,3.8 python3 tools/art/gptpx.py <GPT sheet> <pixel sheet> 14   (the sheets use a ~3.2 px grid;
 #      if one axis comes out different, narrow the range, e.g. 3.05,3.5)
 #   2) this script: finds the 3 rows and 4 frames by the empty gaps between them, lines every frame up on the feet
@@ -37,10 +39,12 @@ def fix(bs, n, total):
         bs[i:i + 1] = [[a, m], [m, b]]
     return bs
 
-rows = fix(bands(al.any(1)), 3, H)
+NR, NC = map(int, (sys.argv[3] if len(sys.argv) > 3 else '3x4').split('x'))
+STRIP = 'strip' in sys.argv[4:]
+rows = fix(bands(al.any(1)), NR, H)
 frames = []
 for r, (y0, y1) in enumerate(rows):
-    cols = fix(bands(al[y0:y1].any(0)), 4, W)
+    cols = fix(bands(al[y0:y1].any(0)), NC, W)
     fr = []
     for (x0, x1) in cols:
         m = al[y0:y1, x0:x1]; ys, xs = np.where(m)
@@ -59,7 +63,21 @@ for r, (y0, y1) in enumerate(rows):
 half = max(max(f['feet'] - f['l'], f['r'] - f['feet']) for row in frames for f in row)
 cw = int(np.ceil(half * 2)) + 4
 ch = max(f['g'] - f['top'] for row in frames for f in row) + 4
-sheet = Image.new('RGBA', (cw * 4, ch * 3), (0, 0, 0, 0))
+flat = [f for row in frames for f in row]
+if STRIP:
+    # one row; a frame in the air keeps its own row's ground line, so every row lands on the same feet line
+    sheet = Image.new('RGBA', (cw * len(flat), ch), (0, 0, 0, 0))
+    for i, f in enumerate(flat):
+        im = Image.fromarray(f['img'])
+        cell = Image.new('RGBA', (cw, ch), (0, 0, 0, 0)); cell.paste(im, (int(round(cw / 2 - f['feet'])), int((ch - 2) - f['g'])), im)
+        sheet.alpha_composite(cell, (i * cw, 0))
+    sheet.save(out, optimize=True)
+    reach = [f['r'] - f['feet'] for f in flat]
+    hit = next(i for i, r in enumerate(reach) if r >= max(reach) - 2)
+    print(json.dumps({'n': len(flat), 'cw': int(cw), 'ch': int(ch), 'fx': cw // 2, 'fy': int(ch - 1),
+                      'h0': int(flat[0]['g'] - flat[0]['top'] + 1), 'hit': max(1, hit)}))
+    sys.exit()
+sheet = Image.new('RGBA', (cw * NC, ch * NR), (0, 0, 0, 0))
 for r, row in enumerate(frames):
     for c, f in enumerate(row):
         # feet at (cw/2, ch-2) of the cell; paste only this frame's pixels, clipped to its cell
