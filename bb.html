@@ -258,19 +258,30 @@ button{font-family:var(--font);cursor:pointer;touch-action:manipulation}
 'use strict';
 const HAS_DOM=typeof document!=='undefined'&&!(typeof window!=='undefined'&&window.BB_HEADLESS);
 // ---------- data ----------
-const BW=960,BH=540,CAP0=100,COLS=7,ROWS=3,NSLOT=COLS*ROWS;
+const BW=960,BH=540,CAP0=100;let COLS=7,ROWS=3,NSLOT=COLS*ROWS;
 // one closed loop around the yard (like Lucky Defense, one board only): demons appear on it and walk round and round, no gate, no exit.
 // A player's HP is a quota: when the demons alive on the loop reach it, that player is out (starts at 100).
-// the loop the demons walk: straight sides round the yard (owner 2026-11-05: the wavy version was not it, "ทางทำตรง ๆ ดีแล้ว").
-// Clockwise, so the right-hand side of the walking direction faces the yard. More layouts (paths through the middle) may come.
-const PATH=[[166,108],[796,108],[796,440],[166,440],[166,108]];  // hugs the yard (YARD + its wall), like the old loop did round the old yard
-const SEG=[];let PLEN=0;for(let i=0;i<PATH.length-1;i++){const [x0,y0]=PATH[i],[x1,y1]=PATH[i+1],l=Math.hypot(x1-x0,y1-y0)||.01;SEG.push({x0,y0,x1,y1,l,d:PLEN,fx:Math.abs(x1-x0)>.35*l?Math.sign(x1-x0):0});PLEN+=l}
-function pathPos(d){d=((d%PLEN)+PLEN)%PLEN;let lo=0,hi=SEG.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(d<=SEG[mid].d+SEG[mid].l)hi=mid;else lo=mid+1}
-  const s=SEG[lo],k=Math.min(1,(d-s.d)/s.l);return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:s.fx}}
+// field layouts (owner 2026-11-05: "สนามอื่นที่ไม่ได้แค่วน อาจจะผ่านเข้ามา ทางทำตรง ๆ ดีแล้ว" → picked the cross "กากบาท").
+// route = the demons' closed walk (straight pieces; it may cross itself or use a lane twice), rooms = raised yards; c0/r0 = the
+// room's first column/row in the slot grid (cols x rows, every grid cell lies in a room). Each map names its layout in MAPS (lay).
+// loop: the classic loop hugging one 7x3 yard (clockwise, the yard on the right-hand side).
+// cross: a loop round the outside + a cross through the middle, 4 rooms of 3x2; the walk covers every lane once or twice and never
+// turns back: TL TM C LM BL BM C RM TR TM C BM BR RM C LM TL.
+const LAYOUTS={
+  loop:{cols:7,rows:3,cw:82,ch:268/3,rooms:[{x:194,y:136,c0:0,r0:0,cols:7,rows:3}],route:[[166,108],[796,108],[796,440],[166,440],[166,108]]},
+  cross:{cols:6,rows:4,cw:82,ch:72,rooms:[{x:178,y:86,c0:0,r0:0,cols:3,rows:2},{x:538,y:86,c0:3,r0:0,cols:3,rows:2},{x:178,y:300,c0:0,r0:2,cols:3,rows:2},{x:538,y:300,c0:3,r0:2,cols:3,rows:2}],
+    route:(()=>{const P={TL:[120,56],TM:[480,56],TR:[840,56],LM:[120,270],C:[480,270],RM:[840,270],BL:[120,484],BM:[480,484],BR:[840,484]};return 'TL TM C LM BL BM C RM TR TM C BM BR RM C LM TL'.split(' ').map(k=>P[k])})()}};
+function segsOf(route){const S=[];let d=0;for(let i=0;i<route.length-1;i++){const [x0,y0]=route[i],[x1,y1]=route[i+1],l=Math.hypot(x1-x0,y1-y0)||.01;S.push({x0,y0,x1,y1,l,d,fx:Math.abs(x1-x0)>.35*l?Math.sign(x1-x0):0});d+=l}return S}
+function posOn(S,L,d){d=((d%L)+L)%L;let lo=0,hi=S.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(d<=S[mid].d+S[mid].l)hi=mid;else lo=mid+1}
+  const s=S[lo],k=Math.min(1,(d-s.d)/s.l);return{x:s.x0+(s.x1-s.x0)*k,y:s.y0+(s.y1-s.y0)*k,dx:s.fx}}
+function slotsOf(L){const out=[];for(let r=0;r<L.rows;r++)for(let c=0;c<L.cols;c++){const R=L.rooms.find(R=>c>=R.c0&&c<R.c0+R.cols&&r>=R.r0&&r<R.r0+R.rows);out.push({x:R.x+L.cw*(c-R.c0+.5),y:R.y+L.ch*(r-R.r0+.5)+14})}return out}
+let LAY,PATH,SEG,PLEN,SLOTS,CELL;
+// the match's layout (newGame calls it from the map); all five boards share it
+function setLayout(k){LAY=LAYOUTS[k]||LAYOUTS.loop;COLS=LAY.cols;ROWS=LAY.rows;NSLOT=COLS*ROWS;CELL={w:LAY.cw,h:LAY.ch};PATH=LAY.route;SEG=segsOf(PATH);const e=SEG[SEG.length-1];PLEN=e.d+e.l;SLOTS=slotsOf(LAY)}
+setLayout('loop');
+function pathPos(d){return posOn(SEG,PLEN,d)}
 // n points spread evenly along the loop (for effects that used to sit at fixed spots on the old straight sides)
 const lanePts=(n,o)=>Array.from({length:n},(_,i)=>{const q=pathPos(PLEN*(i+(o||0))/n);return [q.x,q.y]});
-// the yard inside the loop: 7 x 3 pads (owner: 7 per row)
-const YARD={x:194,y:136,w:574,h:268},SLOTS=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)SLOTS.push({x:YARD.x+YARD.w/COLS*(c+.5),y:YARD.y+YARD.h/ROWS*(r+.5)+14});
 const TIER=[{n:'ขาว',age:'2 ขวบ',c:'#f2f2f2',m:1,sc:.96},{n:'เขียว',age:'4 ขวบ',c:'#5fe05f',m:3.3,sc:1.04},{n:'ม่วง',age:'6 ขวบ',c:'#b77bff',m:11,sc:1.12},{n:'แดง',age:'7 ขวบ',c:'#ff5050',m:36,sc:1.2},{n:'ทอง',age:'8 ขวบ',c:'#ffd75a',m:100,sc:1.22},{n:'รุ้ง',age:'ฟอร์ม',c:'#ff8ad8',m:260,sc:1.16},{n:'ตำนาน',age:'สัตว์ในตำนาน',c:'#3ee8c0',m:110,sc:1.26}];
 const CLS={
   warrior:{n:'นักรบ',kid:'แทน',a:'ชุดหมี',col:'#e08a3a',rng:118,dmg:15,rate:1.05,splash:58,atk:'ทุบเป็นวง ระยะใกล้',pas:'ตัวเลือดเกินครึ่งโดนแรงขึ้น 40%',proc:'15% กระแทกพื้นวงใหญ่ x2',ult:'หมีกระโดดทุบ: กระโดดออกไปทุบกลุ่มปีศาจที่หนาสุด แรงมาก มึน 2 วิ · ตัวอื่นทั้งสนามมึน 0.6 วิ'},
@@ -423,7 +434,9 @@ const ANIM={warrior:.34,assassin:.22,hunter:.26,mage:.36,support:.32,curse:.36};
 const SEND=[{id:'imp',n:'ผีจิ๋ว',cost:30,inc:3,mon:'imp'},{id:'brute',n:'ผียักษ์',cost:90,inc:9,mon:'brute'}];
 const NAMES=['แก๊งเสือน้อย','แก๊งลูกหมู','แก๊งนกกระจิบ','แก๊งปลาทอง'];
 // maps change only the look (same loop and yard): chosen in the lobby
-const MAPS=[{id:'camp',n:'ค่ายกลางป่า',ic:'🏕️'},{id:'park',n:'สนามเด็กเล่นร้าง',ic:'🛝'},{id:'beach',n:'หาดประภาคาร',ic:'🌊'}];
+const MAPS=[{id:'camp',n:'ค่ายกลางป่า',ic:'🏕️'},{id:'park',n:'สนามเด็กเล่นร้าง',ic:'🛝'},{id:'beach',n:'หาดประภาคาร',ic:'🌊'},{id:'cross',n:'สี่แยกกลางป่า',ic:'✚',lay:'cross',th:'camp'}];
+// lay = field layout (LAYOUTS), th = which map painter draws it (default: the map's own id)
+function layOf(m){return (MAPS.find(q=>q.id===m)||{}).lay||'loop'}
 // balance knobs (tools/sim/bb_sim.js runs 5 bots to check them)
 const BAL={hpG:1.16,sdW:24,sdG:1.15,luck:[.86,.12,.02],inc0:10,incW:2,killW:6,sum0:20,sumK:1,sumMax:60};
 const hpScale=w=>Math.pow(BAL.hpG,w-1)*(w>BAL.sdW?Math.pow(BAL.sdG,w-BAL.sdW):1);
@@ -434,7 +447,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 let G=null;
 function mkPlayer(i,name,human){return{i,name,human,hp:CAP0,gold:100,tiles:Array.from({length:NSLOT},()=>[]),tal:{},cls:{},offer:null,inc:0,nSum:0,units:Array(NSLOT).fill(null),mons:[],spawnQ:[],shots:[],fx:[],nums:[],alive:true,rank:0,
   lv:Object.fromEntries(CK.map(k=>[k,0])),klv:Object.fromEntries(CK.map(k=>[k,1])),forms:{},curseT:0,partyT:0,quakeT:0,moonT:0,ampT:0,stopT:0,rallyT:0,gsk:{bolt:6,freeze:20,rally:15},zones:[],fly:[],dying:[],kills:0,ai:{t:rnd(.5,1.5)}}}
-function newGame(o){o=o||{};
+function newGame(o){o=o||{};setLayout(layOf(o.map||'camp'));
   G={autoUlt:HAS_DOM?LS.get('autoUlt',false):true,t:0,wave:0,waveT:3,map:o.map||'camp',paused:false,players:[mkPlayer(0,o.me||'คุณ',true),...(o.names||NAMES).map((n,i)=>mkPlayer(i+1,n,false))].map((q,i)=>(q.av=(o.avs||[])[i]||CK[(Math.random()*CK.length)|0],q)),view:0,over:false,spd:1,out:0,sel:-1,popup:null,placing:null};
   const st=['balanced','rush','build','newbie'].sort(()=>Math.random()-.5);G.players.slice(1).forEach((p,i)=>p.ai.style=st[i]);
   // your kid levels; bots get levels near yours (a bit lower) so matches stay close
@@ -841,18 +854,18 @@ function makeBg(map){
   const vn=(x,y,s)=>{const X=x/s,Y=y/s,i=Math.floor(X),j=Math.floor(Y),u0=X-i,v0=Y-j,a=hs(i,j),b=hs(i+1,j),cc=hs(i,j+1),d=hs(i+1,j+1),u=u0*u0*(3-2*u0),v=v0*v0*(3-2*v0);return a+(b-a)*u+(cc-a)*v+(a-b-cc+d)*u*v};
   const hex=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),pick=(P,n)=>P[Math.max(0,Math.min(P.length-1,Math.floor(n*P.length)))];
   const rnd2=(a,b)=>a+Math.random()*(b-a);
-  const PXS=PATH.map(q=>q[0]),PYS=PATH.map(q=>q[1]),lx=Math.min(...PXS)/Q+ox,ly=Math.min(...PYS)/Q+oy,rx=Math.max(...PXS)/Q+ox,by=Math.max(...PYS)/Q+oy,hw=28/Q;
+  const LYm=LAYOUTS[layOf(map)],RT=LYm.route,SGm=segsOf(RT),RLm=SGm[SGm.length-1].d+SGm[SGm.length-1].l,TH=(MAPS.find(m=>m.id===map)||{}).th||map;
+  const PXS=RT.map(q=>q[0]),PYS=RT.map(q=>q[1]),lx=Math.min(...PXS)/Q+ox,ly=Math.min(...PYS)/Q+oy,rx=Math.max(...PXS)/Q+ox,by=Math.max(...PYS)/Q+oy,hw=28/Q;
   // road field (winding path): PF = across the road, 0 at the outer edge .. 2hw-1 at the yard side (-1 = not road), PA = distance along,
   // PH = 1 where the road runs left-right; PN = a wider band round the road (keeps decorations off it)
-  const PF=new Int16Array(W*H).fill(-1),PA=new Float32Array(W*H),PH=new Uint8Array(W*H),PN=new Uint8Array(W*H),PP=PATH.map(q=>[q[0]/Q+ox,q[1]/Q+oy]);
-  for(const sg of SEG){const n=Math.ceil(sg.l/Q*2),ux=(sg.x1-sg.x0)/sg.l,uy=(sg.y1-sg.y0)/sg.l,hz=Math.abs(ux)>Math.abs(uy)?1:0;
+  const PF=new Int16Array(W*H).fill(-1),PA=new Float32Array(W*H),PH=new Uint8Array(W*H),PN=new Uint8Array(W*H);
+  for(const sg of SGm){const n=Math.ceil(sg.l/Q*2),ux=(sg.x1-sg.x0)/sg.l,uy=(sg.y1-sg.y0)/sg.l,hz=Math.abs(ux)>Math.abs(uy)?1:0;
     for(let i=0;i<n;i++){const t=i/n,cx=(sg.x0+(sg.x1-sg.x0)*t)/Q+ox,cy=(sg.y0+(sg.y1-sg.y0)*t)/Q+oy,al=(sg.d+sg.l*t)/Q;
       for(let k=-hw-6;k<=hw+6;k+=.5){const x=Math.round(cx-uy*k),y=Math.round(cy+ux*k);if(x<0||y<0||x>=W||y>=H)continue;const j=y*W+x;PN[j]=1;if(Math.abs(k)>hw)continue;
         const a=Math.max(0,Math.min(2*hw-1,Math.round(k+hw))),cur=PF[j];if(cur<0||Math.abs(k)<Math.abs(cur-hw)){PF[j]=a;PA[j]=al;PH[j]=hz}}}}
-  for(const [qx,qy] of PATH){const cx=qx/Q+ox,cy=qy/Q+oy;for(let y=Math.floor(cy-hw-6);y<=cy+hw+6;y++)for(let x=Math.floor(cx-hw-6);x<=cx+hw+6;x++){if(x<0||y<0||x>=W||y>=H)continue;const r=Math.hypot(x-cx,y-cy),j=y*W+x;if(r<=hw+6)PN[j]=1;
+  for(const [qx,qy] of RT){const cx=qx/Q+ox,cy=qy/Q+oy;for(let y=Math.floor(cy-hw-6);y<=cy+hw+6;y++)for(let x=Math.floor(cx-hw-6);x<=cx+hw+6;x++){if(x<0||y<0||x>=W||y>=H)continue;const r=Math.hypot(x-cx,y-cy),j=y*W+x;if(r<=hw+6)PN[j]=1;
     if(r<=hw&&PF[j]<0){PF[j]=Math.max(0,Math.min(2*hw-1,Math.round(hw-r)));PA[j]=0;PH[j]=1}}}
-  const inLoop=(x,y)=>{let c=false;for(let i=0,j=PP.length-1;i<PP.length;j=i++){const [xi,yi]=PP[i],[xj,yj]=PP[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c};
-  const yx=YARD.x/Q+ox,yy=YARD.y/Q+oy,yw=YARD.w/Q,yh=YARD.h/Q,cw=yw/COLS,ch=yh/ROWS,WALL=6;
+  const cw=LYm.cw/Q,ch=LYm.ch/Q,WALL=6,RMS=LYm.rooms.map(R=>({...R,x:R.x/Q+ox,y:R.y/Q+oy,w:R.cols*cw,h:R.rows*ch}));
   const toB=(x,y)=>({x:(x-ox)*Q,y:(y-oy)*Q});
   const onPath=(x,y)=>PF[(y|0)*W+(x|0)]>=0;
   const nearLoop=(x,y,m)=>x>lx-hw-m&&x<rx+hw+m&&y>ly-hw-m&&y<by+hw+m;
@@ -863,8 +876,8 @@ function makeBg(map){
   // the ring: acr = 0 at the outer edge .. 2hw-1 at the yard edge, al = position along the path, hz = top/bottom stretch
   const ring=fn=>paint(lx-hw-1,ly-hw-1,rx+hw+2,by+hw+2,(x,y,r,gg,b)=>{const j=y*W+x,a=PF[j];if(a<0)return null;return fn(x,y,a,PA[j]|0,PH[j]===1,[r,gg,b])});
   // the yard: tile index k, local u/v inside the tile
-  const yard=fn=>paint(yx,yy,yx+yw,yy+yh,(x,y)=>{const ci=Math.max(0,Math.min(COLS-1,Math.floor((x-yx)/cw))),ri=Math.max(0,Math.min(ROWS-1,Math.floor((y-yy)/ch))),u=x-yx-ci*cw,v=y-yy-ri*ch;return fn(x,y,ci,ri,u,v)});
-  const wall=fn=>paint(yx,yy+yh,yx+yw,yy+yh+WALL+3,(x,y,r,gg,b)=>{const v=y-(yy+yh);if(v>=WALL){const k=v===WALL?.55:v===WALL+1?.68:.82;return [r*k|0,gg*k|0,b*k|0]}return fn(x-yx,v)});
+  const yard=fn=>{for(const R of RMS)paint(R.x,R.y,R.x+R.w,R.y+R.h,(x,y)=>{const lc=Math.max(0,Math.min(R.cols-1,Math.floor((x-R.x)/cw))),lr=Math.max(0,Math.min(R.rows-1,Math.floor((y-R.y)/ch))),u=x-R.x-lc*cw,v=y-R.y-lr*ch;return fn(x,y,R.c0+lc,R.r0+lr,u,v)})};
+  const wall=fn=>{for(const R of RMS)paint(R.x,R.y+R.h,R.x+R.w,R.y+R.h+WALL+3,(x,y,r,gg,b)=>{const v=y-(R.y+R.h);if(v>=WALL){const k=v===WALL?.55:v===WALL+1?.68:.82;return [r*k|0,gg*k|0,b*k|0]}return fn(x-R.x,v)})};
   const shade=(c0,k)=>[Math.min(255,c0[0]*k|0),Math.min(255,c0[1]*k|0),Math.min(255,c0[2]*k|0)];
   // props layer: pixel shapes, outlined and shadowed together, drawn back to front
   const PL=document.createElement('canvas');PL.width=W;PL.height=H;const pg=PL.getContext('2d'),props=[];const prop=(y,f)=>props.push([y,f]);
@@ -876,8 +889,7 @@ function makeBg(map){
   const line=(x0,y0,x1,y1,col,w)=>{pg.fillStyle=col;w=w||1;const n=Math.max(1,Math.round(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));for(let i=0;i<=n;i++){const t=i/n;pg.fillRect(Math.round(x0+(x1-x0)*t-(w-1)/2),Math.round(y0+(y1-y0)*t-(w-1)/2),w,w)}};
   const spots=(n,m,f,ok)=>{for(let i=0,k=0;i<n&&k<n*60;k++){const x=Math.random()*W,y=Math.random()*H;if(nearLoop(x,y,m)||(ok&&!ok(x,y)))continue;f(x,y,Math.random());i++}};
   const LIGHTS=[];let AMB=.86,VIG=.5,OL=[22,14,18];
-  const inner=(n,f)=>{for(let i=0,k=0;i<n&&k<n*80;k++){const x=lx+Math.random()*(rx-lx),y=ly+Math.random()*(by-ly);if(PN[(y|0)*W+(x|0)]||!inLoop(x,y))continue;
-    if(x>yx-8&&x<yx+yw+8&&y>yy-8&&y<yy+yh+WALL+12)continue;f(x,y,Math.random());i++}};
+  const inner=(n,f)=>{for(let i=0,k=0;i<n&&k<n*80;k++){const x=lx+Math.random()*(rx-lx),y=ly+Math.random()*(by-ly);if(PN[(y|0)*W+(x|0)]||RMS.some(R=>x>R.x-8&&x<R.x+R.w+8&&y>R.y-8&&y<R.y+R.h+WALL+12))continue;f(x,y,Math.random());i++}};
   // ---- shared props
   const rock=(x,y,s)=>prop(y,()=>{disc(x,y-2*s,4*s,'#4e4a58',.7);disc(x-s,y-3*s,2.6*s,'#686474',.7);rect(x-2*s,y-4*s,s,s,'#8a8696')});
   // owner 2026-11-04: prettier maps -> brighter, more colour, more small things to look at
@@ -885,7 +897,7 @@ function makeBg(map){
   const flowers=(x,y,col)=>prop(y,()=>{for(let k=0;k<6;k++){const fx2=x+((k*5)%13)-6,fy=y-((k*3)%5);rect(fx2,fy-2,1,2,'#2e6a32');rect(fx2-1,fy-3,3,1,col);rect(fx2,fy-4,1,3,col);rect(fx2,fy-3,1,1,'#fff6a0')}});
   const tuft=(x,y,c1,c2)=>prop(y,()=>{rect(x,y-3,1,3,c1);rect(x+1,y-4,1,4,c2);rect(x+2,y-2,1,2,c1);rect(x-1,y-2,1,2,c2)});
   const lampPost=(x,y,col)=>{prop(y,()=>{rect(x,y-22,2,22,'#3e4250');rect(x-1,y-2,4,2,'#2e3240');rect(x-3,y-25,8,3,'#3e4250');rect(x-2,y-24,6,2,col||'#fff0b0')});LIGHTS.push({x:x+1,y:y-20,r:46,c:[255,206,130],k:.42});fx.push({k:'lamp',...toB(x+1,y-23)})};
-  if(map==='park'){
+  if(TH==='park'){
     // ---------------- abandoned playground: asphalt, paving slabs, rubber mats ----------------
     AMB=.92;VIG=.32;OL=[16,12,22];
     ground(['#33313f','#383646','#3d3b4c','#434152','#484658'],30,(x,y,n)=>n+.12*(vn(x,y,7)-.5));
@@ -898,7 +910,7 @@ function makeBg(map){
     for(let i=0;i<70;i++){let x=Math.random()*W,y=Math.random()*H;if(nearLoop(x,y,2))continue;pg.fillStyle='#14121a';for(let k=0;k<14;k++){pg.fillRect(x|0,y|0,1,1);x+=Math.random()<.5?1:-1;y+=Math.random()<.65?1:0}}
     ring((x,y,a,al,hz,o)=>{if(a<2)return a?[128,124,140]:[150,146,162];if(a>2*hw-3)return [70,66,80];const s=Math.floor(al/10),t=Math.floor((a-2)/8),j=(al%10===0)||((a-2)%8===0);if(j)return [74,71,86];
       const base=[98,94,110],v=(hs(s,t)-.5)*14+(hs(x,y)-.5)*8;if(hs(x*3,y*7)>.985)return [60,57,70];return [base[0]+v|0,base[1]+v|0,base[2]+v|0]});
-    for(let i=0;i<40;i++){const q=pathPos(Math.random()*PLEN);let x=q.x/Q+ox+rnd2(-9,9),y=q.y/Q+oy+rnd2(-9,9);pg.fillStyle='#3e3b4a';for(let k=0;k<9;k++){pg.fillRect(x|0,y|0,1,1);x+=Math.random()<.5?1:-1;y+=Math.random()<.6?1:0}}
+    for(let i=0;i<40;i++){const q=posOn(SGm,RLm,Math.random()*RLm);let x=q.x/Q+ox+rnd2(-9,9),y=q.y/Q+oy+rnd2(-9,9);pg.fillStyle='#3e3b4a';for(let k=0;k<9;k++){pg.fillRect(x|0,y|0,1,1);x+=Math.random()<.5?1:-1;y+=Math.random()<.6?1:0}}
     const mats=['#7a4444','#44587e','#7c6e40','#426c52','#6a4c7c','#7a5a3c'].map(hex);
     yard((x,y,ci,ri,u,v)=>{const m=mats[(ri*3+ci)%mats.length];if(u<1||v<1)return shade(m,1.28);if(u>=cw-1||v>=ch-1)return shade(m,.6);if((Math.floor(u)%4===2)&&(Math.floor(v)%4===2))return shade(m,1.12);return shade(m,.94+.12*hs(x,y))});
     wall((u,v)=>v===0?[150,146,160]:(u%14===0?[60,58,70]:[96,92,108]));
@@ -924,7 +936,7 @@ function makeBg(map){
     bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f0c040','#4a9ad8','#5ab85a','#b878e0']);
     inner(14,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8'][Math.floor(r*3)]));inner(22,(x,y)=>tuft(x,y,'#4a8a4a','#6aa85a'));inner(3,(x,y)=>teddy(x,y));inner(4,(x,y)=>balloon(x,y,['#d84a5a','#4a9ad8','#f0c040'][(x|0)%3]));
     fx.push({k:'fog',c:'150,130,190'});fx.push({k:'flies',c:'255,220,160'});
-  }else if(map==='beach'){
+  }else if(TH==='beach'){
     // ---------------- lighthouse beach: sea, boardwalk, sand court ----------------
     AMB=.94;VIG=.28;OL=[24,16,14];
     const sea=ly-hw-6,mx=ox+300;
@@ -984,7 +996,7 @@ function makeBg(map){
     tent(ox-70,oy+150,'#c8603a','#8a3a22');tent(ox-50,oy+300,'#d8b04a','#9a7a2a');tent(W-ox+40,oy+190,'#4a8ac8','#2a5a8a');tent(W-ox+60,oy+340,'#6aaa5a','#3a7a3a');
     const fxp=ox-50,fyp=oy+225;logs(fxp,fyp);LIGHTS.push({x:fxp,y:fyp-6,r:60,c:[255,150,70],k:.55});fx.push({k:'fire',...toB(fxp,fyp-5)});sign(W-ox+20,oy+110);
     for(const [x,y] of [[lx-hw-8,ly-hw-6],[rx+hw+8,ly-hw-6],[lx-hw-8,by+hw+14],[rx+hw+8,by+hw+14]])lampPost(x,y,'#ffd27a');
-    const offPond=(x,y)=>((x-pdx)/62)**2+((y-pdy)/30)**2>1;spots(70,14,(x,y,r)=>(r<.5?pine:tree)(x,y,.9+r*.6),offPond);spots(40,6,(x,y)=>bush(x,y));spots(24,4,(x,y)=>mush(x,y));spots(10,8,(x,y)=>stump(x,y));spots(12,6,(x,y)=>rock(x,y,1));
+    const offPond=(x,y)=>((x-pdx)/62)**2+((y-pdy)/30)**2>1;spots(70,22,(x,y,r)=>(r<.5?pine:tree)(x,y,.9+r*.6),offPond);spots(40,6,(x,y)=>bush(x,y));spots(24,4,(x,y)=>mush(x,y));spots(10,8,(x,y)=>stump(x,y));spots(12,6,(x,y)=>rock(x,y,1));
     spots(26,6,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8','#f8f4ea'][Math.floor(r*4)]),(x,y)=>((x-pdx)/70)**2+((y-pdy)/32)**2>1);spots(90,3,(x,y)=>tuft(x,y,'#3e7e44','#5a9a52'),(x,y)=>((x-pdx)/64)**2+((y-pdy)/28)**2>1);
     bunting(lx-hw+4,rx+hw-4,ly-hw-18,['#e84a5a','#f0c040','#4a9ad8','#5ab85a','#f08aa8']);
     inner(16,(x,y,r)=>flowers(x,y,['#f0d060','#f08aa8','#9ac8f8','#f8f4ea'][Math.floor(r*4)]));inner(26,(x,y)=>tuft(x,y,'#3e7e44','#5a9a52'));inner(8,(x,y)=>mush(x,y));inner(5,(x,y)=>rock(x,y,1));inner(4,(x,y)=>bush(x,y));
@@ -997,7 +1009,7 @@ function makeBg(map){
   {const S=document.createElement('canvas');S.width=W;S.height=H;const sg=S.getContext('2d');sg.drawImage(PL,0,0);sg.globalCompositeOperation='source-in';sg.fillStyle='#000';sg.fillRect(0,0,W,H);
     g.globalAlpha=.34;g.drawImage(S,3,2);g.globalAlpha=1;g.drawImage(PL,0,0)}
   // baked light: moonlit vignette, then warm pools round lamps and fires
-  c.amb=AMB;c.vig=VIG;  // moonlit darkening + vignette are drawn each frame in drawMapFx (cheaper than baking)
+  c.amb=AMB;c.vig=VIG;c.th=TH;  // moonlit darkening + vignette are drawn each frame in drawMapFx (cheaper than baking)
   for(const l of LIGHTS)paint(l.x-l.r,l.y-l.r,l.x+l.r,l.y+l.r,(x,y,r,gg,b)=>{const q=((x-l.x)**2+(y-l.y)**2)/(l.r*l.r);if(q>=1)return null;const e=(1-q)*(1-q)*l.k;return [Math.min(255,r*(1+e)+l.c[0]*e*.35),Math.min(255,gg*(1+e)+l.c[1]*e*.35),Math.min(255,b*(1+e*.6)+l.c[2]*e*.25)]});
   return c}
 function hsl2(h){const f=n=>{const k=(n+h/30)%12;return Math.round(255*(.62-.38*Math.max(-1,Math.min(k-3,9-k,1))))};return f(0)+','+f(8)+','+f(4)}
@@ -1005,7 +1017,7 @@ function glow(x,y,r,rgb,a){const gr=ctx.createRadialGradient(x,y,0,x,y,r);gr.add
 function drawMapFx(map){const bg=BGC[map];if(!bg)return;const t=G.t;
   {const cx=BW/2,cy=BH/2,R=Math.hypot(BW/2+EX,BH/2+EY),gr=ctx.createRadialGradient(cx,cy,R*.34,cx,cy,R);gr.addColorStop(0,'rgba(4,6,18,'+(1-bg.amb).toFixed(2)+')');gr.addColorStop(1,'rgba(4,6,18,'+Math.min(.9,1-bg.amb+bg.vig*.75).toFixed(2)+')');ctx.fillStyle=gr;ctx.fillRect(-EX,-EY,BW+2*EX,BH+2*EY)}
   for(const f of bg.fx){
-    if(f.k==='lamp'){const off=map==='park'&&Math.sin(t*23+f.x)>.95;glow(f.x,f.y,map==='park'?100:70,'255,206,120',off?.03:.2+.05*Math.sin(t*9+f.x));if(!off){ctx.fillStyle='#fff3c0';ctx.fillRect(f.x-4,f.y-2,8,4)}}
+    if(f.k==='lamp'){const off=bg.th==='park'&&Math.sin(t*23+f.x)>.95;glow(f.x,f.y,bg.th==='park'?100:70,'255,206,120',off?.03:.2+.05*Math.sin(t*9+f.x));if(!off){ctx.fillStyle='#fff3c0';ctx.fillRect(f.x-4,f.y-2,8,4)}}
     else if(f.k==='fire'){glow(f.x,f.y,80,'255,140,60',.32+.08*Math.sin(t*13));for(let i=0;i<9;i++){const ph=(t*2.4+i*.29)%1,s=(1-ph)*8+2;ctx.fillStyle=ph<.35?'#fff2a0':ph<.7?'#ffa030':'#d8401a';ctx.fillRect(f.x-10+((i*7)%18)+Math.sin(t*6+i)*3,f.y-ph*34,s,s)}}
     else if(f.k==='beam'){const a=Math.PI*.8+Math.sin(t*.45)*.5,L=1500,w=.07;ctx.save();const gr=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,L);gr.addColorStop(0,'rgba(255,244,190,.22)');gr.addColorStop(1,'rgba(255,244,190,0)');ctx.fillStyle=gr;
       ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+Math.cos(a-w)*L,f.y+Math.sin(a-w)*L);ctx.lineTo(f.x+Math.cos(a+w)*L,f.y+Math.sin(a+w)*L);ctx.closePath();ctx.fill();ctx.restore();glow(f.x,f.y,60,'255,240,180',.55)}
@@ -1124,14 +1136,14 @@ function draw(){
   const p=G.players[G.view],qa=p.quakeT>0?Math.min(9,2.5+p.quakeT*14):0,shk=qa?rnd(-qa,qa):0,shy=qa?rnd(-qa,qa)*.6:0;ctx.setTransform(SC*DPR,0,0,SC*DPR,(OX+shk)*DPR,(OY+shy)*DPR);ctx.imageSmoothingEnabled=false;
   ctx.drawImage(bgFor(G.map),-EX,-EY,BW+2*EX,BH+2*EY);drawMapFx(G.map);
   // talent tiles glow in the talent's colour with a light pillar, so they stand out on the yard
-  for(let s=0;s<NSLOT;s++){const L=p.tiles[s];if(!L.length)continue;const S=SLOTS[s],w=YARD.w/COLS,h=YARD.h/ROWS,x0=S.x-w/2,y0=S.y-14-h/2,col=TALS[L[L.length-1]].col,pu=.5+.5*Math.sin(G.t*3+s);
+  for(let s=0;s<NSLOT;s++){const L=p.tiles[s];if(!L.length)continue;const S=SLOTS[s],w=CELL.w,h=CELL.h,x0=S.x-w/2,y0=S.y-14-h/2,col=TALS[L[L.length-1]].col,pu=.5+.5*Math.sin(G.t*3+s);
     const gr=ctx.createRadialGradient(S.x,S.y+4,6,S.x,S.y+4,w*.62);gr.addColorStop(0,col+'aa');gr.addColorStop(1,col+'00');ctx.fillStyle=gr;ctx.fillRect(x0+2,y0+2,w-4,h-4);
     const pil=ctx.createLinearGradient(0,S.y+8,0,y0-30);pil.addColorStop(0,col+Math.round(90+70*pu).toString(16));pil.addColorStop(1,col+'00');ctx.fillStyle=pil;ctx.fillRect(S.x-w*.32,y0-30,w*.64,S.y+8-(y0-30));
     ctx.strokeStyle=col;ctx.globalAlpha=.65+.35*pu;ctx.lineWidth=4;ctx.strokeRect(x0+4,y0+4,w-8,h-8);ctx.globalAlpha=1;
     for(let k=0;k<3;k++){const t=(G.t*.7+k/3+s*.13)%1;ctx.fillStyle=col;ctx.globalAlpha=1-t;ctx.fillRect(S.x-w*.28+((k*37+s*11)%(w*.56)),S.y+4-t*(h+20),4,4)}ctx.globalAlpha=1;
     ctx.fillStyle='rgba(10,12,22,.75)';ctx.fillRect(x0+6,y0+6,8+L.length*26,30);ctx.font='22px sans-serif';ctx.textAlign='left';L.forEach((id,k)=>ctx.fillText(TALS[id].ic,x0+9+k*26,y0+29))}
   if(G.aim&&G.view===0){ctx.strokeStyle='rgba(255,225,74,'+(.35+.35*Math.sin(G.t*8))+')';ctx.lineWidth=12;ctx.beginPath();PATH.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.stroke()}
-  if(G.placing&&G.view===0){ctx.strokeStyle='rgba(127,224,138,'+(.5+.4*Math.sin(G.t*8))+')';ctx.lineWidth=3;for(const S of SLOTS){const w=YARD.w/COLS,h=YARD.h/ROWS;ctx.strokeRect(S.x-w/2+4,S.y-14-h/2+4,w-8,h-8)}}
+  if(G.placing&&G.view===0){ctx.strokeStyle='rgba(127,224,138,'+(.5+.4*Math.sin(G.t*8))+')';ctx.lineWidth=3;for(const S of SLOTS){const w=CELL.w,h=CELL.h;ctx.strokeRect(S.x-w/2+4,S.y-14-h/2+4,w-8,h-8)}}
   if(G.view===0&&G.sel>=0){const S=SLOTS[G.sel],u=p.units[G.sel];if(u){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(S.x,S.y-20,rangeOf(p,G.sel,u),0,6.28);ctx.stroke();ctx.setLineDash([])}}
   // gold Ratri's burning ground
   for(const z of p.zones){const a=Math.min(1,z.t*1.5);ctx.globalAlpha=.22*a;ctx.fillStyle='#ff6a1a';ctx.beginPath();ctx.ellipse(z.x,z.y,z.r,z.r*.42,0,0,6.28);ctx.fill();ctx.globalAlpha=a;
@@ -1375,7 +1387,7 @@ if(HAS_DOM){
   $('#watch').addEventListener('click',()=>{$('#end').hidden=true});
   $('#toLobby').addEventListener('click',toLobby);
   // "what's new": opens once per update (bump VER and NEWS together)
-  const VER='2026-11-05d',NEWS=['🌈 เด็กแต่ละระดับดูเก่งขึ้นเป็นขั้น: เขียวมีวงเวท · ม่วงมีขอบเรือง · แดงมีไฟลุกหลังตัว · ทองมีรัศมีแสงกับวงเวททอง · รุ้งมีรัศมีสายรุ้ง ไฟหลากสี ขอบเปลี่ยนสี ตัวใหญ่ขึ้น · สัตว์ในตำนานมีลมหมุนสีเขียวมรกต','🗺️ ช่องเล็กลง ทางเดินเข้ามาชิดลาน มุมทางมนขึ้น · รอบลานมีวิวแมพมากขึ้น','🐾 ตัวใหม่! สัตว์ในตำนาน 3 ตัว ผสมจากเด็กแดง 2 ตัว: 🦖 ไดโนเสาร์ = แทน + จันทร์ (กระทืบพื้น คำรามให้เพื่อนตีเร็ว ไม้ตายอุกกาบาตยักษ์) · 🐉 มังกร = ราตรี + ฟ้า (พ่นไฟตามทาง ไม้ตายพายุเพลิง) · 🦊 จิ้งจอกเก้าหาง = นิล + หมอก (ไฟจิ้งจอก ทำให้ปีศาจหลงตีกันเอง) · แตะเด็กแดงดูสูตร · รูปจริงกำลังมา','💥 มันส์ขึ้นแบบในคลิป: เลขดาเมจตัวใหญ่เอียง ไล่สี โดนแรงเลขยิ่งใหญ่ ตีรัวเลขซ้อนเป็นแถว · ไม้ตายจอสั่น แสงวาบ ภาพค้างแวบหนึ่ง (แทนลงพื้น พาวเวอร์ช็อต บอสตายแรงสุด)','✨ สกิลแบบพิกเซลชุดใหม่ แนวคลิปที่ส่งมา: แทนลงพื้นเป็นวังวนไฟ · นิลฟันกากบาทม่วง · ราตรีแช่แข็งเป็นดอกน้ำแข็ง ร่างทองเป็นโดมน้ำวน · จันทร์ริบบิ้นชมพูหมุนขึ้น · หมอกร่างทอง/คลีโอเป็นโดมมืด · ขงเบ้งฟ้าผ่าทอง · ฝนธนูมีผลึกเขียว','💥 ของที่คุณทำใน PixelLab เข้าเกมแล้ว: ระเบิด (ดาวตก บอสตาย) · ลูกพลังทอง (พาวเวอร์ช็อตของฟ้า) · ลูกพลาสมา (ราตรียิง) · หมอกพิษ (ไม้ตายหมอก)','📏 เด็กทุกตัวตัวเล็กลงอีก ลานดูโล่งขึ้น','📏 ฟอร์มวีรชนตัวเล็กลง พอดีช่อง ขนาดใกล้ร่างทอง','🎨 ฟอร์มวีรชนมีรูปครบทั้ง 6 ตัวแล้ว: ซุนหงอคง · ฮันโซ · โรบินฮู้ด · เมอร์ลิน · ขงเบ้ง · คลีโอพัตรา','🌈 ฟอร์มสายรุ้งครบ 6 ตัว (ชุดวีรชนที่ทุกคนรู้จัก): แทน → ซุนหงอคง · นิล → ฮัตโตริ ฮันโซ · ฟ้า → โรบินฮู้ด · ราตรี → เมอร์ลิน · จันทร์ → ขงเบ้ง · หมอก → คลีโอพัตรา · ปลดที่ 🧸 เด็กของฉัน','🌈 ฟอร์มสายรุ้งแรก: ฟ้า → โรบินฮู้ด · ปลดที่ 🧸 เด็กของฉัน (ชิ้นส่วนฟ้า 40) · ในเกม ฟ้าแดง 2 ตัว + ตัวที่แตะยิงครบ 500 ดอก → เปลี่ยนฟอร์ม · ปล้นเงินแก๊งที่รวยสุด ยิงทะลุทั้งแนว ฝนธนู 50 ดอก','🎁 ทาเลนต์หลังบอสชุดใหม่ 23 ใบ มีระดับ เงิน ทอง รุ้ง (บอสหลัง ๆ ได้ใบดีขึ้น): ช่องเพลิงลุก สายฟ้าโซ่ ปิดบัญชี เงาแฝด ช่องเติบโต มือทอง · เรียกแฝด กาชาโชคดี ดอกเบี้ย · ปีศาจระเบิดต่อกัน ราชาลาน ช่องรุ้งเจ็ดสี ฯลฯ','⏱️ เกมยาวขึ้น (ประมาณ 16 นาที เดิม 12) ช่วงต้นเหมือนเดิม ปีศาจเก่งขึ้นช้าลงตอนกลางเกม','🐻 ไม้ตายใหม่ของแทน: กระโดดออกจากช่อง ไปทุบกลุ่มปีศาจที่หนาสุดบนทาง แล้วกระโดดกลับ · ร่างทองกระโดดทุบ 3 กลุ่มติดกัน','🗺️ แมพสวยขึ้น สว่างขึ้น: ค่ายมีบ่อน้ำ ดอกไม้ ธงราว · สนามเด็กเล่นมีสนามหญ้า ต้นไม้ ตารางกระโดด · ชายหาดทรายสว่าง ผ้าเช็ดตัว รอยเท้า','🏹 ฟ้า: ลูกศรทะลุกับพาวเวอร์ช็อตพุ่งไปตามทางเดินปีศาจ (เดิมพุ่งขึ้นแนวตั้ง โดนตัวเดียว)','🌩️ เอาปุ่มสกิลแก๊งออกก่อน (เก็บไว้ใส่ให้ตัวละครอื่น)','🎬 แทนขยับจริงแล้ว (ขาว เขียว ม่วง แดง): ยืนหายใจ กะพริบตา · ตีเงื้อค้อนทุบ 4 จังหวะ · ไม้ตายกระโดดทุบ · ตัวอื่นตามมา','🎬 เด็กขยับมากขึ้น: ยืนโยกตัว หายใจ ท่าตีเหวี่ยงแรงขึ้นทุกตัว (ภาพท่าหลายเฟรมกำลังตามมา)','🌩️ ❄️ 📯 สกิลแก๊ง 3 ปุ่มใหม่ (ด้านล่าง): ฟ้าผ่าตรงที่แตะ · แช่แข็งปีศาจทั้งสนาม · ปลุกใจเด็กทั้งลานตีเร็ว · ใช้แล้วรอคูลดาวน์ บอทก็ใช้','🔨 แทนมีท่าทุบแล้ว (ร่างขาว เขียว ม่วง แดง) · ตอนตีจะเปลี่ยนเป็นท่าเหวี่ยงค้อนจริง ๆ · เด็กตัวอื่นตามมาเร็ว ๆ นี้','💥 เอฟเฟกต์สกิลใหม่ 17 แบบ (จากชุด pixelfx): แทนทุบค้อน พื้นแตก · นิลฟันคู่ ฟันรัว · ฟ้าประกายศร คริ · ราตรีดาวตก ระเบิด นาฬิกาหยุดเวลา วงไฟ · จันทร์วงฮีลใหญ่ ขนนก · หมอกตราสาป ระเบิดมืด · รวมร่างแสงพลัง · ผสมทองเสาแสง · บอสตายระเบิด','⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
+  const VER='2026-11-05e',NEWS=['✚ สนามใหม่ "สี่แยกกลางป่า": ทางวนรอบนอก + ทางผ่ากลางเป็นกากบาท ลานแบ่ง 4 ห้อง (ห้องละ 3×2 รวม 24 ช่อง) ทุกช่องมีทางผ่านใกล้ ๆ · เลือกที่ล็อบบี้ (ปุ่มเปลี่ยนแมพ)','🌈 เด็กแต่ละระดับดูเก่งขึ้นเป็นขั้น: เขียวมีวงเวท · ม่วงมีขอบเรือง · แดงมีไฟลุกหลังตัว · ทองมีรัศมีแสงกับวงเวททอง · รุ้งมีรัศมีสายรุ้ง ไฟหลากสี ขอบเปลี่ยนสี ตัวใหญ่ขึ้น · สัตว์ในตำนานมีลมหมุนสีเขียวมรกต','🗺️ ช่องเล็กลง ทางเดินเข้ามาชิดลาน มุมทางมนขึ้น · รอบลานมีวิวแมพมากขึ้น','🐾 ตัวใหม่! สัตว์ในตำนาน 3 ตัว ผสมจากเด็กแดง 2 ตัว: 🦖 ไดโนเสาร์ = แทน + จันทร์ (กระทืบพื้น คำรามให้เพื่อนตีเร็ว ไม้ตายอุกกาบาตยักษ์) · 🐉 มังกร = ราตรี + ฟ้า (พ่นไฟตามทาง ไม้ตายพายุเพลิง) · 🦊 จิ้งจอกเก้าหาง = นิล + หมอก (ไฟจิ้งจอก ทำให้ปีศาจหลงตีกันเอง) · แตะเด็กแดงดูสูตร · รูปจริงกำลังมา','💥 มันส์ขึ้นแบบในคลิป: เลขดาเมจตัวใหญ่เอียง ไล่สี โดนแรงเลขยิ่งใหญ่ ตีรัวเลขซ้อนเป็นแถว · ไม้ตายจอสั่น แสงวาบ ภาพค้างแวบหนึ่ง (แทนลงพื้น พาวเวอร์ช็อต บอสตายแรงสุด)','✨ สกิลแบบพิกเซลชุดใหม่ แนวคลิปที่ส่งมา: แทนลงพื้นเป็นวังวนไฟ · นิลฟันกากบาทม่วง · ราตรีแช่แข็งเป็นดอกน้ำแข็ง ร่างทองเป็นโดมน้ำวน · จันทร์ริบบิ้นชมพูหมุนขึ้น · หมอกร่างทอง/คลีโอเป็นโดมมืด · ขงเบ้งฟ้าผ่าทอง · ฝนธนูมีผลึกเขียว','💥 ของที่คุณทำใน PixelLab เข้าเกมแล้ว: ระเบิด (ดาวตก บอสตาย) · ลูกพลังทอง (พาวเวอร์ช็อตของฟ้า) · ลูกพลาสมา (ราตรียิง) · หมอกพิษ (ไม้ตายหมอก)','📏 เด็กทุกตัวตัวเล็กลงอีก ลานดูโล่งขึ้น','📏 ฟอร์มวีรชนตัวเล็กลง พอดีช่อง ขนาดใกล้ร่างทอง','🎨 ฟอร์มวีรชนมีรูปครบทั้ง 6 ตัวแล้ว: ซุนหงอคง · ฮันโซ · โรบินฮู้ด · เมอร์ลิน · ขงเบ้ง · คลีโอพัตรา','🌈 ฟอร์มสายรุ้งครบ 6 ตัว (ชุดวีรชนที่ทุกคนรู้จัก): แทน → ซุนหงอคง · นิล → ฮัตโตริ ฮันโซ · ฟ้า → โรบินฮู้ด · ราตรี → เมอร์ลิน · จันทร์ → ขงเบ้ง · หมอก → คลีโอพัตรา · ปลดที่ 🧸 เด็กของฉัน','🌈 ฟอร์มสายรุ้งแรก: ฟ้า → โรบินฮู้ด · ปลดที่ 🧸 เด็กของฉัน (ชิ้นส่วนฟ้า 40) · ในเกม ฟ้าแดง 2 ตัว + ตัวที่แตะยิงครบ 500 ดอก → เปลี่ยนฟอร์ม · ปล้นเงินแก๊งที่รวยสุด ยิงทะลุทั้งแนว ฝนธนู 50 ดอก','🎁 ทาเลนต์หลังบอสชุดใหม่ 23 ใบ มีระดับ เงิน ทอง รุ้ง (บอสหลัง ๆ ได้ใบดีขึ้น): ช่องเพลิงลุก สายฟ้าโซ่ ปิดบัญชี เงาแฝด ช่องเติบโต มือทอง · เรียกแฝด กาชาโชคดี ดอกเบี้ย · ปีศาจระเบิดต่อกัน ราชาลาน ช่องรุ้งเจ็ดสี ฯลฯ','⏱️ เกมยาวขึ้น (ประมาณ 16 นาที เดิม 12) ช่วงต้นเหมือนเดิม ปีศาจเก่งขึ้นช้าลงตอนกลางเกม','🐻 ไม้ตายใหม่ของแทน: กระโดดออกจากช่อง ไปทุบกลุ่มปีศาจที่หนาสุดบนทาง แล้วกระโดดกลับ · ร่างทองกระโดดทุบ 3 กลุ่มติดกัน','🗺️ แมพสวยขึ้น สว่างขึ้น: ค่ายมีบ่อน้ำ ดอกไม้ ธงราว · สนามเด็กเล่นมีสนามหญ้า ต้นไม้ ตารางกระโดด · ชายหาดทรายสว่าง ผ้าเช็ดตัว รอยเท้า','🏹 ฟ้า: ลูกศรทะลุกับพาวเวอร์ช็อตพุ่งไปตามทางเดินปีศาจ (เดิมพุ่งขึ้นแนวตั้ง โดนตัวเดียว)','🌩️ เอาปุ่มสกิลแก๊งออกก่อน (เก็บไว้ใส่ให้ตัวละครอื่น)','🎬 แทนขยับจริงแล้ว (ขาว เขียว ม่วง แดง): ยืนหายใจ กะพริบตา · ตีเงื้อค้อนทุบ 4 จังหวะ · ไม้ตายกระโดดทุบ · ตัวอื่นตามมา','🎬 เด็กขยับมากขึ้น: ยืนโยกตัว หายใจ ท่าตีเหวี่ยงแรงขึ้นทุกตัว (ภาพท่าหลายเฟรมกำลังตามมา)','🌩️ ❄️ 📯 สกิลแก๊ง 3 ปุ่มใหม่ (ด้านล่าง): ฟ้าผ่าตรงที่แตะ · แช่แข็งปีศาจทั้งสนาม · ปลุกใจเด็กทั้งลานตีเร็ว · ใช้แล้วรอคูลดาวน์ บอทก็ใช้','🔨 แทนมีท่าทุบแล้ว (ร่างขาว เขียว ม่วง แดง) · ตอนตีจะเปลี่ยนเป็นท่าเหวี่ยงค้อนจริง ๆ · เด็กตัวอื่นตามมาเร็ว ๆ นี้','💥 เอฟเฟกต์สกิลใหม่ 17 แบบ (จากชุด pixelfx): แทนทุบค้อน พื้นแตก · นิลฟันคู่ ฟันรัว · ฟ้าประกายศร คริ · ราตรีดาวตก ระเบิด นาฬิกาหยุดเวลา วงไฟ · จันทร์วงฮีลใหญ่ ขนนก · หมอกตราสาป ระเบิดมืด · รวมร่างแสงพลัง · ผสมทองเสาแสง · บอสตายระเบิด','⚡ ไม้ตายกดเองได้แล้ว: หลอดฟ้าเต็ม เด็กมีสายฟ้าขึ้น แตะเด็กเพื่อปล่อย เลือกจังหวะเอง (เก็บไว้ตอนบอสก็ได้) · ปุ่ม ⚡ ด้านล่างสลับเป็นออโต้ได้','🎬 เด็กขยับแล้ว: แต่ละคลาสมีท่าตีของตัวเอง (แทนเงื้อทุบ นิลพุ่งฟันมีเงา ฟ้าดึงธนูถอย ราตรีลอยร่าย จันทร์กระโดด หมอกโยกสาป) · เรียกเด็กตกลงมา · รวมร่างเพื่อนบินเข้าหา · ไม้ตายกระโดดสูง · ปีศาจเดินโยก ล้มแล้วจางหาย','✨ ร่างทองมาแล้ว! เด็กแดง + เด็กม่วง 2 ตัวตามสูตร → ร่างทอง ได้สกิลใหม่ 3 อย่างไม่ซ้ำกันเลย (ทุบมึน ปิดฉาก สามศร ไฟบนพื้น หยุดเวลา กระจกสาป ฯลฯ) · แตะเด็กแดงดูสูตร','🔍 ย่อลานกับเด็กลงอีก (ลาน 80% ของจอ เด็กเล็กลงอีกนิด)','🐦‍⬛ หมอกมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาผ้า → กระดิ่งผีผ้าพันคอเขียว → ไม้เท้าลูกแก้วม่วง → ไม้เท้าตาแดง → ร่างทอง','🦉 ราตรีได้ร่างม่วง (คทาคริสตัล ผ้าคลุมดาว) กับร่างแดง (ไม้เท้าเปลวไฟ)','🐰 จันทร์มีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนกอดตุ๊กตาแครอท → ตะกร้าแครอท → ไม้เท้าแครอทผ้าคลุมม่วง → ไม้เท้าหัวใจผ้าคลุมแดง → ร่างทอง','🐦‍⬛ หมอกร่างแดงมาแล้ว (ชุดอีกาดำแดง ไม้เท้าตาแดง)','🔍 ย่อลานกับเด็กลงหน่อย: ช่องเล็กลง เด็กไม่ล้นช่อง เห็นแมพรอบ ๆ มากขึ้น','🦅 ฟ้ามีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนเหยี่ยวธนูจุกยาง → ธนูไม้ผ้าพันคอเขียว → หน้าไม้แว่นนักบิน → ธนูยาวผ้าคลุมแดง → ร่างทอง','🐻 แทนมีรูปจาก GPT ครบ 5 ระดับแล้ว: ชุดนอนหมีจุกหลอก → กระบองไม้ → ค้อนเหล็กผ้าคลุมม่วง → ค้อนศึกผ้าคลุมแดง → ร่างทอง','🌟 รูประดับทองใหม่ 5 ตัวจาก GPT: แทน ฟ้า ราตรี จันทร์ หมอก (ดูได้ที่ล็อบบี้ และในหน้าต่างเด็กของฉัน)','🗺️ แมพสวยขึ้น ละเอียด 2 เท่า: ลานยกพื้น ไฟส่องสว่าง หมอกลอย ของตกแต่งเยอะขึ้น','🧸 แทน ราตรี จันทร์ หมอก มีรูปครบ 5 ระดับแล้ว (วาดด้วยโค้ด ชั่วคราว)','🟩 ลานกว้างขึ้น: แถวละ 7 ช่อง รวม 21 ช่อง (เดิม 18)','🔀 รวมร่างง่ายขึ้น: เด็กสีเดียวกัน 3 ตัว คลาสไหนก็ได้ ตัวที่แตะจะโตขึ้น','🏠 หน้าล็อบบี้ใหม่ · กด เล่น แล้วหาแก๊ง นับ 3-2-1','🗺️ แมพ 3 แบบ เลือกที่ล็อบบี้ (ค่ายกลางป่า · สนามเด็กเล่นร้าง · หาดประภาคาร)','🔊 เสียงเอฟเฟกต์ + เพลงกล่อมเด็ก (ปิดได้ใน ⚙️ ตั้งค่า)',
     '🌟 เลเวลเด็ก 1–20 ติดตัวข้ามเกม: จบเกมได้ชิ้นส่วน ไปอัปที่ 🧸 เด็กของฉัน','📅 ภารกิจประจำวัน วันละ 3 อัน ได้ชิ้นส่วน','👹 บอส 4 แบบ ผลัดกันทุก 10 ระลอก (เรียกลูกน้อง · แตกร่าง · มีโล่) + แถบเลือดบอส',
     '⭐ MVP ตอนจบเกม · เด็กหันหาปีศาจที่ตี · คัตอินตอนใช้ไม้ตาย · ลูกศรเขียวบอกตัวที่รวมร่างได้','📱 เพิ่มลงหน้าจอโฮมได้ เปิดเต็มจอเหมือนแอป · มือถือกด เล่น แล้วเต็มจอ · สั่นตอนบอสมา',
     '🖼️ นิลครบ 5 ระดับ · หน้าคำสั่งเจนรูปเด็กและปีศาจ (🧸 เด็กของฉัน → 📝 คำสั่งเจนรูป)'];
