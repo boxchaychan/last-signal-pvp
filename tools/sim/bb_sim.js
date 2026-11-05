@@ -10,7 +10,7 @@ for(let g=0;g<N;g++){
   const out=[];let t=0;const dt=1/30;
   while(!G.over&&t<3600){B.step(dt);t+=dt;for(const p of G.players)if(!p.alive&&!out.includes(p.i)){out.push(p.i);p.outW=G.wave;p.outT=t}}
   const win=G.players.find(p=>p.rank===1);
-  const units=win?win.units.filter(Boolean).map(u=>u.c[0]+u.t).join(' '):'';const reds=G.players.reduce((a,p)=>a+p.units.filter(u=>u&&u.t===3).length,0),golds=G.players.reduce((a,p)=>a+p.units.filter(u=>u&&u.t===4).length,0);
-  rows.push({game:g,winStyle:win&&(win.ai.style||'bal'),minutes:(t/60).toFixed(1),waves:G.wave,outs:G.players.filter(p=>p.outW).sort((a,b)=>a.outW-b.outW).map(p=>(p.ai.style||'bal')[0]+p.outW).join(','),winner:win&&win.name,winGold:win&&win.gold,winInc:win&&win.inc,reds,golds,units});
+  const units=win?win.units.filter(Boolean).map(u=>(u.b?u.b[0].toUpperCase():u.c[0])+u.t).join(' '):'';const reds=G.players.reduce((a,p)=>a+p.units.filter(u=>u&&u.t===3).length,0),golds=G.players.reduce((a,p)=>a+p.units.filter(u=>u&&u.t===4).length,0);const beasts=G.players.reduce((a,p)=>a+p.units.filter(u=>u&&u.t===6).length,0);
+  rows.push({game:g,winStyle:win&&(win.ai.style||'bal'),minutes:(t/60).toFixed(1),waves:G.wave,outs:G.players.filter(p=>p.outW).sort((a,b)=>a.outW-b.outW).map(p=>(p.ai.style||'bal')[0]+p.outW).join(','),winner:win&&win.name,winGold:win&&win.gold,winInc:win&&win.inc,reds,golds,beasts,units});
   console.log(JSON.stringify(rows[rows.length-1]));
 }
