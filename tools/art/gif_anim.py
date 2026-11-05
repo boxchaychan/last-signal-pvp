@@ -124,4 +124,7 @@ yy, xx = np.where(f0)
 fy = int(yy.max()) + 1
 low = xx[yy > yy.min() + (yy.max() - yy.min()) * .6]
 fx = int(round((low.min() + low.max()) / 2))
-print(json.dumps({'n': len(out_cells), 'cw': int(cw), 'ch': int(ch), 'fx': fx, 'fy': fy, 'h0': int(yy.max() - yy.min() + 1)}))
+# strike frame guess: the first frame whose figure reaches (almost) as far forward as any frame
+reach = [int(np.where((strip[:, i * cw:(i + 1) * cw, 3] > 0).any(0))[0].max()) for i in range(len(out_cells))]
+hit = next(i for i, r in enumerate(reach) if r >= max(reach) - 2)
+print(json.dumps({'n': len(out_cells), 'cw': int(cw), 'ch': int(ch), 'fx': fx, 'fy': fy, 'h0': int(yy.max() - yy.min() + 1), 'hit': max(1, hit)}))
