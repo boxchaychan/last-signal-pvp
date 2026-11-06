@@ -221,6 +221,28 @@ ANIM = [
   ['stance', 'raise the scepter high overhead in both hands', 'the cobra crown and the scepter eyes glow bright green, the cape lifts', 'slam the scepter base down to the ground', 'hold, a commanding smile, the free hand spread wide', 'back to the stance']),
 ]
 
+# owner 2026-11-06: video AI (Meta AI) redraws faces, "เจนสกิลเอา เอฟเฟกต์ไม่น่าเพี้ยน" = use it for the skill EFFECTS instead:
+# one short clip per ultimate on pure black (black turns see-through in the game: bright = glow), still camera, no characters
+FX = [
+ ('fx_god_warrior', 'ซุนหงอคง · ตีลังกาเมฆ', 'a giant golden staff smashing down from above into the ground: a burst of golden-red light, a ring shockwave of swirling Chinese auspicious clouds spreading out, glowing cracks, golden sparks'),
+ ('fx_god_assassin', 'โลกิ · ราชันแห่งเล่ห์', 'emerald-green illusion magic: twisting green smoke with snake shapes coiling in a circle, glowing green runes flashing, then a sharp burst of green sparks'),
+ ('fx_god_hunter', 'อาร์เทมิส · ราตรีแห่งการล่า', 'a silver crescent moon glowing above, then a shining silver moonlight arrow streaking down into the ground with a bright pale-blue starburst and falling star glitter'),
+ ('fx_god_mage', 'โอดิน · หอกกุงเนียร์', 'a glowing blue rune circle on the ground, then a bolt of blue lightning shaped like a spear strikes its centre, with crackling blue electric arcs and flying rune symbols'),
+ ('fx_god_support', 'อพอลโล · รถม้าสุริยะ', 'a radiant golden sun bursting open with long golden light rays spinning outward, warm orange flames curling around the rim, golden music-note sparkles floating up'),
+ ('fx_god_curse', 'อนูบิส · พิพากษาแห่งดูอัต', 'a dark curse: a swirling vortex of purple-black smoke and golden sand, a glowing teal Eye of Horus symbol appearing in the middle, ghostly teal wisps rising'),
+ ('fx_hero_warrior', 'ลิโป้ · ทะลวงหมื่นทัพ', 'a huge red crescent slash wave sweeping across from left to right, with crimson energy and golden sparks trailing behind it'),
+ ('fx_hero_assassin', 'ฮันโซ · คาถาแยกเงา', 'a ninja smoke bomb: a puff of dark indigo smoke bursting outward, many fast white slash lines crossing through it, small silver shuriken spinning out'),
+ ('fx_hero_hunter', 'โรบินฮู้ด · ฝนธนูเชอร์วูด', 'a burst of glowing green leaves and golden light where many arrows hit the ground at once, leaves spinning outward and drifting down'),
+ ('fx_hero_mage', 'เมอร์ลิน · ฝนดาวตก', 'a blazing blue-white meteor falling from the top and exploding on the ground into a starry blast of blue and white sparkles and a shockwave ring'),
+ ('fx_hero_support', 'ขงเบ้ง · ศึกผาแดง', 'a strong east wind carrying a wave of orange-red flames sweeping across from left to right, swirling fire and glowing embers'),
+ ('fx_hero_curse', 'คลีโอพัตรา · คำสาปฟาโรห์', 'a golden cobra made of light rearing up and striking down, leaving a splash of glowing green poison and golden hieroglyph sparks'),
+]
+def fx_prompt(f):
+    return ('A visual effect for a 2D pixel art game: ' + f[2] + '. '
+        'Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. '
+        'The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, '
+        'crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.')
+
 def anim_prompt(a):
     k, en, th, desc, idle, an, asteps, sn, swhat, ssteps = a[:10]
     extra = a[10] if len(a) > 10 else ''
@@ -304,6 +326,14 @@ def main():
             f.write('=== %s (%s) animation ===\nAttach: art/incoming/legends/%s.png (the finished picture of this character)\n\n%s\n' % (a[1], a[2], a[0], anim_prompt(a)))
         md += ['### A%d. %s (%s) - attach `%s.png`\n' % (i, a[1], a[2], a[0]), '```', anim_prompt(a), '```\n']
         ent.append(('🎬 ท่า %d. %s · %s' % (i, a[2], a[1]), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ (art/incoming/legends/%s.png)' % (a[7], a[0]), anim_prompt(a)))
+    open(OUT + '/PROMPT.md', 'w', encoding='utf-8').write('\n'.join(md))
+    md = open(OUT + '/PROMPT.md', encoding='utf-8').read().split('\n')
+    md += ['## Skill effects for a video AI (Meta AI etc.): pure black background, still camera\n']
+    for i, f in enumerate(FX, 1):
+        with open(OUT + '/prompts/fx_%02d_%s.txt' % (i, f[0]), 'w', encoding='utf-8') as fo:
+            fo.write('=== %s ===\nSave as: %s.mp4 (download the video file, do not screenshot)\n\n%s\n' % (f[1], f[0], fx_prompt(f)))
+        md += ['### FX%d. %s -> `%s.mp4`\n' % (i, f[1], f[0]), '```', fx_prompt(f), '```\n']
+        ent.append(('✨ เอฟเฟกต์ %d. %s' % (i, f[1]), 'ใช้ Meta AI หรือเว็บทำวิดีโออื่น ไม่ต้องแนบรูป · ได้แล้วดาวน์โหลด mp4 ส่งมาเป็นไฟล์', fx_prompt(f)))
     open(OUT + '/PROMPT.md', 'w', encoding='utf-8').write('\n'.join(md))
     open('docs/legends-prompts.html', 'w', encoding='utf-8').write(page(ent))
     open(OUT + '/README_TH.txt', 'w', encoding='utf-8').write(

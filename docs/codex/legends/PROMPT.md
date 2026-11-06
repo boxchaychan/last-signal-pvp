@@ -665,3 +665,77 @@ Smooth animation: every frame is a small step from the one before; the same size
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
+
+## Skill effects for a video AI (Meta AI etc.): pure black background, still camera
+
+### FX1. ซุนหงอคง · ตีลังกาเมฆ -> `fx_god_warrior.mp4`
+
+```
+A visual effect for a 2D pixel art game: a giant golden staff smashing down from above into the ground: a burst of golden-red light, a ring shockwave of swirling Chinese auspicious clouds spreading out, glowing cracks, golden sparks. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX2. โลกิ · ราชันแห่งเล่ห์ -> `fx_god_assassin.mp4`
+
+```
+A visual effect for a 2D pixel art game: emerald-green illusion magic: twisting green smoke with snake shapes coiling in a circle, glowing green runes flashing, then a sharp burst of green sparks. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX3. อาร์เทมิส · ราตรีแห่งการล่า -> `fx_god_hunter.mp4`
+
+```
+A visual effect for a 2D pixel art game: a silver crescent moon glowing above, then a shining silver moonlight arrow streaking down into the ground with a bright pale-blue starburst and falling star glitter. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX4. โอดิน · หอกกุงเนียร์ -> `fx_god_mage.mp4`
+
+```
+A visual effect for a 2D pixel art game: a glowing blue rune circle on the ground, then a bolt of blue lightning shaped like a spear strikes its centre, with crackling blue electric arcs and flying rune symbols. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX5. อพอลโล · รถม้าสุริยะ -> `fx_god_support.mp4`
+
+```
+A visual effect for a 2D pixel art game: a radiant golden sun bursting open with long golden light rays spinning outward, warm orange flames curling around the rim, golden music-note sparkles floating up. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX6. อนูบิส · พิพากษาแห่งดูอัต -> `fx_god_curse.mp4`
+
+```
+A visual effect for a 2D pixel art game: a dark curse: a swirling vortex of purple-black smoke and golden sand, a glowing teal Eye of Horus symbol appearing in the middle, ghostly teal wisps rising. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX7. ลิโป้ · ทะลวงหมื่นทัพ -> `fx_hero_warrior.mp4`
+
+```
+A visual effect for a 2D pixel art game: a huge red crescent slash wave sweeping across from left to right, with crimson energy and golden sparks trailing behind it. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX8. ฮันโซ · คาถาแยกเงา -> `fx_hero_assassin.mp4`
+
+```
+A visual effect for a 2D pixel art game: a ninja smoke bomb: a puff of dark indigo smoke bursting outward, many fast white slash lines crossing through it, small silver shuriken spinning out. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX9. โรบินฮู้ด · ฝนธนูเชอร์วูด -> `fx_hero_hunter.mp4`
+
+```
+A visual effect for a 2D pixel art game: a burst of glowing green leaves and golden light where many arrows hit the ground at once, leaves spinning outward and drifting down. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX10. เมอร์ลิน · ฝนดาวตก -> `fx_hero_mage.mp4`
+
+```
+A visual effect for a 2D pixel art game: a blazing blue-white meteor falling from the top and exploding on the ground into a starry blast of blue and white sparkles and a shockwave ring. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX11. ขงเบ้ง · ศึกผาแดง -> `fx_hero_support.mp4`
+
+```
+A visual effect for a 2D pixel art game: a strong east wind carrying a wave of orange-red flames sweeping across from left to right, swirling fire and glowing embers. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
+
+### FX12. คลีโอพัตรา · คำสาปฟาโรห์ -> `fx_hero_curse.mp4`
+
+```
+A visual effect for a 2D pixel art game: a golden cobra made of light rearing up and striking down, leaving a splash of glowing green poison and golden hieroglyph sparks. Pure black background, the camera completely still, the effect centred in the frame, no characters, no ground, no scenery, no text. The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.
+```
