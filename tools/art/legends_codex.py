@@ -247,31 +247,40 @@ def fx_prompt(f):
 # animation sets already brought in (art/incoming/legends/anim/<key>.png)
 ANIMDONE = {'god_assassin'}
 
-def anim_prompt(a):
+# owner 2026-11-06 asked "ครบ 4 ทิศหรือเปล่า": dirs=True asks for south, east and north; west = east mirrored by the game
+# (Codex's own west strips came out facing right in the dino test, so it is not asked for)
+def anim_prompt(a, dirs=False):
     k, en, th, desc, idle, an, asteps, sn, swhat, ssteps = a[:10]
     extra = a[10] if len(a) > 10 else ''
     st = lambda L: '\n'.join('  %d. %s' % (i + 1, x) for i, x in enumerate(L))
     return ('Use $game-character-sprites.\n'
         'Reference: the attached picture (' + desc + '). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.\n'
-        'Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.\n\n'
+        + ('Scope: 3 directions, in this order: south (facing the viewer), east (facing right, the same three-quarter view as the reference), north (back to the viewer). '
+           'Do NOT make west: the game mirrors east to get west. Actions for EACH direction: idle (4 frames), attack (6 frames) and skill (6 frames). No walk. Cell 128x128 for the clean sheets.\n'
+           'The reference shows the east view. For south and north, turn the same character to face that way and keep every part of the costume and weapon the same. '
+           'The steps below are the same beats in every direction, aimed the way that direction faces (south = toward the viewer, north = away from the viewer, east = right).\n\n' if dirs else
+        'Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.\n\n') +
         'Idle (4 frames, a smooth loop that ends where it starts): ' + idle + '.\n\n'
         'Attack (6 frames) - ' + an + ':\n' + st(asteps) + '\n\n'
         'Skill (6 frames) - ' + sn + ', the ultimate (in the game it ' + swhat + '):\n' + st(ssteps) + '\n\n'
         + (extra + '\n' if extra else '') +
-        'SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.\n'
+        ('SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.\n' if dirs else
+        'SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.\n') +
         'Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; '
         'hair, cape and cloth follow through and settle.\n'
         'Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. '
         'Parts of the costume or weapon that already glow may glow brighter. Transparent background.\n'
         'When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, '
-        'plus one large preview picture of all three rows. Do not shrink anything.')
+        'plus one large preview picture of all ' + ('nine rows' if dirs else 'three rows') + '. Do not shrink anything.')
 
 def page(entries):
     """docs/legends-prompts.html: every prompt on one phone-friendly page with a copy button (owner: "ขอพรอมต์แบบจบตัว")"""
     import html
     cards = []
-    for t, sub, txt in entries:
-        cards.append('<section><h2>%s</h2><p class="sub">%s</p><pre>%s</pre><button type="button">คัดลอกคำสั่ง</button></section>' % (html.escape(t), sub, html.escape(txt)))
+    for e in entries:
+        t, sub, txt = e[:3]
+        more = ''.join('<p class="sub">%s</p><pre>%s</pre><button type="button">คัดลอกคำสั่ง</button>' % (h, html.escape(x)) for h, x in e[3:])
+        cards.append('<section><h2>%s</h2><p class="sub">%s</p><pre>%s</pre><button type="button">คัดลอกคำสั่ง</button>%s</section>' % (html.escape(t), sub, html.escape(txt), more))
     return ('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
       '<title>Legends Prompts</title><style>:root{--bg:#12131c;--card:#1c1e2b;--line:#2e3146;--txt:#ecebf5;--dim:#a6a8bf;--acc:#ffd36a}'
       '@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f4f2ec;--card:#fff;--line:#ddd8cc;--txt:#1c1a24;--dim:#5e5a6e;--acc:#a8780a}}'
@@ -329,8 +338,12 @@ def main():
     for i, a in enumerate(ANIM, 1):
         with open(OUT + '/prompts/anim_%02d_%s.txt' % (i, a[0]), 'w', encoding='utf-8') as f:
             f.write('=== %s (%s) animation ===\nAttach: art/incoming/legends/%s.png (the finished picture of this character)\n\n%s\n' % (a[1], a[2], a[0], anim_prompt(a)))
-        md += ['### A%d. %s (%s) - attach `%s.png`\n' % (i, a[1], a[2], a[0]), '```', anim_prompt(a), '```\n']
-        ent.append(('🎬 ท่า %d. %s · %s%s' % (i, a[2], a[1], ' ✅ ได้แล้ว' if a[0] in ANIMDONE else ''), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ (art/incoming/legends/%s.png)' % (a[7], a[0]), anim_prompt(a)))
+        with open(OUT + '/prompts/anim_%02d_%s_4dir.txt' % (i, a[0]), 'w', encoding='utf-8') as f:
+            f.write('=== %s (%s) animation, south/east/north (west = mirrored east) ===\nAttach: art/incoming/legends/%s.png\n\n%s\n' % (a[1], a[2], a[0], anim_prompt(a, True)))
+        md += ['### A%d. %s (%s) - attach `%s.png`\n' % (i, a[1], a[2], a[0]), '```', anim_prompt(a), '```\n',
+               'Same, 4 directions (south, east, north; the game mirrors east for west):\n', '```', anim_prompt(a, True), '```\n']
+        ent.append(('🎬 ท่า %d. %s · %s%s' % (i, a[2], a[1], ' ✅ ได้แล้ว' if a[0] in ANIMDONE else ''), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ (art/incoming/legends/%s.png) · ปุ่มบน = หันขวาทิศเดียว (ซ้ายเกมกลับด้านให้) · ปุ่มล่าง = 4 ทิศ' % (a[7], a[0]), anim_prompt(a),
+                    ('4 ทิศ: ล่าง (หันหน้าหาจอ) · ขวา · บน (หันหลัง) · ซ้าย = เกมกลับด้านจากขวาเอง · งานเยอะขึ้น 3 เท่า', anim_prompt(a, True))))
     open(OUT + '/PROMPT.md', 'w', encoding='utf-8').write('\n'.join(md))
     md = open(OUT + '/PROMPT.md', encoding='utf-8').read().split('\n')
     md += ['## Skill effects for a video AI (Meta AI etc.): pure black background, still camera\n']
