@@ -326,6 +326,8 @@ Skill (6 frames) - Cloud Somersault smash (ตีลังกาเมฆ), the 
   5. smash: he swings the long staff down to the ground in front of him and lands
   6. the staff shrinks back to normal and he returns to the stance
 
+Only in skill frames 4-5 the grown staff may run past the frame edge; his body stays inside. In every other frame the staff is its normal length, as in the reference.
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -357,6 +359,7 @@ Skill (6 frames) - King of Tricks (ราชันแห่งเล่ห์), 
   6. straightens up laughing and returns to the stance
 
 Keep the reverse grip in every frame: a ring on top of each fist, the curved blade coming out of the bottom of the fist and curving back toward the body.
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -388,6 +391,7 @@ Skill (6 frames) - Night of the Hunt (ราตรีแห่งการล่
   6. stand up and return to the stance
 
 Do not draw flying arrows: the game draws the shots itself.
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -419,6 +423,7 @@ Skill (6 frames) - Gungnir (หอกกุงเนียร์), the ultimate 
   6. the spear has flown back into his hand, the ravens land back on his shoulders
 
 The small floating runes are part of his pose; no other effects.
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -449,6 +454,7 @@ Skill (6 frames) - Sun Chariot (รถม้าสุริยะ), the ultimate
   5. arms spread wide, head back, singing joyfully
   6. back to the stance
 
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -479,6 +485,7 @@ Skill (6 frames) - Judgement of the Duat (พิพากษาแห่งด�
   5. hold, the cape flaring up behind him
   6. back to the stance
 
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -509,6 +516,7 @@ Skill (6 frames) - Break Ten Thousand Troops (ทะลวงหมื่นท�
   5. smash the halberd down to the ground in front of him and land
   6. rise back into the stance
 
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -540,6 +548,7 @@ Skill (6 frames) - Shadow Clone Technique (คาถาแยกเงา), the 
   6. land back in the stance
 
 Keep the reverse grip in every frame: the blade comes out of the bottom of the fist and runs back along the forearm.
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -571,6 +580,7 @@ Skill (6 frames) - Sherwood Arrow Rain (ฝนธนูเชอร์วูด)
   6. back to the stance
 
 Do not draw flying arrows: the game draws the shots itself.
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -601,6 +611,7 @@ Skill (6 frames) - Meteor Shower (ฝนดาวตก), the ultimate (in the g
   5. hold, a proud grin
   6. back to the stance
 
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -631,6 +642,7 @@ Skill (6 frames) - Battle of Red Cliffs (ศึกผาแดง), the ultimate
   5. point the fan forward, commanding
   6. back to the stance
 
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
@@ -661,6 +673,7 @@ Skill (6 frames) - Pharaoh's Curse (คำสาปฟาโรห์), the ulti
   5. hold, a commanding smile, the free hand spread wide
   6. back to the stance
 
+SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
