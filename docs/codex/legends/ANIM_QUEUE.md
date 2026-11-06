@@ -12,7 +12,7 @@ The owner wants 4 directions: use the `_4dir` prompt (south, east, north; the ga
 
 | # | Character | key | Reference picture | Prompt file | Status |
 |---|---|---|---|---|---|
-| 1 | Sun Wukong (ซุนหงอคง) | `god_warrior` | `art/incoming/legends/god_warrior.png` | `docs/codex/legends/prompts/anim_01_god_warrior_4dir.txt` | todo |
+| 1 | Sun Wukong (ซุนหงอคง) | `god_warrior` | `art/incoming/legends/god_warrior.png` | `docs/codex/legends/prompts/anim_01_god_warrior_4dir.txt` | done (east only; south + north later) |
 | 2 | Loki (โลกิ) | `god_assassin` | `art/incoming/legends/god_assassin.png` | `docs/codex/legends/prompts/anim_02_god_assassin_4dir.txt` | done (east only; south + north later) |
 | 3 | Artemis (อาร์เทมิส) | `god_hunter` | `art/incoming/legends/god_hunter.png` | `docs/codex/legends/prompts/anim_03_god_hunter_4dir.txt` | todo |
 | 4 | Odin (โอดิน) | `god_mage` | `art/incoming/legends/god_mage.png` | `docs/codex/legends/prompts/anim_04_god_mage_4dir.txt` | todo |
