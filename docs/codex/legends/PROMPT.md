@@ -298,3 +298,370 @@ Keep the whole body and the whole long staff inside the frame (the long staff ma
 No detached effects, no dust, no shadows, transparent background.
 When done, zip the whole run folder (including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews) plus one large preview picture of both rows. Do not shrink anything.
 ```
+
+## Animations: idle + attack + skill for every character (owner: acted out from the skills, smooth)
+
+### A1. Sun Wukong (ซุนหงอคง) - attach `god_warrior.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Sun Wukong with the red-and-gold staff). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): wide battle stance, the staff resting on his shoulder, gentle breathing, the tail curls and the scarves sway.
+
+Attack (6 frames) - staff combo:
+  1. battle stance, staff on the shoulder
+  2. swing the staff back behind him in both fists
+  3. a big horizontal sweep to the right, the body twisting
+  4. follow-through, the staff fully extended in front
+  5. twirl the staff once in front of him
+  6. back to the stance, staff on the shoulder
+
+Skill (6 frames) - Cloud Somersault smash (ตีลังกาเมฆ), the ultimate (in the game it leaps onto groups of demons and smashes them, the magic staff growing very long):
+  1. battle stance, staff on the shoulder
+  2. crouch low gripping the staff in both fists
+  3. leap up high, the staff raised over his head
+  4. at the top of the jump the magic staff GROWS very long, stretching far up and forward
+  5. smash: he swings the long staff down to the ground in front of him and lands
+  6. the staff shrinks back to normal and he returns to the stance
+
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A2. Loki (โลกิ) - attach `god_assassin.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Loki with flame-red hair, serpent hood and two fang daggers). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): low sly stance, both fang daggers in a reverse grip, a sly grin, the cape and hair sway, he shifts his weight from foot to foot.
+
+Attack (6 frames) - fang cross slash:
+  1. sly stance, daggers in a reverse grip
+  2. crouch low, both daggers crossed in front of his chest
+  3. dash forward, the front foot stepping ahead
+  4. X slash: both fang daggers slash across in front of him, body stretched forward
+  5. follow-through, arms crossed past the body, cape flaring
+  6. hop back to the stance
+
+Skill (6 frames) - King of Tricks (ราชันแห่งเล่ห์), the ultimate (in the game it bewitches the strongest demons so they fight each other, then finishes the weak ones):
+  1. sly stance
+  2. raises his free hand, the emerald runes on his armour glowing brighter
+  3. snaps his fingers with a wicked grin, his eyes glowing green
+  4. spins the fang daggers in his fingers (still in a reverse grip)
+  5. lunges forward and slashes down hard with both daggers
+  6. straightens up laughing and returns to the stance
+
+Keep the reverse grip in every frame: a ring on top of each fist, the curved blade coming out of the bottom of the fist and curving back toward the body.
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A3. Artemis (อาร์เทมิส) - attach `god_hunter.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Artemis with the silver crescent-moon bow). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): poised hunter stance, the bow held forward, the ponytail and pale-blue cloak sway gently.
+
+Attack (6 frames) - moon arrow:
+  1. stance, bow forward, an arrow nocked
+  2. start drawing the string back
+  3. full draw: string at her cheek, aiming straight ahead
+  4. release: the string snaps forward, the arrow is gone, small recoil
+  5. follow-through, the bow arm still forward
+  6. reach back to the quiver for the next arrow and return to the stance
+
+Skill (6 frames) - Night of the Hunt (ราตรีแห่งการล่า), the ultimate (in the game it marks the five strongest demons with the moon and shoots giant moon arrows at them):
+  1. stance
+  2. drop to one knee, pull THREE arrows from the quiver
+  3. nock all three arrows, the crescent tiara glowing brighter
+  4. full draw aiming high up and forward
+  5. release upward (the arrows are gone), the cloak whips back
+  6. stand up and return to the stance
+
+Do not draw flying arrows: the game draws the shots itself.
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A4. Odin (โอดิน) - attach `god_mage.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Odin with the rune spear Gungnir and two ravens). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): commanding stance, the spear upright, the ravens shift on his shoulders, small blue runes float above his open palm, the fur and cloak sway.
+
+Attack (6 frames) - rune cast:
+  1. stance, spear upright, palm open
+  2. raise the free hand, the runes on the spear blade glow
+  3. thrust the open palm forward, casting
+  4. hold the cast, the beard and cloak blown back
+  5. lower the hand
+  6. back to the stance
+
+Skill (6 frames) - Gungnir (หอกกุงเนียร์), the ultimate (in the game it hurls the spear along the whole road, then freezes every demon in time):
+  1. stance
+  2. lift the spear overhead into a throwing grip, the ravens take off from his shoulders
+  3. lean far back winding up, the runes along the blade blazing
+  4. throw: his arm whips forward and the spear leaves his hand (no spear in the hand now)
+  5. follow-through, the cloak flaring forward
+  6. the spear has flown back into his hand, the ravens land back on his shoulders
+
+The small floating runes are part of his pose; no other effects.
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A5. Apollo (อพอลโล) - attach `god_support.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Apollo with the golden lyre). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): cheerful sway, gently plucking the lyre, the curly hair and orange cape bounce.
+
+Attack (6 frames) - sun chord:
+  1. stance, lyre in front
+  2. raise the lyre
+  3. strum hard with a big arm sweep, the strings glowing
+  4. lyre held forward, singing
+  5. hold, a happy grin
+  6. back to the stance
+
+Skill (6 frames) - Sun Chariot (รถม้าสุริยะ), the ultimate (in the game it makes every unit on the board twice as strong and sets all demons on fire):
+  1. stance
+  2. lift the lyre high above his head in both hands
+  3. the sun emblem on his chest and the lyre glow brightly, the cape billows up
+  4. bring the lyre down and strum with a huge sweeping arm
+  5. arms spread wide, head back, singing joyfully
+  6. back to the stance
+
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A6. Anubis (อนูบิส) - attach `god_curse.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Anubis with the was-sceptre and the ankh). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): solemn guardian stance, the sceptre planted, the free hand slowly turning palm up, the cape sways.
+
+Attack (6 frames) - sceptre curse:
+  1. stance, sceptre planted
+  2. raise the sceptre
+  3. point the jackal head of the sceptre forward, his eyes glowing teal
+  4. thrust forward, casting
+  5. hold the cast
+  6. plant the sceptre back down, stance
+
+Skill (6 frames) - Judgement of the Duat (พิพากษาแห่งดูอัต), the ultimate (in the game it curses every rival gang and sends giant mummies to their houses):
+  1. stance
+  2. lift the golden ankh from his belt in the free hand
+  3. hold the ankh high, the eye emblem and his eyes glowing teal
+  4. slam the forked end of the sceptre into the ground
+  5. hold, the cape flaring up behind him
+  6. back to the stance
+
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A7. Lu Bu (ลิโป้) - attach `hero_warrior.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Lu Bu with the crescent halberd and two long pheasant feathers). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): wide battle stance, the halberd held across his body in both fists, the long feathers and red cape sway, a fierce grin.
+
+Attack (6 frames) - halberd sweep:
+  1. battle stance, halberd across the body
+  2. raise the halberd back over his shoulder
+  3. a huge horizontal sweep to the right, the body twisting
+  4. follow-through, the crescent blade fully extended in front
+  5. pull the halberd back across the body
+  6. back to the stance
+
+Skill (6 frames) - Break Ten Thousand Troops (ทะลวงหมื่นทัพ), the ultimate (in the game it leaps onto three groups of demons in a row and stuns the whole field):
+  1. battle stance
+  2. crouch low, the halberd held back
+  3. leap up high, the halberd raised over his head in both fists
+  4. at the top of the jump the feathers and cape whip up behind him
+  5. smash the halberd down to the ground in front of him and land
+  6. rise back into the stance
+
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A8. Hattori Hanzo (ฮัตโตริ ฮันโซ) - attach `hero_assassin.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi ninja Hattori Hanzo with two short blades in a reverse grip). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): low ninja stance, both blades in a reverse grip, the red scarf and hood tail flutter, a slight bob.
+
+Attack (6 frames) - twin slash:
+  1. ninja stance
+  2. crouch low
+  3. dash forward, the front foot stepping ahead
+  4. double slash, both blades crossing in front of him
+  5. follow-through, the red scarf flaring
+  6. back to the stance
+
+Skill (6 frames) - Shadow Clone Technique (คาถาแยกเงา), the ultimate (in the game it slashes demons all over the field 40 times):
+  1. ninja stance
+  2. bring the blades together in front of his chest and make a ninja hand sign
+  3. crouch very low, the scarf rising
+  4. lunge far forward, body stretched low
+  5. rising slash upward with both blades
+  6. land back in the stance
+
+Keep the reverse grip in every frame: the blade comes out of the bottom of the fist and runs back along the forearm.
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A9. Robin Hood (โรบินฮู้ด) - attach `hero_hunter.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Robin Hood with the longbow and the red-feathered cap). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): confident archer stance, bow held ready, the red feather and green cape sway.
+
+Attack (6 frames) - piercing arrow:
+  1. stance, an arrow nocked
+  2. draw the string
+  3. full draw aiming straight ahead
+  4. release (the arrow is gone), a cheeky grin
+  5. follow-through
+  6. take a new arrow, back to the stance
+
+Skill (6 frames) - Sherwood Arrow Rain (ฝนธนูเชอร์วูด), the ultimate (in the game it rains 50 arrows over the whole field):
+  1. stance
+  2. grab a handful of arrows from the quiver
+  3. nock several arrows at once, aiming high
+  4. full draw upward
+  5. release upward (the arrows are gone), laughing
+  6. back to the stance
+
+Do not draw flying arrows: the game draws the shots itself.
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A10. Merlin (เมอร์ลิน) - attach `hero_mage.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Merlin with the crystal staff). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): wise stance, the staff planted, the free hand wiggling its fingers as if casting, the beard and cloak sway.
+
+Attack (6 frames) - crystal bolt:
+  1. stance
+  2. lift the staff, the crystal brightening
+  3. point the staff forward
+  4. hold the cast, the hat brim blown back
+  5. lower the staff
+  6. back to the stance
+
+Skill (6 frames) - Meteor Shower (ฝนดาวตก), the ultimate (in the game it calls 20 meteors down on the field):
+  1. stance
+  2. raise the staff high overhead in both hands, the crystal blazing
+  3. look up, the robe and beard billowing in a magic wind
+  4. bring the staff down to point forward
+  5. hold, a proud grin
+  6. back to the stance
+
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A11. Zhuge Liang (Kongming) (ขงเบ้ง) - attach `hero_support.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Kongming with the white feather fan). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): calm elegant stance, slowly fanning himself with the feather fan, the ribbons and robe sway.
+
+Attack (6 frames) - fan gust:
+  1. stance, fan raised
+  2. draw the fan back
+  3. sweep the fan forward in a wide arc
+  4. follow-through, sleeves flowing
+  5. fan held forward
+  6. back to the stance
+
+Skill (6 frames) - Battle of Red Cliffs (ศึกผาแดง), the ultimate (in the game it sets every demon on the field on fire):
+  1. stance
+  2. hold the fan high, eyes closed in focus
+  3. the robe and ribbons lift in a rising wind
+  4. eyes open, sweep the fan in a big horizontal arc
+  5. point the fan forward, commanding
+  6. back to the stance
+
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
+
+### A12. Cleopatra (คลีโอพัตรา) - attach `hero_curse.png`
+
+```
+Use $game-character-sprites.
+Reference: the attached picture (chibi Cleopatra with the golden cobra scepter). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.
+Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.
+
+Idle (4 frames, a smooth loop that ends where it starts): regal stance, the cobra scepter held up, the free hand gesturing elegantly, the purple cape sways.
+
+Attack (6 frames) - cobra curse:
+  1. stance
+  2. raise the scepter, the cobra eyes glowing green
+  3. point the scepter forward, the free hand pushing
+  4. hold the cast
+  5. lower the scepter
+  6. back to the stance
+
+Skill (6 frames) - Pharaoh's Curse (คำสาปฟาโรห์), the ultimate (in the game it curses every rival gang and steals their gold):
+  1. stance
+  2. raise the scepter high overhead in both hands
+  3. the cobra crown and the scepter eyes glow bright green, the cape lifts
+  4. slam the scepter base down to the ground
+  5. hold, a commanding smile, the free hand spread wide
+  6. back to the stance
+
+Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
+Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
+```
