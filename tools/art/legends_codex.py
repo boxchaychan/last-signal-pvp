@@ -158,7 +158,8 @@ ANIM = [
   'wide battle stance, the staff resting on his shoulder, gentle breathing, the tail curls and the scarves sway',
   'staff combo', ['battle stance, staff on the shoulder', 'swing the staff back behind him in both fists', 'a big horizontal sweep to the right, the body twisting', 'follow-through, the staff fully extended in front', 'twirl the staff once in front of him', 'back to the stance, staff on the shoulder'],
   'Cloud Somersault smash (ตีลังกาเมฆ)', 'leaps onto groups of demons and smashes them, the magic staff growing very long',
-  ['battle stance, staff on the shoulder', 'crouch low gripping the staff in both fists', 'leap up high, the staff raised over his head', 'at the top of the jump the magic staff GROWS very long, stretching far up and forward', 'smash: he swings the long staff down to the ground in front of him and lands', 'the staff shrinks back to normal and he returns to the stance']),
+  ['battle stance, staff on the shoulder', 'crouch low gripping the staff in both fists', 'leap up high, the staff raised over his head', 'at the top of the jump the magic staff GROWS very long, stretching far up and forward', 'smash: he swings the long staff down to the ground in front of him and lands', 'the staff shrinks back to normal and he returns to the stance'],
+  'Only in skill frames 4-5 the grown staff may run past the frame edge; his body stays inside. In every other frame the staff is its normal length, as in the reference.'),
  ('god_assassin', 'Loki', 'โลกิ', 'chibi Loki with flame-red hair, serpent hood and two fang daggers',
   'low sly stance, both fang daggers in a reverse grip, a sly grin, the cape and hair sway, he shifts his weight from foot to foot',
   'fang cross slash', ['sly stance, daggers in a reverse grip', 'crouch low, both daggers crossed in front of his chest', 'dash forward, the front foot stepping ahead', 'X slash: both fang daggers slash across in front of him, body stretched forward', 'follow-through, arms crossed past the body, cape flaring', 'hop back to the stance'],
@@ -243,6 +244,9 @@ def fx_prompt(f):
         'The effect starts small, bursts to full size, then fades out completely back to black by the end. Bright saturated glowing colours, '
         'crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.')
 
+# animation sets already brought in (art/incoming/legends/anim/<key>.png)
+ANIMDONE = {'god_assassin'}
+
 def anim_prompt(a):
     k, en, th, desc, idle, an, asteps, sn, swhat, ssteps = a[:10]
     extra = a[10] if len(a) > 10 else ''
@@ -254,6 +258,7 @@ def anim_prompt(a):
         'Attack (6 frames) - ' + an + ':\n' + st(asteps) + '\n\n'
         'Skill (6 frames) - ' + sn + ', the ultimate (in the game it ' + swhat + '):\n' + st(ssteps) + '\n\n'
         + (extra + '\n' if extra else '') +
+        'SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.\n'
         'Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; '
         'hair, cape and cloth follow through and settle.\n'
         'Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. '
@@ -325,7 +330,7 @@ def main():
         with open(OUT + '/prompts/anim_%02d_%s.txt' % (i, a[0]), 'w', encoding='utf-8') as f:
             f.write('=== %s (%s) animation ===\nAttach: art/incoming/legends/%s.png (the finished picture of this character)\n\n%s\n' % (a[1], a[2], a[0], anim_prompt(a)))
         md += ['### A%d. %s (%s) - attach `%s.png`\n' % (i, a[1], a[2], a[0]), '```', anim_prompt(a), '```\n']
-        ent.append(('🎬 ท่า %d. %s · %s' % (i, a[2], a[1]), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ (art/incoming/legends/%s.png)' % (a[7], a[0]), anim_prompt(a)))
+        ent.append(('🎬 ท่า %d. %s · %s%s' % (i, a[2], a[1], ' ✅ ได้แล้ว' if a[0] in ANIMDONE else ''), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ (art/incoming/legends/%s.png)' % (a[7], a[0]), anim_prompt(a)))
     open(OUT + '/PROMPT.md', 'w', encoding='utf-8').write('\n'.join(md))
     md = open(OUT + '/PROMPT.md', encoding='utf-8').read().split('\n')
     md += ['## Skill effects for a video AI (Meta AI etc.): pure black background, still camera\n']
