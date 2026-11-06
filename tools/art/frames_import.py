@@ -19,7 +19,11 @@ NC = int(sys.argv[5]) if len(sys.argv) > 5 else 48
 
 im = Image.open(src).convert('RGBA'); a = np.array(im)
 if (a[..., 3] < 250).mean() > .05: mask = a[..., 3] >= 128          # see-through background
-else: mask = ~((a[..., :3].min(2) > 235))                            # white background
+else:   # flat background (white, or the skill's chroma-key colour): the most common border colour
+    bd = np.concatenate([a[0, :, :3], a[-1, :, :3], a[:, 0, :3], a[:, -1, :3]]).astype(int)
+    keys, cnt = np.unique((bd // 8), axis=0, return_counts=True); bgc = keys[cnt.argmax()] * 8 + 4
+    mask = np.abs(a[..., :3].astype(int) - bgc).sum(2) > 90
+    print('background', bgc.tolist())
 lab, n = ndimage.label(mask); objs = ndimage.find_objects(lab)
 figs = [(i + 1, o) for i, o in enumerate(objs) if (lab[o] == i + 1).sum() > 3000]
 # keep only figures, not big dark preview panels: a panel is much wider than tall
