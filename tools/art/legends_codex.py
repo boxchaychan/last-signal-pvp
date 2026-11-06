@@ -1,0 +1,228 @@
+# Codex / image-AI package for the new cast (owner 2026-11-06: no more kids and animals, the whole game becomes legends:
+# white..red = normal units, gold = HEROES, rainbow = GODS; chibi like the owner's Wukong picture).
+# Output: docs/codex/legends/ (PROMPT.md, prompts/*.txt, refs/, README_TH.txt) + docs/codex/legends_codex.zip
+# Run from the repo root: python3 tools/art/legends_codex.py <style picture>
+import os, sys, shutil, zipfile
+from PIL import Image
+
+OUT = 'docs/codex/legends'
+STYLE = sys.argv[1] if len(sys.argv) > 1 else None
+
+C = [  # key, name, Thai, tier, class job, who, look, expression, head, body, back, weapon, pose, silhouette, palette
+ ('hero_warrior', 'Lu Bu', 'ลิโป้', 'hero', 'warrior (heavy hitter, smashes groups)', 'the mightiest warrior of the Three Kingdoms, a young man',
+  'long black hair flowing out of the helmet, sharp red-brown eyes', 'a fierce proud smirk',
+  'a tall golden crown-helmet with two VERY long pheasant tail feathers (white with dark bands) sweeping up and back, a red tassel on top',
+  'heavy dark crimson and black lamellar armour with gold trims, big shoulder guards, a gold tiger-face belt buckle, armoured boots',
+  'a long red cape and red sash ends flowing behind him',
+  'a huge halberd "Sky Piercer": a long red shaft, a spear tip with a crescent blade on each side, a red tassel under the blade, held in his fist',
+  'a wide battle stance, the halberd held across his body ready to sweep', 'the two huge pheasant feathers and the crescent halberd',
+  [('crimson', '#5e0f14 / #9a1c22 / #d63a3a'), ('black armour', '#16131a / #2c2632 / #4a4250'), ('gold', '#8a5a12 / #d8a22a / #ffe07a'), ('feathers', '#f2ead8 / #6a5040')]),
+ ('hero_assassin', 'Hattori Hanzo', 'ฮัตโตริ ฮันโซ', 'hero', 'assassin (fast critical strikes)', 'the legendary ninja master of Iga, a young man',
+  'short spiky dark hair, sharp steel-grey eyes', 'a cool confident half-smile',
+  'a dark indigo ninja hood with a steel forehead plate engraved with a crest, the face mask pulled DOWN to the neck so the whole face shows',
+  'fitted dark indigo ninja garb with dark steel arm guards and shin guards, a crimson sash belt, wrapped hands, split-toe boots',
+  'a long crimson scarf flowing behind him',
+  'two short straight blades (tanto) in a REVERSE GRIP: a small ring or guard on top of each fist, the blade coming out of the BOTTOM of the fist and pointing back along the forearm',
+  'a low ready stance, one blade forward at chest height, the other held back by his hip', 'the ninja hood with the steel forehead plate and the flowing crimson scarf',
+  [('indigo', '#141a33 / #232c55 / #3a4880'), ('steel', '#4a5060 / #8a92a6 / #d8dde8'), ('crimson', '#7a1018 / #c42a30 / #ff6a5a'), ('gold accents', '#c8962a / #ffd36a')]),
+ ('hero_hunter', 'Robin Hood', 'โรบินฮู้ด', 'hero', 'archer (long range, piercing arrows)', 'the outlaw archer of Sherwood Forest, a young man',
+  'messy auburn hair, bright green eyes', 'a cheeky confident grin',
+  'a forest-green hooded cap with a long red feather tucked in it',
+  'a brown leather jerkin over a green tunic, leather bracers with gold rims, a belt with pouches and a gold buckle, a quiver of arrows on his back, soft leather boots',
+  'a short forest-green hooded cape with a ragged edge flowing behind him',
+  'a tall yew longbow with green wraps on the grip, an arrow ready on the string, held in his front fist',
+  'a confident stance, the bow held forward and slightly raised', 'the green feathered cap, the longbow and the quiver',
+  [('forest green', '#173a1e / #2e6a32 / #5aa24e'), ('leather', '#3a2414 / #6e4628 / #a87448'), ('red feather', '#a01e1e / #e04a3a'), ('gold', '#b8862a / #ffd36a')]),
+ ('hero_mage', 'Merlin', 'เมอร์ลิน', 'hero', 'mage (spells that hit areas)', 'the great wizard of King Arthur\'s court, a cheerful old man',
+  'a long fluffy white beard, bushy white eyebrows, bright blue eyes', 'a wise knowing smile',
+  'a tall floppy pointed wizard hat, deep blue with silver stars and crescent moons',
+  'a deep blue wizard robe with silver star embroidery and a wide belt with a silver moon buckle, wide sleeves, curled pointed shoes',
+  'a long midnight-blue cloak with silver edges flowing behind him',
+  'a tall gnarled wooden staff topped with a big glowing cyan crystal held in its roots, gripped in his fist',
+  'standing proudly, the staff planted beside him, the free hand raised with fingers open as if casting', 'the starry pointed hat, the long white beard and the crystal staff',
+  [('royal blue', '#141c4a / #24357a / #3f5cbc'), ('silver', '#8a90a8 / #d6dbe8 / #ffffff'), ('beard', '#d8d6e0 / #ffffff'), ('crystal', '#1a9ab8 / #5ae0ff / #d6faff')]),
+ ('hero_support', 'Zhuge Liang (Kongming)', 'ขงเบ้ง', 'hero', 'support (heals and buffs allies)', 'the genius strategist of the Three Kingdoms, a young man',
+  'long straight black hair, calm dark eyes', 'a calm gentle smile',
+  'a black scholar\'s cap (guan) tied with ribbons',
+  'flowing white and sky-blue Han scholar robes with cloud patterns and gold trims, wide sleeves, a black sash with a jade pendant, cloth shoes',
+  'long white robe tails and blue ribbons flowing behind him',
+  'the iconic white crane-feather fan held up in his fist',
+  'a relaxed elegant stance, the feather fan raised in front of him, the other hand behind his back', 'the white feather fan and the black scholar cap',
+  [('white robe', '#c8ccd8 / #e8ecf4 / #ffffff'), ('sky blue', '#2a5a8a / #4a8ac8 / #9ad0ff'), ('black', '#141418 / #2a2a33'), ('gold and jade', '#c8962a / #ffd36a / #3aa87a')]),
+ ('hero_curse', 'Cleopatra', 'คลีโอพัตรา', 'hero', 'curse caster (poison and weakening)', 'the last queen of ancient Egypt, a young woman',
+  'a straight black bob with blunt bangs, bold kohl eyeliner, bright amber eyes', 'a mysterious confident smile',
+  'a golden crown with a rearing cobra (uraeus) on the front and gold and lapis stripes',
+  'a wide gold and lapis-blue collar (usekh), a white linen dress with a gold belt, gold arm cuffs and bracelets, gold sandals',
+  'a long deep purple cape with gold edges flowing behind her',
+  'a golden cobra scepter: a staff topped with a rearing cobra head with glowing emerald eyes, held in her fist',
+  'an elegant regal stance, the cobra scepter held forward', 'the cobra crown, the black bob and the gold collar',
+  [('gold', '#8a5a12 / #d8a22a / #ffe07a'), ('lapis blue', '#142a6a / #2a4aa8 / #5a82e0'), ('white linen', '#d8d2c0 / #f6f2e6'), ('purple and emerald', '#3a1650 / #6a2a8a / #2ad07a')]),
+ ('god_warrior', 'Sun Wukong', 'ซุนหงอคง', 'god', 'warrior (heavy hitter, smashes groups)', 'the Monkey King, the Great Sage Equal to Heaven',
+  'a monkey face with golden-brown fur, wild spiky golden-brown hair, fierce red eyes, round monkey ears', 'a fierce toothy grin',
+  'a golden circlet with cloud swirls on his forehead (exactly like the style example)',
+  'black and gold armour with a gold dragon shoulder guard, a red rope sash with white fur trim, black baggy trousers, black and gold boots',
+  'long red scarves with gold cloud patterns flowing behind him, a curling monkey tail',
+  'the Ruyi Jingu Bang: a red staff with ornate gold ends, resting on his shoulder in his fist',
+  'a wide battle stance, the staff on his shoulder, the free hand open like a claw (same character as the example, now standing on the ground)', 'the golden circlet, the monkey tail and the red-and-gold staff',
+  [('fur', '#6a3a1a / #a8642a / #e0a050'), ('red', '#7a1018 / #c42a30 / #ff6a5a'), ('black', '#16131a / #2c2632'), ('gold', '#8a5a12 / #d8a22a / #ffe07a')]),
+ ('god_assassin', 'Loki', 'โลกิ', 'god', 'assassin (fast critical strikes)', 'the Norse trickster god born of fire, a young man',
+  'wild flame-red hair, sly emerald-green eyes', 'a sly mischievous grin',
+  'a black leather hood with a serpent-scale pattern pushed back so the flame-red hair spills out, a thin gold circlet shaped like a snake biting its tail on the forehead',
+  'black and deep purple leather armour with gold serpent knotwork, a high collar, gold bracers shaped like coiled snakes, slim black boots; faint glowing emerald runes on the armour',
+  'a long dark purple cape with a ragged edge and an emerald lining flowing behind him',
+  'two curved daggers shaped like white serpent fangs with gold hilts, in a REVERSE GRIP: a ring on top of each fist, the blade coming out of the BOTTOM of the fist and curving back toward the body',
+  'a low sly stance, one fang dagger forward, the other held back', 'the flame-red hair under the serpent hood and the fang daggers',
+  [('black and purple', '#121216 / #2a1a3a / #4a2a6a'), ('flame hair', '#8a1a0a / #e0441a / #ffa040'), ('gold', '#8a5a12 / #d8a22a / #ffe07a'), ('emerald', '#0e5a3a / #1ab874 / #8affc8')]),
+ ('god_hunter', 'Artemis', 'อาร์เทมิส', 'god', 'archer (long range, piercing arrows)', 'the Greek goddess of the hunt and the moon, a young woman',
+  'long silver-white hair in a high ponytail, bright silver-blue eyes', 'a determined confident smile',
+  'a silver crescent-moon tiara glowing softly on her forehead',
+  'a short white Greek chiton with silver armour pieces (chest plate with a moon emblem, shoulder guard, bracers), a silver belt, laced silver sandals up the calves',
+  'a light pale-blue cloak flowing behind her, a quiver of silver-fletched arrows on her back',
+  'a silver bow shaped like a crescent moon with a glowing pale-blue string, an arrow ready, held in her front fist',
+  'a poised hunter stance, the bow held forward', 'the crescent-moon tiara and the crescent-moon bow',
+  [('silver', '#6a7088 / #b8c0d6 / #f2f6ff'), ('white', '#d6dae6 / #ffffff'), ('pale blue', '#3a6aa8 / #7ab0e8 / #c8e6ff'), ('moon gold', '#c8a24a / #ffe6a0')]),
+ ('god_mage', 'Odin', 'โอดิน', 'god', 'mage (spells that hit areas)', 'the Allfather, king of the Norse gods, an old man',
+  'a long braided white beard, an eye patch over his left eye, a bright blue right eye', 'a stern wise look',
+  'a golden helmet with two white wings on the sides',
+  'steel-blue armour with gold trims and Norse knotwork, a grey wolf-fur mantle over the shoulders, a wide belt with a gold buckle, fur-topped boots; two small black ravens perched on his shoulders',
+  'a long steel-blue cloak flowing behind him',
+  'the spear Gungnir: a long gold-and-steel spear with glowing blue runes along the blade, held in his fist',
+  'a commanding stance, the spear held upright, the free hand raised with glowing runes floating close to the palm', 'the winged helmet, the eye patch, the ravens and the rune spear',
+  [('steel blue', '#1a2a44 / #34507a / #6a8ab8'), ('grey fur', '#5a5a62 / #9a9aa6 / #d6d6de'), ('gold', '#8a5a12 / #d8a22a / #ffe07a'), ('rune glow', '#3ac8ff / #c8f2ff')]),
+ ('god_support', 'Apollo', 'อพอลโล', 'god', 'support (heals and buffs allies)', 'the Greek god of the sun, music and healing, a young man',
+  'curly golden-blond hair, warm golden eyes', 'a warm bright smile',
+  'a golden laurel wreath',
+  'a white toga-style chiton with gold sun embroidery, a gold chest plate with a sun disc emblem, gold arm cuffs, laced gold sandals',
+  'a flowing orange-gold cape like sunset light',
+  'a golden lyre with glowing strings held in one arm, the other hand plucking it',
+  'a cheerful stance, the lyre held up in front of him', 'the laurel wreath, the sun emblem and the golden lyre',
+  [('white', '#d6dae6 / #ffffff'), ('gold', '#8a5a12 / #d8a22a / #ffe07a'), ('sun orange', '#c8501a / #ff8a2a / #ffc86a'), ('hair', '#c8902a / #ffd060 / #fff0a8')]),
+ ('god_curse', 'Anubis', 'อนูบิส', 'god', 'curse caster (poison and weakening)', 'the jackal-headed Egyptian god of the dead',
+  'a black jackal head with tall pointed ears, glowing teal eyes', 'a calm stern look',
+  'a gold and lapis striped headdress (nemes) behind the jackal ears',
+  'a dark-skinned body with a wide gold and lapis collar, gold arm bands, a white linen kilt with a gold belt and an ankh hanging from it, gold sandals',
+  'a long black cape with gold edges flowing behind him',
+  'a was-sceptre: a tall dark staff topped with a stylised jackal head and forked at the bottom, held in his fist',
+  'a solemn guardian stance, the sceptre planted beside him, the free hand raised with an open palm', 'the jackal head with tall ears and the striped headdress',
+  [('black', '#0e0e14 / #22222c / #3a3a48'), ('gold', '#8a5a12 / #d8a22a / #ffe07a'), ('lapis', '#142a6a / #2a4aa8 / #5a82e0'), ('teal glow', '#1ac8b8 / #9affee')]),
+]
+
+STYLE_TXT = ('The attached picture is the STYLE EXAMPLE (a chibi Sun Wukong). Copy its art style exactly: chibi proportions with a big head (about 40-45% of the '
+  'height), crisp clean pixel art on one even grid, a bold dark outline, rich clean shading, smooth tidy shapes with no noise, lots of fine gold ornament, cloth and '
+  'scarves that flow with motion, a fierce expressive face with big bright eyes, plain white background.')
+
+def prompt(c, wk=False):
+    k, en, th, tier, job, who, look, face, head, body, back, weapon, pose, sil, pal = c
+    tierline = ('GOLD tier = HERO: a legendary human, real armour and clothes, impressive but earthly.' if tier == 'hero' else
+                'RAINBOW tier = GOD: divine and the most impressive of all, extra gold ornament and small glowing divine details that are PART of the costume (runes, moon, sun, eyes).')
+    ex = ('This IS the character in the style example: keep his design, colours and staff exactly, only redraw him STANDING on the ground in a battle stance.' if wk else
+          'Copy only the style of the example, NOT its monkey features, colours or staff.')
+    return (STYLE_TXT + ' ' + ex + '\n\n'
+        'Draw ' + en + ' (' + who + ') as a chibi pixel-art game character. Class: ' + job + '. ' + tierline + '\n\n'
+        'Face: ' + look + ', ' + face + '. Both eyes bright and clearly visible' + (' (Odin\'s eye patch is the one exception)' if k == 'god_mage' else '') + ', no hair over the eyes.\n'
+        'Head: ' + head + '.\nBody: ' + body + '.\nBack: ' + back + '.\nWeapon: ' + weapon + '.\n'
+        'Pose: three-quarter view facing RIGHT, ' + pose + '. Both feet on the ground (the characters stand on tiles in the game), with the energy and flowing cloth of the example.\n'
+        'Must read as ' + en + ' at a glance: ' + sil + '.\n'
+        'Original design: do not copy any existing game, film, anime or comic version of ' + en + ' (for example no Marvel, Dragon Ball or Black Myth look).\n'
+        'Colours (dark / mid / light): ' + '; '.join(n + ' ' + h for n, h in pal) + '.\n\n'
+        'Square canvas, plain pure white background with nothing else, the character centred, full body from the top of the head gear to the feet, filling about 85-90% of the height. '
+        'No aura or glow round the body, no effects, no sparkles, no ground, no shadow, no text, no watermark.')
+
+# owner 2026-11-06: "เจนท่ายืดกระบองด้วย กระโดดยืดกระบองฟาด" = Wukong's attack: leap up, the staff grows long, smash down
+WK_ATK = (STYLE_TXT + ' This IS the character in the style example: keep his design, colours and staff exactly.\n\n'
+  'Draw Sun Wukong (the Monkey King) in his ATTACK pose, same chibi pixel art: he has leapt high into the air and holds the Ruyi Jingu Bang high over his head in both '
+  'fists, ready to smash down to the right. The magic staff has GROWN very long (about three times its normal length), the red shaft with ornate gold ends stretching '
+  'far up and forward, slightly curved by the swing. His knees are tucked, the red scarves and his tail whip up behind him, a fierce toothy shout on his face.\n'
+  'Three-quarter view facing RIGHT. Original design: do not copy any existing game, film or anime version of Sun Wukong.\n\n'
+  'Square canvas, plain pure white background with nothing else, the whole character and the whole staff inside the picture. No aura, no glow round the body, '
+  'no speed lines, no effects, no ground, no shadow, no text.')
+WK_ANIM = ('Use $game-character-sprites.\n'
+  'Reference: the attached picture (Sun Wukong, the Monkey King, chibi pixel art). Keep the exact same character, face, outfit, colours and staff in every frame.\n'
+  'Scope: cell 128x128 only. One direction only: east (facing right, the same view as the reference). Actions: idle (4 frames) and attack (6 frames). No walk, no other directions.\n'
+  'Idle: standing battle stance with the staff on his shoulder, gentle breathing, the feet do not move.\n'
+  'Attack, 6 frames:\n'
+  '  1. standing battle stance with the staff on his shoulder\n'
+  '  2. crouch low, gripping the staff in both fists\n'
+  '  3. leap up high, the staff raised over his head\n'
+  '  4. at the top of the jump the magic staff GROWS very long, stretching far up and forward\n'
+  '  5. smash: he swings the long staff down to the ground in front of him (to the right) and lands\n'
+  '  6. the staff shrinks back to normal and he returns to the standing stance\n'
+  'Keep the whole body and the whole long staff inside the frame (the long staff may reach the frame edge in frames 4-5). Keep both feet on the same ground line in frames 1, 2, 5 and 6.\n'
+  'No detached effects, no dust, no shadows, transparent background.\n'
+  'When done, zip the whole run folder (including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews) plus one large preview picture of both rows. Do not shrink anything.')
+
+def page(entries):
+    """docs/legends-prompts.html: every prompt on one phone-friendly page with a copy button (owner: "ขอพรอมต์แบบจบตัว")"""
+    import html
+    cards = []
+    for t, sub, txt in entries:
+        cards.append('<section><h2>%s</h2><p class="sub">%s</p><pre>%s</pre><button type="button">คัดลอกคำสั่ง</button></section>' % (html.escape(t), sub, html.escape(txt)))
+    return ('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      '<title>Legends Prompts</title><style>:root{--bg:#12131c;--card:#1c1e2b;--line:#2e3146;--txt:#ecebf5;--dim:#a6a8bf;--acc:#ffd36a}'
+      '@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f4f2ec;--card:#fff;--line:#ddd8cc;--txt:#1c1a24;--dim:#5e5a6e;--acc:#a8780a}}'
+      'body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 system-ui,"Noto Sans Thai",sans-serif}main{max-width:860px;margin:0 auto;padding:16px}'
+      'h1{font-size:22px;margin:8px 0}h2{font-size:18px;margin:0 0 4px}.sub{color:var(--dim);margin:0 0 8px}section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0}'
+      'pre{white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.18);border-radius:8px;padding:10px;font-size:13px;max-height:220px;overflow:auto}'
+      'button{font:inherit;font-weight:700;padding:10px 16px;border-radius:8px;border:0;background:var(--acc);color:#1a1200;cursor:pointer;width:100%}button.ok{background:#5fd07a}'
+      'img{max-width:180px;border-radius:8px;border:1px solid var(--line);background:#fff}a{color:var(--acc)}</style></head><body><main>'
+      '<h1>🏛️ ตัวละครใหม่: วีรชน (ทอง) + เทพ (รุ้ง)</h1>'
+      '<section><h2>วิธีใช้</h2><p class="sub">ChatGPT: แชตใหม่ทีละตัว แนบรูปตัวอย่างสไตล์ (กดค้างที่รูปแล้วบันทึก) แล้ววางคำสั่งของตัวนั้น · '
+      'Codex ที่ต่อโปรเจกต์ไว้: พิมพ์ <code>Read docs/codex/legends/PROMPT.md and make all 12 pictures. Follow AGENTS.md.</code> · '
+      '<a href="codex/legends_codex.zip" download>⬇ zip ทั้งชุด</a></p>'
+      '<a href="codex/legends/refs/00_STYLE_wukong.png" download="style_wukong.png"><img src="codex/legends/refs/00_STYLE_wukong.png" alt="รูปตัวอย่างสไตล์ ซุนหงอคงจิบิ"></a>'
+      '<p class="sub">⬆ รูปตัวอย่างสไตล์ (แนบทุกครั้ง)</p></section>' + ''.join(cards) +
+      '<script>for(const b of document.querySelectorAll("section button")){b.onclick=async()=>{const t=b.previousElementSibling.textContent;'
+      'try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();document.execCommand("copy");a.remove()}'
+      'b.textContent="คัดลอกแล้ว ✓";b.classList.add("ok");setTimeout(()=>{b.textContent="คัดลอกคำสั่ง";b.classList.remove("ok")},1600)}}</script></main></body></html>')
+
+def main():
+    if os.path.isdir(OUT): shutil.rmtree(OUT)
+    os.makedirs(OUT + '/refs'); os.makedirs(OUT + '/prompts')
+    if STYLE:
+        im = Image.open(STYLE).convert('RGBA'); bg = Image.new('RGBA', im.size, (255, 255, 255, 255)); bg.alpha_composite(im)
+        bg.convert('RGB').save(OUT + '/refs/00_STYLE_wukong.png', optimize=True)
+    for i, c in enumerate(C, 1):
+        with open(OUT + '/prompts/%02d_%s.txt' % (i, c[0]), 'w', encoding='utf-8') as f:
+            f.write('=== %s (%s) - %s ===\nAttach: refs/00_STYLE_wukong.png\nSave as: %s.png\n\n%s\n' % (c[1], c[2], 'HERO / gold' if c[3] == 'hero' else 'GOD / rainbow', c[0], prompt(c, c[0] == 'god_warrior')))
+    md = ['# New cast: 6 heroes (gold) + 6 gods (rainbow), chibi pixel art\n',
+          'The game drops the kids in animal costumes. New ladder per class: white..red = normal units, gold = HERO, rainbow = GOD.',
+          'Style: `refs/00_STYLE_wukong.png` (the owner picked it). Attach it to EVERY picture.\n',
+          '| File | Who | Tier | Class |', '|---|---|---|---|'] + ['| `%s.png` | %s (%s) | %s | %s |' % (c[0], c[1], c[2], 'hero (gold)' if c[3] == 'hero' else 'god (rainbow)', c[4].split(' (')[0]) for c in C]
+    md += ['\n## How to work\n',
+           '1. Look at `refs/00_STYLE_wukong.png` first: that is the quality and style for all twelve.',
+           '2. Make the twelve pictures one at a time with the prompt below (word for word), always attaching the style picture.',
+           '3. If the repository is attached: save them on a new branch `codex/legends` in `art/incoming/legends/` with a short `REPORT_TH.txt`, open a pull request, do not merge (see AGENTS.md). Otherwise zip them as `legends.zip`.',
+           '4. Full size PNG, plain white background. Do not shrink or convert to a small pixel grid (Claude converts them for the game).\n',
+           '## The twelve prompts\n']
+    for i, c in enumerate(C, 1):
+        md += ['### %d. %s (%s) -> `%s.png`\n' % (i, c[1], c[2], c[0]), '```', prompt(c, c[0] == 'god_warrior'), '```\n']
+    md += ['## Extra: Sun Wukong attack (leap, the staff grows long, smash)\n',
+           '### 13. Attack picture -> `god_warrior_attack.png` (attach the style picture)\n', '```', WK_ATK, '```\n',
+           '### 14. Attack animation with $game-character-sprites (attach `god_warrior.png` once it is made, or the style picture)\n', '```', WK_ANIM, '```\n']
+    open(OUT + '/PROMPT.md', 'w', encoding='utf-8').write('\n'.join(md))
+    with open(OUT + '/prompts/13_god_warrior_attack.txt', 'w', encoding='utf-8') as f:
+        f.write('=== Sun Wukong attack picture ===\nAttach: refs/00_STYLE_wukong.png\nSave as: god_warrior_attack.png\n\n' + WK_ATK + '\n')
+    with open(OUT + '/prompts/14_god_warrior_anim.txt', 'w', encoding='utf-8') as f:
+        f.write('=== Sun Wukong attack animation (Codex + $game-character-sprites) ===\nAttach: god_warrior.png (or refs/00_STYLE_wukong.png)\n\n' + WK_ANIM + '\n')
+    ent = [('%d. %s · %s' % (i, c[2], c[1]), ('🥇 วีรชน ระดับทอง' if c[3] == 'hero' else '🌈 เทพ ระดับรุ้ง') + ' · คลาส ' + {'warrior':'นักรบ','assassin':'นักฆ่า','archer':'นักธนู','mage':'นักเวท','support':'ซัพพอร์ต','curse caster':'สาปแช่ง'}.get(c[4].split(' (')[0], c[4]) + ' · บันทึกเป็น ' + c[0] + '.png',
+            prompt(c, c[0] == 'god_warrior')) for i, c in enumerate(C, 1)]
+    ent += [('13. ซุนหงอคง ท่าโจมตี (รูปเดียว)', 'กระโดด ยืดกระบองยาว เตรียมฟาด · แนบรูปตัวอย่างสไตล์ · บันทึกเป็น god_warrior_attack.png', WK_ATK),
+            ('14. ซุนหงอคง ภาพเคลื่อนไหว (Codex + สกิล)', 'ย่อ กระโดด กระบองยืด ฟาดลงพื้น กลับท่า · แนบรูปซุนหงอคงที่เจนเสร็จแล้ว', WK_ANIM)]
+    open('docs/legends-prompts.html', 'w', encoding='utf-8').write(page(ent))
+    open(OUT + '/README_TH.txt', 'w', encoding='utf-8').write(
+        'ตัวละครชุดใหม่: วีรชน 6 (ระดับทอง) + เทพ 6 (ระดับรุ้ง) แบบจิบิ ตามรูปซุนหงอคงที่เลือก\r\n\r\n'
+        'วีรชน: ลิโป้ (นักรบ) ฮัตโตริ ฮันโซ (นักฆ่า) โรบินฮู้ด (นักธนู) เมอร์ลิน (นักเวท) ขงเบ้ง (ซัพพอร์ต) คลีโอพัตรา (สาปแช่ง)\r\n'
+        'เทพ: ซุนหงอคง (นักรบ) โลกิ (นักฆ่า) อาร์เทมิส (นักธนู) โอดิน (นักเวท) อพอลโล (ซัพพอร์ต) อนูบิส (สาปแช่ง)\r\n\r\n'
+        'ใช้กับ Codex: แนบโฟลเดอร์นี้ (หรือถ้าต่อโปรเจกต์ไว้แล้ว ไม่ต้องแนบ) แล้วพิมพ์\r\n'
+        '   Read docs/codex/legends/PROMPT.md and make all 12 pictures. Follow AGENTS.md.\r\n'
+        'ใช้กับ ChatGPT ทีละรูป: แนบ refs/00_STYLE_wukong.png แล้ววางคำสั่งในโฟลเดอร์ prompts ของตัวนั้น\r\n'
+        'ได้รูปแล้วส่งให้ Claude (หรือบอกว่า Codex ทำเสร็จแล้ว) Claude แปลงเป็นพิกเซลแล้วใส่เกมให้\r\n')
+    z = 'docs/codex/legends_codex.zip'
+    with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, _, fs in os.walk(OUT):
+            for f in sorted(fs):
+                p = os.path.join(root, f); zf.write(p, os.path.join('legends', os.path.relpath(p, OUT)))
+    print('wrote', OUT, z, os.path.getsize(z))
+
+if __name__ == '__main__':
+    main()

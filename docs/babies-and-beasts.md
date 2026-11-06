@@ -381,3 +381,10 @@ Same art style, size and proportions as the attached hawk archer: chibi 1-year-o
 - **สาปแช่ง (อีกา):** `A toddler girl curse-caster in a dark navy crow kigurumi (black feathers, grey beak on the hood, purple glow), holding a small staff with a glowing purple eye orb, mischievous smirk.`
 
 ร่างโต (ทำทีหลัง): ส่งรูประดับขาวกลับไปแล้วสั่ง `same kid, now about 3 years old (green tier) / 5 years old (purple) / 7 years old (red): taller, more confident pose, costume and weapon a bit fancier, keep the same face and colors` ทีละขั้น
+
+## เปลี่ยนทั้งเกมเป็นวีรชนและเทพ (เจ้าของเกม 2026-11-06)
+- "ไม่เอาเด็กกับสัตว์แล้ว" → เปลี่ยนทั้งเกม · ระดับขาวถึงแดง = ตัวปกติ · ทอง (เท่า Mythic ใน Lucky Defense) = วีรชน · รุ้ง = เทพ (เจ้าของเกม: "ซุนหงอคงก็พระเจ้า")
+- รูปเก่าไม่ใช้ ("ไม่สวยเลย") · สไตล์ใหม่ = จิบิแบบรูปซุนหงอคงที่เจ้าของเกมเลือก (พื้นขาว ท่ามีพลัง ผ้าพลิ้ว)
+- ตัวที่เสนอ: วีรชน ลิโป้ ฮัตโตริ ฮันโซ โรบินฮู้ด เมอร์ลิน ขงเบ้ง คลีโอพัตรา · เทพ ซุนหงอคง โลกิ อาร์เทมิส โอดิน อพอลโล อนูบิส
+- ลิขสิทธิ์: ตัวละครจากประวัติศาสตร์ ตำนาน และวรรณคดีเก่า ใช้ได้ แต่ห้ามลอกหน้าตาจากเกม/หนัง/การ์ตูนที่มีอยู่ (เช่น โลกิของ Marvel) · เลี่ยงเทพที่คนไทยกราบไหว้อยู่
+- คำสั่งเจน: `docs/legends-prompts.html` (ปุ่มคัดลอก) และ `docs/codex/legends/`
