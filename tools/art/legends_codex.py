@@ -269,9 +269,7 @@ def main():
     if STYLE:
         im = Image.open(STYLE).convert('RGBA'); bg = Image.new('RGBA', im.size, (255, 255, 255, 255)); bg.alpha_composite(im)
         bg.convert('RGB').save(OUT + '/refs/00_STYLE_wukong.png', optimize=True)
-    # the finished character pictures (art/incoming/legends/<key>.png) go into refs too, so Codex can attach them by path
-    import glob
-    for f in sorted(glob.glob('art/incoming/legends/*.png')): shutil.copy(f, OUT + '/refs/' + os.path.basename(f))
+    # the finished character pictures stay in art/incoming/legends/<key>.png (Codex attaches them from there; no copies, the repo stays small)
     for i, c in enumerate(C, 1):
         with open(OUT + '/prompts/%02d_%s.txt' % (i, c[0]), 'w', encoding='utf-8') as f:
             f.write('=== %s (%s) - %s ===\nAttach: refs/00_STYLE_wukong.png\nSave as: %s.png\n\n%s\n' % (c[1], c[2], 'HERO / gold' if c[3] == 'hero' else 'GOD / rainbow', c[0], prompt(c, c[0] == 'god_warrior')))
@@ -303,9 +301,9 @@ def main():
     md += ['## Animations: idle + attack + skill for every character (owner: acted out from the skills, smooth)\n']
     for i, a in enumerate(ANIM, 1):
         with open(OUT + '/prompts/anim_%02d_%s.txt' % (i, a[0]), 'w', encoding='utf-8') as f:
-            f.write('=== %s (%s) animation ===\nAttach: %s.png (the finished picture of this character)\n\n%s\n' % (a[1], a[2], a[0], anim_prompt(a)))
+            f.write('=== %s (%s) animation ===\nAttach: art/incoming/legends/%s.png (the finished picture of this character)\n\n%s\n' % (a[1], a[2], a[0], anim_prompt(a)))
         md += ['### A%d. %s (%s) - attach `%s.png`\n' % (i, a[1], a[2], a[0]), '```', anim_prompt(a), '```\n']
-        ent.append(('🎬 ท่า %d. %s · %s' % (i, a[2], a[1]), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ที่เจนเสร็จแล้ว (%s.png)' % (a[7], a[0]), anim_prompt(a)))
+        ent.append(('🎬 ท่า %d. %s · %s' % (i, a[2], a[1]), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ (art/incoming/legends/%s.png)' % (a[7], a[0]), anim_prompt(a)))
     open(OUT + '/PROMPT.md', 'w', encoding='utf-8').write('\n'.join(md))
     open('docs/legends-prompts.html', 'w', encoding='utf-8').write(page(ent))
     open(OUT + '/README_TH.txt', 'w', encoding='utf-8').write(
