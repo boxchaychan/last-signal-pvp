@@ -29,7 +29,7 @@ if os.environ.get('GPTPX_HALO'):
     for i in e2:bg|=l2==i
 fig=~bg
 # drop small separate bits (sparkles); keep parts bigger than 2% of the main body
-fl,fn=nd.label(fig);fs=nd.sum(fig,fl,range(1,fn+1));keep=fs>fs.max()*.02
+fl,fn=nd.label(fig);fs=nd.sum(fig,fl,range(1,fn+1));keep=fs>fs.max()*float(os.environ.get('GPTPX_KEEP','.02'))  # GPTPX_KEEP=.002 keeps small floating parts (Odin's runes)
 fig=np.isin(fl,np.where(keep)[0]+1);print('parts kept',keep.sum(),'of',fn)
 # grid: GPT's block size is searched in 9-16 px. Some pictures use a finer grid (~6-7 px; the search then lands on
 # twice that and small details like a held doll turn to mush): GPTPX_GRID=5.5,8 searches that range instead.
