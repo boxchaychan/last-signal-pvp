@@ -151,6 +151,94 @@ WK_ANIM = ('Use $game-character-sprites.\n'
   'No detached effects, no dust, no shadows, transparent background.\n'
   'When done, zip the whole run folder (including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews) plus one large preview picture of both rows. Do not shrink anything.')
 
+# owner 2026-11-06: "ท่ายืน ท่าที่ใช้ เอาดีๆ ตามสกิล ... เนียนๆ" = an animation set per character that acts out its skills (docs/legends-skills.html):
+# idle 4 (a smooth loop), attack 6 (the normal hit), skill 6 (the ultimate). key, name, Thai, picture, idle, attack name, 6 steps, skill name, what it does, 6 steps
+ANIM = [
+ ('god_warrior', 'Sun Wukong', 'ซุนหงอคง', 'chibi Sun Wukong with the red-and-gold staff',
+  'wide battle stance, the staff resting on his shoulder, gentle breathing, the tail curls and the scarves sway',
+  'staff combo', ['battle stance, staff on the shoulder', 'swing the staff back behind him in both fists', 'a big horizontal sweep to the right, the body twisting', 'follow-through, the staff fully extended in front', 'twirl the staff once in front of him', 'back to the stance, staff on the shoulder'],
+  'Cloud Somersault smash (ตีลังกาเมฆ)', 'leaps onto groups of demons and smashes them, the magic staff growing very long',
+  ['battle stance, staff on the shoulder', 'crouch low gripping the staff in both fists', 'leap up high, the staff raised over his head', 'at the top of the jump the magic staff GROWS very long, stretching far up and forward', 'smash: he swings the long staff down to the ground in front of him and lands', 'the staff shrinks back to normal and he returns to the stance']),
+ ('god_assassin', 'Loki', 'โลกิ', 'chibi Loki with flame-red hair, serpent hood and two fang daggers',
+  'low sly stance, both fang daggers in a reverse grip, a sly grin, the cape and hair sway, he shifts his weight from foot to foot',
+  'fang cross slash', ['sly stance, daggers in a reverse grip', 'crouch low, both daggers crossed in front of his chest', 'dash forward, the front foot stepping ahead', 'X slash: both fang daggers slash across in front of him, body stretched forward', 'follow-through, arms crossed past the body, cape flaring', 'hop back to the stance'],
+  'King of Tricks (ราชันแห่งเล่ห์)', 'bewitches the strongest demons so they fight each other, then finishes the weak ones',
+  ['sly stance', 'raises his free hand, the emerald runes on his armour glowing brighter', 'snaps his fingers with a wicked grin, his eyes glowing green', 'spins the fang daggers in his fingers (still in a reverse grip)', 'lunges forward and slashes down hard with both daggers', 'straightens up laughing and returns to the stance'],
+  'Keep the reverse grip in every frame: a ring on top of each fist, the curved blade coming out of the bottom of the fist and curving back toward the body.'),
+ ('god_hunter', 'Artemis', 'อาร์เทมิส', 'chibi Artemis with the silver crescent-moon bow',
+  'poised hunter stance, the bow held forward, the ponytail and pale-blue cloak sway gently',
+  'moon arrow', ['stance, bow forward, an arrow nocked', 'start drawing the string back', 'full draw: string at her cheek, aiming straight ahead', 'release: the string snaps forward, the arrow is gone, small recoil', 'follow-through, the bow arm still forward', 'reach back to the quiver for the next arrow and return to the stance'],
+  'Night of the Hunt (ราตรีแห่งการล่า)', 'marks the five strongest demons with the moon and shoots giant moon arrows at them',
+  ['stance', 'drop to one knee, pull THREE arrows from the quiver', 'nock all three arrows, the crescent tiara glowing brighter', 'full draw aiming high up and forward', 'release upward (the arrows are gone), the cloak whips back', 'stand up and return to the stance'],
+  'Do not draw flying arrows: the game draws the shots itself.'),
+ ('god_mage', 'Odin', 'โอดิน', 'chibi Odin with the rune spear Gungnir and two ravens',
+  'commanding stance, the spear upright, the ravens shift on his shoulders, small blue runes float above his open palm, the fur and cloak sway',
+  'rune cast', ['stance, spear upright, palm open', 'raise the free hand, the runes on the spear blade glow', 'thrust the open palm forward, casting', 'hold the cast, the beard and cloak blown back', 'lower the hand', 'back to the stance'],
+  'Gungnir (หอกกุงเนียร์)', 'hurls the spear along the whole road, then freezes every demon in time',
+  ['stance', 'lift the spear overhead into a throwing grip, the ravens take off from his shoulders', 'lean far back winding up, the runes along the blade blazing', 'throw: his arm whips forward and the spear leaves his hand (no spear in the hand now)', 'follow-through, the cloak flaring forward', 'the spear has flown back into his hand, the ravens land back on his shoulders'],
+  'The small floating runes are part of his pose; no other effects.'),
+ ('god_support', 'Apollo', 'อพอลโล', 'chibi Apollo with the golden lyre',
+  'cheerful sway, gently plucking the lyre, the curly hair and orange cape bounce',
+  'sun chord', ['stance, lyre in front', 'raise the lyre', 'strum hard with a big arm sweep, the strings glowing', 'lyre held forward, singing', 'hold, a happy grin', 'back to the stance'],
+  'Sun Chariot (รถม้าสุริยะ)', 'makes every unit on the board twice as strong and sets all demons on fire',
+  ['stance', 'lift the lyre high above his head in both hands', 'the sun emblem on his chest and the lyre glow brightly, the cape billows up', 'bring the lyre down and strum with a huge sweeping arm', 'arms spread wide, head back, singing joyfully', 'back to the stance']),
+ ('god_curse', 'Anubis', 'อนูบิส', 'chibi Anubis with the was-sceptre and the ankh',
+  'solemn guardian stance, the sceptre planted, the free hand slowly turning palm up, the cape sways',
+  'sceptre curse', ['stance, sceptre planted', 'raise the sceptre', 'point the jackal head of the sceptre forward, his eyes glowing teal', 'thrust forward, casting', 'hold the cast', 'plant the sceptre back down, stance'],
+  'Judgement of the Duat (พิพากษาแห่งดูอัต)', 'curses every rival gang and sends giant mummies to their houses',
+  ['stance', 'lift the golden ankh from his belt in the free hand', 'hold the ankh high, the eye emblem and his eyes glowing teal', 'slam the forked end of the sceptre into the ground', 'hold, the cape flaring up behind him', 'back to the stance']),
+ ('hero_warrior', 'Lu Bu', 'ลิโป้', 'chibi Lu Bu with the crescent halberd and two long pheasant feathers',
+  'wide battle stance, the halberd held across his body in both fists, the long feathers and red cape sway, a fierce grin',
+  'halberd sweep', ['battle stance, halberd across the body', 'raise the halberd back over his shoulder', 'a huge horizontal sweep to the right, the body twisting', 'follow-through, the crescent blade fully extended in front', 'pull the halberd back across the body', 'back to the stance'],
+  'Break Ten Thousand Troops (ทะลวงหมื่นทัพ)', 'leaps onto three groups of demons in a row and stuns the whole field',
+  ['battle stance', 'crouch low, the halberd held back', 'leap up high, the halberd raised over his head in both fists', 'at the top of the jump the feathers and cape whip up behind him', 'smash the halberd down to the ground in front of him and land', 'rise back into the stance']),
+ ('hero_assassin', 'Hattori Hanzo', 'ฮัตโตริ ฮันโซ', 'chibi ninja Hattori Hanzo with two short blades in a reverse grip',
+  'low ninja stance, both blades in a reverse grip, the red scarf and hood tail flutter, a slight bob',
+  'twin slash', ['ninja stance', 'crouch low', 'dash forward, the front foot stepping ahead', 'double slash, both blades crossing in front of him', 'follow-through, the red scarf flaring', 'back to the stance'],
+  'Shadow Clone Technique (คาถาแยกเงา)', 'slashes demons all over the field 40 times',
+  ['ninja stance', 'bring the blades together in front of his chest and make a ninja hand sign', 'crouch very low, the scarf rising', 'lunge far forward, body stretched low', 'rising slash upward with both blades', 'land back in the stance'],
+  'Keep the reverse grip in every frame: the blade comes out of the bottom of the fist and runs back along the forearm.'),
+ ('hero_hunter', 'Robin Hood', 'โรบินฮู้ด', 'chibi Robin Hood with the longbow and the red-feathered cap',
+  'confident archer stance, bow held ready, the red feather and green cape sway',
+  'piercing arrow', ['stance, an arrow nocked', 'draw the string', 'full draw aiming straight ahead', 'release (the arrow is gone), a cheeky grin', 'follow-through', 'take a new arrow, back to the stance'],
+  'Sherwood Arrow Rain (ฝนธนูเชอร์วูด)', 'rains 50 arrows over the whole field',
+  ['stance', 'grab a handful of arrows from the quiver', 'nock several arrows at once, aiming high', 'full draw upward', 'release upward (the arrows are gone), laughing', 'back to the stance'],
+  'Do not draw flying arrows: the game draws the shots itself.'),
+ ('hero_mage', 'Merlin', 'เมอร์ลิน', 'chibi Merlin with the crystal staff',
+  'wise stance, the staff planted, the free hand wiggling its fingers as if casting, the beard and cloak sway',
+  'crystal bolt', ['stance', 'lift the staff, the crystal brightening', 'point the staff forward', 'hold the cast, the hat brim blown back', 'lower the staff', 'back to the stance'],
+  'Meteor Shower (ฝนดาวตก)', 'calls 20 meteors down on the field',
+  ['stance', 'raise the staff high overhead in both hands, the crystal blazing', 'look up, the robe and beard billowing in a magic wind', 'bring the staff down to point forward', 'hold, a proud grin', 'back to the stance']),
+ ('hero_support', 'Zhuge Liang (Kongming)', 'ขงเบ้ง', 'chibi Kongming with the white feather fan',
+  'calm elegant stance, slowly fanning himself with the feather fan, the ribbons and robe sway',
+  'fan gust', ['stance, fan raised', 'draw the fan back', 'sweep the fan forward in a wide arc', 'follow-through, sleeves flowing', 'fan held forward', 'back to the stance'],
+  'Battle of Red Cliffs (ศึกผาแดง)', 'sets every demon on the field on fire',
+  ['stance', 'hold the fan high, eyes closed in focus', 'the robe and ribbons lift in a rising wind', 'eyes open, sweep the fan in a big horizontal arc', 'point the fan forward, commanding', 'back to the stance']),
+ ('hero_curse', 'Cleopatra', 'คลีโอพัตรา', 'chibi Cleopatra with the golden cobra scepter',
+  'regal stance, the cobra scepter held up, the free hand gesturing elegantly, the purple cape sways',
+  'cobra curse', ['stance', 'raise the scepter, the cobra eyes glowing green', 'point the scepter forward, the free hand pushing', 'hold the cast', 'lower the scepter', 'back to the stance'],
+  "Pharaoh's Curse (คำสาปฟาโรห์)", 'curses every rival gang and steals their gold',
+  ['stance', 'raise the scepter high overhead in both hands', 'the cobra crown and the scepter eyes glow bright green, the cape lifts', 'slam the scepter base down to the ground', 'hold, a commanding smile, the free hand spread wide', 'back to the stance']),
+]
+
+def anim_prompt(a):
+    k, en, th, desc, idle, an, asteps, sn, swhat, ssteps = a[:10]
+    extra = a[10] if len(a) > 10 else ''
+    st = lambda L: '\n'.join('  %d. %s' % (i + 1, x) for i, x in enumerate(L))
+    return ('Use $game-character-sprites.\n'
+        'Reference: the attached picture (' + desc + '). It is the final design: keep the exact same character, face, hair, outfit, colours, weapon and level of detail in every frame.\n'
+        'Scope: ONE direction only: east (facing right, the same three-quarter view as the reference). Actions: idle (4 frames), attack (6 frames) and skill (6 frames). No walk, no other directions. Cell 128x128 for the clean sheets.\n\n'
+        'Idle (4 frames, a smooth loop that ends where it starts): ' + idle + '.\n\n'
+        'Attack (6 frames) - ' + an + ':\n' + st(asteps) + '\n\n'
+        'Skill (6 frames) - ' + sn + ', the ultimate (in the game it ' + swhat + '):\n' + st(ssteps) + '\n\n'
+        + (extra + '\n' if extra else '') +
+        'Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; '
+        'hair, cape and cloth follow through and settle.\n'
+        'Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. '
+        'Parts of the costume or weapon that already glow may glow brighter. Transparent background.\n'
+        'When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, '
+        'plus one large preview picture of all three rows. Do not shrink anything.')
+
 def page(entries):
     """docs/legends-prompts.html: every prompt on one phone-friendly page with a copy button (owner: "ขอพรอมต์แบบจบตัว")"""
     import html
@@ -181,6 +269,9 @@ def main():
     if STYLE:
         im = Image.open(STYLE).convert('RGBA'); bg = Image.new('RGBA', im.size, (255, 255, 255, 255)); bg.alpha_composite(im)
         bg.convert('RGB').save(OUT + '/refs/00_STYLE_wukong.png', optimize=True)
+    # the finished character pictures (art/incoming/legends/<key>.png) go into refs too, so Codex can attach them by path
+    import glob
+    for f in sorted(glob.glob('art/incoming/legends/*.png')): shutil.copy(f, OUT + '/refs/' + os.path.basename(f))
     for i, c in enumerate(C, 1):
         with open(OUT + '/prompts/%02d_%s.txt' % (i, c[0]), 'w', encoding='utf-8') as f:
             f.write('=== %s (%s) - %s ===\nAttach: refs/00_STYLE_wukong.png\nSave as: %s.png\n\n%s\n' % (c[1], c[2], 'HERO / gold' if c[3] == 'hero' else 'GOD / rainbow', c[0], prompt(c, c[0] == 'god_warrior')))
@@ -208,6 +299,14 @@ def main():
             prompt(c, c[0] == 'god_warrior')) for i, c in enumerate(C, 1)]
     ent += [('13. ซุนหงอคง ท่าโจมตี (รูปเดียว)', 'กระโดด ยืดกระบองยาว เตรียมฟาด · แนบรูปตัวอย่างสไตล์ · บันทึกเป็น god_warrior_attack.png', WK_ATK),
             ('14. ซุนหงอคง ภาพเคลื่อนไหว (Codex + สกิล)', 'ย่อ กระโดด กระบองยืด ฟาดลงพื้น กลับท่า · แนบรูปซุนหงอคงที่เจนเสร็จแล้ว', WK_ANIM)]
+    md = open(OUT + '/PROMPT.md', encoding='utf-8').read().split('\n')
+    md += ['## Animations: idle + attack + skill for every character (owner: acted out from the skills, smooth)\n']
+    for i, a in enumerate(ANIM, 1):
+        with open(OUT + '/prompts/anim_%02d_%s.txt' % (i, a[0]), 'w', encoding='utf-8') as f:
+            f.write('=== %s (%s) animation ===\nAttach: %s.png (the finished picture of this character)\n\n%s\n' % (a[1], a[2], a[0], anim_prompt(a)))
+        md += ['### A%d. %s (%s) - attach `%s.png`\n' % (i, a[1], a[2], a[0]), '```', anim_prompt(a), '```\n']
+        ent.append(('🎬 ท่า %d. %s · %s' % (i, a[2], a[1]), 'ยืน 4 · โจมตี 6 · สกิล "%s" 6 · แนบรูปของตัวนี้ที่เจนเสร็จแล้ว (%s.png)' % (a[7], a[0]), anim_prompt(a)))
+    open(OUT + '/PROMPT.md', 'w', encoding='utf-8').write('\n'.join(md))
     open('docs/legends-prompts.html', 'w', encoding='utf-8').write(page(ent))
     open(OUT + '/README_TH.txt', 'w', encoding='utf-8').write(
         'ตัวละครชุดใหม่: วีรชน 6 (ระดับทอง) + เทพ 6 (ระดับรุ้ง) แบบจิบิ ตามรูปซุนหงอคงที่เลือก\r\n\r\n'
