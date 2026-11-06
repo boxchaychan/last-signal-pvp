@@ -24,6 +24,15 @@ else:   # flat background (white, or the skill's chroma-key colour): the most co
     keys, cnt = np.unique((bd // 8), axis=0, return_counts=True); bgc = keys[cnt.argmax()] * 8 + 4
     mask = np.abs(a[..., :3].astype(int) - bgc).sum(2) > 90
     print('background', bgc.tolist())
+    # colour spill: pixels within 3 px of the background that lean toward the key colour get that lean removed
+    # (only near the edge, so a green sash or a pink cape inside the figure keeps its colour)
+    near = ndimage.binary_dilation(~mask, iterations=3) & mask
+    rgb = a[..., :3].astype(int); kc = int(np.argmax(bgc)); oth = [c for c in range(3) if c != kc]
+    lim = np.maximum(rgb[..., oth[0]], rgb[..., oth[1]]) if bgc[kc] - max(bgc[oth[0]], bgc[oth[1]]) > 120 else None
+    if lim is not None:
+        spill = near & (rgb[..., kc] > lim + 24)
+        a[..., kc][spill] = lim[spill]
+        print('despilled', int(spill.sum()), 'edge pixels')
 lab, n = ndimage.label(mask); objs = ndimage.find_objects(lab)
 figs = [(i + 1, o) for i, o in enumerate(objs) if (lab[o] == i + 1).sum() > 3000]
 # keep only figures, not big dark preview panels: a panel is much wider than tall
