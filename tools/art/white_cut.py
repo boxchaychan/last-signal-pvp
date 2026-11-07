@@ -1,6 +1,9 @@
 # Cut the plain white background of a generated picture -> see-through PNG, without eating white or silver parts of the figure
 # (owner 2026-11-07, Artemis: silver hair and a white dress on a white background, so a colour threshold alone would punch holes).
-#   python3 tools/art/white_cut.py <in.png> <out.png> [--edge-only]
+#   python3 tools/art/white_cut.py <in.png> <out.png> [--edge-only] [--no-ring]
+#   --no-ring   skips the dark-ring rule below, for gold / orange characters (Apollo 2026-11-07): the rule takes the min
+#               channel as darkness, so saturated gold counts as dark outline and eye highlights, skirt whites and the
+#               cape lining were cut. With it the gaps in Apollo's lyre stay white (they read as a glowing lyre).
 #   --edge-only skips step 2, for very white characters (Artemis's back view: her hair has pure-white patches over 100 px);
 #               white and light grey joined to the outside in the lowest 16% of each figure (the gap between the legs behind
 #               the ground shadow) still go, and 1 px wide tall lines left by the generator's cell cutting
@@ -36,7 +39,7 @@ if '--edge-only' in sys.argv:
     # background seen inside the bow / between arm and body: a pure-white patch walled by dark outline pixels. White hair
     # highlights sit inside lighter hair strands (almost no dark pixels round them), so they stay (owner 2026-11-07 "แก้ด่วน")
     pw = (mn >= 246) & (mx - mn <= 8) & ~bg; l4, n4 = ndimage.label(pw)
-    for i, o in enumerate(ndimage.find_objects(l4)):
+    for i, o in enumerate([] if '--no-ring' in sys.argv else ndimage.find_objects(l4)):
         m = np.zeros(bg.shape, bool); m[o] = l4[o] == i + 1
         if m.sum() < 40: continue
         ring = ndimage.binary_dilation(m, iterations=2) & ~m & ~bg
