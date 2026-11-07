@@ -26,7 +26,8 @@ RULES = (('SAME SCALE in every frame and every job: the same height as the figur
          'unless a step says jump; hair, cape and cloth follow through and settle. Keep the whole body and weapon inside every frame. '
          'No detached effects (no swooshes, slash trails, projectiles, sparks, dust or shadows): the game draws those. Transparent background, no text.\n'
          + (extra + '\n' if extra else ''))
-DELIVER = ('Deliver it like this: frames_full/ (every frame of this job as a 1024x1024 PNG on ONE shared canvas: the same scale and the same '
+DELIVER = ('LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.\n'
+           'Deliver it like this: frames_full/ (every frame of this job as a 1024x1024 PNG on ONE shared canvas: the same scale and the same '
            'ground line for all of them, transparent background), clean/ (128x128 cells, one strip per action), previews/ (GIFs), generated/ (the untouched '
            'full-size generated images). Zip everything. Do not shrink the generated images.')
 
