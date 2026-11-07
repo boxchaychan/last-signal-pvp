@@ -6,7 +6,8 @@
 # between its feet.
 # --clean: cut what the generator's own background removal left (Wukong 2026-11-07): plain white caught between the legs and
 #          the soft grey ground shadow under the feet. Only pure, untinted white patches go (white fur has a tint and stays).
-#   python3 tools/art/anim_cells.py <out.png> <still.png> <height> [--clean] <name>=<grid.png>:<cols>x<rows>[:<n>] | <name>=<f.png,f.png,...> ...
+# --clean-shadow: only the grey ground shadow (keeps white patches: for white-haired characters like Artemis)
+#   python3 tools/art/anim_cells.py <out.png> <still.png> <height> [--clean | --clean-shadow] <name>=<grid.png>:<cols>x<rows>[:<n>] | <name>=<f.png,f.png,...> ...
 # Prints the layout as JSON (rows, cw, ch, fx, fy, h0) like anim_rows.py / anim_aligned.py.
 import sys, json
 import numpy as np
@@ -14,12 +15,12 @@ from PIL import Image
 from scipy import ndimage
 
 out, pal_src, H = sys.argv[1], sys.argv[2], float(sys.argv[3])
-CLEAN = '--clean' in sys.argv
+CLEAN = '--clean' in sys.argv; SHADOW = CLEAN or '--clean-shadow' in sys.argv
 
 def clean(f):
     a = np.array(f); rgb = a[..., :3].astype(int); al = a[..., 3]; mx, mn = rgb.max(2), rgb.min(2)
     lab, n = ndimage.label((al >= 128) & (mn >= 238) & (mx - mn <= 10))
-    if n:
+    if n and CLEAN:
         sz = ndimage.sum(np.ones_like(al), lab, range(1, n + 1)); big = np.isin(lab, 1 + np.where(sz >= 120)[0]); al[big] = 0
     ys = np.where((al >= 128).any(1))[0]
     if len(ys):
@@ -28,7 +29,7 @@ def clean(f):
     a[..., 3] = al; return Image.fromarray(a)
 
 rows = []
-for arg in [x for x in sys.argv[4:] if x != '--clean']:
+for arg in [x for x in sys.argv[4:] if not x.startswith('--clean')]:
     name, spec = arg.split('=', 1)
     if ':' in spec:
         p = spec.split(':'); im = Image.open(p[0]).convert('RGBA'); c, r = [int(v) for v in p[1].split('x')]
@@ -36,7 +37,7 @@ for arg in [x for x in sys.argv[4:] if x != '--clean']:
         fr = [im.crop((i % c * cw, i // c * ch, i % c * cw + cw, i // c * ch + ch)) for i in range(n)]
     else:
         fr = [Image.open(f).convert('RGBA') for f in spec.split(',')]
-    rows.append((name, [clean(f) for f in fr] if CLEAN else fr))
+    rows.append((name, [clean(f) for f in fr] if SHADOW else fr))
 
 def feet(m):
     """ground row and the middle between the outer feet (runs a few rows above the ground) of a standing frame"""
