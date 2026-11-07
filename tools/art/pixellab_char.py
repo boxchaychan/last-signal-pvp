@@ -1,7 +1,7 @@
 # PixelLab character download (owner 2026-11-07, Wukong: "Chibi_Sun_Wukong_the_Mon-Idle.zip") -> one legend sheet for the game.
 # The zip holds <state>/rotations/<dir>.png (8 still directions, 256x256, native pixel art) and
 # <state>/animations/<action name>/<dir>/frame_NNN.png (up to 40 frames, PixMiniMax).
-#   python3 tools/art/pixellab_char.py <unzipped dir> <out.png> attack=<action folder | still> [skill=<action folder | attack>] [--sub=2] [--hit=N] [--views=east,south-east,north-east]
+#   python3 tools/art/pixellab_char.py <unzipped dir> <out.png> attack=<action folder | still> [skill=<action folder | file.gif | attack>] [--sub=2] [--hit=N] [--views=east,south-east,north-east]
 #   --views = the PixelLab directions for the game's 3 row blocks: side (target level), toward the camera (target below, and resting),
 #             away (target above). Default east,south-east,north-east: the owner prefers the diagonal views (2026-11-07 "ทำไมเราไม่ใช้เฉียง").
 #             A block whose direction has no animation of its own swings with the east one (a still while attacking looked stiff:
@@ -26,6 +26,10 @@ state = next(d for d in glob.glob(os.path.join(src, '*')) if os.path.isdir(os.pa
 def load(f): return np.array(Image.open(f).convert('RGBA')).astype(float)
 def still(d): return load(os.path.join(state, 'rotations', d + '.png'))
 def anim(name, d):
+    if name.lower().endswith('.gif'):   # a PixelLab GIF download (one direction, east): skill=<path to gif>
+        if d != 'east' or not os.path.exists(name): return None
+        from PIL import ImageSequence
+        return [np.array(f.convert('RGBA')).astype(float) for f in ImageSequence.Iterator(Image.open(name))][::sub]
     fs = sorted(glob.glob(os.path.join(state, 'animations', name, d, 'frame_*.png')))
     return [load(f) for f in fs][::sub] if fs else None
 
