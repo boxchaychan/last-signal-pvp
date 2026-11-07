@@ -245,7 +245,7 @@ def fx_prompt(f):
         'crisp pixel art style with chunky pixels, smooth motion, about 2 seconds.')
 
 # animation sets already brought in (art/incoming/legends/anim/<key>.png)
-ANIMDONE = {'god_assassin', 'god_warrior', 'god_hunter', 'god_mage'}
+ANIMDONE = {'god_assassin', 'god_warrior', 'god_hunter', 'god_mage', 'god_support'}
 
 # owner 2026-11-06 asked "ครบ 4 ทิศหรือเปล่า": dirs=True asks for south, east and north; west = east mirrored by the game
 # (Codex's own west strips came out facing right in the dino test, so it is not asked for)

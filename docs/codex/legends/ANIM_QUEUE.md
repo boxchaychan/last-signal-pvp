@@ -16,7 +16,7 @@ Use the one-direction prompt (east). A 4-direction try (Wukong, 2026-11-06) came
 | 2 | Loki (โลกิ) | `god_assassin` | `art/incoming/legends/god_assassin.png` | `docs/codex/legends/prompts/anim_02_god_assassin.txt` | done (east) |
 | 3 | Artemis (อาร์เทมิส) | `god_hunter` | `art/incoming/legends/god_hunter.png` | `docs/codex/legends/prompts/anim_03_god_hunter.txt` | done (east) |
 | 4 | Odin (โอดิน) | `god_mage` | `art/incoming/legends/god_mage.png` | `docs/codex/legends/prompts/anim_04_god_mage.txt` | done (east) |
-| 5 | Apollo (อพอลโล) | `god_support` | `art/incoming/legends/god_support.png` | `docs/codex/legends/prompts/anim_05_god_support.txt` | todo |
+| 5 | Apollo (อพอลโล) | `god_support` | `art/incoming/legends/god_support.png` | `docs/codex/legends/prompts/anim_05_god_support.txt` | done (east) |
 | 6 | Anubis (อนูบิส) | `god_curse` | `art/incoming/legends/god_curse.png` | `docs/codex/legends/prompts/anim_06_god_curse.txt` | todo |
 | 7 | Lu Bu (ลิโป้) | `hero_warrior` | `art/incoming/legends/hero_warrior.png` | `docs/codex/legends/prompts/anim_07_hero_warrior.txt` | todo |
 | 8 | Hattori Hanzo (ฮัตโตริ ฮันโซ) | `hero_assassin` | `art/incoming/legends/hero_assassin.png` | `docs/codex/legends/prompts/anim_08_hero_assassin.txt` | todo |

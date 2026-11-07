@@ -7,7 +7,10 @@
 # --clean: cut what the generator's own background removal left (Wukong 2026-11-07): plain white caught between the legs and
 #          the soft grey ground shadow under the feet. Only pure, untinted white patches go (white fur has a tint and stays).
 # --clean-shadow: only the grey ground shadow (keeps white patches: for white-haired characters like Artemis)
-#   python3 tools/art/anim_cells.py <out.png> <still.png> <height> [--clean | --clean-shadow] <name>=<grid.png>:<cols>x<rows>[:<n>] | <name>=<f.png,f.png,...> ...
+# --ground: every frame's feet go on the first frame's ground line (for sets with no jumps: Apollo 2026-11-07, the generator drew
+#           the bottom row of a grid 15-30 px higher or lower than the top row). Without it frames keep their drawn height.
+# Specks under 40 px (the generator's 1-5 px dots, the tip of a raised lyre crossing into the cell above) are always dropped.
+#   python3 tools/art/anim_cells.py <out.png> <still.png> <height> [--clean | --clean-shadow] [--ground] <name>=<grid.png>:<cols>x<rows>[:<n>] | <name>=<f.png,f.png,...> ...
 # Prints the layout as JSON (rows, cw, ch, fx, fy, h0) like anim_rows.py / anim_aligned.py.
 import sys, json
 import numpy as np
@@ -15,7 +18,7 @@ from PIL import Image
 from scipy import ndimage
 
 out, pal_src, H = sys.argv[1], sys.argv[2], float(sys.argv[3])
-CLEAN = '--clean' in sys.argv; SHADOW = CLEAN or '--clean-shadow' in sys.argv
+CLEAN = '--clean' in sys.argv; SHADOW = CLEAN or '--clean-shadow' in sys.argv; GROUND = '--ground' in sys.argv
 
 def clean(f):
     a = np.array(f); rgb = a[..., :3].astype(int); al = a[..., 3]; mx, mn = rgb.max(2), rgb.min(2)
@@ -28,8 +31,14 @@ def clean(f):
         al[band & (al < 250) & (mx - mn <= 24) & (rgb.mean(2) > 110)] = 0
     a[..., 3] = al; return Image.fromarray(a)
 
+def specks(f):
+    a = np.array(f); m = a[..., 3] >= 128; lab, n = ndimage.label(m)
+    if n > 1:
+        sz = ndimage.sum(m, lab, range(1, n + 1)); a[..., 3][np.isin(lab, 1 + np.where(sz < 40)[0])] = 0
+    return Image.fromarray(a)
+
 rows = []
-for arg in [x for x in sys.argv[4:] if not x.startswith('--clean')]:
+for arg in [x for x in sys.argv[4:] if not x.startswith('--')]:
     name, spec = arg.split('=', 1)
     if ':' in spec:
         p = spec.split(':'); im = Image.open(p[0]).convert('RGBA'); c, r = [int(v) for v in p[1].split('x')]
@@ -37,7 +46,7 @@ for arg in [x for x in sys.argv[4:] if not x.startswith('--clean')]:
         fr = [im.crop((i % c * cw, i // c * ch, i % c * cw + cw, i // c * ch + ch)) for i in range(n)]
     else:
         fr = [Image.open(f).convert('RGBA') for f in spec.split(',')]
-    rows.append((name, [clean(f) for f in fr] if SHADOW else fr))
+    rows.append((name, [specks(clean(f) if SHADOW else f) for f in fr]))
 
 def feet(m):
     """ground row and the middle between the outer feet (runs a few rows above the ground) of a standing frame"""
@@ -52,7 +61,8 @@ for name, fr in rows:
     for f in fr:
         w2, h2 = max(1, round(f.width * k)), max(1, round(f.height * k))
         s = f.resize((w2, h2), Image.BOX); a = np.array(s); a[..., 3] = np.where(a[..., 3] >= 128, 255, 0)
-        out_fr.append((Image.fromarray(a), -fx * k, -(gy + 1) * k))
+        g = np.where((np.array(f)[..., 3] >= 128).any(1))[0][-1] if GROUND else gy
+        out_fr.append((Image.fromarray(a), -fx * k, -(g + 1) * k))
     placed.append((name, out_fr))
 # common cell: the union of every scaled frame around the feet point
 L = R = T = B = 0
