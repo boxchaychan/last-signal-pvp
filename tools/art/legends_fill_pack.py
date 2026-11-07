@@ -39,7 +39,8 @@ TURN = (REF0 + '.\n\n' + 'Make ONE image, a character turnaround: draw this exac
         '  2. SIDE view: facing right (east), the same three-quarter view as the reference\n'
         '  3. BACK view: back to the viewer (north): the back of the hair, the back of the outfit, cape or scarf ends, and the weapon as it would look from behind\n'
         'Every costume part, colour and the weapon stay the same in all three views; only the camera moves around the character. '
-        'Full size, pixel art like the reference, plain white background, no text, no labels, no effects. Save it as turnaround.png.')
+        'Full size, pixel art like the reference, plain white background, no text, no labels, no effects. Save it as turnaround.png. '
+        'Do ONLY this one picture now, even if other job files are attached: the animation frames come in later messages, one picture each.')
 
 VIEW = {'east': ('facing right (east)', 'SIDE view', ''),
         'south': ('facing the viewer (south, toward the camera)', 'FRONT view',
@@ -60,7 +61,8 @@ def pic(d, act):
             'The character is the same size in every frame as in turnaround.png' + ('' if fresh else ' and east_done.png')
             + ', feet on the same line in every cell unless a step says jump. Plain white background. No text, no numbers, no motion lines, no effects.\n\n'
             + title + ':\n' + body + '\n\n' + aim + (extra + '\n' if extra and (act == 'skill' or 'skill frames' not in extra) else '')
-            + 'Same pixel-art style, colours and detail as the reference. Give me only this one image; no other files are needed.')
+            + 'Same pixel-art style, colours and detail as the reference. Give me only this one image; no other files are needed. '
+            'Do ONLY this one picture now, even if other job files are attached: the other directions and actions come in later messages.')
 
 P = {'turn': TURN}
 NUM = {'east': '2', 'south': '3', 'north': '4'}; LET = {'idle': 'a', 'attack': 'b', 'skill': 'c'}
@@ -72,6 +74,7 @@ for d in VIEW:
         FN[j] = '%s%s_%s_%s.txt' % (NUM[d], LET[x], d.upper(), x.upper()); TH[j] = '%s %s' % (DTH[d], ATH[x])
 steps = ''.join('%d. พิมพ์: ทำตาม %s  → %s\r\n' % (i + 1, FN[j], TH[j]) for i, j in enumerate(jobs))
 readme = ('%s (%s): ' + ('ท่าครบ 4 ทิศ (ซ้าย = เกมกลับภาพจากขวาให้เอง)' if fresh else 'สั่งเฉพาะส่วนที่ยังขาด') + '\r\n\r\n'
+          'สำคัญ: พิมพ์ทีละบรรทัด รอให้ได้รูปก่อนแล้วค่อยพิมพ์บรรทัดถัดไป อย่าสั่งให้ทำทั้งหมดทีเดียว (ซุนหงอคงกับอาร์เทมิสโดนยัดทุกท่าทุกทิศในรูปเดียว ภาพเล็กจนใช้ไม่ได้)\r\n'
           'ทำในแชตเดียวกัน: ครั้งแรกแนบรูปที่ Claude ส่งแยกมา (' + ', '.join([key + '.png'] + ([] if fresh else ['east_done.png']) + (['turnaround.png'] if turnpng else [])) + ') พร้อม zip นี้ แล้วพิมพ์ทีละบรรทัด แต่ละบรรทัดได้ 1 รูป\r\n%s\r\n'
           + ('ข้อ 1 ต้องทำก่อน: ตัววาดหมุนตัวละครไปหันหน้า/หันหลังเองไม่ได้ ให้วาดรูปนิ่ง 3 ด้านก่อน ถ้าไม่เหมือนตัวเดิมให้สั่งใหม่จนเหมือน\r\n' if 'turn' in jobs else
              'รูปนิ่ง 3 ด้าน (turnaround.png) ทำเสร็จแล้ว อยู่ในไฟล์นี้\r\n') +
