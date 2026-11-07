@@ -4,7 +4,8 @@
 #   python3 tools/art/pixellab_char.py <unzipped dir> <out.png> attack=<action folder | still> [skill=<action folder | attack>] [--sub=2] [--hit=N] [--views=east,south-east,north-east]
 #   --views = the PixelLab directions for the game's 3 row blocks: side (target level), toward the camera (target below, and resting),
 #             away (target above). Default east,south-east,north-east: the owner prefers the diagonal views (2026-11-07 "ทำไมเราไม่ใช้เฉียง").
-#             A block whose direction has no animation uses its still; block 1 falls back to the east animation only for itself.
+#             A block whose direction has no animation of its own swings with the east one (a still while attacking looked stiff:
+#             the demons often pass above a slot); its idle stays its own still.
 # Rows like the other legend sheets: east_idle / east_attack / east_skill, south_*, north_* (the game mirrors east for west).
 # A direction without an animation gets its still in every cell (the game adds breathing, lean and lunge in code).
 # PixelLab drifted Wukong's colours toward red in the middle of the attack (skin and hair red): a frame whose mean red is
@@ -49,9 +50,9 @@ act = opt.get('attack'); sk = opt.get('skill', 'attack')
 rows = []
 for d in views:
     st = still(d)
-    A = anim(act, d) if act and act != 'still' else None
+    A = (anim(act, d) or anim(act, 'east')) if act and act != 'still' else None
     A = fix_colours(A) if A else [st]
-    S = A if sk == 'attack' else (fix_colours(anim(sk, d)) if anim(sk, d) else [st])
+    S = A if sk == 'attack' else (fix_colours(anim(sk, d) or anim(sk, 'east')) if (anim(sk, d) or anim(sk, 'east')) else [st])
     rows += [[st], A, S]
 # one cell for everything: the union of all frames, feet point from the east still
 al = [(f[..., 3] > 0) for r in rows for f in r]
