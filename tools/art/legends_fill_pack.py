@@ -55,6 +55,9 @@ def pic(d, act):
     if act == 'idle': title, body = 'Idle, 4 frames, a smooth loop (frame 4 leads back to frame 1)', '  ' + idle + '. Only small changes between frames.'
     elif act == 'attack': title, body = 'Attack, 6 frames - ' + an, st(asteps)
     else: title, body = 'Skill, 6 frames - %s (in the game it %s)' % (sn, swhat), st(ssteps)
+    if act != 'idle':   # Odin 2026-11-07: all six skill frames came back as the same standing pose with tiny changes
+        body += ('\n  Every frame must be a clearly DIFFERENT pose with big, readable movement of the arms, weapon and body, as the steps say; '
+                 'only frames 1 and 6 show the standing pose. Do not repeat one pose and change only small details.')
     return (REF + 'Make ONE image: %s %s, drawn exactly like the %s in turnaround.png. ' % (en, look, view)
             + 'A sprite sheet of %d frames in a grid of %s, read left to right, top row first. ' % (n, grid)
             + 'All cells the same size, empty space around the figure in every cell, nothing touching the next cell. '
