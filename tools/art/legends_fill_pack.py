@@ -59,7 +59,8 @@ def pic(d, act):
             + 'A sprite sheet of %d frames in a grid of %s, read left to right, top row first. ' % (n, grid)
             + 'All cells the same size, empty space around the figure in every cell, nothing touching the next cell. '
             'The character is the same size in every frame as in turnaround.png' + ('' if fresh else ' and east_done.png')
-            + ', feet on the same line in every cell unless a step says jump. Plain white background. No text, no numbers, no motion lines, no effects.\n\n'
+            + ', feet on the same line in every cell unless a step says jump. Plain white background. No text, no numbers, no motion lines, no effects. '
+            'Keep the picture at its FULL generated size (at least 400 px per cell); do not shrink it to small 128 px cells.\n\n'
             + title + ':\n' + body + '\n\n' + aim + (extra + '\n' if extra and (act == 'skill' or 'skill frames' not in extra) else '')
             + 'Same pixel-art style, colours and detail as the reference. Give me only this one image; no other files are needed. '
             'Do ONLY this one picture now, even if other job files are attached: the other directions and actions come in later messages.')
