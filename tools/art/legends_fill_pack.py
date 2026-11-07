@@ -72,7 +72,7 @@ for d in VIEW:
         FN[j] = '%s%s_%s_%s.txt' % (NUM[d], LET[x], d.upper(), x.upper()); TH[j] = '%s %s' % (DTH[d], ATH[x])
 steps = ''.join('%d. พิมพ์: ทำตาม %s  → %s\r\n' % (i + 1, FN[j], TH[j]) for i, j in enumerate(jobs))
 readme = ('%s (%s): ' + ('ท่าครบ 4 ทิศ (ซ้าย = เกมกลับภาพจากขวาให้เอง)' if fresh else 'สั่งเฉพาะส่วนที่ยังขาด') + '\r\n\r\n'
-          'ทำในแชตเดียวกัน: แนบ zip นี้ครั้งแรกครั้งเดียว แล้วพิมพ์ทีละบรรทัด แต่ละบรรทัดได้ 1 รูป\r\n%s\r\n'
+          'ทำในแชตเดียวกัน: ครั้งแรกแนบรูปที่ Claude ส่งแยกมา (' + ', '.join([key + '.png'] + ([] if fresh else ['east_done.png']) + (['turnaround.png'] if turnpng else [])) + ') พร้อม zip นี้ แล้วพิมพ์ทีละบรรทัด แต่ละบรรทัดได้ 1 รูป\r\n%s\r\n'
           + ('ข้อ 1 ต้องทำก่อน: ตัววาดหมุนตัวละครไปหันหน้า/หันหลังเองไม่ได้ ให้วาดรูปนิ่ง 3 ด้านก่อน ถ้าไม่เหมือนตัวเดิมให้สั่งใหม่จนเหมือน\r\n' if 'turn' in jobs else
              'รูปนิ่ง 3 ด้าน (turnaround.png) ทำเสร็จแล้ว อยู่ในไฟล์นี้\r\n') +
           'ได้รูปไหนก็ดาวน์โหลดเก็บไว้ ส่งให้ Claude ทีละรูปหรือรวมเป็น zip ก็ได้ (ห้ามย่อ)\r\n'
@@ -86,3 +86,7 @@ with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
     for j in jobs: z.writestr(FN[j], P[j] + '\n')
     z.writestr('README_TH.txt', readme.encode('utf-8-sig'))
 print(zp, os.path.getsize(zp))
+# the pictures also go next to the zip, to be sent on their own: the owner attaches them by hand (2026-11-07 "ส่งไฟล์มาแล้วแนบรูปให้ ฉันจะแนบให้มันเอง")
+import shutil
+for src, name in [('art/incoming/legends/%s.png' % key, key + '.png')] + ([] if fresh else [(done, 'east_done.png')]) + ([(turnpng, 'turnaround.png')] if turnpng else []):
+    shutil.copyfile(src, os.path.join(out, name)); print(os.path.join(out, name))
