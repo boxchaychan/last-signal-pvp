@@ -33,6 +33,14 @@ if '--edge-only' in sys.argv:
     l3, n3 = ndimage.label(pas | bg)
     keep = set(np.unique(l3[bg])) - {0}
     bg |= pas & np.isin(l3, list(keep))
+    # background seen inside the bow / between arm and body: a pure-white patch walled by dark outline pixels. White hair
+    # highlights sit inside lighter hair strands (almost no dark pixels round them), so they stay (owner 2026-11-07 "แก้ด่วน")
+    pw = (mn >= 246) & (mx - mn <= 8) & ~bg; l4, n4 = ndimage.label(pw)
+    for i, o in enumerate(ndimage.find_objects(l4)):
+        m = np.zeros(bg.shape, bool); m[o] = l4[o] == i + 1
+        if m.sum() < 40: continue
+        ring = ndimage.binary_dilation(m, iterations=2) & ~m & ~bg
+        if ring.any() and (mn[ring] < 120).mean() >= .15: bg |= m
     # 1 px wide tall lines left at the cell edges by the generator's cutting
     op = ~bg
     for x in range(1, op.shape[1] - 1):
