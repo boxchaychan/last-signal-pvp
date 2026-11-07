@@ -21,15 +21,28 @@ opt = dict(a.split('=', 1) for a in sys.argv[3:] if '=' in a and not a.startswit
 sub = int(next((a[6:] for a in sys.argv[3:] if a.startswith('--sub=')), '2'))
 hit_arg = next((int(a[6:]) for a in sys.argv[3:] if a.startswith('--hit=')), None)
 views = next((a[8:] for a in sys.argv[3:] if a.startswith('--views=')), 'east,south-east,north-east').split(',')
+# --half: every 2x2 block -> one pixel (a dark outline pixel wins, else the most common colour). A 256 canvas makes the figure
+# ~200 px tall but the game shows a legend 80-160 screen px tall, so it was shrunk and blended and stopped looking like pixel
+# art (owner 2026-11-07 "ตัวหงอคงมันดูไม่เป็นพิกเซล"); at half size the game draws it with sharp pixels (LEGA px:1).
+HALF = '--half' in sys.argv
+def half(a):
+    H, W = a.shape[0] // 2 * 2, a.shape[1] // 2 * 2; b = a[:H, :W].reshape(H // 2, 2, W // 2, 2, 4).transpose(0, 2, 1, 3, 4).reshape(H // 2, W // 2, 4, 4)
+    op = b[..., 3] >= 128; lum = b[..., :3] @ np.array([.299, .587, .114]); lum = np.where(op, lum, 1e9)
+    dark = lum.min(-1) < 60; di = lum.argmin(-1)
+    eq = (np.abs(b[:, :, :, None, :3] - b[:, :, None, :, :3]).sum(-1) < 1) & op[:, :, :, None] & op[:, :, None, :]
+    mi = eq.sum(-1).argmax(-1); pick = np.where(dark, di, mi)
+    out = np.take_along_axis(b, pick[..., None, None].repeat(4, -1), 2)[:, :, 0]
+    out[..., 3] = np.where(op.sum(-1) >= 2, 255, 0); return out
 state = next(d for d in glob.glob(os.path.join(src, '*')) if os.path.isdir(os.path.join(d, 'rotations')))
 
-def load(f): return np.array(Image.open(f).convert('RGBA')).astype(float)
+def load(f): a = np.array(Image.open(f).convert('RGBA')).astype(float); return half(a) if HALF else a
 def still(d): return load(os.path.join(state, 'rotations', d + '.png'))
 def anim(name, d):
     if name.lower().endswith('.gif'):   # a PixelLab GIF download (one direction, east): skill=<path to gif>
         if d != 'east' or not os.path.exists(name): return None
         from PIL import ImageSequence
-        return [np.array(f.convert('RGBA')).astype(float) for f in ImageSequence.Iterator(Image.open(name))][::sub]
+        fr = [np.array(f.convert('RGBA')).astype(float) for f in ImageSequence.Iterator(Image.open(name))][::sub]
+        return [half(a) for a in fr] if HALF else fr
     fs = sorted(glob.glob(os.path.join(state, 'animations', name, d, 'frame_*.png')))
     return [load(f) for f in fs][::sub] if fs else None
 
@@ -63,7 +76,7 @@ al = [(f[..., 3] > 0) for r in rows for f in r]
 ys = [np.where(m.any(1))[0] for m in al if m.any()]; xs = [np.where(m.any(0))[0] for m in al if m.any()]
 X0, X1 = min(x[0] for x in xs), max(x[-1] for x in xs) + 1; Y0, Y1 = min(y[0] for y in ys), max(y[-1] for y in ys) + 1
 e = rows[0][0][..., 3] > 0; ey = np.where(e.any(1))[0]; gy = ey[-1]   # feet point from the side view's still
-feet = np.where(e[gy - 4])[0]; fx = (feet[0] + feet[-1]) / 2
+feet = np.where(e[gy - (2 if HALF else 4)])[0]; fx = (feet[0] + feet[-1]) / 2
 pad = 2; CW, CH = X1 - X0 + 2 * pad, Y1 - Y0 + 2 * pad
 NA = max(len(r) for r in rows)
 sheet = np.zeros((CH * len(rows), CW * NA, 4), np.uint8)
