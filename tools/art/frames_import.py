@@ -7,7 +7,7 @@
 # Feet: every frame is pinned by its BACK boot (the leftmost boot, the kid faces right), so a forward step looks like a step;
 # the slot centre (fx) sits between the two boots of the standing frame. Prints the FANIM line (hit = first frame reaching
 # furthest forward, check it by eye).
-import sys
+import sys, os
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -36,7 +36,8 @@ else:   # flat background (white, or the skill's chroma-key colour): the most co
 lab, n = ndimage.label(mask); objs = ndimage.find_objects(lab)
 figs = [(i + 1, o) for i, o in enumerate(objs) if (lab[o] == i + 1).sum() > 3000]
 # keep only figures, not big dark preview panels: a panel is much wider than tall
-figs = [(i, o) for i, o in figs if (o[1].stop - o[1].start) < 1.6 * (o[0].stop - o[0].start)]
+if not os.environ.get('FI_WIDE'):   # FI_WIDE=1 keeps wide figures too (a frame with a long weapon or effect, Artemis 2026-11-07)
+    figs = [(i, o) for i, o in figs if (o[1].stop - o[1].start) < 1.6 * (o[0].stop - o[0].start)]
 figs.sort(key=lambda f: f[1][0].stop)
 rows = []
 for f in figs:   # group by the ground line (bottom y)
