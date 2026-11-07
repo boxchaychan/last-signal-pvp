@@ -159,7 +159,7 @@ ANIM = [
   'staff combo', ['battle stance, staff on the shoulder', 'swing the staff back behind him in both fists', 'a big horizontal sweep to the right, the body twisting', 'follow-through, the staff fully extended in front', 'twirl the staff once in front of him', 'back to the stance, staff on the shoulder'],
   'Cloud Somersault smash (ตีลังกาเมฆ)', 'leaps onto groups of demons and smashes them, the magic staff growing very long',
   ['battle stance, staff on the shoulder', 'crouch low gripping the staff in both fists', 'leap up high, the staff raised over his head', 'at the top of the jump the magic staff GROWS very long, stretching far up and forward', 'smash: he swings the long staff down to the ground in front of him and lands', 'the staff shrinks back to normal and he returns to the stance'],
-  'Only in skill frames 4-5 the grown staff may run past the frame edge; his body stays inside. In every other frame the staff is its normal length, as in the reference.'),
+  'Only in skill frames 4-5 the grown staff may run past the edge of its own cell (give those two cells extra empty space so it never touches another frame); his body stays inside. In every other frame the staff is its normal length, as in the reference.'),
  ('god_assassin', 'Loki', 'โลกิ', 'chibi Loki with flame-red hair, serpent hood and two fang daggers',
   'low sly stance, both fang daggers in a reverse grip, a sly grin, the cape and hair sway, he shifts his weight from foot to foot',
   'fang cross slash', ['sly stance, daggers in a reverse grip', 'crouch low, both daggers crossed in front of his chest', 'dash forward, the front foot stepping ahead', 'X slash: both fang daggers slash across in front of him, body stretched forward', 'follow-through, arms crossed past the body, cape flaring', 'hop back to the stance'],
@@ -270,6 +270,7 @@ def anim_prompt(a, dirs=False):
         'hair, cape and cloth follow through and settle.\n'
         'Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. '
         'Parts of the costume or weapon that already glow may glow brighter. Transparent background.\n'
+        + ('LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.\n' if dirs else 'LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.\n') +
         'When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, '
         'plus one large preview picture of all ' + ('nine rows' if dirs else 'three rows') + '. Do not shrink anything.')
 

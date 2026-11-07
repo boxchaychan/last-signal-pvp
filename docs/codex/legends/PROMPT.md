@@ -326,10 +326,11 @@ Skill (6 frames) - Cloud Somersault smash (ตีลังกาเมฆ), the 
   5. smash: he swings the long staff down to the ground in front of him and lands
   6. the staff shrinks back to normal and he returns to the stance
 
-Only in skill frames 4-5 the grown staff may run past the frame edge; his body stays inside. In every other frame the staff is its normal length, as in the reference.
+Only in skill frames 4-5 the grown staff may run past the edge of its own cell (give those two cells extra empty space so it never touches another frame); his body stays inside. In every other frame the staff is its normal length, as in the reference.
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -359,10 +360,11 @@ Skill (6 frames) - Cloud Somersault smash (ตีลังกาเมฆ), the 
   5. smash: he swings the long staff down to the ground in front of him and lands
   6. the staff shrinks back to normal and he returns to the stance
 
-Only in skill frames 4-5 the grown staff may run past the frame edge; his body stays inside. In every other frame the staff is its normal length, as in the reference.
+Only in skill frames 4-5 the grown staff may run past the edge of its own cell (give those two cells extra empty space so it never touches another frame); his body stays inside. In every other frame the staff is its normal length, as in the reference.
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -395,6 +397,7 @@ Keep the reverse grip in every frame: a ring on top of each fist, the curved bla
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -428,6 +431,7 @@ Keep the reverse grip in every frame: a ring on top of each fist, the curved bla
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -460,6 +464,7 @@ Do not draw flying arrows: the game draws the shots itself.
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -493,6 +498,7 @@ Do not draw flying arrows: the game draws the shots itself.
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -525,6 +531,7 @@ The small floating runes are part of his pose; no other effects.
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -558,6 +565,7 @@ The small floating runes are part of his pose; no other effects.
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -589,6 +597,7 @@ Skill (6 frames) - Sun Chariot (รถม้าสุริยะ), the ultimate
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -621,6 +630,7 @@ Skill (6 frames) - Sun Chariot (รถม้าสุริยะ), the ultimate
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -652,6 +662,7 @@ Skill (6 frames) - Judgement of the Duat (พิพากษาแห่งด�
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -684,6 +695,7 @@ Skill (6 frames) - Judgement of the Duat (พิพากษาแห่งด�
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -715,6 +727,7 @@ Skill (6 frames) - Break Ten Thousand Troops (ทะลวงหมื่นท�
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -747,6 +760,7 @@ Skill (6 frames) - Break Ten Thousand Troops (ทะลวงหมื่นท�
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -779,6 +793,7 @@ Keep the reverse grip in every frame: the blade comes out of the bottom of the f
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -812,6 +827,7 @@ Keep the reverse grip in every frame: the blade comes out of the bottom of the f
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -844,6 +860,7 @@ Do not draw flying arrows: the game draws the shots itself.
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -877,6 +894,7 @@ Do not draw flying arrows: the game draws the shots itself.
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -908,6 +926,7 @@ Skill (6 frames) - Meteor Shower (ฝนดาวตก), the ultimate (in the g
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -940,6 +959,7 @@ Skill (6 frames) - Meteor Shower (ฝนดาวตก), the ultimate (in the g
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -971,6 +991,7 @@ Skill (6 frames) - Battle of Red Cliffs (ศึกผาแดง), the ultimate
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -1003,6 +1024,7 @@ Skill (6 frames) - Battle of Red Cliffs (ศึกผาแดง), the ultimate
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
@@ -1034,6 +1056,7 @@ Skill (6 frames) - Pharaoh's Curse (คำสาปฟาโรห์), the ulti
 SAME SCALE IN ALL THREE ROWS: the character is exactly the same height in idle, attack and skill (do not draw the idle row bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all three rows. Do not shrink anything.
 ```
 
@@ -1066,6 +1089,7 @@ Skill (6 frames) - Pharaoh's Curse (คำสาปฟาโรห์), the ulti
 SAME SCALE IN EVERY ROW AND DIRECTION: the character is exactly the same height in idle, attack and skill in south, east and north (do not draw the idle rows bigger), the same as in the reference.
 Smooth animation: every frame is a small step from the one before; the same size, proportions and outline in every frame; both feet on the same ground line unless a step says jump; hair, cape and cloth follow through and settle.
 Keep the whole body, weapon and cape inside every frame. No detached effects (no flying projectiles, slash trails, magic bolts, sparks, dust or shadows): the game draws those. Parts of the costume or weapon that already glow may glow brighter. Transparent background.
+LAYOUT (owner): never put all frames in one long row. Draw one action per row (idle row, attack row, skill row; one block of three rows per direction), every frame in its own equal-size square cell with empty space all around the figure; no part of a frame (body, weapon, cape) may touch or cross into the next cell. Use this layout in the generated images and in the sheets.
 When done, zip the whole run folder including the full-size raw images in source/ and generated/, the clean sheets and the GIF previews, plus one large preview picture of all nine rows. Do not shrink anything.
 ```
 
