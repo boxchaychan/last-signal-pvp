@@ -27,7 +27,7 @@ runs = [r for r in runs if r[1] - r[0] > 20]
 # join runs closer than 12 px (a dagger tip or headband tail split off its figure)
 merged = []
 for r in runs:
-    if merged and r[0] - merged[-1][1] < 12: merged[-1] = (merged[-1][0], r[1])
+    if merged and r[0] - merged[-1][1] < int(os.environ.get('T128_GAP', 12)): merged[-1] = (merged[-1][0], r[1])   # T128_GAP=4 when two views nearly touch (Chalawan)
     else: merged.append(r)
 assert len(merged) == 3, f'expected 3 figures, found {len(merged)}: {merged}'
 figs = []

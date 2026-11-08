@@ -33,21 +33,21 @@ Original design: do not copy any existing game, anime, film or comic monster.
 ## Queue
 | # | key | status | map | size in game (Claude scales it) |
 |---|-----|--------|-----|--------------|
-| 1 | shroom | todo | forest | small |
-| 2 | wolf | todo | forest | medium |
-| 3 | goblin_archer | todo | forest | small |
-| 4 | boar_guard | todo | forest | large |
-| 5 | skeleton | todo | ruins | medium |
-| 6 | wisp | todo | ruins | small |
-| 7 | golem | todo | ruins | large |
-| 8 | boss_treant | todo | forest boss | huge |
-| 9 | krahang | todo | Thai city | medium |
-| 10 | khamot | todo | Thai village | small |
-| 11 | phrai | todo | Thai river | medium |
-| 12 | pret | todo | Thai city | large |
-| 13 | monkey | todo | Thai city | small |
-| 14 | croc_guard | todo | Thai river | large |
-| 15 | boss_chalawan | todo | Thai boss | huge |
+| 1 | shroom | done | forest | small |
+| 2 | wolf | done | forest | medium |
+| 3 | goblin_archer | done | forest | small |
+| 4 | boar_guard | done | forest | large |
+| 5 | skeleton | done | ruins | medium |
+| 6 | wisp | done | ruins | small |
+| 7 | golem | done | ruins | large |
+| 8 | boss_treant | done | forest boss | huge |
+| 9 | krahang | done | Thai city | medium |
+| 10 | khamot | done | Thai village | small |
+| 11 | phrai | done | Thai river | medium |
+| 12 | pret | done | Thai city | large |
+| 13 | monkey | done | Thai city | small |
+| 14 | croc_guard | done | Thai river | large |
+| 15 | boss_chalawan | done | Thai boss | huge |
 
 ## Monster lines (add after the shared prompt)
 

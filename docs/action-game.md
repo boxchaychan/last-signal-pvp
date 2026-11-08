@@ -299,6 +299,17 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Monsters from Codex** (2026-11-09, ~8 min, Codex worked straight in this folder on `main` instead of a branch): all 15
+  in `art/incoming/mobs/<key>.png` (1536x1024, cel-shaded chibi turnarounds, front / right profile / back, all usable) +
+  `REPORT_TH.txt`; 128 px views (free, `white_cut.py --no-ring` → `turn128.py`, each figure 118 px tall for now) in
+  `art/incoming/mobs/px128/<key>/`; Chalawan's views nearly touch → `T128_GAP=4`. Ready-to-paste GPT page
+  `docs/action-prompts.html` (`tools/art/action_prompts_page.py`, from MOBS.md). Not in PixelLab yet (credits: ask).
+- **Swordsman + mage in PixelLab** (owner "เอาท่าจำเป็นก่อน สกิลยังไม่ต้อง" → "เจนเลย"): 128 px views from the GPT pictures
+  (`px128/`; the mage needed the inside-white cut, no `--edge-only`), characters made with v3 + our south / east / north:
+  swordsman 5b37a57c-6137-4831-9e9e-fea7115e3d2f, mage f04219c6-4a1a-4efa-a52e-5deadb67984d (2 generations each, all 8
+  views good; the mage's north-west hides the staff behind him). Base moves = `tools/art/hero_jobs.py <key>` →
+  `art/incoming/action/<key>/jobs_base.json` (41 jobs: idle + run 8 dirs, attack 16 f E S N NE NW, roll + hurt 8 dirs,
+  death E S W N) through `pl_queue.py` into `<key>/pl_dl/`.
 - **Poison 10 s + passive** (owner 2026-11-09 "บัพพิษอยู่นานกว่านี้ 10 วิ ... เพิ่มคูลดาวน์ เพิ่มพาสซีฟสกิล"): `SK6` dur 10, cd 20.
   Passive "จังหวะสังหาร" (`PAS`): every 4th strike that lands (one count per game step, so a swing that hits 3 monsters
   counts once and all 3 crit) does ×2 with a gold crit-hit (`fx/critg.png` = `critx_ice` recoloured gold, free) and big
