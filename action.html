@@ -458,7 +458,7 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
   if (e.pointerType === 'touch') { if (e.clientX < innerWidth * .55 && stick.id === null) { stick.id = e.pointerId; stick.ox = stick.x = e.clientX; stick.oy = stick.y = e.clientY; stick.on = true; } return; }
   mouse.x = e.clientX; mouse.y = e.clientY; mouse.used = true;
-  if (e.button === 0) wantAtk(); else if (e.button === 2) wantRoll();
+  if (e.button === 0) wantAtk(true); else if (e.button === 2) wantRoll();
 });
 addEventListener('pointermove', e => { if (e.pointerId === stick.id) { stick.x = e.clientX; stick.y = e.clientY; } else if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.used = true; } });
 const endStick = e => { if (e.pointerId === stick.id) { stick.id = null; stick.on = false; } };
@@ -476,13 +476,15 @@ function moveInput() {
 }
 function aimDir() {
   const p = G.p;
-  if (!TOUCH && mouse.used) { const wx = mouse.x * DPR / S + cam.x, wy = mouse.y * DPR / S + cam.y; return dirOf(wx - p.x, wy - (p.y - 50)); }
-  let best = null, bd = 230; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
+  // a mouse click aims at the mouse; J / the touch button aim at the nearest slime (owner's clip 2026-11-08: the cursor
+  // was left at the top of the screen and every J attack swung that way while the slime came from below)
+  if (!TOUCH && p.bufMouse) { const wx = mouse.x * DPR / S + cam.x, wy = mouse.y * DPR / S + cam.y; return dirOf(wx - p.x, wy - (p.y - 50)); }
+  let best = null, bd = 260; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
   if (best) return dirOf(best.x - p.x, best.y - p.y);
   const [mx, my] = moveInput(); return (mx || my) ? dirOf(mx, my) : p.dir;
 }
 function noStamina() { const b = document.getElementById('stb'); b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); }
-function wantAtk() { if (!G || G.over) return; G.p.buf = 'atk'; G.p.bufT = .3; }
+function wantAtk(byMouse) { if (!G || G.over) return; G.p.buf = 'atk'; G.p.bufT = .3; G.p.bufMouse = !!byMouse; }
 function wantRoll() { if (!G || G.over) return; G.p.buf = 'roll'; G.p.bufT = .3; }
 
 // ---------- rules ----------
@@ -654,7 +656,12 @@ function drawMove(name, dir, x, y, t, fps, k) {
   drawCell(ar.img, ar.r, f, x, y, ar.flip); return true;
 }
 function drawPlayer(p) {
-  if (p.inv > 0 && p.state !== 'roll' && p.state !== 'hurt' && p.state !== 'dead' && ((G.t * 14) | 0) % 2) return;   // blink after a hit
+  // after a hit she flickers see-through instead of vanishing (owner's clip: she seemed to disappear)
+  const blink = p.inv > 0 && p.state !== 'roll' && p.state !== 'hurt' && p.state !== 'dead' && ((G.t * 14) | 0) % 2;
+  if (blink) ctx.globalAlpha = .45;
+  drawPlayerBody(p); ctx.globalAlpha = 1;
+}
+function drawPlayerBody(p) {
   if (p.state === 'atk' && p.a) { const ar = p.a.plan.ar, f = Math.min(p.a.i, ar.n - 1); drawCell(ar.img, ar.r, f, p.x, p.y, ar.flip);
     if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, f, p.x, p.y, ar.flip, .85); ctx.globalCompositeOperation = 'source-over'; }   // arc glow (bloom)
     return; }

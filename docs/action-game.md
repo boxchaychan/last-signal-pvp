@@ -80,6 +80,11 @@ Then (owner): air blade OFF ("ไม่เอาใบมีดลม"), reach b
 of 5 → cell 140, feet 70/118, `k` 0.8 in the json); wider waves ("ทำคลื่นฟันให้กว้างกว่านี้"): two faint see-through bands
 round every outside arc (3 and 6 px, the outer one dithered) and a wider glow.
 
+Owner's play clip 2026-11-08: every J attack swung toward the mouse cursor left at the top while the slime came from below →
+aim: a mouse click aims at the mouse, J / the touch button auto-aim at the nearest slime within 260 (else the walk direction);
+the hit blink is now 45% see-through instead of vanishing. The wave bands looked like a leftover white frame → one 2 px band in
+the arc's own edge colour/alpha.
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of

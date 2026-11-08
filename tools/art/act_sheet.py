@@ -127,10 +127,10 @@ def arcwhite(fr, grow=3):
                 a[arc & (L > lo), :3] = c; a[out_arc & (L > lo), 3] = al   # see-through only beyond the body
             if out_arc.sum() >= 60:
                 # owner "ทำคลื่นฟันให้กว้างกว่านี้": a wider wave = two faint see-through bands round the arc, on empty pixels only
-                b1 = ndimage.binary_dilation(out_arc, iterations=3) & (a[..., 3] == 0)
-                b2 = ndimage.binary_dilation(out_arc, iterations=6) & (a[..., 3] == 0) & ~b1
-                a[b1, :3] = SMEAR[1]; a[b1, 3] = max(60, AIRA[0] - 30)
-                a[b2 & (BAY[:a.shape[0], :a.shape[1]] < .55), :3] = SMEAR[0]; a[b2 & (BAY[:a.shape[0], :a.shape[1]] < .55), 3] = max(40, AIRA[0] - 70)
+                # (owner then: two faint halo bands looked like a leftover white frame round the arc) -> one thin band in
+                # the arc's own edge colour and alpha, so the arc itself is thicker and no separate border shows
+                b1 = ndimage.binary_dilation(out_arc, iterations=2) & (a[..., 3] == 0)
+                a[b1, :3] = SMEAR[0]; a[b1, 3] = AIRA[0]
         out.append(Image.fromarray(a))
     return out
 import numpy as _np0
