@@ -12,6 +12,10 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 #hud{position:fixed;left:max(10px,env(safe-area-inset-left));top:10px;pointer-events:none;display:flex;flex-direction:column;gap:5px}
 .bar{width:min(34vw,220px);height:12px;background:#2a2430;border:2px solid var(--ink);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
 .bar>i{display:block;height:100%;width:100%;transition:width .08s linear}
+#pas{display:flex;align-items:center;gap:5px;font-size:11px;text-shadow:0 1px 0 var(--ink);padding-left:2px}
+#pas i{width:9px;height:9px;transform:rotate(45deg);background:#2a2430;border:2px solid var(--ink);margin-right:1px}
+#pas i.f{background:#ffd23c} #pas.rdy i{background:#fff3a0;box-shadow:0 0 6px #ffd23c;animation:skp .35s infinite alternate}
+#stb.gain{box-shadow:0 0 8px #ffe066}
 #hpb>i{background:var(--hp)} #stb>i{background:var(--st)}
 #stb.no{animation:no .25s 2}
 @keyframes no{50%{border-color:#ff5050}}
@@ -33,7 +37,7 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 .bt.sk span{position:relative;z-index:1}
 .bt.sk.blink{background:#c9a8ff;box-shadow:0 5px 0 #6c4fa8;animation:skp .5s infinite alternate}
 @keyframes skp{to{filter:brightness(1.25)}}
-#skpc{position:fixed;left:max(10px,env(safe-area-inset-left));top:52px;display:flex;gap:6px;pointer-events:none} .touch #skpc{display:none}
+#skpc{position:fixed;left:max(10px,env(safe-area-inset-left));top:74px;display:flex;gap:6px;pointer-events:none} .touch #skpc{display:none}
 .sq{position:relative;width:40px;height:40px;border:3px solid var(--ink);background:#f3dca0;
   color:var(--ink);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden}
 .sq b{position:absolute;left:0;right:0;bottom:0;background:rgba(20,18,26,.55);height:0} .sq span{position:relative}
@@ -46,10 +50,10 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 </head>
 <body>
 <canvas id="cv"></canvas>
-<div id="hud"><div class="bar" id="hpb"><i></i></div><div class="bar" id="stb"><i></i></div></div>
+<div id="hud"><div class="bar" id="hpb"><i></i></div><div class="bar" id="stb"><i></i></div><div id="pas"><i></i><i></i><i></i><i></i><span>จังหวะสังหาร</span></div></div>
 <div id="score"></div>
 <div id="skpc"><div class="sq" id="q1"><span>Q</span><b></b></div><div class="sq" id="q2"><span>E</span><b></b></div><div class="sq" id="q3"><span>R</span><b></b></div><div class="sq" id="q4"><span>F</span><b></b></div><div class="sq" id="q5"><span>Z</span><b></b></div><div class="sq" id="q6"><span>X</span><b></b></div></div>
-<div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ · Q ปามีด (กดค้างเล็ง โดนแล้วกดอีกที = วาร์ป) · E หมุนตัวฟัน · R ปาระเบิดควันตาบอด · Z ล่องหน · X มีดพิษ · F พุ่งฟัน 6 ครั้ง</div>
+<div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ · Q ปามีด (กดค้างเล็ง โดนแล้วกดอีกที = วาร์ป) · E หมุนตัวฟัน · R ปาระเบิดควันตาบอด · Z ล่องหน · X มีดพิษ · F พุ่งฟัน 6 ครั้ง · ติดตัว: ตีโดนครั้งที่ 4 คริ ×2, ฆ่าได้คืนสตามินา</div>
 <div id="btns"><div class="bt sk" id="bSk1"><span>ปา</span><b></b></div><div class="bt sk" id="bSk2"><span>หมุน</span><b></b></div><div class="bt sk" id="bSk3"><span>ระเบิด</span><b></b></div><div class="bt sk" id="bSk4"><span>พุ่ง</span><b></b></div><div class="bt sk" id="bSk5"><span>ล่องหน</span><b></b></div><div class="bt sk" id="bSk6"><span>พิษ</span><b></b></div><div class="bt small" id="bRoll">กลิ้ง</div><div class="bt" id="bAtk">ตี</div></div>
 <div id="ov"><div><h1>นักมีด</h1><p>ต้นแบบเกมแอคชัน · ตี 2 ฮิต · กลิ้งหลบ · แถบแรง</p>
 <p>สไลม์จะกะพริบ + วงแดงก่อนพุ่งใส่ กลิ้งหลบให้ทัน</p><button id="go" disabled>กำลังสร้างแผนที่…</button></div></div>
@@ -818,7 +822,7 @@ const FXS = {}, PFX = {};
 // 8 crescent slashes from the VFX workbench (owner: "ไม่เอาเส้นตรง ให้เป็นรอยฟันสวยๆ"), which way each one bulges (screen degrees)
 const SLB = [41, 99, 150, -175, -138, -84, -33, 3];
 function slashFor(deg, t = '') { let b = 0, bd = 999; for (let k = 0; k < 8; k++) { const d = Math.abs(((SLB[k] - deg) % 360 + 540) % 360 - 180); if (d < bd) { bd = d; b = k; } } return 'dslash' + t + b; }
-const PFXA = {critx_ice: [.85, .18], zspark: [1, .3], zstar: [1, .45]};   // [picture alpha, glow alpha] per effect
+const PFXA = {critg: [.9, .2], critx_ice: [.85, .18], zspark: [1, .3], zstar: [1, .45]};   // [picture alpha, glow alpha] per effect
 function pfx(k, x, y) { const P = PFX[k]; if (!P || !P.m) return false; G.fx.push({k: 'pfx', key: k, x, y, t: 0, life: P.m.n / P.m.fps}); return true; }
 // soft light (bloom) for arcs and hits, added with 'lighter' like the glowing slashes in the owner's reference clip
 function glowSprite(c) {
@@ -850,7 +854,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all(['critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1054,9 +1058,8 @@ function knifeLand(kn) {          // area hit where it lands; the monster neares
   for (const m of G.mobs) { if (m.hp <= 0) continue; const d = Math.hypot(m.x - kn.tx, (m.y - kn.ty) * 1.3); if (d > SK1.r + m.r) continue;
     const [kd, kc] = rogueDmg(m, SK1.dmg); m.hp -= kd; m.hit = .12; m.st = 'hurt'; m.t = 0; spark(m.x, m.y - 16, 8, '#ffffff'); spark(m.x, m.y - 16, 4, '#c9a8ff');
     G.fx.push({k: 'burst', x: m.x, y: m.y - 18, t: 0, life: .2, big: false});
-    G.nums.push({x: m.x + (rnd() - .5) * 10, y: m.y - 46, v: kd, t: 0, big: kc, ...(kc ? {col: '#d8b4ff', sz: U + 2} : {})});
-    if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k = 0; k < 10; k++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070');
-      G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); }
+    G.nums.push({x: m.x + (rnd() - .5) * 10, y: m.y - 46, v: kd, t: 0, big: false, ...kc});
+    if (m.hp <= 0) mobDie(m);
     else if (d < md) { md = d; mk = m; } }
   for (let k = 0; k < 7; k++) puff(kn.tx + (rnd() - .5) * 26, kn.ty, '#e6dcc0');
   G.fx.push({k: 'burst', x: kn.tx, y: kn.ty - 6, t: 0, life: .22, big: true}); spark(kn.tx, kn.ty - 6, 8, '#eafcff'); G.shake = Math.max(G.shake, 3);
@@ -1087,10 +1090,14 @@ const SK4 = {range: 320, r: 160, fr: .42, dmg: 9, fin: 22, n: 6, cost: 25, cd: 1
 // skill 5 VANISH (owner 2026-11-08 "สกิล 5 6 ช่วยคิด" -> "จัดมา ขอสวยๆ"): she melts into purple shadow for 4 s, monsters lose
 // her (they hop about like blinded ones and never lunge), she runs 30% faster; her next attack or attacking skill comes out of
 // the dark: every hit for .9 s does x3 with a purple strike and big purple numbers, then she shows again.
-// skill 6 POISON BLADES: 7 s of green blades; every hit adds a poison stack (max 5, ticks 2 x stacks every .6 s for 4 s, green
+// skill 6 POISON BLADES: 10 s of green blades (cooldown 20); every hit adds a poison stack (max 5, ticks 2 x stacks every .6 s for 4 s, green
 // numbers, bubbles over the monster); at 5 stacks it bursts (28 + a green cloud) and splashes 2 stacks onto monsters close by
 const SK5 = {cost: 20, cd: 12, dur: 4, amb: .9, mul: 3};
-const SK6 = {cost: 15, cd: 14, dur: 7, tick: .6, per: 2, max: 5, last: 4, burst: 28, splash: 90};
+const SK6 = {cost: 15, cd: 20, dur: 10, tick: .6, per: 2, max: 5, last: 4, burst: 28, splash: 90};
+// PASSIVE "จังหวะสังหาร" (owner 2026-11-09 "เพิ่มพาสซีฟสกิล"): every 4th strike that lands is a gold crit x2 (all monsters
+// hit in that same moment), shown by 4 pips under the bars and a gold glint on her blade when the next one is ready;
+// every kill gives back 10 stamina
+const PAS = {n: 4, mul: 2, st: 10};
 const SKS = {1: SK1, 2: SK2, 3: SK3, 4: SK4, 5: SK5, 6: SK6};
 function startVanish(p) {
   if (!payFor(p, 5)) return false;
@@ -1107,15 +1114,19 @@ function startVenom(p) {
   for (let k = 0; k < 12; k++) puff(p.x + (rnd() - .5) * 30, p.y - rnd() * 50, k & 1 ? '#3ec244' : '#9cf27a');
   return true;
 }
-function rogueDmg(m, dmg) {        // every hit of hers goes through here: the ambush x3 and the poison stacks
-  const p = G.p; let crit = false;
-  if (G.t < (p.amb || 0)) { dmg *= SK5.mul; crit = true; pfx('ambush', m.x, m.y - 24); G.hs = Math.max(G.hs, .06); G.shake = Math.max(G.shake, 5); }
+function rogueDmg(m, dmg) {        // every hit of hers goes through here: the passive crit, the ambush x3 and the poison stacks
+  const p = G.p; let sty = {};
+  if (p.pcT !== G.t) { p.pcT = G.t; p.pc = (p.pc || 0) + 1; if (p.pc >= PAS.n) { p.pc = 0; p.pcHit = G.t; } }   // one count per moment
+  if (p.pcHit === G.t) { dmg *= PAS.mul; sty = {col: '#ffd23c', sz: U + 2, big: true}; pfx('critg', m.x, m.y - 26); G.hs = Math.max(G.hs, .06); G.shake = Math.max(G.shake, 4); spark(m.x, m.y - 20, 6, '#ffe066'); }
+  if (G.t < (p.amb || 0)) { dmg *= SK5.mul; sty = {col: '#d8b4ff', sz: U + 2, big: true}; pfx('ambush', m.x, m.y - 24); G.hs = Math.max(G.hs, .06); G.shake = Math.max(G.shake, 5); }
   if (G.t < (p.venom || 0)) poisonAdd(m, 1);
-  return [dmg, crit];
+  return [dmg, sty];
 }
 function mobDie(m) {
+  if (m.dieT !== undefined) return;   // already dying (a poison burst can kill before the hit lands)
   G.kills++; m.dieT = 0; for (let k = 0; k < 10; k++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070');
   G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); if (G.p.mark && G.p.mark.m === m) G.p.mark = null;
+  const p = G.p; if (p.hp > 0) { p.st = Math.min(100, p.st + PAS.st); p.stGain = G.t; }   // passive: a kill gives stamina back
 }
 function poisonAdd(m, n) {
   if (m.hp <= 0) return; m.pz = Math.min(SK6.max, (m.pz || 0) + n); m.pzT = G.t + SK6.last; if (m.pzTick === undefined) m.pzTick = SK6.tick;
@@ -1147,9 +1158,8 @@ function hitMob(m, dmg, fx, fy, kb, col = '#ffe066', big = false, noRing = false
   m.hp -= dmg; m.hit = .12; m.st = 'hurt'; m.t = 0; m.kx = dx / d * kb * 4; m.ky = dy / d * kb * 4;
   spark(m.x, m.y - 16, 7, '#ffffff'); spark(m.x, m.y - 16, 4, col);
   if (!noRing) G.fx.push({k: 'burst', x: m.x - dx / d * 8, y: m.y - 18, t: 0, life: .2, big});
-  G.nums.push({x: m.x + (rnd() - .5) * 12, y: m.y - 46, v: dmg, t: 0, big: dmg >= 15, ...(hc ? {col: '#d8b4ff', sz: U + 2} : {})});
-  if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k = 0; k < 10; k++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070');
-    G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); if (G.p.mark && G.p.mark.m === m) G.p.mark = null; }
+  G.nums.push({x: m.x + (rnd() - .5) * 12, y: m.y - 46, v: dmg, t: 0, big: dmg >= 15, ...hc});
+  if (m.hp <= 0) mobDie(m);
 }
 function startSpin(p) {
   if (!animRow('attack', p.dir) || !payFor(p, 2)) return false;
@@ -1266,9 +1276,8 @@ function doHit(p, h) {
     const k = h.kb / Math.max(d, 1); m.kx = dx * k * 4; m.ky = dy * k * 4;
     spark(m.x, m.y - 16, 8, '#ffffff'); spark(m.x, m.y - 16, 4, '#ffe066');
     G.fx.push({k: 'burst', x: m.x - dx / Math.max(d, 1) * 10, y: m.y - 18, t: 0, life: .2, big: h.kb > 60});   // impact star
-    G.nums.push({x: m.x + (rnd() - .5) * 10, y: m.y - 46, v: hd, t: 0, big: hd >= 20, ...(hc ? {col: '#d8b4ff', sz: U + 2} : {})});
-    if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k2 = 0; k2 < 10; k2++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070');
-      G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); }
+    G.nums.push({x: m.x + (rnd() - .5) * 10, y: m.y - 46, v: hd, t: 0, big: hd >= 20, ...hc});
+    if (m.hp <= 0) mobDie(m);
   }
   if (any) { G.hs = Math.max(G.hs, h.hs); G.shake = Math.max(G.shake, h.sh);
     if (h.kb > 60) G.kick = {x: fx * 6, y: fy * 6, t: .12}; }   // last hit: camera kick (the white screen flash is gone: owner saw it as a leftover background)
@@ -1418,11 +1427,11 @@ function testSetup() {
     const nn = +new URLSearchParams(location.search).get('n') || (TEST === 'spin' ? 20 : TEST === 'bomb' ? 22 : TEST === 'bomb2' ? 60 : 20);   // &n= steps
     for (let i = 0; i < nn; i++) step(1 / 60);
     for (const m of G.mobs) m.t = -99; G.freeze = 1; return; }
-  if (TEST === 'stealth' || TEST === 'venom') { const p = G.p; G.next = 1e9;   // ?test=stealth|venom&n=steps
+  if (TEST === 'stealth' || TEST === 'venom' || TEST === 'pas') { const p = G.p; G.next = 1e9;   // ?test=stealth|venom|pas&n=steps (pas: the passive crit ready, one attack)
     for (let i = 0; i < 3; i++) G.mobs.push({kind: i & 1 ? 'blue' : 'green', x: p.x + 90 + i * 30, y: p.y + (i - 1) * 26, r: 18, hp: 199, max: 199, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
-    p.dir = 0; startSk(p, TEST === 'stealth' ? 5 : 6);
+    p.dir = 0; if (TEST === 'pas') p.pc = PAS.n - 1; else startSk(p, TEST === 'stealth' ? 5 : 6);
     const nn = +new URLSearchParams(location.search).get('n') || 10;
-    for (let i = 0; i < nn; i++) { if (TEST === 'venom' && i % 14 === 0 && p.state !== 'atk') startAtk(p); if (TEST === 'stealth' && i === 70) startAtk(p); step(1 / 60); }
+    for (let i = 0; i < nn; i++) { if (TEST === 'venom' && i % 14 === 0 && p.state !== 'atk') startAtk(p); if (TEST === 'stealth' && i === 70) startAtk(p); if (TEST === 'pas' && i === 20) startAtk(p); step(1 / 60); }
     for (const m of G.mobs) m.t = -99; G.freeze = 1; return; }
   if (TEST === 'sk1' || TEST === 'sk1b') { const p = G.p; G.next = 1e9;
     G.mobs.push({kind: 'green', x: p.x + 240, y: p.y + 90, r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
@@ -1487,6 +1496,11 @@ function drawPlayer(p) {
     drawPlayerBody(p); ctx.filter = 'none'; ctx.globalAlpha = 1;
     if (((G.t * 20) | 0) % 3 === 0) G.fx.push({k: 'puff', x: p.x + (rnd() - .5) * 26, y: p.y - rnd() * 50, vx: 0, vy: -20, t: 0, life: .5, c: rnd() < .5 ? '#5a3a9a' : '#9a7ad8'});
     return;
+  }
+  if ((p.pc || 0) === PAS.n - 1 && p.state !== 'dead') {   // passive ready: a gold glint at her blade
+    if (!FXS.glowGold) FXS.glowGold = glowSprite([255, 200, 60]);
+    glowAt(p.x + DV[p.dir][0] * 16, p.y - 32, 18, 16, FXS.glowGold, .35 + .2 * Math.sin(G.t * 12));
+    if (((G.t * 20) | 0) % 6 === 0) G.fx.push({k: 'spark', x: p.x + DV[p.dir][0] * 16 + (rnd() - .5) * 10, y: p.y - 34 + (rnd() - .5) * 10, vx: 0, vy: -30, t: 0, life: .25, c: '#fff3a0'});
   }
   if (p.venom > G.t) {               // poison blades: a green glow on her and green bubbles rising
     if (!FXS.glowGreen) FXS.glowGreen = glowSprite([90, 255, 120]);
@@ -1713,9 +1727,11 @@ function draw() {
     ctx.font = '800 30px "Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = '#1d1a22'; ctx.fillStyle = '#ffe066';
     ctx.strokeText(G.banner.txt, innerWidth / 2, innerHeight * .3); ctx.fillText(G.banner.txt, innerWidth / 2, innerHeight * .3); ctx.globalAlpha = 1; }
 }
+const PASI = [...document.querySelectorAll('#pas>i')], pasEl = document.getElementById('pas'), stbEl = document.getElementById('stb');
 const hpI = document.querySelector('#hpb>i'), stI = document.querySelector('#stb>i'), scoreEl = document.getElementById('score');
 const SKB = [1, 2, 3, 4, 5, 6].map(k => [document.getElementById('bSk' + k), document.getElementById('q' + k)]);
 function hud() { if (!G) return; hpI.style.width = G.p.hp + '%'; stI.style.width = G.p.st + '%';
+  const pc = G.p.pc || 0; PASI.forEach((e, i) => e.classList.toggle('f', i < pc)); pasEl.classList.toggle('rdy', pc === PAS.n - 1); stbEl.classList.toggle('gain', G.t - (G.p.stGain || -9) < .35);
   for (let k = 1; k <= 6; k++) { const mk = k === 1 && !!G.p.mark, cd = mk ? 0 : Math.max(0, (G.p.cd[k] || 0) - G.t) / SKS[k].cd;
     for (const b of SKB[k - 1]) { b.lastChild.style.height = (cd * 100).toFixed(1) + '%'; b.classList.toggle('blink', mk);
       b.classList.toggle('on5', k === 5 && G.p.stealth > G.t); b.classList.toggle('on6', k === 6 && G.p.venom > G.t);

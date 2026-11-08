@@ -290,6 +290,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   star on each monster hit instead of a crit-hit each.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
+- **Poison 10 s + passive** (owner 2026-11-09 "บัพพิษอยู่นานกว่านี้ 10 วิ ... เพิ่มคูลดาวน์ เพิ่มพาสซีฟสกิล"): `SK6` dur 10, cd 20.
+  Passive "จังหวะสังหาร" (`PAS`): every 4th strike that lands (one count per game step, so a swing that hits 3 monsters
+  counts once and all 3 crit) does ×2 with a gold crit-hit (`fx/critg.png` = `critx_ice` recoloured gold, free) and big
+  gold numbers; 4 diamond pips under the bars (`#pas`, all glowing when the next strike crits) + a gold glint at her blade;
+  every kill gives 10 stamina (`mobDie`, now the only kill path; guarded against double kills). PC skill squares moved to
+  top 74 px. Test `?test=pas&n=<steps>`.
 - **Skills 5 and 6** (owner "สกิล 5 6 ช่วยคิด" → my two proposals → "จัดมา ขอสวยๆ"; no new moves, no credits): Z / ล่องหน =
   **vanish** (`SK5`: 4 s, cost 20, cd 12): purple VFX `smoke_poof` (`fx/vanish.png`), she is drawn as a see-through purple
   shadow (ctx.filter grayscale → sepia → hue 228° → saturate, alpha .62, purple glow, rising purple wisps), runs 30%
