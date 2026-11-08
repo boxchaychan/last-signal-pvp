@@ -139,8 +139,15 @@ she is ~1/17 of it).
 Proposed shape (owner asked "เอากี่สกิลดี"): 4 skill buttons on screen at once (room for thumbs round the attack button on a
 phone) + attack + roll; about 8 skills per class to unlock up to level 50, the player picks which 4 to carry.
 - **Skill 1 — throw dagger (owner):** throw at a spot on the ground (aimed area, not a target); if it hits a monster, the
-  skill can be pressed again within 5 s → she appears BEHIND that monster. Not built yet; a throw move would cost PixelLab
-  credits (ask first), the existing attack pose can stand in for free.
+  skill can be pressed again within 5 s → she appears BEHIND that monster. Built (free, no PixelLab): Q / 1 on PC (aims at
+  the mouse), button ปา on phones (aims at the nearest slime in range, else straight ahead). `SK1` (range 380, area r 46,
+  18 damage, stamina 18, cooldown 6 s, mark 5 s); the throw pose = the attack's second swing (owner "เอาคลื่นก็เหมือนปาแล้ว":
+  `throwPlan` plays from 2 frames after the first hit to 4 after the last, the dagger leaves on the big arc); `G.knives`
+  fly in a slight arc with a ground shadow and stick in the ground; the monster nearest the landing spot gets `p.mark`
+  (purple ring + arrow); the button turns purple "วาร์ป" / "Q!"; `blinkBehind` = after-image streak, purple puffs, she lands
+  on the far side facing it (sides / stays put if that is water), .3 s i-frames. The flying dagger is a few code pixels
+  (`drawKnife`) until the GPT dagger sheet arrives (`art/incoming/action/skills/PROMPT_dagger.txt` + `ref_rogue_dagger.png`:
+  8 directions, 4 spin frames, 3 stuck-in-ground frames). Tests: `?test=sk1` (in flight), `?test=sk1b` (after the warp).
 - Effects: PixelLab VFX Creator (owner's screenshot, "Slash arc" preset: sweep / thickness / size / angle / trail / speed /
   frames sliders; the chat "Send" costs 1 generation) → export "For a game (ZIP)" → `pixellab_import.py` (from bb.html).
 

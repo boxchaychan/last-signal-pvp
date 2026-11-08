@@ -23,6 +23,15 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
   box-shadow:0 5px 0 #8c8678;display:flex;align-items:center;justify-content:center;touch-action:none}
 .bt.small{width:64px;height:64px;font-size:14px;background:#cfe8f0;box-shadow:0 5px 0 #6f8f99}
 .bt.on{transform:translateY(4px);box-shadow:0 1px 0 #8c8678}
+.bt.sk{position:relative;background:#f3dca0;box-shadow:0 5px 0 #9a7f3c;align-self:flex-start;margin-bottom:40px;overflow:hidden}
+.bt.sk b{position:absolute;left:0;right:0;bottom:0;background:rgba(20,18,26,.55);height:0}
+.bt.sk span{position:relative;z-index:1}
+.bt.sk.blink{background:#c9a8ff;box-shadow:0 5px 0 #6c4fa8;animation:skp .5s infinite alternate}
+@keyframes skp{to{filter:brightness(1.25)}}
+#sk1pc{position:fixed;left:max(10px,env(safe-area-inset-left));top:52px;width:44px;height:44px;border:3px solid var(--ink);background:#f3dca0;
+  color:var(--ink);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden}
+#sk1pc b{position:absolute;left:0;right:0;bottom:0;background:rgba(20,18,26,.55);height:0} #sk1pc span{position:relative}
+#sk1pc.blink{background:#c9a8ff} .touch #sk1pc{display:none}
 #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,14,10,.55)}
 #ov>div{background:var(--panel);border:3px solid var(--ink);padding:18px 26px;text-align:center;max-width:86vw}
 #ov h1{margin:0 0 8px;font-size:26px} #ov p{margin:6px 0;font-size:14px;line-height:1.5}
@@ -33,8 +42,9 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 <canvas id="cv"></canvas>
 <div id="hud"><div class="bar" id="hpb"><i></i></div><div class="bar" id="stb"><i></i></div></div>
 <div id="score"></div>
-<div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ</div>
-<div id="btns"><div class="bt small" id="bRoll">กลิ้ง</div><div class="bt" id="bAtk">ตี</div></div>
+<div id="sk1pc"><span>Q</span><b></b></div>
+<div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ · Q ปามีด (โดนแล้วกด Q อีกที = วาร์ปไปหลังมอน)</div>
+<div id="btns"><div class="bt small sk" id="bSk1"><span>ปา</span><b></b></div><div class="bt small" id="bRoll">กลิ้ง</div><div class="bt" id="bAtk">ตี</div></div>
 <div id="ov"><div><h1>นักมีด</h1><p>ต้นแบบเกมแอคชัน · ตี 2 ฮิต · กลิ้งหลบ · แถบแรง</p>
 <p>สไลม์จะกะพริบ + วงแดงก่อนพุ่งใส่ กลิ้งหลบให้ทัน</p><button id="go" disabled>กำลังสร้างแผนที่…</button></div></div>
 <script>
@@ -616,6 +626,7 @@ const DIG = ['111101101101111', '010110010010111', '111001111100111', '111001111
 // ---------- assets ----------
 const IMGS = {}; let META = null, BG = null;   // one sheet per move (art/action/rogue_<move>.png) + the stills
 const SL = {}, SHP = ellipseSprite(46, 12, '#000000'), SHS = ellipseSprite(40, 10, '#000000'), RING = ellipseSprite(70, 24, '#ff3b3b', 1);
+const MRING = ellipseSprite(60, 22, '#c9a8ff', 1), KSH = ellipseSprite(14, 5, '#000000');
 async function load() {
   META = await fetch('art/action/rogue.json', {cache: 'no-cache'}).then(r => r.json());
   const files = [META.still, ...Object.values(META.anims).flatMap(a => a.glow ? [a.img, a.glow] : [a.img])];
@@ -635,7 +646,7 @@ async function load() {
 // ---------- state ----------
 let G;
 function newGame() {
-  G = {t: 0, hs: 0, shake: 0, wave: 0, kills: 0, over: false, fx: [], nums: [], ghosts: [], mobs: [], next: 1.2,
+  G = {t: 0, hs: 0, shake: 0, wave: 0, kills: 0, over: false, fx: [], nums: [], ghosts: [], mobs: [], knives: [], next: 1.2,
     p: {x: WW / 2, y: WH / 2 + 60, dir: 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null}};
   cam.x = G.p.x - VW / 2; cam.y = G.p.y - VH / 2;
 }
@@ -650,6 +661,15 @@ function atkPlan(dir) {
   return {ar, hits, dmg, ms, first: hits[0], last: hits[n - 1]};
 }
 const ROLL = {t: .4, sp: 380, cost: 26}, HURT_T = .28, DEATH_T = .9, RUN = 230;   // run speed for the wide field
+// skill 1, throw dagger (owner 2026-11-08): thrown at a spot on the ground; if it hits a monster the skill can be pressed
+// again within 5 s and she appears behind that monster. The throw pose = the attack's second swing (owner: "เอาคลื่นก็
+// เหมือนปาแล้ว"): wind-up from 2 frames after the first hit, the dagger leaves her hand on the big arc, then follow-through
+const SK1 = {range: 380, r: 46, dmg: 18, cost: 18, speed: 1100, mark: 5, cd: 6, wind: 45, rel: 85, after: 55};
+function throwPlan(ar) {
+  const h = ar.hits && ar.hits.length > 1 ? ar.hits : [4, 9], rel = h[h.length - 1], a = h[0] + 2, b = Math.min(ar.n - 1, rel + 4);
+  const fr = [], ms = []; for (let f = a; f <= b; f++) { fr.push(f); ms.push(f < rel ? SK1.wind : f === rel ? SK1.rel : SK1.after); }
+  return {fr, ms, rel: rel - a};
+}
 function dirOf(dx, dy) { return ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8; }
 const DV = [...Array(8)].map((_, i) => [Math.cos(i * Math.PI / 4), Math.sin(i * Math.PI / 4)]);
 function animRow(name, dir) {
@@ -663,7 +683,7 @@ function animRow(name, dir) {
 
 // ---------- input ----------
 const keys = {}, stick = {id: null, ox: 0, oy: 0, x: 0, y: 0, on: false}, mouse = {x: 0, y: 0, used: false};
-addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'KeyJ') wantAtk(); if (e.code === 'Space' || e.code === 'KeyK') { wantRoll(); e.preventDefault(); } });
+addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'KeyJ') wantAtk(); if (e.code === 'Space' || e.code === 'KeyK') { wantRoll(); e.preventDefault(); } if (e.code === 'KeyQ' || e.code === 'Digit1') wantSk1(); });
 addEventListener('keyup', e => { keys[e.code] = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
@@ -674,7 +694,7 @@ cv.addEventListener('pointerdown', e => {
 addEventListener('pointermove', e => { if (e.pointerId === stick.id) { stick.x = e.clientX; stick.y = e.clientY; } else if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.used = true; } });
 const endStick = e => { if (e.pointerId === stick.id) { stick.id = null; stick.on = false; } };
 addEventListener('pointerup', endStick); addEventListener('pointercancel', endStick);
-for (const [id, fn] of [['bAtk', () => wantAtk()], ['bRoll', () => wantRoll()]]) {
+for (const [id, fn] of [['bAtk', () => wantAtk()], ['bRoll', () => wantRoll()], ['bSk1', () => wantSk1()]]) {
   const b = document.getElementById(id);
   b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('on'); fn(); });
   b.addEventListener('pointerup', () => b.classList.remove('on')); b.addEventListener('pointerleave', () => b.classList.remove('on'));
@@ -697,6 +717,7 @@ function aimDir() {
 function noStamina() { const b = document.getElementById('stb'); b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); }
 function wantAtk(byMouse) { if (!G || G.over) return; G.p.buf = 'atk'; G.p.bufT = .3; G.p.bufMouse = !!byMouse; }
 function wantRoll() { if (!G || G.over) return; G.p.buf = 'roll'; G.p.bufT = .3; }
+function wantSk1() { if (!G || G.over) return; G.p.buf = 'sk1'; G.p.bufT = .3; }
 
 // ---------- rules ----------
 function startAtk(p) {
@@ -711,6 +732,51 @@ function startRoll(p) {
   const [mx, my] = moveInput(); const d = (mx || my) ? dirOf(mx, my) : p.dir; p.dir = d;
   p.state = 'roll'; p.a = null; p.roll = {t: 0, vx: DV[d][0], vy: DV[d][1], g: 0}; p.inv = Math.max(p.inv, ROLL.t + .02);
   for (let k = 0; k < 6; k++) puff(p.x + (rnd() - .5) * 20, p.y, '#e6dcc0');
+  return true;
+}
+function sk1Ready(p) { return G.t >= (p.sk1cd || 0); }
+function startSk1(p) {
+  if (p.mark && p.mark.m.hp > 0 && G.t < p.mark.until) return blinkBehind(p);
+  if (!sk1Ready(p)) return false;
+  if (p.st < SK1.cost * .5) { noStamina(); return false; }
+  // where: the mouse on PC; else the nearest slime in range; else straight ahead at full range
+  let tx, ty;
+  if (!TOUCH && mouse.used) { tx = mouse.x * DPR / S + cam.x; ty = mouse.y * DPR / S + cam.y + 20; }
+  else { let best = null, bd = SK1.range + 60; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
+    if (best) { tx = best.x; ty = best.y; } else { const [mx, my] = moveInput(), d = (mx || my) ? dirOf(mx, my) : p.dir; tx = p.x + DV[d][0] * SK1.range; ty = p.y + DV[d][1] * SK1.range; } }
+  const dx = tx - p.x, dy = ty - p.y, l = Math.hypot(dx, dy) || 1, k = Math.min(1, SK1.range / l); tx = p.x + dx * k; ty = p.y + dy * k;
+  const d = dirOf(dx, dy), ar = animRow('attack', d); if (!ar) return false;
+  p.st = Math.max(0, p.st - SK1.cost); p.stT = .6; p.sk1cd = G.t + SK1.cd;
+  p.dir = d; p.state = 'throw'; p.a = null; p.th = {t: 0, i: 0, ar, ...throwPlan(ar), tx, ty, out: false};
+  return true;
+}
+function throwDagger(p) {         // the dagger leaves her hand: flies to the spot (a little arc) and lands
+  const t = p.th, sx = p.x + DV[p.dir][0] * 18, sy = p.y - 34 + DV[p.dir][1] * 8, d = Math.hypot(t.tx - sx, t.ty - sy);
+  G.knives.push({sx, sy, x: sx, y: sy, tx: t.tx, ty: t.ty, t: 0, T: Math.max(.12, d / SK1.speed), dir: p.dir, land: -1});
+}
+function knifeLand(kn) {          // area hit where it lands; the monster nearest the spot gets the mark
+  const p = G.p; let mk = null, md = 1e9;
+  for (const m of G.mobs) { if (m.hp <= 0) continue; const d = Math.hypot(m.x - kn.tx, (m.y - kn.ty) * 1.3); if (d > SK1.r + m.r) continue;
+    m.hp -= SK1.dmg; m.hit = .12; m.st = 'hurt'; m.t = 0; spark(m.x, m.y - 16, 8, '#ffffff'); spark(m.x, m.y - 16, 4, '#c9a8ff');
+    G.fx.push({k: 'burst', x: m.x, y: m.y - 18, t: 0, life: .2, big: false});
+    G.nums.push({x: m.x + (rnd() - .5) * 10, y: m.y - 46, v: SK1.dmg, t: 0, big: false});
+    if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k = 0; k < 10; k++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070');
+      G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); }
+    else if (d < md) { md = d; mk = m; } }
+  for (let k = 0; k < 7; k++) puff(kn.tx + (rnd() - .5) * 26, kn.ty, '#e6dcc0');
+  if (mk) { p.mark = {m: mk, until: G.t + SK1.mark}; G.hs = Math.max(G.hs, .04); G.shake = Math.max(G.shake, 2); }
+  kn.land = 0;
+}
+function blinkBehind(p) {         // second press: appear behind the marked monster (the side away from her)
+  const m = p.mark.m; p.mark = null;
+  let ax = m.x - p.x, ay = m.y - p.y; const l = Math.hypot(ax, ay) || 1; ax /= l; ay /= l;
+  const ox = p.x, oy = p.y; let nx = m.x + ax * 44, ny = m.y + ay * 30;
+  if (waterAt(nx, ny)) { nx = m.x - ay * 44; ny = m.y + ax * 30; } if (waterAt(nx, ny)) { nx = m.x + ay * 44; ny = m.y - ax * 30; } if (waterAt(nx, ny)) { nx = ox; ny = oy; }
+  for (let k = 0; k <= 6; k++) G.ghosts.push({x: ox + (nx - ox) * k / 6, y: oy + (ny - oy) * k / 6, dir: p.dir, t: -k * .015, k: .5, still: 1});   // a streak of after-images
+  for (let k = 0; k < 10; k++) { puff(ox + (rnd() - .5) * 24, oy - rnd() * 40, '#c9a8ff'); puff(nx + (rnd() - .5) * 24, ny - rnd() * 40, '#c9a8ff'); }
+  p.x = nx; p.y = ny; p.dir = dirOf(m.x - nx, m.y - ny); p.state = 'idle'; p.a = null; p.th = null; p.roll = null;
+  p.inv = Math.max(p.inv, .3); p.noFl = G.t + .32; p.sk1cd = G.t + SK1.cd; G.shake = Math.max(G.shake, 3);
+  blockProps(p, 14); cam.x += (nx - ox) * .5; cam.y += (ny - oy) * .5;   // the camera catches up faster
   return true;
 }
 function puff(x, y, c) { G.fx.push({k: 'puff', x, y, vx: (rnd() - .5) * 40, vy: -10 - rnd() * 20, t: 0, life: .35 + rnd() * .2, c}); }
@@ -765,6 +831,11 @@ function stepPlayer(dt) {
     p.x += r.vx * sp * dt; p.y += r.vy * sp * dt; r.g -= dt;
     if (r.g <= 0) { r.g = .035; G.ghosts.push({x: p.x, y: p.y, dir: p.dir, t: 0, k: r.t / ROLL.t}); if (rnd() < .6) puff(p.x + (rnd() - .5) * 16, p.y, '#e6dcc0'); }
     if (r.t >= ROLL.t) { p.state = 'idle'; p.roll = null; puff(p.x, p.y, '#e6dcc0'); }
+  } else if (p.state === 'throw') {
+    const t = p.th; t.t += dt * 1000;
+    while (p.th && t.t >= t.ms[t.i]) { t.t -= t.ms[t.i]; t.i++; if (t.i >= t.fr.length) { p.state = 'idle'; p.th = null; } }
+    if (p.th && !t.out && t.i >= t.rel) { t.out = true; throwDagger(p); }
+    if (p.th && t.out && p.buf === 'roll') { p.buf = null; p.th = null; startRoll(p); }
   } else if (p.state === 'atk') {
     const a = p.a, P = a.plan; a.t += dt * 1000;
     while (a.t >= P.ms[a.i]) {
@@ -777,12 +848,15 @@ function stepPlayer(dt) {
     if (p.a) {
       const free = p.a.i >= P.last + 3, early = p.a.i < P.first;
       if (p.buf === 'roll' && (free || early || p.a.i > P.last)) { p.buf = null; startRoll(p); }
+      else if (p.buf === 'sk1' && (free || p.a.i > P.last)) { p.buf = null; startSk1(p); }
       else if (free && p.buf === 'atk') { p.buf = null; startAtk(p); }
       else if (free && (mx || my)) { p.state = 'idle'; p.a = null; }
     }
   }
+  if (p.buf === 'sk1' && p.mark && p.state !== 'dead') { p.buf = null; startSk1(p); }   // the blink works from any state
   if (p.state === 'idle' || p.state === 'move') {
-    if (p.buf === 'roll') { p.buf = null; startRoll(p); }
+    if (p.buf === 'sk1') { p.buf = null; startSk1(p); }
+    else if (p.buf === 'roll') { p.buf = null; startRoll(p); }
     else if (p.buf === 'atk') { p.buf = null; startAtk(p); }
   }
   if (p.state === 'idle' || p.state === 'move') {
@@ -831,6 +905,10 @@ function testSetup() {
   if (TEST === 'view') { const q = new URLSearchParams(location.search); G.next = 1e9; G.p.x = +q.get('x'); G.p.y = +q.get('y');   // ?test=view&x=&y=
     cam.x = G.p.x - VW / 2; cam.y = G.p.y - 60 - VH / 2; return; }
   if (TEST === 'run') { G.next = 1e9; keys.KeyD = keys.KeyS = true; for (let i = 0; i < 20; i++) step(1 / 60); return; }   // ?test=run: runs down-right
+  if (TEST === 'sk1' || TEST === 'sk1b') { const p = G.p; G.next = 1e9;
+    G.mobs.push({kind: 'green', x: p.x + 240, y: p.y + 90, r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
+    startSk1(p); for (let i = 0; i < (TEST === 'sk1' ? 14 : 50); i++) step(1 / 60);
+    if (TEST === 'sk1b') { startSk1(p); step(1 / 60); } G.mobs[0].t = -99; G.freeze = 1; return; }
   if (TEST !== 'atk') return; const p = G.p; G.next = 1e9; p.dir = 0;
   for (let i = 0; i < 3; i++) G.mobs.push({kind: i ? 'green' : 'blue', x: p.x + 80 + i * 18, y: p.y + (i - 1) * 26, r: 18, hp: 99, max: 99, st: 'idle', t: -9, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 1, tell: .5, fr: 0, born: 0});
   const d = +(new URLSearchParams(location.search).get('dir') || 0); p.dir = d;
@@ -839,12 +917,18 @@ function testSetup() {
   for (let i = 0; i < 240; i++) step(1 / 60);   // run to the freeze point without waiting for frames
 }
 function step(dt) {
+  if (G.freeze) return;                          // ?test=sk1 screenshots
   if (TEST === 'atk' && G.p.a && G.p.a.i >= G.p.a.plan.last - 1) return;   // just after the last hit
   G.t += dt;
   if (G.hs > 0) { G.hs -= dt; return; }       // hit-stop: everything holds for a moment
   if (!G.over) stepPlayer(dt); else if (G.p.state === 'dead') G.p.deadT += dt;
   stepAmbient(dt);
   stepMobs(dt);
+  for (const kn of G.knives) { if (kn.land >= 0) { kn.land += dt; continue; } kn.t += dt; const k = Math.min(1, kn.t / kn.T);
+    kn.x = kn.sx + (kn.tx - kn.sx) * k; kn.y = kn.sy + (kn.ty - kn.sy) * k - Math.sin(k * Math.PI) * 18;   // hand height down to the ground, a slight arc
+    if (k >= 1) knifeLand(kn); }
+  G.knives = G.knives.filter(kn => kn.land < .9);
+  if (G.p.mark && (G.t >= G.p.mark.until || G.p.mark.m.hp <= 0)) G.p.mark = null;
   for (const f of G.fx) { f.t += dt; if (f.vx !== undefined) { const dm = f.k === 'air' ? .965 : .9; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= dm; f.vy *= dm; } }
   G.fx = G.fx.filter(f => f.t < f.life);
   for (const n of G.nums) n.t += dt; G.nums = G.nums.filter(n => n.t < .75);
@@ -871,11 +955,14 @@ function drawMove(name, dir, x, y, t, fps, k) {
 }
 function drawPlayer(p) {
   // after a hit she flickers see-through instead of vanishing (owner's clip: she seemed to disappear)
-  const blink = p.inv > 0 && p.state !== 'roll' && p.state !== 'hurt' && p.state !== 'dead' && ((G.t * 14) | 0) % 2;
+  const blink = p.inv > 0 && G.t > (p.noFl || 0) && p.state !== 'roll' && p.state !== 'hurt' && p.state !== 'dead' && ((G.t * 14) | 0) % 2;
   if (blink) ctx.globalAlpha = .45;
   drawPlayerBody(p); ctx.globalAlpha = 1;
 }
 function drawPlayerBody(p) {
+  if (p.state === 'throw' && p.th) { const t = p.th, ar = t.ar, f = t.fr[Math.min(t.i, t.fr.length - 1)]; drawCell(ar.img, ar.r, f, p.x, p.y, ar.flip);
+    if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, f, p.x, p.y, ar.flip, .85); ctx.globalCompositeOperation = 'source-over'; }
+    return; }
   if (p.state === 'atk' && p.a) { const ar = p.a.plan.ar, f = Math.min(p.a.i, ar.n - 1); drawCell(ar.img, ar.r, f, p.x, p.y, ar.flip);
     if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, f, p.x, p.y, ar.flip, .85); ctx.globalCompositeOperation = 'source-over'; }   // arc glow (bloom)
     return; }
@@ -900,6 +987,17 @@ function drawMob(m) {
   if (m.hp > 0 && m.hp < m.max) { const w = 30, x = Math.round(m.x - w / 2), y = Math.round(m.y - img.height - z - 8);
     ctx.fillStyle = '#1d1a22'; ctx.fillRect(x - 1, y - 1, w + 2, 5); ctx.fillStyle = '#e04848'; ctx.fillRect(x, y, Math.round(w * m.hp / m.max), 3); }
 }
+function drawKnife(kn) {
+  const D = DV[kn.dir], x = Math.round(kn.x), y = Math.round(kn.y);
+  if (kn.land >= 0) { const a = kn.land > .6 ? 1 - (kn.land - .6) / .3 : 1; ctx.globalAlpha = Math.max(0, a);   // stuck in the ground
+    const tx = Math.round(kn.tx), ty = Math.round(kn.ty); ctx.fillStyle = '#1d1a22'; ctx.fillRect(tx - 1, ty - 12, 4, 13);
+    ctx.fillStyle = '#5a3a22'; ctx.fillRect(tx, ty - 11, 2, 4); ctx.fillStyle = '#c8a24a'; ctx.fillRect(tx - 1, ty - 7, 4, 1); ctx.fillStyle = '#d8e0ea'; ctx.fillRect(tx, ty - 6, 2, 6);
+    ctx.globalAlpha = 1; return; }
+  for (let i = -5; i <= 7; i++) { const px = x + Math.round(D[0] * i), py = y + Math.round(D[1] * i * .8);
+    ctx.fillStyle = '#1d1a22'; ctx.fillRect(px - 1, py - 1, 3, 3); }
+  for (let i = -5; i <= 7; i++) { const px = x + Math.round(D[0] * i), py = y + Math.round(D[1] * i * .8);
+    ctx.fillStyle = i < -1 ? '#6e4a2a' : i === -1 ? '#c8a24a' : i > 5 ? '#ffffff' : '#c9d3df'; ctx.fillRect(px, py, 1, 1); }
+}
 function drawDigits(n, x, y, sc, col) {
   const s = String(n), w = s.length * 4 * sc - sc; x = Math.round(x - w / 2); y = Math.round(y);
   for (const pass of [0, 1]) for (let i = 0; i < s.length; i++) { const g = DIG[+s[i]];
@@ -923,12 +1021,17 @@ function draw() {
   ctx.drawImage(SHP, Math.round(p.x - 23), Math.round(p.y - 7));
   for (const m of G.mobs) if (m.hp > 0) ctx.drawImage(SHS, Math.round(m.x - 20), Math.round(m.y - 6));
   ctx.globalAlpha = 1;
+  if (G.p.mark) { const m = G.p.mark.m, left = (G.p.mark.until - G.t) / SK1.mark;   // mark ring under the monster
+    ctx.globalAlpha = left < .3 && ((G.t * 10) | 0) & 1 ? .3 : .85; ctx.drawImage(MRING, Math.round(m.x - 30), Math.round(m.y - 11)); ctx.globalAlpha = 1; }
+  for (const kn of G.knives) {   // ground shadow of a flying dagger
+    if (kn.land < 0) { const k = Math.min(1, kn.t / kn.T), gx = kn.sx + (kn.tx - kn.sx) * k, gy = kn.sy + 34 + (kn.ty - kn.sy - 34) * k; ctx.globalAlpha = .3; ctx.drawImage(KSH, Math.round(gx - 7), Math.round(gy - 2)); ctx.globalAlpha = 1; } }
   for (const m of G.mobs) if (m.st === 'tell' && m.hp > 0) { ctx.globalAlpha = .5 + .5 * Math.sin(m.t * 30); ctx.drawImage(RING, Math.round(m.x - 35), Math.round(m.y - 12)); ctx.globalAlpha = 1; }
   for (const f of G.fx) if (f.k === 'puff') { ctx.globalAlpha = 1 - f.t / f.life; ctx.fillStyle = f.c; const s = (f.t < f.life * .5 ? 2 : 1) * Math.ceil(U / 2) * 2; ctx.fillRect(Math.round(f.x), Math.round(f.y), s, s); }
   ctx.globalAlpha = 1;
   // dodge after-images
-  for (const g of G.ghosts) { const ar = animRow('roll', g.dir), a = .35 * (1 - g.t / .22);   // after-images copy the roll pose
-    if (ar) drawCell(ar.img, ar.r, Math.min(ar.n - 1, Math.floor(g.k * ar.n)), g.x, g.y, ar.flip, a); else drawStill(g.dir, g.x, g.y, a); }
+  for (const g of G.ghosts) { if (g.t < 0) continue; const ar = animRow('roll', g.dir), a = .35 * (1 - g.t / .22);   // after-images copy the roll pose
+    if (g.still) drawStill(g.dir, g.x, g.y, a);
+    else if (ar) drawCell(ar.img, ar.r, Math.min(ar.n - 1, Math.floor(g.k * ar.n)), g.x, g.y, ar.flip, a); else drawStill(g.dir, g.x, g.y, a); }
   // bodies, back to front
   // big props join the back-to-front pass; one standing in front of the rogue fades so she stays visible
   const inView = q => q.x - q.ox < cx + VW && q.x - q.ox + q.w > cx && q.y - q.oy < cy + VH && q.y - q.oy + q.h > cy;
@@ -938,6 +1041,10 @@ function draw() {
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props].sort((a, b) => a.y - b.y);
   for (const o of list) o.d();
   drawFlies();
+  for (const kn of G.knives) drawKnife(kn);
+  if (G.p.mark) { const m = G.p.mark.m, y = Math.round(m.y - 58 - Math.abs(Math.sin(G.t * 5)) * 4), x = Math.round(m.x);   // a purple arrow over the marked one
+    ctx.fillStyle = '#1d1a22'; ctx.fillRect(x - 5, y - 1, 11, 4); ctx.fillRect(x - 3, y + 3, 7, 2); ctx.fillRect(x - 1, y + 5, 3, 2);
+    ctx.fillStyle = '#c9a8ff'; ctx.fillRect(x - 4, y, 9, 2); ctx.fillRect(x - 2, y + 2, 5, 2); ctx.fillRect(x, y + 4, 1, 2); }
   // hit arcs (pixel squares along a curve in front of the rogue) and sparks
   for (const f of G.fx) {
     if (f.k === 'arc') { const a0 = Math.atan2(DV[f.dir][1], DV[f.dir][0]), R = f.big ? 62 : 52, k = f.t / f.life;
@@ -968,7 +1075,10 @@ function draw() {
     ctx.strokeText(G.banner.txt, innerWidth / 2, innerHeight * .3); ctx.fillText(G.banner.txt, innerWidth / 2, innerHeight * .3); ctx.globalAlpha = 1; }
 }
 const hpI = document.querySelector('#hpb>i'), stI = document.querySelector('#stb>i'), scoreEl = document.getElementById('score');
-function hud() { if (!G) return; hpI.style.width = G.p.hp + '%'; stI.style.width = G.p.st + '%'; scoreEl.textContent = 'ระลอก ' + G.wave + ' · ล้ม ' + G.kills; }
+const SKB = [document.getElementById('bSk1'), document.getElementById('sk1pc')];
+function hud() { if (!G) return; hpI.style.width = G.p.hp + '%'; stI.style.width = G.p.st + '%';
+  const cd = G.p.mark ? 0 : Math.max(0, (G.p.sk1cd || 0) - G.t) / SK1.cd;
+  for (const b of SKB) { b.lastChild.style.height = (cd * 100).toFixed(1) + '%'; b.classList.toggle('blink', !!G.p.mark); b.firstChild.textContent = G.p.mark ? (b.id === 'bSk1' ? 'วาร์ป' : 'Q!') : (b.id === 'bSk1' ? 'ปา' : 'Q'); } scoreEl.textContent = 'ระลอก ' + G.wave + ' · ล้ม ' + G.kills; }
 
 // ---------- overlay + loop ----------
 const ov = document.getElementById('ov');
