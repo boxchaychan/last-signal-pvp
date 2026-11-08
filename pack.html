@@ -141,7 +141,7 @@ button{font-family:Kanit,sans-serif}
     </div>
     <div class="phase" id="p-fight"><div id="fports"></div><div id="flog"></div><button class="chip sbtn" id="spd" style="position:absolute;right:10px;top:8px">⏩ x1</button><div class="label" id="fvs" style="right:12px;bottom:8px"></div></div>
   </div>
-  <div id="tbar"><button class="tb" id="tback">◀ หน้าแรก</button><span class="pill" style="color:var(--gold)">🐒 ทดสอบท่าหงอคง</span><button class="tb" id="tult">⚡ ไม้ตายเลย</button><button class="tb" id="tslow">🐢 ช้า</button><span class="pill" id="tinfo">เวฟ 1</span></div>
+  <div id="tbar"><button class="tb" id="tback">◀ หน้าแรก</button><span class="pill" style="color:var(--gold)">🐒 ทดสอบท่าหงอคง</span><button class="tb" id="tult">⚡ ไม้ตายเลย</button><button class="tb" id="tslow">🐢 ช้า</button><button class="tb" id="tskin"></button><span class="pill" id="tinfo">เวฟ 1</span></div>
   <div id="ov"></div>
 </div></div></div>
 <script>
@@ -167,6 +167,12 @@ const ULT={god_warrior:'ตีลังกาเมฆ',god_assassin:'ราช�
 // + walk 25 (owner "หงอคงก็มีท่าเดินด้วยที่ติดมา": the site run that made a walk instead of an attack)
 const LANIM={god_warrior:{src:'art/incoming/legends/anim/god_warrior_as2.png',cw:384,ch:386,fx:166,fy:370,h0:140,cols:13,nr:6,
   rows:{idle:{r:0,n:4},attack:{r:1,n:6},skill:{r:2,n:25},walk:{r:4,n:25}},hit:3,shit:12,leap:1,ud:1.7}};
+// PixelLab Wukong (owner 2026-11-08 "ทำหงอคงให้เสร็จ แล้วลงในเกมดู"): made in PixelLab from our own turnaround (imported, nothing redrawn), moves with
+// PixMiniMax at 256: idle 8, walk 16, attack 13 (gold swoosh hits on frame 4), ult 25 (somersault, gold slam on frame 11); 8.25 generations in all
+const LALT={god_warrior:{as:LANIM.god_warrior,pl:{src:'art/incoming/legends/anim/god_warrior_pl2.png',cw:256,ch:256,fx:134,fy:247,h0:235,cols:13,nr:6,
+  rows:{idle:{r:0,n:8},walk:{r:1,n:16},attack:{r:3,n:13},skill:{r:4,n:25}},hit:4,shit:11,leap:1,ud:1.9,lead:.3,pa:.5}}};
+let WSKIN=LS.get('wkskin','pl');
+const animOf=k=>LALT[k]?LALT[k][WSKIN]||LALT[k].as:LANIM[k]||null;
 const LEAD=.3,PA=.36;  // attack frames: wind up during the last LEAD s before a hit, follow through for PA s after it
 // ---------- monsters (old pictures from the city game for now)
 const MON={walker:{n:'ซอมบี้',img:'art/px/z_walker.png',px:1,sc:.9,R:{rg:30,sp:48,cd:1.15},hp:260,dm:34,x:545},
@@ -243,7 +249,7 @@ function teamOf(p){const M=meta(p.bag),lvm=1+.05*(p.lv-1);
   return p.bag.leg.map(l=>{const t={};p.bag.items.forEach(it=>{const m=M.get(it);if(m.own.includes(l)&&IT[it.k].st)for(const s in IT[it.k].st)t[s]=(t[s]||0)+val(it.k,it.r,s,m.boost)});const Rl=ROLE[cls(l.k)];
     return{k:l.k,n:CAST[l.k],img:A+l.k+'.png',px:1,sc:1,R:Rl,hp:Math.round((Rl.hp+(t.hp||0))*lvm*(1+.15*tc(p,'hp'))),dm:(Rl.dm+(t.atk||0))*lvm*(1+.15*tc(p,'atk')),
       arm:(t.arm||0)+20*tc(p,'arm'),spd:(t.spd||0)+15*tc(p,'spd'),crit:5+(t.crit||0)+12*tc(p,'crit'),gau:Math.min(95,(t.gau||0)+30*tc(p,'gau')),heal:t.heal||0,burn:t.burn||0,cdr:t.cd||0,
-      regen:3*tc(p,'regen'),bx:l.x,by:l.y,ult:ULT[l.k],an:LANIM[l.k]||null}})}
+      regen:3*tc(p,'regen'),bx:l.x,by:l.y,ult:ULT[l.k],an:animOf(l.k)}})}
 function openFree(p,n){for(let x=0;x<BW&&n>0;x++)for(let y=0;y<BH&&n>0;y++){const k=key(x,y);if(!p.bag.open.has(k)&&N4.some(([a,b])=>p.bag.open.has(key(x+a,y+b)))){p.bag.open.add(k);n--}}}
 function applyTal(p,k){p.tal.push(k);if(k==='cells')openFree(p,6)}
 
@@ -307,7 +313,7 @@ function bstep(F,dt,V){if(F.end)return;F.t+=dt;
     const dx=gx-u.x,dz=(gz-u.z)*1.3,dl=Math.hypot(dx,dz);
     u.ir=dl<=3;if(u.ir)u.face=side;
     if(dl>3){const st=Math.min(dl,u.R.sp*dt);u.x+=dx/dl*st;u.z+=dz/dl*st/1.3;u.mv=1;if(Math.abs(dx)>1)u.face=dx>0?1:-1}
-    else if(u.cd<=0){u.face=side;u.cd=u.R.cd/(1+(u.spd||0)/100);u.lt=.2;u.pa=PA;
+    else if(u.cd<=0){u.face=side;u.cd=u.R.cd/(1+(u.spd||0)/100);u.lt=.2;u.pa=u.paT=(u.an&&u.an.pa)||PA;
       if(melee){fhit(u,tg,1,V);if(u.R.aoe)foes.forEach(o=>{if(o!==tg&&dist(o,tg)<60)fhit(u,o,.6,V)})}
       else if(u.R.heal&&R()<.35){const m=mates.reduce((a,o)=>o.hp/o.mx<a.hp/a.mx?o:a);heal(m,m.mx*.06,V);u.g=Math.min(100,u.g+10)}
       else F.S.push({x:u.x+side*14,z:u.z,h:34,u,tg,col:u.R.shot,ar:u.R.ar,done:0,el:null})}
@@ -357,8 +363,9 @@ const V={stop(t){if(LIVE)LIVE.hs=Math.max(LIVE.hs||0,t)},spark(o){const d=docume
 function animFrame(u,A,t){const R_=A.rows,sk=R_.skill.n,ni=R_.idle.n;
   if(u.ua){const a=u.ua,q=a.t<a.hit?a.t/a.hit*A.shit:A.shit+(a.t-a.hit)/(a.dur-a.hit)*(sk-1-A.shit),f=Math.min(sk-1,Math.floor(q));return['skill',f,Math.min(sk-1,f+1),q-f]}
   const na=R_.attack.n;
-  if(u.pa>0){const q=A.hit+(1-u.pa/PA)*(na-A.hit),f=Math.min(na-1,Math.floor(q)),fr=q-f;return['attack',f,Math.min(na-1,f+1),f<na-1&&fr>.55?(fr-.55)/.45*.6:0]}
-  if(u.ir&&!u.mv&&u.cd<LEAD&&!u.dead){const q=(LEAD-Math.max(0,u.cd))/LEAD*A.hit,f=Math.min(A.hit-1,Math.floor(q)),fr=q-f;return['attack',f,Math.min(A.hit,f+1),fr>.55?(fr-.55)/.45*.6:0]}
+  const LD=A.lead||LEAD;
+  if(u.pa>0){const q=A.hit+(1-u.pa/(u.paT||PA))*(na-A.hit),f=Math.min(na-1,Math.floor(q)),fr=q-f;return['attack',f,Math.min(na-1,f+1),f<na-1&&fr>.55?(fr-.55)/.45*.6:0]}
+  if(u.ir&&!u.mv&&u.cd<LD&&!u.dead){const q=(LD-Math.max(0,u.cd))/LD*A.hit,f=Math.min(A.hit-1,Math.floor(q)),fr=q-f;return['attack',f,Math.min(A.hit,f+1),fr>.55?(fr-.55)/.45*.6:0]}
   if(u.mv&&R_.walk){const nw=R_.walk.n,q=t*17,f=Math.floor(q)%nw;return['walk',f,(f+1)%nw,q-Math.floor(q)]}
   const q=t*(u.mv?8:4.5)+u.x*.013,f=Math.floor(q)%ni;return['idle',f,(f+1)%ni,q-Math.floor(q)]}
 function framePos(A,row,f,k){const R_=A.rows[row];return(-(f%A.cols)*A.cw*k)+'px '+(-(R_.r+Math.floor(f/A.cols))*A.ch*k)+'px'}
@@ -466,7 +473,7 @@ function closeOv(){$('#ov').classList.remove('on');$('#ov').innerHTML='';G.ov=fa
 // ---------- Wukong test: one legend against endless monster waves, big, with slow motion
 let TF=null,TSAVE=0;
 function testStart(){closeOv();LIVE=null;G.phase='test';setMode('test');FIELD.innerHTML='';LOG=[];$('#battle').className='mon';
-  const wk={k:'god_warrior',n:CAST.god_warrior,img:A+'god_warrior.png',px:1,sc:1,R:ROLE.warrior,hp:4000,dm:150,arm:30,spd:0,crit:12,gau:60,heal:0,burn:0,cdr:80,regen:6,bx:6,by:1.5,ult:ULT.god_warrior,an:LANIM.god_warrior};
+  const wk={k:'god_warrior',n:CAST.god_warrior,img:A+'god_warrior.png',px:1,sc:1,R:ROLE.warrior,hp:4000,dm:150,arm:30,spd:0,crit:12,gau:60,heal:0,burn:0,cdr:80,regen:6,bx:6,by:1.5,ult:ULT.god_warrior,an:animOf('god_warrior')};
   TF=mkB([wk],[]);TF.wave=0;testWave();LIVE={F:TF,last:performance.now(),endT:0,test:1};requestAnimationFrame(loop)}
 function testWave(){const F=TF;F.wave++;F.U.filter(u=>u.s&&u.el).forEach(u=>u.el.remove());F.U=F.U.filter(u=>!u.s);const w=F.U[0];w.dead=0;w.hp=w.mx;
   const n=3+F.wave%3;for(let i=0;i<n;i++){const t=i===n-1&&F.wave%2===0?'spit':'walker',M=MON[t];
@@ -474,6 +481,8 @@ function testWave(){const F=TF;F.wave++;F.U.filter(u=>u.s&&u.el).forEach(u=>u.el
   F.S=[];F.end=0;F.win=-1;$('#tinfo').textContent='เวฟ '+F.wave+' · ซอมบี้ '+n}
 $('#tback').onclick=()=>{LIVE=null;if(TSAVE){SPD=TSAVE;TSAVE=0}$('#tslow').classList.remove('on');FIELD.innerHTML='';setMode('shop');lobby()};
 $('#tult').onclick=()=>{if(TF&&TF.U[0]&&!TF.U[0].ua)TF.U[0].g=100};
+const skinLab=()=>{$('#tskin').textContent=WSKIN==='pl'?'👾 PixelLab':'🎨 ภาพวาด'};skinLab();
+$('#tskin').onclick=()=>{WSKIN=WSKIN==='pl'?'as':'pl';LS.set('wkskin',WSKIN);skinLab();const u=TF&&TF.U[0];if(u){u.an=animOf('god_warrior');if(u.el){u.el.remove();u.el=null}}};
 $('#tslow').onclick=()=>{if(TSAVE){SPD=TSAVE;TSAVE=0}else{TSAVE=SPD;SPD=.35}$('#tslow').classList.toggle('on',!!TSAVE)};
 function lobby(){G.phase='lobby';const best=LS.get('best',0);
   ov('<h1>กระเป๋าเทพ</h1><div class="sub">ต้นแบบลองเล่น · 5 คน (คุณ + บอท 4) · คนสุดท้ายที่รอดชนะ</div><img class="lineup" src="'+A+'_lineup.png" alt="">'+
