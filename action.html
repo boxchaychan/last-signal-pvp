@@ -732,7 +732,7 @@ async function load() {
   // pixelfx effects already in the repo (MIT, vendor/pixelfx; owner 2026-11-08 "อันนี้เราเคยใช้นิ"): darkx = the smoke
   // bomb's blast, poof = vanishing / warping, nslash = the flurry's cross cuts
   try { const man = await fetch('fx/manifest.json').then(r => r.json());
-    await Promise.all(['darkx', 'poof', 'nslash', 'blindstars'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
+    await Promise.all(['darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -945,7 +945,7 @@ function blinkBehind(p) {         // second press: appear behind the marked mons
 // drift while spinning. Skill 3 bomb: the 'bomb' throw, a high lob to the aimed spot, a blast in a circle that blinds
 // (blind monsters hop about at random and their lunges miss half the time). Skill 4 flurry: pick a monster, she vanishes
 // and cuts through it 6 times from different sides (streaks + after-images, no new moves needed), then lands behind it.
-const SK2 = {cost: 15, cd: 5, dmg: 13, r: 108, seq: [3, 5, 6, 7, 8, 6, 7, 8, 9, 11, 13, 16], ms: [40, 40, 55, 55, 55, 55, 55, 55, 45, 45, 45, 45], hits: [3, 6]};
+const SK2 = {cost: 15, cd: 5, dmg: 13, r: 140, wind: 70, step: 30, steps: 16, rec: 90, hits: [8, 16]};
 const SK3 = {range: 340, r: 96, dmg: 12, cost: 20, cd: 9, blind: 4, fly: .55, ms: [55, 55, 55, 55, 55, 75, 50, 50, 50]};
 const SK4 = {range: 300, r: 0, dmg: 9, n: 6, gap: .085, cost: 25, cd: 10};
 const SKS = {1: SK1, 2: SK2, 3: SK3, 4: SK4};
@@ -965,8 +965,14 @@ function hitMob(m, dmg, fx, fy, kb, col = '#ffe066', big = false) {
     G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); if (G.p.mark && G.p.mark.m === m) G.p.mark = null; }
 }
 function startSpin(p) {
-  if (!animRow('spin', 2) || !payFor(p, 2)) return false;
-  p.state = 'spin'; p.a = null; p.th = null; p.sp = {i: 0, t: 0}; return true;
+  if (!animRow('attack', p.dir) || !payFor(p, 2)) return false;
+  p.state = 'spin'; p.a = null; p.th = null; p.bm = null; p.sp = {t: 0, s: -1, d0: p.dir};
+  for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; puff(p.x + Math.cos(a) * 30, p.y + Math.sin(a) * 12, '#e6dcc0'); }
+  return true;
+}
+function spinRing() {     // the PixelLab VFX ring: the far half behind her, the near half (2 frames later) in front, following her
+  G.fx.push({k: 'pfx', key: 'spinring_b', follow: 1, oy: -30, depth: 'b', t: 0, life: 6 / 16});
+  G.fx.push({k: 'pfx', key: 'spinring_f', follow: 1, oy: -30, depth: 'f', t: -2 / 16, life: 8 / 16});
 }
 function spinHit(p, last) {
   let any = false;
@@ -1070,9 +1076,15 @@ function stepPlayer(dt) {
     if (r.t >= ROLL.t) { p.state = 'idle'; p.roll = null; puff(p.x, p.y, '#e6dcc0'); }
   } else if (p.state === 'spin') {
     const q = p.sp; q.t += dt * 1000;
-    while (p.sp && q.t >= SK2.ms[q.i]) { q.t -= SK2.ms[q.i]; q.i++; if (q.i >= SK2.seq.length) { p.state = 'idle'; p.sp = null; break; } if (SK2.hits.includes(q.i)) spinHit(p, q.i === SK2.hits[SK2.hits.length - 1]); }
-    if (mx || my) { p.x += mx * RUN * .45 * dt; p.y += my * RUN * .45 * dt; }
-    if (p.sp && q.i >= SK2.seq.length - 3 && p.buf === 'roll') { p.buf = null; p.sp = null; startRoll(p); }
+    const st = Math.floor((q.t - SK2.wind) / SK2.step);
+    while (q.s < Math.min(st, SK2.steps)) {                       // each step = one direction further round
+      q.s++; if (q.s === 0 || q.s === SK2.steps / 2) spinRing();
+      if (q.s > 0) { const pd = (q.d0 + q.s - 1) % 8, ar = animRow('attack', pd); if (ar) G.ghosts.push({x: p.x, y: p.y, dir: pd, t: 0, k: .5, atk: (ar.hits || [4])[0], a: 1.3}); }
+      if (SK2.hits.includes(q.s)) spinHit(p, q.s === SK2.hits[SK2.hits.length - 1]);
+      p.dir = (q.d0 + Math.max(0, q.s)) % 8; }
+    if (q.t >= SK2.wind + SK2.steps * SK2.step + SK2.rec) { p.state = 'idle'; p.sp = null; p.dir = q.d0; }
+    if (mx || my) { p.x += mx * RUN * .5 * dt; p.y += my * RUN * .5 * dt; }
+    if (p.sp && q.s >= SK2.steps && p.buf === 'roll') { p.buf = null; p.sp = null; startRoll(p); }
   } else if (p.state === 'bomb') {
     const q = p.bm; q.t += dt * 1000;
     while (p.bm && q.t >= (SK3.ms[q.i] || 50)) { q.t -= SK3.ms[q.i] || 50; q.i++; if (q.i >= q.ar.n) { p.state = 'idle'; p.bm = null; break; } }
@@ -1165,7 +1177,8 @@ function testSetup() {
   if (TEST === 'spin' || TEST === 'bomb' || TEST === 'bomb2' || TEST === 'flurry') { const p = G.p; G.next = 1e9;   // skill screenshots
     for (let i = 0; i < 4; i++) G.mobs.push({kind: i & 1 ? 'blue' : 'green', x: p.x + (TEST === 'spin' ? Math.cos(i * 1.6) * 70 : 200 + (i % 2) * 40), y: p.y + (TEST === 'spin' ? Math.sin(i * 1.6) * 50 : 60 + (i >> 1) * 40), r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
     const k = TEST === 'spin' ? 2 : TEST === 'flurry' ? 4 : 3; startSk(p, k);
-    for (let i = 0; i < (TEST === 'spin' ? 13 : TEST === 'bomb' ? 22 : TEST === 'bomb2' ? 60 : 20); i++) step(1 / 60);
+    const nn = +new URLSearchParams(location.search).get('n') || (TEST === 'spin' ? 20 : TEST === 'bomb' ? 22 : TEST === 'bomb2' ? 60 : 20);   // &n= steps
+    for (let i = 0; i < nn; i++) step(1 / 60);
     for (const m of G.mobs) m.t = -99; G.freeze = 1; return; }
   if (TEST === 'sk1' || TEST === 'sk1b') { const p = G.p; G.next = 1e9;
     G.mobs.push({kind: 'green', x: p.x + 240, y: p.y + 90, r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
@@ -1195,7 +1208,7 @@ function step(dt) {
   G.bombs = G.bombs.filter(b => !b.done);
   if (G.p.mark && (G.t >= G.p.mark.until || G.p.mark.m.hp <= 0)) G.p.mark = null;
   for (const f of G.fx) { f.t += dt; if (f.vx !== undefined) { const dm = f.k === 'air' ? .965 : .9; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= dm; f.vy *= dm; } }
-  G.fx = G.fx.filter(f => f.t < f.life);
+  G.fx = G.fx.filter(f => f.t < f.life);   // (an effect with t < 0 waits)
   for (const n of G.nums) n.t += dt; G.nums = G.nums.filter(n => n.t < .75);
   for (const g of G.ghosts) g.t += dt; G.ghosts = G.ghosts.filter(g => g.t < .22);
   if (G.banner) { G.banner.t += dt; if (G.banner.t > 1.6) G.banner = null; }
@@ -1226,8 +1239,13 @@ function drawPlayer(p) {
 }
 function drawPlayerBody(p) {
   if (p.state === 'flurry') return;                             // gone: only the cuts and after-images show
-  if (p.state === 'spin' && p.sp) { const ar = animRow('spin', 2), f = SK2.seq[Math.min(p.sp.i, SK2.seq.length - 1)]; drawCell(ar.img, ar.r, f, p.x, p.y, false);
-    if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, f, p.x, p.y, false, .85); ctx.globalCompositeOperation = 'source-over'; } return; }
+  if (p.state === 'spin' && p.sp) { const q = p.sp;
+    if (q.s < 0) { const ar = animRow('attack', q.d0); drawCell(ar.img, ar.r, Math.max(0, (ar.hits || [4])[0] - 1), p.x, p.y, ar.flip); return; }   // wind-up
+    if (q.s >= SK2.steps) { drawMove('idle', q.d0, p.x, p.y, 0, 7) || drawStill(q.d0, p.x, p.y); return; }                             // settle
+    const d = (q.d0 + q.s) % 8, ar = animRow('attack', d), f = (ar.hits || [4])[0];
+    drawCell(ar.img, ar.r, f, p.x, p.y, ar.flip);
+    if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, f, p.x, p.y, ar.flip, .9); ctx.globalCompositeOperation = 'source-over'; }
+    return; }
   if (p.state === 'bomb' && p.bm) { const ar = p.bm.ar; drawCell(ar.img, ar.r, Math.min(p.bm.i, ar.n - 1), p.x, p.y, ar.flip); return; }
   if (p.state === 'throw' && p.th) { const t = p.th, ar = t.ar, f = t.fr[Math.min(t.i, t.fr.length - 1)];   // no arc, no glow
     if (!NOARC) NOARC = makeNoArc(ar.img); drawCell(NOARC, ar.r, f, p.x, p.y, ar.flip); return; }
@@ -1254,6 +1272,11 @@ function drawMob(m) {
   ctx.globalAlpha = 1;
   if (m.hp > 0 && m.hp < m.max) { const w = 30, x = Math.round(m.x - w / 2), y = Math.round(m.y - img.height - z - 8);
     ctx.fillStyle = '#1d1a22'; ctx.fillRect(x - 1, y - 1, w + 2, 5); ctx.fillStyle = '#e04848'; ctx.fillRect(x, y, Math.round(w * m.hp / m.max), 3); }
+}
+function drawPfx(f) {
+  const P = PFX[f.key]; if (!P || !P.m || f.t < 0) return; const m = P.m, i = Math.min(m.n - 1, f.t * m.fps | 0), cols = m.cols || m.n;
+  const x = f.follow ? G.p.x : f.x, y = f.follow ? G.p.y + (f.oy || 0) : f.y;
+  ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(x - m.ax), Math.round(y - m.ay), m.w, m.h);
 }
 function drawBomb(b) {            // a black round bomb with a fizzing fuse, its shadow on the ground under it
   const k = Math.min(1, b.t / b.T), gx = b.sx + (b.tx - b.sx) * k, gy = b.sy + 40 + (b.ty - b.sy - 40) * k, x = Math.round(b.x), y = Math.round(b.y);
@@ -1345,7 +1368,8 @@ function draw() {
   const props = PROPS.filter(inView).map(q => ({y: q.y, d: () => {
     const cover = p.y < q.y && p.y > q.y - q.oy + 30 && Math.abs(p.x - q.x) < q.w * .42 && p.y - 60 > q.y - q.oy;
     if (cover) ctx.globalAlpha = .45; ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); ctx.globalAlpha = 1; }}));
-  const list = [{y: p.y, d: () => drawPlayer(p)}, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props].sort((a, b) => a.y - b.y);
+  const rings = G.fx.filter(f => f.k === 'pfx' && f.depth).map(f => ({y: p.y + (f.depth === 'b' ? -.5 : .5), d: () => drawPfx(f)}));
+  const list = [{y: p.y, d: () => drawPlayer(p)}, ...rings, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props].sort((a, b) => a.y - b.y);
   for (const o of list) o.d();
   drawFlies();
   for (const kn of G.knives) drawKnife(kn);
@@ -1372,8 +1396,7 @@ function draw() {
     if (f.k === 'wave') { const set = (f.big ? FXS.waveB : FXS.wave)[f.dir], im = set[Math.min(3, Math.floor(f.t / f.life * 4))];
       ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
     if (f.k === 'burst') { const k = f.t / f.life, R = f.big ? 34 : 24; glowAt(f.x, f.y, R, R, FXS.glowHit, (1 - k) * .5); }
-    if (f.k === 'pfx') { const P = PFX[f.key], m = P.m, i = Math.min(m.n - 1, f.t * m.fps | 0), cols = m.cols || m.n;
-      ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(f.x - m.ax), Math.round(f.y - m.ay), m.w, m.h); }
+    if (f.k === 'pfx' && !f.depth) drawPfx(f);
     if (f.k === 'smoke') { if (!FXS.smoke) FXS.smoke = smokeSprite(SK3.r); const k = f.t / f.life, im = FXS.smoke[(f.t * 6 | 0) % 2];
       ctx.globalAlpha = (k < .1 ? k / .1 : 1 - (k - .1) / .9) * .85; ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2 - 10)); ctx.globalAlpha = 1; }
     if (f.k === 'streak') { const k = f.t / f.life, n = Math.hypot(f.x2 - f.x, f.y2 - f.y) | 0, a = 1 - k;

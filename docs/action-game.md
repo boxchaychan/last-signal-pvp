@@ -197,6 +197,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   6 times 150° apart (`streak` fx + crescent + attack-frame after-images), 6 × 9 + 8, invulnerable, moves on to a monster
   close by if it dies, lands behind it. Cooldowns 5 / 9 / 10 s; costs 15 / 20 / 25 stamina. Phone: 4 skill buttons in an
   arc round ตี / กลิ้ง; PC: Q E R F (or 1–4) with squares under the bars. Tests `?test=spin|bomb|bomb2|flurry`.
+  Spin redone (owner "หมุนตัวไม่สวย ... ดูแข็งไม่มีพลัง", "ให้มีระยะกว้างหน่อย"): PixelLab's spin only turned half way and played twice
+  looked like twisting, so it is no longer used: she turns through the 8 directions twice (`SK2.step` 30 ms, the attack's
+  swing frame of each direction with its arc + glow, after-images), wind-up 70 ms, settle 90 ms, hits at the end of each
+  turn, reach 140; a PixelLab VFX `spin_slash` ring (size 2.8, air colours; My effects "rogue_spin_ring" 034322c3…,
+  game pack → `fx/spinring_b.png` behind her + `fx/spinring_f.png` in front, `drawPfx` with `follow`/`depth`) at the
+  start of each turn; a ring of dust at the feet. `?test=spin&n=<steps>`.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
   the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =
