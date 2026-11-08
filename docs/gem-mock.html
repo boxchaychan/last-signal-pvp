@@ -63,18 +63,18 @@
 .item{position:absolute;border:2px solid #000;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
 .r1{background:#cfd4e0}.r2{background:#7fd88e}.r3{background:#b48cf0}.r4{background:#ff8a7a}.r5{background:#ffd75a}
 .star{position:absolute;font-size:9px;color:#fff6a8;-webkit-text-stroke:1px #000;paint-order:stroke}
-#shop{position:absolute;left:600px;top:4px;right:6px;bottom:44px;background:#1a1430;border:2px solid #3d3263;border-radius:8px;padding:4px 6px}
+#shop{position:absolute;left:484px;top:4px;right:6px;bottom:44px;background:#1a1430;border:2px solid #3d3263;border-radius:8px;padding:4px 6px}
 .go{position:absolute;right:8px;bottom:8px;font:800 14px Kanit;background:#5be06b;color:#06280c;border:3px solid #000;border-radius:8px;padding:2px 14px}
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#e9e4f5}}
 </style></head><body>
 <div id="wrap">
-  <div id="tabs"><button data-p="gem" class="on">1. ช่วงเพชร 10 วิ</button><button data-p="fight">2. ช่วงสู้</button><button data-p="bag">3. ช่วงจัดกระเป๋า</button></div>
+  <div id="tabs"><button data-p="bag" class="on">1. ร้านค้า + จัดกระเป๋า</button><button data-p="fight">2. ช่วงสู้</button></div>
   <div id="holder"><div id="stage">
     <div id="battle">
       <div class="mtn" style="left:40px"></div><div class="mtn" style="left:300px;border-bottom-width:90px"></div><div class="mtn" style="left:560px"></div>
     </div>
     <div id="top">
-      <span class="pill">⏸</span><span class="pill t" id="tmr">⏳ 07</span><span class="pill">รอบ 6</span><span class="pill">💰 23</span>
+      <span class="pill">⏸</span><span class="pill t" id="tmr">⏳ 07</span><span class="pill" id="wave">เวฟ 3/4 · มอน</span><span class="pill">💰 23</span>
       <div id="players"></div>
     </div>
     <div id="bot">
@@ -93,8 +93,8 @@
       </div>
       <div class="phase" id="p-bag">
         <div id="bagCols"></div>
-        <div id="shop"><div class="label" style="position:static">ไอเทมที่ได้ / ร้าน</div><div id="tray" style="position:relative;height:150px"></div></div>
-        <div class="label" style="left:604px;bottom:12px;width:120px;line-height:1.2">ลากของไปใต้เทพ · แตะหมุน · ★ วางติดกันได้โบนัส</div><div class="go">พร้อม ▶</div>
+        <div id="shop"><div style="display:flex;justify-content:space-between;align-items:center"><span class="label" style="position:static">ร้านค้า</span><span class="chip" style="font:600 11px Kanit">🎲 สุ่มใหม่ 1💰</span></div><div id="tray" style="position:relative;height:150px"></div></div>
+        <div class="label" style="left:488px;bottom:6px;width:230px;line-height:1.2">ของที่แตะเทพ = ของเทพตัวนั้น (ขอบสีเดียวกัน) · แตะหมุน · ★ เสริมของที่ติดกัน</div><div class="go">พร้อม ▶</div>
       </div>
     </div>
   </div></div>
@@ -121,19 +121,25 @@ ports($('#fightPorts'),222,40,82,0,5,1);  // owner 2026-11-08: no ult buttons, a
 const seq='0132413024142301320412043113402340121340';$('#board').innerHTML=[...seq].map((g,i)=>'<div class="gem g'+g+(i>=17&&i<=19?' hit':'')+'"></div>').join('');
 // backpack: a 3x3 bag under each legend
 const IT=[['🗡️',1,2,'r3'],['🛡️',2,2,'r2'],['💍',1,1,'r5'],['🧪',1,1,'r1'],['📜',2,1,'r4'],['🔥',1,1,'r3'],['🪶',1,1,'r2']];
-$('#bagCols').innerHTML=ME.map(([k,n,c],i)=>'<div class="hcol" style="left:'+(6+i*118)+'px"><div class="port" style="background-image:url('+A+k+'.png);border-color:'+GC[c]+'"><div class="bar"><i style="width:60%;background:'+GC[c]+'"></i></div></div><div class="bag" id="bag'+i+'">'+'<div class="cell"></div>'.repeat(9)+'</div></div>').join('');
-function put(bag,ic,w,h,r,cx,cy,star){const b=$('#bag'+bag),e=document.createElement('div');e.className='item '+r;e.style.left=(Number(cx)*29+(96-3*26-6)/2)+'px';e.style.top=(cy*29)+'px';e.style.width=(w*26+(w-1)*3)+'px';e.style.height=(h*26+(h-1)*3)+'px';e.textContent=ic;if(star)e.innerHTML+='<span class="star" style="right:-5px;top:-6px">★</span>';b.appendChild(e)}
-put(0,'🗡️',1,2,'r3',0,0,1);put(0,'💍',1,1,'r5',1,0);put(0,'🔥',1,1,'r3',1,1);
-put(1,'🧪',1,1,'r1',2,2);put(1,'🗡️',1,2,'r2',0,1);
-put(2,'🪶',1,1,'r2',0,0);put(2,'📜',2,1,'r4',1,2,1);
-put(3,'🛡️',2,2,'r2',0,0);
-put(4,'💍',1,1,'r5',1,1);
+// ONE shared backpack, Backpack Battles style (owner 2026-11-08 "กระเป๋าแบบรวมไปเลย ให้การใช้ไอเทมเป็นแบบแบ็คแพ็ค"): the 5 legends sit in
+// the bag as 2x2 tiles; an item touching a legend belongs to that legend (its border takes the legend's colour); a ★ item boosts what touches it
+const C=36,G=3,COLS=12,ROWS=5,X0=8,Y0=8;
+let h='<div style="position:absolute;left:'+(X0-5)+'px;top:'+(Y0-5)+'px;width:'+(COLS*(C+G)+7)+'px;height:'+(ROWS*(C+G)+7)+'px;background:#120d22;border:3px solid #000;border-radius:8px"></div>';
+for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)h+='<div class="cell" style="position:absolute;left:'+(X0+x*(C+G))+'px;top:'+(Y0+y*(C+G))+'px;width:'+C+'px;height:'+C+'px"></div>';
+const at=(x,y,w,ht)=>'left:'+(X0+x*(C+G))+'px;top:'+(Y0+y*(C+G))+'px;width:'+(w*C+(w-1)*G)+'px;height:'+(ht*C+(ht-1)*G)+'px';
+const HP=[[0,0],[4,0],[8,0],[2,3],[7,3]];  // legend tiles (2x2)
+ME.forEach(([k,n,c],i)=>{const [x,y]=HP[i];h+='<div class="port" style="position:absolute;'+at(x,y,2,2)+';background-image:url('+A+k+'.png);border-color:'+GC[c]+';background-size:150%;background-position:50% 10%"><div class="bar"><i style="width:'+[100,72,45,88,30][i]+'%;background:'+GC[c]+'"></i></div></div>'});
+// [icon, w, h, rarity, x, y, owner legend index or -1, star]
+[['🗡️',1,2,'r3',2,0,0,1],['💍',1,1,'r5',3,0,1],['🔥',1,1,'r3',2,2,0],['🧪',1,1,'r1',6,0,1],['🗡️',1,2,'r2',6,1,2],['🪶',1,1,'r2',10,0,2],
+ ['📜',2,1,'r4',10,1,2,1],['🛡️',2,2,'r2',0,2,3],['💍',1,1,'r5',4,3,3],['🌙',1,1,'r4',9,3,4],['🪨',1,1,'r1',11,4,-1]]
+ .forEach(([ic,w,ht,r,x,y,o,st])=>{h+='<div class="item '+r+'" style="'+at(x,y,w,ht)+';font-size:20px'+(o>=0?';border-color:'+GC[ME[o][2]]+';border-width:3px':'')+'">'+ic+(st?'<span class="star" style="right:-5px;top:-7px;font-size:12px">★</span>':'')+'</div>'});
+$('#bagCols').innerHTML=h;
 $('#tray').innerHTML=[['🗡️',1,2,'r4',8,22],['🛡️',2,2,'r3',44,22],['💍',1,1,'r5',110,22],['🧪',1,1,'r2',148,22],['📜',2,1,'r3',8,100],['🔥',1,1,'r4',72,100],['🪶',1,1,'r1',110,100]]
-  .map(([ic,w,h,r,x,y])=>'<div class="item '+r+'" style="left:'+x+'px;top:'+y+'px;width:'+(w*26+(w-1)*3)+'px;height:'+(h*26+(h-1)*3)+'px">'+ic+'</div>').join('')+'';
+  .map(([ic,w,h,r,x,y],i)=>'<div class="item '+r+'" style="left:'+x+'px;top:'+y+'px;width:'+(w*26+(w-1)*3)+'px;height:'+(h*26+(h-1)*3)+'px">'+ic+'<span style="position:absolute;bottom:-14px;left:0;right:0;text-align:center;font:600 10px Kanit;color:#ffd75a">'+[6,9,4,3,7,5,3][i]+'💰</span></div>').join('')+'';
 // phases
 function show(p){document.querySelectorAll('.phase').forEach(e=>e.classList.toggle('on',e.id==='p-'+p));document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
-  $('#tmr').textContent=p==='gem'?'⏳ 07':p==='fight'?'⚔ สู้':'🎒 15';units(p)}
+  $('#tmr').textContent=p==='gem'?'⏳ 07':p==='fight'?'⚔ สู้':'🎒 15';$('#wave').textContent=p==='fight'?'เวฟ 4/4 · สู้กับคน':'ถัดไป เวฟ 4/4 · สู้กับคน';units(p)}  // owner 2026-11-08: 3 monster waves, wave 4 against a player
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.p)};
 function fit(){const t=$('#tabs').offsetHeight+18,k=Math.min((innerWidth-12)/844,(innerHeight-t)/390);$('#stage').style.transform='scale('+k+')';$('#holder').style.width=844*k+'px';$('#holder').style.height=390*k+'px'}
-addEventListener('resize',fit);fit();show(new URLSearchParams(location.search).get('p')||'gem');
+addEventListener('resize',fit);fit();show(new URLSearchParams(location.search).get('p')||'bag');  // gems parked (owner 2026-11-08 "เพชรเอาออกไปก่อน"), the gem phase stays in the file
 </script></body></html>
