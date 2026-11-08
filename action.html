@@ -58,6 +58,9 @@ const TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window
 if (TOUCH) document.body.classList.add('touch');
 const WW = 6000, WH = 4000, MARGIN = {l: 180, r: 180, t: 240, b: 260};   // owner: a bigger world so the rogue looks small (4200x2800 -> 6000x4000 on 2026-11-08)
 const AR = WW * WH / (4200 * 2800);   // how many times the first map's area (prop counts follow it)
+// two maps (owner 2026-11-08 picked "a separate map" for the old Thai city): ?map=thai; walking off the road's east end
+// of the first map leads there, its west end leads back (a page reload with ?map=..&from=..)
+const QS = new URLSearchParams(location.search), MAP = QS.get('map') === 'thai' ? 'thai' : 'west', TH = MAP === 'thai', FROM = QS.get('from');
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
 let S = 1, VW = 960, VH = 540, DPR = 1, U = 2;
 function onResize() {
@@ -88,23 +91,25 @@ function painter(w, h) {
 }
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + .5) / 16);
 // ---------- terrain layout: lake, stream, hamlet, meadows ----------
-const LAKE = {cx: WW * .7, cy: WH * .66, parts: [[0, 0, 300, 170], [215, 70, 190, 115], [-200, 50, 170, 105], [40, -85, 170, 90]].map(q => q.map(v => v * 1.35))};
-LAKE.box = [LAKE.cx - 600, LAKE.cy - 300, LAKE.cx + 620, LAKE.cy + 310];
+const LAKE = TH ? {cx: WW * .2, cy: WH * .47, parts: [[0, 0, 200, 105], [130, 40, 120, 72], [-120, 30, 110, 66]]} : {cx: WW * .7, cy: WH * .66, parts: [[0, 0, 300, 170], [215, 70, 190, 115], [-200, 50, 170, 105], [40, -85, 170, 90]].map(q => q.map(v => v * 1.35))};
+LAKE.box = TH ? [LAKE.cx - 330, LAKE.cy - 170, LAKE.cx + 330, LAKE.cy + 170] : [LAKE.cx - 600, LAKE.cy - 300, LAKE.cx + 620, LAKE.cy + 310];
 function lakeF(x, y) {           // > 0 inside the water, about 1 in the middle
   let v = -9; for (const [ox, oy, rx, ry] of LAKE.parts) { const dx = (x - LAKE.cx - ox) / rx, dy = (y - LAKE.cy - oy) / ry; v = Math.max(v, 1 - (dx * dx + dy * dy)); }
   return v + .06 * Math.sin(x / 31) * Math.sin(y / 23);
 }
 // stream: from the lake's north shore up to the top edge, crossing the path (bridge there)
 const STREAM = (() => {
-  const cy = LAKE.cy, K = [[LAKE.cx + 40, cy - 160], [LAKE.cx + 140, cy * .8], [LAKE.cx + 30, cy * .62], [LAKE.cx + 220, cy * .42], [LAKE.cx + 110, cy * .2], [LAKE.cx + 280, -40]];
+  const cy = LAKE.cy, K = TH ? [[WW * .63, -60], [WW * .67, WH * .18], [WW * .6, WH * .4], [WW * .65, WH * .6], [WW * .58, WH * .8], [WW * .62, WH + 60]] : [[LAKE.cx + 40, cy - 160], [LAKE.cx + 140, cy * .8], [LAKE.cx + 30, cy * .62], [LAKE.cx + 220, cy * .42], [LAKE.cx + 110, cy * .2], [LAKE.cx + 280, -40]];
   const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
     for (let t = 0; t < 1; t += .1) { const t2 = t * t, t3 = t2 * t, f = (a, b, c, d) => .5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
       pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
   pts.push(K[K.length - 1]);
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  return {pts, box: [Math.min(...xs) - 50, Math.min(...ys) - 50, Math.max(...xs) + 50, Math.max(...ys) + 50]};
+  const mg = TH ? 260 : 50;   // the Thai map's stream is a wide river
+  return {pts, box: [Math.min(...xs) - mg, Math.min(...ys) - mg, Math.max(...xs) + mg, Math.max(...ys) + mg]};
 })();
-const SEGB = STREAM.pts.slice(1).map((b, i) => { const a = STREAM.pts[i]; return [Math.min(a[0], b[0]) - 64, Math.min(a[1], b[1]) - 64, Math.max(a[0], b[0]) + 64, Math.max(a[1], b[1]) + 64]; });
+const RIVM = TH ? 240 : 64, SEGB = STREAM.pts.slice(1).map((b, i) => { const a = STREAM.pts[i]; return [Math.min(a[0], b[0]) - RIVM, Math.min(a[1], b[1]) - RIVM, Math.max(a[0], b[0]) + RIVM, Math.max(a[1], b[1]) + RIVM]; });
+function riverX(y) { const P = STREAM.pts; for (let i = 0; i < P.length - 1; i++) if (y >= P[i][1] && y <= P[i + 1][1]) return P[i][0] + (P[i + 1][0] - P[i][0]) * (y - P[i][1]) / ((P[i + 1][1] - P[i][1]) || 1); return P[0][0]; }
 function streamD(x, y) {          // distance to the stream's middle line (1e9 when more than ~64 px away: nothing uses it then)
   let best = 1e9; const P = STREAM.pts;
   for (let i = 0; i < P.length - 1; i++) { const q = SEGB[i]; if (x < q[0] || x > q[2] || y < q[1] || y > q[3]) continue;
@@ -112,25 +117,28 @@ function streamD(x, y) {          // distance to the stream's middle line (1e9 w
     const t = l ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0, ex = ax + dx * t - x, ey = ay + dy * t - y, d = ex * ex + ey * ey; if (d < best) best = d; }
   return Math.sqrt(best);
 }
-const HAMLET = {x: WW * .27 + 300, y: WH * .28 + 170, rx: 980, ry: 640};   // a town since the GPT buildings sheet (was 720 x 520)   // wider for the 1.5x cottages   // the cottages stand round its middle
-const MEADOWS = [[WW * .5, WH * .78], [WW * .14, WH * .6], [WW * .64, WH * .36], [WW * .55, WH * .2], [WW * .34, WH * .9], [WW * .9, WH * .82], [WW * .1, WH * .2]];
+const HAMLET = TH ? {x: WW * .26, y: WH * .52, rx: 1150, ry: 720} : {x: WW * .27 + 300, y: WH * .28 + 170, rx: 980, ry: 640};   // a town since the GPT buildings sheet (was 720 x 520)   // wider for the 1.5x cottages   // the cottages stand round its middle
+const MEADOWS = TH ? [[WW * .74, WH * .34], [WW * .5, WH * .26], [WW * .5, WH * .78], [WW * .76, WH * .5]] : [[WW * .5, WH * .78], [WW * .14, WH * .6], [WW * .64, WH * .36], [WW * .55, WH * .2], [WW * .34, WH * .9], [WW * .9, WH * .82], [WW * .1, WH * .2]];
 // zones (owner 2026-11-08 "ทำแมพต่อ"): two thick forests with darker ground (north-east round a ruined tower, south-west),
 // ruins round the south tower, side paths from the road to each tower
-const FORESTS = [{x: WW * .86, y: WH * .25, rx: 820, ry: 640}, {x: WW * .13, y: WH * .8, rx: 760, ry: 580}];
+const FORESTS = TH ? [{x: WW * .86, y: WH * .2, rx: 620, ry: 460}, {x: WW * .9, y: WH * .86, rx: 560, ry: 400}, {x: WW * .1, y: WH * .9, rx: 600, ry: 360}]
+  : [{x: WW * .86, y: WH * .25, rx: 820, ry: 640}, {x: WW * .13, y: WH * .8, rx: 760, ry: 580}];
 function forestF(x, y) {         // > 0 inside a forest, about 1 in the middle
   let v = -9; for (const f of FORESTS) { const dx = (x - f.x) / f.rx, dy = (y - f.y) / f.ry; v = Math.max(v, 1 - (dx * dx + dy * dy)); }
   return v < -.2 ? v : v + .07 * Math.sin(x / 53) * Math.sin(y / 41);   // the wobble only near / inside a forest
 }
-const RUINS = {x: WW * .44, y: WH * .84 + 40, rx: 480, ry: 300};
-const TOWERS = [[WW * .86, WH * .3], [WW * .44, WH * .84], [WW * .1, WH * .3]];
+const RUINS = TH ? {x: WW * .84, y: WH * .24, rx: 440, ry: 270} : {x: WW * .44, y: WH * .84 + 40, rx: 480, ry: 300};
+const PADDY = TH ? {x0: WW * .67, y0: WH * .63, x1: WW * .84, y1: WH * .9} : null;   // rice fields east of the river
+const TOWERS = TH ? [] : [[WW * .86, WH * .3], [WW * .44, WH * .84], [WW * .1, WH * .3]];
 function crv(K) {                // Catmull-Rom through the key points
   const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
     for (let t = 0; t < 1; t += .125) { const t2 = t * t, t3 = t2 * t, f = (a, b, c, d) => .5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
       pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
   pts.push(K[K.length - 1]); return pts;
 }
-const pathY0 = x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
-const SIDE = [   // from the road to the north-east tower (through the forest), the south ruins, the west tower
+const pathY0 = TH ? x => WH * .58 + 230 * Math.sin(x / 760) + 50 * Math.sin(x / 240 + .7) : x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
+const SIDE = TH ? [crv([[WW * .79, pathY0(WW * .79)], [WW * .81, WH * .42], [WW * .84, WH * .24 + 70]]),   // to the prang ruins, to the paddies
+  crv([[WW * .73, pathY0(WW * .73)], [WW * .75, WH * .72], [WW * .76, WH * .86]])] : [   // from the road to the north-east tower (through the forest), the south ruins, the west tower
   crv([[WW * .82, pathY0(WW * .82)], [WW * .84, WH * .38], [WW * .855, WH * .33], [WW * .86, WH * .3 + 40]]),
   crv([[WW * .43, pathY0(WW * .43)], [WW * .45, WH * .66], [WW * .425, WH * .75], [WW * .44, WH * .84 + 50]]),
   crv([[WW * .12, pathY0(WW * .12)], [WW * .105, WH * .4], [WW * .1, WH * .3 + 40]])];
@@ -162,7 +170,8 @@ for (let gy = 0; gy < ZH; gy++) for (let gx = 0; gx < ZW; gx++) { const x = gx *
 // kinds: 0 grass, 1 path, 2 yard, 3 shore, 4 water, 5 bridge deck, 6 bridge rail, 7 ruins floor
 const PYC = new Float32Array(WW + 8), PWC = new Float32Array(WW + 8), SWC = new Float32Array(WH + 8);   // per column / row
 for (let x = 0; x < WW + 8; x++) { PYC[x] = pathY(x); PWC[x] = 34 + 8 * Math.sin(x / 57); }
-for (let y = 0; y < WH + 8; y++) SWC[y] = 22 + 5 * Math.sin(y / 70);
+for (let y = 0; y < WH + 8; y++) SWC[y] = TH ? 118 + 16 * Math.sin(y / 130) : 22 + 5 * Math.sin(y / 70);
+const SHORE = TH ? 30 : 8;
 function terr(x, y) {            // x, y whole numbers inside the world
   const lb = LAKE.box, sb = STREAM.box, hz = HAMLET;
   const dpath = Math.abs(y - PYC[x]), pw = PWC[x];
@@ -170,7 +179,7 @@ function terr(x, y) {            // x, y whole numbers inside the world
   const sd = x > sb[0] && x < sb[2] && y > sb[1] && y < sb[3] ? streamD(x, y) : 1e9, sw = SWC[y];
   if (dpath < pw + 8 && sd < sw + 12) { TK = dpath < pw + 2 ? 5 : 6; TA = dpath > pw + 5 ? 1 : 0; return; }
   if (lf > 0 || sd < sw) { TK = 4; TA = Math.max(lf > 0 ? lf / .5 : 0, sd < sw ? 1 - sd / sw : 0); return; }
-  if (lf > -.13 || sd < sw + 8) { TK = 3; TA = lf > -.13 ? (-lf) / .13 : (sd - sw) / 8; return; }
+  if (lf > -.13 || sd < sw + SHORE) { TK = 3; TA = lf > -.13 ? (-lf) / .13 : (sd - sw) / SHORE; return; }
   const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
   if (hd < 1 && dpath >= pw) { TK = 2; TA = hd; return; }
   if (dpath < pw) { TK = 1; TA = dpath; TB = pw; return; }
@@ -178,6 +187,7 @@ function terr(x, y) {            // x, y whole numbers inside the world
   if (zf & 1) { const sp = sideD(x, y), sw2 = 22 + 4 * Math.sin((x + y) / 47); if (sp < sw2) { TK = 1; TA = sp; TB = sw2; return; } }
   const rd = ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2;
   if (rd < 1) { TK = 7; TA = rd; return; }
+  if (PADDY && x > PADDY.x0 && x < PADDY.x1 && y > PADDY.y0 && y < PADDY.y1) { TK = 8; TA = (x - PADDY.x0) % 170 < 10 || (y - PADDY.y0) % 120 < 8 ? 1 : 0; return; }   // dikes
   TK = 0; TA = zf & 2 ? forestF(x, y) : -1;
 }
 function setupGround() {
@@ -201,8 +211,10 @@ function groundPx(x, y, D, o) {
   terr(x, y);
   const b = BAYER[(y & 3) * 4 + (x & 3)];
   let T = 'grass', k = 0;                                       // k 0 = the grass light patches
-  if (TK === 5 || TK === 6) { const c = TK === 6 ? WD[TA ? 0 : 1] : x % 9 === 0 ? WD[0] : x % 9 < 4 ? WD[2] : WD[3]; D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = 255; return; }
-  if (TK === 4) { T = 'water'; k = TA < .07 && b < .7 ? 1.18 : 1.04 - Math.min(1, TA) * .3; }
+  if (TK === 6 || (TK === 5 && !TEX.planks)) { const c = TK === 6 ? WD[TA ? 0 : 1] : x % 9 === 0 ? WD[0] : x % 9 < 4 ? WD[2] : WD[3]; D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = 255; return; }
+  if (TK === 5) { T = 'planks'; k = 1; }
+  else if (TK === 8) { T = TA ? 'dirt' : 'reeds'; k = .95 + GND.noise(x, y) * .1; }
+  else if (TK === 4) { T = 'water'; k = TA < .07 && b < .7 ? 1.18 : 1.04 - Math.min(1, TA) * .3; }
   else if (TK === 3) { if (!(TA > .6 && b < (TA - .6) / .4)) { T = 'sand'; k = 1; } }
   else if (TK === 2) { if (!(TA > .82 && b < (TA - .82) / .18)) { T = 'cobble'; k = 1; } }
   else if (TK === 1) { if (!(TA > TB - 6 && b < (TA - (TB - 6)) / 7)) { T = 'dirt'; k = .96 + GND.noise(x, y) * .08; } }
@@ -213,7 +225,7 @@ function groundPx(x, y, D, o) {
     if (m2 < 67600) { const md = Math.sqrt(m2); if (md < 200 || b < (260 - md) / 60) T = 'flowergrass'; } }
   if (!k) k = .9 + GND.noise(x, y) * .2;
   const t = TEX[T];
-  if (t) { const i = ((y % t.h) * t.w + (x % t.w)) * 4; D[o] = t.d[i] * k; D[o + 1] = t.d[i + 1] * k; D[o + 2] = t.d[i + 2] * k; }
+  if (t) { const i = T === 'planks' ? ((x % t.h) * t.w + (y % t.w)) * 4 : ((y % t.h) * t.w + (x % t.w)) * 4; /* planks turned across the road */ D[o] = t.d[i] * k; D[o + 1] = t.d[i + 1] * k; D[o + 2] = t.d[i + 2] * k; }
   else { const c = TFB[T]; D[o] = c[0] * k; D[o + 1] = c[1] * k; D[o + 2] = c[2] * k; }
   D[o + 3] = 255;
 }
@@ -447,7 +459,14 @@ const GPDEF = {oak: {rad: 30}, pine: {rad: 24}, blossom: {rad: 22},   // trees r
   wall: {rect: {w: 200, d: 34}}, wall_corner: {rect: {w: 160, d: 50}}, arch: {soft: 1, shade: {w: 210, d: 30}, nf: 1}, statue: {rad: 30, nf: 1},
   pillar_down: {rect: {w: 160, d: 30}}, pillar: {rad: 28}, rubble: {rad: 40}, stairs: {rect: {w: 180, d: 60}}, stump: {rad: 30},
   log: {rect: {w: 140, d: 26}}, mushrooms: {soft: 1}, fern: {soft: 1}, dead_tree: {rad: 26, tree: 1}, mossy_rock: {rad: 50},
-  campfire: {rad: 36}, tent: {rect: {w: 190, d: 40}, nf: 1}, signpost: {rad: 10, nf: 1}, cart: {rect: {w: 200, d: 34}}};
+  campfire: {rad: 36}, tent: {rect: {w: 190, d: 40}, nf: 1}, signpost: {rad: 10, nf: 1}, cart: {rect: {w: 200, d: 34}},
+  // the Thai map (owner's four GPT sheets 2026-11-08; tools/art/thai_props.py)
+  ...Object.fromEntries(('v_stilt v_row v_hut v_kitchen v_granary v_veranda v_waterhouse v_fishhut v_boatshed v_stall v_pen v_temple v_stupa v_pavilion ' +
+    't_house t_twin t_hut t_granary t_shophouse t_stall t_sala t_fort t_palace t_temple t_stupa t_prang t_belltower t_library t_elephant t_smithy t_teahouse').split(' ').map(n => [n, {bld: 1, nf: 1}])),
+  t_gate: {soft: 1, shade: {w: 300, d: 40}, nf: 1}, v_watchtower: {rad: 40, nf: 1}, v_well: {rad: 34, nf: 1}, v_raintree: {rad: 40, tree: 1}, v_bridge: {soft: 1, nf: 1},
+  jar_dragon: {rad: 18, nf: 1}, pots: {rad: 18}, boat_fruit: {soft: 1}, lotus: {soft: 1}, banana: {rad: 18, tree: 1}, coconut: {rad: 16, tree: 1}, sugarpalm: {rad: 16, tree: 1},
+  fence_bamboo: {rect: {w: 80, d: 10}}, baskets: {rad: 16}, oxcart: {rect: {w: 140, d: 30}}, lantern_thai: {rad: 8, nf: 1}, lion: {rad: 24, nf: 1}, elephant_statue: {rad: 30, nf: 1},
+  flagpole: {rad: 8, nf: 1}, fruit_mat: {soft: 1}, wall_sema: {rect: {w: 140, d: 24}, nf: 1}, noticeboard: {rad: 14, nf: 1}, bridge_curve: {soft: 1, nf: 1}};
 const GPROP = {};
 function gp(name) {
   const g = GPROP[name], d = GPDEF[name], img = d.nf || rnd() < .5 ? g.a : g.b;   // a / b = as drawn / mirrored (not for houses: their light comes from one side)
@@ -456,10 +475,12 @@ function gp(name) {
 }
 const TEX = {};   // GPT ground textures as pixel arrays (grass, dirt, sand, water, cobble, flowergrass)
 async function loadProps() {
-  await Promise.all(['grass', 'dirt', 'sand', 'water', 'cobble', 'flowergrass'].map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
+  const TEXF = TH ? {grass: 'grass', dirt: 'rv_dirt', sand: 'rv_mud', water: 'rv_water', cobble: 'cobble', flowergrass: 'grass', planks: 'planks', reeds: 'reeds'}
+    : {grass: 'grass', dirt: 'dirt', sand: 'sand', water: 'water', cobble: 'cobble', flowergrass: 'flowergrass'};   // Thai map: the owner's riverside ground sheet
+  await Promise.all(Object.keys(TEXF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
-    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/ground/' + n + '.png?v=' + (META.v || 1); })));
-  if (Object.keys(TEX).length < 6) for (const k of Object.keys(TEX)) delete TEX[k];   // all or nothing (code ground otherwise)
+    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/ground/' + TEXF[n] + '.png?v=' + (META.v || 1); })));
+  if (Object.keys(TEX).length < Object.keys(TEXF).length) for (const k of Object.keys(TEX)) delete TEX[k];   // all or nothing (code ground otherwise)
   await Promise.all(Object.keys(GPDEF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
     GPROP[n] = {a: im, b}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
@@ -480,6 +501,9 @@ function makeProps() {
     }
     PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft, shades});
   };
+  if (TH) { if (GPROP.t_palace) thaiProps({add, far, dry, pathOk, inYard}); PROPS.sort((a, b) => a.y - b.y); return; }
+  // the first map's exit to the Thai map: a signpost where the road leaves at the east edge
+  if (GPROP.signpost) { const x = WW - MARGIN.r - 90; add(gp('signpost'), x | 0, GROUND_PATH(x) - 80 | 0); }
   // GPT-drawn props (owner 2026-11-08: map art from GPT, the code-drawn ones looked poor); the code ones are only a
   // fallback if the pictures did not load
   const T = () => GPROP.oak ? gp(['oak', 'oak', 'pine', 'blossom'][rnd() * 4 | 0]) : bigTree(80 + rnd() * 44 | 0, 110 + rnd() * 70 | 0, PAL_TREE[rnd() * 2 | 0]);
@@ -572,6 +596,73 @@ function makeProps() {
     add(gp('flowers'), x | 0, y | 0);
   }
   PROPS.sort((a, b) => a.y - b.y);
+}
+// ---------- the Thai map's props: a walled royal city, a riverside village, a temple, paddies, prang ruins, jungle ----------
+function thaiProps({add, far, dry, pathOk, inYard}) {
+  const J = () => gp(['coconut', 'coconut', 'sugarpalm', 'banana', 'v_raintree'][rnd() * 5 | 0]);
+  const roadOk = (x, y, w) => [x - w / 2, x, x + w / 2].every(xs => Math.abs(y - GROUND_PATH(xs)) > 95) && sideD(x, y) > 90 && dry(x, y, 60);
+  const put = (n, x, y, check = true) => { if (!GPROP[n]) return false; if (check && !roadOk(x, y, GPROP[n].a.width)) return false; add(gp(n), x | 0, y | 0); return true; };
+  // jungle round the edges
+  for (let x = 40; x < WW; x += 300 + rnd() * 140) { add(J(), x | 0, 170 + rnd() * 30 | 0); add(J(), x + 60 | 0, WH - 30 - rnd() * 20 | 0); }
+  for (let y = 320; y < WH - 140; y += 320 + rnd() * 140) { add(J(), 70 + rnd() * 50 | 0, y | 0); add(J(), WW - 70 - rnd() * 50 | 0, y | 0); }
+  // the way back: a notice board where the road leaves at the west edge
+  { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0); }
+  // the royal city: walls of sema bricks round the yard, forts on the diagonals, a gate where the road goes in and out
+  const C = HAMLET, FA = [.79, 2.36, 3.93, 5.5];
+  for (let a = 0; a < 6.283; a += .082) { const x = C.x + Math.cos(a) * C.rx * .99, y = C.y + Math.sin(a) * C.ry * .99;
+    if (Math.abs(y - GROUND_PATH(x)) < 120 || FA.some(c => Math.abs(a - c) < .1) || x < 60) continue;
+    add(gp('wall_sema'), x | 0, y | 0); }
+  for (const c of FA) add(gp('t_fort'), C.x + Math.cos(c) * C.rx * .99 | 0, C.y + Math.sin(c) * C.ry * .99 + 30 | 0);
+  for (const s of [-1, 1]) { let x = C.x + s * C.rx; for (let k = 0; k < 8; k++) { const y = GROUND_PATH(x), q = 1 - ((y - C.y) / C.ry) ** 2; x = C.x + s * C.rx * Math.sqrt(Math.max(0, q)) * .99; }
+    if (x > 100) add(gp('t_gate'), x | 0, GROUND_PATH(x) + 34 | 0); }
+  // inside: the palace in the middle of the north half, temple and stupa beside it, the library hall on the lotus pond,
+  // lions and flags before the palace, houses, smithy, tea house, elephant stable, a market along the road
+  const IN = [['t_palace', 0, -330], ['t_temple', 560, -300], ['t_stupa', 900, -170], ['t_belltower', 330, -110], ['t_sala', -420, -360],
+    ['t_house', -760, -40], ['t_twin', -980, 120], ['t_shophouse', 700, 120], ['t_smithy', 980, 60], ['t_teahouse', -560, 120],
+    ['t_elephant', -200, -60], ['t_granary', -900, -280], ['t_hut', 420, 320], ['t_house', -300, 380], ['t_twin', 760, 420]];
+  for (const [n, dx, dy] of IN) put(n, C.x + dx, C.y + dy);
+  put('t_library', LAKE.cx + 10, LAKE.cy + 30, false);
+  for (const sx of [-170, 170]) { put('lion', C.x + sx, C.y - 170); put('flagpole', C.x + sx * 1.6, C.y - 190); }
+  put('elephant_statue', C.x + 560, C.y - 110); put('elephant_statue', C.x + 760, C.y - 110);
+  for (let x = C.x - C.rx * .8; x < C.x + C.rx * .8; x += 260 + rnd() * 80) {        // market stalls both sides of the road
+    const y = GROUND_PATH(x), up = rnd() < .5, yy = y + (up ? -110 : 150);
+    if (((x - C.x) / C.rx) ** 2 + ((yy - C.y) / C.ry) ** 2 > .8 || !dry(x, yy, 40) || !far(x, yy, 150)) continue;
+    add(gp(rnd() < .5 ? 't_stall' : 'v_stall'), x | 0, yy | 0);
+    for (let k = 0; k < 2; k++) { const px = x + (rnd() - .5) * 260, py = yy + 30 + rnd() * 30; if (dry(px, py, 20) && far(px, py, 50)) add(gp(['fruit_mat', 'baskets', 'pots', 'jar_dragon'][rnd() * 4 | 0]), px | 0, py | 0); } }
+  for (let x = C.x - C.rx; x < C.x + C.rx; x += 230) { const y = GROUND_PATH(x) - 70; if (inYard(x, y) && far(x, y, 60)) add(gp('lantern_thai'), x | 0, y | 0); }
+  // the riverside village: stilt houses standing in the water on both banks, more houses, kitchens and granaries behind
+  const WAT = ['v_waterhouse', 'v_fishhut', 'v_boatshed', 'v_pavilion'], LAND = ['v_stilt', 'v_row', 'v_hut', 'v_kitchen', 'v_granary', 'v_veranda', 'v_well'];
+  for (let y = WH * .18; y < WH * .84; y += 300 + rnd() * 90) {
+    if (Math.abs(y - GROUND_PATH(riverX(y))) < 260) continue;                       // keep clear of the bridge
+    for (const s of [-1, 1]) { const rx = riverX(y), w = SWC[y | 0], xw = rx + s * (w - 40);
+      if (rnd() < .8) add(gp(WAT[rnd() * WAT.length | 0]), xw | 0, y | 0);
+      const xl = rx + s * (w + 230 + rnd() * 120), yl = y + (rnd() - .5) * 80;
+      if (roadOk(xl, yl, 340) && far(xl, yl, 230)) add(gp(LAND[rnd() * LAND.length | 0]), xl | 0, yl | 0);
+      if (rnd() < .6) { const x2 = xl + s * 120, y2 = yl + 90; if (dry(x2, y2, 20) && far(x2, y2, 60)) add(gp(['jar_dragon', 'pots', 'baskets', 'banana'][rnd() * 4 | 0]), x2 | 0, y2 | 0); } } }
+  for (let i = 0; i < 26; i++) { const y = 200 + rnd() * (WH - 400), rx = riverX(y);           // boats and lotus on the river
+    if (Math.abs(y - GROUND_PATH(rx)) < 160) continue;
+    if (i % 2) add(gp('boat_fruit'), rx + (rnd() - .5) * 120 | 0, y | 0);
+    else { const s = rnd() < .5 ? -1 : 1, w = SWC[y | 0]; add(gp('lotus'), rx + s * (w - 30 - rnd() * 30) | 0, y | 0); } }
+  // a temple on the east bank north of the road
+  { const y = WH * .4, x = riverX(y) + SWC[y | 0] + 520; put('v_temple', x, y); put('v_stupa', x + 380, y - 60); put('t_sala', x - 120, y + 260); put('flagpole', x - 200, y + 40); put('lion', x - 60, y + 90); }
+  // the paddies: a granary, a buffalo pen, a watchtower and huts round the rice fields
+  if (PADDY) { const P = PADDY; put('v_watchtower', P.x0 + 80, P.y0 - 40); put('v_pen', P.x1 + 200, P.y0 + 150); put('v_granary', P.x1 + 180, P.y1 - 120);
+    put('v_hut', P.x0 + 300, P.y1 + 120); put('oxcart', P.x0 + 520, P.y1 + 140); put('fence_bamboo', P.x1 + 60, P.y0 + 300); }
+  // the prang ruins in the north-east jungle
+  if (GPROP.t_prang) { put('t_prang', RUINS.x, RUINS.y - 20, false); put('t_prang', RUINS.x - 330, RUINS.y + 90, false); put('t_stupa', RUINS.x + 300, RUINS.y + 60, false);
+    for (let i = 0; i < 24; i++) { const a = rnd() * 6.28, r = .5 + rnd() * .6, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
+      if (pathOk(x, y) && far(x, y, 90)) add(gp(rnd() < .4 ? 'rubble' : rnd() < .5 ? 'mossy_rock' : 'fern'), x | 0, y | 0); } }
+  // jungle groves: palms, bananas and big rain trees close together, ferns under them
+  for (const F of FORESTS) for (let tries = 0, k = 0; tries < 2500 && k < F.rx * F.ry / 14000; tries++) {
+    const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 150) || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.1) continue;
+    add(J(), x | 0, y | 0); k++; }
+  for (const F of FORESTS) for (let i = 0; i < 40; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(rnd() < .5 ? 'fern' : rnd() < .5 ? 'bush' : 'mushrooms'), x | 0, y | 0); }
+  // the open land: a few palms and bananas, bushes and rocks
+  for (let k = 0, tries = 0; k < 70 && tries < 3000; tries++) { const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
+    if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || (PADDY && x > PADDY.x0 - 60 && x < PADDY.x1 + 60 && y > PADDY.y0 - 60 && y < PADDY.y1 + 60) || !far(x, y, 380)) continue;
+    add(rnd() < .7 ? J() : gp(rnd() < .5 ? 'bush' : 'rocks'), x | 0, y | 0); k++; }
 }
 // water blocks walking (the bridge deck is open): slide along the shore by undoing one axis, else stay
 function unwater(o, ox, oy) {
@@ -704,6 +795,9 @@ function airFrames(dir, R) {
   return out;
 }
 const FXS = {}, PFX = {};
+// 8 crescent slashes from the VFX workbench (owner: "ไม่เอาเส้นตรง ให้เป็นรอยฟันสวยๆ"), which way each one bulges (screen degrees)
+const SLB = [41, 99, 150, -175, -138, -84, -33, 3];
+function slashFor(deg, t = '') { let b = 0, bd = 999; for (let k = 0; k < 8; k++) { const d = Math.abs(((SLB[k] - deg) % 360 + 540) % 360 - 180); if (d < bd) { bd = d; b = k; } } return 'dslash' + t + b; }
 function pfx(k, x, y) { const P = PFX[k]; if (!P || !P.m) return false; G.fx.push({k: 'pfx', key: k, x, y, t: 0, life: P.m.n / P.m.fps}); return true; }
 // soft light (bloom) for arcs and hits, added with 'lighter' like the glowing slashes in the owner's reference clip
 function glowSprite(c) {
@@ -732,7 +826,7 @@ async function load() {
   // pixelfx effects already in the repo (MIT, vendor/pixelfx; owner 2026-11-08 "อันนี้เราเคยใช้นิ"): darkx = the smoke
   // bomb's blast, poof = vanishing / warping, nslash = the flurry's cross cuts
   try { const man = await fetch('fx/manifest.json').then(r => r.json());
-    await Promise.all(['dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
+    await Promise.all([...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -746,10 +840,22 @@ async function load() {
 
 // ---------- state ----------
 let G;
+function spawnAt() {              // where she appears: the road's west end on the Thai map, its east end coming back
+  if (TH) { const x = MARGIN.l + 70; return [x, GROUND_PATH(x)]; }
+  if (FROM === 'thai') { const x = WW - MARGIN.r - 70; return [x, GROUND_PATH(x)]; }
+  return [WW / 2, WH / 2 + 60];
+}
+function travel(to) {             // off the end of the road: fade out, carry hp / stamina, load the other map
+  if (G.travel) return; G.travel = 1;
+  try { sessionStorage.setItem('act.carry', JSON.stringify({hp: G.p.hp, st: G.p.st, kills: G.kills, wave: G.wave})); } catch (e) {}
+  const f = document.createElement('div'); f.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;transition:opacity .35s;z-index:50'; document.body.appendChild(f);
+  requestAnimationFrame(() => { f.style.opacity = 1; }); setTimeout(() => { location.href = 'action.html?map=' + to + '&from=' + MAP; }, 380);
+}
 function newGame() {
   G = {t: 0, hs: 0, shake: 0, wave: 0, kills: 0, over: false, fx: [], nums: [], ghosts: [], mobs: [], knives: [], bombs: [], next: 1.2,
-    p: {cd: {}, x: WW / 2, y: WH / 2 + 60, dir: 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null}};
+    p: {cd: {}, x: spawnAt()[0], y: spawnAt()[1], dir: TH ? 0 : FROM === 'thai' ? 4 : 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null}};
   cam.x = G.p.x - VW / 2; cam.y = G.p.y - VH / 2;
+  if (FROM) try { const c = JSON.parse(sessionStorage.getItem('act.carry') || 'null'); if (c) { G.p.hp = c.hp || 100; G.p.st = c.st || 100; G.kills = c.kills || 0; G.wave = c.wave || 0; } } catch (e) {}
 }
 const cam = {x: 0, y: 0};
 // attack: every direction has its own frames; the swing frames (hits) come from the sheet json (widest frames)
@@ -1010,7 +1116,8 @@ function flurryStep(p, dt) {
     p.x = f.ax + (f.bx - f.ax) * f.u; p.y = f.ay + (f.by - f.ay) * f.u;
     f.gh -= dt; if (f.gh <= 0 && f.u < 1) { f.gh = .018; G.ghosts.push({x: p.x, y: p.y, dir: f.bx >= f.ax ? 0 : 4, t: 0, k: .5, atk: 3, an: 'dash', a: 1.6}); }
     if (!f.hit && f.u >= .5) { f.hit = 1; let any = false;
-      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 10, '#a8f4f4'); any = true; }
+      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 10, '#a8f4f4'); pfx('xcut', m.x + (rnd() - .5) * 10, m.y - 22); any = true; }
+      if (!any) pfx('xcut', f.cx, f.cy - 24);
       if (any) { G.hs = Math.max(G.hs, .03); G.shake = Math.max(G.shake, 2); } }
     if (f.t >= SK4.cut) { f.t = 0; if (++f.n < SK4.n) nextCut(p, f); else { f.ph = 'end';
       for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) hitMob(m, SK4.fin, f.cx, f.cy, 90, '#ffffff', true);
@@ -1024,9 +1131,7 @@ function nextCut(p, f) {         // a pentagram: each pass 144 degrees round fro
   f.ax = f.n === 0 ? p.x : f.bx; f.ay = f.n === 0 ? p.y : f.by;
   f.bx = f.cx + c * R; f.by = f.cy + sn * R * .6; f.hit = 0; f.u = 0;
   if (f.n > 0) { f.ax = f.cx - c * R; f.ay = f.cy - sn * R * .6; }
-  G.fx.push({k: 'streak', x: f.ax, y: f.ay - 30, x2: f.bx, y2: f.by - 30, t: 0, life: .26, cy: 1});
-  G.fx.push({k: 'air', x: f.cx, y: f.cy - 24, dir: dirOf(c, sn), t: 0, life: .16, big: f.n === SK4.n - 1});
-  if (f.n % 2 === 1) pfx('nslash', f.cx, f.cy - 24);
+  f.cut = 1;                                                                   // the X cuts go on the monsters when the pass reaches them
   p.dir = f.bx >= f.ax ? 0 : 4;
 }
 function flurryEnd(p) {
@@ -1091,6 +1196,9 @@ function stepPlayer(dt) {
     const st = Math.floor((q.t - SK2.wind) / SK2.step);
     while (q.s < Math.min(st, SK2.steps)) {                       // each step = one direction further round
       q.s++; if (q.s === 0 || q.s === SK2.steps / 2) spinRing();
+      if (q.s >= 0 && q.s % 2 === 0 && q.s < SK2.steps) { const a = ((q.d0 + q.s) % 8) * Math.PI / 4, k = slashFor(a * 180 / Math.PI), P = PFX[k];   // a storm of crescents round her (owner)
+        if (P && P.m) for (const [t, r, lag] of [['s', 26, 0], ['', 44, .03], ['l', 66, .06]]) { const b = a + lag * 6, kk = slashFor(b * 180 / Math.PI, t), Q = PFX[kk];
+          if (Q && Q.m) G.fx.push({k: 'pfx', key: kk, follow: 1, ox: Math.cos(b) * r, oy: -30 + Math.sin(b) * r * .6, depth: Math.sin(b) < -.2 ? 'b' : 'f', t: -lag, life: Q.m.n / Q.m.fps}); } }
       if (q.s > 0) { const pd = (q.d0 + q.s - 1) % 8, ar = animRow('attack', pd); if (ar) G.ghosts.push({x: p.x, y: p.y, dir: pd, t: 0, k: .5, atk: (ar.hits || [4])[0], a: 1.3}); }
       if (SK2.hits.includes(q.s)) spinHit(p, q.s === SK2.hits[SK2.hits.length - 1]);
       p.dir = (q.d0 + Math.max(0, q.s)) % 8; }
@@ -1142,6 +1250,7 @@ function stepPlayer(dt) {
     } else { p.state = 'idle'; p.bob = 0; }
   }
   blockProps(p, 14); unwater(p, ox, oy);
+  if (!TEST && !G.travel && Math.abs(p.y - GROUND_PATH(p.x)) < 70) { if (!TH && p.x >= WW - MARGIN.r - 2) travel('thai'); else if (TH && p.x <= MARGIN.l + 2) travel('west'); }
   p.x = clamp(p.x, MARGIN.l, WW - MARGIN.r); p.y = clamp(p.y, MARGIN.t, WH - MARGIN.b);
 }
 function stepMobs(dt) {
@@ -1290,7 +1399,7 @@ function drawMob(m) {
 }
 function drawPfx(f) {
   const P = PFX[f.key]; if (!P || !P.m || f.t < 0) return; const m = P.m, i = Math.min(m.n - 1, f.t * m.fps | 0), cols = m.cols || m.n;
-  const x = f.follow ? G.p.x : f.x, y = f.follow ? G.p.y + (f.oy || 0) : f.y, Gl = PFX[f.key + '_glow'];
+  const x = f.follow ? G.p.x + (f.ox || 0) : f.x, y = f.follow ? G.p.y + (f.oy || 0) : f.y, Gl = PFX[f.key + '_glow'];
   // owner "เอฟเฟกต์ทำใสหน่อย มีแสง": effects with a glow copy are drawn a little see-through, with the soft light added on top
   if (Gl && Gl.m) ctx.globalAlpha = .78;
   ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(x - m.ax), Math.round(y - m.ay), m.w, m.h);
@@ -1400,6 +1509,9 @@ function draw() {
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...rings, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props].sort((a, b) => a.y - b.y);
   for (const o of list) o.d();
   drawFlies();
+  { const ex = TH ? MARGIN.l + 150 : WW - MARGIN.r - 160, ey = GROUND_PATH(ex) - 150;   // where the road leads on
+    if (Math.abs(ex - p.x) < VW) { ctx.font = '800 18px "Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = '#1d1a22'; ctx.fillStyle = '#ffe066';
+      const t = TH ? '← กลับทุ่งหญ้า' : 'เมืองไทย →'; ctx.strokeText(t, ex, ey); ctx.fillText(t, ex, ey); } }
   for (const kn of G.knives) drawKnife(kn);
   for (const b of G.bombs) drawBomb(b);
   for (const m of G.mobs) if (m.hp > 0 && m.blind > G.t && PFX.blindstars) {   // blinded: pale stars circling the head (PixelLab VFX)
@@ -1470,7 +1582,7 @@ function start() {
 }
 let last = performance.now();
 function frame(t) { const dt = Math.min(1 / 30, (t - last) / 1000); last = t; if (G) step(dt); draw(); hud(); requestAnimationFrame(frame); }
-load().then(() => { const go = document.getElementById('go'); go.disabled = false; go.textContent = 'เริ่ม'; go.onclick = start; if (TEST) { start(); testSetup(); } requestAnimationFrame(frame); })
+load().then(() => { const go = document.getElementById('go'); go.disabled = false; go.textContent = 'เริ่ม'; go.onclick = start; if (FROM && !TEST) start(); if (TEST) { start(); testSetup(); } requestAnimationFrame(frame); })
   .catch(e => { ov.innerHTML = '<div><h1>โหลดภาพไม่ได้</h1><p>เปิดผ่านตัวรันเกม (เล่นเกม.bat) แล้วเข้า /action.html</p></div>'; console.error(e); });
 window.ACT = {get G() { return G; }, start, step, draw, newGame};
 </script>

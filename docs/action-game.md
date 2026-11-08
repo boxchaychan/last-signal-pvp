@@ -216,6 +216,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   VFX `charge_up` (`fx/dashcharge.png`) at the start. Invulnerable throughout.
 - Bomb blast (owner "ระเบิดเปลี่ยนเอฟเฟกต์ ใส่ระเบิดกับควันให้เข้าสกิล ตาบอด"): VFX `cartoon_boom` + a dark `smoke_puff`, ×1.85,
   1.5 s (My effects "rogue_smoke_bomb") → `fx/smokebomb.png` via `tools/art/vfx_import.py`.
+- Cuts (owner "ไม่เอาเส้นตรง" → "รอยฟันแบบรอยผ่า"): skill 4 puts a big cyan VFX `cross_slash` (`fx/xcut.png`, size 2.6) on every
+  monster each pass; the spin throws crescents (`slash_trail`, cyan, 8 facings × 3 sizes: `dslashs*` 1.5, `dslash*` 2.3,
+  `dslashl*` 3.3; `slashFor(deg, size)` picks the one that bulges that way) in three layers round her every other step
+  (owner's picture: 3–4 overlapping swirls of different sizes). Made with `tools/pl_vfx.py <export> <key> '<part json>'`
+  (start → add_part → export → download → `vfx_import.py`, all free); `_glow` copies for each.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
   the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =
@@ -227,6 +232,21 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   tried (`throw image dagger spin 2`): only 14 px long, smaller than the code dagger the owner asked to be bigger → not used.
 - Effects: PixelLab VFX Creator (owner's screenshot, "Slash arc" preset: sweep / thickness / size / angle / trail / speed /
   frames sliders; the chat "Send" costs 1 generation) → export "For a game (ZIP)" → `pixellab_import.py` (from bb.html).
+
+## Thai map (owner 2026-11-08 chose "a separate map")
+`action.html?map=thai`: walk off the east end of the first map's road (signpost + "เมืองไทย →" label) → fade, hp / stamina /
+kills carried in sessionStorage (`act.carry`), `?map=thai&from=west` starts at the west end of the Thai road; its west end
+leads back (`travel`, `spawnAt`). Same chunk ground with the owner's riverside textures (`TEXF`: rv_dirt road, rv_mud shore,
+rv_water, planks for the bridge deck, reeds in the paddies) and layout per map (`TH`): a wide river (`SWC` 118 ± 16,
+`riverX`) through the middle with a plank bridge, a walled royal city west of it (sema walls, four forts, two gates on the
+road, palace, temple, stupa, bell tower, sala, library on the lotus pond, lions, flags, elephant statues, houses, smithy, tea
+house, elephant stable, a market of stalls along the road, Thai lanterns), stilt houses standing in the river on both banks
+with kitchens, granaries, wells, jars behind, boats and lotus on the river, a temple on the east bank, rice paddies with
+dikes (`PADDY`, kind 8) with a watchtower, buffalo pen, granary, huts, an ox cart, prang ruins in the north-east jungle,
+jungle groves of coconut / sugar palms / bananas / rain trees (`thaiProps`). Pieces: the owner's four GPT sheets (`gpt_thai_*`)
+→ `white_cut.py --edge-only --no-ring`, spaced into a 6×3 grid → `tools/art/thai_props.py` (heights per item, water cut in
+the full-size sheet under stilt houses before the colours are reduced) and `ground_px.py ... 0.44 20 rv_dirt,rv_mud,
+rv_water,planks,straw,reeds`. Overview: `action.html?map=thai&test=map`.
 
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
