@@ -43,15 +43,17 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 if (TOUCH) document.body.classList.add('touch');
-const WW = 2400, WH = 1600, MARGIN = {l: 150, r: 150, t: 190, b: 230};
+const WW = 3600, WH = 2400, MARGIN = {l: 150, r: 150, t: 190, b: 230};   // owner: wider field, camera further out
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
-let S = 2, VW = 960, VH = 540, DPR = 1;
+let S = 1, VW = 960, VH = 540, DPR = 1, U = 2;
 function onResize() {
   DPR = window.devicePixelRatio || 1;
   const dw = Math.round(innerWidth * DPR), dh = Math.round(innerHeight * DPR);
   cv.width = dw; cv.height = dh;
-  S = Math.max(1, Math.round(dh / 560));          // whole-number pixel size: about 560 world px of height on screen
+  // whole-number pixel size only (no blur): 1 art px = 1 screen px up to ~1900 px tall screens (owner: camera further out)
+  S = Math.max(1, Math.floor(dh / 950));
   VW = Math.ceil(dw / S); VH = Math.ceil(dh / S);
+  U = Math.max(2, Math.round(DPR * 2 / S));        // size of numbers / sparks so they stay readable on phones
 }
 addEventListener('resize', onResize); onResize();
 const rnd = (() => { let s = 12345; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
@@ -78,7 +80,8 @@ function makeGround() {
   const noise = (x, y) => { const fx = x / WW * (NW - 1), fy = y / WH * (NH - 1), ix = fx | 0, iy = fy | 0, tx = fx - ix, ty = fy - iy;
     const a = N[iy * NW + ix], b = N[iy * NW + ix + 1], c = N[(iy + 1) * NW + ix], e = N[(iy + 1) * NW + ix + 1];
     const s = t => t * t * (3 - 2 * t); return (a + (b - a) * s(tx)) + ((c + (e - c) * s(tx)) - (a + (b - a) * s(tx))) * s(ty); };
-  const pathY = x => 820 + 230 * Math.sin(x / 430) + 60 * Math.sin(x / 170 + 1.3);
+  const pathY = x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
+  const AREA = WW * WH / (2400 * 1600);
   const SAND = ['#b48f58', '#c9a66b', '#d8b97c', '#e6cc94'].map(hex);
   for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
     const u = Math.floor(x / 96 + y / 48), v = Math.floor(x / 96 - y / 48), chk = (u + v) & 1;   // diamond tiles
@@ -93,13 +96,13 @@ function makeGround() {
     P.set(x, y, G[clamp(Math.floor(t * 4 + b * .8), 0, 4)]);
   }
   // pebbles on the path
-  for (let i = 0; i < 260; i++) { const x = rnd() * WW | 0, y = pathY(x) + (rnd() - .5) * 50 | 0; P.set(x, y, hex('#9c7c4c')); P.set(x + 1, y, hex('#f0dcae')); }
+  for (let i = 0; i < 260 * AREA; i++) { const x = rnd() * WW | 0, y = pathY(x) + (rnd() - .5) * 50 | 0; P.set(x, y, hex('#9c7c4c')); P.set(x + 1, y, hex('#f0dcae')); }
   // grass tufts and flowers
   const TD = hex('#467f30'), TL = hex('#b4e67a');
-  for (let i = 0; i < 4200; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0; if (Math.abs(y - pathY(x)) < 46) continue;
+  for (let i = 0; i < 4200 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0; if (Math.abs(y - pathY(x)) < 46) continue;
     P.set(x, y, TD); P.set(x - 1, y - 1, TD); P.set(x + 1, y - 1, TD); P.set(x, y - 2, TD); P.set(x - 2, y - 2, TD); P.set(x + 2, y - 3, TD); P.set(x, y - 3, TL); }
   const FL = ['#ffffff', '#ffe066', '#ff9ec7', '#a8d8ff'].map(hex);
-  for (let i = 0; i < 520; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0, c = FL[rnd() * 4 | 0]; if (Math.abs(y - pathY(x)) < 46) continue;
+  for (let i = 0; i < 520 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0, c = FL[rnd() * 4 | 0]; if (Math.abs(y - pathY(x)) < 46) continue;
     for (let k = 0; k < 3; k++) { const fx = x + (rnd() * 9 - 4 | 0), fy = y + (rnd() * 7 - 3 | 0); P.set(fx, fy + 1, TD); P.set(fx, fy, c); } }
   // rocks and bushes (low, drawn into the ground)
   const blob = (cx, cy, r, pal) => { P.disc(cx, cy + 2, r + 2, Math.round(r * .55) + 1, hex('#3a6a2a')); // ground shadow
@@ -107,7 +110,7 @@ function makeGround() {
     P.disc(cx - Math.round(r * .2), cy - Math.round(r * .2), Math.round(r * .7), Math.round(r * .5), pal[2]);
     P.disc(cx - Math.round(r * .4), cy - Math.round(r * .4), Math.max(1, Math.round(r * .3)), Math.max(1, Math.round(r * .22)), pal[3]); };
   const ROCK = ['#3b3f4a', '#7d8494', '#9aa1ad', '#d0d4da'].map(hex), BUSH = ['#24451f', '#3f7a30', '#559a3b', '#86c95a'].map(hex);
-  for (let i = 0; i < 46; i++) { const x = 200 + rnd() * (WW - 400) | 0, y = 240 + rnd() * (WH - 500) | 0; if (Math.abs(y - pathY(x)) < 60) continue;
+  for (let i = 0; i < 46 * AREA; i++) { const x = 200 + rnd() * (WW - 400) | 0, y = 240 + rnd() * (WH - 500) | 0; if (Math.abs(y - pathY(x)) < 60) continue;
     if (rnd() < .45) blob(x, y, 6 + rnd() * 9 | 0, ROCK);
     else { const r = 9 + rnd() * 8 | 0; blob(x, y, r, BUSH); blob(x + r, y + 2, r - 3, BUSH); blob(x - r + 2, y + 3, r - 4, BUSH);
       if (rnd() < .5) for (let k = 0; k < 4; k++) P.set(x - r + (rnd() * r * 2 | 0), y - (rnd() * r * .6 | 0), FL[rnd() * 3 | 0]); } }
@@ -177,7 +180,7 @@ async function load() {
 let G;
 function newGame() {
   G = {t: 0, hs: 0, shake: 0, wave: 0, kills: 0, over: false, fx: [], nums: [], ghosts: [], mobs: [], next: 1.2,
-    p: {x: WW / 2, y: 900, dir: 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null}};
+    p: {x: WW / 2, y: WH / 2 + 60, dir: 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null}};
   cam.x = G.p.x - VW / 2; cam.y = G.p.y - VH / 2;
 }
 const cam = {x: 0, y: 0};
@@ -267,7 +270,7 @@ function doHit(p, h) {
     if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k2 = 0; k2 < 10; k2++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070'); }
   }
   if (any) { G.hs = Math.max(G.hs, h.hs); G.shake = Math.max(G.shake, h.sh); }
-  G.fx.push({k: 'arc', x: cx, y: cy, dir: p.dir, t: 0, life: .12, big: h.dmg >= 20});
+  // no code-drawn slash arc: the PixelLab frames carry their own blade smears (owner found the extra arc odd)
 }
 function hurtPlayer(dmg, fromX, fromY) {
   const p = G.p; if (p.inv > 0 || G.over) return;
@@ -278,9 +281,9 @@ function hurtPlayer(dmg, fromX, fromY) {
   if (p.hp <= 0) { p.hp = 0; G.over = true; setTimeout(() => showOver(), 700); }
 }
 function spawnWave() {
-  G.wave++; const n = 3 + G.wave * 2;
+  G.wave++; const n = 3 + G.wave * 2, far = Math.max(560, Math.min(VW, VH) * .55);
   for (let i = 0; i < n; i++) {
-    let x, y; do { x = MARGIN.l + rnd() * (WW - MARGIN.l - MARGIN.r); y = MARGIN.t + rnd() * (WH - MARGIN.t - MARGIN.b); } while (Math.hypot(x - G.p.x, y - G.p.y) < 420);
+    let x, y, k = 0; do { x = MARGIN.l + rnd() * (WW - MARGIN.l - MARGIN.r); y = MARGIN.t + rnd() * (WH - MARGIN.t - MARGIN.b); } while (Math.hypot(x - G.p.x, y - G.p.y) < far && ++k < 50);
     const blue = G.wave >= 3 && rnd() < .3;
     G.mobs.push({kind: blue ? 'blue' : 'green', x, y, r: 18, hp: blue ? 70 : 40, max: blue ? 70 : 40, st: 'idle', t: rnd(), hopT: 0, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: blue ? 1.25 : 1, tell: blue ? .42 : .55, fr: 0, born: 0});
   }
@@ -426,7 +429,7 @@ function draw() {
   for (const m of G.mobs) if (m.hp > 0) ctx.drawImage(SHS, Math.round(m.x - 20), Math.round(m.y - 6));
   ctx.globalAlpha = 1;
   for (const m of G.mobs) if (m.st === 'tell' && m.hp > 0) { ctx.globalAlpha = .5 + .5 * Math.sin(m.t * 30); ctx.drawImage(RING, Math.round(m.x - 35), Math.round(m.y - 12)); ctx.globalAlpha = 1; }
-  for (const f of G.fx) if (f.k === 'puff') { ctx.globalAlpha = 1 - f.t / f.life; ctx.fillStyle = f.c; const s = f.t < f.life * .5 ? 4 : 2; ctx.fillRect(Math.round(f.x), Math.round(f.y), s, s); }
+  for (const f of G.fx) if (f.k === 'puff') { ctx.globalAlpha = 1 - f.t / f.life; ctx.fillStyle = f.c; const s = (f.t < f.life * .5 ? 2 : 1) * Math.ceil(U / 2) * 2; ctx.fillRect(Math.round(f.x), Math.round(f.y), s, s); }
   ctx.globalAlpha = 1;
   // dodge after-images
   for (const g of G.ghosts) drawCell(META.idle, g.dir, g.x, g.y, false, .35 * (1 - g.t / .22));
@@ -439,9 +442,9 @@ function draw() {
       ctx.fillStyle = k < .5 ? '#ffffff' : '#e8f4ff';
       for (let s = -1; s <= 1; s += .06) { const a = a0 + s * 1.2, rr = R * (1 - .25 * Math.abs(s)), w = Math.round((1 - Math.abs(s)) * (f.big ? 4 : 3)) + 1;
         if (Math.abs(s) > .3 + k * 1.2) continue; ctx.fillRect(Math.round(f.x + Math.cos(a) * rr), Math.round(f.y + Math.sin(a) * rr * .6), w, w); } }
-    if (f.k === 'spark') { ctx.fillStyle = f.c; ctx.globalAlpha = 1 - f.t / f.life; ctx.fillRect(Math.round(f.x), Math.round(f.y), 3, 3); ctx.globalAlpha = 1; }
+    if (f.k === 'spark') { ctx.fillStyle = f.c; ctx.globalAlpha = 1 - f.t / f.life; ctx.fillRect(Math.round(f.x), Math.round(f.y), U + 1, U + 1); ctx.globalAlpha = 1; }
   }
-  for (const n of G.nums) { const k = n.t / .75; ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; drawDigits(n.v, n.x, n.y - k * 26 - (k < .15 ? (1 - k / .15) * -6 : 0), n.big ? 3 : 2, n.red ? '#ff6060' : n.big ? '#ffe066' : '#ffffff'); ctx.globalAlpha = 1; }
+  for (const n of G.nums) { const k = n.t / .75; ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; drawDigits(n.v, n.x, n.y - k * 26 - (k < .15 ? (1 - k / .15) * -6 : 0), n.big ? U + 1 : U, n.red ? '#ff6060' : n.big ? '#ffe066' : '#ffffff'); ctx.globalAlpha = 1; }
   // screen-space: joystick + wave banner
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (stick.on) { ctx.globalAlpha = .35; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(stick.ox, stick.oy, 50, 0, 7); ctx.fill();
