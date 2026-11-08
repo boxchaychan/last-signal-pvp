@@ -261,6 +261,8 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   (nearest, about its centre) to 12 angles `fx/bigcut0..165.png` + glows. Skill 4's dashes now cross the middle of the
   circle at `CUTS` 0 / 135 / 45 / 165 / 105° (alternating sides, length 280), each leaving one big cut that lingers; no
   lightning line, no strikes per dash (the finish keeps five strikes + shockwave). `fx/bluecut*` = the smaller held cut.
+  Owner "ท่าจบ ลบเส้นสีขาวออก": the dash is drawn from an arc-free copy (`noArcOf(sheet)` = `makeNoArc`, cached per sheet,
+  also for the dash after-images) and skips frame 5 (the one with PixelLab's big slash arc): lunge 3–4, then 6.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
