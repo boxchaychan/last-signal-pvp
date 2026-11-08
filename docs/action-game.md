@@ -328,6 +328,8 @@ rv_water,planks,straw,reeds`. Overview: `action.html?map=thai&test=map`.
 - Water: the Thai map uses the clear blue `water` texture (the muddy `rv_water` looked dull grey); foam laps at every shore on
   both maps (`SHORE_PTS` = water cells next to land with the way to land, drawn in `drawGround`: a short white / pale line
   washing toward the land and back, a slow wave along the shore); twice the sparkles on the Thai river.
+- Thai city floor: `art/action/ground/laterite.png` = the cobble texture's brightness on an old red laterite / brick ramp
+  (#4a261e … #d69668, 20 colours), used for the Thai map's yard instead of the grey European cobbles.
 
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
