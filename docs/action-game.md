@@ -245,6 +245,13 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Owner then "เปลี่ยนสีฟ้าดีกว่า": back to cyan-blue (the `_g` sheets stay in fx/, not loaded).
   Then "ไม่ฟ้าแบบนี้ ฟ้าแบบน้ำเงินสายฟ้า": electric blue `_b` sheets (ramp #0a1248 #1c3cd2 #4080ff #a5cdff #f5faff, glow 70,130,255) for
   every skill-4 effect, the field and her glow — current.
+  **Skill 4 as a STAR** (owner: "เอฟเฟกต์ฟันไม่สวย เอาออก ให้ฟัน 5 ที เป็นรูปดาว", "ทำวงสวยๆ เพิ่มเอฟเฟกต์", "ให้ดูหนักหน่วง รุนแรง"):
+  no cut marks, no horizontal streak; a spinning VFX `rune_circle` (5 points, electric blue, `fx/starrune.png`, drawn at 50%
+  under the bodies by `drawField`, field 160 × .42); she blinks to the top point and dashes the pentagram (`STAR` order
+  0 2 4 1 3 0), each line stays on the ground as crackling light (`drawStarLines`: re-jagged every 2 frames, dark edge / blue /
+  light / white core, glow), a VFX `bolt_strike` (`fx/starbolt.png`) at every point she reaches, everything inside hit per
+  line (5 × 9); `starFinish`: the star flashes, five strikes together, VFX `shockwave_ring` (`fx/starshock.png`), a burst,
+  22 damage, hit-stop .14, shake 11, camera kick.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
