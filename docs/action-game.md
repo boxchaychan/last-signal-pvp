@@ -279,6 +279,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Owner "ดีละ วงเอาออก ไม่สวย เพิ่มเอฟเฟกต์ตอนลง กระจายประกาย หรือเพิ่มเป็น 6 ฮิต": the ground circle is gone (no `field` fx;
   the aim ring still shows the area), a VFX `star_burst` (`fx/zspark.png`: a ring flash, little stars scattering) with the
   flash star at every landing point, and 6 dashes (`SK4.n` 6).
+  Then: "ตอนจบไม่เอาวงแบบนี้" → the finish has no shockwave / puff ring / ring burst, the sparkle re-made without its ring layer,
+  skill-4 hits skip the normal ring burst (`hitMob(..., noRing)`); the owner pasted pixelfx's crit-hit code → its sheet
+  (`fx/critx.png`, already rendered from pixelfx impacts/crit-hit) is the finishing hit and the hit on every monster each
+  pass ("เอาเอฟเฟกต์ตอนมอนสเตอร์มาใส่"); "สีเหลืองเข้มกว่านี้" + "เหลืองขอบดำเข้มๆ" → streaks / stars / sparkles moved to deep gold
+  (#f0a800 / #ffce28 / #ffec78) with a 2 px near-black outline (1 px on the sparkle), faint pixels and tiny specks dropped.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):

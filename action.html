@@ -829,7 +829,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['zstar', 'zspark', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all(['critx', 'zstar', 'zspark', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1070,11 +1070,11 @@ function payFor(p, k) {
   if (p.st < S2.cost * .5) { noStamina(); return false; }
   p.st = Math.max(0, p.st - S2.cost); p.stT = .6; p.cd[k] = G.t + S2.cd; return true;
 }
-function hitMob(m, dmg, fx, fy, kb, col = '#ffe066', big = false) {
+function hitMob(m, dmg, fx, fy, kb, col = '#ffe066', big = false, noRing = false) {
   const dx = m.x - fx, dy = m.y - fy, d = Math.hypot(dx, dy) || 1;
   m.hp -= dmg; m.hit = .12; m.st = 'hurt'; m.t = 0; m.kx = dx / d * kb * 4; m.ky = dy / d * kb * 4;
   spark(m.x, m.y - 16, 7, '#ffffff'); spark(m.x, m.y - 16, 4, col);
-  G.fx.push({k: 'burst', x: m.x - dx / d * 8, y: m.y - 18, t: 0, life: .2, big});
+  if (!noRing) G.fx.push({k: 'burst', x: m.x - dx / d * 8, y: m.y - 18, t: 0, life: .2, big});
   G.nums.push({x: m.x + (rnd() - .5) * 12, y: m.y - 46, v: dmg, t: 0, big: dmg >= 15});
   if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k = 0; k < 10; k++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070');
     G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); if (G.p.mark && G.p.mark.m === m) G.p.mark = null; }
@@ -1131,7 +1131,7 @@ function flurryStep(p, dt) {
     f.u = Math.min(1, f.t / (SK4.cut * .7));
     p.x = f.ax + (f.bx - f.ax) * f.u; p.y = f.ay + (f.by - f.ay) * f.u;
     if (!f.hit && f.u >= 1) { f.hit = 1; let any = false; pfx('zstar', f.bx, f.by - 30); pfx('zspark', f.bx, f.by - 30);   // sparkles scatter where she lands
-      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 14, '#a5cdff'); any = true; }
+      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 14, '#ffc228', false, true); pfx('critx', m.x + (rnd() - .5) * 12, m.y - 24); any = true; }   // pixelfx crit-hit on every monster (owner)
       G.shake = Math.max(G.shake, 5); if (any) G.hs = Math.max(G.hs, .05); }
     if (f.t >= SK4.cut) { f.t = 0; if (++f.n < SK4.n) nextCut(p, f); else starFinish(p, f); }
   }
@@ -1154,9 +1154,9 @@ function nextCut(p, f) {
 }
 function starFinish(p, f) {       // the heavy end: the star flashes, five strikes, a shockwave, everything inside takes a big hit
   f.ph = 'end'; f.flash = .35;
-  for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) hitMob(m, SK4.fin, f.cx, f.cy, 110, '#ffffff', true);
-  pfx('starshock', f.cx, f.cy); pfx('dashhit_b', f.cx, f.cy - 24); G.fx.push({k: 'burst', x: f.cx, y: f.cy - 20, t: 0, life: .3, big: true});
-  for (let k = 0; k < 24; k++) { const a = k / 24 * 6.28; puff(f.cx + Math.cos(a) * SK4.r * .8, f.cy + Math.sin(a) * SK4.r * SK4.fr * .8, k & 1 ? '#a5cdff' : '#4080ff'); }
+  for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) hitMob(m, SK4.fin, f.cx, f.cy, 110, '#ffffff', false, true);
+  // owner "ตอนจบไม่เอาวงแบบนี้": no shockwave, no ring of puffs, no ring burst; flash stars + scattering sparkles instead
+  pfx('critx', f.cx, f.cy - 30); pfx('zspark', f.cx, f.cy - 30);
   G.hs = Math.max(G.hs, .14); G.shake = Math.max(G.shake, 11); G.kick = {x: 0, y: 8, t: .14};
 }
 function flurryEnd(p) {
