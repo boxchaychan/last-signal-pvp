@@ -4,14 +4,17 @@
 # up by the feet in their own frame_000 (lowest opaque row, middle of the pixels near it). Frames keep their drawn offsets inside a
 # row (jumps, steps). Owner 2026-11-08: Wukong made in PixelLab from our own turnaround (front/side/back imported, nothing redrawn),
 # moves made with PixMiniMax (text), which beat the skeleton mode on the same move.
-#   python3 -I tools/art/pixellab_sheet.py <unzipped dir> <out.png> <row>=<animation folder>:<first>-<last> ... [--cols=13] [--dir=east]
+#   python3 -I tools/art/pixellab_sheet.py <unzipped dir> <out.png> <row>=<animation folder>:<first>-<last> ... [--cols=13] [--dir=east] [--smoke]
+# --smoke: PixMiniMax sometimes paints flat grey smoke blobs behind the character (Wukong's side-view run 2026-11-08): a greyish
+#          colour filling a connected patch of 150+ px goes, with its soft rim (the character's own art is shaded, so it stays).
 # Prints the layout JSON (rows {r,n}, cols, nr, cw, ch, fx, fy, h0) and writes it next to the picture.
 import sys, json, glob, os
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 src, out = sys.argv[1], sys.argv[2]
-opts = dict(a[2:].split('=', 1) for a in sys.argv[3:] if a.startswith('--'))
+opts = dict((a[2:].split('=', 1) + [''])[:2] for a in sys.argv[3:] if a.startswith('--'))
 COLS, DIR = int(opts.get('cols', 13)), opts.get('dir', 'east')
 specs = []
 for a in sys.argv[3:]:
@@ -22,7 +25,25 @@ for a in sys.argv[3:]:
 def frames_of(folder):
     fs = sorted(glob.glob(os.path.join(src, '*', 'animations', folder, DIR, 'frame_*.png')))
     if not fs: raise SystemExit('no frames for ' + folder)
-    return [Image.open(f).convert('RGBA') for f in fs]
+    fr = [Image.open(f).convert('RGBA') for f in fs]
+    return [unsmoke(f) for f in fr] if 'smoke' in opts else fr
+
+def unsmoke(im):
+    # the smoke is a big patch of ONE flat colour (grey 127,127,126 / greyish pink 149,117,112 on Wukong); the character's own art is
+    # shaded, so no single greyish colour of his covers 150+ connected pixels
+    a = np.array(im); rgb = a[..., :3].astype(int); op = a[..., 3] > 0
+    key = (rgb[..., 0] << 16) | (rgb[..., 1] << 8) | rgb[..., 2]
+    vals, cnt = np.unique(key[op], return_counts=True)
+    for v, c in zip(vals, cnt):
+        if c < 150: continue
+        r, g, b = v >> 16, (v >> 8) & 255, v & 255
+        if max(r, g, b) - min(r, g, b) > 50 or not 80 < (r + g + b) / 3 < 210: continue
+        lab, n = ndimage.label(op & (key == v))
+        if n:
+            sz = ndimage.sum(np.ones_like(key), lab, range(1, n + 1)); big = np.isin(lab, 1 + np.where(sz >= 150)[0])
+            big = ndimage.binary_dilation(big, iterations=1) & op & (np.abs(rgb - [r, g, b]).max(2) < 40)  # its soft rim
+            a[..., 3][big] = 0; op = a[..., 3] > 0
+    return Image.fromarray(a)
 
 def feet(im):
     al = np.array(im)[..., 3] > 40; ys = np.where(al.any(1))[0]; y1 = ys[-1]
