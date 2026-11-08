@@ -223,6 +223,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   full circle = 4 crescents bulging out 90° apart, two sizes at once (mid + large, the large a beat later), each set turned
   45° from the last; 55% see-through with a weaker glow, only the arc nearest the camera in front of her, so her body shows. Made with `tools/pl_vfx.py <export> <key> '<part json>'`
   (start → add_part → export → download → `vfx_import.py`, all free); `_glow` copies for each.
+  Dash lightning (owner asked for a straight dash line with lightning chasing it; their own VFX Creator try was lost unsaved):
+  VFX `dash_slash` (cyan, 2.4) + two own `bolt` layers along it (jag .07, 2 branches, growing back to front, flickering) +
+  a spark burst, My effects "rogue_dash_bolt" → `fx/dashbolt.png` (orange tip sparks recoloured) + mirrored `dashbolt_l`;
+  skill 4's passes now cross the field left / right in turn with a slight slant (`nextCut`), one streak per pass.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
   the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =

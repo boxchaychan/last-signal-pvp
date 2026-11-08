@@ -826,7 +826,7 @@ async function load() {
   // pixelfx effects already in the repo (MIT, vendor/pixelfx; owner 2026-11-08 "อันนี้เราเคยใช้นิ"): darkx = the smoke
   // bomb's blast, poof = vanishing / warping, nslash = the flurry's cross cuts
   try { const man = await fetch('fx/manifest.json').then(r => r.json());
-    await Promise.all([...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
+    await Promise.all([...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1126,12 +1126,13 @@ function flurryStep(p, dt) {
   }
   if (f.ph === 'end' && f.t >= SK4.end) flurryEnd(p);
 }
-function nextCut(p, f) {         // a pentagram: each pass 144 degrees round from the last, edge to edge through the middle
-  const a = f.a0 + Math.PI + f.n * Math.PI * 4 / 5, c = Math.cos(a), sn = Math.sin(a), R = SK4.r * 1.05;
+function nextCut(p, f) {         // across the field, left and right in turn with a slight slant (owner: a dash line with lightning behind)
+  const first = f.n === 0 ? (p.x > f.cx ? Math.PI : 0) : 0, a = first + (f.n % 2 ? Math.PI : 0) + [-.22, .26, .14, -.3, 0][f.n % 5], c = Math.cos(a), sn = Math.sin(a), R = SK4.r * 1.05;
   f.ax = f.n === 0 ? p.x : f.bx; f.ay = f.n === 0 ? p.y : f.by;
   f.bx = f.cx + c * R; f.by = f.cy + sn * R * .6; f.hit = 0; f.u = 0;
   if (f.n > 0) { f.ax = f.cx - c * R; f.ay = f.cy - sn * R * .6; }
   f.cut = 1;                                                                   // the X cuts go on the monsters when the pass reaches them
+  pfx(c >= 0 ? 'dashbolt' : 'dashbolt_l', f.cx, f.cy - 30 + sn * 20);         // a streak of light with lightning chasing it (VFX)
   p.dir = f.bx >= f.ax ? 0 : 4;
 }
 function flurryEnd(p) {
