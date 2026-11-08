@@ -203,6 +203,8 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   turn, reach 140; a PixelLab VFX `spin_slash` ring (size 2.8, air colours; My effects "rogue_spin_ring" 034322c3…,
   game pack → `fx/spinring_b.png` behind her + `fx/spinring_f.png` in front, `drawPfx` with `follow`/`depth`) at the
   start of each turn; a ring of dust at the feet. `?test=spin&n=<steps>`.
+  Owner "เอฟเฟกต์ทำใสหน่อย มีแสง": `fx/<key>_glow.png` = a blurred, tinted copy of an effect (12 px padding, light cyan;
+  lavender for nslash) for spinring_b / spinring_f / nslash; `drawPfx` draws such effects at 78% and adds the glow with 'lighter'.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
   the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =
