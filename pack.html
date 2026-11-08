@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>กระเป๋าเทพ</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* กระเป๋าเทพ: playable prototype (owner 2026-11-08 "ลองทำมาเป็นเกมเพลดูหน่อย"): 5 players (you + 4 bots), a shared backpack per player,
+   a shop every round (special at 5/10/15...), monster waves, a fight against another player at 4/9/14..., a boss at 10/20 + a talent pick,
+   lose a fight = lose HP, last one standing wins. One phone screen in landscape (844x390) scaled to fit. */
+:root{--bg:#120f1c;--ink:#f4efff;--dim:#a99fc4;--gold:#ffd75a;--line:#4a3c78}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Kanit,system-ui,sans-serif;overflow:hidden}
+button{font-family:Kanit,sans-serif}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#holder{position:relative}
+#stage{position:absolute;left:0;top:0;width:844px;height:390px;transform-origin:0 0;overflow:hidden;border-radius:12px;border:3px solid #000;background:#1b1530}
+/* arena: sky + slanted (isometric) floor; units live in #field */
+#battle{position:absolute;left:0;top:0;width:844px;height:170px;overflow:hidden;transition:height .35s;background:linear-gradient(#5d7fb8,#a9c0de 80%,#cfdbe8)}
+#battle.mon{background:linear-gradient(#2c2348,#5d4a86 75%,#9a86b4)}
+#battle.boss{background:linear-gradient(#3a0f18,#7c2632 75%,#c46a5a)}
+#stage.fighting #battle{height:290px}
+#hills{position:absolute;left:0;right:0;top:0;height:104px;transition:height .35s}
+#stage.fighting #hills{height:92px}
+.mtn{position:absolute;bottom:0;width:0;height:0;border-left:90px solid transparent;border-right:90px solid transparent;border-bottom:60px solid rgba(40,30,70,.35)}
+#floor{position:absolute;left:0;right:0;bottom:0;top:104px;transition:top .35s;background-color:#5f7584;
+  background-image:linear-gradient(rgba(0,0,0,.28),rgba(0,0,0,0) 45%),repeating-linear-gradient(26.57deg,rgba(255,255,255,.08) 0 2px,transparent 2px 36px),repeating-linear-gradient(-26.57deg,rgba(255,255,255,.08) 0 2px,transparent 2px 36px)}
+#battle.mon #floor{background-color:#4b4466}#battle.boss #floor{background-color:#5a3434}
+#stage.fighting #floor{top:92px}
+#field{position:absolute;inset:0}
+.unit{position:absolute;background-size:contain;background-repeat:no-repeat;background-position:50% 100%;transform-origin:50% 100%}
+.unit.px{image-rendering:pixelated}
+.unit:after{content:"";position:absolute;left:18%;right:18%;bottom:-3px;height:8px;border-radius:50%;background:rgba(0,0,0,.28);z-index:-1}
+.unit .hp{position:absolute;left:14%;right:14%;top:-7px;height:5px;background:#300;border:1px solid #000}
+.unit .hp i{display:block;height:100%}
+.dmg{position:absolute;font:800 17px Kanit;color:#ffe27a;-webkit-text-stroke:3px #2a0a14;paint-order:stroke;z-index:300;transform:skewX(-12deg);pointer-events:none;white-space:nowrap}
+.fl{animation:fl .9s ease-out forwards}@keyframes fl{to{transform:translateY(-28px) skewX(-12deg);opacity:0}}
+.skn{position:absolute;font:800 14px Kanit;color:#bfe8ff;-webkit-text-stroke:3px #102040;paint-order:stroke;z-index:301;white-space:nowrap;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.4)}}
+.shot{position:absolute;width:10px;height:10px;border-radius:50%;z-index:250;box-shadow:0 0 8px 3px currentColor}
+.shot.ar{width:18px;height:3px;border-radius:2px}
+.blab{position:absolute;left:8px;top:36px;font:600 12px Kanit;color:#fff;-webkit-text-stroke:3px #1a2440;paint-order:stroke;z-index:400}
+/* top bar */
+#top{position:absolute;left:0;right:0;top:0;height:32px;display:flex;align-items:center;gap:6px;padding:0 8px;z-index:500}
+.pill{background:rgba(16,10,30,.85);border:2px solid #000;border-radius:7px;padding:1px 9px;font:600 13px Kanit;white-space:nowrap}
+.pill.t{color:var(--gold)}
+#players{margin-left:auto;display:flex;gap:4px}
+.pl{height:26px;border-radius:6px;border:2px solid #000;background:#2a2140;display:flex;align-items:center;gap:3px;padding:0 4px 0 2px;font:600 11px Kanit}
+.pl.me{border-color:var(--gold)}.pl.out{opacity:.35}.pl.vs{box-shadow:0 0 0 2px #ff8a8a}
+.fc{width:20px;height:20px;border-radius:4px;background-size:190%;background-position:50% 6%;image-rendering:pixelated;background-color:#3b2f5e;flex:none}
+/* bottom panel */
+#bot{position:absolute;left:0;right:0;top:170px;bottom:0;background:linear-gradient(#2a2145,#1a1430);border-top:3px solid #000;transition:top .35s}
+#stage.fighting #bot{top:290px}
+.phase{position:absolute;inset:0;display:none}.phase.on{display:block}
+.label{position:absolute;font:600 11px Kanit;color:var(--dim)}
+.chip{background:#2f2650;border:2px solid #000;border-radius:6px;padding:1px 7px}
+.port{position:absolute;width:50px;height:50px;border-radius:7px;border:3px solid #000;background-size:185%;background-position:50% 5%;image-rendering:pixelated;background-color:#3b2f5e}
+/* backpack */
+#p-shop{touch-action:none;user-select:none;-webkit-user-select:none}
+.bframe{position:absolute;background:#120d22;border:3px solid #000;border-radius:8px}
+.cell{position:absolute;width:34px;height:34px;background:#2a2148;border:2px solid #3d3263;border-radius:4px}
+.cell.lockc{background:repeating-linear-gradient(45deg,#15102a 0 4px,#1b1533 4px 8px);border:2px dashed #2a2347}
+.hl{position:absolute;width:34px;height:34px;border-radius:4px;pointer-events:none;z-index:25}
+.hl.ok{background:rgba(91,224,107,.6);box-shadow:0 0 0 3px #5be06b}.hl.bad{background:rgba(255,80,80,.6);box-shadow:0 0 0 3px #ff5050}
+.port.lg{background-size:150%;background-position:50% 10%;cursor:grab}
+.port.lg.sel{box-shadow:0 0 0 2px #fff,0 0 10px 3px rgba(255,255,255,.7)}
+.rk{position:absolute;left:-7px;top:-8px;min-width:16px;height:16px;border-radius:8px;background:#000;color:#fff;font:600 10px/16px Kanit;text-align:center;border:1px solid #fff}
+.itm{position:absolute;cursor:grab}
+.itm i{position:absolute;border-radius:5px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.22),inset 0 2px 0 rgba(255,255,255,.35)}
+.itm.bagp i{background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.14) 0 3px,transparent 3px 6px)}
+.itm .ic{position:absolute;transform:translate(-50%,-50%);line-height:1;pointer-events:none}
+.itm.idle{opacity:.55}
+.bdg{position:absolute;font:800 12px Kanit;-webkit-text-stroke:2px #000;paint-order:stroke;line-height:1;pointer-events:none}
+.dots{position:absolute;left:1px;bottom:1px;display:flex;gap:1px;pointer-events:none}.dots u{width:7px;height:7px;border-radius:50%;border:1px solid #000}
+#shop{position:absolute;left:452px;top:4px;right:6px;bottom:4px;background:#1a1430;border:2px solid #3d3263;border-radius:8px;padding:2px 6px}
+#shop.spec{border-color:var(--gold);box-shadow:0 0 10px rgba(255,215,90,.35) inset}
+#shop.sell{border-color:#ff8a7a}
+#shop.sell:after{content:"ปล่อยเพื่อขาย ได้คืนครึ่งราคา";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 17px Kanit;color:#ffc0b0;background:rgba(60,10,30,.82);border-radius:6px;z-index:5}
+.shead{display:flex;justify-content:space-between;align-items:center;height:22px;font:600 12px Kanit}
+.sbtn{font:600 11px Kanit;color:var(--ink);cursor:pointer;padding:1px 6px}
+#tray{position:relative;height:80px}
+.slot{position:absolute;top:0;width:70px;height:78px;border-radius:6px;background:#120d22;border:2px solid #2c2450}
+.slot .pr{position:absolute;bottom:1px;left:0;right:0;text-align:center;font:600 11px Kanit;color:var(--gold)}
+.slot.poor .pr{color:#ff7a7a}.slot.poor .itm{filter:grayscale(.8) brightness(.6)!important}
+#info{position:absolute;left:8px;right:8px;top:106px;bottom:29px;font:400 10.5px/1.38 Kanit;color:#e6ddff;overflow:hidden}
+#info b{color:#fff}
+.go{position:absolute;right:6px;bottom:4px;font:800 13px Kanit;background:#5be06b;color:#06280c;border:3px solid #000;border-radius:8px;padding:0 14px;cursor:pointer}
+#ghost{position:absolute;left:0;top:0;pointer-events:none;z-index:40;opacity:.72}
+.lifted{opacity:.25!important}
+.r1{background:#cfd4e0}.r2{background:#7fd88e}.r3{background:#b48cf0}.r4{background:#ff8a7a}.r5{background:#ffd75a}
+/* fight panel */
+#fports .port{width:44px;height:44px;top:8px}
+#fports .bars{position:absolute;left:-3px;right:-3px;top:42px}
+#fports .bars s{display:block;height:5px;border:1px solid #000;background:#222;margin-top:1px}
+#fports .bars s i{display:block;height:100%}
+#fports .port.ready{box-shadow:0 0 0 2px #fff6a8,0 0 12px 4px #ffd75a}
+#flog{position:absolute;left:290px;right:110px;top:6px;font:600 12px/1.5 Kanit;color:#d8cff0;text-align:center}
+/* overlays */
+#ov{position:absolute;inset:0;z-index:900;display:none;align-items:center;justify-content:center;background:rgba(10,6,20,.62)}
+#ov.on{display:flex}
+.card{background:#211a35;border:3px solid #000;border-radius:12px;padding:10px 18px 12px;box-shadow:0 0 0 2px var(--line);max-width:600px;max-height:370px;overflow:auto;text-align:center}
+.card h1{margin:0;font:800 34px Kanit;color:var(--gold);-webkit-text-stroke:5px #2a0a14;paint-order:stroke}
+.card h2{margin:2px 0;font:800 26px Kanit;-webkit-text-stroke:4px #2a0a14;paint-order:stroke}
+.sub{color:var(--dim);font-size:13px;margin:2px 0 6px}
+.btn{font:800 16px Kanit;background:#5be06b;color:#06280c;border:3px solid #000;border-radius:9px;padding:2px 20px;cursor:pointer;margin:4px}
+.btn2{font:600 14px Kanit;background:#2c2347;color:var(--ink);border:2px solid var(--line);border-radius:9px;padding:3px 14px;cursor:pointer;margin:4px}
+.lineup{width:440px;max-width:100%;image-rendering:pixelated;display:block;margin:4px auto}
+.how{text-align:left;font-size:12.5px;line-height:1.5;color:#e6ddff;margin:4px 0}
+.rl{display:grid;gap:3px;margin:6px 0;text-align:left}
+.rr{display:flex;align-items:center;gap:8px;background:#2a2140;border:2px solid #000;border-radius:7px;padding:2px 8px;font-size:13px}
+.rr.me{border-color:var(--gold)}.rr.out{opacity:.45}.rr b{min-width:90px}.rr span{min-width:80px}.rr .fc{min-width:20px;width:20px}
+.tals{display:flex;gap:8px;margin:8px 0}
+.tal{flex:1;background:#2c2347;border:3px solid #000;box-shadow:0 0 0 2px var(--line);border-radius:10px;padding:8px;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:96px}
+.tal b{font-size:15px;color:var(--gold)}.tal span{font-size:12px;color:#e6ddff}
+.tal:hover{box-shadow:0 0 0 2px var(--gold)}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#e9e4f5}}
+</style></head><body>
+<div id="wrap"><div id="holder"><div id="stage">
+  <div id="battle"><div id="hills"><div class="mtn" style="left:30px"></div><div class="mtn" style="left:290px;border-bottom-width:80px"></div><div class="mtn" style="left:560px"></div></div><div id="floor"></div><div id="field"></div></div>
+  <div id="top"><span class="pill" id="rnd">รอบ 1</span><span class="pill t" id="tmr">⏳ 60</span><span class="pill" id="gold">💰 10</span><span class="pill" id="hp">❤️ 100</span><div id="players"></div></div>
+  <div id="bot">
+    <div class="phase on" id="p-shop">
+      <div class="label" style="left:12px;top:2px">🎒 กระเป๋า · ลากวาง · แตะ = หมุน · ลากไปที่ร้าน = ขาย</div>
+      <div id="bagL"></div><div id="hlL"></div>
+      <div id="shop"><div class="shead"><span id="shn">ร้านค้า <b id="sg" style="color:var(--gold)">💰 10</b></span><span><button id="lock" class="chip sbtn">🔓 ล็อก</button> <button id="roll" class="chip sbtn">🎲 สุ่มใหม่ 1💰</button></span></div>
+        <div id="tray"></div><div id="info"></div><button class="go" id="go">พร้อม ▶</button></div>
+      <div id="ghost"></div>
+    </div>
+    <div class="phase" id="p-fight"><div id="fports"></div><div id="flog"></div><button class="chip sbtn" id="spd" style="position:absolute;right:10px;top:8px">⏩ x1</button><div class="label" id="fvs" style="right:12px;bottom:8px"></div></div>
+  </div>
+  <div id="ov"></div>
+</div></div></div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s),R=Math.random,pick=a=>a[R()*a.length|0];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=R()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+const LS={get(k,d){try{const v=localStorage.getItem('lp.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('lp.'+k,JSON.stringify(v))}catch(e){}}};
+const HAS_DOM=typeof document!=='undefined'&&!!document.getElementById('stage');
+
+// ---------- cast (pictures = the pixel stills of the 12 legends)
+const A='art/incoming/legends/px/';
+const CAST={god_warrior:'ซุนหงอคง',god_assassin:'โลกิ',god_hunter:'อาร์เทมิส',god_mage:'โอดิน',god_support:'อพอลโล',god_curse:'อนูบิส',
+  hero_warrior:'ลิโป้',hero_assassin:'ฮันโซ',hero_hunter:'โรบินฮู้ด',hero_mage:'เมอร์ลิน',hero_support:'ขงเบ้ง',hero_curse:'คลีโอพัตรา'};
+const CC={warrior:'#e8423f',assassin:'#3fbf5a',hunter:'#4aa4ef',mage:'#9a62e8',support:'#f2c33a',curse:'#2fc7b0'};
+const cls=k=>k.split('_')[1],colOf=k=>CC[cls(k)];
+// per class: range, walk speed, seconds between hits, damage, HP (melee walks up to a foe, assassins dive for the back row, ranged shoot)
+const ROLE={warrior:{rg:34,sp:62,cd:.95,dm:105,hp:1500},assassin:{rg:30,sp:95,cd:.75,dm:90,hp:950,dive:1},hunter:{rg:250,sp:45,cd:1.05,dm:80,hp:760,shot:'#d8eeff',ar:1},
+  mage:{rg:230,sp:45,cd:1.45,dm:130,hp:700,shot:'#c79bff'},support:{rg:220,sp:45,cd:1.35,dm:55,hp:820,shot:'#ffd75a',heal:1},curse:{rg:210,sp:45,cd:1.3,dm:75,hp:900,shot:'#8cff9a'}};
+const ULT={god_warrior:'ตีลังกาเมฆ',god_assassin:'ราชันแห่งเล่ห์',god_hunter:'ราตรีแห่งการล่า',god_mage:'หอกกุงเนียร์',god_support:'รถม้าสุริยะ',god_curse:'พิพากษาแห่งดูอัต',
+  hero_warrior:'ทะลวงหมื่นทัพ',hero_assassin:'คาถาแยกเงา',hero_hunter:'ฝนธนูเชอร์วูด',hero_mage:'ฝนดาวตก',hero_support:'ศึกผาแดง',hero_curse:'คำสาปฟาโรห์'};
+// ---------- monsters (old pictures from the city game for now)
+const MON={walker:{n:'ซอมบี้',img:'art/px/z_walker.png',px:1,sc:.9,R:{rg:30,sp:48,cd:1.15},hp:260,dm:34,x:545},
+  spit:{n:'กระสือ',img:'art/px/z_krasue.png',px:1,sc:.85,R:{rg:190,sp:40,cd:1.4,shot:'#9cff7a'},hp:170,dm:30,x:715},
+  brute:{n:'ยักษ์ซอมบี้',img:'art/px/z_walker.png',px:1,sc:1.3,hue:'hue-rotate(190deg) saturate(1.4)',R:{rg:36,sp:40,cd:1.4},hp:900,dm:70,x:610},
+  boss:{n:'ราชินีแมงมุม',img:'art/z_queen.png',sc:1.9,R:{rg:52,sp:34,cd:1.15,aoe:1},hp:4200,dm:110,x:720,ult:'ฝนใยพิษ'}};
+const MG=1.16;  // monsters get 16% stronger every round
+function waveList(r){const L=[],add=(t,n)=>{for(let i=0;i<n;i++)L.push(t)};
+  if(r%10===0){add('boss',1);add('walker',2+Math.floor(r/10))}else{add('walker',Math.min(5,2+Math.ceil(r/2)));add('spit',Math.min(3,Math.floor(r/2)));add('brute',r>=6?Math.min(3,Math.floor((r-3)/3)):0)}
+  return L}
+function waveTeam(r){const g=Math.pow(MG,r-1),cnt={};return waveList(r).map(t=>{const M=MON[t],j=cnt[t]=(cnt[t]||0)+1;
+  return{k:'mon_'+t,n:M.n,img:M.img,px:M.px,sc:M.sc,hue:M.hue,R:M.R,mon:1,hp:Math.round(M.hp*g),dm:M.dm*g,arm:0,crit:5,gau:0,ult:M.ult||null,
+    x:M.x+(j%2)*36+(t==='boss'?0:(j*13)%30),z:t==='boss'?50:[50,18,82,34,66][(j-1)%5]}})}
+
+// ---------- items (shapes are cells; a star item boosts the items it touches; bags open locked cells)
+const RC=['','#cfd4e0','#7fd88e','#b48cf0','#ff8a7a','#ffd75a'],RN=['','ขาว','เขียว','ม่วง','แดง','ทอง'],RM=[0,1,1.5,2.2,3.2,4.5];
+const SH={o:[[0,0]],i2:[[0,0],[0,1]],i3:[[0,0],[0,1],[0,2]],w2:[[0,0],[1,0]],sq:[[0,0],[1,0],[0,1],[1,1]],L:[[0,0],[0,1],[1,1]]};
+const IT={sword:{n:'ดาบ',ic:'🗡️',s:'i2',p:4,st:{atk:10},d:'แรงตี +{atk}'},
+ spear:{n:'หอกยาว',ic:'🔱',s:'i3',p:6,st:{atk:18},d:'แรงตี +{atk}'},
+ shield:{n:'โล่',ic:'🛡️',s:'sq',p:6,st:{arm:20},d:'เกราะ +{arm}'},
+ ring:{n:'แหวนพลัง',ic:'💍',s:'o',p:4,st:{gau:15},d:'เกจไม้ตายตอนเริ่ม +{gau}%'},
+ potion:{n:'ยาฟื้นเลือด',ic:'🧪',s:'o',p:3,st:{heal:6},d:'ฮีล {heal}% ทุก 6 วิ'},
+ scroll:{n:'คัมภีร์',ic:'📜',s:'w2',p:5,st:{cd:12},d:'เกจไม้ตายขึ้นเร็ว +{cd}%'},
+ fire:{n:'ไฟวิญญาณ',ic:'🔥',s:'o',p:4,st:{burn:12},d:'ตีติดไฟ {burn} ต่อวิ'},
+ feather:{n:'ขนนก',ic:'🪶',s:'o',p:3,st:{spd:8},d:'ตีเร็ว +{spd}%'},
+ moon:{n:'จี้จันทร์',ic:'🌙',s:'o',p:4,st:{crit:8},d:'คริ +{crit}%'},
+ amulet:{n:'เครื่องราง',ic:'🧿',s:'L',p:5,st:{hp:150},d:'เลือด +{hp}'},
+ whet:{n:'หินลับมีด',ic:'🪨',s:'o',p:3,star:1,d:'★ ของที่วางติดแรงขึ้น 25%'},
+ bag4:{n:'ถุงเสริม',ic:'👜',s:'sq',p:4,bag:1,d:'วางบนช่องล็อกที่ติดกระเป๋า เปิดเพิ่ม 4 ช่อง'},
+ bag3:{n:'ย่ามยาว',ic:'🎒',s:'i3',p:3,bag:1,d:'วางบนช่องล็อกที่ติดกระเป๋า เปิดเพิ่ม 3 ช่อง'},
+ bagL:{n:'ถุงมุม',ic:'👝',s:'L',p:2,bag:1,d:'วางบนช่องล็อกที่ติดกระเป๋า เปิดเพิ่ม 3 ช่อง'}};
+const STN={atk:'แรงตี',arm:'เกราะ',gau:'เกจเริ่ม',heal:'ฮีล',cd:'เกจเร็ว',burn:'ไฟ',spd:'ตีเร็ว',crit:'คริ',hp:'เลือด'},PCT={gau:1,heal:1,cd:1,spd:1,crit:1};
+const TALS=[{k:'atk',ic:'💪',n:'ฝึกหนัก',d:'ทุกตัวแรงตี +15%'},{k:'hp',ic:'🫀',n:'กายเหล็ก',d:'ทุกตัวเลือด +15%'},{k:'arm',ic:'🛡️',n:'เกราะเทพ',d:'ทุกตัวเกราะ +20'},
+  {k:'gau',ic:'⚡',n:'เกจไว',d:'ไม้ตายเริ่มเกจ +30%'},{k:'gold',ic:'💰',n:'ทองไหลมา',d:'ได้เงิน +3 ทุกรอบ'},{k:'cells',ic:'🎒',n:'กระเป๋าใหญ่',d:'เปิดช่องฟรี 6 ช่อง'},
+  {k:'disc',ic:'🏷️',n:'ลดราคา',d:'ของในร้านถูกลง 1💰'},{k:'regen',ic:'🌿',n:'ฟื้นฟู',d:'ทุกตัวฟื้นเลือด 3% ทุก 3 วิ'},{k:'crit',ic:'🎯',n:'ตาเหยี่ยว',d:'ทุกตัวคริ +12%'},{k:'spd',ic:'🌪️',n:'ลมกรด',d:'ทุกตัวตีเร็ว +15%'}];
+const KN={mon:'👹 มอน',pvp:'⚔️ สู้กับคน',boss:'💀 บอส'};
+const kindOf=r=>r%10===0?'boss':r%5===4?'pvp':'mon',special=r=>r%5===0;
+
+// ---------- bag geometry
+const CP=36,CS=34,GX=10,GY=20,BW=12,BH=5,SP=21,SC=19,SHX=452;
+const N4=[[1,0],[-1,0],[0,1],[0,-1]],SQ=SH.sq,key=(x,y)=>x+','+y,inB=(x,y)=>x>=0&&y>=0&&x<BW&&y<BH;
+const cellsOf=(c,x,y)=>c.map(([a,b])=>[x+a,y+b]);
+function rotC(c){const n=c.map(([x,y])=>[-y,x]),mx=Math.min(...n.map(a=>a[0])),my=Math.min(...n.map(a=>a[1]));return n.map(([x,y])=>[x-mx,y-my])}
+let UID=1;
+function occMap(b,skip){const m=new Map();b.leg.forEach(l=>{if(l!==skip)cellsOf(SQ,l.x,l.y).forEach(([x,y])=>m.set(key(x,y),l))});
+  b.items.forEach(it=>{if(it!==skip)cellsOf(it.c,it.x,it.y).forEach(([x,y])=>m.set(key(x,y),it))});return m}
+function fits(b,cs,skip){const m=occMap(b,skip);return cs.every(([x,y])=>inB(x,y)&&b.open.has(key(x,y))&&!m.has(key(x,y)))}
+function fitsBag(b,cs){return cs.every(([x,y])=>inB(x,y)&&!b.open.has(key(x,y)))&&cs.some(([x,y])=>N4.some(([a,c])=>b.open.has(key(x+a,y+c))))}
+function nbrs(it,m){const s=new Set();cellsOf(it.c,it.x,it.y).forEach(([x,y])=>N4.forEach(([a,b])=>{const o=m.get(key(x+a,y+b));if(o&&o!==it)s.add(o)}));return[...s]}
+function meta(b){const m=occMap(b,null),M=new Map(),pr=new Map();
+  b.items.forEach(it=>{const N=nbrs(it,m),own=N.filter(o=>o.lg),st=IT[it.k].star;
+    M.set(it,{N,own,boost:st?0:N.filter(o=>!o.lg&&IT[o.k].star).length,idle:st?!N.some(o=>!o.lg&&!IT[o.k].star):!own.length})});
+  b.items.forEach(a=>{if(pr.has(a)||a.r>=5)return;const q=M.get(a).N.find(o=>!o.lg&&o.k===a.k&&o.r===a.r&&!pr.has(o));if(q){pr.set(a,q);pr.set(q,a)}});
+  pr.forEach((q,a)=>M.get(a).merge=1);M.pairs=pr;return M}
+const val=(k,r,s,bo)=>Math.round(IT[k].st[s]*RM[r]*(1+.25*(bo||0)));
+const eff=(k,r,bo)=>IT[k].d.replace(/\{(\w+)\}/g,(_,s)=>val(k,r,s,bo));
+const basePrice=(k,r)=>Math.max(1,Math.round(IT[k].p*RM[r]));
+const sellP=it=>Math.max(1,Math.floor(basePrice(it.k,it.r)/2));
+const tc=(p,k)=>p.tal.filter(x=>x===k).length;
+function doMerge(p){const pr=meta(p.bag).pairs,done=new Set();let n=0;pr.forEach((q,a)=>{if(done.has(a))return;done.add(a);done.add(q);a.r++;p.bag.items.splice(p.bag.items.indexOf(q),1);n++});return n}
+
+// ---------- players
+const LAY=[[4,0],[2,0],[0,0],[2,2],[0,2]];  // first legend stands at the front
+function mkPlayer(name,keys,bot,skill){const p={name,keys,bot,skill,hp:100,gold:10,alive:true,place:0,tal:[],lock:false,shop:[],lv:1,lastWin:false,inc:0,
+  bag:{open:new Set(),leg:keys.map((k,i)=>({lg:1,i,k,x:LAY[i][0],y:LAY[i][1]})),items:[]}};
+  for(let y=0;y<4;y++)for(let x=0;x<9;x++)p.bag.open.add(key(x,y));
+  p.bag.items.push({id:UID++,k:pick(['sword','feather','moon','ring']),r:1,c:SH.o,x:6,y:0});p.bag.items[0].c=SH[IT[p.bag.items[0].k].s];return p}
+function botKeys(){const ks=shuffle(Object.keys(CAST)),out=[ks.find(k=>/warrior|assassin/.test(k))];for(const k of ks)if(out.length<5&&!out.includes(k))out.push(k);return out}
+function sItem(p,k,r){return{k,r,c:SH[IT[k].s],price:Math.max(1,basePrice(k,r)-tc(p,'disc'))}}
+function rarity(r,sp){const t=Math.min(1,(r-1)/14),w=[45-35*t,30-5*t,15+15*t,8+17*t,2+8*t];if(sp){w[0]*=.25;w[1]*=.6;w[3]*=1.8;w[4]*=2.5}
+  let q=R()*w.reduce((a,b)=>a+b);for(let i=0;i<5;i++){q-=w[i];if(q<0)return i+1}return 5}
+function roll(p){const ks=Object.keys(IT),sp=special(G.round);p.shop=[0,1,2,3,4].map(()=>{const bg=R()<.16,k=pick(ks.filter(x=>!!IT[x].bag===bg));return sItem(p,k,IT[k].bag?1:rarity(G.round,sp))})}
+function teamOf(p){const M=meta(p.bag),lvm=1+.05*(p.lv-1);
+  return p.bag.leg.map(l=>{const t={};p.bag.items.forEach(it=>{const m=M.get(it);if(m.own.includes(l)&&IT[it.k].st)for(const s in IT[it.k].st)t[s]=(t[s]||0)+val(it.k,it.r,s,m.boost)});const Rl=ROLE[cls(l.k)];
+    return{k:l.k,n:CAST[l.k],img:A+l.k+'.png',px:1,sc:1,R:Rl,hp:Math.round((Rl.hp+(t.hp||0))*lvm*(1+.15*tc(p,'hp'))),dm:(Rl.dm+(t.atk||0))*lvm*(1+.15*tc(p,'atk')),
+      arm:(t.arm||0)+20*tc(p,'arm'),spd:(t.spd||0)+15*tc(p,'spd'),crit:5+(t.crit||0)+12*tc(p,'crit'),gau:Math.min(95,(t.gau||0)+30*tc(p,'gau')),heal:t.heal||0,burn:t.burn||0,cdr:t.cd||0,
+      regen:3*tc(p,'regen'),bx:l.x,by:l.y,ult:ULT[l.k]}})}
+function openFree(p,n){for(let x=0;x<BW&&n>0;x++)for(let y=0;y<BH&&n>0;y++){const k=key(x,y);if(!p.bag.open.has(k)&&N4.some(([a,b])=>p.bag.open.has(key(x+a,y+b)))){p.bag.open.add(k);n--}}}
+function applyTal(p,k){p.tal.push(k);if(k==='cells')openFree(p,6)}
+
+// ---------- bot brain: buy what fits next to a legend, bags when cramped, sell idle junk
+function freeCells(p){const m=occMap(p.bag,null);let n=0;p.bag.open.forEach(k=>{if(!m.has(k))n++});return n}
+function spotScore(p,cs,k,m){let L=new Set(),I=0,mg=0,st=0;cs.forEach(([x,y])=>N4.forEach(([a,b])=>{const o=m.get(key(x+a,y+b));if(!o)return;if(o.lg)L.add(o);else{I++;if(IT[o.k].star)st++}}));
+  if(IT[k].star)return I?I*5:0;return L.size?L.size*10+st*3:0}
+function itemSpot(p,s){const m=occMap(p.bag,null);let best=null,c=s.c;for(let r=0;r<4;r++){for(let y=0;y<BH;y++)for(let x=0;x<BW;x++){const cs=cellsOf(c,x,y);if(!fits(p.bag,cs,null))continue;
+  let sc=spotScore(p,cs,s.k,m);if(sc&&p.bag.items.some(o=>o.k===s.k&&o.r===s.r&&cs.some(([a,b])=>cellsOf(o.c,o.x,o.y).some(([e,f])=>Math.abs(a-e)+Math.abs(b-f)===1))))sc+=8;
+  if(sc>0&&(!best||sc>best.sc))best={x,y,c,sc}}c=rotC(c)}return best}
+function bagSpot(p,s){let c=s.c;for(let r=0;r<4;r++){for(let x=0;x<BW;x++)for(let y=0;y<BH;y++){const cs=cellsOf(c,x,y);if(fitsBag(p.bag,cs))return{cs}}c=rotC(c)}return null}
+const iv=it=>RM[it.r]*IT[it.k].p;
+function botShop(p){let rr=0;for(let g=0;g<20;g++){const fc=freeCells(p),opts=p.shop.map((s,i)=>({s,i})).filter(o=>o.s&&o.s.price<=p.gold);
+  if(!opts.length){if(p.gold>=(rr?14:9)&&rr<4&&R()<p.skill){p.gold--;rr++;roll(p);continue}break}
+  const worth=s=>IT[s.k].bag?(fc<6?60:3):iv(s)*(1+R()*(1-p.skill));opts.sort((a,b)=>worth(b.s)-worth(a.s));let done=false;
+  for(const o of opts){const s=o.s,sp=IT[s.k].bag?bagSpot(p,s):itemSpot(p,s);if(!sp)continue;p.gold-=s.price;p.shop[o.i]=null;
+    if(IT[s.k].bag)sp.cs.forEach(([x,y])=>p.bag.open.add(key(x,y)));else p.bag.items.push({id:UID++,k:s.k,r:s.r,c:sp.c,x:sp.x,y:sp.y});done=true;break}
+  if(!done){const M=meta(p.bag),junk=p.bag.items.filter(it=>M.get(it).idle).sort((a,b)=>a.r-b.r)[0];if(junk&&fc<2){p.gold+=sellP(junk);p.bag.items.splice(p.bag.items.indexOf(junk),1);continue}
+    // no room: sell the weakest owned item when the best offer is clearly better (skilled bots do this more)
+    const best=opts.filter(o=>!IT[o.s.k].bag)[0],weak=p.bag.items.filter(it=>!IT[it.k].star).sort((a,b)=>iv(a)-iv(b))[0];
+    if(best&&weak&&iv(best.s)>iv(weak)*1.6&&R()<p.skill){p.gold+=sellP(weak);p.bag.items.splice(p.bag.items.indexOf(weak),1);if(!itemSpot(p,best.s)){p.bag.items.push(weak);p.gold-=sellP(weak);break}continue}
+    if(p.gold>=14&&rr<4&&R()<p.skill){p.gold--;rr++;roll(p);continue}break}}}
+
+// ---------- battle engine (the same code runs drawn for your fight and silent for everyone else's)
+const dist=(a,b)=>Math.hypot(b.x-a.x,(b.z-a.z)*1.3);
+function mkU(s,side){const u=Object.assign({},s);u.s=side;if(u.x==null)u.x=side?804-s.bx*28:40+s.bx*28;if(u.z==null)u.z=8+s.by*28;
+  Object.assign(u,{mx:s.hp,cd:.3+R()*.5,g:s.gau||0,face:side?-1:1,lt:0,mv:0,ht:0,dead:0,dt:0,rt:0,bn:0,bnT:0,ba:0,el:null});return u}
+function mkB(a,b){return{U:[...a.map(s=>mkU(s,0)),...b.map(s=>mkU(s,1))],S:[],t:0,end:0,win:-1}}
+function kill(o,V){o.dead=1;o.hp=0;if(V)V.log('<b style="color:'+(o.s?'#ff9a9a':'#9fe8ff')+'">'+o.n+'</b> ล้ม')}
+function heal(u,h,V){h=Math.round(h);if(h<1||u.dead)return;u.hp=Math.min(u.mx,u.hp+h);if(V)V.num(u,'+'+h,'#7dff8a')}
+function fhit(u,o,mul,V){if(o.dead)return;let d=u.dm*mul*(.9+R()*.2);const cr=R()*100<(u.crit||5);if(cr)d*=2;
+  d=Math.max(1,Math.round(d*100/(100+(o.arm||0))));o.hp-=d;o.ht=.12;if(u.burn){o.bn=Math.max(o.bn,u.burn);o.bnT=3}
+  u.g=Math.min(100,u.g+14*(1+(u.cdr||0)/100));o.g=Math.min(100,o.g+6);
+  if(V)V.num(o,(cr?'คริ! ':'')+d,u.s?'#ff9a9a':cr?'#fff27a':'#ffe27a');if(o.hp<=0)kill(o,V)}
+function fult(u,tg,foes,mates,V){u.g=0;u.lt=.3;if(V)V.ult(u);const r=u.mon?'boss':cls(u.k);
+  if(r==='support'){mates.forEach(m=>heal(m,m.mx*.3,V));foes.forEach(o=>fhit(u,o,.6,V))}
+  else if(r==='warrior')foes.filter(o=>dist(o,tg)<85).forEach(o=>fhit(u,o,2.3,V));
+  else if(r==='assassin'){u.x=tg.x+(u.s?-26:26);u.z=tg.z;u.face=u.s?1:-1;fhit(u,tg,3.3,V)}
+  else if(r==='hunter'){const line=foes.filter(o=>Math.abs(o.z-tg.z)<22);(line.length?line:[tg]).forEach(o=>fhit(u,o,2.4,V))}
+  else if(r==='curse')foes.forEach(o=>{fhit(u,o,1.1,V);o.cd+=1.2});
+  else foes.forEach(o=>fhit(u,o,1.5,V));
+  u.g=0}  // the ult's own hits don't refill its gauge
+function decide(F){const hp=s=>F.U.filter(u=>u.s===s).reduce((t,u)=>t+u.hp/u.mx,0);F.end=1;F.win=hp(0)>=hp(1)?0:1}
+function bstep(F,dt,V){if(F.end)return;F.t+=dt;
+  for(const u of F.U){if(u.dead)continue;u.cd-=dt;u.lt=Math.max(0,u.lt-dt);u.ht=Math.max(0,u.ht-dt);u.mv=0;
+    if(u.bnT>0){u.bnT-=dt;if((u.ba+=dt)>=1){u.ba=0;const d=Math.round(u.bn);u.hp-=d;if(V)V.num(u,d,'#ff9a3a');if(u.hp<=0){kill(u,V);continue}}}
+    if(u.heal&&(u.dt+=dt)>=6){u.dt=0;heal(u,u.mx*u.heal/100,V)}
+    if(u.regen&&(u.rt+=dt)>=3){u.rt=0;heal(u,u.mx*u.regen/100,V)}
+    const foes=F.U.filter(o=>!o.dead&&o.s!==u.s);if(!foes.length)continue;const mates=F.U.filter(o=>!o.dead&&o.s===u.s);
+    const tg=u.R.dive?foes.reduce((a,o)=>(u.s?o.x<a.x:o.x>a.x)?o:a):foes.reduce((a,o)=>dist(u,o)<dist(u,a)?o:a);
+    if(u.ult&&u.g>=100){fult(u,tg,foes,mates,V);continue}
+    const melee=!u.R.shot,side=tg.x>=u.x?1:-1;let gx=u.x,gz=u.z;
+    if(melee){gx=tg.x-side*u.R.rg;gz=tg.z}else{const d=dist(u,tg);if(d>u.R.rg){const k=1-u.R.rg/d;gx=u.x+(tg.x-u.x)*k;gz=u.z+(tg.z-u.z)*k}}
+    const dx=gx-u.x,dz=(gz-u.z)*1.3,dl=Math.hypot(dx,dz);
+    if(dl>3){const st=Math.min(dl,u.R.sp*dt);u.x+=dx/dl*st;u.z+=dz/dl*st/1.3;u.mv=1;if(Math.abs(dx)>1)u.face=dx>0?1:-1}
+    else if(u.cd<=0){u.face=side;u.cd=u.R.cd/(1+(u.spd||0)/100);u.lt=.2;
+      if(melee){fhit(u,tg,1,V);if(u.R.aoe)foes.forEach(o=>{if(o!==tg&&dist(o,tg)<60)fhit(u,o,.6,V)})}
+      else if(u.R.heal&&R()<.35){const m=mates.reduce((a,o)=>o.hp/o.mx<a.hp/a.mx?o:a);heal(m,m.mx*.06,V);u.g=Math.min(100,u.g+10)}
+      else F.S.push({x:u.x+side*14,z:u.z,h:34,u,tg,col:u.R.shot,ar:u.R.ar,done:0,el:null})}
+    for(const o of mates)if(o!==u){const ox=u.x-o.x,oz=(u.z-o.z)*1.3,od=Math.hypot(ox,oz);if(od<30&&od>0){u.x+=ox/od*45*dt;u.z+=oz/od*30*dt/1.3}}
+    u.z=Math.max(0,Math.min(100,u.z));u.x=Math.max(16,Math.min(828,u.x))}
+  for(const p of F.S){if(p.done)continue;if(p.tg.dead){p.done=1;continue}const dx=p.tg.x-p.x,dz=p.tg.z-p.z,d=Math.hypot(dx,dz*1.3),st=420*dt;
+    if(d<=st){p.done=1;fhit(p.u,p.tg,1,V)}else{p.x+=dx/d*st;p.z+=dz/d*st}}
+  if(!V)F.S=F.S.filter(p=>!p.done);
+  const a=F.U.some(u=>!u.s&&!u.dead),b=F.U.some(u=>u.s&&!u.dead);if(!a||!b){F.end=1;F.win=a?0:1}else if(F.t>80)decide(F)}
+function simB(a,b){const F=mkB(a,b);for(let n=0;n<1700&&!F.end;n++)bstep(F,.05,null);if(!F.end)decide(F);return F}
+
+// ---------- rounds (pure: used by the screen and by the silent test games)
+const G={round:0,P:[],phase:'lobby',timer:0,match:null,res:null,ov:false};
+const me=()=>G.P[0];
+function newGame(allBots){UID=1;G.round=0;G.P=[mkPlayer('คุณ',['god_warrior','god_assassin','god_hunter','god_mage','god_support'],!!allBots,.9)];
+  ['บอทอัคนี','บอทวายุ','บอทธารา','บอทศิลา'].forEach(n=>G.P.push(mkPlayer(n,botKeys(),true,.5+R()*.5)))}
+function beginRound(){G.round++;const r=G.round,alive=G.P.filter(p=>p.alive);
+  alive.forEach(p=>{if(r>1){p.inc=5+Math.min(3,Math.floor(p.gold/10))+(p.lastWin?1:0)+3*tc(p,'gold');p.gold+=p.inc}p.lv=r;if(p.lock&&r>1)p.lock=false;else roll(p)});
+  G.match=new Map();if(kindOf(r)==='pvp'){const sh=shuffle(alive.slice());for(let i=0;i<sh.length;i+=2){const a=sh[i],b=sh[i+1]||pick(alive.filter(o=>o!==a));G.match.set(a,b);if(sh[i+1])G.match.set(b,a)}}
+  alive.filter(p=>p.bot).forEach(botShop)}
+function foeOf(p){return kindOf(G.round)==='pvp'?teamOf(G.match.get(p)):waveTeam(G.round)}
+function lossDmg(kind,r,surv){return Math.round(kind==='pvp'?4+surv*2+r/3:kind==='boss'?8+surv*3:2+r/2+surv*1.5)}
+function setRes(p,F,side,vs){const kind=kindOf(G.round),win=F.win===side,surv=F.U.filter(u=>!u.dead&&u.s!==side).length;G.res.set(p,{win,dmg:win?0:lossDmg(kind,G.round,surv),vs,surv})}
+function resolveRound(myF){const kind=kindOf(G.round),alive=G.P.filter(p=>p.alive),m=me();G.res=new Map();
+  if(myF&&m.alive){const o=kind==='pvp'?G.match.get(m):null;setRes(m,myF,0,o);if(o&&G.match.get(o)===m)setRes(o,myF,1,m)}
+  alive.forEach(p=>{if(G.res.has(p))return;if(kind==='pvp'){const o=G.match.get(p),F=simB(teamOf(p),teamOf(o));setRes(p,F,0,o);if(G.match.get(o)===p&&!G.res.has(o))setRes(o,F,1,p)}
+    else setRes(p,simB(teamOf(p),waveTeam(G.round)),0,null)})}
+function applyRound(){const died=[];G.P.forEach(p=>{const q=G.res.get(p);if(!q||!p.alive)return;p.hp-=q.dmg;p.lastWin=q.win;if(p.hp<=0){p.alive=false;died.push(p)}});
+  const n=G.P.filter(p=>p.alive).length;died.sort((a,b)=>b.hp-a.hp).forEach((p,i)=>{p.place=n+1+i});
+  if(n===1)G.P.find(p=>p.alive).place=1}
+function gameDone(){const n=G.P.filter(p=>p.alive).length;return n<=1||!me().alive&&!G.P[0].bot}
+// silent full games for balance checks: node-free, run from the console or a test (all five players are bots)
+function autoGames(n){const out=[];for(let i=0;i<n;i++){newGame(true);let guard=0;while(G.P.filter(p=>p.alive).length>1&&guard++<40){beginRound();G.P.filter(p=>p.alive).forEach(doMerge);resolveRound(null);applyRound();
+    if(kindOf(G.round)==='boss')G.P.filter(p=>p.alive).forEach(p=>applyTal(p,pick(TALS).k))}
+  out.push({rounds:G.round,out:G.P.map(p=>p.place+':'+p.name+':'+Math.max(0,p.hp)+':'+p.bag.items.length)})}return out}
+
+// ---------- screen
+if(HAS_DOM){
+const FIELD=$('#field'),TSPD=+new URLSearchParams(location.search).get('spd')||0;let MODE='shop',SPD=TSPD||LS.get('spd',1),LIVE=null,LOG=[],TT=null,D=null;
+const fy=z=>MODE==='fight'?126+z*1.45:121+z*.4,BS=()=>MODE==='fight'?1.3:1,uh=u=>62*(u.sc||1)*BS();
+const V={num(o,t,c){const d=document.createElement('div');d.className='dmg fl';d.style.left=(o.x-22)+'px';d.style.top=(fy(o.z)-uh(o)-16)+'px';d.style.color=c;d.textContent=t;FIELD.appendChild(d);setTimeout(()=>d.remove(),900)},
+  log(t){LOG.unshift(t);LOG.length=Math.min(LOG.length,3);$('#flog').innerHTML=LOG.map(x=>'<div>'+x+'</div>').join('')},
+  ult(u){const s=document.createElement('div');s.className='skn';s.style.left=(u.x-40)+'px';s.style.top=(fy(u.z)-uh(u)-40)+'px';s.textContent=u.ult;FIELD.appendChild(s);setTimeout(()=>s.remove(),1200);
+    V.log('<b style="color:'+(u.s?'#ff9a9a':'#9fe8ff')+'">'+u.n+'</b> ไม้ตาย <b>'+u.ult+'</b>')}};
+function syncDOM(F){const bs=BS();
+  for(const u of F.U){if(!u.el){const e=document.createElement('div');e.className='unit'+(u.px?' px':'');u.w=62*(u.sc||1);e.style.width=e.style.height=u.w+'px';e.style.backgroundImage='url('+u.img+')';e.innerHTML='<div class="hp"><i></i></div>';FIELD.appendChild(e);u.el=e}
+    const bob=u.mv?-Math.abs(Math.sin(F.t*11+u.x))*4:0,lx=u.lt>0?u.face*10*Math.sin(u.lt/.2*Math.PI):0;
+    u.el.style.left=(u.x-u.w/2)+'px';u.el.style.top=(fy(u.z)-u.w)+'px';u.el.style.zIndex=10+Math.round(u.z);
+    u.el.style.transform='translate('+lx+'px,'+(bob+(u.dead?10:0))+'px) scale('+(u.face*bs)+','+bs+')';u.el.style.opacity=u.dead?.15:1;
+    u.el.style.filter=(u.hue||'')+(u.ht>0?' brightness(2.4)':'');const i=u.el.firstChild.firstChild;i.style.width=Math.max(0,u.hp/u.mx*100)+'%';i.style.background=u.s?'#ff5a5a':'#5be06b'}
+  for(const p of F.S){if(p.done){if(p.el)p.el.remove();continue}if(!p.el){p.el=document.createElement('div');p.el.className='shot'+(p.ar?' ar':'');p.el.style.color=p.col;p.el.style.background=p.col;FIELD.appendChild(p.el)}
+    p.el.style.left=(p.x-5)+'px';p.el.style.top=(fy(p.z)-p.h*bs-3)+'px';p.el.style.transform='rotate('+Math.atan2(fy(p.tg.z)-fy(p.z),p.tg.x-p.x)+'rad)'}
+  F.S=F.S.filter(p=>!p.done)}
+function setMode(m){MODE=m;$('#stage').classList.toggle('fighting',m==='fight');$('#p-shop').classList.toggle('on',m==='shop');$('#p-fight').classList.toggle('on',m==='fight');
+  const k=G.round?kindOf(G.round):'mon';$('#battle').className=k==='boss'?'boss':k==='mon'?'mon':''}
+function preview(){if(MODE!=='shop'||!G.round||LIVE)return;FIELD.innerHTML='';const m=me(),k=kindOf(G.round),F=mkB(teamOf(m),foeOf(m));syncDOM(F);
+  const o=G.match&&G.match.get(m),txt=k==='pvp'?'รอบนี้ ⚔️ สู้กับ '+o.name:k==='boss'?'รอบนี้ 💀 บอส '+MON.boss.n:'รอบนี้ 👹 มอน '+waveList(G.round).length+' ตัว';
+  FIELD.insertAdjacentHTML('beforeend','<div class="blab">'+txt+' · ทีมยืนตามที่วางในกระเป๋า ขวา = หน้า</div>')}
+function rTop(){const m=me(),k=G.round?kindOf(G.round):'mon';$('#rnd').textContent='รอบ '+G.round+' · '+KN[k];$('#gold').textContent='💰 '+m.gold;$('#hp').textContent='❤️ '+Math.max(0,m.hp);
+  const o=G.match&&G.match.get(m);$('#players').innerHTML=G.P.map(p=>'<div class="pl'+(p===m?' me':'')+(p.alive?'':' out')+(o===p&&k==='pvp'?' vs':'')+'" title="'+p.name+'"><div class="fc" style="background-image:url('+A+p.keys[0]+'.png)"></div>'+(p.alive?Math.max(0,p.hp):'ตก')+'</div>').join('')}
+// bag drawing (from docs/gem-mock.html)
+function itemHTML(k,r,cs,c,p,m,pos,data){const I=IT[k],w=Math.max(...cs.map(a=>a[0]))+1,h=Math.max(...cs.map(a=>a[1]))+1,S=new Set(cs.map(([x,y])=>key(x,y))),col=I.bag?'#b07a42':RC[r];
+  let s='';cs.forEach(([x,y])=>{s+='<i style="left:'+x*p+'px;top:'+y*p+'px;width:'+(c+(S.has(key(x+1,y))?p-c:0))+'px;height:'+(c+(S.has(key(x,y+1))?p-c:0))+'px;background-color:'+col+'"></i>'});
+  let ic;if(cs.length===w*h)ic=[(w*p-(p-c))/2,(h*p-(p-c))/2];else{const b=cs.reduce((b,a)=>{const n=N4.filter(([dx,dy])=>S.has(key(a[0]+dx,a[1]+dy))).length;return n>b[0]?[n,a]:b},[-1])[1];ic=[b[0]*p+c/2,b[1]*p+c/2]}
+  s+='<b class="ic" style="left:'+ic[0]+'px;top:'+ic[1]+'px;font-size:'+Math.round(c*.6)+'px">'+I.ic+'</b>';
+  if(I.star)s+='<span class="bdg" style="right:-4px;top:-6px;color:#fff6a8">★</span>';
+  if(m&&m.merge)s+='<span class="bdg" style="right:-4px;bottom:-5px;color:#7dff8a">⇧</span>';
+  if(m&&m.idle)s+='<span class="bdg" style="right:0;bottom:0;font-size:9px">💤</span>';
+  if(m&&m.own&&m.own.length>1)s+='<span class="dots">'+m.own.map(l=>'<u style="background:'+colOf(l.k)+'"></u>').join('')+'</span>';
+  const oc=m&&m.own&&m.own.length===1?colOf(m.own[0].k):m&&m.own&&m.own.length>1?'#fff':'#000',ow=c>=30?2:1.5;
+  const f=['drop-shadow('+ow+'px 0 0 '+oc+')','drop-shadow(-'+ow+'px 0 0 '+oc+')','drop-shadow(0 '+ow+'px 0 '+oc+')','drop-shadow(0 -'+ow+'px 0 '+oc+')'].join(' ')+(m&&m.sel?' drop-shadow(0 0 5px #fff)':'')+(m&&m.boost?' drop-shadow(0 0 4px #ffd75a)':'');
+  return '<div class="itm'+(m&&m.idle?' idle':'')+(I.bag?' bagp':'')+'" '+(data||'')+' style="'+pos+';width:'+(w*p-(p-c))+'px;height:'+(h*p-(p-c))+'px;filter:'+f+'">'+s+'</div>'}
+const legHTML=(l,pos,sel,rk)=>'<div class="port lg'+(sel?' sel':'')+'" data-l="'+l.i+'" style="'+pos+';width:'+(2*CP-(CP-CS))+'px;height:'+(2*CP-(CP-CS))+'px;background-image:url('+A+l.k+'.png);border-color:'+colOf(l.k)+'">'+(rk?'<span class="rk">'+rk+'</span>':'')+'</div>';
+const rank=(b,l)=>{const xs=[...new Set(b.leg.map(o=>o.x))].sort((a,c)=>c-a);return xs.indexOf(l.x)+1};
+function rBag(M){const b=me().bag,sel=me().sel;let h='<div class="bframe" style="left:'+(GX-5)+'px;top:'+(GY-5)+'px;width:'+(BW*CP+8)+'px;height:'+(BH*CP+8)+'px"></div>';
+  for(let y=0;y<BH;y++)for(let x=0;x<BW;x++)h+='<div class="cell'+(b.open.has(key(x,y))?'':' lockc')+'" style="left:'+(GX+x*CP)+'px;top:'+(GY+y*CP)+'px"></div>';
+  b.leg.forEach(l=>{h+=legHTML(l,'left:'+(GX+l.x*CP)+'px;top:'+(GY+l.y*CP)+'px',sel===l,rank(b,l))});
+  b.items.forEach(it=>{const m=M.get(it);m.sel=sel===it;h+=itemHTML(it.k,it.r,it.c,CS,CP,m,'left:'+(GX+it.x*CP)+'px;top:'+(GY+it.y*CP)+'px','data-it="'+it.id+'"')});
+  $('#bagL').innerHTML=h}
+function rShop(){const m=me();$('#tray').innerHTML=m.shop.map((s,i)=>{if(!s)return '<div class="slot" style="left:'+i*74+'px"><span class="pr" style="color:var(--dim)">ซื้อแล้ว</span></div>';
+    const w=Math.max(...s.c.map(a=>a[0]))+1,h=Math.max(...s.c.map(a=>a[1]))+1,iw=w*SP-(SP-SC),ih=h*SP-(SP-SC);
+    return '<div class="slot'+(m.gold<s.price?' poor':'')+'" style="left:'+i*74+'px">'+itemHTML(s.k,s.r,s.c,SC,SP,{own:[],sel:m.sel===s},'left:'+(66-iw)/2+'px;top:'+((61-ih)/2+1)+'px','data-s="'+i+'"')+'<span class="pr">'+s.price+'💰</span></div>'}).join('');
+  $('#lock').textContent=m.lock?'🔒 ล็อกไว้':'🔓 ล็อก';$('#sg').textContent='💰 '+m.gold;const sp=special(G.round);$('#shop').classList.toggle('spec',sp);
+  $('#shn').firstChild.textContent=sp?'🌟 ร้านพิเศษ ':'ร้านค้า '}
+function rInfo(M){const p=me(),s=p.sel;let h=p.toast?'<b style="color:var(--gold)">'+p.toast+'</b><br>':'';
+  if(!s)h+='ของแตะเทพ = ของตัวนั้น (ขอบสีเทพ) แตะหลายตัวช่วยทุกตัว<br>💤 ไม่แตะเทพ = ไม่ทำงาน · ★ เสริมของที่วางติด 25%<br>⇧ ของเหมือนกันสีเดียวกันติดกัน รวมเป็นสีถัดไปตอนเริ่มสู้<br>👜 ถุง วางบนช่องล็อก = ขยายกระเป๋า · เทพขวาสุด = ยืนหน้าสุด';
+  else if(s.lg){const r=rank(p.bag,s),tot={};let cnt=0;p.bag.items.forEach(it=>{const m=M.get(it);if(!m.own.includes(s)||!IT[it.k].st)return;cnt++;for(const k in IT[it.k].st)tot[k]=(tot[k]||0)+val(it.k,it.r,k,m.boost)});
+    h+='<b style="color:'+colOf(s.k)+'">'+CAST[s.k]+'</b> · ยืนแถวที่ '+r+(r===1?' (หน้าสุด)':'')+' · ของ '+cnt+' ชิ้น · ไม้ตาย '+ULT[s.k]+'<br>'+(cnt?Object.keys(tot).map(k=>STN[k]+' +'+tot[k]+(PCT[k]?'%':'')).join(' · '):'ยังไม่มีของ วางของให้แตะเทพตัวนี้')+'<br><span style="color:var(--dim)">ลากเทพไปที่อื่นได้ · ขวามากขึ้น = ยืนหน้ามากขึ้น</span>'}
+  else if(p.bag.items.includes(s)){const m=M.get(s),I=IT[s.k];h+='<b>'+I.ic+' '+I.n+'</b> <span style="color:'+RC[s.r]+'">'+RN[s.r]+'</span> · '+eff(s.k,s.r,m.boost)+(m.boost?' <span style="color:var(--gold)">(★ เสริมแล้ว)</span>':'')+'<br>'+
+    (I.star?(m.idle?'💤 ยังไม่ได้ติดของชิ้นไหน':'★ เสริมของที่ติดอยู่'):m.own.length?'ของ: '+m.own.map(l=>'<b style="color:'+colOf(l.k)+'">'+CAST[l.k]+'</b>').join(', '):'💤 ยังไม่แตะเทพตัวไหน ไม่ทำงาน')+
+    (m.merge?'<br><span style="color:#7dff8a">⇧ ติดกับของเหมือนกัน จะรวมเป็นสี'+RN[s.r+1]+'ตอนเริ่มสู้</span>':'')+'<br><span style="color:var(--dim)">แตะ = หมุน · ลากไปที่ร้าน = ขาย '+sellP(s)+'💰</span>'}
+  else{const I=IT[s.k];h+='<b>'+I.ic+' '+I.n+'</b>'+(I.bag?'':' <span style="color:'+RC[s.r]+'">'+RN[s.r]+'</span>')+' · '+(I.bag?I.d:eff(s.k,s.r,0))+'<br>ราคา '+s.price+'💰 · ลากลงกระเป๋าเพื่อซื้อ · แตะ = หมุน'}
+  $('#info').innerHTML=h}
+function render(){rTop();if(MODE!=='shop')return;const M=meta(me().bag);rBag(M);rShop();rInfo(M);preview()}
+function toast(t){me().toast=t;if(MODE==='shop'&&G.round)rInfo(meta(me().bag));clearTimeout(TT);TT=setTimeout(()=>{me().toast='';if(MODE==='shop')rInfo(meta(me().bag))},2800)}
+// drag & drop on the bag
+function pt(e){const Rr=$('#p-shop').getBoundingClientRect(),k=Rr.width/844;return[(e.clientX-Rr.left)/k,(e.clientY-Rr.top)/k]}
+$('#p-shop').addEventListener('pointerdown',e=>{if(G.phase!=='shop'||e.target.closest('button'))return;const p=me(),t=e.target.closest('[data-it],[data-l],[data-s]'),[px,py]=pt(e);
+  if(!t){if(!e.target.closest('#shop')){p.sel=null;render()}return}
+  e.preventDefault();let d;
+  if(t.dataset.it){const it=p.bag.items.find(o=>o.id==t.dataset.it);d={kind:'it',ref:it,cells:it.c,ox:px-(GX+it.x*CP),oy:py-(GY+it.y*CP)}}
+  else if(t.dataset.l){const l=p.bag.leg[t.dataset.l];d={kind:'l',ref:l,cells:SQ,ox:px-(GX+l.x*CP),oy:py-(GY+l.y*CP)}}
+  else{const s=p.shop[t.dataset.s],Rr=t.getBoundingClientRect(),Q=$('#p-shop').getBoundingClientRect(),k=Q.width/844;
+    d={kind:'s',ref:s,cells:s.c,ox:(px-(Rr.left-Q.left)/k)*CP/SP,oy:(py-(Rr.top-Q.top)/k)*CP/SP,poor:p.gold<s.price}}
+  d.sx=px;d.sy=py;d.moved=false;D=d});
+function target(d,px,py){const b=me().bag,x=Math.round((px-d.ox-GX)/CP),y=Math.round((py-d.oy-GY)/CP),cs=cellsOf(d.cells,x,y);
+  return{x,y,cs,ok:d.kind==='s'&&IT[d.ref.k].bag?fitsBag(b,cs):fits(b,cs,d.kind==='s'?null:d.ref)}}
+addEventListener('pointermove',e=>{if(!D)return;const[px,py]=pt(e);if(!D.moved){if(Math.hypot(px-D.sx,py-D.sy)<6)return;if(D.kind==='s'&&D.poor){toast('เงินไม่พอ');D=null;render();return}D.moved=true;
+    const src=D.kind==='it'?$('[data-it="'+D.ref.id+'"]'):D.kind==='l'?$('#bagL [data-l="'+D.ref.i+'"]'):null;if(src)src.classList.add('lifted')}
+  const pos='left:'+(px-D.ox)+'px;top:'+(py-D.oy)+'px';
+  $('#ghost').innerHTML=D.kind==='l'?legHTML(D.ref,pos,0,0).replace('data-l','data-g'):itemHTML(D.ref.k,D.ref.r,D.cells,CS,CP,{own:[]},pos,'');
+  const sell=D.kind==='it'&&px>=SHX;$('#shop').classList.toggle('sell',sell);
+  const t=target(D,px,py);$('#hlL').innerHTML=sell?'':t.cs.filter(([x,y])=>inB(x,y)).map(([x,y])=>'<div class="hl '+(t.ok?'ok':'bad')+'" style="left:'+(GX+x*CP)+'px;top:'+(GY+y*CP)+'px"></div>').join('')});
+function endDrag(e){if(!D)return;const d=D,p=me(),[px,py]=pt(e);D=null;$('#ghost').innerHTML=$('#hlL').innerHTML='';$('#shop').classList.remove('sell');if(G.phase!=='shop')return;
+  if(!d.moved){if(d.kind!=='l'){const o=d.ref,nc=rotC(o.c);if(d.kind==='s')o.c=nc;else if(fits(p.bag,cellsOf(nc,o.x,o.y),o))o.c=nc;
+      else for(const [a,b] of [[-1,0],[0,-1],[-1,-1],[-2,0],[0,-2]])if(fits(p.bag,cellsOf(nc,o.x+a,o.y+b),o)){o.c=nc;o.x+=a;o.y+=b;break}}
+    p.sel=d.ref;render();return}
+  if(d.kind==='it'&&px>=SHX){const g=sellP(d.ref);p.gold+=g;p.bag.items.splice(p.bag.items.indexOf(d.ref),1);if(p.sel===d.ref)p.sel=null;toast('ขาย '+IT[d.ref.k].n+' +'+g+'💰');render();return}
+  const t=target(d,px,py);
+  if(t.ok){if(d.kind==='s'){const s=d.ref;p.gold-=s.price;p.shop[p.shop.indexOf(s)]=null;
+      if(IT[s.k].bag){t.cs.forEach(([x,y])=>p.bag.open.add(key(x,y)));toast('กระเป๋าใหญ่ขึ้น +'+t.cs.length+' ช่อง');if(p.sel===s)p.sel=null}
+      else{const it={id:UID++,k:s.k,r:s.r,c:d.cells,x:t.x,y:t.y};p.bag.items.push(it);p.sel=it}}
+    else{d.ref.x=t.x;d.ref.y=t.y;if(d.kind==='it')d.ref.c=d.cells;p.sel=d.ref}}
+  else if(d.kind==='s'&&IT[d.ref.k].bag)toast('ถุงต้องวางบนช่องล็อก ติดกับกระเป๋า');
+  render()}
+addEventListener('pointerup',endDrag);addEventListener('pointercancel',endDrag);
+$('#roll').onclick=()=>{const p=me();if(G.phase!=='shop')return;if(p.gold<1){toast('เงินไม่พอ');return}p.gold--;roll(p);p.sel=null;render()};
+$('#lock').onclick=()=>{const p=me();p.lock=!p.lock;toast(p.lock?'ล็อกร้าน รอบหน้าได้ของชุดนี้':'ปลดล็อกร้าน');render()};
+$('#go').onclick=()=>ready();
+$('#spd').onclick=()=>{SPD=SPD===1?2:1;LS.set('spd',SPD);$('#spd').textContent='⏩ x'+SPD};$('#spd').textContent='⏩ x'+SPD;
+// overlays
+function ov(h){$('#ov').innerHTML='<div class="card">'+h+'</div>';$('#ov').classList.add('on');G.ov=true}
+function closeOv(){$('#ov').classList.remove('on');$('#ov').innerHTML='';G.ov=false}
+function lobby(){G.phase='lobby';const best=LS.get('best',0);
+  ov('<h1>กระเป๋าเทพ</h1><div class="sub">ต้นแบบลองเล่น · 5 คน (คุณ + บอท 4) · คนสุดท้ายที่รอดชนะ</div><img class="lineup" src="'+A+'_lineup.png" alt="">'+
+    '<div><button class="btn" id="bplay">▶ เริ่มเล่น</button> <button class="btn2" id="bhow">วิธีเล่น</button></div>'+
+    '<div class="how" id="howt" hidden>1. <b>ช่วงร้าน:</b> ซื้อของ ลากลงกระเป๋า วางให้แตะเทพ ของที่แตะเทพตัวไหนก็เป็นของตัวนั้น<br>2. กด <b>พร้อม</b> (หรือรอเวลาหมด) แล้วทีมสู้เอง ตัวตีใกล้เดินเข้าหา ตัวยิงไกลยืนยิง เกจเต็มใช้ไม้ตายเอง<br>3. แพ้เสียเลือด ❤️ หมด = ตกรอบ · ทุกรอบได้เงิน +5 (เก็บเงินไว้ได้ดอกเบี้ย สูงสุด +3)<br>4. รอบ 4, 9, 14 ... ⚔️ สู้กับผู้เล่นอื่น · รอบ 10, 20 💀 บอส แล้วเลือกทาเลนต์ · รอบ 5, 10, 15 🌟 ร้านพิเศษ ของดีออกบ่อย</div>'+
+    (best?'<div class="sub">ดีที่สุด: อันดับ '+best+'</div>':''));
+  $('#bplay').onclick=()=>{closeOv();newGame(false);startRound()};$('#bhow').onclick=()=>{$('#howt').hidden=!$('#howt').hidden}}
+function startRound(){beginRound();G.phase='shop';G.timer=G.round===1?60:40;me().sel=null;setMode('shop');render();const m=me();
+  toast(G.round===1?'ซื้อของ ลากลงกระเป๋า วางให้แตะเทพ แล้วกด พร้อม':'รอบ '+G.round+' · +'+m.inc+'💰'+(special(G.round)?' · 🌟 ร้านพิเศษ':'')+(kindOf(G.round)==='pvp'?' · ⚔️ สู้กับ '+G.match.get(m).name:''))}
+function ready(){if(G.phase!=='shop')return;G.phase='fight';const m=me(),k=kindOf(G.round);G.P.filter(p=>p.alive).forEach(doMerge);
+  setMode('fight');FIELD.innerHTML='';LOG=[];const o=G.match.get(m);
+  $('#fvs').textContent=k==='pvp'?'สู้กับ '+o.name:k==='boss'?'บอส '+MON.boss.n:'มอน '+waveList(G.round).length+' ตัว';
+  const F=mkB(teamOf(m),foeOf(m));
+  $('#fports').innerHTML=F.U.filter(u=>!u.s).map((u,i)=>'<div class="port" style="left:'+(10+i*54)+'px;background-image:url('+u.img+');border-color:'+colOf(u.k)+'"><div class="bars"><s><i style="background:#5be06b"></i></s><s><i style="background:'+colOf(u.k)+'"></i></s></div></div>').join('');
+  V.log('เริ่มสู้! '+KN[k]+(k==='pvp'?' กับ '+o.name:''));rTop();
+  LIVE={F,last:performance.now(),endT:0};requestAnimationFrame(loop)}
+function loop(now){const L=LIVE;if(!L)return;let dt=Math.min(.1,(now-L.last)/1000)*SPD;L.last=now;
+  while(dt>0){const d=Math.min(.05,dt);bstep(L.F,d,V);dt-=d}syncDOM(L.F);
+  const ps=document.querySelectorAll('#fports .port');L.F.U.filter(u=>!u.s).forEach((u,i)=>{const e=ps[i];if(!e)return;const b=e.querySelectorAll('s i');b[0].style.width=Math.max(0,u.hp/u.mx*100)+'%';b[1].style.width=u.g+'%';e.classList.toggle('ready',u.g>=90&&!u.dead);e.style.opacity=u.dead?.35:1});
+  if(L.F.end){if(!L.endT){L.endT=now;V.log(L.F.win===0?'<b style="color:#7dff8a">ชนะ!</b>':'<b style="color:#ff8a8a">แพ้...</b>')}if(now-L.endT>1300/SPD){LIVE=null;fightDone(L.F);return}}
+  requestAnimationFrame(loop)}
+function fightDone(F){resolveRound(F);applyRound();showResults()}
+function showResults(){G.phase='result';const m=me(),q=G.res.get(m),k=kindOf(G.round);
+  const rows=G.P.slice().sort((a,b)=>(b.alive-a.alive)||(b.hp-a.hp)).map(p=>{const r=G.res.get(p);return '<div class="rr'+(p===m?' me':'')+(p.alive?'':' out')+'"><span class="fc" style="background-image:url('+A+p.keys[0]+'.png)"></span><b>'+p.name+'</b><span>'+
+    (r?(r.win?'✅ ชนะ':'❌ แพ้ −'+r.dmg):'')+'</span><span>❤️ '+Math.max(0,p.hp)+'</span>'+(p.alive?'':'<span style="color:#ff8a8a">ตกรอบ</span>')+'</div>'}).join('');
+  ov('<h2 style="color:'+(q.win?'#7dff8a':'#ff8a8a')+'">'+(q.win?'ชนะ!':'แพ้ −'+q.dmg+' ❤️')+'</h2><div class="sub">รอบ '+G.round+' · '+KN[k]+(q.vs?' กับ '+q.vs.name:'')+'</div><div class="rl">'+rows+'</div><button class="btn" id="bnx">ต่อไป ▶</button>');
+  $('#bnx').onclick=afterResults}
+function afterResults(){closeOv();if(gameDone()){gameOver();return}
+  if(kindOf(G.round)==='boss'){G.P.filter(p=>p.bot&&p.alive).forEach(p=>applyTal(p,pick(TALS).k));const opts=shuffle(TALS.slice()).slice(0,3);
+    ov('<h2 style="color:var(--gold)">ผ่านบอสรอบ '+G.round+' · เลือกทาเลนต์</h2><div class="sub">ได้ทั้งเกม เลือก 1 อย่าง</div><div class="tals">'+opts.map(t=>'<button class="tal" data-t="'+t.k+'"><b>'+t.ic+' '+t.n+'</b><span>'+t.d+'</span></button>').join('')+'</div>');
+    document.querySelectorAll('.tal').forEach(b=>b.onclick=()=>{applyTal(me(),b.dataset.t);closeOv();startRound()});return}
+  startRound()}
+function gameOver(){G.phase='over';const m=me(),pl=m.alive?1:m.place,best=LS.get('best',0);if(!best||pl<best)LS.set('best',pl);
+  ov('<h1>'+(pl===1?'🏆 ชนะ!':'ตกรอบ')+'</h1><div class="sub" style="font-size:16px;color:#fff">'+(pl===1?'คุณรอดเป็นคนสุดท้าย':'อันดับ '+pl+' จาก 5')+' · ถึงรอบ '+G.round+'</div>'+
+    '<div class="rl">'+G.P.slice().sort((a,b)=>(a.alive?0:a.place)-(b.alive?0:b.place)).map(p=>'<div class="rr'+(p===m?' me':'')+'"><b>'+(p.alive?(pl===1?'#1 ':'ยังรอด '):'#'+p.place+' ')+p.name+'</b><span>'+p.keys.map(k=>CAST[k]).slice(0,3).join(' ')+'…</span></div>').join('')+'</div>'+
+    '<button class="btn" id="bag2">เล่นใหม่</button> <button class="btn2" id="bhome">หน้าแรก</button>');
+  $('#bag2').onclick=()=>{closeOv();newGame(false);startRound()};$('#bhome').onclick=()=>lobby()}
+setInterval(()=>{if(G.phase!=='shop'||G.ov)return;G.timer--;$('#tmr').textContent='⏳ '+G.timer;if(G.timer<=0)ready()},1000);
+const tmrSet=()=>{$('#tmr').textContent=G.phase==='shop'?'⏳ '+G.timer:G.phase==='fight'?'⚔ สู้':'—'};setInterval(tmrSet,250);
+function fit(){const k=Math.min(innerWidth/844,innerHeight/390);$('#stage').style.transform='scale('+k+')';$('#holder').style.width=844*k+'px';$('#holder').style.height=390*k+'px'}
+addEventListener('resize',fit);fit();
+newGame(false);G.round=1;roll(me());setMode('shop');G.round=0;render();lobby();
+window.PACK={G,autoGames,newGame,startRound,ready};
+}
+</script></body></html>
