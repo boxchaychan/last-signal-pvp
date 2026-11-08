@@ -203,6 +203,12 @@ function setupGround() {
     deco.push({k: 0, x: x | 0, y: y | 0, r: 4 + rnd() * 4 | 0, fl: rnd() < .25}); }
   for (let i = 0; i < 1500; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * (lb[2] - lb[0]) * .5 * rnd(), y = LAKE.cy + Math.sin(a) * (lb[3] - lb[1]) * .5 * rnd();
     const f = lakeF(x, y); if (f > .03 || f < -.08 || rnd() < .4) continue; deco.push({k: 1, x: x | 0, y: y | 0, h: 6 + rnd() * 8 | 0, s: rnd()}); }
+  // shore points for the lapping foam (owner 2026-11-08 "ไปทำน้ำ"): water cells with land next to them, with the way to land
+  const shore = [];
+  for (let gy = 1; gy < GH - 1; gy++) for (let gx = 1; gx < GW - 1; gx++) { if (WATER[gy * GW + gx] !== 1) continue;
+    let nx = 0, ny = 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (WATER[(gy + dy) * GW + gx + dx] === 0) { nx += dx; ny += dy; }
+    if (nx || ny) { const l = Math.hypot(nx, ny); shore.push({x: gx * WG + 4, y: gy * WG + 4, nx: nx / l, ny: ny / l, p: rnd()}); } }
+  SHORE_PTS = shore;
   GND = {noise, deco};
 }
 const WD = ['#4a2f1a', '#6e4a2a', '#8e6538', '#ab8048'].map(hex), LP = ['#2f6e2a', '#4f9a3a', '#7cc455', '#55a6d4', '#ff9ec7', '#ffe066'].map(hex), RD = ['#3f6f2a', '#5c8f36', '#a7864a'].map(hex);
@@ -419,7 +425,7 @@ function grassClump() {          // tall blades the rogue walks behind (no colli
 // moving details: sparkles on the water, drifting cloud shadows, butterflies over the meadows
 let GLINTS = [], CLOUDS = [], FLIES = [], CLOUDIMG = null;
 function makeAmbient() {
-  GLINTS = []; for (let i = 0; i < 16000 && GLINTS.length < 1200; i++) {
+  GLINTS = []; for (let i = 0; i < 30000 && GLINTS.length < (TH ? 2400 : 1200); i++) {
     const inL = i & 1, bx = inL ? LAKE.box : STREAM.box, x = bx[0] + rnd() * (bx[2] - bx[0]), y = bx[1] + rnd() * (bx[3] - bx[1]);
     if (waterAt(x, y) && waterAt(x + 8, y) && waterAt(x - 8, y)) GLINTS.push({x: x | 0, y: y | 0, p: rnd(), w: rnd() < .3 ? 3 : 2}); }
   const W = 560, H = 260, P = painter(W, H), D = hex('#0e2a0c');
@@ -434,12 +440,20 @@ function stepAmbient(dt) {
   for (const f of FLIES) { f.a += (Math.sin(G.t * 1.7 + f.p) + (rnd() - .5)) * 2.2 * dt; const back = Math.hypot(f.hx - f.x, f.hy - f.y) > 260;
     if (back) f.a = Math.atan2(f.hy - f.y, f.hx - f.x); f.x += Math.cos(f.a) * 34 * dt; f.y += Math.sin(f.a) * 22 * dt; }
 }
+let SHORE_PTS = [];
 function drawGround(cx, cy) {     // after the ground picture: cloud shadows and water sparkles (only what is on screen)
   ctx.globalAlpha = .1;
   for (const c of CLOUDS) if (c.x + 300 > cx && c.x - 300 < cx + VW && c.y + 140 > cy && c.y - 140 < cy + VH) ctx.drawImage(CLOUDIMG, Math.round(c.x - 280), Math.round(c.y - 130));
   ctx.globalAlpha = 1; ctx.fillStyle = '#eafcff';
   for (const g of GLINTS) { if (g.x < cx || g.x > cx + VW || g.y < cy || g.y > cy + VH) continue;
     const ph = (G.t * .9 + g.p) % 1; if (ph < .22) ctx.fillRect(g.x, g.y, ph < .11 ? g.w : g.w - 1, 1); }
+  // foam lapping at the shore: each point washes up toward the land and back (a slow wave travelling along the shore)
+  for (const q of SHORE_PTS) { if (q.x < cx - 8 || q.x > cx + VW + 8 || q.y < cy - 8 || q.y > cy + VH + 8) continue;
+    const w = Math.sin(G.t * 1.6 + q.x * .021 + q.y * .017), d = (w * .5 + .5) * 5, x = Math.round(q.x + q.nx * (d - 2)), y = Math.round(q.y + q.ny * (d - 2) * .7);
+    ctx.globalAlpha = .35 + .4 * (w * .5 + .5); ctx.fillStyle = w > .4 ? '#ffffff' : '#d8f4ff';
+    const len = q.ny ? 6 : 2, hgt = q.ny ? 1 : 4; ctx.fillRect(x - (len >> 1), y, len, hgt);
+    if (q.p < .35 && w > .7) { ctx.globalAlpha = .6; ctx.fillRect(x - q.nx * 3 | 0, y - q.ny * 2 | 0, 1, 1); } }
+  ctx.globalAlpha = 1;
 }
 function drawFlies() {
   for (const f of FLIES) { const open = ((G.t * 11 + f.p) | 0) & 1, x = Math.round(f.x), y = Math.round(f.y - 26 - Math.abs(Math.sin(G.t * 3 + f.p)) * 8);
@@ -471,11 +485,12 @@ const GPROP = {};
 function gp(name) {
   const g = GPROP[name], d = GPDEF[name], img = d.nf || rnd() < .5 ? g.a : g.b;   // a / b = as drawn / mirrored (not for houses: their light comes from one side)
   const rect = d.bld ? {w: img.width * .78 | 0, d: 70} : d.rect;
-  return {c: img, fx: img.width >> 1, fy: img.height - 3, rad: d.rad || 0, rect, soft: d.soft, shade: d.shade, top: d.tree || name === 'oak' || name === 'pine' || name === 'blossom' ? -200 : 0};
+  return {c: img, fx: img.width >> 1, fy: (g.foot || img.height - 3) - 2, rad: d.rad || 0, rect, soft: d.soft, shade: d.shade, top: d.tree || name === 'oak' || name === 'pine' || name === 'blossom' ? -200 : 0,
+    ao: name === 'oak' || name === 'pine' || name === 'blossom' || name === 'v_raintree'};   // crown shade only under real crowns (on palms it floated mid-trunk)
 }
 const TEX = {};   // GPT ground textures as pixel arrays (grass, dirt, sand, water, cobble, flowergrass)
 async function loadProps() {
-  const TEXF = TH ? {grass: 'grass', dirt: 'rv_dirt', sand: 'rv_mud', water: 'rv_water', cobble: 'cobble', flowergrass: 'grass', planks: 'planks', reeds: 'reeds'}
+  const TEXF = TH ? {grass: 'grass', dirt: 'rv_dirt', sand: 'rv_mud', water: 'water', cobble: 'cobble', flowergrass: 'grass', planks: 'planks', reeds: 'reeds'}
     : {grass: 'grass', dirt: 'dirt', sand: 'sand', water: 'water', cobble: 'cobble', flowergrass: 'flowergrass'};   // Thai map: the owner's riverside ground sheet
   await Promise.all(Object.keys(TEXF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
@@ -483,7 +498,9 @@ async function loadProps() {
   if (Object.keys(TEX).length < Object.keys(TEXF).length) for (const k of Object.keys(TEX)) delete TEX[k];   // all or nothing (code ground otherwise)
   await Promise.all(Object.keys(GPDEF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
-    GPROP[n] = {a: im, b}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
+    const ad = x.getImageData(0, 0, im.width, im.height).data; let foot = im.height - 1;
+    for (; foot > 0; foot--) { let hit = false; for (let q = 0; q < im.width; q++) if (ad[(foot * im.width + q) * 4 + 3] > 40) { hit = true; break; } if (hit) break; }
+    GPROP[n] = {a: im, b, foot}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
 }
 let PROPS = [];
 function makeProps() {
@@ -497,7 +514,7 @@ function makeProps() {
     if (!s.soft || s.shade) {   // ground shadow (+ darker ground under a big canopy), painted into the ground chunks
       const R = s.rect || s.shade, sw = R ? R.w * 1.15 : s.rad * 4.6, shh = R ? Math.min(46, R.d * 1.4 + 6) : s.rad * 1.4;   // fences: a thin shadow
       const sh = ellipseSprite(Math.max(40, sw | 0), Math.max(14, shh | 0), '#203a18'); shades.push({img: sh, x: x - sh.width / 2 + 10 | 0, y: y - sh.height / 2 | 0, a: .28});
-      if (s.top < -60) { const ao = ellipseSprite(s.c.width * .9 | 0, s.c.width * .38 | 0, '#1d3415'); shades.push({img: ao, x: x - ao.width / 2 | 0, y: y - ao.height * .55 | 0, a: .16}); }
+      if (s.ao) { const ao = ellipseSprite(s.c.width * .7 | 0, s.c.width * .24 | 0, '#1d3415'); shades.push({img: ao, x: x - ao.width / 2 + 6 | 0, y: y - ao.height * .35 | 0, a: .15}); }   // on the ground round the trunk
     }
     PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft, shades});
   };

@@ -317,6 +317,18 @@ jungle groves of coconut / sugar palms / bananas / rain trees (`thaiProps`). Pie
 the full-size sheet under stilt houses before the colours are reduced) and `ground_px.py ... 0.44 20 rv_dirt,rv_mud,
 rv_water,planks,straw,reeds`. Overview: `action.html?map=thai&test=map`.
 
+### Map fixes (owner 2026-11-08 "แก้แมพต่อ บางอย่างแบ็คกราวด์เอาออกไม่หมด เงาลอย ไปทำน้ำ ไม่ต้องรออนุญาต")
+- Leftover white background between posts: flat pure-white patches (> 60 px, min channel > 225, chroma < 16) plus their pale
+  fringe cut from v_pen, v_well, t_stall, v_kitchen, v_pavilion, t_sala, v_stall, v_granary, v_watchtower, v_bridge,
+  bridge_curve. NOT from t_palace, t_temple, v_stupa, t_stupa, t_gate, t_belltower, v_temple, shop, chapel (their own white
+  walls / awning stripes; checked by marking the patches in magenta).
+- Floating: most GPT props have 4–10 empty rows under their base, so they stood above their shadows → `loadProps` finds each
+  picture's lowest opaque row (`GPROP[n].foot`) and `gp` pins it (fy = foot - 2); the crown shade (`ao`) only under oak /
+  pine / blossom / rain tree, smaller and on the ground round the trunk (on palms and bananas it hung mid-trunk).
+- Water: the Thai map uses the clear blue `water` texture (the muddy `rv_water` looked dull grey); foam laps at every shore on
+  both maps (`SHORE_PTS` = water cells next to land with the way to land, drawn in `drawGround`: a short white / pale line
+  washing toward the land and back, a slow wave along the shore); twice the sparkles on the Thai river.
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of
