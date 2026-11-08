@@ -14,6 +14,14 @@ for a in sys.argv[3:]:
     if a.startswith('--hits='):
         for part in a[7:].split(';'):
             d, fs = part.split(':'); FIX[d] = [int(f) for f in fs.split(',')]
+# --skip=<dir>,<dir> leaves those directions empty so the game mirrors the opposite side instead (a bad run)
+SKIP = set(sum([a[7:].split(',') for a in sys.argv[3:] if a.startswith('--skip=')], []))
+# --alias=<dir>:<from dir>[~],... plays another direction's frames instead (~ = mirrored), e.g. the clean east clip
+ALIAS = {}
+for a in sys.argv[3:]:
+    if a.startswith('--alias='):
+        for part in a[8:].split(','):
+            d, f = part.split(':'); ALIAS[d] = (f.rstrip('~'), f.endswith('~')); SKIP.add(d)
 anims = [a.split('=') for a in sys.argv[3:] if not a.startswith('--')]
 DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east']
 rows = []  # (name, dir, [frames])
@@ -21,7 +29,10 @@ rot = [Image.open(os.path.join(src, 'rotations', d + '.png')).convert('RGBA') fo
 C = rot[0].width
 for name, folder in anims:
     for d in DIRS:
-        fs = sorted(glob.glob(os.path.join(src, 'animations', folder, d, 'frame_*.png')))
+        fs = []
+        for f in folder.split(','):   # attack=a,b: a redo in folder b replaces folder a for the directions b has
+            fs = sorted(glob.glob(os.path.join(src, 'animations', f, d, 'frame_*.png'))) or fs
+        if d in SKIP: fs = []
         fr = [Image.open(f).convert('RGBA') for f in fs]
         if fr: C = max(C, fr[0].width)
         rows.append((name, d, fr))
@@ -43,6 +54,10 @@ for j, (name, d, fr) in enumerate(rows):
     o = (C - fr[0].width) // 2 if fr else 0
     for i, im in enumerate(fr): sheet.alpha_composite(im, (i * C + o, (1 + j) * C + o))
     meta['anims'].setdefault(name, {})[d] = {'r': 1 + j, 'n': len(fr), 'hits': FIX.get(d) or hits(fr)} if fr else None
+for name in meta['anims']:
+    for d, (f, mir) in ALIAS.items():
+        v = meta['anims'][name].get(f)
+        if v: meta['anims'][name][d] = dict(v, flip=mir, alias=f)
 os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
 sheet.save(out, optimize=True)
 json.dump(meta, open(os.path.splitext(out)[0] + '.json', 'w'), indent=1)
