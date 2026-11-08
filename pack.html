@@ -171,7 +171,8 @@ const LANIM={god_warrior:{src:'art/incoming/legends/anim/god_warrior_as2.png',cw
 // PixMiniMax at 256: idle 8, walk 16, attack 13 (gold swoosh hits on frame 4), ult 25 (somersault, gold slam on frame 11); 8.25 generations in all
 // v3 (owner "มันแปลก ต้องหันหน้าใหม่"): the first set's east picture was the turnaround's 3/4 view, so he faced the camera; now east = a true
 // side view (the painted walk sheet's frame 0), every move side-on, flat grey smoke blobs removed (pixellab_sheet.py --smoke); ult = frames 7-24
-const LALT={god_warrior:{as:LANIM.god_warrior,pl:{src:'art/incoming/legends/anim/god_warrior_pl3.png',cw:256,ch:256,fx:129,fy:247,h0:211,cols:13,nr:6,
+// half size with the pixel merge (pixellab_sheet.py --half; owner "ภาพมันดูมนๆ": the 256 frames shown ~105 px tall looked soft), drawn with sharp pixels
+const LALT={god_warrior:{as:LANIM.god_warrior,pl:{src:'art/incoming/legends/anim/god_warrior_pl3h.png',cw:128,ch:128,fx:62,fy:123,h0:104,px:1,cols:13,nr:6,
   rows:{idle:{r:0,n:8},walk:{r:1,n:16},attack:{r:3,n:13},skill:{r:4,n:18}},hit:5,shit:13,air:6,leap:1,ud:1.5,lead:.3,pa:.45}}};
 let WSKIN=LS.get('wkskin','pl');
 const animOf=k=>LALT[k]?LALT[k][WSKIN]||LALT[k].as:LANIM[k]||null;
@@ -373,7 +374,8 @@ function animFrame(u,A,t){const R_=A.rows,sk=R_.skill.n,ni=R_.idle.n;
 function framePos(A,row,f,k){const R_=A.rows[row];return(-(f%A.cols)*A.cw*k)+'px '+(-(R_.r+Math.floor(f/A.cols))*A.ch*k)+'px'}
 function syncAnim(u,F,bs){const A=u.an,k=60*(u.sc||1)/A.h0;
   if(!u.el){const e=document.createElement('div');e.className='unit anim';e.style.width=A.cw*k+'px';e.style.height=A.ch*k+'px';e.style.transformOrigin=A.fx*k+'px '+A.fy*k+'px';
-    const lay='position:absolute;inset:0;background-image:url('+A.src+');background-size:'+A.cols*A.cw*k+'px '+A.nr*A.ch*k+'px;background-repeat:no-repeat';
+    const sharp=A.px&&k*bs*(window.devicePixelRatio||1)>=.95;  // pixel art: nearest when each art pixel gets at least one screen pixel
+    const lay='position:absolute;inset:0;background-image:url('+A.src+');background-size:'+A.cols*A.cw*k+'px '+A.nr*A.ch*k+'px;background-repeat:no-repeat'+(sharp?';image-rendering:pixelated':'');
     e.innerHTML='<div class="fa" style="'+lay+'"></div><div class="fb" style="'+lay+';opacity:0"></div><div class="hp" style="left:'+(A.fx*k-20)+'px;right:auto;width:40px;top:'+((A.fy-A.h0)*k-9)+'px"><i></i></div><div class="sh" style="left:'+(A.fx*k-16)+'px;top:'+(A.fy*k-4)+'px"></div>';
     FIELD.appendChild(e);u.el=e;u.fa=e.children[0];u.fb=e.children[1]}
   const [row,f,f2,b]=animFrame(u,A,F.t);u.fa.style.backgroundPosition=framePos(A,row,f,k);
