@@ -54,7 +54,12 @@ Blade arcs: PixelLab painted each direction's arc its own colour (white, beige, 
 pixel that is not a colour of the stills and is light or bluish onto one cream-white ramp (owner "ทำสีให้เหมือนกันทุกทิศ").
 Hit effects (owner "ใส่เอฟเฟคให้เหมือนเกมต้นแบบ"): pixel impact star → ring → sparkles at the hit point (`starFrames`, big on
 the last hit), slime splat on a kill (`splatFrames`), a 16% white screen flash + camera kick toward the swing on the last hit,
-run dust, roll after-images that copy the roll frame.
+run dust, roll after-images that copy the roll frame. Slash wave (owner "ทำคลื่นฟันให้สวยๆ ใช้กับทุกทิศ"): `waveFrames(dir, R)`
+= a pixel crescent on the ground plane (y ×0.6) drawn per direction (no runtime rotation), 4 frames, white cutting edge, a
+cream trail that fades out in Bayer dither, sparkles at the end; on every swing (`doHit`), bigger on the last hit.
+**Longer dagger (owner asked): not possible in code** — the blade uses exactly the skin colours (246,215,191 / 214,185,159 /
+173,147,123), so it cannot be picked out; a longer blade means regenerating every move (~50 credits). Plan: order longer
+blades in the GPT design of rank 2 (dual daggers).
 
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer

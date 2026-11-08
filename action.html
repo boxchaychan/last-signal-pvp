@@ -194,6 +194,34 @@ function splatFrames(dk, lt) {
   }
   return out;
 }
+// slash wave (owner "ทำคลื่นฟันให้สวยๆ ใช้กับทุกทิศ"): a pixel crescent lying on the ground plane in front of the rogue,
+// drawn once per direction (no runtime rotation of pixel art), 4 frames: quick sliver -> full crescent -> wider and
+// thinner with dither -> sparkles along the edge; white cutting edge fading to the cream of the PixelLab blade arcs
+function waveFrames(dir, R) {
+  const th = dir * Math.PI / 4, SQ = .6, out = [];
+  const C1 = [255, 255, 255], C2 = [255, 243, 196], C3 = [244, 226, 186], C4 = [222, 202, 160];
+  const spec = [{ro: .8, ri: .7, sp: .6, dith: 0}, {ro: 1, ri: .74, sp: 1.25, dith: 0}, {ro: 1.12, ri: .95, sp: 1.35, dith: .45}, {ro: 1.18, ri: 1.1, sp: 1.35, dith: .75}];
+  for (const s of spec) {
+    const W = Math.ceil(R * 2.6), H = Math.ceil(R * 2.6 * SQ), P = painter(W, H), cx = W >> 1, cy = H >> 1;
+    const Ro = R * s.ro, off = R * .16, icx = -Math.cos(th) * off, icy = -Math.sin(th) * off, Ri = R * s.ri;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const px = x + .5 - cx, py = (y + .5 - cy) / SQ, r = Math.hypot(px, py);
+      if (r > Ro) continue;
+      const r2 = Math.hypot(px - icx, py - icy); if (r2 < Ri) continue;
+      let a = Math.atan2(py, px) - th; a = Math.atan2(Math.sin(a), Math.cos(a));
+      const e = Math.abs(a) / s.sp; if (e > 1) continue;                       // span of the arc
+      const b = BAYER[(y & 3) * 4 + (x & 3)], t = (Ro - r) / Math.max(1, Ro - Ri);  // 0 = outer cutting edge
+      if (e > .7 && b < (e - .7) / .3) continue;                                // ends taper off in dither
+      if (s.dith && b < s.dith + t * .3) continue;
+      if (t > .4 && b < (t - .4) * 1.5) continue;                               // the trail behind the edge fades out
+      P.set(x, y, t < .2 ? C1 : t < .45 ? C2 : t < .72 ? C3 : C4);
+    }
+    if (s.dith > .5) for (let k = 0; k < 9; k++) { const a = th + (k / 8 - .5) * 2 * s.sp * .9, rr = Ro + 2;   // sparkles
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * SQ; P.set(x, y, C1); P.set(x + 1, y, C2); P.set(x, y - 1, C2); }
+    out.push(P.done());
+  }
+  return out;
+}
 const FXS = {};
 // 3x5 pixel digits for damage numbers
 const DIG = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001', '111100111001111', '111100111101111', '111001001010010', '111101111101111', '111101111001111'];
@@ -209,6 +237,7 @@ async function load() {
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
   SL.blue = makeSlime(['#284a8a', '#4a7fd0', '#86b8f4', '#eef6ff']);
   FXS.burst = starFrames(13, 4); FXS.burstB = starFrames(22, 5);
+  FXS.wave = [...Array(8)].map((_, d) => waveFrames(d, 54)); FXS.waveB = [...Array(8)].map((_, d) => waveFrames(d, 68));
   FXS.splat_green = splatFrames('#2f6f2a', '#8fe070'); FXS.splat_blue = splatFrames('#284a8a', '#86b8f4');
 }
 
@@ -310,7 +339,8 @@ function doHit(p, h) {
   }
   if (any) { G.hs = Math.max(G.hs, h.hs); G.shake = Math.max(G.shake, h.sh);
     if (h.kb > 60) { G.flash = .09; G.kick = {x: fx * 6, y: fy * 6, t: .12}; } }   // last hit: white flash + camera kick
-  // no code-drawn slash arc: the PixelLab frames carry their own blade smears (owner found the extra arc odd)
+  // slash wave on every swing, hit or miss (the old dotted arc is gone; owner asked for a nicer wave in every direction)
+  G.fx.push({k: 'wave', x: p.x + fx * 22, y: p.y - 40 + fy * 12, dir: p.dir, t: 0, life: .18, big: h.kb > 60});
 }
 function hurtPlayer(dmg, fromX, fromY) {
   const p = G.p; if (p.inv > 0 || G.over) return;
@@ -411,7 +441,7 @@ function testSetup() {
   for (let i = 0; i < 240; i++) step(1 / 60);   // run to the freeze point without waiting for frames
 }
 function step(dt) {
-  if (TEST === 'atk' && G.p.a && G.p.a.i >= G.p.a.plan.last && G.p.a.t > 20) return;
+  if (TEST === 'atk' && G.p.a && G.p.a.i >= G.p.a.plan.last && G.p.a.t > 55) return;
   G.t += dt;
   if (G.hs > 0) { G.hs -= dt; return; }       // hit-stop: everything holds for a moment
   if (!G.over) stepPlayer(dt); else if (G.p.state === 'dead') G.p.deadT += dt;
@@ -500,6 +530,8 @@ function draw() {
       for (let s = -1; s <= 1; s += .06) { const a = a0 + s * 1.2, rr = R * (1 - .25 * Math.abs(s)), w = Math.round((1 - Math.abs(s)) * (f.big ? 4 : 3)) + 1;
         if (Math.abs(s) > .3 + k * 1.2) continue; ctx.fillRect(Math.round(f.x + Math.cos(a) * rr), Math.round(f.y + Math.sin(a) * rr * .6), w, w); } }
     if (f.k === 'spark') { ctx.fillStyle = f.c; ctx.globalAlpha = 1 - f.t / f.life; ctx.fillRect(Math.round(f.x), Math.round(f.y), U + 1, U + 1); ctx.globalAlpha = 1; }
+    if (f.k === 'wave') { const set = (f.big ? FXS.waveB : FXS.wave)[f.dir], im = set[Math.min(3, Math.floor(f.t / f.life * 4))];
+      ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
     if (f.k === 'burst') { const set = f.big ? FXS.burstB : FXS.burst, im = set[Math.min(set.length - 1, Math.floor(f.t / f.life * set.length))];
       ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
     if (f.k === 'splat') { const set = FXS['splat_' + f.c], im = set[Math.min(set.length - 1, Math.floor(f.t / f.life * set.length))];
