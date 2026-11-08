@@ -135,6 +135,16 @@ the PC); walking across the map: median 0.3 ms, 1 frame of ~675 over 16 ms. A "h
 low-top-down art: the same feel comes from the smaller rogue (on a DPR-3 phone the screen shows 1170 world px of height,
 she is ~1/17 of it).
 
+Zones (owner 2026-11-08 "ทำแมพต่อ", free, existing art): `FORESTS` = two thick forests (north-east round the NE tower,
+south-west; `forestF` > 0 inside): trees every ~118 px (pines first), bushes / rocks / grass under them, darker ground
+(×.74, dithered edge), no flower grass, no random field trees near them; `RUINS` = broken cobble floor round the south tower
+(kind 7: round grass patches from a sine pattern, dithered edge) ringed by boulders and rock piles; `SIDE` = 3 side paths
+(Catmull-Rom `crv`, `sideD` with per-segment and per-path boxes) from the road to the three `TOWERS`; meadows moved out of
+the forests. `ZF` = 32 px cells near a side path / forest, so most pixels skip those checks (`terr` 18 ms per chunk).
+`?test=map` draws the whole world shrunk onto the screen (`drawMap`; picture `art/incoming/action/map/overview.png`).
+Next art: GPT sheet `art/incoming/action/map/PROMPT_ruins_forest.txt` (ruin walls, arch, pillars, rubble, stairs, statue,
+stump, log, mushrooms, fern, dead tree, mossy rock, campfire, tent, signpost, cart; attach `gpt_village.png` for style).
+
 ## Skills (design in progress, owner 2026-11-08)
 Proposed shape (owner asked "เอากี่สกิลดี"): 4 skill buttons on screen at once (room for thumbs round the attack button on a
 phone) + attack + roll; about 8 skills per class to unlock up to level 50, the player picks which 4 to carry.

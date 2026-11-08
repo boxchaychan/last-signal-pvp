@@ -110,7 +110,37 @@ function streamD(x, y) {          // distance to the stream's middle line (1e9 w
   return Math.sqrt(best);
 }
 const HAMLET = {x: WW * .27 + 300, y: WH * .28 + 260, rx: 720, ry: 520};   // wider for the 1.5x cottages   // the cottages stand round its middle
-const MEADOWS = [[WW * .5, WH * .78], [WW * .14, WH * .62], [WW * .86, WH * .28], [WW * .55, WH * .2], [WW * .28, WH * .86], [WW * .9, WH * .82], [WW * .1, WH * .2]];
+const MEADOWS = [[WW * .5, WH * .78], [WW * .14, WH * .6], [WW * .64, WH * .36], [WW * .55, WH * .2], [WW * .34, WH * .9], [WW * .9, WH * .82], [WW * .1, WH * .2]];
+// zones (owner 2026-11-08 "ทำแมพต่อ"): two thick forests with darker ground (north-east round a ruined tower, south-west),
+// ruins round the south tower, side paths from the road to each tower
+const FORESTS = [{x: WW * .86, y: WH * .25, rx: 820, ry: 640}, {x: WW * .13, y: WH * .8, rx: 760, ry: 580}];
+function forestF(x, y) {         // > 0 inside a forest, about 1 in the middle
+  let v = -9; for (const f of FORESTS) { const dx = (x - f.x) / f.rx, dy = (y - f.y) / f.ry; v = Math.max(v, 1 - (dx * dx + dy * dy)); }
+  return v < -.2 ? v : v + .07 * Math.sin(x / 53) * Math.sin(y / 41);   // the wobble only near / inside a forest
+}
+const RUINS = {x: WW * .44, y: WH * .84 + 40, rx: 330, ry: 210};
+const TOWERS = [[WW * .86, WH * .3], [WW * .44, WH * .84], [WW * .1, WH * .3]];
+function crv(K) {                // Catmull-Rom through the key points
+  const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
+    for (let t = 0; t < 1; t += .125) { const t2 = t * t, t3 = t2 * t, f = (a, b, c, d) => .5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+      pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
+  pts.push(K[K.length - 1]); return pts;
+}
+const pathY0 = x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
+const SIDE = [   // from the road to the north-east tower (through the forest), the south ruins, the west tower
+  crv([[WW * .82, pathY0(WW * .82)], [WW * .84, WH * .38], [WW * .855, WH * .33], [WW * .86, WH * .3 + 40]]),
+  crv([[WW * .43, pathY0(WW * .43)], [WW * .45, WH * .66], [WW * .425, WH * .75], [WW * .44, WH * .84 + 50]]),
+  crv([[WW * .12, pathY0(WW * .12)], [WW * .105, WH * .4], [WW * .1, WH * .3 + 40]])];
+const SIDEB = SIDE.map(P => P.slice(1).map((b, i) => { const a = P[i]; return [Math.min(a[0], b[0]) - 50, Math.min(a[1], b[1]) - 50, Math.max(a[0], b[0]) + 50, Math.max(a[1], b[1]) + 50]; }));
+const SIDEA = SIDEB.map(B => [Math.min(...B.map(q => q[0])), Math.min(...B.map(q => q[1])), Math.max(...B.map(q => q[2])), Math.max(...B.map(q => q[3]))]);   // whole path
+function sideD(x, y) {           // distance to the nearest side path (1e9 when far)
+  let best = 1e9;
+  for (let k = 0; k < SIDE.length; k++) { const P = SIDE[k], B = SIDEB[k], A = SIDEA[k]; if (x < A[0] || x > A[2] || y < A[1] || y > A[3]) continue;
+    for (let i = 0; i < P.length - 1; i++) { const q = B[i]; if (x < q[0] || x > q[2] || y < q[1] || y > q[3]) continue;
+      const ax = P[i][0], ay = P[i][1], dx = P[i + 1][0] - ax, dy = P[i + 1][1] - ay, l = dx * dx + dy * dy;
+      const t = l ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0, ex = ax + dx * t - x, ey = ay + dy * t - y, d = ex * ex + ey * ey; if (d < best) best = d; } }
+  return best < 1e9 ? Math.sqrt(best) : 1e9;
+}
 // water map for walking: 8 px cells, 1 = water (blocked), 2 = bridge (open)
 const WG = 8, GW = Math.ceil(WW / WG), GH = Math.ceil(WH / WG), WATER = new Uint8Array(GW * GH);
 function markWater(x, y, v) { const i = (y / WG | 0) * GW + (x / WG | 0); if (v === 2 || WATER[i] !== 2) WATER[i] = v; }
@@ -120,9 +150,13 @@ function waterAt(x, y) { if (x < 0 || y < 0 || x >= WW || y >= WH) return false;
 // is worked out for the whole world up front, so chunks that are not painted yet still block the water ----------
 const CH = 512, CHUNKS = new Map();
 let GND = null, TK = 0, TA = 0, TB = 0;          // terr(): kind at the point + two numbers for its edge
-const pathY = x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
+const pathY = pathY0;
 let GROUND_PATH = pathY;
-// kinds: 0 grass, 1 path, 2 yard, 3 shore, 4 water, 5 bridge deck, 6 bridge rail
+// 32 px cells that are near a side path (1) or a forest (2), worked out once so most pixels skip those checks
+const ZC = 32, ZW = Math.ceil(WW / ZC), ZH = Math.ceil(WH / ZC), ZF = new Uint8Array(ZW * ZH);
+for (let gy = 0; gy < ZH; gy++) for (let gx = 0; gx < ZW; gx++) { const x = gx * ZC + 16, y = gy * ZC + 16;
+  ZF[gy * ZW + gx] = (sideD(x, y) < 80 ? 1 : 0) | (forestF(x, y) > -.3 ? 2 : 0); }
+// kinds: 0 grass, 1 path, 2 yard, 3 shore, 4 water, 5 bridge deck, 6 bridge rail, 7 ruins floor
 const PYC = new Float32Array(WW + 8), PWC = new Float32Array(WW + 8), SWC = new Float32Array(WH + 8);   // per column / row
 for (let x = 0; x < WW + 8; x++) { PYC[x] = pathY(x); PWC[x] = 34 + 8 * Math.sin(x / 57); }
 for (let y = 0; y < WH + 8; y++) SWC[y] = 22 + 5 * Math.sin(y / 70);
@@ -137,7 +171,11 @@ function terr(x, y) {            // x, y whole numbers inside the world
   const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
   if (hd < 1 && dpath >= pw) { TK = 2; TA = hd; return; }
   if (dpath < pw) { TK = 1; TA = dpath; TB = pw; return; }
-  TK = 0;
+  const zf = ZF[(y >> 5) * ZW + (x >> 5)];
+  if (zf & 1) { const sp = sideD(x, y), sw2 = 22 + 4 * Math.sin((x + y) / 47); if (sp < sw2) { TK = 1; TA = sp; TB = sw2; return; } }
+  const rd = ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2;
+  if (rd < 1) { TK = 7; TA = rd; return; }
+  TK = 0; TA = zf & 2 ? forestF(x, y) : -1;
 }
 function setupGround() {
   const NW = Math.round(WW / 160), NH = Math.round(WH / 160), N = []; for (let i = 0; i < NW * NH; i++) N.push(rnd());
@@ -165,6 +203,9 @@ function groundPx(x, y, D, o) {
   else if (TK === 3) { if (!(TA > .6 && b < (TA - .6) / .4)) { T = 'sand'; k = 1; } }
   else if (TK === 2) { if (!(TA > .82 && b < (TA - .82) / .18)) { T = 'cobble'; k = 1; } }
   else if (TK === 1) { if (!(TA > TB - 6 && b < (TA - (TB - 6)) / 7)) { T = 'dirt'; k = .96 + GND.noise(x, y) * .08; } }
+  else if (TK === 7) { const n2 = Math.sin(x / 19 + Math.sin(y / 23) * 1.7) * Math.sin(y / 15 + Math.sin(x / 29) * 1.7);   // broken floor: round
+    if (!(TA > .45 && b < (TA - .45) / .55) && !(n2 > .5 || (n2 > .38 && b < (n2 - .38) / .12))) { T = 'cobble'; k = .8 + GND.noise(x, y) * .1; } }   // patches of grass
+  else if (TA > 0) { if (TA > .18 || b < TA / .18) k = (.9 + GND.noise(x, y) * .2) * .74; }   // forest floor, dithered edge
   else { let m2 = 1e12; for (let i = 0; i < MEADOWS.length; i++) { const dx = x - MEADOWS[i][0], dy = (y - MEADOWS[i][1]) / .7, d = dx * dx + dy * dy; if (d < m2) m2 = d; }   // flower grass in the meadows
     if (m2 < 67600) { const md = Math.sqrt(m2); if (md < 200 || b < (260 - md) / 60) T = 'flowergrass'; } }
   if (!k) k = .9 + GND.noise(x, y) * .2;
@@ -417,7 +458,7 @@ function makeProps() {
   const far = (x, y, d) => PROPS.every(p => Math.hypot(p.x - x, p.y - y) > d);
   const dry = (x, y, r) => !waterAt(x, y) && !waterAt(x - r, y) && !waterAt(x + r, y) && !waterAt(x, y - r * .5) && !waterAt(x, y + r * .5);
   const inYard = (x, y) => ((x - HAMLET.x) / HAMLET.rx) ** 2 + ((y - HAMLET.y) / HAMLET.ry) ** 2 < 1;
-  const pathOk = (x, y) => Math.abs(y - GROUND_PATH(x)) > 70 && dry(x, y, 90);
+  const pathOk = (x, y) => Math.abs(y - GROUND_PATH(x)) > 70 && sideD(x, y) > 60 && dry(x, y, 90);
   const add = (s, x, y) => {
     const shades = [];
     if (!s.soft) {   // ground shadow (+ darker ground under a big canopy), painted into the ground chunks
@@ -450,12 +491,23 @@ function makeProps() {
     if (Math.sin(a * 3 + 1) > .55) continue;             // gaps to walk through
     const x = HAMLET.x + Math.cos(a) * HAMLET.rx * .98, y = HAMLET.y + Math.sin(a) * HAMLET.ry * .98;
     if (pathOk(x, y) && far(x, y, 40)) add(GPROP.fence ? gp('fence') : fence(3), x | 0, y | 0); }
-  for (const [fx, fy] of [[.86, .3], [.44, .84], [.1, .3]]) { const x = WW * fx, y = WH * fy; if (pathOk(x, y) && far(x, y, 260)) add(GPROP.tower ? gp('tower') : tower(330 + rnd() * 80 | 0), x | 0, y | 0); }   // not by the lake
+  for (const [x, y] of TOWERS) { if (dry(x, y, 90) && far(x, y, 260)) add(GPROP.tower ? gp('tower') : tower(330 + rnd() * 80 | 0), x | 0, y | 0); }   // not by the lake
   // inside the field: groves, big boulders and tall ruined pillars, kept off the path, the water, the yard and the start
+  // the forests: trees close together (pines first), bushes and rocks under them, clearings left by the spacing
+  const TF = () => gp(['pine', 'pine', 'oak', 'oak', 'pine', 'blossom'][rnd() * 6 | 0]);
+  if (GPROP.pine) for (const F of FORESTS) for (let tries = 0, k = 0; tries < 3000 && k < F.rx * F.ry / 8000; tries++) {
+    const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 118) || TOWERS.some(([tx, ty]) => Math.hypot(x - tx, (y - ty) * 1.4) < 240)) continue;
+    add(TF(), x | 0, y | 0); k++; }
+  if (GPROP.bush) for (const F of FORESTS) for (let i = 0; i < 70; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(rnd() < .6 ? 'bush' : rnd() < .5 ? 'rocks' : 'grass'), x | 0, y | 0); }
+  // the ruins: boulders and rock piles round the broken floor of the south tower
+  if (GPROP.boulder) for (let i = 0; i < 40; i++) { const a = rnd() * 6.28, r = .55 + rnd() * .55, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
+    if (pathOk(x, y) && far(x, y, 80)) add(gp(rnd() < .35 ? 'boulder' : rnd() < .6 ? 'rocks' : 'grass'), x | 0, y | 0); }
   const n = WW * WH / 200000 | 0;   // owner 2026-11-08 "เบาๆ ต้นไม้หน่อย": about half as many
   for (let k = 0, tries = 0; k < n && tries < 3000; tries++) {
     const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
-    if (!pathOk(x, y) || inYard(x, y) || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 300)) continue;
+    if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.6 || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 300)) continue;
     const t = rnd();
     if (t < .6) add(T(), x | 0, y | 0);
     else if (t < .8) add(GPROP.boulder ? gp('boulder') : boulder(90 + rnd() * 90 | 0), x | 0, y | 0);
@@ -1029,7 +1081,14 @@ function drawDigits(n, x, y, sc, col) {
     for (let k = 0; k < 15; k++) if (g[k] === '1') { const px = x + i * 4 * sc + (k % 3) * sc, py = y + ((k / 3) | 0) * sc;
       ctx.fillStyle = pass ? col : '#1d1a22'; if (pass) ctx.fillRect(px, py, sc, sc); else ctx.fillRect(px - 1, py - 1, sc + 2, sc + 2); } }
 }
+function drawMap() {             // ?test=map overview
+  const k = Math.min(cv.width / WW, cv.height / WH); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.imageSmoothingEnabled = true;
+  for (let j = 0; j < NCJ; j++) for (let i = 0; i < NCI; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0); }
+  for (const q of PROPS) ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy));
+  ctx.fillStyle = '#ff3b3b'; ctx.fillRect(G.p.x - 40, G.p.y - 40, 80, 80);
+}
 function draw() {
+  if (TEST === 'map' && G) { drawMap(); return; }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = '#21331d'; ctx.fillRect(0, 0, cv.width, cv.height);
   if (!G || !BG) return;
