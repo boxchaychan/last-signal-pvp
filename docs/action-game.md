@@ -99,6 +99,7 @@ south-east still so pixel size / outline / shading match; 5 gens ≤96 px, 6 ≤
 A/B test), ground from `create_topdown_tileset` mode pro view low top-down (15–25). Map tools themselves are free.
 | date | what | id | cost | result |
 |---|---|---|---|---|
+| 2026-11-08 | ground test: create_topdown_tileset STANDARD 32 px, dirt path (lower) → grass (upper), flat (owner "ลองเจนสแตนดาดู 1 เครดิต") | tileset 97dd7c79-104f-4869-876b-01916a17558b (bases: dirt 12ee2be9…, grass 7f7aa800…) | 1 | (pending) |
 | 2026-11-08 | test oak tree 208×256, pro flash, 1 direction, style = rogue south-east (upload) | object 3a6ec4fc-ec37-4509-a868-0d76313be787 | ~9 | done (`art/incoming/action/map/pl_oak_test.png`, tree ~155 px tall): darker and flatter than the GPT props |
 
 A/B 2026-11-08: the owner's GPT sheet `gpt_nature.png` (oak, pine, blossom, bush, boulder, rocks, grass, flowers; prompt 1 in
@@ -110,6 +111,15 @@ like before (free); only bosses through PixelLab. **Decision (owner 2026-11-08 "
 In the game: `art/action/props/<oak|pine|blossom|bush|boulder|rocks|grass|flowers>.png` replace the code trees / boulders /
 pillars / grass clumps (`GPROP` in action.html, random horizontal flips); houses + towers stay code-drawn until the GPT
 village sheet (prompt 2) arrives.
+
+Ground + village (owner 2026-11-08): the 1-credit PixelLab standard tileset (grass ↔ dirt, 32 px) looked flat with stair-step
+edges ("ไม่สวยเลย") → GPT ground textures `gpt_ground.png` (grass, dirt, sand, water, cobble, flower grass) →
+`tools/art/ground_px.py <sheet> <out> 0.44 20 names` (scaled to the props' detail, made seamless by cross-fading with the
+half-shifted copy, 20 colours; flower grass 40) → `art/action/ground/*.png`; `makeGround` samples them per pixel (`TEX`, `tx`)
+times a big soft light/dark patch, ragged dithered edges between terrains, darker deep water, flower grass in the meadows;
+the code ground is only a fallback. GPT village sheet `gpt_village.png` → `props_px.py ... 0=228 20 house_red,house_blue,
+tower,well,fence,barrel,crate,lantern` → `art/action/props/`; houses / fences block as boxes (`GPDEF.rect`), houses are not
+mirrored. Owner "เบาๆ ต้นไม้หน่อย": about half as many trees, bushes and grass clumps.
 
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer

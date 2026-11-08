@@ -117,10 +117,42 @@ function makeGround() {
   const WC = ['#2a628f', '#3a82b4', '#55a6d4', '#8fd0ee', '#d6f3fd'].map(hex), SH = ['#cdb47c', '#e0c993', '#efdcaa'].map(hex);
   const WD = ['#4a2f1a', '#6e4a2a', '#8e6538', '#ab8048'].map(hex), CB = ['#7a7682', '#94909b', '#aba7b0', '#c4c0c6'].map(hex);
   const lb = LAKE.box, sb = STREAM.box, hz = HAMLET;
+  // GPT ground textures (owner 2026-11-08, art/action/ground/*.png, seamless): sample by world position, times a
+  // big soft light / dark patch so the repeat does not show; the code colours below are only the fallback
+  const HT = !!TEX.grass, tx = (T, x, y, k) => { const t = TEX[T], i = ((y % t.h) * t.w + (x % t.w)) * 4; return [t.d[i] * k, t.d[i + 1] * k, t.d[i + 2] * k]; };
+  const MD = (x, y) => Math.min(...MEADOWS.map(([mx, my]) => Math.hypot(x - mx, (y - my) / .7)));
   for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
     const u = Math.floor(x / 96 + y / 48), v = Math.floor(x / 96 - y / 48), chk = (u + v) & 1;   // diamond tiles
-    let t = noise(x, y) * 0.75 + chk * 0.13 + 0.12;
+    const nz = noise(x, y);
+    let t = nz * 0.75 + chk * 0.13 + 0.12;
     const dpath = Math.abs(y - pathY(x)), pw = 34 + 8 * Math.sin(x / 57);
+    if (HT) {
+      const b = BAYER[(y & 3) * 4 + (x & 3)], lum = .9 + nz * .2;
+      const lf = x > lb[0] && x < lb[2] && y > lb[1] && y < lb[3] ? lakeF(x, y) : -9;
+      const sd = x > sb[0] && x < sb[2] && y > sb[1] && y < sb[3] ? streamD(x, y) : 1e9, sw = 22 + 5 * Math.sin(y / 70);
+      if (dpath < pw + 8 && sd < sw + 12) {               // wooden bridge where the path crosses the stream
+        const e = dpath > pw + 5, rail = dpath > pw + 2;
+        P.set(x, y, e ? WD[0] : rail ? WD[1] : (x % 9 === 0 ? WD[0] : (x % 9 < 4 ? WD[2] : WD[3])));
+        if (dpath < pw + 2) markWater(x, y, 2); continue;
+      }
+      if (lf > 0 || sd < sw) {                            // water: darker in the deep middle, a light rim
+        const dep = Math.max(lf > 0 ? lf / .5 : 0, sd < sw ? 1 - sd / sw : 0);
+        P.set(x, y, tx('water', x, y, dep < .07 && b < .7 ? 1.18 : 1.04 - Math.min(1, dep) * .3)); markWater(x, y, 1); continue;
+      }
+      if (lf > -.13 || sd < sw + 8) {                     // sandy shore, fraying into the grass
+        const e = lf > -9 ? (-lf) / .13 : (sd - sw) / 8;
+        if (e > .6 && b < (e - .6) / .4) P.set(x, y, tx('grass', x, y, lum)); else P.set(x, y, tx('sand', x, y, 1)); continue;
+      }
+      const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
+      if (hd < 1 && dpath >= pw) {                        // cobbled yard of the hamlet, fraying into the grass
+        if (hd > .82 && b < (hd - .82) / .18) P.set(x, y, tx('grass', x, y, lum)); else P.set(x, y, tx('cobble', x, y, 1)); continue;
+      }
+      if (dpath < pw) {                                   // dirt path with a ragged grassy edge
+        if (dpath > pw - 6 && b < (dpath - (pw - 6)) / 7) P.set(x, y, tx('grass', x, y, lum)); else P.set(x, y, tx('dirt', x, y, .96 + nz * .08)); continue;
+      }
+      const md = MD(x, y);                                // flower grass in the meadows, fading out
+      P.set(x, y, tx(md < 200 || (md < 260 && b < (260 - md) / 60) ? 'flowergrass' : 'grass', x, y, lum)); continue;
+    }
     const b = BAYER[(y & 3) * 4 + (x & 3)];
     const lf = x > lb[0] && x < lb[2] && y > lb[1] && y < lb[3] ? lakeF(x, y) : -9;
     const sd = x > sb[0] && x < sb[2] && y > sb[1] && y < sb[3] ? streamD(x, y) : 1e9, sw = 22 + 5 * Math.sin(y / 70);
@@ -151,8 +183,8 @@ function makeGround() {
     if (dpath < pw + 3 && b < .6) { P.set(x, y, G[0]); continue; }  // worn grass edge
     P.set(x, y, G[clamp(Math.floor(t * 4 + b * .8), 0, 4)]);
   }
-  // pebbles on the path
-  for (let i = 0; i < 260 * AREA; i++) { const x = rnd() * WW | 0, y = pathY(x) + (rnd() - .5) * 50 | 0; if (waterAt(x, y)) continue; P.set(x, y, hex('#9c7c4c')); P.set(x + 1, y, hex('#f0dcae')); }
+  // pebbles on the path (code ground only: the GPT textures have their own detail)
+  if (!HT) for (let i = 0; i < 260 * AREA; i++) { const x = rnd() * WW | 0, y = pathY(x) + (rnd() - .5) * 50 | 0; if (waterAt(x, y)) continue; P.set(x, y, hex('#9c7c4c')); P.set(x + 1, y, hex('#f0dcae')); }
   // lily pads with a few pink flowers, reeds along the shore
   const LP = ['#2f6e2a', '#4f9a3a', '#7cc455'].map(hex), PK = hex('#ff9ec7');
   for (let i = 0; i < 140; i++) { const x = lb[0] + rnd() * (lb[2] - lb[0]), y = lb[1] + rnd() * (lb[3] - lb[1]); if (lakeF(x, y) < .12) continue;
@@ -164,15 +196,15 @@ function makeGround() {
     const f = lakeF(x, y); if (f > .03 || f < -.08 || rnd() < .4) continue;
     const h = 6 + rnd() * 8 | 0; for (let k = 0; k < h; k++) P.set(x, y - k, RD[k > h - 3 && rnd() < .5 ? 2 : k & 1]); }
   // flower meadows: a few patches packed with flowers
-  for (const [mx, my] of MEADOWS) for (let i = 0; i < 900; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * 230, x = mx + Math.cos(a) * d | 0, y = my + Math.sin(a) * d * .7 | 0;
+  if (!HT) for (const [mx, my] of MEADOWS) for (let i = 0; i < 900; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * 230, x = mx + Math.cos(a) * d | 0, y = my + Math.sin(a) * d * .7 | 0;
     if (waterAt(x, y) || Math.abs(y - pathY(x)) < 46) continue; const c = [hex('#ffffff'), hex('#ffe066'), hex('#ff9ec7'), hex('#c7a8ff')][rnd() * 4 | 0];
     P.set(x, y + 1, hex('#467f30')); P.set(x, y, c); if (rnd() < .4) P.set(x + 1, y, c); }
   // grass tufts and flowers
   const TD = hex('#467f30'), TL = hex('#b4e67a');
-  for (let i = 0; i < 4200 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0; if (Math.abs(y - pathY(x)) < 46) continue;
+  if (!HT) for (let i = 0; i < 4200 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0; if (Math.abs(y - pathY(x)) < 46) continue;
     P.set(x, y, TD); P.set(x - 1, y - 1, TD); P.set(x + 1, y - 1, TD); P.set(x, y - 2, TD); P.set(x - 2, y - 2, TD); P.set(x + 2, y - 3, TD); P.set(x, y - 3, TL); }
   const FL = ['#ffffff', '#ffe066', '#ff9ec7', '#a8d8ff'].map(hex);
-  for (let i = 0; i < 520 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0, c = FL[rnd() * 4 | 0]; if (Math.abs(y - pathY(x)) < 46) continue;
+  if (!HT) for (let i = 0; i < 520 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0, c = FL[rnd() * 4 | 0]; if (Math.abs(y - pathY(x)) < 46) continue;
     for (let k = 0; k < 3; k++) { const fx = x + (rnd() * 9 - 4 | 0), fy = y + (rnd() * 7 - 3 | 0); P.set(fx, fy + 1, TD); P.set(fx, fy, c); } }
   // rocks and bushes (low, drawn into the ground)
   const blob = (cx, cy, r, pal) => { P.disc(cx, cy + 2, r + 2, Math.round(r * .55) + 1, hex('#3a6a2a')); // ground shadow
@@ -180,7 +212,7 @@ function makeGround() {
     P.disc(cx - Math.round(r * .2), cy - Math.round(r * .2), Math.round(r * .7), Math.round(r * .5), pal[2]);
     P.disc(cx - Math.round(r * .4), cy - Math.round(r * .4), Math.max(1, Math.round(r * .3)), Math.max(1, Math.round(r * .22)), pal[3]); };
   const ROCK = ['#3b3f4a', '#7d8494', '#9aa1ad', '#d0d4da'].map(hex), BUSH = ['#24451f', '#3f7a30', '#559a3b', '#86c95a'].map(hex);
-  for (let i = 0; i < 46 * AREA; i++) { const x = 200 + rnd() * (WW - 400) | 0, y = 240 + rnd() * (WH - 500) | 0; if (Math.abs(y - pathY(x)) < 60) continue;
+  if (!HT) for (let i = 0; i < 46 * AREA; i++) { const x = 200 + rnd() * (WW - 400) | 0, y = 240 + rnd() * (WH - 500) | 0; if (Math.abs(y - pathY(x)) < 60) continue;
     if (rnd() < .45) blob(x, y, 6 + rnd() * 9 | 0, ROCK);
     else { const r = 9 + rnd() * 8 | 0; blob(x, y, r, BUSH); blob(x + r, y + 2, r - 3, BUSH); blob(x - r + 2, y + 3, r - 4, BUSH);
       if (rnd() < .5) for (let k = 0; k < 4; k++) P.set(x - r + (rnd() * r * 2 | 0), y - (rnd() * r * .6 | 0), FL[rnd() * 3 | 0]); } }
@@ -370,13 +402,21 @@ function drawFlies() {
 }
 // GPT props (art/action/props/*.png): base = the bottom middle; how solid each one is
 const GPDEF = {oak: {rad: 20}, pine: {rad: 16}, blossom: {rad: 15}, boulder: {rad: 44}, bush: {rad: 18}, rocks: {rad: 12},
-  grass: {soft: 1}, flowers: {soft: 1}};
+  grass: {soft: 1}, flowers: {soft: 1},
+  // village sheet (owner's GPT "Charming Fantasy Village Asset Sheet"): houses and the fence block as boxes
+  house_red: {rect: {w: 196, d: 46}, nf: 1}, house_blue: {rect: {w: 190, d: 44}, nf: 1}, tower: {rad: 70, nf: 1},
+  well: {rad: 34}, fence: {rect: {w: 140, d: 10}}, barrel: {rad: 18}, crate: {rad: 22}, lantern: {rad: 8}};
 const GPROP = {};
 function gp(name) {
-  const g = GPROP[name], d = GPDEF[name], img = rnd() < .5 ? g.a : g.b;   // a / b = as drawn / mirrored for variety
-  return {c: img, fx: img.width >> 1, fy: img.height - 3, rad: d.rad || 0, soft: d.soft, top: name === 'oak' || name === 'pine' || name === 'blossom' ? -200 : 0};
+  const g = GPROP[name], d = GPDEF[name], img = d.nf || rnd() < .5 ? g.a : g.b;   // a / b = as drawn / mirrored (not for houses: their light comes from one side)
+  return {c: img, fx: img.width >> 1, fy: img.height - 3, rad: d.rad || 0, rect: d.rect, soft: d.soft, top: name === 'oak' || name === 'pine' || name === 'blossom' ? -200 : 0};
 }
+const TEX = {};   // GPT ground textures as pixel arrays (grass, dirt, sand, water, cobble, flowergrass)
 async function loadProps() {
+  await Promise.all(['grass', 'dirt', 'sand', 'water', 'cobble', 'flowergrass'].map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
+    const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/ground/' + n + '.png'; })));
+  if (Object.keys(TEX).length < 6) for (const k of Object.keys(TEX)) delete TEX[k];   // all or nothing (code ground otherwise)
   await Promise.all(Object.keys(GPDEF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
     GPROP[n] = {a: im, b}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png'; })));
@@ -402,27 +442,31 @@ function makeProps(bg) {
   // fallback if the pictures did not load
   const T = () => GPROP.oak ? gp(['oak', 'oak', 'pine', 'blossom'][rnd() * 4 | 0]) : bigTree(80 + rnd() * 44 | 0, 110 + rnd() * 70 | 0, PAL_TREE[rnd() * 2 | 0]);
   // edge forest: huge trees all round the field (behind the margins)
-  for (let x = 40; x < WW; x += 150 + rnd() * 70) { add(T(), x, 160 + rnd() * 30 | 0); add(T(), x + 60, WH - 30 - rnd() * 20 | 0); }
-  for (let y = 320; y < WH - 140; y += 160 + rnd() * 70) { add(T(), 70 + rnd() * 50 | 0, y); add(T(), WW - 70 - rnd() * 50 | 0, y); }
+  for (let x = 40; x < WW; x += 230 + rnd() * 110) {   // owner: fewer trees
+    add(T(), x, 160 + rnd() * 30 | 0); add(T(), x + 60, WH - 30 - rnd() * 20 | 0); }
+  for (let y = 320; y < WH - 140; y += 240 + rnd() * 110) { add(T(), 70 + rnd() * 50 | 0, y); add(T(), WW - 70 - rnd() * 50 | 0, y); }
   // a hamlet of big cottages and two ruined watchtowers (the rogue reaches about to a door's top)
   const hx = WW * .28, hy = WH * .3, RC = [['#5a1f1f', '#8a3426', '#b04a33'], ['#1f3550', '#2f5680', '#4778aa'], ['#3d3020', '#6b5233', '#8f6f45']];
   for (let k = 0; k < 4; k++) { const x = hx + (k % 2) * 420 + rnd() * 60, y = hy + (k >> 1) * 380 + rnd() * 40;
-    if (pathOk(x, y)) add(house(230 + rnd() * 70 | 0, RC[k % 3]), x | 0, y | 0); }
+    if (pathOk(x, y)) add(GPROP.house_red ? gp(k % 3 === 1 ? 'house_blue' : 'house_red') : house(230 + rnd() * 70 | 0, RC[k % 3]), x | 0, y | 0); }
   // the yard: a well in the middle, barrels and crates by the cottages, fences round the edge with gaps
-  add(well(), HAMLET.x + 40 | 0, HAMLET.y + 60 | 0);
+  add(GPROP.well ? gp('well') : well(), HAMLET.x + 40 | 0, HAMLET.y + 60 | 0);
+  if (GPROP.lantern) for (let i = 0, put = 0; i < 60 && put < 4; i++) {   // lanterns only where nothing stands (not over a roof)
+    const a = rnd() * 6.28, x = HAMLET.x + Math.cos(a) * HAMLET.rx * (.25 + rnd() * .55), y = HAMLET.y + Math.sin(a) * HAMLET.ry * (.25 + rnd() * .55);
+    if (PROPS.every(q => Math.abs(q.x - x) > q.w / 2 + 30 || Math.abs(q.y - y) > 140)) { add(gp('lantern'), x | 0, y | 0); put++; } }
   for (const p of PROPS.filter(q => q.rect && q.rect.d > 20)) for (let k = 0; k < 3; k++) {
     const x = p.x + (rnd() < .5 ? -1 : 1) * (p.rect.w / 2 + 20 + rnd() * 30), y = p.y - 10 + rnd() * 30;
-    if (dry(x, y, 20) && far(x, y, 34)) add(rnd() < .55 ? barrel() : crate(), x | 0, y | 0); }
-  for (let a = 0; a < Math.PI * 2; a += .2) {
+    if (dry(x, y, 20) && far(x, y, 40)) add(GPROP.barrel ? gp(rnd() < .55 ? 'barrel' : 'crate') : rnd() < .55 ? barrel() : crate(), x | 0, y | 0); }
+  for (let a = 0; a < Math.PI * 2; a += GPROP.fence ? .27 : .2) {
     if (Math.sin(a * 3 + 1) > .55) continue;             // gaps to walk through
     const x = HAMLET.x + Math.cos(a) * HAMLET.rx * .98, y = HAMLET.y + Math.sin(a) * HAMLET.ry * .98;
-    if (pathOk(x, y) && far(x, y, 40)) add(fence(3), x | 0, y | 0); }
-  for (const [fx, fy] of [[.86, .3], [.44, .84]]) { const x = WW * fx, y = WH * fy; if (pathOk(x, y) && far(x, y, 260)) add(tower(330 + rnd() * 80 | 0), x | 0, y | 0); }   // not by the lake
+    if (pathOk(x, y) && far(x, y, 40)) add(GPROP.fence ? gp('fence') : fence(3), x | 0, y | 0); }
+  for (const [fx, fy] of [[.86, .3], [.44, .84]]) { const x = WW * fx, y = WH * fy; if (pathOk(x, y) && far(x, y, 260)) add(GPROP.tower ? gp('tower') : tower(330 + rnd() * 80 | 0), x | 0, y | 0); }   // not by the lake
   // inside the field: groves, big boulders and tall ruined pillars, kept off the path, the water, the yard and the start
-  const n = WW * WH / 110000 | 0;
+  const n = WW * WH / 200000 | 0;   // owner 2026-11-08 "เบาๆ ต้นไม้หน่อย": about half as many
   for (let k = 0, tries = 0; k < n && tries < 3000; tries++) {
     const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
-    if (!pathOk(x, y) || inYard(x, y) || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 230)) continue;
+    if (!pathOk(x, y) || inYard(x, y) || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 300)) continue;
     const t = rnd();
     if (t < .6) add(T(), x | 0, y | 0);
     else if (t < .8) add(GPROP.boulder ? gp('boulder') : boulder(90 + rnd() * 90 | 0), x | 0, y | 0);
@@ -431,16 +475,16 @@ function makeProps(bg) {
     k++;
   }
   // small stuff from the GPT sheet: bushes and rock clusters scattered round the field
-  if (GPROP.rocks) for (let i = 0; i < 160; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
+  if (GPROP.rocks) for (let i = 0; i < 90; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
     if (pathOk(x, y) && !inYard(x, y) && far(x, y, 70)) add(gp(rnd() < .55 ? 'bush' : 'rocks'), x | 0, y | 0); }
   // tall grass: thick in the meadows and along the water, a few everywhere
-  for (let i = 0; i < 520; i++) {
+  for (let i = 0; i < 260; i++) {
     const m = MEADOWS[i % MEADOWS.length], near = i % 3 === 0;
     const x = near ? m[0] + (rnd() - .5) * 520 : 220 + rnd() * (WW - 440), y = near ? m[1] + (rnd() - .5) * 360 : 300 + rnd() * (WH - 600);
     if (!GROUND_PATH || Math.abs(y - GROUND_PATH(x)) < 50 || !dry(x, y, 20) || inYard(x, y)) continue;
     add(GPROP.grass ? gp(near && rnd() < .5 ? 'flowers' : 'grass') : grassClump(), x | 0, y | 0);
   }
-  for (let i = 0; i < 160; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 470, y = LAKE.cy + Math.sin(a) * 255;
+  for (let i = 0; i < 90; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 470, y = LAKE.cy + Math.sin(a) * 255;
     if (dry(x, y, 14) && lakeF(x, y) > -.4) add(GPROP.grass ? gp('grass') : grassClump(), x | 0, y | 0); }
   PROPS.sort((a, b) => a.y - b.y);
 }
