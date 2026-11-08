@@ -121,6 +121,20 @@ the code ground is only a fallback. GPT village sheet `gpt_village.png` → `pro
 tower,well,fence,barrel,crate,lantern` → `art/action/props/`; houses / fences block as boxes (`GPDEF.rect`), houses are not
 mirrored. Owner "เบาๆ ต้นไม้หน่อย": about half as many trees, bushes and grass clumps.
 
+Bigger (owner 2026-11-08 "สิ่งก่อสร้างขยายได้อีกไหม", then "ให้ดูตัวละครเล็กลง ขยายแมพอีก มุมกล้องสูงอีก"): houses and the
+tower re-cut 1.5× (`props_px.py ... 0=340`: house_red 330×342, house_blue 316×304, tower 272×418; footprints in `GPDEF`);
+rogue 2/3 at build time (`rogue_build.sh --scale=2/3` → cell 116, feet 58/99, `k` .667; reach follows `META.k`); world
+6000×4000 (`AR` = area vs the old 4200×2800, prop counts follow it; lake 1.35×, a longer stream, 7 meadows, 3 towers).
+One 6000×4000 canvas is too big for phones, so the ground is painted in 512 px chunks (`CHUNKS`): `terr(x,y)` = what is at a
+point (sets `TK`/`TA`/`TB`, path / stream widths cached per column / row in `PYC PWC SWC`, `streamD` skips far segments
+`SEGB`), `groundPx` = its colour from the textures, `chunkStep` paints 16-row bands, then lily pads / reeds (`GND.deco`) and
+the props' ground shadows (`PROPS[].shades`); `drawGroundChunks` draws what is on screen (paints a missing one at once) and
+spends ~4 ms a frame on the nearest unpainted chunks in the ring round the view; far chunks are dropped above 60. The
+walking water map `WATER` is worked out for the whole world in `setupGround`. Load paints only the start view (~0.5–1 s on
+the PC); walking across the map: median 0.3 ms, 1 frame of ~675 over 16 ms. A "higher camera" can't be done with the
+low-top-down art: the same feel comes from the smaller rogue (on a DPR-3 phone the screen shows 1170 world px of height,
+she is ~1/17 of it).
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of

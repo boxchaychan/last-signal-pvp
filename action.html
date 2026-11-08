@@ -43,7 +43,8 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 if (TOUCH) document.body.classList.add('touch');
-const WW = 4200, WH = 2800, MARGIN = {l: 180, r: 180, t: 240, b: 260};   // owner: a bigger, taller world so the rogue looks small
+const WW = 6000, WH = 4000, MARGIN = {l: 180, r: 180, t: 240, b: 260};   // owner: a bigger world so the rogue looks small (4200x2800 -> 6000x4000 on 2026-11-08)
+const AR = WW * WH / (4200 * 2800);   // how many times the first map's area (prop counts follow it)
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
 let S = 1, VW = 960, VH = 540, DPR = 1, U = 2;
 function onResize() {
@@ -74,15 +75,15 @@ function painter(w, h) {
 }
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + .5) / 16);
 // ---------- terrain layout: lake, stream, hamlet, meadows ----------
-const LAKE = {cx: WW * .7, cy: WH * .66, parts: [[0, 0, 300, 170], [215, 70, 190, 115], [-200, 50, 170, 105], [40, -85, 170, 90]]};
-LAKE.box = [LAKE.cx - 440, LAKE.cy - 220, LAKE.cx + 460, LAKE.cy + 230];
+const LAKE = {cx: WW * .7, cy: WH * .66, parts: [[0, 0, 300, 170], [215, 70, 190, 115], [-200, 50, 170, 105], [40, -85, 170, 90]].map(q => q.map(v => v * 1.35))};
+LAKE.box = [LAKE.cx - 600, LAKE.cy - 300, LAKE.cx + 620, LAKE.cy + 310];
 function lakeF(x, y) {           // > 0 inside the water, about 1 in the middle
   let v = -9; for (const [ox, oy, rx, ry] of LAKE.parts) { const dx = (x - LAKE.cx - ox) / rx, dy = (y - LAKE.cy - oy) / ry; v = Math.max(v, 1 - (dx * dx + dy * dy)); }
   return v + .06 * Math.sin(x / 31) * Math.sin(y / 23);
 }
 // stream: from the lake's north shore up to the top edge, crossing the path (bridge there)
 const STREAM = (() => {
-  const K = [[LAKE.cx + 40, LAKE.cy - 120], [LAKE.cx + 120, LAKE.cy - 480], [LAKE.cx + 40, LAKE.cy - 860], [LAKE.cx + 210, LAKE.cy - 1260], [LAKE.cx + 280, -40]];
+  const cy = LAKE.cy, K = [[LAKE.cx + 40, cy - 160], [LAKE.cx + 140, cy * .8], [LAKE.cx + 30, cy * .62], [LAKE.cx + 220, cy * .42], [LAKE.cx + 110, cy * .2], [LAKE.cx + 280, -40]];
   const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
     for (let t = 0; t < 1; t += .1) { const t2 = t * t, t3 = t2 * t, f = (a, b, c, d) => .5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
       pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
@@ -90,149 +91,128 @@ const STREAM = (() => {
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   return {pts, box: [Math.min(...xs) - 50, Math.min(...ys) - 50, Math.max(...xs) + 50, Math.max(...ys) + 50]};
 })();
-function streamD(x, y) {
+const SEGB = STREAM.pts.slice(1).map((b, i) => { const a = STREAM.pts[i]; return [Math.min(a[0], b[0]) - 64, Math.min(a[1], b[1]) - 64, Math.max(a[0], b[0]) + 64, Math.max(a[1], b[1]) + 64]; });
+function streamD(x, y) {          // distance to the stream's middle line (1e9 when more than ~64 px away: nothing uses it then)
   let best = 1e9; const P = STREAM.pts;
-  for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+  for (let i = 0; i < P.length - 1; i++) { const q = SEGB[i]; if (x < q[0] || x > q[2] || y < q[1] || y > q[3]) continue;
+    const [ax, ay] = P[i], [bx, by] = P[i + 1], dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
     const t = l ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0, ex = ax + dx * t - x, ey = ay + dy * t - y, d = ex * ex + ey * ey; if (d < best) best = d; }
   return Math.sqrt(best);
 }
-const HAMLET = {x: WW * .28 + 240, y: WH * .3 + 200, rx: 580, ry: 400};   // the cottages stand round its middle
-const MEADOWS = [[WW * .5, WH * .78], [WW * .14, WH * .62], [WW * .86, WH * .28], [WW * .55, WH * .2]];
+const HAMLET = {x: WW * .27 + 300, y: WH * .28 + 260, rx: 720, ry: 520};   // wider for the 1.5x cottages   // the cottages stand round its middle
+const MEADOWS = [[WW * .5, WH * .78], [WW * .14, WH * .62], [WW * .86, WH * .28], [WW * .55, WH * .2], [WW * .28, WH * .86], [WW * .9, WH * .82], [WW * .1, WH * .2]];
 // water map for walking: 8 px cells, 1 = water (blocked), 2 = bridge (open)
 const WG = 8, GW = Math.ceil(WW / WG), GH = Math.ceil(WH / WG), WATER = new Uint8Array(GW * GH);
 function markWater(x, y, v) { const i = (y / WG | 0) * GW + (x / WG | 0); if (v === 2 || WATER[i] !== 2) WATER[i] = v; }
 function waterAt(x, y) { if (x < 0 || y < 0 || x >= WW || y >= WH) return false; return WATER[(y / WG | 0) * GW + (x / WG | 0)] === 1; }
-function makeGround() {
-  const P = painter(WW, WH);
-  const G = ['#5c9f3f', '#6bb048', '#7bbf51', '#8dce5c', '#9edb68'].map(hex);
-  // low-frequency noise for patches of lighter / darker grass
-  const NW = 26, NH = 18, N = []; for (let i = 0; i < NW * NH; i++) N.push(rnd());
-  const noise = (x, y) => { const fx = x / WW * (NW - 1), fy = y / WH * (NH - 1), ix = fx | 0, iy = fy | 0, tx = fx - ix, ty = fy - iy;
-    const a = N[iy * NW + ix], b = N[iy * NW + ix + 1], c = N[(iy + 1) * NW + ix], e = N[(iy + 1) * NW + ix + 1];
-    const s = t => t * t * (3 - 2 * t); return (a + (b - a) * s(tx)) + ((c + (e - c) * s(tx)) - (a + (b - a) * s(tx))) * s(ty); };
-  const pathY = x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
-  const AREA = WW * WH / (2400 * 1600);
-  const SAND = ['#b48f58', '#c9a66b', '#d8b97c', '#e6cc94'].map(hex);
-  // water, shore, bridge and the hamlet's stone yard (owner 2026-11-08 "ทำแมพต่อสวยๆ")
-  const WC = ['#2a628f', '#3a82b4', '#55a6d4', '#8fd0ee', '#d6f3fd'].map(hex), SH = ['#cdb47c', '#e0c993', '#efdcaa'].map(hex);
-  const WD = ['#4a2f1a', '#6e4a2a', '#8e6538', '#ab8048'].map(hex), CB = ['#7a7682', '#94909b', '#aba7b0', '#c4c0c6'].map(hex);
+// ---------- ground: painted in 512 px chunks when the camera gets near (owner 2026-11-08 wanted a much bigger
+// world; one canvas that size does not fit on phones). Every pixel samples the GPT textures (TEX); the walking water map
+// is worked out for the whole world up front, so chunks that are not painted yet still block the water ----------
+const CH = 512, CHUNKS = new Map();
+let GND = null, TK = 0, TA = 0, TB = 0;          // terr(): kind at the point + two numbers for its edge
+const pathY = x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
+let GROUND_PATH = pathY;
+// kinds: 0 grass, 1 path, 2 yard, 3 shore, 4 water, 5 bridge deck, 6 bridge rail
+const PYC = new Float32Array(WW + 8), PWC = new Float32Array(WW + 8), SWC = new Float32Array(WH + 8);   // per column / row
+for (let x = 0; x < WW + 8; x++) { PYC[x] = pathY(x); PWC[x] = 34 + 8 * Math.sin(x / 57); }
+for (let y = 0; y < WH + 8; y++) SWC[y] = 22 + 5 * Math.sin(y / 70);
+function terr(x, y) {            // x, y whole numbers inside the world
   const lb = LAKE.box, sb = STREAM.box, hz = HAMLET;
-  // GPT ground textures (owner 2026-11-08, art/action/ground/*.png, seamless): sample by world position, times a
-  // big soft light / dark patch so the repeat does not show; the code colours below are only the fallback
-  const HT = !!TEX.grass, tx = (T, x, y, k) => { const t = TEX[T], i = ((y % t.h) * t.w + (x % t.w)) * 4; return [t.d[i] * k, t.d[i + 1] * k, t.d[i + 2] * k]; };
-  const MD = (x, y) => Math.min(...MEADOWS.map(([mx, my]) => Math.hypot(x - mx, (y - my) / .7)));
-  for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
-    const u = Math.floor(x / 96 + y / 48), v = Math.floor(x / 96 - y / 48), chk = (u + v) & 1;   // diamond tiles
-    const nz = noise(x, y);
-    let t = nz * 0.75 + chk * 0.13 + 0.12;
-    const dpath = Math.abs(y - pathY(x)), pw = 34 + 8 * Math.sin(x / 57);
-    if (HT) {
-      const b = BAYER[(y & 3) * 4 + (x & 3)], lum = .9 + nz * .2;
-      const lf = x > lb[0] && x < lb[2] && y > lb[1] && y < lb[3] ? lakeF(x, y) : -9;
-      const sd = x > sb[0] && x < sb[2] && y > sb[1] && y < sb[3] ? streamD(x, y) : 1e9, sw = 22 + 5 * Math.sin(y / 70);
-      if (dpath < pw + 8 && sd < sw + 12) {               // wooden bridge where the path crosses the stream
-        const e = dpath > pw + 5, rail = dpath > pw + 2;
-        P.set(x, y, e ? WD[0] : rail ? WD[1] : (x % 9 === 0 ? WD[0] : (x % 9 < 4 ? WD[2] : WD[3])));
-        if (dpath < pw + 2) markWater(x, y, 2); continue;
-      }
-      if (lf > 0 || sd < sw) {                            // water: darker in the deep middle, a light rim
-        const dep = Math.max(lf > 0 ? lf / .5 : 0, sd < sw ? 1 - sd / sw : 0);
-        P.set(x, y, tx('water', x, y, dep < .07 && b < .7 ? 1.18 : 1.04 - Math.min(1, dep) * .3)); markWater(x, y, 1); continue;
-      }
-      if (lf > -.13 || sd < sw + 8) {                     // sandy shore, fraying into the grass
-        const e = lf > -9 ? (-lf) / .13 : (sd - sw) / 8;
-        if (e > .6 && b < (e - .6) / .4) P.set(x, y, tx('grass', x, y, lum)); else P.set(x, y, tx('sand', x, y, 1)); continue;
-      }
-      const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
-      if (hd < 1 && dpath >= pw) {                        // cobbled yard of the hamlet, fraying into the grass
-        if (hd > .82 && b < (hd - .82) / .18) P.set(x, y, tx('grass', x, y, lum)); else P.set(x, y, tx('cobble', x, y, 1)); continue;
-      }
-      if (dpath < pw) {                                   // dirt path with a ragged grassy edge
-        if (dpath > pw - 6 && b < (dpath - (pw - 6)) / 7) P.set(x, y, tx('grass', x, y, lum)); else P.set(x, y, tx('dirt', x, y, .96 + nz * .08)); continue;
-      }
-      const md = MD(x, y);                                // flower grass in the meadows, fading out
-      P.set(x, y, tx(md < 200 || (md < 260 && b < (260 - md) / 60) ? 'flowergrass' : 'grass', x, y, lum)); continue;
-    }
-    const b = BAYER[(y & 3) * 4 + (x & 3)];
-    const lf = x > lb[0] && x < lb[2] && y > lb[1] && y < lb[3] ? lakeF(x, y) : -9;
-    const sd = x > sb[0] && x < sb[2] && y > sb[1] && y < sb[3] ? streamD(x, y) : 1e9, sw = 22 + 5 * Math.sin(y / 70);
-    if (dpath < pw + 8 && sd < sw + 12) {                 // wooden bridge where the path crosses the stream
-      const e = dpath > pw + 5, rail = dpath > pw + 2;
-      P.set(x, y, e ? WD[0] : rail ? WD[1] : (x % 9 === 0 ? WD[0] : (x % 9 < 4 ? WD[2] : WD[3])));
-      if (dpath < pw + 2) markWater(x, y, 2);              // the deck is walkable, the rails are not
-      continue;
-    }
-    if (lf > 0 || sd < sw) {                              // water: deep middle, light edge, foam rim
-      const dep = Math.max(lf > 0 ? lf / .5 : 0, sd < sw ? 1 - sd / sw : 0);
-      const k = dep > .85 ? 0 : dep > .5 ? 1 : dep > .22 ? 2 : dep > .08 ? 3 : 4;
-      P.set(x, y, WC[k === 4 && b > .55 ? 3 : k === 1 && b < .12 ? 2 : k]); markWater(x, y, 1);
-      continue;
-    }
-    if (lf > -.13 || sd < sw + 8) { const k = lf > -.05 || sd < sw + 3 ? 0 : b < .5 ? 1 : 2; P.set(x, y, SH[k]); continue; }   // sandy shore
-    const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
-    if (hd < 1 && dpath >= pw) {                          // cobbled yard of the hamlet, fraying into the grass
-      if (hd > .82 && b < (hd - .82) / .18) { P.set(x, y, G[1]); continue; }
-      const row = Math.floor(y / 11), cx = Math.floor((x + (row & 1) * 7) / 14), j = ((cx * 73856093) ^ (row * 19349663)) >>> 0;
-      const mx = (x + (row & 1) * 7) % 14, my = y % 11;
-      P.set(x, y, mx === 0 || my === 0 ? CB[0] : CB[1 + j % 3]); continue;
-    }
-    if (dpath < pw) {                                     // dirt path, lighter in the middle
-      const m = 1 - dpath / pw; const k = clamp(Math.floor(m * 3.2 + b * .9), 0, 3); P.set(x, y, SAND[k]);
-      continue;
-    }
-    if (dpath < pw + 3 && b < .6) { P.set(x, y, G[0]); continue; }  // worn grass edge
-    P.set(x, y, G[clamp(Math.floor(t * 4 + b * .8), 0, 4)]);
-  }
-  // pebbles on the path (code ground only: the GPT textures have their own detail)
-  if (!HT) for (let i = 0; i < 260 * AREA; i++) { const x = rnd() * WW | 0, y = pathY(x) + (rnd() - .5) * 50 | 0; if (waterAt(x, y)) continue; P.set(x, y, hex('#9c7c4c')); P.set(x + 1, y, hex('#f0dcae')); }
-  // lily pads with a few pink flowers, reeds along the shore
-  const LP = ['#2f6e2a', '#4f9a3a', '#7cc455'].map(hex), PK = hex('#ff9ec7');
-  for (let i = 0; i < 140; i++) { const x = lb[0] + rnd() * (lb[2] - lb[0]), y = lb[1] + rnd() * (lb[3] - lb[1]); if (lakeF(x, y) < .12) continue;
-    const r = 4 + rnd() * 4 | 0; P.disc(x | 0, y | 0, r + 1, r * .6 + 1 | 0, LP[0]); P.disc(x | 0, y | 0, r, r * .6 | 0, LP[1]); P.set(x - 1, y - 1, LP[2]);
-    for (let k = 0; k < r; k++) P.set(x + k, y, WC[2]);                  // the notch
-    if (rnd() < .25) { P.set(x, y - 2, PK); P.set(x + 1, y - 2, PK); P.set(x, y - 3, hex('#ffe066')); } }
-  const RD = ['#3f6f2a', '#5c8f36', '#a7864a'].map(hex);
-  for (let i = 0; i < 900; i++) { const a = rnd() * Math.PI * 2, x = LAKE.cx + Math.cos(a) * (lb[2] - lb[0]) * .5 * rnd(), y = LAKE.cy + Math.sin(a) * (lb[3] - lb[1]) * .5 * rnd();
-    const f = lakeF(x, y); if (f > .03 || f < -.08 || rnd() < .4) continue;
-    const h = 6 + rnd() * 8 | 0; for (let k = 0; k < h; k++) P.set(x, y - k, RD[k > h - 3 && rnd() < .5 ? 2 : k & 1]); }
-  // flower meadows: a few patches packed with flowers
-  if (!HT) for (const [mx, my] of MEADOWS) for (let i = 0; i < 900; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * 230, x = mx + Math.cos(a) * d | 0, y = my + Math.sin(a) * d * .7 | 0;
-    if (waterAt(x, y) || Math.abs(y - pathY(x)) < 46) continue; const c = [hex('#ffffff'), hex('#ffe066'), hex('#ff9ec7'), hex('#c7a8ff')][rnd() * 4 | 0];
-    P.set(x, y + 1, hex('#467f30')); P.set(x, y, c); if (rnd() < .4) P.set(x + 1, y, c); }
-  // grass tufts and flowers
-  const TD = hex('#467f30'), TL = hex('#b4e67a');
-  if (!HT) for (let i = 0; i < 4200 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0; if (Math.abs(y - pathY(x)) < 46) continue;
-    P.set(x, y, TD); P.set(x - 1, y - 1, TD); P.set(x + 1, y - 1, TD); P.set(x, y - 2, TD); P.set(x - 2, y - 2, TD); P.set(x + 2, y - 3, TD); P.set(x, y - 3, TL); }
-  const FL = ['#ffffff', '#ffe066', '#ff9ec7', '#a8d8ff'].map(hex);
-  if (!HT) for (let i = 0; i < 520 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0, c = FL[rnd() * 4 | 0]; if (Math.abs(y - pathY(x)) < 46) continue;
-    for (let k = 0; k < 3; k++) { const fx = x + (rnd() * 9 - 4 | 0), fy = y + (rnd() * 7 - 3 | 0); P.set(fx, fy + 1, TD); P.set(fx, fy, c); } }
-  // rocks and bushes (low, drawn into the ground)
-  const blob = (cx, cy, r, pal) => { P.disc(cx, cy + 2, r + 2, Math.round(r * .55) + 1, hex('#3a6a2a')); // ground shadow
-    P.disc(cx, cy, r + 1, Math.round(r * .75) + 1, pal[0]); P.disc(cx, cy, r, Math.round(r * .75), pal[1]);
-    P.disc(cx - Math.round(r * .2), cy - Math.round(r * .2), Math.round(r * .7), Math.round(r * .5), pal[2]);
-    P.disc(cx - Math.round(r * .4), cy - Math.round(r * .4), Math.max(1, Math.round(r * .3)), Math.max(1, Math.round(r * .22)), pal[3]); };
-  const ROCK = ['#3b3f4a', '#7d8494', '#9aa1ad', '#d0d4da'].map(hex), BUSH = ['#24451f', '#3f7a30', '#559a3b', '#86c95a'].map(hex);
-  if (!HT) for (let i = 0; i < 46 * AREA; i++) { const x = 200 + rnd() * (WW - 400) | 0, y = 240 + rnd() * (WH - 500) | 0; if (Math.abs(y - pathY(x)) < 60) continue;
-    if (rnd() < .45) blob(x, y, 6 + rnd() * 9 | 0, ROCK);
-    else { const r = 9 + rnd() * 8 | 0; blob(x, y, r, BUSH); blob(x + r, y + 2, r - 3, BUSH); blob(x - r + 2, y + 3, r - 4, BUSH);
-      if (rnd() < .5) for (let k = 0; k < 4; k++) P.set(x - r + (rnd() * r * 2 | 0), y - (rnd() * r * .6 | 0), FL[rnd() * 3 | 0]); } }
-  // tree ring round the edge
-  const LEAF = ['#1f3b1c', '#2f6a2a', '#3f8a33', '#5aa844', '#7cc95a'].map(hex), BARK = ['#3a2416', '#5a3a22', '#7a5030'].map(hex);
-  const tree = (cx, by) => { const r = 30 + rnd() * 14 | 0, top = by - 40 - r;
-    P.disc(cx + 6, by + 2, r - 4, 9, hex('#3d6c2c'));
-    for (let y = by - 44; y <= by; y++) for (let x = -7; x <= 7; x++) P.set(cx + x, y, Math.abs(x) >= 6 ? BARK[0] : x < -1 ? BARK[1] : BARK[2]);
-    const lobes = [[0, 0, r], [-r * .55, r * .25, r * .7], [r * .55, r * .3, r * .7], [0, -r * .45, r * .7]];
-    for (const [ox, oy, rr] of lobes) P.disc(cx + ox | 0, top + oy | 0, rr + 2 | 0, rr * .85 + 2 | 0, LEAF[0]);
-    for (const [ox, oy, rr] of lobes) P.disc(cx + ox | 0, top + oy | 0, rr | 0, rr * .85 | 0, LEAF[1]);
-    for (const [ox, oy, rr] of lobes) P.disc(cx + ox - rr * .2 | 0, top + oy - rr * .2 | 0, rr * .7 | 0, rr * .55 | 0, LEAF[2]);
-    for (const [ox, oy, rr] of lobes) P.disc(cx + ox - rr * .35 | 0, top + oy - rr * .35 | 0, rr * .38 | 0, rr * .3 | 0, LEAF[3]);
-    for (let k = 0; k < 10; k++) P.set(cx - r + (rnd() * r * 1.6 | 0), top - r * .6 + (rnd() * r | 0), LEAF[4]); };
-  // (the small baked tree ring is gone: big trees, boulders and pillars are now sprites drawn in depth order, see makeProps)
-  void tree;
-  GROUND_PATH = pathY;
-  return P.done();
+  const dpath = Math.abs(y - PYC[x]), pw = PWC[x];
+  const lf = x > lb[0] && x < lb[2] && y > lb[1] && y < lb[3] ? lakeF(x, y) : -9;
+  const sd = x > sb[0] && x < sb[2] && y > sb[1] && y < sb[3] ? streamD(x, y) : 1e9, sw = SWC[y];
+  if (dpath < pw + 8 && sd < sw + 12) { TK = dpath < pw + 2 ? 5 : 6; TA = dpath > pw + 5 ? 1 : 0; return; }
+  if (lf > 0 || sd < sw) { TK = 4; TA = Math.max(lf > 0 ? lf / .5 : 0, sd < sw ? 1 - sd / sw : 0); return; }
+  if (lf > -.13 || sd < sw + 8) { TK = 3; TA = lf > -.13 ? (-lf) / .13 : (sd - sw) / 8; return; }
+  const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
+  if (hd < 1 && dpath >= pw) { TK = 2; TA = hd; return; }
+  if (dpath < pw) { TK = 1; TA = dpath; TB = pw; return; }
+  TK = 0;
 }
-let GROUND_PATH = null;
+function setupGround() {
+  const NW = Math.round(WW / 160), NH = Math.round(WH / 160), N = []; for (let i = 0; i < NW * NH; i++) N.push(rnd());
+  const noise = (x, y) => { const fx = x / WW * (NW - 1), fy = y / WH * (NH - 1), ix = Math.min(NW - 2, fx | 0), iy = Math.min(NH - 2, fy | 0), tx = fx - ix, ty = fy - iy;
+    const a = N[iy * NW + ix], b = N[iy * NW + ix + 1], c = N[(iy + 1) * NW + ix], e = N[(iy + 1) * NW + ix + 1];
+    const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty), u = a + (b - a) * sx; return u + ((c + (e - c) * sx) - u) * sy; };
+  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {   // walking water map, 8 px cells
+    terr(gx * WG + 4, gy * WG + 4); WATER[gy * GW + gx] = TK === 4 || TK === 6 ? 1 : TK === 5 ? 2 : 0; }
+  // lily pads and reeds: decided now, drawn into whichever chunk they fall in
+  const lb = LAKE.box, deco = [];
+  for (let i = 0; i < 220; i++) { const x = lb[0] + rnd() * (lb[2] - lb[0]), y = lb[1] + rnd() * (lb[3] - lb[1]); if (lakeF(x, y) < .12) continue;
+    deco.push({k: 0, x: x | 0, y: y | 0, r: 4 + rnd() * 4 | 0, fl: rnd() < .25}); }
+  for (let i = 0; i < 1500; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * (lb[2] - lb[0]) * .5 * rnd(), y = LAKE.cy + Math.sin(a) * (lb[3] - lb[1]) * .5 * rnd();
+    const f = lakeF(x, y); if (f > .03 || f < -.08 || rnd() < .4) continue; deco.push({k: 1, x: x | 0, y: y | 0, h: 6 + rnd() * 8 | 0, s: rnd()}); }
+  GND = {noise, deco};
+}
+const WD = ['#4a2f1a', '#6e4a2a', '#8e6538', '#ab8048'].map(hex), LP = ['#2f6e2a', '#4f9a3a', '#7cc455', '#55a6d4', '#ff9ec7', '#ffe066'].map(hex), RD = ['#3f6f2a', '#5c8f36', '#a7864a'].map(hex);
+const TFB = {grass: [104, 170, 72], flowergrass: [110, 172, 76], dirt: [168, 128, 82], sand: [222, 200, 148], water: [62, 132, 186], cobble: [150, 146, 152]};   // if a texture is missing
+function groundPx(x, y, D, o) {
+  terr(x, y);
+  const b = BAYER[(y & 3) * 4 + (x & 3)];
+  let T = 'grass', k = 0;                                       // k 0 = the grass light patches
+  if (TK === 5 || TK === 6) { const c = TK === 6 ? WD[TA ? 0 : 1] : x % 9 === 0 ? WD[0] : x % 9 < 4 ? WD[2] : WD[3]; D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = 255; return; }
+  if (TK === 4) { T = 'water'; k = TA < .07 && b < .7 ? 1.18 : 1.04 - Math.min(1, TA) * .3; }
+  else if (TK === 3) { if (!(TA > .6 && b < (TA - .6) / .4)) { T = 'sand'; k = 1; } }
+  else if (TK === 2) { if (!(TA > .82 && b < (TA - .82) / .18)) { T = 'cobble'; k = 1; } }
+  else if (TK === 1) { if (!(TA > TB - 6 && b < (TA - (TB - 6)) / 7)) { T = 'dirt'; k = .96 + GND.noise(x, y) * .08; } }
+  else { let m2 = 1e12; for (let i = 0; i < MEADOWS.length; i++) { const dx = x - MEADOWS[i][0], dy = (y - MEADOWS[i][1]) / .7, d = dx * dx + dy * dy; if (d < m2) m2 = d; }   // flower grass in the meadows
+    if (m2 < 67600) { const md = Math.sqrt(m2); if (md < 200 || b < (260 - md) / 60) T = 'flowergrass'; } }
+  if (!k) k = .9 + GND.noise(x, y) * .2;
+  const t = TEX[T];
+  if (t) { const i = ((y % t.h) * t.w + (x % t.w)) * 4; D[o] = t.d[i] * k; D[o + 1] = t.d[i + 1] * k; D[o + 2] = t.d[i + 2] * k; }
+  else { const c = TFB[T]; D[o] = c[0] * k; D[o + 1] = c[1] * k; D[o + 2] = c[2] * k; }
+  D[o + 3] = 255;
+}
+// a chunk is painted in bands of rows (BAND per call) so walking into a new area does not stall a frame
+const BAND = 16;
+function chunkStep(ch, rows) {
+  const {P, X0, Y0, W, H} = ch, D = P.d, y1 = Math.min(H, ch.y + rows);
+  for (let y = ch.y; y < y1; y++) for (let x = 0, o = y * W * 4; x < W; x++, o += 4) groundPx(X0 + x, Y0 + y, D, o);
+  ch.y = y1; if (ch.y < H) return;
+  for (const d of GND.deco) {                                   // lily pads (pink flowers on some), reeds along the shore
+    if (d.x < X0 - 12 || d.x > X0 + W + 12 || d.y < Y0 - 4 || d.y > Y0 + H + 16) continue;
+    const x = d.x - X0, y = d.y - Y0;
+    if (d.k === 0) { P.disc(x, y, d.r + 1, d.r * .6 + 1 | 0, LP[0]); P.disc(x, y, d.r, d.r * .6 | 0, LP[1]); P.set(x - 1, y - 1, LP[2]);
+      for (let q = 0; q < d.r; q++) P.set(x + q, y, LP[3]);
+      if (d.fl) { P.set(x, y - 2, LP[4]); P.set(x + 1, y - 2, LP[4]); P.set(x, y - 3, LP[5]); } }
+    else for (let q = 0; q < d.h; q++) P.set(x, y - q, RD[q > d.h - 3 && d.s < .5 ? 2 : q & 1]);
+  }
+  const c = P.done(), g = c.getContext('2d');
+  for (const p of PROPS) for (const s of p.shades || []) {      // the props' ground shadows
+    if (s.x + s.img.width < X0 || s.x > X0 + W || s.y + s.img.height < Y0 || s.y > Y0 + H) continue;
+    g.globalAlpha = s.a; g.drawImage(s.img, s.x - X0, s.y - Y0); }
+  g.globalAlpha = 1; ch.c = c; delete ch.P;
+}
+function chunk(i, j) {
+  const k = i + ',' + j; let ch = CHUNKS.get(k);
+  if (!ch) { const X0 = i * CH, Y0 = j * CH, W = Math.min(CH, WW - X0), H = Math.min(CH, WH - Y0);
+    ch = {X0, Y0, W, H, y: 0, P: painter(W, H), c: null}; CHUNKS.set(k, ch); }
+  return ch;
+}
+const NCI = Math.ceil(WW / CH), NCJ = Math.ceil(WH / CH);
+function viewChunks(cx, cy) { return [Math.max(0, Math.floor(cx / CH)), Math.max(0, Math.floor(cy / CH)), Math.min(NCI - 1, Math.floor((cx + VW) / CH)), Math.min(NCJ - 1, Math.floor((cy + VH) / CH))]; }
+function prebuild(cx, cy) {                                       // at load: what is on screen (the ring round it fills in while playing)
+  const [i0, j0, i1, j1] = viewChunks(cx, cy);
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); }
+}
+function drawGroundChunks(cx, cy) {
+  const [i0, j0, i1, j1] = viewChunks(cx, cy);
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0); }
+  // the nearest unpainted chunks just outside the view, a few rows at a time for ~4 ms a frame (a whole chunk is
+  // ~50 ms on a PC, more on a phone); far chunks are dropped
+  const t0 = performance.now();
+  while (performance.now() - t0 < 4) {
+    let todo = null, best = 1e9;
+    for (let j = Math.max(0, j0 - 1); j <= Math.min(NCJ - 1, j1 + 1); j++) for (let i = Math.max(0, i0 - 1); i <= Math.min(NCI - 1, i1 + 1); i++) {
+      const ch = CHUNKS.get(i + ',' + j); if (ch && ch.c) continue;
+      const d = Math.hypot((i + .5) * CH - (cx + VW / 2), (j + .5) * CH - (cy + VH / 2)); if (d < best) { best = d; todo = [i, j]; } }
+    if (!todo) break;
+    chunkStep(chunk(todo[0], todo[1]), BAND);
+  }
+  if (CHUNKS.size > 60) for (const [k, ch] of CHUNKS) { const i = ch.X0 / CH, j = ch.Y0 / CH;
+    if (i < i0 - 2 || i > i1 + 2 || j < j0 - 2 || j > j1 + 2) CHUNKS.delete(k); }
+}
+
 
 // ---------- big props (owner 2026-11-08 "เอาแมพสูงใหญ่ ทำให้สเกลตัวละครดูเล็ก") ----------
 // huge trees (2-3x the rogue), boulders and tall ruined stone pillars, pixel sprites at 1 art px = 1 world px,
@@ -373,15 +353,15 @@ function grassClump() {          // tall blades the rogue walks behind (no colli
 // moving details: sparkles on the water, drifting cloud shadows, butterflies over the meadows
 let GLINTS = [], CLOUDS = [], FLIES = [], CLOUDIMG = null;
 function makeAmbient() {
-  GLINTS = []; for (let i = 0; i < 9000 && GLINTS.length < 700; i++) {
+  GLINTS = []; for (let i = 0; i < 16000 && GLINTS.length < 1200; i++) {
     const inL = i & 1, bx = inL ? LAKE.box : STREAM.box, x = bx[0] + rnd() * (bx[2] - bx[0]), y = bx[1] + rnd() * (bx[3] - bx[1]);
     if (waterAt(x, y) && waterAt(x + 8, y) && waterAt(x - 8, y)) GLINTS.push({x: x | 0, y: y | 0, p: rnd(), w: rnd() < .3 ? 3 : 2}); }
   const W = 560, H = 260, P = painter(W, H), D = hex('#0e2a0c');
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const dx = (x - W / 2) / (W / 2), dy = (y - H / 2) / (H / 2), r = dx * dx + dy * dy + .25 * Math.sin(x / 40) * Math.cos(y / 33);
     if (r < 1 && BAYER[(y & 3) * 4 + (x & 3)] < (1 - r) * 1.4) P.set(x, y, D); }
   CLOUDIMG = P.done();
-  CLOUDS = [...Array(5)].map(() => ({x: rnd() * WW, y: rnd() * WH, v: 10 + rnd() * 8}));
-  FLIES = [...Array(14)].map((_, i) => { const m = MEADOWS[i % MEADOWS.length]; return {x: m[0] + (rnd() - .5) * 300, y: m[1] + (rnd() - .5) * 200, hx: m[0], hy: m[1], a: rnd() * 6.28, p: rnd() * 6, c: ['#ffffff', '#ffe066', '#ff9ec7', '#a8d8ff'][i % 4]}; });
+  CLOUDS = [...Array(10)].map(() => ({x: rnd() * WW, y: rnd() * WH, v: 10 + rnd() * 8}));
+  FLIES = [...Array(21)].map((_, i) => { const m = MEADOWS[i % MEADOWS.length]; return {x: m[0] + (rnd() - .5) * 300, y: m[1] + (rnd() - .5) * 200, hx: m[0], hy: m[1], a: rnd() * 6.28, p: rnd() * 6, c: ['#ffffff', '#ffe066', '#ff9ec7', '#a8d8ff'][i % 4]}; });
 }
 function stepAmbient(dt) {
   for (const c of CLOUDS) { c.x += c.v * dt; c.y += c.v * .25 * dt; if (c.x > WW + 300) { c.x = -300; c.y = rnd() * WH; } }
@@ -404,7 +384,7 @@ function drawFlies() {
 const GPDEF = {oak: {rad: 20}, pine: {rad: 16}, blossom: {rad: 15}, boulder: {rad: 44}, bush: {rad: 18}, rocks: {rad: 12},
   grass: {soft: 1}, flowers: {soft: 1},
   // village sheet (owner's GPT "Charming Fantasy Village Asset Sheet"): houses and the fence block as boxes
-  house_red: {rect: {w: 196, d: 46}, nf: 1}, house_blue: {rect: {w: 190, d: 44}, nf: 1}, tower: {rad: 70, nf: 1},
+  house_red: {rect: {w: 292, d: 66}, nf: 1}, house_blue: {rect: {w: 282, d: 64}, nf: 1}, tower: {rad: 100, nf: 1},   // 1.5x (owner: bigger buildings)
   well: {rad: 34}, fence: {rect: {w: 140, d: 10}}, barrel: {rad: 18}, crate: {rad: 22}, lantern: {rad: 8}};
 const GPROP = {};
 function gp(name) {
@@ -415,28 +395,27 @@ const TEX = {};   // GPT ground textures as pixel arrays (grass, dirt, sand, wat
 async function loadProps() {
   await Promise.all(['grass', 'dirt', 'sand', 'water', 'cobble', 'flowergrass'].map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
-    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/ground/' + n + '.png'; })));
+    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/ground/' + n + '.png?v=' + (META.v || 1); })));
   if (Object.keys(TEX).length < 6) for (const k of Object.keys(TEX)) delete TEX[k];   // all or nothing (code ground otherwise)
   await Promise.all(Object.keys(GPDEF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
-    GPROP[n] = {a: im, b}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png'; })));
+    GPROP[n] = {a: im, b}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
 }
 let PROPS = [];
-function makeProps(bg) {
+function makeProps() {
   PROPS = [];
-  const bx = bg.getContext('2d'), far = (x, y, d) => PROPS.every(p => Math.hypot(p.x - x, p.y - y) > d);
+  const far = (x, y, d) => PROPS.every(p => Math.hypot(p.x - x, p.y - y) > d);
   const dry = (x, y, r) => !waterAt(x, y) && !waterAt(x - r, y) && !waterAt(x + r, y) && !waterAt(x, y - r * .5) && !waterAt(x, y + r * .5);
   const inYard = (x, y) => ((x - HAMLET.x) / HAMLET.rx) ** 2 + ((y - HAMLET.y) / HAMLET.ry) ** 2 < 1;
-  const pathOk = (x, y) => (!GROUND_PATH || Math.abs(y - GROUND_PATH(x)) > 70) && dry(x, y, 90);
+  const pathOk = (x, y) => Math.abs(y - GROUND_PATH(x)) > 70 && dry(x, y, 90);
   const add = (s, x, y) => {
-    if (!s.soft) {
+    const shades = [];
+    if (!s.soft) {   // ground shadow (+ darker ground under a big canopy), painted into the ground chunks
       const sw = s.rect ? s.rect.w * 1.15 : s.rad * 4.6, shh = s.rect ? Math.min(46, s.rect.d * 1.4 + 6) : s.rad * 1.4;   // fences: a thin shadow
-      const sh = ellipseSprite(Math.max(40, sw | 0), Math.max(14, shh | 0), '#203a18');   // baked ground shadow
-      bx.globalAlpha = .28; bx.drawImage(sh, x - sh.width / 2 + 10 | 0, y - sh.height / 2 | 0); bx.globalAlpha = 1;
-      if (s.top < -60) {   // darker ground under a big canopy (ambient occlusion), dithered by the ellipse sprite's edge
-        const ao = ellipseSprite(s.c.width * .9 | 0, s.c.width * .38 | 0, '#1d3415'); bx.globalAlpha = .16; bx.drawImage(ao, x - ao.width / 2 | 0, y - ao.height * .55 | 0); bx.globalAlpha = 1; }
+      const sh = ellipseSprite(Math.max(40, sw | 0), Math.max(14, shh | 0), '#203a18'); shades.push({img: sh, x: x - sh.width / 2 + 10 | 0, y: y - sh.height / 2 | 0, a: .28});
+      if (s.top < -60) { const ao = ellipseSprite(s.c.width * .9 | 0, s.c.width * .38 | 0, '#1d3415'); shades.push({img: ao, x: x - ao.width / 2 | 0, y: y - ao.height * .55 | 0, a: .16}); }
     }
-    PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft});
+    PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft, shades});
   };
   // GPT-drawn props (owner 2026-11-08: map art from GPT, the code-drawn ones looked poor); the code ones are only a
   // fallback if the pictures did not load
@@ -446,11 +425,11 @@ function makeProps(bg) {
     add(T(), x, 160 + rnd() * 30 | 0); add(T(), x + 60, WH - 30 - rnd() * 20 | 0); }
   for (let y = 320; y < WH - 140; y += 240 + rnd() * 110) { add(T(), 70 + rnd() * 50 | 0, y); add(T(), WW - 70 - rnd() * 50 | 0, y); }
   // a hamlet of big cottages and two ruined watchtowers (the rogue reaches about to a door's top)
-  const hx = WW * .28, hy = WH * .3, RC = [['#5a1f1f', '#8a3426', '#b04a33'], ['#1f3550', '#2f5680', '#4778aa'], ['#3d3020', '#6b5233', '#8f6f45']];
-  for (let k = 0; k < 4; k++) { const x = hx + (k % 2) * 420 + rnd() * 60, y = hy + (k >> 1) * 380 + rnd() * 40;
+  const hx = WW * .27, hy = WH * .28, RC = [['#5a1f1f', '#8a3426', '#b04a33'], ['#1f3550', '#2f5680', '#4778aa'], ['#3d3020', '#6b5233', '#8f6f45']];
+  for (let k = 0; k < 4; k++) { const x = hx + (k % 2) * 600 + rnd() * 40, y = hy + (k >> 1) * 520 + rnd() * 30;
     if (pathOk(x, y)) add(GPROP.house_red ? gp(k % 3 === 1 ? 'house_blue' : 'house_red') : house(230 + rnd() * 70 | 0, RC[k % 3]), x | 0, y | 0); }
   // the yard: a well in the middle, barrels and crates by the cottages, fences round the edge with gaps
-  add(GPROP.well ? gp('well') : well(), HAMLET.x + 40 | 0, HAMLET.y + 60 | 0);
+  add(GPROP.well ? gp('well') : well(), HAMLET.x | 0, HAMLET.y + 20 | 0);
   if (GPROP.lantern) for (let i = 0, put = 0; i < 60 && put < 4; i++) {   // lanterns only where nothing stands (not over a roof)
     const a = rnd() * 6.28, x = HAMLET.x + Math.cos(a) * HAMLET.rx * (.25 + rnd() * .55), y = HAMLET.y + Math.sin(a) * HAMLET.ry * (.25 + rnd() * .55);
     if (PROPS.every(q => Math.abs(q.x - x) > q.w / 2 + 30 || Math.abs(q.y - y) > 140)) { add(gp('lantern'), x | 0, y | 0); put++; } }
@@ -461,7 +440,7 @@ function makeProps(bg) {
     if (Math.sin(a * 3 + 1) > .55) continue;             // gaps to walk through
     const x = HAMLET.x + Math.cos(a) * HAMLET.rx * .98, y = HAMLET.y + Math.sin(a) * HAMLET.ry * .98;
     if (pathOk(x, y) && far(x, y, 40)) add(GPROP.fence ? gp('fence') : fence(3), x | 0, y | 0); }
-  for (const [fx, fy] of [[.86, .3], [.44, .84]]) { const x = WW * fx, y = WH * fy; if (pathOk(x, y) && far(x, y, 260)) add(GPROP.tower ? gp('tower') : tower(330 + rnd() * 80 | 0), x | 0, y | 0); }   // not by the lake
+  for (const [fx, fy] of [[.86, .3], [.44, .84], [.1, .3]]) { const x = WW * fx, y = WH * fy; if (pathOk(x, y) && far(x, y, 260)) add(GPROP.tower ? gp('tower') : tower(330 + rnd() * 80 | 0), x | 0, y | 0); }   // not by the lake
   // inside the field: groves, big boulders and tall ruined pillars, kept off the path, the water, the yard and the start
   const n = WW * WH / 200000 | 0;   // owner 2026-11-08 "เบาๆ ต้นไม้หน่อย": about half as many
   for (let k = 0, tries = 0; k < n && tries < 3000; tries++) {
@@ -475,16 +454,16 @@ function makeProps(bg) {
     k++;
   }
   // small stuff from the GPT sheet: bushes and rock clusters scattered round the field
-  if (GPROP.rocks) for (let i = 0; i < 90; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
+  if (GPROP.rocks) for (let i = 0; i < 90 * AR; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
     if (pathOk(x, y) && !inYard(x, y) && far(x, y, 70)) add(gp(rnd() < .55 ? 'bush' : 'rocks'), x | 0, y | 0); }
   // tall grass: thick in the meadows and along the water, a few everywhere
-  for (let i = 0; i < 260; i++) {
+  for (let i = 0; i < 260 * AR; i++) {
     const m = MEADOWS[i % MEADOWS.length], near = i % 3 === 0;
     const x = near ? m[0] + (rnd() - .5) * 520 : 220 + rnd() * (WW - 440), y = near ? m[1] + (rnd() - .5) * 360 : 300 + rnd() * (WH - 600);
-    if (!GROUND_PATH || Math.abs(y - GROUND_PATH(x)) < 50 || !dry(x, y, 20) || inYard(x, y)) continue;
+    if (Math.abs(y - GROUND_PATH(x)) < 50 || !dry(x, y, 20) || inYard(x, y)) continue;
     add(GPROP.grass ? gp(near && rnd() < .5 ? 'flowers' : 'grass') : grassClump(), x | 0, y | 0);
   }
-  for (let i = 0; i < 90; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 470, y = LAKE.cy + Math.sin(a) * 255;
+  for (let i = 0; i < 130; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 630, y = LAKE.cy + Math.sin(a) * 345;
     if (dry(x, y, 14) && lakeF(x, y) > -.4) add(GPROP.grass ? gp('grass') : grassClump(), x | 0, y | 0); }
   PROPS.sort((a, b) => a.y - b.y);
 }
@@ -642,7 +621,8 @@ async function load() {
   const files = [META.still, ...Object.values(META.anims).flatMap(a => a.glow ? [a.img, a.glow] : [a.img])];
   await Promise.all(files.map(f => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = no; im.src = 'art/action/' + f + '?v=' + (META.v || 1); IMGS[f] = im; })));
   await loadProps();
-  BG = makeGround(); if (!/noprops/.test(location.search)) makeProps(BG); makeAmbient();   // ?noprops: bare ground (art tests)
+  setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
+  prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
   SL.blue = makeSlime(['#284a8a', '#4a7fd0', '#86b8f4', '#eef6ff']);
   FXS.burst = starFrames(13, 4); FXS.burstB = starFrames(22, 5);
@@ -937,7 +917,7 @@ function draw() {
   if (G.shake > 0) { cx += Math.round((rnd() - .5) * G.shake * 2); cy += Math.round((rnd() - .5) * G.shake * 2); }
   if (G.kick) { const k = G.kick.t / .12; cx += Math.round(G.kick.x * k); cy += Math.round(G.kick.y * k); }
   ctx.setTransform(S, 0, 0, S, -cx * S, -cy * S);
-  ctx.drawImage(BG, 0, 0); drawGround(cx, cy);
+  drawGroundChunks(cx, cy); drawGround(cx, cy);
   // shadows + warning rings
   ctx.globalAlpha = .22;
   ctx.drawImage(SHP, Math.round(p.x - 23), Math.round(p.y - 7));

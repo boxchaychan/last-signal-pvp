@@ -183,7 +183,8 @@ os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
 still = Image.new('RGBA', (8 * C, C))
 for i, im in enumerate(rot): still.alpha_composite(im, (i * C + pad, pad))
 shrink(still).save(out + '_still.png', optimize=True)
-meta = {'cell': round(C * K), 'fx': round(C // 2 * K), 'fy': round((pad + 125) * K), 'k': K, 'dirs': DIRS, 'still': pre + '_still.png', 'anims': {},
+import time
+meta = {'v': int(time.time()), 'cell': round(C * K), 'fx': round(C // 2 * K), 'fy': round((pad + 125) * K), 'k': K, 'dirs': DIRS, 'still': pre + '_still.png', 'anims': {},
         'arc': {'ramp': SMEAR, 'alpha': AIRA, 'glow': GLOWC}}
 for name, A in data.items():
     have = [d for d in DIRS if A[d]]
