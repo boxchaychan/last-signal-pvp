@@ -665,6 +665,32 @@ const ROLL = {t: .4, sp: 380, cost: 26}, HURT_T = .28, DEATH_T = .9, RUN = 230; 
 // again within 5 s and she appears behind that monster. The throw pose = the attack's second swing (owner: "เอาคลื่นก็
 // เหมือนปาแล้ว"): wind-up from 2 frames after the first hit, the dagger leaves her hand on the big arc, then follow-through
 const SK1 = {range: 380, r: 46, dmg: 18, cost: 18, speed: 1100, mark: 5, cd: 6, wind: 45, rel: 85, after: 55};
+// the attack sheet without its slash arcs, for the throw (owner "เอาคลื่นฟันออก"): the arcs are the 3 ramp colours in
+// META.arc; see-through arc pixels go, solid ones (where the arc crossed her body) take the most common colour round
+// them, filled in from the edges over a few passes
+let NOARC = null;
+function makeNoArc(img) {
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  const id = g.getImageData(0, 0, c.width, c.height), d = id.data, W = c.width, H = c.height, R = (META.arc && META.arc.ramp) || [];
+  const arc = new Uint8Array(W * H), was = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) { const o = i * 4; if (!d[o + 3]) continue;   // only the arcs are see-through in the sheet
+    if (d[o + 3] < 255) { d[o + 3] = 0; was[i] = 1; } else if (R.some(q => Math.abs(d[o] - q[0]) < 3 && Math.abs(d[o + 1] - q[1]) < 3 && Math.abs(d[o + 2] - q[2]) < 3)) arc[i] = 1; }
+  for (let pass = 0; pass < 4; pass++) { const fill = [];
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; if (!arc[i]) continue;
+      const cnt = new Map(); let n = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const j = i + dy * W + dx, o = j * 4; if (j === i || arc[j] || d[o + 3] < 255) continue;
+        const k = (d[o] << 16) | (d[o + 1] << 8) | d[o + 2]; cnt.set(k, (cnt.get(k) || 0) + 1); n++; }
+      if (n >= 4) { let bk = 0, bv = 0; for (const [k, v] of cnt) if (v > bv) { bv = v; bk = k; } fill.push([i, bk]); } }
+    for (const [i, k] of fill) { const o = i * 4; d[o] = k >> 16; d[o + 1] = (k >> 8) & 255; d[o + 2] = k & 255; arc[i] = 0; } }
+  for (let i = 0; i < W * H; i++) if (arc[i]) { d[i * 4 + 3] = 0; was[i] = 1; }
+  // the arc's dark outline: dark pixels next to where the arc was that are only a thin line (few solid neighbours)
+  for (let pass = 0; pass < 3; pass++) { const cut = [];
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x, o = i * 4; if (!d[o + 3] || Math.max(d[o], d[o + 1], d[o + 2]) > 90) continue;
+      let near = 0, solid = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const j = i + dy * W + dx; if (was[j]) near++; else if (d[j * 4 + 3]) solid++; }
+      if (near && solid <= 2) cut.push(i); }
+    for (const i of cut) { d[i * 4 + 3] = 0; was[i] = 1; } }
+  g.putImageData(id, 0, 0); return c;
+}
 function throwPlan(ar) {
   const h = ar.hits && ar.hits.length > 1 ? ar.hits : [4, 9], rel = h[h.length - 1], a = h[0] + 2, b = Math.min(ar.n - 1, rel + 4);
   const fr = [], ms = []; for (let f = a; f <= b; f++) { fr.push(f); ms.push(f < rel ? SK1.wind : f === rel ? SK1.rel : SK1.after); }
@@ -960,9 +986,8 @@ function drawPlayer(p) {
   drawPlayerBody(p); ctx.globalAlpha = 1;
 }
 function drawPlayerBody(p) {
-  if (p.state === 'throw' && p.th) { const t = p.th, ar = t.ar, f = t.fr[Math.min(t.i, t.fr.length - 1)]; drawCell(ar.img, ar.r, f, p.x, p.y, ar.flip);
-    if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, f, p.x, p.y, ar.flip, .85); ctx.globalCompositeOperation = 'source-over'; }
-    return; }
+  if (p.state === 'throw' && p.th) { const t = p.th, ar = t.ar, f = t.fr[Math.min(t.i, t.fr.length - 1)];   // no arc, no glow
+    if (!NOARC) NOARC = makeNoArc(ar.img); drawCell(NOARC, ar.r, f, p.x, p.y, ar.flip); return; }
   if (p.state === 'atk' && p.a) { const ar = p.a.plan.ar, f = Math.min(p.a.i, ar.n - 1); drawCell(ar.img, ar.r, f, p.x, p.y, ar.flip);
     if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, f, p.x, p.y, ar.flip, .85); ctx.globalCompositeOperation = 'source-over'; }   // arc glow (bloom)
     return; }

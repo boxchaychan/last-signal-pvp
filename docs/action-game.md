@@ -142,7 +142,9 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   skill can be pressed again within 5 s → she appears BEHIND that monster. Built (free, no PixelLab): Q / 1 on PC (aims at
   the mouse), button ปา on phones (aims at the nearest slime in range, else straight ahead). `SK1` (range 380, area r 46,
   18 damage, stamina 18, cooldown 6 s, mark 5 s); the throw pose = the attack's second swing (owner "เอาคลื่นก็เหมือนปาแล้ว":
-  `throwPlan` plays from 2 frames after the first hit to 4 after the last, the dagger leaves on the big arc); `G.knives`
+  `throwPlan` plays from 2 frames after the first hit to 4 after the last, the dagger leaves on the big arc; then owner
+  "เอาคลื่นฟันออก": drawn from `makeNoArc(sheet)` = see-through arc pixels and the solid ramp colours removed, holes over
+  the body filled from the neighbours, the arc's thin dark outline cut, no glow); `G.knives`
   fly in a slight arc with a ground shadow and stick in the ground; the monster nearest the landing spot gets `p.mark`
   (purple ring + arrow); the button turns purple "วาร์ป" / "Q!"; `blinkBehind` = after-image streak, purple puffs, she lands
   on the far side facing it (sides / stays put if that is water), .3 s i-frames. The flying dagger is a few code pixels
