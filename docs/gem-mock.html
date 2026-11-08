@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gem Battle Mock</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* screen mock-up for the gem + backpack battle idea (owner 2026-11-08 "จอมันจะพอไหม จำลองมาให้ดูหน่อย"): one phone screen
+   in landscape, 844x390, scaled to fit; three phases switched with the buttons outside the screen */
+:root{--bg:#120f1c;--ink:#f4efff;--dim:#a99fc4;--gold:#ffd75a;--panel:#211a35;--line:#4a3c78}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Kanit,system-ui,sans-serif;overflow:hidden}
+#wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:6px}
+#tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+#tabs button{font:600 14px Kanit,sans-serif;color:var(--ink);background:#2c2347;border:2px solid var(--line);border-radius:8px;padding:5px 12px;cursor:pointer}
+#tabs button.on{background:var(--gold);color:#2a1c00;border-color:#fff1b0}
+#holder{position:relative}
+#stage{position:absolute;left:0;top:0;width:844px;height:390px;transform-origin:0 0;overflow:hidden;border-radius:14px;border:3px solid #000;box-shadow:0 0 0 2px #3a2f5c;background:#1b1530}
+/* battle strip */
+#battle{position:absolute;left:0;top:0;width:844px;height:170px;background:linear-gradient(#5d7fb8 0,#9cb6d9 45%,#c9d6e6 62%,#7f96a8 63%,#5f7584 100%)}
+#battle:after{content:"";position:absolute;left:0;right:0;bottom:0;height:52px;background:repeating-linear-gradient(90deg,#6c8292 0 40px,#647a8a 40px 80px);opacity:.6}
+.mtn{position:absolute;bottom:60px;width:0;height:0;border-left:90px solid transparent;border-right:90px solid transparent;border-bottom:70px solid #8aa2c4;opacity:.7}
+.unit{position:absolute;bottom:14px;width:62px;height:62px;background-size:contain;background-repeat:no-repeat;background-position:50% 100%;image-rendering:pixelated;z-index:2}
+.unit.en{transform:scaleX(-1)}
+.unit .hp{position:absolute;left:12px;right:12px;top:-8px;height:5px;background:#300;border:1px solid #000}
+.unit .hp i{display:block;height:100%;background:#5be06b}
+.unit.en .hp i{background:#ff5a5a}
+.dmg{position:absolute;font:800 18px Kanit;color:#ffe27a;-webkit-text-stroke:3px #2a0a14;paint-order:stroke;z-index:5;transform:skewX(-12deg)}
+.skn{position:absolute;font:600 11px Kanit;color:#bfe8ff;-webkit-text-stroke:2px #102040;paint-order:stroke;z-index:5}
+/* top bar */
+#top{position:absolute;left:0;right:0;top:0;height:30px;display:flex;align-items:center;gap:8px;padding:0 8px;z-index:10}
+.pill{background:rgba(16,10,30,.82);border:2px solid #000;border-radius:7px;padding:1px 9px;font:600 13px Kanit;white-space:nowrap}
+.pill.t{color:var(--gold)}
+#players{margin-left:auto;display:flex;gap:4px}
+.pl{width:40px;height:24px;border-radius:5px;border:2px solid #000;background:#2a2140;display:flex;align-items:center;gap:2px;padding:0 2px;font:600 10px Kanit}
+.pl.me{border-color:var(--gold)}
+.pl .fc{width:18px;height:18px;border-radius:4px;background-size:190%;background-position:50% 6%;image-rendering:pixelated;background-color:#3b2f5e}
+.pl.out{opacity:.35}
+/* bottom panel */
+#bot{position:absolute;left:0;right:0;top:170px;bottom:0;background:linear-gradient(#2a2145,#1a1430);border-top:3px solid #000}
+.phase{position:absolute;inset:0;display:none}.phase.on{display:block}
+.label{position:absolute;font:600 11px Kanit;color:var(--dim)}
+/* portraits */
+.port{position:absolute;width:50px;height:50px;border-radius:7px;border:3px solid #000;background-size:185%;background-position:50% 5%;image-rendering:pixelated;background-color:#3b2f5e}
+.port .bar{position:absolute;left:-3px;right:-3px;bottom:-9px;height:6px;border:1px solid #000;background:#222}
+.port .bar i{display:block;height:100%}
+.port.ready{box-shadow:0 0 0 2px #fff6a8,0 0 12px 4px #ffd75a}
+.port .st{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:9px;color:var(--gold);-webkit-text-stroke:1px #000;paint-order:stroke}
+/* gem board */
+#board{position:absolute;left:250px;top:8px;width:344px;height:200px;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(5,1fr);gap:3px;padding:4px;background:#120d22;border:3px solid #000;border-radius:8px}
+.gem{border-radius:9px;position:relative;box-shadow:inset 0 -4px 0 rgba(0,0,0,.28),inset 0 3px 0 rgba(255,255,255,.35)}
+.gem:after{content:"";position:absolute;left:22%;top:16%;width:26%;height:22%;border-radius:50%;background:rgba(255,255,255,.75)}
+.g0{background:#e8423f}.g1{background:#3fbf5a}.g2{background:#4aa4ef}.g3{background:#9a62e8}.g4{background:#f2c33a}
+.gem.hit{outline:3px solid #fff;outline-offset:-2px;filter:brightness(1.35)}
+#combo{position:absolute;left:606px;top:10px;width:228px}
+.big{font:800 34px Kanit;color:var(--gold);-webkit-text-stroke:4px #2a0a14;paint-order:stroke;line-height:1}
+.row{display:flex;gap:6px;align-items:center;font:600 13px Kanit;margin-top:6px}
+.chip{background:#2f2650;border:2px solid #000;border-radius:6px;padding:1px 7px}
+.timer{position:absolute;left:250px;right:250px;top:-2px;height:6px}
+/* backpack */
+.hcol{position:absolute;top:6px;width:96px}
+.hcol .port{position:relative;margin:0 auto}
+.bag{display:grid;grid-template-columns:repeat(3,26px);grid-template-rows:repeat(3,26px);gap:3px;justify-content:center;margin-top:12px;position:relative}
+.cell{background:#120d22;border:2px solid #3d3263;border-radius:4px}
+.item{position:absolute;border:2px solid #000;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.r1{background:#cfd4e0}.r2{background:#7fd88e}.r3{background:#b48cf0}.r4{background:#ff8a7a}.r5{background:#ffd75a}
+.star{position:absolute;font-size:9px;color:#fff6a8;-webkit-text-stroke:1px #000;paint-order:stroke}
+#shop{position:absolute;left:600px;top:4px;right:6px;bottom:44px;background:#1a1430;border:2px solid #3d3263;border-radius:8px;padding:4px 6px}
+.go{position:absolute;right:8px;bottom:8px;font:800 14px Kanit;background:#5be06b;color:#06280c;border:3px solid #000;border-radius:8px;padding:2px 14px}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#e9e4f5}}
+</style></head><body>
+<div id="wrap">
+  <div id="tabs"><button data-p="gem" class="on">1. ช่วงเพชร 10 วิ</button><button data-p="fight">2. ช่วงสู้</button><button data-p="bag">3. ช่วงจัดกระเป๋า</button></div>
+  <div id="holder"><div id="stage">
+    <div id="battle">
+      <div class="mtn" style="left:40px"></div><div class="mtn" style="left:300px;border-bottom-width:90px"></div><div class="mtn" style="left:560px"></div>
+    </div>
+    <div id="top">
+      <span class="pill">⏸</span><span class="pill t" id="tmr">⏳ 07</span><span class="pill">รอบ 6</span><span class="pill">💰 23</span>
+      <div id="players"></div>
+    </div>
+    <div id="bot">
+      <div class="phase on" id="p-gem">
+        <div class="label" style="left:12px;top:4px">ทีมเรา (สีเพชร = เทพ)</div>
+        <div id="gemPorts"></div>
+        <div id="board"></div>
+        <div id="combo"><div class="label" style="position:static">คอมโบ</div><div class="big">x14</div>
+          <div class="row"><span class="chip">💰 +6</span><span class="chip">🎁 ไอเทม 1</span></div>
+          <div class="row" style="color:var(--dim);font-size:11px">ทุกคนได้กระดานชุดเดียวกัน · เลื่อนไม่จำกัด</div></div>
+      </div>
+      <div class="phase" id="p-fight">
+        <div id="fightPorts"></div>
+        <div class="label" style="left:12px;top:4px">แตะรูปเทพที่เรืองแสงเพื่อใช้ไม้ตาย</div>
+        <div class="label" style="right:12px;top:4px;color:#ff9a9a">ศัตรู: แก๊งเสือน้อย</div>
+      </div>
+      <div class="phase" id="p-bag">
+        <div id="bagCols"></div>
+        <div id="shop"><div class="label" style="position:static">ไอเทมที่ได้ / ร้าน</div><div id="tray" style="position:relative;height:150px"></div></div>
+        <div class="label" style="left:604px;bottom:12px;width:120px;line-height:1.2">ลากของไปใต้เทพ · แตะหมุน · ★ วางติดกันได้โบนัส</div><div class="go">พร้อม ▶</div>
+      </div>
+    </div>
+  </div></div>
+</div>
+<script>
+const A='../art/incoming/legends/px/';
+const ME=[['god_warrior','ซุนหงอคง',0],['god_assassin','โลกิ',1],['god_hunter','อาร์เทมิส',2],['god_mage','โอดิน',3],['god_support','อพอลโล',4]];
+const EN=['hero_warrior','hero_assassin','hero_hunter','hero_mage','hero_support'];
+const GC=['#e8423f','#3fbf5a','#4aa4ef','#9a62e8','#f2c33a'];
+const $=s=>document.querySelector(s);
+// battle units: ours facing right, theirs mirrored
+function units(ph){const b=$('#battle');b.querySelectorAll('.unit,.dmg,.skn').forEach(e=>e.remove());
+  ME.forEach(([k],i)=>{const d=document.createElement('div');d.className='unit';d.style.left=(ph==='fight'?150+i*52:40+i*58)+'px';d.style.bottom=(14+(i%2)*14)+'px';d.style.backgroundImage='url('+A+k+'.png)';d.innerHTML='<div class="hp"><i style="width:'+(70+i*6)+'%"></i></div>';b.appendChild(d)});
+  EN.forEach((k,i)=>{const d=document.createElement('div');d.className='unit en';d.style.left=(ph==='fight'?470+i*52:530+i*58)+'px';d.style.bottom=(14+((i+1)%2)*14)+'px';d.style.backgroundImage='url('+A+k+'.png)';d.innerHTML='<div class="hp"><i style="width:'+(90-i*12)+'%"></i></div>';b.appendChild(d)});
+  if(ph==='fight'){[[500,40,'-2,980'],[560,70,'-1,240'],[610,30,'-4,415']].forEach(([x,y,t])=>{const d=document.createElement('div');d.className='dmg';d.style.left=x+'px';d.style.top=y+'px';d.textContent=t;b.appendChild(d)});
+    const s=document.createElement('div');s.className='skn';s.style.left='212px';s.style.top='58px';s.textContent='กระบองยืดหด';b.appendChild(s)}}
+// players list (5 players, TFT style)
+$('#players').innerHTML=[['god_warrior',84,1],['hero_mage',61],['god_hunter',47],['hero_curse',22],['god_curse',0]].map(([k,h,me])=>'<div class="pl'+(me?' me':'')+(h?'':' out')+'"><div class="fc" style="background-image:url('+A+k+'.png)"></div>'+(h||'ตก')+'</div>').join('');
+// portraits
+function ports(el,x0,y0,dx,dy,big){el.innerHTML=ME.map(([k,n,c],i)=>{const v=[100,72,45,88,30][i];return '<div class="port'+(v>=100?' ready':'')+'" style="left:'+(x0+(i%big)*dx)+'px;top:'+(y0+Math.floor(i/big)*dy)+'px;background-image:url('+A+k+'.png);border-color:'+GC[c]+'"><div class="bar"><i style="width:'+v+'%;background:'+GC[c]+'"></i></div><div class="st">'+'★'.repeat(1+i%3)+'</div></div>'}).join('')}
+ports($('#gemPorts'),14,26,74,72,3);
+ports($('#fightPorts'),222,40,82,0,5);
+// gem board
+const seq='0132413024142301320412043113402340121340';$('#board').innerHTML=[...seq].map((g,i)=>'<div class="gem g'+g+(i>=17&&i<=19?' hit':'')+'"></div>').join('');
+// backpack: a 3x3 bag under each legend
+const IT=[['🗡️',1,2,'r3'],['🛡️',2,2,'r2'],['💍',1,1,'r5'],['🧪',1,1,'r1'],['📜',2,1,'r4'],['🔥',1,1,'r3'],['🪶',1,1,'r2']];
+$('#bagCols').innerHTML=ME.map(([k,n,c],i)=>'<div class="hcol" style="left:'+(6+i*118)+'px"><div class="port" style="background-image:url('+A+k+'.png);border-color:'+GC[c]+'"><div class="bar"><i style="width:60%;background:'+GC[c]+'"></i></div></div><div class="bag" id="bag'+i+'">'+'<div class="cell"></div>'.repeat(9)+'</div></div>').join('');
+function put(bag,ic,w,h,r,cx,cy,star){const b=$('#bag'+bag),e=document.createElement('div');e.className='item '+r;e.style.left=(Number(cx)*29+(96-3*26-6)/2)+'px';e.style.top=(cy*29)+'px';e.style.width=(w*26+(w-1)*3)+'px';e.style.height=(h*26+(h-1)*3)+'px';e.textContent=ic;if(star)e.innerHTML+='<span class="star" style="right:-5px;top:-6px">★</span>';b.appendChild(e)}
+put(0,'🗡️',1,2,'r3',0,0,1);put(0,'💍',1,1,'r5',1,0);put(0,'🔥',1,1,'r3',1,1);
+put(1,'🧪',1,1,'r1',2,2);put(1,'🗡️',1,2,'r2',0,1);
+put(2,'🪶',1,1,'r2',0,0);put(2,'📜',2,1,'r4',1,2,1);
+put(3,'🛡️',2,2,'r2',0,0);
+put(4,'💍',1,1,'r5',1,1);
+$('#tray').innerHTML=[['🗡️',1,2,'r4',8,22],['🛡️',2,2,'r3',44,22],['💍',1,1,'r5',110,22],['🧪',1,1,'r2',148,22],['📜',2,1,'r3',8,100],['🔥',1,1,'r4',72,100],['🪶',1,1,'r1',110,100]]
+  .map(([ic,w,h,r,x,y])=>'<div class="item '+r+'" style="left:'+x+'px;top:'+y+'px;width:'+(w*26+(w-1)*3)+'px;height:'+(h*26+(h-1)*3)+'px">'+ic+'</div>').join('')+'';
+// phases
+function show(p){document.querySelectorAll('.phase').forEach(e=>e.classList.toggle('on',e.id==='p-'+p));document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  $('#tmr').textContent=p==='gem'?'⏳ 07':p==='fight'?'⚔ สู้':'🎒 15';units(p)}
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.p)};
+function fit(){const t=$('#tabs').offsetHeight+18,k=Math.min((innerWidth-12)/844,(innerHeight-t)/390);$('#stage').style.transform='scale('+k+')';$('#holder').style.width=844*k+'px';$('#holder').style.height=390*k+'px'}
+addEventListener('resize',fit);fit();show(new URLSearchParams(location.search).get('p')||'gem');
+</script></body></html>
