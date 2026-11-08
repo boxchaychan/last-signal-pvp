@@ -881,6 +881,9 @@ const SK1 = {range: 380, r: 46, dmg: 18, cost: 18, speed: 1700, mark: 5, cd: 6, 
 let NOARC = null;
 const NOARCS = new Map();   // arc-free copies of other sheets (the dash: owner "ท่าจบ ลบเส้นสีขาวออก")
 function noArcOf(img) { let c = NOARCS.get(img); if (!c) { c = makeNoArc(img); NOARCS.set(img, c); } return c; }
+const BLUES = new Map();   // light-blue ghost copies (skill 4's dash after-images)
+function blueOf(img) { let c = BLUES.get(img); if (!c) { const b = noArcOf(img); c = document.createElement('canvas'); c.width = b.width; c.height = b.height; const g = c.getContext('2d');
+  g.drawImage(b, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = .82; g.fillStyle = '#3d9bff'; g.fillRect(0, 0, c.width, c.height); BLUES.set(img, c); } return c; }
 function makeNoArc(img) {
   const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
   const id = g.getImageData(0, 0, c.width, c.height), d = id.data, W = c.width, H = c.height, R = (META.arc && META.arc.ramp) || [];
@@ -1128,7 +1131,7 @@ function flurryStep(p, dt) {
   if (f.ph === 'cut') {
     f.u = Math.min(1, f.t / (SK4.cut * .7));
     p.x = f.ax + (f.bx - f.ax) * f.u; p.y = f.ay + (f.by - f.ay) * f.u;
-    f.gh -= dt; if (f.gh <= 0 && f.u < 1) { f.gh = .016; G.ghosts.push({x: p.x, y: p.y, dir: f.bx >= f.ax ? 0 : 4, t: 0, k: .5, atk: 3, an: 'dash', a: 1.6}); }
+    f.gh -= dt; if (f.gh <= 0 && f.u < 1) { f.gh = .012; G.ghosts.push({x: p.x, y: p.y, dir: f.bx >= f.ax ? 0 : 4, t: 0, k: .5, atk: 4, an: 'dash', a: 1.9, life: .34}); }
     if (!f.hit && f.u >= 1) { f.hit = 1; let any = false;
       for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 14, '#a5cdff'); any = true; }
       G.shake = Math.max(G.shake, 5); if (any) G.hs = Math.max(G.hs, .05); }
@@ -1142,8 +1145,6 @@ const CUTS = [0, 135, 45, 165, 105];
 function nextCut(p, f) {
   const deg = CUTS[f.n], th = deg * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), L = 140, s = f.n % 2 ? -1 : 1;
   f.ax = f.cx - c * L * s; f.ay = f.cy - sn * L * s; f.bx = f.cx + c * L * s; f.by = f.cy + sn * L * s; f.hit = 0; f.u = 0;
-  const hd = (Math.atan2(f.by - f.ay, f.bx - f.ax) * 180 / Math.PI + 360) % 360;   // owner chose the lightning dash instead of the blue cut
-  pfx('ldash' + (Math.round(hd / 15) * 15 % 360), f.cx, f.cy - 26);
   p.dir = f.bx >= f.ax ? 0 : 4;
 }
 function starFinish(p, f) {       // the heavy end: the star flashes, five strikes, a shockwave, everything inside takes a big hit
@@ -1370,7 +1371,7 @@ function step(dt) {
   for (const f of G.fx) { f.t += dt; if (f.vx !== undefined) { const dm = f.k === 'air' ? .965 : .9; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= dm; f.vy *= dm; } }
   G.fx = G.fx.filter(f => f.t < f.life);   // (an effect with t < 0 waits)
   for (const n of G.nums) n.t += dt; G.nums = G.nums.filter(n => n.t < .75);
-  for (const g of G.ghosts) g.t += dt; G.ghosts = G.ghosts.filter(g => g.t < .22);
+  for (const g of G.ghosts) g.t += dt; G.ghosts = G.ghosts.filter(g => g.t < (g.life || .22));
   if (G.banner) { G.banner.t += dt; if (G.banner.t > 1.6) G.banner = null; }
   G.shake = Math.max(0, G.shake - dt * 30);
   if (G.flash > 0) G.flash -= dt; if (G.kick) { G.kick.t -= dt; if (G.kick.t <= 0) G.kick = null; }
@@ -1543,8 +1544,8 @@ function draw() {
   for (const f of G.fx) if (f.k === 'puff') { ctx.globalAlpha = 1 - f.t / f.life; ctx.fillStyle = f.c; const s = (f.t < f.life * .5 ? 2 : 1) * Math.ceil(U / 2) * 2; ctx.fillRect(Math.round(f.x), Math.round(f.y), s, s); }
   ctx.globalAlpha = 1;
   // dodge after-images
-  for (const g of G.ghosts) { if (g.t < 0) continue; const ar = animRow('roll', g.dir), a = .35 * (1 - g.t / .22);   // after-images copy the roll pose
-    if (g.atk !== undefined) { const ar2 = animRow(g.an || 'attack', g.dir); if (ar2) drawCell(g.an === 'dash' ? noArcOf(ar2.img) : ar2.img, ar2.r, g.atk, g.x, g.y, ar2.flip, Math.min(1, a * (g.a || 1))); }
+  for (const g of G.ghosts) { if (g.t < 0) continue; const ar = animRow('roll', g.dir), a = .35 * (1 - g.t / (g.life || .22));   // after-images copy the roll pose
+    if (g.atk !== undefined) { const ar2 = animRow(g.an || 'attack', g.dir); if (ar2) drawCell(g.an === 'dash' ? blueOf(ar2.img) : ar2.img, ar2.r, g.atk, g.x, g.y, ar2.flip, Math.min(1, a * (g.a || 1))); }
     else if (g.still) drawStill(g.dir, g.x, g.y, a);
     else if (ar) drawCell(ar.img, ar.r, Math.min(ar.n - 1, Math.floor(g.k * ar.n)), g.x, g.y, ar.flip, a); else drawStill(g.dir, g.x, g.y, a); }
   // bodies, back to front

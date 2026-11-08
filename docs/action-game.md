@@ -268,6 +268,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   black lightning, red flecks, blue-purple streak; "เอา แต่งให้แล้ว" = use it as is) → `whole` clip turned offline to 24
   headings `fx/ldash0..345.png` (nearest, about the anchor) + glows from the bright pixels only; each skill-4 dash plays the
   heading it travels (`nextCut`), the blue cut (`bigcut*`) is no longer drawn.
+  Then owner "ไม่ต้องใช้อะไรเลย ตัวมันพุ่งเป็นเงารางๆ สีฟ้าก็พอ" + "ใส่ฟ้าให้เงา ให้เห็นเงามันด้วย": no effect on the dashes at all;
+  only her after-images, every 12 ms, in a blue copy of the dash sheet (`blueOf`: arc-free sheet tinted #3d9bff at 82%), up to
+  ~67% and fading over .34 s (ghosts now take their own `life`). Also effect pictures load with `?v=<hash of fx/manifest.json>`
+  (fetched no-cache), because the owner's browser kept old effect pictures.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
