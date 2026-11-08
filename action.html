@@ -829,7 +829,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['zstar', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all(['zstar', 'zspark', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1062,7 +1062,7 @@ function blinkBehind(p) {         // second press: appear behind the marked mons
 // and cuts through it 6 times from different sides (streaks + after-images, no new moves needed), then lands behind it.
 const SK2 = {cost: 15, cd: 5, dmg: 13, r: 140, wind: 70, step: 30, steps: 16, rec: 90, hits: [8, 16]};
 const SK3 = {range: 340, r: 96, dmg: 12, cost: 20, cd: 9, blind: 4, fly: .26, ms: [55, 55, 55, 55, 55, 75, 50, 50, 50]};
-const SK4 = {range: 320, r: 160, fr: .42, dmg: 9, fin: 22, n: 5, cost: 25, cd: 10, open: .34, cut: .12, end: .6};   // fr = field height / width (the rune circle's)
+const SK4 = {range: 320, r: 160, fr: .42, dmg: 9, fin: 22, n: 6, cost: 25, cd: 10, open: .34, cut: .12, end: .6};   // fr = field height / width (the rune circle's)
 const SKS = {1: SK1, 2: SK2, 3: SK3, 4: SK4};
 function startSk(p, k) { return k === 1 ? startSk1(p) : k === 2 ? startSpin(p) : k === 3 ? startBomb(p) : startFlurry(p); }
 function payFor(p, k) {
@@ -1119,7 +1119,6 @@ function startFlurry(p) {
   p.dir = dirOf(tx - p.x, ty - p.y); p.state = 'flurry'; p.a = null; p.th = null;
   p.fl = {cx: tx, cy: ty, V, ph: 'open', t: 0, n: -1, ax: p.x, ay: p.y, bx: p.x, by: p.y, u: 0, gh: 0, lines: [], flash: 0};
   p.inv = Math.max(p.inv, SK4.open + SK4.n * SK4.cut + SK4.end + .2);
-  G.fx.push({k: 'field', x: tx, y: ty, t: 0, life: SK4.open + SK4.n * SK4.cut + SK4.end + .2, fl: p.fl});
   pfx('dashcharge_b', p.x, p.y - 34); G.shake = Math.max(G.shake, 3);
   return true;
 }
@@ -1131,7 +1130,7 @@ function flurryStep(p, dt) {
   if (f.ph === 'cut') {
     f.u = Math.min(1, f.t / (SK4.cut * .7));
     p.x = f.ax + (f.bx - f.ax) * f.u; p.y = f.ay + (f.by - f.ay) * f.u;
-    if (!f.hit && f.u >= 1) { f.hit = 1; let any = false; pfx('zstar', f.bx, f.by - 30);
+    if (!f.hit && f.u >= 1) { f.hit = 1; let any = false; pfx('zstar', f.bx, f.by - 30); pfx('zspark', f.bx, f.by - 30);   // sparkles scatter where she lands
       for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 14, '#a5cdff'); any = true; }
       G.shake = Math.max(G.shake, 5); if (any) G.hs = Math.max(G.hs, .05); }
     if (f.t >= SK4.cut) { f.t = 0; if (++f.n < SK4.n) nextCut(p, f); else starFinish(p, f); }

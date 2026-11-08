@@ -276,6 +276,9 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   ~150-165° on from the last, the last ending near the middle), each dash a thin bright streak (VFX `dash_slash` in white /
   pale yellow / cyan, orange tip sparks made yellow, turned to 24 headings `fx/zstreak*` + warm glows) and a flash star
   (VFX `hit_star`, `fx/zstar.png`) where she lands; she is drawn only for the blink at each landing point; no after-images.
+  Owner "ดีละ วงเอาออก ไม่สวย เพิ่มเอฟเฟกต์ตอนลง กระจายประกาย หรือเพิ่มเป็น 6 ฮิต": the ground circle is gone (no `field` fx;
+  the aim ring still shows the area), a VFX `star_burst` (`fx/zspark.png`: a ring flash, little stars scattering) with the
+  flash star at every landing point, and 6 dashes (`SK4.n` 6).
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
