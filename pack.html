@@ -28,6 +28,7 @@ button{font-family:Kanit,sans-serif}
 #field{position:absolute;inset:0}
 .unit{position:absolute;background-size:contain;background-repeat:no-repeat;background-position:50% 100%;transform-origin:50% 100%}
 .unit.px{image-rendering:pixelated}
+.unit.anim:after{display:none}.unit .sh{position:absolute;width:32px;height:8px;border-radius:50%;background:rgba(0,0,0,.28);z-index:-1}
 .unit:after{content:"";position:absolute;left:18%;right:18%;bottom:-3px;height:8px;border-radius:50%;background:rgba(0,0,0,.28);z-index:-1}
 .unit .hp{position:absolute;left:14%;right:14%;top:-7px;height:5px;background:#300;border:1px solid #000}
 .unit .hp i{display:block;height:100%}
@@ -111,6 +112,20 @@ button{font-family:Kanit,sans-serif}
 .tal{flex:1;background:#2c2347;border:3px solid #000;box-shadow:0 0 0 2px var(--line);border-radius:10px;padding:8px;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:96px}
 .tal b{font-size:15px;color:var(--gold)}.tal span{font-size:12px;color:#e6ddff}
 .tal:hover{box-shadow:0 0 0 2px var(--gold)}
+/* Wukong test view (owner 2026-11-08 "เอาสวยๆ ก่อน 1 ตัว", "เอาตัวอื่นออก แค่หงอคงกับมอนสเตอร์") */
+#stage.testing #battle{height:390px}#stage.testing #bot,#stage.testing #top{display:none}
+#stage.testing #hills{height:150px}#stage.testing #floor{top:150px}
+#tbar{position:absolute;left:0;right:0;top:0;height:36px;display:none;align-items:center;gap:6px;padding:0 8px;z-index:500}
+#stage.testing #tbar{display:flex}
+.tb{font:600 13px Kanit;color:var(--ink);background:rgba(16,10,30,.85);border:2px solid #000;border-radius:7px;padding:1px 10px;cursor:pointer}
+.tb.on{background:var(--gold);color:#2a1c00}
+.spark{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffe27a 30%,rgba(255,170,60,0) 70%);z-index:290;pointer-events:none;animation:spk .28s ease-out forwards}
+@keyframes spk{from{transform:scale(.3);opacity:1}to{transform:scale(1.7);opacity:0}}
+.ring{position:absolute;width:0;height:0;z-index:6;pointer-events:none}
+.ring:before{content:"";position:absolute;left:-10px;top:-4px;width:20px;height:8px;border:4px solid rgba(255,226,140,.95);border-radius:50%;animation:rng .55s ease-out forwards}
+@keyframes rng{to{left:-150px;top:-50px;width:300px;height:100px;opacity:0;border-width:2px}}
+.shake{animation:shk .35s}
+@keyframes shk{20%{transform:translate(-6px,3px)}40%{transform:translate(6px,-3px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#e9e4f5}}
 </style></head><body>
 <div id="wrap"><div id="holder"><div id="stage">
@@ -126,6 +141,7 @@ button{font-family:Kanit,sans-serif}
     </div>
     <div class="phase" id="p-fight"><div id="fports"></div><div id="flog"></div><button class="chip sbtn" id="spd" style="position:absolute;right:10px;top:8px">⏩ x1</button><div class="label" id="fvs" style="right:12px;bottom:8px"></div></div>
   </div>
+  <div id="tbar"><button class="tb" id="tback">◀ หน้าแรก</button><span class="pill" style="color:var(--gold)">🐒 ทดสอบท่าหงอคง</span><button class="tb" id="tult">⚡ ไม้ตายเลย</button><button class="tb" id="tslow">🐢 ช้า</button><span class="pill" id="tinfo">เวฟ 1</span></div>
   <div id="ov"></div>
 </div></div></div>
 <script>
@@ -146,6 +162,9 @@ const ROLE={warrior:{rg:34,sp:62,cd:.95,dm:105,hp:1500},assassin:{rg:30,sp:95,cd
   mage:{rg:230,sp:45,cd:1.45,dm:130,hp:700,shot:'#c79bff'},support:{rg:220,sp:45,cd:1.35,dm:55,hp:820,shot:'#ffd75a',heal:1},curse:{rg:210,sp:45,cd:1.3,dm:75,hp:900,shot:'#8cff9a'}};
 const ULT={god_warrior:'ตีลังกาเมฆ',god_assassin:'ราชันแห่งเล่ห์',god_hunter:'ราตรีแห่งการล่า',god_mage:'หอกกุงเนียร์',god_support:'รถม้าสุริยะ',god_curse:'พิพากษาแห่งดูอัต',
   hero_warrior:'ทะลวงหมื่นทัพ',hero_assassin:'คาถาแยกเงา',hero_hunter:'ฝนธนูเชอร์วูด',hero_mage:'ฝนดาวตก',hero_support:'ศึกผาแดง',hero_curse:'คำสาปฟาโรห์'};
+// animation sheets (owner 2026-11-08 "ทำอนิเมชันให้หงอคง เอาที่มีอยู่ ลงแค่หงอคงตัวเดียวก่อน"): rows idle / attack / ult, feet at fx,fy, h0 = figure height
+const LANIM={god_warrior:{src:'art/incoming/legends/anim/god_warrior_as.png',cw:380,ch:369,fx:162,fy:353,h0:140,cols:13,na:6,hit:3,ns:13,shit:6,leap:1}};
+const LEAD=.24,PA=.32;  // attack frames: wind up during the last LEAD s before a hit, follow through for PA s after it
 // ---------- monsters (old pictures from the city game for now)
 const MON={walker:{n:'ซอมบี้',img:'art/px/z_walker.png',px:1,sc:.9,R:{rg:30,sp:48,cd:1.15},hp:260,dm:34,x:545},
   spit:{n:'กระสือ',img:'art/px/z_krasue.png',px:1,sc:.85,R:{rg:190,sp:40,cd:1.4,shot:'#9cff7a'},hp:170,dm:30,x:715},
@@ -221,7 +240,7 @@ function teamOf(p){const M=meta(p.bag),lvm=1+.05*(p.lv-1);
   return p.bag.leg.map(l=>{const t={};p.bag.items.forEach(it=>{const m=M.get(it);if(m.own.includes(l)&&IT[it.k].st)for(const s in IT[it.k].st)t[s]=(t[s]||0)+val(it.k,it.r,s,m.boost)});const Rl=ROLE[cls(l.k)];
     return{k:l.k,n:CAST[l.k],img:A+l.k+'.png',px:1,sc:1,R:Rl,hp:Math.round((Rl.hp+(t.hp||0))*lvm*(1+.15*tc(p,'hp'))),dm:(Rl.dm+(t.atk||0))*lvm*(1+.15*tc(p,'atk')),
       arm:(t.arm||0)+20*tc(p,'arm'),spd:(t.spd||0)+15*tc(p,'spd'),crit:5+(t.crit||0)+12*tc(p,'crit'),gau:Math.min(95,(t.gau||0)+30*tc(p,'gau')),heal:t.heal||0,burn:t.burn||0,cdr:t.cd||0,
-      regen:3*tc(p,'regen'),bx:l.x,by:l.y,ult:ULT[l.k]}})}
+      regen:3*tc(p,'regen'),bx:l.x,by:l.y,ult:ULT[l.k],an:LANIM[l.k]||null}})}
 function openFree(p,n){for(let x=0;x<BW&&n>0;x++)for(let y=0;y<BH&&n>0;y++){const k=key(x,y);if(!p.bag.open.has(k)&&N4.some(([a,b])=>p.bag.open.has(key(x+a,y+b)))){p.bag.open.add(k);n--}}}
 function applyTal(p,k){p.tal.push(k);if(k==='cells')openFree(p,6)}
 
@@ -248,15 +267,21 @@ function botShop(p){let rr=0;for(let g=0;g<20;g++){const fc=freeCells(p),opts=p.
 // ---------- battle engine (the same code runs drawn for your fight and silent for everyone else's)
 const dist=(a,b)=>Math.hypot(b.x-a.x,(b.z-a.z)*1.3);
 function mkU(s,side){const u=Object.assign({},s);u.s=side;if(u.x==null)u.x=side?804-s.bx*28:40+s.bx*28;if(u.z==null)u.z=8+s.by*28;
-  Object.assign(u,{mx:s.hp,cd:.3+R()*.5,g:s.gau||0,face:side?-1:1,lt:0,mv:0,ht:0,dead:0,dt:0,rt:0,bn:0,bnT:0,ba:0,el:null});return u}
+  Object.assign(u,{mx:s.hp,cd:.3+R()*.5,g:s.gau||0,face:side?-1:1,lt:0,mv:0,ht:0,dead:0,dt:0,rt:0,bn:0,bnT:0,ba:0,el:null,pa:0,ir:0,ua:null});return u}
 function mkB(a,b){return{U:[...a.map(s=>mkU(s,0)),...b.map(s=>mkU(s,1))],S:[],t:0,end:0,win:-1}}
 function kill(o,V){o.dead=1;o.hp=0;if(V)V.log('<b style="color:'+(o.s?'#ff9a9a':'#9fe8ff')+'">'+o.n+'</b> ล้ม')}
 function heal(u,h,V){h=Math.round(h);if(h<1||u.dead)return;u.hp=Math.min(u.mx,u.hp+h);if(V)V.num(u,'+'+h,'#7dff8a')}
 function fhit(u,o,mul,V){if(o.dead)return;let d=u.dm*mul*(.9+R()*.2);const cr=R()*100<(u.crit||5);if(cr)d*=2;
   d=Math.max(1,Math.round(d*100/(100+(o.arm||0))));o.hp-=d;o.ht=.12;if(u.burn){o.bn=Math.max(o.bn,u.burn);o.bnT=3}
   u.g=Math.min(100,u.g+14*(1+(u.cdr||0)/100));o.g=Math.min(100,o.g+6);
-  if(V)V.num(o,(cr?'คริ! ':'')+d,u.s?'#ff9a9a':cr?'#fff27a':'#ffe27a');if(o.hp<=0)kill(o,V)}
-function fult(u,tg,foes,mates,V){u.g=0;u.lt=.3;if(V)V.ult(u);const r=u.mon?'boss':cls(u.k);
+  if(V){V.num(o,(cr?'คริ! ':'')+d,u.s?'#ff9a9a':cr?'#fff27a':'#ffe27a');if(u.an&&V.spark)V.spark(o)}if(o.hp<=0)kill(o,V)}
+function startUlt(u,tg,V){u.g=0;const A=u.an,dur=A?1.3:.45,hit=A?dur*A.shit/A.ns:.15,side=tg.x>=u.x?1:-1;
+  u.ua={t:0,dur,hit,tg,done:0,leap:!!(A&&A.leap&&!u.R.shot),sx:u.x,sz:u.z,tx:tg.x-side*30,tz:tg.z};u.face=side;if(V)V.ult(u)}
+function ultTick(F,u,dt,V){const a=u.ua;a.t+=dt;if(a.leap&&a.t<a.hit){const q=a.t/a.hit,e=q*q*(3-2*q);u.x=a.sx+(a.tx-a.sx)*e;u.z=a.sz+(a.tz-a.sz)*e}
+  if(!a.done&&a.t>=a.hit){a.done=1;const foes=F.U.filter(o=>!o.dead&&o.s!==u.s),mates=F.U.filter(o=>!o.dead&&o.s===u.s);
+    if(V&&u.an&&V.slam)V.slam(u.x+u.face*20,u.z);if(foes.length){const tg=!a.tg.dead?a.tg:foes.reduce((b,o)=>dist(u,o)<dist(u,b)?o:b);fult(u,tg,foes,mates,V)}}
+  if(a.t>=a.dur)u.ua=null}
+function fult(u,tg,foes,mates,V){u.lt=.3;const r=u.mon?'boss':cls(u.k);
   if(r==='support'){mates.forEach(m=>heal(m,m.mx*.3,V));foes.forEach(o=>fhit(u,o,.6,V))}
   else if(r==='warrior')foes.filter(o=>dist(o,tg)<85).forEach(o=>fhit(u,o,2.3,V));
   else if(r==='assassin'){u.x=tg.x+(u.s?-26:26);u.z=tg.z;u.face=u.s?1:-1;fhit(u,tg,3.3,V)}
@@ -270,14 +295,16 @@ function bstep(F,dt,V){if(F.end)return;F.t+=dt;
     if(u.bnT>0){u.bnT-=dt;if((u.ba+=dt)>=1){u.ba=0;const d=Math.round(u.bn);u.hp-=d;if(V)V.num(u,d,'#ff9a3a');if(u.hp<=0){kill(u,V);continue}}}
     if(u.heal&&(u.dt+=dt)>=6){u.dt=0;heal(u,u.mx*u.heal/100,V)}
     if(u.regen&&(u.rt+=dt)>=3){u.rt=0;heal(u,u.mx*u.regen/100,V)}
+    u.pa=Math.max(0,u.pa-dt);if(u.ua){ultTick(F,u,dt,V);continue}
     const foes=F.U.filter(o=>!o.dead&&o.s!==u.s);if(!foes.length)continue;const mates=F.U.filter(o=>!o.dead&&o.s===u.s);
     const tg=u.R.dive?foes.reduce((a,o)=>(u.s?o.x<a.x:o.x>a.x)?o:a):foes.reduce((a,o)=>dist(u,o)<dist(u,a)?o:a);
-    if(u.ult&&u.g>=100){fult(u,tg,foes,mates,V);continue}
+    if(u.ult&&u.g>=100){startUlt(u,tg,V);continue}
     const melee=!u.R.shot,side=tg.x>=u.x?1:-1;let gx=u.x,gz=u.z;
     if(melee){gx=tg.x-side*u.R.rg;gz=tg.z}else{const d=dist(u,tg);if(d>u.R.rg){const k=1-u.R.rg/d;gx=u.x+(tg.x-u.x)*k;gz=u.z+(tg.z-u.z)*k}}
     const dx=gx-u.x,dz=(gz-u.z)*1.3,dl=Math.hypot(dx,dz);
+    u.ir=dl<=3;if(u.ir)u.face=side;
     if(dl>3){const st=Math.min(dl,u.R.sp*dt);u.x+=dx/dl*st;u.z+=dz/dl*st/1.3;u.mv=1;if(Math.abs(dx)>1)u.face=dx>0?1:-1}
-    else if(u.cd<=0){u.face=side;u.cd=u.R.cd/(1+(u.spd||0)/100);u.lt=.2;
+    else if(u.cd<=0){u.face=side;u.cd=u.R.cd/(1+(u.spd||0)/100);u.lt=.2;u.pa=PA;
       if(melee){fhit(u,tg,1,V);if(u.R.aoe)foes.forEach(o=>{if(o!==tg&&dist(o,tg)<60)fhit(u,o,.6,V)})}
       else if(u.R.heal&&R()<.35){const m=mates.reduce((a,o)=>o.hp/o.mx<a.hp/a.mx?o:a);heal(m,m.mx*.06,V);u.g=Math.min(100,u.g+10)}
       else F.S.push({x:u.x+side*14,z:u.z,h:34,u,tg,col:u.R.shot,ar:u.R.ar,done:0,el:null})}
@@ -317,13 +344,26 @@ function autoGames(n){const out=[];for(let i=0;i<n;i++){newGame(true);let guard=
 // ---------- screen
 if(HAS_DOM){
 const FIELD=$('#field'),TSPD=+new URLSearchParams(location.search).get('spd')||0;let MODE='shop',SPD=TSPD||LS.get('spd',1),LIVE=null,LOG=[],TT=null,D=null;
-const fy=z=>MODE==='fight'?126+z*1.45:121+z*.4,BS=()=>MODE==='fight'?1.3:1,uh=u=>62*(u.sc||1)*BS();
-const V={num(o,t,c){const d=document.createElement('div');d.className='dmg fl';d.style.left=(o.x-22)+'px';d.style.top=(fy(o.z)-uh(o)-16)+'px';d.style.color=c;d.textContent=t;FIELD.appendChild(d);setTimeout(()=>d.remove(),900)},
+const fy=z=>MODE==='test'?186+z*1.5:MODE==='fight'?126+z*1.45:121+z*.4,BS=()=>MODE==='test'?1.75:MODE==='fight'?1.3:1,uh=u=>62*(u.sc||1)*BS();
+const V={spark(o){const d=document.createElement('div');d.className='spark';d.style.left=(o.x+(R()-.5)*14)+'px';d.style.top=(fy(o.z)-uh(o)*.5+(R()-.5)*14)+'px';FIELD.appendChild(d);setTimeout(()=>d.remove(),300)},
+  slam(x,z){const d=document.createElement('div');d.className='ring';d.style.left=x+'px';d.style.top=fy(z)+'px';FIELD.appendChild(d);setTimeout(()=>d.remove(),600);FIELD.classList.remove('shake');void FIELD.offsetWidth;FIELD.classList.add('shake')},
+  num(o,t,c){const d=document.createElement('div');d.className='dmg fl';d.style.left=(o.x-22)+'px';d.style.top=(fy(o.z)-uh(o)-16)+'px';d.style.color=c;d.textContent=t;FIELD.appendChild(d);setTimeout(()=>d.remove(),900)},
   log(t){LOG.unshift(t);LOG.length=Math.min(LOG.length,3);$('#flog').innerHTML=LOG.map(x=>'<div>'+x+'</div>').join('')},
   ult(u){const s=document.createElement('div');s.className='skn';s.style.left=(u.x-40)+'px';s.style.top=(fy(u.z)-uh(u)-40)+'px';s.textContent=u.ult;FIELD.appendChild(s);setTimeout(()=>s.remove(),1200);
     V.log('<b style="color:'+(u.s?'#ff9a9a':'#9fe8ff')+'">'+u.n+'</b> ไม้ตาย <b>'+u.ult+'</b>')}};
+function animFrame(u,A,t){if(u.ua){const a=u.ua,f=a.t<a.hit?a.t/a.hit*A.shit:A.shit+(a.t-a.hit)/(a.dur-a.hit)*(A.ns-A.shit);return[2,Math.min(A.ns-1,Math.floor(f))]}
+  if(u.pa>0)return[1,Math.min(A.na-1,A.hit+Math.floor((1-u.pa/PA)*(A.na-A.hit)))];
+  if(u.ir&&!u.mv&&u.cd<LEAD&&!u.dead)return[1,Math.min(A.hit-1,Math.floor((LEAD-Math.max(0,u.cd))/LEAD*A.hit))];return[0,0]}
+function syncAnim(u,F,bs){const A=u.an,k=60*(u.sc||1)/A.h0;
+  if(!u.el){const e=document.createElement('div');e.className='unit anim';e.style.width=A.cw*k+'px';e.style.height=A.ch*k+'px';e.style.backgroundImage='url('+A.src+')';
+    e.style.backgroundSize=A.cols*A.cw*k+'px '+3*A.ch*k+'px';e.style.transformOrigin=A.fx*k+'px '+A.fy*k+'px';
+    e.innerHTML='<div class="hp" style="left:'+(A.fx*k-20)+'px;right:auto;width:40px;top:'+((A.fy-A.h0)*k-9)+'px"><i></i></div><div class="sh" style="left:'+(A.fx*k-16)+'px;top:'+(A.fy*k-4)+'px"></div>';FIELD.appendChild(e);u.el=e}
+  const [r,f]=animFrame(u,A,F.t),bob=u.mv?-Math.abs(Math.sin(F.t*11+u.x))*4:0,br=u.mv||r?1:1+.018*Math.sin(F.t*3.1+u.x);
+  u.el.style.backgroundPosition=(-f*A.cw*k)+'px '+(-r*A.ch*k)+'px';u.el.style.left=(u.x-A.fx*k)+'px';u.el.style.top=(fy(u.z)-A.fy*k)+'px';u.el.style.zIndex=10+Math.round(u.z);
+  u.el.style.transform='translateY('+(bob+(u.dead?10:0))+'px) scale('+(u.face*bs)+','+(bs*br)+')';u.el.style.opacity=u.dead?.15:1;u.el.style.filter=u.ht>0?'brightness(1.8)':'';
+  const i=u.el.firstChild.firstChild;i.style.width=Math.max(0,u.hp/u.mx*100)+'%';i.style.background=u.s?'#ff5a5a':'#5be06b'}
 function syncDOM(F){const bs=BS();
-  for(const u of F.U){if(!u.el){const e=document.createElement('div');e.className='unit'+(u.px?' px':'');u.w=62*(u.sc||1);e.style.width=e.style.height=u.w+'px';e.style.backgroundImage='url('+u.img+')';e.innerHTML='<div class="hp"><i></i></div>';FIELD.appendChild(e);u.el=e}
+  for(const u of F.U){if(u.an){syncAnim(u,F,bs);continue}if(!u.el){const e=document.createElement('div');e.className='unit'+(u.px?' px':'');u.w=62*(u.sc||1);e.style.width=e.style.height=u.w+'px';e.style.backgroundImage='url('+u.img+')';e.innerHTML='<div class="hp"><i></i></div>';FIELD.appendChild(e);u.el=e}
     const bob=u.mv?-Math.abs(Math.sin(F.t*11+u.x))*4:0,lx=u.lt>0?u.face*10*Math.sin(u.lt/.2*Math.PI):0;
     u.el.style.left=(u.x-u.w/2)+'px';u.el.style.top=(fy(u.z)-u.w)+'px';u.el.style.zIndex=10+Math.round(u.z);
     u.el.style.transform='translate('+lx+'px,'+(bob+(u.dead?10:0))+'px) scale('+(u.face*bs)+','+bs+')';u.el.style.opacity=u.dead?.15:1;
@@ -331,7 +371,7 @@ function syncDOM(F){const bs=BS();
   for(const p of F.S){if(p.done){if(p.el)p.el.remove();continue}if(!p.el){p.el=document.createElement('div');p.el.className='shot'+(p.ar?' ar':'');p.el.style.color=p.col;p.el.style.background=p.col;FIELD.appendChild(p.el)}
     p.el.style.left=(p.x-5)+'px';p.el.style.top=(fy(p.z)-p.h*bs-3)+'px';p.el.style.transform='rotate('+Math.atan2(fy(p.tg.z)-fy(p.z),p.tg.x-p.x)+'rad)'}
   F.S=F.S.filter(p=>!p.done)}
-function setMode(m){MODE=m;$('#stage').classList.toggle('fighting',m==='fight');$('#p-shop').classList.toggle('on',m==='shop');$('#p-fight').classList.toggle('on',m==='fight');
+function setMode(m){MODE=m;$('#stage').classList.toggle('fighting',m==='fight');$('#stage').classList.toggle('testing',m==='test');$('#p-shop').classList.toggle('on',m==='shop');$('#p-fight').classList.toggle('on',m==='fight');
   const k=G.round?kindOf(G.round):'mon';$('#battle').className=k==='boss'?'boss':k==='mon'?'mon':''}
 function preview(){if(MODE!=='shop'||!G.round||LIVE)return;FIELD.innerHTML='';const m=me(),k=kindOf(G.round),F=mkB(teamOf(m),foeOf(m));syncDOM(F);
   const o=G.match&&G.match.get(m),txt=k==='pvp'?'รอบนี้ ⚔️ สู้กับ '+o.name:k==='boss'?'รอบนี้ 💀 บอส '+MON.boss.n:'รอบนี้ 👹 มอน '+waveList(G.round).length+' ตัว';
@@ -411,12 +451,24 @@ $('#spd').onclick=()=>{SPD=SPD===1?2:1;LS.set('spd',SPD);$('#spd').textContent='
 // overlays
 function ov(h){$('#ov').innerHTML='<div class="card">'+h+'</div>';$('#ov').classList.add('on');G.ov=true}
 function closeOv(){$('#ov').classList.remove('on');$('#ov').innerHTML='';G.ov=false}
+// ---------- Wukong test: one legend against endless monster waves, big, with slow motion
+let TF=null,TSAVE=0;
+function testStart(){closeOv();LIVE=null;G.phase='test';setMode('test');FIELD.innerHTML='';LOG=[];$('#battle').className='mon';
+  const wk={k:'god_warrior',n:CAST.god_warrior,img:A+'god_warrior.png',px:1,sc:1,R:ROLE.warrior,hp:4000,dm:150,arm:30,spd:0,crit:12,gau:60,heal:0,burn:0,cdr:80,regen:6,bx:6,by:1.5,ult:ULT.god_warrior,an:LANIM.god_warrior};
+  TF=mkB([wk],[]);TF.wave=0;testWave();LIVE={F:TF,last:performance.now(),endT:0,test:1};requestAnimationFrame(loop)}
+function testWave(){const F=TF;F.wave++;F.U.filter(u=>u.s&&u.el).forEach(u=>u.el.remove());F.U=F.U.filter(u=>!u.s);const w=F.U[0];w.dead=0;w.hp=w.mx;
+  const n=3+F.wave%3;for(let i=0;i<n;i++){const t=i===n-1&&F.wave%2===0?'spit':'walker',M=MON[t];
+    F.U.push(mkU({k:'mon_'+t,n:M.n,img:M.img,px:M.px,sc:M.sc,hue:M.hue,R:M.R,mon:1,hp:520,dm:22,arm:0,crit:0,gau:0,ult:null,x:870+i*45,z:[50,18,82,34,66][i%5]},1))}
+  F.S=[];F.end=0;F.win=-1;$('#tinfo').textContent='เวฟ '+F.wave+' · ซอมบี้ '+n}
+$('#tback').onclick=()=>{LIVE=null;if(TSAVE){SPD=TSAVE;TSAVE=0}$('#tslow').classList.remove('on');FIELD.innerHTML='';setMode('shop');lobby()};
+$('#tult').onclick=()=>{if(TF&&TF.U[0]&&!TF.U[0].ua)TF.U[0].g=100};
+$('#tslow').onclick=()=>{if(TSAVE){SPD=TSAVE;TSAVE=0}else{TSAVE=SPD;SPD=.35}$('#tslow').classList.toggle('on',!!TSAVE)};
 function lobby(){G.phase='lobby';const best=LS.get('best',0);
   ov('<h1>กระเป๋าเทพ</h1><div class="sub">ต้นแบบลองเล่น · 5 คน (คุณ + บอท 4) · คนสุดท้ายที่รอดชนะ</div><img class="lineup" src="'+A+'_lineup.png" alt="">'+
-    '<div><button class="btn" id="bplay">▶ เริ่มเล่น</button> <button class="btn2" id="bhow">วิธีเล่น</button></div>'+
+    '<div><button class="btn" id="btest" style="background:var(--gold);color:#2a1c00">🐒 ทดสอบท่าหงอคง</button> <button class="btn" id="bplay">▶ เริ่มเล่น</button> <button class="btn2" id="bhow">วิธีเล่น</button></div>'+
     '<div class="how" id="howt" hidden>1. <b>ช่วงร้าน:</b> ซื้อของ ลากลงกระเป๋า วางให้แตะเทพ ของที่แตะเทพตัวไหนก็เป็นของตัวนั้น<br>2. กด <b>พร้อม</b> (หรือรอเวลาหมด) แล้วทีมสู้เอง ตัวตีใกล้เดินเข้าหา ตัวยิงไกลยืนยิง เกจเต็มใช้ไม้ตายเอง<br>3. แพ้เสียเลือด ❤️ หมด = ตกรอบ · ทุกรอบได้เงิน +5 (เก็บเงินไว้ได้ดอกเบี้ย สูงสุด +3)<br>4. รอบ 4, 9, 14 ... ⚔️ สู้กับผู้เล่นอื่น · รอบ 10, 20 💀 บอส แล้วเลือกทาเลนต์ · รอบ 5, 10, 15 🌟 ร้านพิเศษ ของดีออกบ่อย</div>'+
     (best?'<div class="sub">ดีที่สุด: อันดับ '+best+'</div>':''));
-  $('#bplay').onclick=()=>{closeOv();newGame(false);startRound()};$('#bhow').onclick=()=>{$('#howt').hidden=!$('#howt').hidden}}
+  $('#btest').onclick=testStart;$('#bplay').onclick=()=>{closeOv();newGame(false);startRound()};$('#bhow').onclick=()=>{$('#howt').hidden=!$('#howt').hidden}}
 function startRound(){beginRound();G.phase='shop';G.timer=G.round===1?60:40;me().sel=null;setMode('shop');render();const m=me();
   toast(G.round===1?'ซื้อของ ลากลงกระเป๋า วางให้แตะเทพ แล้วกด พร้อม':'รอบ '+G.round+' · +'+m.inc+'💰'+(special(G.round)?' · 🌟 ร้านพิเศษ':'')+(kindOf(G.round)==='pvp'?' · ⚔️ สู้กับ '+G.match.get(m).name:''))}
 function ready(){if(G.phase!=='shop')return;G.phase='fight';const m=me(),k=kindOf(G.round);G.P.filter(p=>p.alive).forEach(doMerge);
@@ -428,6 +480,7 @@ function ready(){if(G.phase!=='shop')return;G.phase='fight';const m=me(),k=kindO
   LIVE={F,last:performance.now(),endT:0};requestAnimationFrame(loop)}
 function loop(now){const L=LIVE;if(!L)return;let dt=Math.min(.1,(now-L.last)/1000)*SPD;L.last=now;
   while(dt>0){const d=Math.min(.05,dt);bstep(L.F,d,V);dt-=d}syncDOM(L.F);
+  if(L.test){if(L.F.end){if(!L.endT)L.endT=now;if(now-L.endT>900){L.endT=0;testWave()}}requestAnimationFrame(loop);return}
   const ps=document.querySelectorAll('#fports .port');L.F.U.filter(u=>!u.s).forEach((u,i)=>{const e=ps[i];if(!e)return;const b=e.querySelectorAll('s i');b[0].style.width=Math.max(0,u.hp/u.mx*100)+'%';b[1].style.width=u.g+'%';e.classList.toggle('ready',u.g>=90&&!u.dead);e.style.opacity=u.dead?.35:1});
   if(L.F.end){if(!L.endT){L.endT=now;V.log(L.F.win===0?'<b style="color:#7dff8a">ชนะ!</b>':'<b style="color:#ff8a8a">แพ้...</b>')}if(now-L.endT>1300/SPD){LIVE=null;fightDone(L.F);return}}
   requestAnimationFrame(loop)}
@@ -451,7 +504,7 @@ setInterval(()=>{if(G.phase!=='shop'||G.ov)return;G.timer--;$('#tmr').textConten
 const tmrSet=()=>{$('#tmr').textContent=G.phase==='shop'?'⏳ '+G.timer:G.phase==='fight'?'⚔ สู้':'—'};setInterval(tmrSet,250);
 function fit(){const k=Math.min(innerWidth/844,innerHeight/390);$('#stage').style.transform='scale('+k+')';$('#holder').style.width=844*k+'px';$('#holder').style.height=390*k+'px'}
 addEventListener('resize',fit);fit();
-newGame(false);G.round=1;roll(me());setMode('shop');G.round=0;render();lobby();
-window.PACK={G,autoGames,newGame,startRound,ready};
+newGame(false);G.round=1;roll(me());setMode('shop');G.round=0;render();lobby();if(new URLSearchParams(location.search).get('test'))testStart();
+window.PACK={G,autoGames,newGame,startRound,ready,live:()=>LIVE};
 }
 </script></body></html>
