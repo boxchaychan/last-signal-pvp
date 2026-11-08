@@ -219,7 +219,9 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
 - Cuts (owner "ไม่เอาเส้นตรง" → "รอยฟันแบบรอยผ่า"): skill 4 puts a big cyan VFX `cross_slash` (`fx/xcut.png`, size 2.6) on every
   monster each pass; the spin throws crescents (`slash_trail`, cyan, 8 facings × 3 sizes: `dslashs*` 1.5, `dslash*` 2.3,
   `dslashl*` 3.3; `slashFor(deg, size)` picks the one that bulges that way) in three layers round her every other step
-  (owner's picture: 3–4 overlapping swirls of different sizes). Made with `tools/pl_vfx.py <export> <key> '<part json>'`
+  (owner's picture: 3–4 overlapping swirls of different sizes). Then (owner "ซ้อนกันให้ได้วงกลม วงละ 90 องศา"): every 4 steps a
+  full circle = 4 crescents bulging out 90° apart, two sizes at once (mid + large, the large a beat later), each set turned
+  45° from the last; 55% see-through with a weaker glow, only the arc nearest the camera in front of her, so her body shows. Made with `tools/pl_vfx.py <export> <key> '<part json>'`
   (start → add_part → export → download → `vfx_import.py`, all free); `_glow` copies for each.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
