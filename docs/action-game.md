@@ -252,6 +252,9 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   light / white core, glow), a VFX `bolt_strike` (`fx/starbolt.png`) at every point she reaches, everything inside hit per
   line (5 × 9); `starFinish`: the star flashes, five strikes together, VFX `shockwave_ring` (`fx/starshock.png`), a burst,
   22 damage, hit-stop .14, shake 11, camera kick.
+  Owner "ไม่สวย เอาดาวออก": the rune circle re-made without its hexagram / star ring (My effects "rogue_rune_nostar" →
+  `fx/starrune.png`), and each dash line now only flashes (.22 s after the dash) instead of staying, so no star builds up;
+  the five dashes, lightning strikes and the heavy finish stay.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
