@@ -290,6 +290,17 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   star on each monster hit instead of a crit-hit each.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
+- **Skills 5 and 6** (owner "สกิล 5 6 ช่วยคิด" → my two proposals → "จัดมา ขอสวยๆ"; no new moves, no credits): Z / ล่องหน =
+  **vanish** (`SK5`: 4 s, cost 20, cd 12): purple VFX `smoke_poof` (`fx/vanish.png`), she is drawn as a see-through purple
+  shadow (ctx.filter grayscale → sepia → hue 228° → saturate, alpha .62, purple glow, rising purple wisps), runs 30%
+  faster, monsters lose her (random hops, no lunges); her next attack or attacking skill (`unstealth` in `startAtk` /
+  `startSk`) opens a .9 s ambush: every hit ×3 with a purple VFX `crit_hit` (recoloured, `fx/ambush.png`) and big purple
+  numbers. X / พิษ = **poison blades** (`SK6`: 7 s, cost 15, cd 14): VFX `charge_up` green on cast, a green glow on her
+  hand, green bubbles, her slash glow hue-rotated green; every hit adds a stack (`poisonAdd`, max 5, ticks 2 × stacks every
+  .6 s for 4 s, green numbers, VFX `poison_bubbles` loop over the monster + one pip per stack); at 5 stacks it bursts (28,
+  VFX `fire_blast` recoloured green `fx/pburst.png`) and splashes 2 stacks onto monsters within 90. Every hit of hers goes
+  through `rogueDmg` (doHit, hitMob, knifeLand); deaths by poison via `mobDie`. Phone: 2 more buttons (ล่องหน, พิษ) left of
+  the arc, purple / green while active; PC squares Z X. Tests `?test=stealth|venom&n=<steps>`.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
   the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =
