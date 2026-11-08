@@ -65,6 +65,15 @@ narrow frame, never into the top 30% = the head) + `smear()` (non-still colours)
 173,147,123), so it cannot be picked out; a longer blade means regenerating every move (~50 credits). Plan: order longer
 blades in the GPT design of rank 2 (dual daggers).
 
+Glow + reach (owner sent a clip of strong glowing golden arcs, "สีแรงแสง", and "ระยะฟันมันสั้น"): `act_sheet.py --arc=air|gold|white`
+picks the arc ramp; the attack gets `rogue_attack_glow.png` (arc pixels blurred) that the game adds with 'lighter'; a see-through
+air blade (`airFrames`, colours from `META.arc`) flies on from each hit (760 / 900 px/s, damping .965) with a soft glow
+(`glowSprite`/`glowAt`), white-warm glow on impacts; reach 180 / 230. Owner still to choose A gold or B air (built: air).
+Bigger world (owner: "ไม่อยากลดตัวละคร เดี๋ยวเบลอ ก็ขยายแมพ สิ่งก่อสร้าง ให้ใหญ่ ให้ตัวละครดูเล็ก" — the 2x2-merge far camera
+was tried and dropped): field 4200×2800; `makeProps` = sprite props drawn in the depth pass (fade to 45% when the rogue
+stands behind) with baked ground shadows and solid bases (`blockProps`: ellipses, building footprints `rect`): huge trees
+(`bigTree`, ~3× the rogue), boulders, tall ruined pillars, a hamlet of 4 cottages (`house`) and 2 ruined watchtowers (`tower`).
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of

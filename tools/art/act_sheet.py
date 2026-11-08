@@ -46,6 +46,17 @@ def dedust(im):
 # one WHITE blade-arc ramp for every direction (owner 2026-11-08: the arcs looked brown; then "ไม่ต้องทำมาซ้อน" =
 # fix the arc inside the attack frames, no extra wave drawn on top)
 SMEAR = [(196, 210, 226), (228, 236, 244), (255, 255, 255)]
+# owner 2026-11-08 "ทำสีเหมือนอากาศหน่อย": the arcs are now pale air blue-white; outside the body they are see-through
+SMEAR = [(168, 212, 238), (206, 236, 250), (246, 253, 255)]
+AIRA = [120, 170, 215]   # alpha of the three steps where the arc sticks out beyond the body (over the body it stays solid)
+# --arc=gold|air|white picks the arc colour; owner 2026-11-08 sent a clip with strong, glowing golden arcs ("สีแรงแสง"),
+# so the attack also gets a glow sheet (<prefix>_attack_glow.png: the arc pixels blurred) that the game adds on top
+ARCS = {'air': ([(168, 212, 238), (206, 236, 250), (246, 253, 255)], [120, 170, 215], (120, 200, 255)),
+        'gold': ([(255, 150, 30), (255, 214, 70), (255, 248, 196)], [235, 245, 255], (255, 170, 40)),
+        'white': ([(196, 210, 226), (228, 236, 244), (255, 255, 255)], [255, 255, 255], (255, 240, 210))}
+GLOWC = ARCS['air'][2]
+for _a in sys.argv[3:]:
+    if _a.startswith('--arc='): SMEAR, AIRA, GLOWC = ARCS[_a[6:]]
 
 def arcwhite(fr, grow=3):
     # PixelLab often paints the arc with the skin's own colours, so colour alone cannot find it: on a swing frame
@@ -62,10 +73,12 @@ def arcwhite(fr, grow=3):
             ref = np.zeros(a.shape[:2], bool)
             for j in near: ref |= A[j][..., 3] > 0
             rgb = a[..., :3].astype(int); L = .3 * rgb[..., 0] + .59 * rgb[..., 1] + .11 * rgb[..., 2]
-            arc = (a[..., 3] > 0) & ~ndimage.binary_dilation(ref, iterations=grow) & (L > 100)   # dark limb outlines stay
+            body = ndimage.binary_dilation(ref, iterations=grow)
+            arc = (a[..., 3] > 0) & ~body & (L > 100)   # dark limb outlines stay
             lab, n = ndimage.label(arc, structure=np.ones((3, 3)))
             if n:   # thin slivers left by a head or leg that moved a few pixels are not arcs: keep blobs of 30+ px only
                 sz = ndimage.sum(arc, lab, range(1, n + 1)); arc &= np.isin(lab, 1 + np.where(sz >= 30)[0])
+            out_arc = arc.copy()
             if arc.sum() >= 120 and near:
                 # where the arc crosses the body it is painted in light skin tones over the dark clothes: grow the arc
                 # into light pixels that were dark / empty in the nearest narrow frame (owner: one tone for every arc)
@@ -78,7 +91,8 @@ def arcwhite(fr, grow=3):
                     nb = ndimage.binary_dilation(arc) & cand & ~arc
                     if not nb.any(): break
                     arc |= nb
-            for lo, c in zip([-1, 120, 190], SMEAR): a[arc & (L > lo), :3] = c
+            for lo, c, al in zip([-1, 120, 190], SMEAR, AIRA):
+                a[arc & (L > lo), :3] = c; a[out_arc & (L > lo), 3] = al   # see-through only beyond the body
         out.append(Image.fromarray(a))
     return out
 PAL = None
@@ -89,6 +103,7 @@ def smear(im):
     # they are repainted on SMEAR by brightness, so every direction's arc looks the same. Body colours are untouched.
     import numpy as np
     a = np.array(im).astype(int); rgb = a[..., :3]; m = a[..., 3] > 0
+    if not len(SMEAR): return im
     d = np.full(m.shape, 1e9)
     for c in PAL: d = np.minimum(d, ((rgb - c) ** 2).sum(2))
     L = .3 * rgb[..., 0] + .59 * rgb[..., 1] + .11 * rgb[..., 2]
@@ -105,7 +120,7 @@ def frames(folder, d, name):
         for f in fl.split(','):
             fs = sorted(glob.glob(os.path.join(base, 'animations', f, d, 'frame_*.png'))) or fs
     out = [Image.open(f).convert('RGBA') for f in fs]
-    if name in ('attack', 'chop') and out: return [smear(im) for im in arcwhite(out)]   # attacks keep their detached blade smears
+    if name in ('attack', 'chop') and out: return arcwhite([smear(im) for im in out])   # attacks keep their detached blade smears
     return [dedust(im) for im in out]
 
 def hits(fr):
@@ -126,7 +141,8 @@ os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
 still = Image.new('RGBA', (8 * C, C))
 for i, im in enumerate(rot): still.alpha_composite(im, (i * C + pad, pad))
 still.save(out + '_still.png', optimize=True)
-meta = {'cell': C, 'fx': C // 2, 'fy': pad + 125, 'dirs': DIRS, 'still': pre + '_still.png', 'anims': {}}
+meta = {'cell': C, 'fx': C // 2, 'fy': pad + 125, 'dirs': DIRS, 'still': pre + '_still.png', 'anims': {},
+        'arc': {'ramp': SMEAR, 'alpha': AIRA, 'glow': GLOWC}}
 for name, A in data.items():
     have = [d for d in DIRS if A[d]]
     if not have: continue
@@ -141,6 +157,15 @@ for name, A in data.items():
         an, d = key.split('/')
         if an == name and f in M: M[d] = dict(M[f], flip=mir, alias=f)
     sheet.save(f'{out}_{name}.png', optimize=True); meta['anims'][name] = M
+    if name == 'attack':
+        # glow layer: every arc pixel (exactly a SMEAR colour) blurred into a soft halo of GLOWC, added by the game
+        import numpy as np
+        from scipy import ndimage
+        s = np.array(sheet); m = np.zeros(s.shape[:2], bool)
+        for c in SMEAR: m |= (s[..., 3] > 0) & (s[..., 0] == c[0]) & (s[..., 1] == c[1]) & (s[..., 2] == c[2])
+        g = ndimage.gaussian_filter(m.astype(float), 3.2) * 2.2 + ndimage.gaussian_filter(m.astype(float), 8) * 1.4
+        gl = np.zeros(s.shape, np.uint8); gl[..., :3] = GLOWC; gl[..., 3] = (np.clip(g, 0, 1) * 255).astype(np.uint8)
+        Image.fromarray(gl).save(f'{out}_{name}_glow.png', optimize=True); M['glow'] = f'{pre}_{name}_glow.png'
     print(name.ljust(7), sheet.size, 'dirs', len(have), 'frames', cols, {d: M[d].get('hits') for d in DIRS if d in M and 'hits' in M[d]})
 json.dump(meta, open(out + '.json', 'w'), indent=1)
 print('cell', C, 'feet', meta['fx'], meta['fy'])
