@@ -205,7 +205,18 @@ for name, A in data.items():
         from scipy import ndimage
         s = np.array(sheet); m = np.zeros(s.shape[:2], bool)
         for c in SMEAR: m |= (s[..., 3] > 0) & (s[..., 0] == c[0]) & (s[..., 1] == c[1]) & (s[..., 2] == c[2])
-        g = ndimage.gaussian_filter(m.astype(float), 3.5) * 2.2 + ndimage.gaussian_filter(m.astype(float), 10) * 1.8
+        # one cell at a time (no light spilling in from the next frame), the faint tail cut to zero and a fade before the
+        # cell edge: owner 2026-11-08 saw two straight vertical lines either side of her when attacking = the glow layer's
+        # very faint light filling the whole cell and stopping at its border
+        cs = round(C * K); g = np.zeros(m.shape)
+        ramp = np.minimum(np.arange(cs), np.arange(cs)[::-1]) / 14.0; edge = np.clip(np.minimum.outer(ramp, ramp), 0, 1)
+        for y0 in range(0, m.shape[0], cs):
+            for x0 in range(0, m.shape[1], cs):
+                mc = m[y0:y0 + cs, x0:x0 + cs].astype(float)
+                if not mc.any(): continue
+                gc = ndimage.gaussian_filter(mc, 3.5, mode='constant') * 2.2 + ndimage.gaussian_filter(mc, 10, mode='constant') * 1.8
+                gc = np.clip((gc - .08) / .92, 0, 1) * edge[:mc.shape[0], :mc.shape[1]]
+                g[y0:y0 + cs, x0:x0 + cs] = gc
         gl = np.zeros(s.shape, np.uint8); gl[..., :3] = GLOWC; gl[..., 3] = (np.clip(g, 0, 1) * 255).astype(np.uint8)
         Image.fromarray(gl).save(f'{out}_{name}_glow.png', optimize=True); M['glow'] = f'{pre}_{name}_glow.png'
     print(name.ljust(7), sheet.size, 'dirs', len(have), 'frames', cols, {d: M[d].get('hits') for d in DIRS if d in M and 'hits' in M[d]})

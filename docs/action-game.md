@@ -88,6 +88,10 @@ the arc's own edge colour/alpha.
 Owner: "สีขาวตอนกดฟัน 2 เหมือนเอา bg ออกไม่หมด" → the 16% white screen flash on the last hit is gone (camera kick stays), the
 slime hit/warning flash is a 55% white overlay instead of a solid white silhouette, the hit glow is smaller/softer (smoothed).
 
+Owner's screenshot (two red lines either side of her while attacking): the glow layer's faint tail filled the whole cell and
+stopped at its border → `act_sheet.py` now blurs the glow one cell at a time, cuts the faint tail (< 8%) to zero and fades
+it out over the last 14 px before each cell edge (every cell border is 0).
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of
