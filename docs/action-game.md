@@ -284,6 +284,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   (`fx/critx.png`, already rendered from pixelfx impacts/crit-hit) is the finishing hit and the hit on every monster each
   pass ("เอาเอฟเฟกต์ตอนมอนสเตอร์มาใส่"); "สีเหลืองเข้มกว่านี้" + "เหลืองขอบดำเข้มๆ" → streaks / stars / sparkles moved to deep gold
   (#f0a800 / #ffce28 / #ffec78) with a 2 px near-black outline (1 px on the sparkle), faint pixels and tiny specks dropped.
+  Then "เอาสีเดียวกับแสงฟัน": every skill-4 effect re-made from the original VFX sheets in the attack's slash-light ramp
+  (`rogue.json` arc ramp #a8d4ee / #ceecfa / #f6fdff, glow 120,200,255), no outline; `fx/critx_ice.png` for the finish;
+  per-effect strengths `PFXA` (crit-hit glow .18, sparkle .3, star .45: stacked glows washed the monsters white); a flash
+  star on each monster hit instead of a crit-hit each.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
