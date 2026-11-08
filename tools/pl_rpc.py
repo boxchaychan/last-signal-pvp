@@ -18,6 +18,11 @@ def call(tool, args):
             d = json.loads(line[5:])
             for c in d.get('result', {}).get('content', []):
                 if c.get('type') == 'text': out.append(c['text'])
+                elif c.get('type') == 'image' and os.environ.get('PL_IMG'):   # replies with pictures (vfx_workbench frames)
+                    import base64, time
+                    os.makedirs(os.environ['PL_IMG'], exist_ok=True)
+                    f = os.path.join(os.environ['PL_IMG'], f'{int(time.time() * 1000)}_{len(out)}.' + c.get('mimeType', 'image/png').split('/')[-1])
+                    open(f, 'wb').write(base64.b64decode(c['data'])); out.append(f'[saved image: {f}]')
             if 'error' in d: out.append('ERROR ' + json.dumps(d['error']))
     return '\n'.join(out)
 

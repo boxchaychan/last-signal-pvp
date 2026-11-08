@@ -197,6 +197,15 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   6 times 150° apart (`streak` fx + crescent + attack-frame after-images), 6 × 9 + 8, invulnerable, moves on to a monster
   close by if it dies, lands behind it. Cooldowns 5 / 9 / 10 s; costs 15 / 20 / 25 stamina. Phone: 4 skill buttons in an
   arc round ตี / กลิ้ง; PC: Q E R F (or 1–4) with squares under the bars. Tests `?test=spin|bomb|bomb2|flurry`.
+- Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
+  pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
+  the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =
+  every other flurry cut. Missing in pixelfx → PixelLab **vfx_workbench (free: nothing generated, nothing charged; you
+  build from parts and look at the frames)** through `tools/pl_rpc.py` (replies' pictures saved when `PL_IMG` is set) +
+  `tools/pl_get.py` (downloads the exported gif / json / png): `stun_stars` recoloured grey-lavender = blind status,
+  exported as "rogue_blind_stars" (My effects 5d41ccb5-d17a-44f9-a91b-8019d570a2de, raw in `art/incoming/fx_raw/
+  rogue_blind_stars/`) → `fx/blindstars.png` + manifest entry, looped over blinded slimes. Its ready "dagger" throw was
+  tried (`throw image dagger spin 2`): only 14 px long, smaller than the code dagger the owner asked to be bigger → not used.
 - Effects: PixelLab VFX Creator (owner's screenshot, "Slash arc" preset: sweep / thickness / size / angle / trail / speed /
   frames sliders; the chat "Send" costs 1 generation) → export "For a game (ZIP)" → `pixellab_import.py` (from bb.html).
 

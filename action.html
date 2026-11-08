@@ -703,7 +703,8 @@ function airFrames(dir, R) {
   }
   return out;
 }
-const FXS = {};
+const FXS = {}, PFX = {};
+function pfx(k, x, y) { const P = PFX[k]; if (!P || !P.m) return false; G.fx.push({k: 'pfx', key: k, x, y, t: 0, life: P.m.n / P.m.fps}); return true; }
 // soft light (bloom) for arcs and hits, added with 'lighter' like the glowing slashes in the owner's reference clip
 function glowSprite(c) {
   const g = document.createElement('canvas'); g.width = g.height = 64; const x = g.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -728,6 +729,10 @@ async function load() {
   const files = [META.still, ...Object.values(META.anims).flatMap(a => a.glow ? [a.img, a.glow] : [a.img])];
   await Promise.all(files.map(f => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = no; im.src = 'art/action/' + f + '?v=' + (META.v || 1); IMGS[f] = im; })));
   await loadProps();
+  // pixelfx effects already in the repo (MIT, vendor/pixelfx; owner 2026-11-08 "อันนี้เราเคยใช้นิ"): darkx = the smoke
+  // bomb's blast, poof = vanishing / warping, nslash = the flurry's cross cuts
+  try { const man = await fetch('fx/manifest.json').then(r => r.json());
+    await Promise.all(['darkx', 'poof', 'nslash', 'blindstars'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -929,6 +934,7 @@ function blinkBehind(p) {         // second press: appear behind the marked mons
   if (waterAt(nx, ny)) { nx = m.x - ay * 44; ny = m.y + ax * 30; } if (waterAt(nx, ny)) { nx = m.x + ay * 44; ny = m.y - ax * 30; } if (waterAt(nx, ny)) { nx = ox; ny = oy; }
   for (let k = 0; k <= 6; k++) G.ghosts.push({x: ox + (nx - ox) * k / 6, y: oy + (ny - oy) * k / 6, dir: p.dir, t: -k * .015, k: .5, still: 1});   // a streak of after-images
   for (let k = 0; k < 10; k++) { puff(ox + (rnd() - .5) * 24, oy - rnd() * 40, '#c9a8ff'); puff(nx + (rnd() - .5) * 24, ny - rnd() * 40, '#c9a8ff'); }
+  pfx('poof', ox, oy - 34); pfx('poof', nx, ny - 34);
   p.x = nx; p.y = ny; p.dir = dirOf(m.x - nx, m.y - ny); p.state = 'idle'; p.a = null; p.th = null; p.roll = null;
   p.inv = Math.max(p.inv, .3); p.noFl = G.t + .32; p.cd[1] = G.t + SK1.cd; G.shake = Math.max(G.shake, 3);
   blockProps(p, 14); cam.x += (nx - ox) * .5; cam.y += (ny - oy) * .5;   // the camera catches up faster
@@ -975,14 +981,14 @@ function startBomb(p) {
 function bombBlast(b) {
   for (const m of G.mobs) { if (m.hp <= 0 || Math.hypot(m.x - b.tx, (m.y - b.ty) * 1.25) > SK3.r + m.r) continue;
     hitMob(m, SK3.dmg, b.tx, b.ty, 40, '#c9a8ff'); m.blind = G.t + SK3.blind; }
-  G.fx.push({k: 'burst', x: b.tx, y: b.ty - 14, t: 0, life: .28, big: true}); G.fx.push({k: 'smoke', x: b.tx, y: b.ty, t: 0, life: 1.6});
+  G.fx.push({k: 'burst', x: b.tx, y: b.ty - 14, t: 0, life: .28, big: true}); if (!pfx('darkx', b.tx, b.ty - 10)) G.fx.push({k: 'smoke', x: b.tx, y: b.ty, t: 0, life: 1.6});
   for (let k = 0; k < 16; k++) { const a = rnd() * 6.28, r = rnd() * SK3.r * .8; puff(b.tx + Math.cos(a) * r, b.ty + Math.sin(a) * r * .6, k & 1 ? '#3b3546' : '#6a6178'); }
   spark(b.tx, b.ty - 10, 12, '#ffcf6a'); G.shake = Math.max(G.shake, 5); G.hs = Math.max(G.hs, .05);
 }
 function startFlurry(p) {
   const [, , m] = p.skT || skTarget(p, 4); p.skT = null;
   if (!m || m.hp <= 0 || !payFor(p, 4)) return false;
-  for (let k = 0; k < 10; k++) puff(p.x + (rnd() - .5) * 26, p.y - rnd() * 40, '#eafcff');
+  for (let k = 0; k < 10; k++) puff(p.x + (rnd() - .5) * 26, p.y - rnd() * 40, '#eafcff'); pfx('poof', p.x, p.y - 34);
   G.ghosts.push({x: p.x, y: p.y, dir: p.dir, t: 0, k: .5, still: 1});
   p.state = 'flurry'; p.a = null; p.th = null; p.fl = {m, n: 0, t: SK4.gap, a0: Math.atan2(m.y - p.y, m.x - p.x)}; p.inv = Math.max(p.inv, 1.2); return true;
 }
@@ -996,7 +1002,7 @@ function flurryStep(p, dt) {
     const m = f.m, a = f.a0 + f.n * Math.PI * 5 / 6, c = Math.cos(a), sn = Math.sin(a);   // 150 degrees apart: a star of cuts
     const ax = m.x - c * 86, ay = m.y - sn * 58, bx = m.x + c * 96, by = m.y + sn * 66, dir = dirOf(c, sn);
     G.fx.push({k: 'streak', x: ax, y: ay - 26, x2: bx, y2: by - 26, t: 0, life: .2});
-    G.fx.push({k: 'air', x: m.x, y: m.y - 22, dir, t: 0, life: .16, big: f.n === SK4.n - 1});
+    G.fx.push({k: 'air', x: m.x, y: m.y - 22, dir, t: 0, life: .16, big: f.n === SK4.n - 1}); if (f.n % 2) pfx('nslash', m.x, m.y - 22);
     const ar = animRow('attack', dir); G.ghosts.push({x: bx, y: by, dir, t: 0, k: .5, atk: ar ? (ar.hits || [4])[0] : 0, a: 1.8});
     hitMob(m, SK4.dmg + (f.n === SK4.n - 1 ? 8 : 0), ax, ay, f.n === SK4.n - 1 ? 40 : 6, '#eafcff', f.n === SK4.n - 1);
     G.hs = Math.max(G.hs, .03); G.shake = Math.max(G.shake, 2);
@@ -1008,7 +1014,7 @@ function flurryEnd(p) {
   const m = p.fl && p.fl.m; p.fl = null; p.state = 'idle'; p.inv = Math.max(p.inv, .25); p.noFl = G.t + .3;
   if (waterAt(p.x, p.y)) { p.x = m ? m.x : p.x; p.y = m ? m.y + 30 : p.y; }
   if (m) p.dir = dirOf(m.x - p.x, m.y - p.y);
-  for (let k = 0; k < 8; k++) puff(p.x + (rnd() - .5) * 24, p.y - rnd() * 40, '#eafcff'); blockProps(p, 14);
+  for (let k = 0; k < 8; k++) puff(p.x + (rnd() - .5) * 24, p.y - rnd() * 40, '#eafcff'); blockProps(p, 14); pfx('poof', p.x, p.y - 34);
 }
 function puff(x, y, c) { G.fx.push({k: 'puff', x, y, vx: (rnd() - .5) * 40, vy: -10 - rnd() * 20, t: 0, life: .35 + rnd() * .2, c}); }
 function spark(x, y, n, c) { for (let k = 0; k < n; k++) { const a = rnd() * Math.PI * 2, s = 80 + rnd() * 160; G.fx.push({k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, life: .18 + rnd() * .12, c}); } }
@@ -1344,7 +1350,10 @@ function draw() {
   drawFlies();
   for (const kn of G.knives) drawKnife(kn);
   for (const b of G.bombs) drawBomb(b);
-  for (const m of G.mobs) if (m.hp > 0 && m.blind > G.t) {   // blinded: grey smoke circling the head
+  for (const m of G.mobs) if (m.hp > 0 && m.blind > G.t && PFX.blindstars) {   // blinded: pale stars circling the head (PixelLab VFX)
+    const P = PFX.blindstars, q = P.m, i = (G.t * q.fps | 0) % q.n;
+    ctx.drawImage(P.img, (i % q.cols) * q.w, (i / q.cols | 0) * q.h, q.w, q.h, Math.round(m.x - q.ax), Math.round(m.y - 44 - q.ay), q.w, q.h); }
+  for (const m of G.mobs) if (m.hp > 0 && m.blind > G.t && !PFX.blindstars) {   // fallback: grey smoke circling the head
     for (let k = 0; k < 4; k++) { const a = G.t * 5 + k * Math.PI / 2, x = Math.round(m.x + Math.cos(a) * 14), y = Math.round(m.y - 50 + Math.sin(a) * 4);
       ctx.fillStyle = '#1d1a22'; ctx.fillRect(x - 1, y - 1, 6, 5); ctx.fillStyle = k & 1 ? '#7a7088' : '#b3aac0'; ctx.fillRect(x, y, 4, 3); } }
   if (G.p.mark) { const m = G.p.mark.m, y = Math.round(m.y - 58 - Math.abs(Math.sin(G.t * 5)) * 4), x = Math.round(m.x);   // a purple arrow over the marked one
@@ -1363,6 +1372,8 @@ function draw() {
     if (f.k === 'wave') { const set = (f.big ? FXS.waveB : FXS.wave)[f.dir], im = set[Math.min(3, Math.floor(f.t / f.life * 4))];
       ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
     if (f.k === 'burst') { const k = f.t / f.life, R = f.big ? 34 : 24; glowAt(f.x, f.y, R, R, FXS.glowHit, (1 - k) * .5); }
+    if (f.k === 'pfx') { const P = PFX[f.key], m = P.m, i = Math.min(m.n - 1, f.t * m.fps | 0), cols = m.cols || m.n;
+      ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(f.x - m.ax), Math.round(f.y - m.ay), m.w, m.h); }
     if (f.k === 'smoke') { if (!FXS.smoke) FXS.smoke = smokeSprite(SK3.r); const k = f.t / f.life, im = FXS.smoke[(f.t * 6 | 0) % 2];
       ctx.globalAlpha = (k < .1 ? k / .1 : 1 - (k - .1) / .9) * .85; ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2 - 10)); ctx.globalAlpha = 1; }
     if (f.k === 'streak') { const k = f.t / f.life, n = Math.hypot(f.x2 - f.x, f.y2 - f.y) | 0, a = 1 - k;
