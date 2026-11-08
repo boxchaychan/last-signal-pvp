@@ -829,7 +829,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all([...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all(['zstar', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1127,12 +1127,11 @@ function inField(m, f) { return ((m.x - f.cx) / (SK4.r + m.r)) ** 2 + ((m.y - f.
 function flurryStep(p, dt) {
   const f = p.fl; f.t += dt; f.flash = Math.max(0, f.flash - dt);
   if (f.ph === 'open' && f.t >= SK4.open) {            // blink to the star's first point
-    f.ph = 'cut'; f.t = 0; f.n = 0; pfx('poof', p.x, p.y - 34); nextCut(p, f); p.x = f.ax; p.y = f.ay; pfx('poof', p.x, p.y - 34); }
+    f.ph = 'cut'; f.t = 0; f.n = 0; pfx('zstar', p.x, p.y - 30); nextCut(p, f); }
   if (f.ph === 'cut') {
     f.u = Math.min(1, f.t / (SK4.cut * .7));
     p.x = f.ax + (f.bx - f.ax) * f.u; p.y = f.ay + (f.by - f.ay) * f.u;
-    f.gh -= dt; if (f.gh <= 0 && f.u < 1) { f.gh = .012; G.ghosts.push({x: p.x, y: p.y, dir: f.bx >= f.ax ? 0 : 4, t: 0, k: .5, atk: 4, an: 'dash', a: 1.9, life: .34}); }
-    if (!f.hit && f.u >= 1) { f.hit = 1; let any = false;
+    if (!f.hit && f.u >= 1) { f.hit = 1; let any = false; pfx('zstar', f.bx, f.by - 30);
       for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 14, '#a5cdff'); any = true; }
       G.shake = Math.max(G.shake, 5); if (any) G.hs = Math.max(G.hs, .05); }
     if (f.t >= SK4.cut) { f.t = 0; if (++f.n < SK4.n) nextCut(p, f); else starFinish(p, f); }
@@ -1141,10 +1140,17 @@ function flurryStep(p, dt) {
 }
 // owner: "ใช้แทนพุ่งสายฟ้าเลย": every dash leaves the owner's big blue cut along its path (it stays a while); the five cuts
 // cross in the middle of the circle at these screen angles, alternating sides (no star, no lightning line)
-const CUTS = [0, 135, 45, 165, 105];
+// skill 4's dashes like the owner's Zenitsu clip (2026-11-08 "เอาแบบนี้" + "เอาแค่สกิลพุ่ง"): she vanishes and zips point to point
+// across the circle in a zigzag, each dash a thin bright streak (white / pale yellow / cyan) with a flash star where she
+// lands; she shows only for a blink at each landing point
+function rimPt(f, a) { const R = SK4.r * .95; return [f.cx + Math.cos(a) * R, f.cy + Math.sin(a) * R * SK4.fr]; }
 function nextCut(p, f) {
-  const deg = CUTS[f.n], th = deg * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), L = 140, s = f.n % 2 ? -1 : 1;
-  f.ax = f.cx - c * L * s; f.ay = f.cy - sn * L * s; f.bx = f.cx + c * L * s; f.by = f.cy + sn * L * s; f.hit = 0; f.u = 0;
+  if (f.n === 0) { f.ang = Math.atan2((p.y - f.cy) / SK4.fr, p.x - f.cx); f.ax = p.x; f.ay = p.y; } else { f.ax = f.bx; f.ay = f.by; }
+  f.ang += Math.PI * (.82 + (f.n % 2 ? .1 : -.06));                    // nearly across, a little off each time
+  [f.bx, f.by] = rimPt(f, f.ang); if (f.n === SK4.n - 1) { f.bx = f.cx + (f.bx - f.cx) * .3; f.by = f.cy + (f.by - f.cy) * .3; }   // the last one ends near the middle
+  f.hit = 0; f.u = 0;
+  const hd = (Math.atan2(f.by - f.ay, f.bx - f.ax) * 180 / Math.PI + 360) % 360;
+  pfx('zstreak' + (Math.round(hd / 15) * 15 % 360), (f.ax + f.bx) / 2, (f.ay + f.by) / 2 - 26);
   p.dir = f.bx >= f.ax ? 0 : 4;
 }
 function starFinish(p, f) {       // the heavy end: the star flashes, five strikes, a shockwave, everything inside takes a big hit
@@ -1400,7 +1406,8 @@ function drawPlayer(p) {
 }
 function drawPlayerBody(p) {
   if (p.state === 'flurry' && p.fl) { const f = p.fl, ar = animRow('dash', p.dir);
-    const fr = f.ph === 'open' ? 2 : f.ph === 'end' ? 6 : f.u < .45 ? 3 : f.u < 1 ? 4 : 6;   // no frame 5: its white slash arc is gone
+    if (f.ph === 'cut' && f.u < 1) return;                                // gone while she zips across
+    const fr = f.ph === 'open' ? 2 : 6;
     if (!FXS.glowBlue) FXS.glowBlue = glowSprite([70, 130, 255]); glowAt(p.x, p.y - 30, 40, 30, FXS.glowBlue, .6);   // she glows during it
     if (ar) drawCell(noArcOf(ar.img), ar.r, fr, p.x, p.y, ar.flip);
     return; }

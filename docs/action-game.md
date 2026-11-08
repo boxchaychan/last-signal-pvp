@@ -272,6 +272,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   only her after-images, every 12 ms, in a blue copy of the dash sheet (`blueOf`: arc-free sheet tinted #3d9bff at 82%), up to
   ~67% and fading over .34 s (ghosts now take their own `life`). Also effect pictures load with `?v=<hash of fx/manifest.json>`
   (fetched no-cache), because the owner's browser kept old effect pictures.
+  Then the owner's Zenitsu clip ("เอาแบบนี้", "เอาแค่สกิลพุ่ง"): she vanishes and zips rim to rim in a zigzag (`rimPt`, each
+  ~150-165° on from the last, the last ending near the middle), each dash a thin bright streak (VFX `dash_slash` in white /
+  pale yellow / cyan, orange tip sparks made yellow, turned to 24 headings `fx/zstreak*` + warm glows) and a flash star
+  (VFX `hit_star`, `fx/zstar.png`) where she lands; she is drawn only for the blink at each landing point; no after-images.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
