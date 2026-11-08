@@ -507,7 +507,7 @@ function doHit(p, h) {
   for (const m of G.mobs) {
     if (m.hp <= 0) continue;
     const dx = m.x - p.x, dy = (m.y - 14) - (p.y - 30), d = Math.hypot(dx, dy);
-    if (d > (h.kb > 60 ? 230 : 180) + m.r) continue;   // longer reach (owner); the air blade carries the last hit furthest
+    if (d > (h.kb > 60 ? 150 : 125) * (META.k || 1) + m.r) continue;   // reach follows the arcs (no air blade any more)
     if (d > 22 && (dx * fx + dy * fy) / d < Math.cos(80 * Math.PI / 180)) continue;
     any = true; m.hp -= h.dmg; m.hit = .12; m.st = 'hurt'; m.t = 0;
     const k = h.kb / Math.max(d, 1); m.kx = dx * k * 4; m.ky = dy * k * 4;
@@ -519,10 +519,8 @@ function doHit(p, h) {
   }
   if (any) { G.hs = Math.max(G.hs, h.hs); G.shake = Math.max(G.shake, h.sh);
     if (h.kb > 60) { G.flash = .09; G.kick = {x: fx * 6, y: fy * 6, t: .12}; } }   // last hit: white flash + camera kick
-  // no wave drawn over the rogue (owner "ไม่ต้องทำมาซ้อน"): the arcs inside the frames are air-coloured (act_sheet.py);
-  // a see-through blade of air leaves the arc and flies on, so the cut looks like it reaches further
-  const big = h.kb > 60, sp = big ? 900 : 760;   // owner "ระยะฟันมันสั้น": the air blade flies further and stays longer
-  G.fx.push({k: 'air', x: p.x + fx * 50, y: p.y - 40 + fy * 28, vx: fx * sp, vy: fy * sp, dir: p.dir, t: 0, life: big ? .32 : .26, big});
+  // no wave and no flying air blade (owner 2026-11-08 "ไม่เอาใบมีดลม"): only the air-coloured arcs inside the frames
+  // (act_sheet.py) with their glow; airFrames() is kept for skills later
 }
 function hurtPlayer(dmg, fromX, fromY) {
   const p = G.p; if (p.inv > 0 || G.over) return;
@@ -626,7 +624,7 @@ function testSetup() {
   for (let i = 0; i < 240; i++) step(1 / 60);   // run to the freeze point without waiting for frames
 }
 function step(dt) {
-  if (TEST === 'atk' && G.p.a && G.p.a.i > G.p.a.plan.last && G.p.a.t > 20) return;   // just after the last hit
+  if (TEST === 'atk' && G.p.a && G.p.a.i >= G.p.a.plan.last && (G.p.a.i > G.p.a.plan.last || G.p.a.t > 40)) return;   // just after the last hit
   G.t += dt;
   if (G.hs > 0) { G.hs -= dt; return; }       // hit-stop: everything holds for a moment
   if (!G.over) stepPlayer(dt); else if (G.p.state === 'dead') G.p.deadT += dt;

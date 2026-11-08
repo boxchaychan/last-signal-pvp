@@ -10,4 +10,4 @@ python tools/art/act_sheet.py $R/pl2_dl/Idle art/action/rogue \
   "attack=@$R/pl_dl/Idle::attack_2hit_b,attack_back|@$R/pl2_dl/Idle::attack_ul" chop=@$R/pl_dl/Idle::attack_back_v \
   run=run idle=idle roll=roll hurt=hurt death=death \
   --skip=north-east "--alias=south-east:east,south-west:east~,west:east~" \
-  "--hits=chop/north-west:6,9;chop/north:6,11" "$@"
+  "--hits=chop/north-west:6,9;chop/north:6,11" --arc=air --scale=4/5 "$@"

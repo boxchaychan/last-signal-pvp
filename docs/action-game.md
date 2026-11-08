@@ -74,6 +74,12 @@ was tried and dropped): field 4200×2800; `makeProps` = sprite props drawn in th
 stands behind) with baked ground shadows and solid bases (`blockProps`: ellipses, building footprints `rect`): huge trees
 (`bigTree`, ~3× the rogue), boulders, tall ruined pillars, a hamlet of 4 cottages (`house`) and 2 ruined watchtowers (`tower`).
 
+Then (owner): air blade OFF ("ไม่เอาใบมีดลม"), reach back to 125 / 150 × `META.k`; rogue shrunk to 80% at build time
+("ย่อตัวลงหน่อย ... ตัวมันสูงไป", owner checked a 100%/80% comparison for blur and chose 80): `act_sheet.py --scale=4/5`
+(each output pixel = the most common colour of the area it covers, a dark outline wins at ≥30%; cells padded to a multiple
+of 5 → cell 140, feet 70/118, `k` 0.8 in the json); wider waves ("ทำคลื่นฟันให้กว้างกว่านี้"): two faint see-through bands
+round every outside arc (3 and 6 px, the outer one dithered) and a wider glow.
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of

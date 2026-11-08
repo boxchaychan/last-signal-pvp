@@ -25,6 +25,38 @@ for a in opts:
             d, f = part.split(':'); d = d if '/' in d else 'attack/' + d
             ALIAS[d] = (f.rstrip('~'), f.endswith('~')); SKIP.add(d)
 anims = [a.split('=', 1) for a in sys.argv[3:] if not a.startswith('--')]
+# --scale=p/q shrinks every sheet to p/q (owner 2026-11-08 "ย่อตัวลงหน่อย ... ตัวมันสูงไป", without blur): each output
+# pixel takes the most common colour of the source area it covers (a dark outline wins when it fills 30% of it),
+# so the result is crisp pixel art, not a blurred scale
+SCALE = None
+for _a in sys.argv[3:]:
+    if _a.startswith('--scale='): SCALE = tuple(int(v) for v in _a[8:].split('/'))
+
+def shrink(im, soft=False):
+    if not SCALE: return im
+    import numpy as np
+    p, q = SCALE; W, H = im.size
+    if soft: return im.resize((W * p // q, H * p // q), Image.LANCZOS)
+    a = np.array(im.convert('RGBA'))
+    up = a.repeat(p, 0).repeat(p, 1)                      # p x p nearest, then q x q blocks = exact p/q
+    Hh, Ww = up.shape[0] // q, up.shape[1] // q; up = up[:Hh * q, :Ww * q]
+    flat = up.reshape(-1, 4); key = (flat[:, 0].astype(np.int64) << 24) | (flat[:, 1].astype(np.int64) << 16) | (flat[:, 2].astype(np.int64) << 8) | flat[:, 3]
+    key[flat[:, 3] == 0] = -1
+    uniq, inv = np.unique(key, return_inverse=True); inv = inv.reshape(Hh * q, Ww * q)
+    best = np.full((Hh, Ww), -1); bestn = np.zeros((Hh, Ww)); darkn = np.zeros((Hh, Ww)); darki = np.full((Hh, Ww), -1); transn = np.zeros((Hh, Ww))
+    for ci, k in enumerate(uniq):
+        n = (inv == ci).reshape(Hh, q, Ww, q).sum((1, 3))
+        if k < 0: transn = n; continue
+        r, g, b = (k >> 24) & 255, (k >> 16) & 255, (k >> 8) & 255
+        if .3 * r + .59 * g + .11 * b < 60: m = n > darkn; darkn = np.maximum(darkn, n); darki[m] = ci
+        m = n > bestn; bestn[m] = n[m]; best[m] = ci
+    pick = np.where(darkn >= .3 * q * q, darki, best)
+    out = np.zeros((Hh, Ww, 4), np.uint8)
+    for ci, k in enumerate(uniq):
+        if k < 0: continue
+        m = pick == ci; out[m] = [(k >> 24) & 255, (k >> 16) & 255, (k >> 8) & 255, k & 255]
+    out[transn > .5 * q * q] = 0
+    return Image.fromarray(out)
 DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east']
 
 def dedust(im):
@@ -93,8 +125,16 @@ def arcwhite(fr, grow=3):
                     arc |= nb
             for lo, c, al in zip([-1, 120, 190], SMEAR, AIRA):
                 a[arc & (L > lo), :3] = c; a[out_arc & (L > lo), 3] = al   # see-through only beyond the body
+            if out_arc.sum() >= 60:
+                # owner "ทำคลื่นฟันให้กว้างกว่านี้": a wider wave = two faint see-through bands round the arc, on empty pixels only
+                b1 = ndimage.binary_dilation(out_arc, iterations=3) & (a[..., 3] == 0)
+                b2 = ndimage.binary_dilation(out_arc, iterations=6) & (a[..., 3] == 0) & ~b1
+                a[b1, :3] = SMEAR[1]; a[b1, 3] = max(60, AIRA[0] - 30)
+                a[b2 & (BAY[:a.shape[0], :a.shape[1]] < .55), :3] = SMEAR[0]; a[b2 & (BAY[:a.shape[0], :a.shape[1]] < .55), 3] = max(40, AIRA[0] - 70)
         out.append(Image.fromarray(a))
     return out
+import numpy as _np0
+BAY = _np0.tile(_np0.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16, (300, 300))   # ordered dither
 PAL = None
 
 def smear(im):
@@ -135,13 +175,15 @@ import numpy as _np
 PAL = _np.unique(_np.concatenate([_np.array(r)[_np.array(r)[..., 3] > 0][:, :3] for r in rot]), axis=0).astype(int)
 data = {name: {d: ([] if f'{name}/{d}' in SKIP else frames(folder, d, name)) for d in DIRS} for name, folder in anims}
 C = max([rot[0].width] + [fr[0].width for a in data.values() for fr in a.values() if fr])
+if SCALE: C = -(-C // SCALE[1]) * SCALE[1]          # cells a multiple of q so every cell shrinks to whole pixels
+K = SCALE[0] / SCALE[1] if SCALE else 1
 pad = (C - rot[0].width) // 2
 pre = os.path.basename(out)
 os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
 still = Image.new('RGBA', (8 * C, C))
 for i, im in enumerate(rot): still.alpha_composite(im, (i * C + pad, pad))
-still.save(out + '_still.png', optimize=True)
-meta = {'cell': C, 'fx': C // 2, 'fy': pad + 125, 'dirs': DIRS, 'still': pre + '_still.png', 'anims': {},
+shrink(still).save(out + '_still.png', optimize=True)
+meta = {'cell': round(C * K), 'fx': round(C // 2 * K), 'fy': round((pad + 125) * K), 'k': K, 'dirs': DIRS, 'still': pre + '_still.png', 'anims': {},
         'arc': {'ramp': SMEAR, 'alpha': AIRA, 'glow': GLOWC}}
 for name, A in data.items():
     have = [d for d in DIRS if A[d]]
@@ -156,16 +198,16 @@ for name, A in data.items():
     for key, (f, mir) in ALIAS.items():
         an, d = key.split('/')
         if an == name and f in M: M[d] = dict(M[f], flip=mir, alias=f)
-    sheet.save(f'{out}_{name}.png', optimize=True); meta['anims'][name] = M
+    sheet = shrink(sheet); sheet.save(f'{out}_{name}.png', optimize=True); meta['anims'][name] = M
     if name == 'attack':
         # glow layer: every arc pixel (exactly a SMEAR colour) blurred into a soft halo of GLOWC, added by the game
         import numpy as np
         from scipy import ndimage
         s = np.array(sheet); m = np.zeros(s.shape[:2], bool)
         for c in SMEAR: m |= (s[..., 3] > 0) & (s[..., 0] == c[0]) & (s[..., 1] == c[1]) & (s[..., 2] == c[2])
-        g = ndimage.gaussian_filter(m.astype(float), 3.2) * 2.2 + ndimage.gaussian_filter(m.astype(float), 8) * 1.4
+        g = ndimage.gaussian_filter(m.astype(float), 3.5) * 2.2 + ndimage.gaussian_filter(m.astype(float), 10) * 1.8
         gl = np.zeros(s.shape, np.uint8); gl[..., :3] = GLOWC; gl[..., 3] = (np.clip(g, 0, 1) * 255).astype(np.uint8)
         Image.fromarray(gl).save(f'{out}_{name}_glow.png', optimize=True); M['glow'] = f'{pre}_{name}_glow.png'
     print(name.ljust(7), sheet.size, 'dirs', len(have), 'frames', cols, {d: M[d].get('hits') for d in DIRS if d in M and 'hits' in M[d]})
 json.dump(meta, open(out + '.json', 'w'), indent=1)
-print('cell', C, 'feet', meta['fx'], meta['fy'])
+print('cell', meta['cell'], 'feet', meta['fx'], meta['fy'], 'scale', K)
