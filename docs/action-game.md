@@ -263,6 +263,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   lightning line, no strikes per dash (the finish keeps five strikes + shockwave). `fx/bluecut*` = the smaller held cut.
   Owner "ท่าจบ ลบเส้นสีขาวออก": the dash is drawn from an arc-free copy (`noArcOf(sheet)` = `makeNoArc`, cached per sheet,
   also for the dash after-images) and skips frame 5 (the one with PixelLab's big slash arc): lunge 3–4, then 6.
+  Owner: "เอาสายฟ้าตอนจบออก" → no lightning strikes at the finish (shockwave + burst stay); then "สายฟ้าพุ่งในภาพ แทนรอยฟัน"
+  + their own exported game pack `art/incoming/fx_raw/owner_lightning_dash/` ("rogue_lightning_dash_game" re-coloured by them:
+  black lightning, red flecks, blue-purple streak; "เอา แต่งให้แล้ว" = use it as is) → `whole` clip turned offline to 24
+  headings `fx/ldash0..345.png` (nearest, about the anchor) + glows from the bright pixels only; each skill-4 dash plays the
+  heading it travels (`nextCut`), the blue cut (`bigcut*`) is no longer drawn.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
