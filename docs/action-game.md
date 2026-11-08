@@ -92,6 +92,25 @@ Owner's screenshot (two red lines either side of her while attacking): the glow 
 stopped at its border → `act_sheet.py` now blurs the glow one cell at a time, cuts the faint tail (< 8%) to zero and fades
 it out over the last 14 px before each cell edge (every cell border is 0).
 
+### Map art (owner subscribed: Tier 1 Pixel Apprentice on the second account, 2,000 generations, reset 2026-12-08)
+The code-drawn map was judged poor ("ฝีมือการทำแมพกากมาก"); the lake / stream / hamlet code is in action.html but the owner
+wants real art. Plan: props from PixelLab `create_object_pro_flash` (view low top-down, style_image = the rogue's
+south-east still so pixel size / outline / shading match; 5 gens ≤96 px, 6 ≤208, 9 ≤256) or GPT (owner's choice after an
+A/B test), ground from `create_topdown_tileset` mode pro view low top-down (15–25). Map tools themselves are free.
+| date | what | id | cost | result |
+|---|---|---|---|---|
+| 2026-11-08 | test oak tree 208×256, pro flash, 1 direction, style = rogue south-east (upload) | object 3a6ec4fc-ec37-4509-a868-0d76313be787 | ~9 | done (`art/incoming/action/map/pl_oak_test.png`, tree ~155 px tall): darker and flatter than the GPT props |
+
+A/B 2026-11-08: the owner's GPT sheet `gpt_nature.png` (oak, pine, blossom, bush, boulder, rocks, grass, flowers; prompt 1 in
+this chat) → `white_cut.py --edge-only --no-ring` → `tools/art/props_px.py <cut> art/incoming/action/map/gpt_px 0=282 32
+oak,pine,...` (one scale so the oak is 3× the rogue, each prop only its own blob, a palette per prop, 1 px outline) looks
+clearly better than the PixelLab tree → map props from GPT. Owner on monsters: normal monsters frame by frame from GPT
+like before (free); only bosses through PixelLab. **Decision (owner 2026-11-08 "เจน gpt แหละ pixellab เอาไว้ทำตัวละครหลังที่
+เน้นควบคุมกับเอฟเฟค"): map + monsters from GPT; PixelLab only for the playable characters (controls) and skill effects.**
+In the game: `art/action/props/<oak|pine|blossom|bush|boulder|rocks|grass|flowers>.png` replace the code trees / boulders /
+pillars / grass clumps (`GPROP` in action.html, random horizontal flips); houses + towers stay code-drawn until the GPT
+village sheet (prompt 2) arrives.
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of

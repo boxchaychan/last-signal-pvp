@@ -36,7 +36,7 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 <div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ</div>
 <div id="btns"><div class="bt small" id="bRoll">กลิ้ง</div><div class="bt" id="bAtk">ตี</div></div>
 <div id="ov"><div><h1>นักมีด</h1><p>ต้นแบบเกมแอคชัน · ตี 2 ฮิต · กลิ้งหลบ · แถบแรง</p>
-<p>สไลม์จะกะพริบ + วงแดงก่อนพุ่งใส่ กลิ้งหลบให้ทัน</p><button id="go">เริ่ม</button></div></div>
+<p>สไลม์จะกะพริบ + วงแดงก่อนพุ่งใส่ กลิ้งหลบให้ทัน</p><button id="go" disabled>กำลังสร้างแผนที่…</button></div></div>
 <script>
 'use strict';
 // ---------- setup ----------
@@ -73,6 +73,35 @@ function painter(w, h) {
   return P;
 }
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + .5) / 16);
+// ---------- terrain layout: lake, stream, hamlet, meadows ----------
+const LAKE = {cx: WW * .7, cy: WH * .66, parts: [[0, 0, 300, 170], [215, 70, 190, 115], [-200, 50, 170, 105], [40, -85, 170, 90]]};
+LAKE.box = [LAKE.cx - 440, LAKE.cy - 220, LAKE.cx + 460, LAKE.cy + 230];
+function lakeF(x, y) {           // > 0 inside the water, about 1 in the middle
+  let v = -9; for (const [ox, oy, rx, ry] of LAKE.parts) { const dx = (x - LAKE.cx - ox) / rx, dy = (y - LAKE.cy - oy) / ry; v = Math.max(v, 1 - (dx * dx + dy * dy)); }
+  return v + .06 * Math.sin(x / 31) * Math.sin(y / 23);
+}
+// stream: from the lake's north shore up to the top edge, crossing the path (bridge there)
+const STREAM = (() => {
+  const K = [[LAKE.cx + 40, LAKE.cy - 120], [LAKE.cx + 120, LAKE.cy - 480], [LAKE.cx + 40, LAKE.cy - 860], [LAKE.cx + 210, LAKE.cy - 1260], [LAKE.cx + 280, -40]];
+  const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
+    for (let t = 0; t < 1; t += .1) { const t2 = t * t, t3 = t2 * t, f = (a, b, c, d) => .5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+      pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
+  pts.push(K[K.length - 1]);
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  return {pts, box: [Math.min(...xs) - 50, Math.min(...ys) - 50, Math.max(...xs) + 50, Math.max(...ys) + 50]};
+})();
+function streamD(x, y) {
+  let best = 1e9; const P = STREAM.pts;
+  for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+    const t = l ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0, ex = ax + dx * t - x, ey = ay + dy * t - y, d = ex * ex + ey * ey; if (d < best) best = d; }
+  return Math.sqrt(best);
+}
+const HAMLET = {x: WW * .28 + 240, y: WH * .3 + 200, rx: 580, ry: 400};   // the cottages stand round its middle
+const MEADOWS = [[WW * .5, WH * .78], [WW * .14, WH * .62], [WW * .86, WH * .28], [WW * .55, WH * .2]];
+// water map for walking: 8 px cells, 1 = water (blocked), 2 = bridge (open)
+const WG = 8, GW = Math.ceil(WW / WG), GH = Math.ceil(WH / WG), WATER = new Uint8Array(GW * GH);
+function markWater(x, y, v) { const i = (y / WG | 0) * GW + (x / WG | 0); if (v === 2 || WATER[i] !== 2) WATER[i] = v; }
+function waterAt(x, y) { if (x < 0 || y < 0 || x >= WW || y >= WH) return false; return WATER[(y / WG | 0) * GW + (x / WG | 0)] === 1; }
 function makeGround() {
   const P = painter(WW, WH);
   const G = ['#5c9f3f', '#6bb048', '#7bbf51', '#8dce5c', '#9edb68'].map(hex);
@@ -84,11 +113,37 @@ function makeGround() {
   const pathY = x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
   const AREA = WW * WH / (2400 * 1600);
   const SAND = ['#b48f58', '#c9a66b', '#d8b97c', '#e6cc94'].map(hex);
+  // water, shore, bridge and the hamlet's stone yard (owner 2026-11-08 "ทำแมพต่อสวยๆ")
+  const WC = ['#2a628f', '#3a82b4', '#55a6d4', '#8fd0ee', '#d6f3fd'].map(hex), SH = ['#cdb47c', '#e0c993', '#efdcaa'].map(hex);
+  const WD = ['#4a2f1a', '#6e4a2a', '#8e6538', '#ab8048'].map(hex), CB = ['#7a7682', '#94909b', '#aba7b0', '#c4c0c6'].map(hex);
+  const lb = LAKE.box, sb = STREAM.box, hz = HAMLET;
   for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
     const u = Math.floor(x / 96 + y / 48), v = Math.floor(x / 96 - y / 48), chk = (u + v) & 1;   // diamond tiles
     let t = noise(x, y) * 0.75 + chk * 0.13 + 0.12;
     const dpath = Math.abs(y - pathY(x)), pw = 34 + 8 * Math.sin(x / 57);
     const b = BAYER[(y & 3) * 4 + (x & 3)];
+    const lf = x > lb[0] && x < lb[2] && y > lb[1] && y < lb[3] ? lakeF(x, y) : -9;
+    const sd = x > sb[0] && x < sb[2] && y > sb[1] && y < sb[3] ? streamD(x, y) : 1e9, sw = 22 + 5 * Math.sin(y / 70);
+    if (dpath < pw + 8 && sd < sw + 12) {                 // wooden bridge where the path crosses the stream
+      const e = dpath > pw + 5, rail = dpath > pw + 2;
+      P.set(x, y, e ? WD[0] : rail ? WD[1] : (x % 9 === 0 ? WD[0] : (x % 9 < 4 ? WD[2] : WD[3])));
+      if (dpath < pw + 2) markWater(x, y, 2);              // the deck is walkable, the rails are not
+      continue;
+    }
+    if (lf > 0 || sd < sw) {                              // water: deep middle, light edge, foam rim
+      const dep = Math.max(lf > 0 ? lf / .5 : 0, sd < sw ? 1 - sd / sw : 0);
+      const k = dep > .85 ? 0 : dep > .5 ? 1 : dep > .22 ? 2 : dep > .08 ? 3 : 4;
+      P.set(x, y, WC[k === 4 && b > .55 ? 3 : k === 1 && b < .12 ? 2 : k]); markWater(x, y, 1);
+      continue;
+    }
+    if (lf > -.13 || sd < sw + 8) { const k = lf > -.05 || sd < sw + 3 ? 0 : b < .5 ? 1 : 2; P.set(x, y, SH[k]); continue; }   // sandy shore
+    const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
+    if (hd < 1 && dpath >= pw) {                          // cobbled yard of the hamlet, fraying into the grass
+      if (hd > .82 && b < (hd - .82) / .18) { P.set(x, y, G[1]); continue; }
+      const row = Math.floor(y / 11), cx = Math.floor((x + (row & 1) * 7) / 14), j = ((cx * 73856093) ^ (row * 19349663)) >>> 0;
+      const mx = (x + (row & 1) * 7) % 14, my = y % 11;
+      P.set(x, y, mx === 0 || my === 0 ? CB[0] : CB[1 + j % 3]); continue;
+    }
     if (dpath < pw) {                                     // dirt path, lighter in the middle
       const m = 1 - dpath / pw; const k = clamp(Math.floor(m * 3.2 + b * .9), 0, 3); P.set(x, y, SAND[k]);
       continue;
@@ -97,7 +152,21 @@ function makeGround() {
     P.set(x, y, G[clamp(Math.floor(t * 4 + b * .8), 0, 4)]);
   }
   // pebbles on the path
-  for (let i = 0; i < 260 * AREA; i++) { const x = rnd() * WW | 0, y = pathY(x) + (rnd() - .5) * 50 | 0; P.set(x, y, hex('#9c7c4c')); P.set(x + 1, y, hex('#f0dcae')); }
+  for (let i = 0; i < 260 * AREA; i++) { const x = rnd() * WW | 0, y = pathY(x) + (rnd() - .5) * 50 | 0; if (waterAt(x, y)) continue; P.set(x, y, hex('#9c7c4c')); P.set(x + 1, y, hex('#f0dcae')); }
+  // lily pads with a few pink flowers, reeds along the shore
+  const LP = ['#2f6e2a', '#4f9a3a', '#7cc455'].map(hex), PK = hex('#ff9ec7');
+  for (let i = 0; i < 140; i++) { const x = lb[0] + rnd() * (lb[2] - lb[0]), y = lb[1] + rnd() * (lb[3] - lb[1]); if (lakeF(x, y) < .12) continue;
+    const r = 4 + rnd() * 4 | 0; P.disc(x | 0, y | 0, r + 1, r * .6 + 1 | 0, LP[0]); P.disc(x | 0, y | 0, r, r * .6 | 0, LP[1]); P.set(x - 1, y - 1, LP[2]);
+    for (let k = 0; k < r; k++) P.set(x + k, y, WC[2]);                  // the notch
+    if (rnd() < .25) { P.set(x, y - 2, PK); P.set(x + 1, y - 2, PK); P.set(x, y - 3, hex('#ffe066')); } }
+  const RD = ['#3f6f2a', '#5c8f36', '#a7864a'].map(hex);
+  for (let i = 0; i < 900; i++) { const a = rnd() * Math.PI * 2, x = LAKE.cx + Math.cos(a) * (lb[2] - lb[0]) * .5 * rnd(), y = LAKE.cy + Math.sin(a) * (lb[3] - lb[1]) * .5 * rnd();
+    const f = lakeF(x, y); if (f > .03 || f < -.08 || rnd() < .4) continue;
+    const h = 6 + rnd() * 8 | 0; for (let k = 0; k < h; k++) P.set(x, y - k, RD[k > h - 3 && rnd() < .5 ? 2 : k & 1]); }
+  // flower meadows: a few patches packed with flowers
+  for (const [mx, my] of MEADOWS) for (let i = 0; i < 900; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * 230, x = mx + Math.cos(a) * d | 0, y = my + Math.sin(a) * d * .7 | 0;
+    if (waterAt(x, y) || Math.abs(y - pathY(x)) < 46) continue; const c = [hex('#ffffff'), hex('#ffe066'), hex('#ff9ec7'), hex('#c7a8ff')][rnd() * 4 | 0];
+    P.set(x, y + 1, hex('#467f30')); P.set(x, y, c); if (rnd() < .4) P.set(x + 1, y, c); }
   // grass tufts and flowers
   const TD = hex('#467f30'), TL = hex('#b4e67a');
   for (let i = 0; i < 4200 * AREA; i++) { const x = rnd() * WW | 0, y = rnd() * WH | 0; if (Math.abs(y - pathY(x)) < 46) continue;
@@ -233,18 +302,105 @@ function tower(h) {
     if (P.d[i + 3] && P.d[i] !== OUTL[0]) P.set(x, y, M[k % 3]); }
   return {c: P.done(), fx: cx, fy: by, rad: w * .5, top: by - h};
 }
+// small village props and tall grass
+const WOOD = ['#3e2716', '#5e3b20', '#7e5530', '#a0723f'].map(hex);
+function fence(n) {             // n posts in a row, two rails
+  const W = n * 26 + 6, H = 40, P = painter(W, H), by = H - 4;
+  for (let k = 0; k < n; k++) { const x0 = 3 + k * 26; for (let y = by - 30; y <= by; y++) for (let x = x0; x < x0 + 7; x++) P.set(x, y, x === x0 || x === x0 + 6 || y === by - 30 ? OUTL : x < x0 + 3 ? WOOD[2] : WOOD[3]); }
+  for (const ry of [by - 24, by - 12]) for (let y = ry; y < ry + 5; y++) for (let x = 3; x < W - 3; x++) { const i = (y * W + x) * 4; if (P.d[i + 3] && P.d[i] !== OUTL[0] && P.d[i] !== WOOD[2][0]) continue;
+    P.set(x, y, y === ry || y === ry + 4 ? OUTL : y < ry + 2 ? WOOD[3] : WOOD[2]); }
+  return {c: P.done(), fx: W >> 1, fy: by, rad: 8, rect: {w: W - 6, d: 8}, top: 0};
+}
+function well() {
+  const W = 84, H = 110, P = painter(W, H), cx = W >> 1, by = H - 6, S = ['#55555f', '#7c7a84', '#a19ea5'].map(hex), RF = ['#5a1f1f', '#8a3426', '#b04a33'].map(hex);
+  P.disc(cx, by - 14, 34, 16, OUTL); P.disc(cx, by - 14, 32, 14, S[1]); P.disc(cx, by - 18, 24, 9, OUTL); P.disc(cx, by - 18, 22, 8, hex('#1f3550'));
+  for (let y = by - 14; y <= by; y++) for (let x = -33; x <= 33; x++) { const e = Math.abs(x) > 31; P.set(cx + x, y, e || y === by ? OUTL : ((x + 40 >> 3) + (y >> 3)) & 1 ? S[1] : S[2]); }
+  for (const sx of [-26, 22]) for (let y = by - 70; y < by - 16; y++) for (let x = sx; x < sx + 5; x++) P.set(cx + x, y, x === sx || x === sx + 4 ? OUTL : WOOD[2]);
+  for (let y = 0; y < 26; y++) { const hw = 14 + y * 1.4; for (let x = -hw; x <= hw; x++) P.set(cx + x, by - 96 + y, Math.abs(x) > hw - 1.5 || y === 25 ? OUTL : (y % 6 < 1 ? RF[0] : x < 0 ? RF[1] : RF[2])); }
+  return {c: P.done(), fx: cx, fy: by, rad: 30, top: 0};
+}
+function barrel() {
+  const W = 30, H = 36, P = painter(W, H), cx = W >> 1, by = H - 3;
+  for (let y = by - 30; y <= by; y++) { const hw = 11 + (Math.sin((y - (by - 30)) / 30 * Math.PI) * 2 | 0); for (let x = -hw - 1; x <= hw + 1; x++) {
+    const band = (y - (by - 30)) % 10 < 2; P.set(cx + x, y, Math.abs(x) > hw ? OUTL : band ? hex('#6a6670') : x < -hw * .3 ? WOOD[1] : x < hw * .4 ? WOOD[2] : WOOD[3]); } }
+  P.disc(cx, by - 30, 11, 3, WOOD[1]);
+  return {c: P.done(), fx: cx, fy: by, rad: 11, top: 0};
+}
+function crate() {
+  const W = 34, H = 38, P = painter(W, H), by = H - 3;
+  for (let y = by - 30; y <= by; y++) for (let x = 2; x < W - 2; x++) { const top = y < by - 22, e = x === 2 || x === W - 3 || y === by - 30 || y === by || y === by - 22;
+    const diag = !top && Math.abs((x - 2) - (y - (by - 22)) * (W - 4) / 22) < 2; P.set(x, y, e ? OUTL : top ? WOOD[3] : diag ? WOOD[1] : (x % 8 === 0 ? WOOD[1] : WOOD[2])); }
+  return {c: P.done(), fx: W >> 1, fy: by, rad: 14, top: 0};
+}
+function grassClump() {          // tall blades the rogue walks behind (no collision)
+  const W = 34, H = 30, P = painter(W, H), G = ['#2e5f22', '#447f30', '#5f9d3c', '#8fc85a'].map(hex);
+  for (let k = 0; k < 12; k++) { const x0 = 4 + rnd() * 26, h = 12 + rnd() * 16, lean = (rnd() - .5) * 8;
+    for (let y = 0; y < h; y++) { const x = x0 + lean * (y / h) ** 2; P.set(x, H - 2 - y, G[y > h - 4 ? 3 : y > h * .5 ? 2 : k & 1]); P.set(x + 1, H - 2 - y, G[y > h * .6 ? 2 : 0]); } }
+  return {c: P.done(), fx: W >> 1, fy: H - 2, rad: 0, top: 0, soft: 1};
+}
+// moving details: sparkles on the water, drifting cloud shadows, butterflies over the meadows
+let GLINTS = [], CLOUDS = [], FLIES = [], CLOUDIMG = null;
+function makeAmbient() {
+  GLINTS = []; for (let i = 0; i < 9000 && GLINTS.length < 700; i++) {
+    const inL = i & 1, bx = inL ? LAKE.box : STREAM.box, x = bx[0] + rnd() * (bx[2] - bx[0]), y = bx[1] + rnd() * (bx[3] - bx[1]);
+    if (waterAt(x, y) && waterAt(x + 8, y) && waterAt(x - 8, y)) GLINTS.push({x: x | 0, y: y | 0, p: rnd(), w: rnd() < .3 ? 3 : 2}); }
+  const W = 560, H = 260, P = painter(W, H), D = hex('#0e2a0c');
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const dx = (x - W / 2) / (W / 2), dy = (y - H / 2) / (H / 2), r = dx * dx + dy * dy + .25 * Math.sin(x / 40) * Math.cos(y / 33);
+    if (r < 1 && BAYER[(y & 3) * 4 + (x & 3)] < (1 - r) * 1.4) P.set(x, y, D); }
+  CLOUDIMG = P.done();
+  CLOUDS = [...Array(5)].map(() => ({x: rnd() * WW, y: rnd() * WH, v: 10 + rnd() * 8}));
+  FLIES = [...Array(14)].map((_, i) => { const m = MEADOWS[i % MEADOWS.length]; return {x: m[0] + (rnd() - .5) * 300, y: m[1] + (rnd() - .5) * 200, hx: m[0], hy: m[1], a: rnd() * 6.28, p: rnd() * 6, c: ['#ffffff', '#ffe066', '#ff9ec7', '#a8d8ff'][i % 4]}; });
+}
+function stepAmbient(dt) {
+  for (const c of CLOUDS) { c.x += c.v * dt; c.y += c.v * .25 * dt; if (c.x > WW + 300) { c.x = -300; c.y = rnd() * WH; } }
+  for (const f of FLIES) { f.a += (Math.sin(G.t * 1.7 + f.p) + (rnd() - .5)) * 2.2 * dt; const back = Math.hypot(f.hx - f.x, f.hy - f.y) > 260;
+    if (back) f.a = Math.atan2(f.hy - f.y, f.hx - f.x); f.x += Math.cos(f.a) * 34 * dt; f.y += Math.sin(f.a) * 22 * dt; }
+}
+function drawGround(cx, cy) {     // after the ground picture: cloud shadows and water sparkles (only what is on screen)
+  ctx.globalAlpha = .1;
+  for (const c of CLOUDS) if (c.x + 300 > cx && c.x - 300 < cx + VW && c.y + 140 > cy && c.y - 140 < cy + VH) ctx.drawImage(CLOUDIMG, Math.round(c.x - 280), Math.round(c.y - 130));
+  ctx.globalAlpha = 1; ctx.fillStyle = '#eafcff';
+  for (const g of GLINTS) { if (g.x < cx || g.x > cx + VW || g.y < cy || g.y > cy + VH) continue;
+    const ph = (G.t * .9 + g.p) % 1; if (ph < .22) ctx.fillRect(g.x, g.y, ph < .11 ? g.w : g.w - 1, 1); }
+}
+function drawFlies() {
+  for (const f of FLIES) { const open = ((G.t * 11 + f.p) | 0) & 1, x = Math.round(f.x), y = Math.round(f.y - 26 - Math.abs(Math.sin(G.t * 3 + f.p)) * 8);
+    ctx.fillStyle = '#1d1a22'; ctx.fillRect(x, y, 1, 3); ctx.fillStyle = f.c;
+    if (open) { ctx.fillRect(x - 3, y - 1, 3, 3); ctx.fillRect(x + 1, y - 1, 3, 3); } else { ctx.fillRect(x - 1, y - 2, 1, 3); ctx.fillRect(x + 1, y - 2, 1, 3); } }
+}
+// GPT props (art/action/props/*.png): base = the bottom middle; how solid each one is
+const GPDEF = {oak: {rad: 20}, pine: {rad: 16}, blossom: {rad: 15}, boulder: {rad: 44}, bush: {rad: 18}, rocks: {rad: 12},
+  grass: {soft: 1}, flowers: {soft: 1}};
+const GPROP = {};
+function gp(name) {
+  const g = GPROP[name], d = GPDEF[name], img = rnd() < .5 ? g.a : g.b;   // a / b = as drawn / mirrored for variety
+  return {c: img, fx: img.width >> 1, fy: img.height - 3, rad: d.rad || 0, soft: d.soft, top: name === 'oak' || name === 'pine' || name === 'blossom' ? -200 : 0};
+}
+async function loadProps() {
+  await Promise.all(Object.keys(GPDEF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
+    const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
+    GPROP[n] = {a: im, b}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png'; })));
+}
 let PROPS = [];
 function makeProps(bg) {
   PROPS = [];
   const bx = bg.getContext('2d'), far = (x, y, d) => PROPS.every(p => Math.hypot(p.x - x, p.y - y) > d);
-  const pathOk = (x, y) => !GROUND_PATH || Math.abs(y - GROUND_PATH(x)) > 70;
+  const dry = (x, y, r) => !waterAt(x, y) && !waterAt(x - r, y) && !waterAt(x + r, y) && !waterAt(x, y - r * .5) && !waterAt(x, y + r * .5);
+  const inYard = (x, y) => ((x - HAMLET.x) / HAMLET.rx) ** 2 + ((y - HAMLET.y) / HAMLET.ry) ** 2 < 1;
+  const pathOk = (x, y) => (!GROUND_PATH || Math.abs(y - GROUND_PATH(x)) > 70) && dry(x, y, 90);
   const add = (s, x, y) => {
-    const sw = s.rect ? s.rect.w * 1.15 : s.rad * 4.6, shh = s.rect ? 46 : s.rad * 1.4;
-    const sh = ellipseSprite(Math.max(40, sw | 0), Math.max(14, shh | 0), '#203a18');   // baked ground shadow
-    bx.globalAlpha = .28; bx.drawImage(sh, x - sh.width / 2 + 10 | 0, y - sh.height / 2 | 0); bx.globalAlpha = 1;
-    PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height});
+    if (!s.soft) {
+      const sw = s.rect ? s.rect.w * 1.15 : s.rad * 4.6, shh = s.rect ? Math.min(46, s.rect.d * 1.4 + 6) : s.rad * 1.4;   // fences: a thin shadow
+      const sh = ellipseSprite(Math.max(40, sw | 0), Math.max(14, shh | 0), '#203a18');   // baked ground shadow
+      bx.globalAlpha = .28; bx.drawImage(sh, x - sh.width / 2 + 10 | 0, y - sh.height / 2 | 0); bx.globalAlpha = 1;
+      if (s.top < -60) {   // darker ground under a big canopy (ambient occlusion), dithered by the ellipse sprite's edge
+        const ao = ellipseSprite(s.c.width * .9 | 0, s.c.width * .38 | 0, '#1d3415'); bx.globalAlpha = .16; bx.drawImage(ao, x - ao.width / 2 | 0, y - ao.height * .55 | 0); bx.globalAlpha = 1; }
+    }
+    PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft});
   };
-  const T = () => bigTree(80 + rnd() * 44 | 0, 110 + rnd() * 70 | 0, PAL_TREE[rnd() * 2 | 0]);   // 3x the rogue's height
+  // GPT-drawn props (owner 2026-11-08: map art from GPT, the code-drawn ones looked poor); the code ones are only a
+  // fallback if the pictures did not load
+  const T = () => GPROP.oak ? gp(['oak', 'oak', 'pine', 'blossom'][rnd() * 4 | 0]) : bigTree(80 + rnd() * 44 | 0, 110 + rnd() * 70 | 0, PAL_TREE[rnd() * 2 | 0]);
   // edge forest: huge trees all round the field (behind the margins)
   for (let x = 40; x < WW; x += 150 + rnd() * 70) { add(T(), x, 160 + rnd() * 30 | 0); add(T(), x + 60, WH - 30 - rnd() * 20 | 0); }
   for (let y = 320; y < WH - 140; y += 160 + rnd() * 70) { add(T(), 70 + rnd() * 50 | 0, y); add(T(), WW - 70 - rnd() * 50 | 0, y); }
@@ -252,23 +408,51 @@ function makeProps(bg) {
   const hx = WW * .28, hy = WH * .3, RC = [['#5a1f1f', '#8a3426', '#b04a33'], ['#1f3550', '#2f5680', '#4778aa'], ['#3d3020', '#6b5233', '#8f6f45']];
   for (let k = 0; k < 4; k++) { const x = hx + (k % 2) * 420 + rnd() * 60, y = hy + (k >> 1) * 380 + rnd() * 40;
     if (pathOk(x, y)) add(house(230 + rnd() * 70 | 0, RC[k % 3]), x | 0, y | 0); }
-  for (const [fx, fy] of [[.72, .26], [.62, .78]]) { const x = WW * fx, y = WH * fy; if (pathOk(x, y) && far(x, y, 260)) add(tower(330 + rnd() * 80 | 0), x | 0, y | 0); }
-  // inside the field: groves, big boulders and tall ruined pillars, kept off the path and away from the start
+  // the yard: a well in the middle, barrels and crates by the cottages, fences round the edge with gaps
+  add(well(), HAMLET.x + 40 | 0, HAMLET.y + 60 | 0);
+  for (const p of PROPS.filter(q => q.rect && q.rect.d > 20)) for (let k = 0; k < 3; k++) {
+    const x = p.x + (rnd() < .5 ? -1 : 1) * (p.rect.w / 2 + 20 + rnd() * 30), y = p.y - 10 + rnd() * 30;
+    if (dry(x, y, 20) && far(x, y, 34)) add(rnd() < .55 ? barrel() : crate(), x | 0, y | 0); }
+  for (let a = 0; a < Math.PI * 2; a += .2) {
+    if (Math.sin(a * 3 + 1) > .55) continue;             // gaps to walk through
+    const x = HAMLET.x + Math.cos(a) * HAMLET.rx * .98, y = HAMLET.y + Math.sin(a) * HAMLET.ry * .98;
+    if (pathOk(x, y) && far(x, y, 40)) add(fence(3), x | 0, y | 0); }
+  for (const [fx, fy] of [[.86, .3], [.44, .84]]) { const x = WW * fx, y = WH * fy; if (pathOk(x, y) && far(x, y, 260)) add(tower(330 + rnd() * 80 | 0), x | 0, y | 0); }   // not by the lake
+  // inside the field: groves, big boulders and tall ruined pillars, kept off the path, the water, the yard and the start
   const n = WW * WH / 110000 | 0;
   for (let k = 0, tries = 0; k < n && tries < 3000; tries++) {
     const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
-    if (!pathOk(x, y) || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 230)) continue;
+    if (!pathOk(x, y) || inYard(x, y) || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 230)) continue;
     const t = rnd();
-    if (t < .55) add(T(), x | 0, y | 0);
-    else if (t < .82) add(boulder(90 + rnd() * 90 | 0), x | 0, y | 0);
+    if (t < .6) add(T(), x | 0, y | 0);
+    else if (t < .8) add(GPROP.boulder ? gp('boulder') : boulder(90 + rnd() * 90 | 0), x | 0, y | 0);
+    else if (GPROP.bush) add(gp('bush'), x | 0, y | 0);
     else add(pillar(170 + rnd() * 110 | 0, rnd() < .45), x | 0, y | 0);
     k++;
   }
+  // small stuff from the GPT sheet: bushes and rock clusters scattered round the field
+  if (GPROP.rocks) for (let i = 0; i < 160; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
+    if (pathOk(x, y) && !inYard(x, y) && far(x, y, 70)) add(gp(rnd() < .55 ? 'bush' : 'rocks'), x | 0, y | 0); }
+  // tall grass: thick in the meadows and along the water, a few everywhere
+  for (let i = 0; i < 520; i++) {
+    const m = MEADOWS[i % MEADOWS.length], near = i % 3 === 0;
+    const x = near ? m[0] + (rnd() - .5) * 520 : 220 + rnd() * (WW - 440), y = near ? m[1] + (rnd() - .5) * 360 : 300 + rnd() * (WH - 600);
+    if (!GROUND_PATH || Math.abs(y - GROUND_PATH(x)) < 50 || !dry(x, y, 20) || inYard(x, y)) continue;
+    add(GPROP.grass ? gp(near && rnd() < .5 ? 'flowers' : 'grass') : grassClump(), x | 0, y | 0);
+  }
+  for (let i = 0; i < 160; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 470, y = LAKE.cy + Math.sin(a) * 255;
+    if (dry(x, y, 14) && lakeF(x, y) > -.4) add(GPROP.grass ? gp('grass') : grassClump(), x | 0, y | 0); }
   PROPS.sort((a, b) => a.y - b.y);
+}
+// water blocks walking (the bridge deck is open): slide along the shore by undoing one axis, else stay
+function unwater(o, ox, oy) {
+  if (!waterAt(o.x, o.y)) return;
+  if (!waterAt(ox, o.y)) o.x = ox; else if (!waterAt(o.x, oy)) o.y = oy; else { o.x = ox; o.y = oy; }
 }
 // keep a body out of every prop base (ellipse, or the footprint box of a building), used for the rogue and the slimes
 function blockProps(o, r) {
   for (const p of PROPS) {
+    if (p.soft) continue;                               // tall grass: walk through it
     if (p.rect) { const hw = p.rect.w / 2 + r, top = p.y - p.rect.d - r, bot = p.y + r;
       if (o.x > p.x - hw && o.x < p.x + hw && o.y > top && o.y < bot) {
         const dl = o.x - (p.x - hw), dr = p.x + hw - o.x, dt = o.y - top, db = bot - o.y, m = Math.min(dl, dr, dt, db);
@@ -413,7 +597,8 @@ async function load() {
   META = await fetch('art/action/rogue.json', {cache: 'no-cache'}).then(r => r.json());
   const files = [META.still, ...Object.values(META.anims).flatMap(a => a.glow ? [a.img, a.glow] : [a.img])];
   await Promise.all(files.map(f => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = no; im.src = 'art/action/' + f + '?v=' + (META.v || 1); IMGS[f] = im; })));
-  BG = makeGround(); makeProps(BG);
+  await loadProps();
+  BG = makeGround(); if (!/noprops/.test(location.search)) makeProps(BG); makeAmbient();   // ?noprops: bare ground (art tests)
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
   SL.blue = makeSlime(['#284a8a', '#4a7fd0', '#86b8f4', '#eef6ff']);
   FXS.burst = starFrames(13, 4); FXS.burstB = starFrames(22, 5);
@@ -538,14 +723,14 @@ function spawnWave() {
   G.wave++; const n = 3 + G.wave * 2, far = Math.max(560, Math.min(VW, VH) * .55);
   for (let i = 0; i < n; i++) {
     let x, y, k = 0; do { x = MARGIN.l + rnd() * (WW - MARGIN.l - MARGIN.r); y = MARGIN.t + rnd() * (WH - MARGIN.t - MARGIN.b); }
-    while ((Math.hypot(x - G.p.x, y - G.p.y) < far || PROPS.some(q => Math.hypot(q.x - x, (q.y - y) * 1.6) < q.rad + 30)) && ++k < 80);
+    while ((Math.hypot(x - G.p.x, y - G.p.y) < far || waterAt(x, y) || PROPS.some(q => !q.soft && Math.hypot(q.x - x, (q.y - y) * 1.6) < q.rad + 30)) && ++k < 80);
     const blue = G.wave >= 3 && rnd() < .3;
     G.mobs.push({kind: blue ? 'blue' : 'green', x, y, r: 18, hp: blue ? 70 : 40, max: blue ? 70 : 40, st: 'idle', t: rnd(), hopT: 0, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: blue ? 1.25 : 1, tell: blue ? .42 : .55, fr: 0, born: 0});
   }
   G.banner = {t: 0, txt: 'ระลอก ' + G.wave};
 }
 function stepPlayer(dt) {
-  const p = G.p; p.inv = Math.max(0, p.inv - dt);
+  const p = G.p; p.inv = Math.max(0, p.inv - dt); const ox = p.x, oy = p.y;
   if (p.bufT > 0) { p.bufT -= dt; if (p.bufT <= 0) p.buf = null; }
   p.stT -= dt; if (p.stT <= 0) p.st = Math.min(100, p.st + 42 * dt);
   if (p.kx || p.ky) { p.x += p.kx * dt; p.y += p.ky * dt; p.kx *= Math.pow(.0005, dt); p.ky *= Math.pow(.0005, dt); if (Math.abs(p.kx) + Math.abs(p.ky) < 5) p.kx = p.ky = 0; }
@@ -582,14 +767,14 @@ function stepPlayer(dt) {
       p.step += dt; if (p.step > .15) { p.step = 0; p.bob ^= 1; puff(p.x - DV[p.dir][0] * 10 + (rnd() - .5) * 8, p.y - 1, p.bob ? '#efe6c9' : '#d9e8b4'); }   // kicked-up dust
     } else { p.state = 'idle'; p.bob = 0; }
   }
-  blockProps(p, 14);
+  blockProps(p, 14); unwater(p, ox, oy);
   p.x = clamp(p.x, MARGIN.l, WW - MARGIN.r); p.y = clamp(p.y, MARGIN.t, WH - MARGIN.b);
 }
 function stepMobs(dt) {
   const p = G.p;
   for (const m of G.mobs) {
     if (m.hp <= 0) { m.dieT += dt; continue; }
-    m.born += dt; m.t += dt; m.hit = Math.max(0, m.hit - dt);
+    m.born += dt; m.t += dt; m.hit = Math.max(0, m.hit - dt); m.ox = m.x; m.oy = m.y;
     if (m.kx || m.ky) { m.x += m.kx * dt; m.y += m.ky * dt; m.kx *= Math.pow(.002, dt); m.ky *= Math.pow(.002, dt); if (Math.abs(m.kx) + Math.abs(m.ky) < 4) m.kx = m.ky = 0; }
     const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy) || 1;
     if (m.st === 'hurt') { m.fr = 1; if (m.t > .28) { m.st = 'idle'; m.t = 0; } }
@@ -608,7 +793,7 @@ function stepMobs(dt) {
       if (!m.hitP && Math.hypot(p.x - m.x, p.y - m.y) < 34) { m.hitP = true; if (p.inv <= 0) hurtPlayer(m.kind === 'blue' ? 16 : 11, m.x, m.y); }
       if (k >= 1) { m.st = 'rest'; m.t = 0; m.z = 0; puff(m.x, m.y, '#cfe3a8'); }
     } else if (m.st === 'rest') { m.fr = 1; if (m.t > .65) { m.st = 'idle'; m.t = 0; } }
-    blockProps(m, 14);
+    blockProps(m, 14); unwater(m, m.ox, m.oy);
     m.x = clamp(m.x, MARGIN.l - 40, WW - MARGIN.r + 40); m.y = clamp(m.y, MARGIN.t - 40, WH - MARGIN.b + 40);
   }
   // keep bodies apart
@@ -619,6 +804,8 @@ function stepMobs(dt) {
 }
 const TEST = new URLSearchParams(location.search).get('test');   // ?test=atk: screenshot helper, freezes on the second hit
 function testSetup() {
+  if (TEST === 'view') { const q = new URLSearchParams(location.search); G.next = 1e9; G.p.x = +q.get('x'); G.p.y = +q.get('y');   // ?test=view&x=&y=
+    cam.x = G.p.x - VW / 2; cam.y = G.p.y - 60 - VH / 2; return; }
   if (TEST === 'run') { G.next = 1e9; keys.KeyD = keys.KeyS = true; for (let i = 0; i < 20; i++) step(1 / 60); return; }   // ?test=run: runs down-right
   if (TEST !== 'atk') return; const p = G.p; G.next = 1e9; p.dir = 0;
   for (let i = 0; i < 3; i++) G.mobs.push({kind: i ? 'green' : 'blue', x: p.x + 80 + i * 18, y: p.y + (i - 1) * 26, r: 18, hp: 99, max: 99, st: 'idle', t: -9, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 1, tell: .5, fr: 0, born: 0});
@@ -632,6 +819,7 @@ function step(dt) {
   G.t += dt;
   if (G.hs > 0) { G.hs -= dt; return; }       // hit-stop: everything holds for a moment
   if (!G.over) stepPlayer(dt); else if (G.p.state === 'dead') G.p.deadT += dt;
+  stepAmbient(dt);
   stepMobs(dt);
   for (const f of G.fx) { f.t += dt; if (f.vx !== undefined) { const dm = f.k === 'air' ? .965 : .9; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= dm; f.vy *= dm; } }
   G.fx = G.fx.filter(f => f.t < f.life);
@@ -705,7 +893,7 @@ function draw() {
   if (G.shake > 0) { cx += Math.round((rnd() - .5) * G.shake * 2); cy += Math.round((rnd() - .5) * G.shake * 2); }
   if (G.kick) { const k = G.kick.t / .12; cx += Math.round(G.kick.x * k); cy += Math.round(G.kick.y * k); }
   ctx.setTransform(S, 0, 0, S, -cx * S, -cy * S);
-  ctx.drawImage(BG, 0, 0);
+  ctx.drawImage(BG, 0, 0); drawGround(cx, cy);
   // shadows + warning rings
   ctx.globalAlpha = .22;
   ctx.drawImage(SHP, Math.round(p.x - 23), Math.round(p.y - 7));
@@ -725,6 +913,7 @@ function draw() {
     if (cover) ctx.globalAlpha = .45; ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); ctx.globalAlpha = 1; }}));
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props].sort((a, b) => a.y - b.y);
   for (const o of list) o.d();
+  drawFlies();
   // hit arcs (pixel squares along a curve in front of the rogue) and sparks
   for (const f of G.fx) {
     if (f.k === 'arc') { const a0 = Math.atan2(DV[f.dir][1], DV[f.dir][0]), R = f.big ? 62 : 52, k = f.t / f.life;
@@ -766,7 +955,7 @@ function start() {
 }
 let last = performance.now();
 function frame(t) { const dt = Math.min(1 / 30, (t - last) / 1000); last = t; if (G) step(dt); draw(); hud(); requestAnimationFrame(frame); }
-load().then(() => { document.getElementById('go').onclick = start; if (TEST) { start(); testSetup(); } requestAnimationFrame(frame); })
+load().then(() => { const go = document.getElementById('go'); go.disabled = false; go.textContent = 'เริ่ม'; go.onclick = start; if (TEST) { start(); testSetup(); } requestAnimationFrame(frame); })
   .catch(e => { ov.innerHTML = '<div><h1>โหลดภาพไม่ได้</h1><p>เปิดผ่านตัวรันเกม (เล่นเกม.bat) แล้วเข้า /action.html</p></div>'; console.error(e); });
 window.ACT = {get G() { return G; }, start, step, draw, newGame};
 </script>
