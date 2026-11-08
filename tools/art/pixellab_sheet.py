@@ -7,6 +7,8 @@
 #   python3 -I tools/art/pixellab_sheet.py <unzipped dir> <out.png> <row>=<animation folder>:<first>-<last> ... [--cols=13] [--dir=east] [--smoke]
 # --smoke: PixMiniMax sometimes paints flat grey smoke blobs behind the character (Wukong's side-view run 2026-11-08): a greyish
 #          colour filling a connected patch of 150+ px goes, with its soft rim (the character's own art is shaded, so it stays).
+# --half: every 2x2 block -> one pixel (a dark outline pixel wins, else the most common colour), the same merge as pixellab_char.py:
+#         a 256 canvas shown ~105 px tall looked soft when the browser shrank it (owner 2026-11-08 "ภาพมันดูมนๆ").
 # Prints the layout JSON (rows {r,n}, cols, nr, cw, ch, fx, fy, h0) and writes it next to the picture.
 import sys, json, glob, os
 import numpy as np
@@ -26,7 +28,8 @@ def frames_of(folder):
     fs = sorted(glob.glob(os.path.join(src, '*', 'animations', folder, DIR, 'frame_*.png')))
     if not fs: raise SystemExit('no frames for ' + folder)
     fr = [Image.open(f).convert('RGBA') for f in fs]
-    return [unsmoke(f) for f in fr] if 'smoke' in opts else fr
+    if 'smoke' in opts: fr = [unsmoke(f) for f in fr]
+    return [half(f) for f in fr] if 'half' in opts else fr
 
 def unsmoke(im):
     # the smoke is a big patch of ONE flat colour (grey 127,127,126 / greyish pink 149,117,112 on Wukong); the character's own art is
@@ -44,6 +47,16 @@ def unsmoke(im):
             big = ndimage.binary_dilation(big, iterations=1) & op & (np.abs(rgb - [r, g, b]).max(2) < 40)  # its soft rim
             a[..., 3][big] = 0; op = a[..., 3] > 0
     return Image.fromarray(a)
+
+def half(im):
+    a = np.array(im).astype(float); H, W = a.shape[0] // 2 * 2, a.shape[1] // 2 * 2
+    b = a[:H, :W].reshape(H // 2, 2, W // 2, 2, 4).transpose(0, 2, 1, 3, 4).reshape(H // 2, W // 2, 4, 4)
+    op = b[..., 3] >= 128; lum = b[..., :3] @ np.array([.299, .587, .114]); lum = np.where(op, lum, 1e9)
+    dark = lum.min(-1) < 60; di = lum.argmin(-1)
+    eq = (np.abs(b[:, :, :, None, :3] - b[:, :, None, :, :3]).sum(-1) < 1) & op[:, :, :, None] & op[:, :, None, :]
+    mi = eq.sum(-1).argmax(-1); pick = np.where(dark, di, mi)
+    out = np.take_along_axis(b, pick[..., None, None].repeat(4, -1), 2)[:, :, 0]
+    out[..., 3] = np.where(op.sum(-1) >= 2, 255, 0); return Image.fromarray(out.astype(np.uint8))
 
 def feet(im):
     al = np.array(im)[..., 3] > 40; ys = np.where(al.any(1))[0]; y1 = ys[-1]
