@@ -255,6 +255,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Owner "ไม่สวย เอาดาวออก": the rune circle re-made without its hexagram / star ring (My effects "rogue_rune_nostar" →
   `fx/starrune.png`), and each dash line now only flashes (.22 s after the dash) instead of staying, so no star builds up;
   the five dashes, lightning strikes and the heavy finish stay.
+  Owner's picture of "Cyan sword cut" recoloured blue in VFX Creator, "ใส่อันนี้ ให้ทิ้งรอยไว้ หน่วง" + "ใช้แทนพุ่งสายฟ้าเลย":
+  3b257bb0 re-exported ×2.8 ("rogue_big_cut"), pixels moved onto the owner's blue (sampled from their screenshot: #081a46
+  #0d5694 #0fc3ff #83f4f9 #f0fcff), the clean-line frame held 9 frames (~0.65 s) with a slow fade, then turned offline
+  (nearest, about its centre) to 12 angles `fx/bigcut0..165.png` + glows. Skill 4's dashes now cross the middle of the
+  circle at `CUTS` 0 / 135 / 45 / 165 / 105° (alternating sides, length 280), each leaving one big cut that lingers; no
+  lightning line, no strikes per dash (the finish keeps five strikes + shockwave). `fx/bluecut*` = the smaller held cut.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
