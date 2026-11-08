@@ -227,6 +227,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   VFX `dash_slash` (cyan, 2.4) + two own `bolt` layers along it (jag .07, 2 branches, growing back to front, flickering) +
   a spark burst, My effects "rogue_dash_bolt" → `fx/dashbolt.png` (orange tip sparks recoloured) + mirrored `dashbolt_l`;
   skill 4's passes now cross the field left / right in turn with a slight slant (`nextCut`), one streak per pass.
+  Then the owner's own VFX Creator effect "Cyan lightning dash" (My effects 3997ec67-2cf4-49f9-ba5d-caeab4cd24b0, made with
+  the prompt above, Pro = 4 generations) replaced it: opened with `start --effect <id>` (the id was read from the VFX
+  Creator page's "Open" button, `vfx-library-open-<id>`, after the owner signed in in the built-in browser), ×1.7, exported
+  as "rogue_lightning_dash_game" → `fx/dashbolt.png` + mirrored `dashbolt_l` + glows.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
   the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =
