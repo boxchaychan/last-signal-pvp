@@ -85,6 +85,9 @@ aim: a mouse click aims at the mouse, J / the touch button auto-aim at the neare
 the hit blink is now 45% see-through instead of vanishing. The wave bands looked like a leftover white frame → one 2 px band in
 the arc's own edge colour/alpha.
 
+Owner: "สีขาวตอนกดฟัน 2 เหมือนเอา bg ออกไม่หมด" → the 16% white screen flash on the last hit is gone (camera kick stays), the
+slime hit/warning flash is a 55% white overlay instead of a solid white silhouette, the hit glow is smaller/softer (smoothed).
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of
