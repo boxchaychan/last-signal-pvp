@@ -42,6 +42,7 @@ user env var, never printed; `--upload` for images). Balance at start: 40 + 20 d
 | 2026-11-08 | import "Dagger Rogue 128": all 8 views from `pl_rot/` (the first account's PixelLab rotations) | 6f024d02-2df1-4fb1-aaae-43922ac724ce | 0.25 | ✅ "nothing generated"; downloaded back to `pl2_rot/` and compared: all 8 views identical to `pl_rot/` (0 pixels differ) |
 | 2026-11-08 | NW attack redo "attack_ul" (owner: the upper diagonals still had one sweep + a stab): two wide SIDEWAYS sweeps, seen from behind, never facing the camera; NE mirrors it | group d9721383-636b-4fb0-9421-c5b2feab6d6e | 1 | ✅ owner chose it ("B") over attack_2hit_b NW: NW = attack_ul, NE = its mirror (`rogue_build.sh`) |
 | 2026-11-08 | base moves, owner "เอาทุกอย่างที่ใช้เจนไป ยกเว้นสกิล": run 8f ×8 (loop, keep_first_frame off), idle 8f ×8 (loop), roll 8f ×8, hurt 4f ×8, death 8f ×4 (E S W N) — 36 jobs from `art/incoming/action/rogue/jobs_base.json` via `tools/pl_queue.py` (one at a time, ZIP into `pl2_dl/` after each, log `pl2_dl/queue.log`, group ids `pl2_dl/groups.json`; rerunning skips what is downloaded) | see groups.json | 36 (3.75 + daily bonus left) | ✅ all 36 done 15:13–15:49; dust puffs beside the run / roll are cut by `act_sheet.py` (`dedust`: small or pale separate blobs). In the game: idle loop 7 fps, run loop 13 fps at speed 230, roll 0.4 s, hit 0.28 s, death 0.9 s (nearest of E S W N) |
+| 2026-11-08 | skill moves (owner "เจนมาเลย"), `jobs_skills.json` via `pl_queue.py` (log `pl2_dl/queue_skills.log`): spin 16f south · bomb (lob a bomb with the LEFT hand) 8f east, south, north, north-west | spin d8158151-c872-4016-ae19-02844bacbe4b · bomb 512ebe0e-3e33-476b-bd3b-5467d242c0c7 | 5 (1985 left of the 2000 subscription) | ✅ spin: side crouch wind-up 1–4, turns 6–8 with a white ring PixelLab drew itself (kept, recoloured + glow like the attack), back to front 9–16. bomb: E / N / NW clean lobs; S drops the bomb at her feet instead of throwing (fine: the flying bomb is drawn by the game and `dedust` cuts PixelLab's loose bomb) |
 **Back views (N, NE, NW): ask for VERTICAL cuts** (overhead chop, rising slash) plus "seen from BEHIND … never turns … face never visible"; sideways swings make PixMiniMax turn her side-on or toward the camera.
 Download the ZIP only between jobs (`/mcp/characters/<id>/download` answers "still being generated" while a job runs).
 
@@ -146,7 +147,24 @@ Owner after playing: "เอาหญ้าออก ต้นไม้ใหญ
 blossom re-cut 1.5× (`props_px.py gpt_nature_cut.png <out> 0=423 20 oak,pine,blossom,bush,boulder,rocks,grass,flowers`,
 only the three trees copied: oak 389×425, pine 275×446, blossom 274×324), trunk radii 30 / 24 / 22, edge trees every
 320–470 px, forest trees ≥165 apart, field props ≥430 apart (the spacing, not the count, decides how thick the field is).
-Next art: GPT sheet `art/incoming/action/map/PROMPT_ruins_forest.txt` (ruin walls, arch, pillars, rubble, stairs, statue,
+Town (owner 2026-11-08 pasted two GPT sheets: the ruins/forest/camp sheet from `PROMPT_ruins_forest.txt` and an
+18-building sheet; pasted pictures come in the transcript as an `attachment` / `queued_command` line, saved as
+`gpt_ruins.png` / `gpt_buildings.png`): ruins sheet `white_cut.py --no-ring` → `props_px.py ... 0=130 20
+wall,wall_corner,arch,statue,pillar_down,pillar,rubble,stairs,stump,log,mushrooms,fern,dead_tree,mossy_rock,campfire,tent,
+signpost,cart` (dead tree again at `12=330`) → `gpt_rpx/`; buildings sheet `white_cut.py --edge-only --no-ring`, then each
+building moved into its own grid cell with gaps (`gpt_buildings_spaced.png`; neighbours touched and were read as one) →
+`props_px.py ... 0=340 20 cottage_red,cottage_blue,cottage_thatch,guild,shop,healer,smithy,alchemist,library,armory,barn,
+windmill,chapel,townhall,observatory,greenhouse,magetower,watermill` → `gpt_bpx/`; all copied to `art/action/props/`.
+`GPDEF`: buildings `bld` (footprint 78% wide × 70, never mirrored), arch walk-through with a shadow (`shade`), dead tree
+`tree` (canopy shade). Layout: `HAMLET` grown to 980 × 640 = a town round the well (`TOWN` slots: town hall, chapel,
+library, shop, smithy, alchemist, guild, healer, armory, cottages; a slot too close to the road is skipped by
+`roadClear`), a farm east of it (barn, windmill, greenhouse, thatched cottage), a watermill on the stream, a wizard's
+corner north-west (mage tower, observatory); ruins `RUINS` 480 × 300: an arch where the side path comes in flanked by two
+statues, walls, pillars, rubble, stairs, three dead trees round it; forests get ferns, mushrooms, stumps, logs, mossy rocks,
+dead trees; a camp east of the lake (tent, fire, log, cart, barrel, crate); a signpost where each side path leaves the
+road; fences keep out of buildings. Prompts waiting for the owner: `PROMPT_trees.txt` (16 trees), `PROMPT_thai_city.txt`
+(old Thai capital: 18 buildings, 18 props, 6 ground tiles; attach `gpt_buildings.png`).
+Earlier prompt: GPT sheet `art/incoming/action/map/PROMPT_ruins_forest.txt` (ruin walls, arch, pillars, rubble, stairs, statue,
 stump, log, mushrooms, fern, dead tree, mossy rock, campfire, tent, signpost, cart; attach `gpt_village.png` for style).
 
 ## Skills (design in progress, owner 2026-11-08)
@@ -169,6 +187,16 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   shows the longest throw, dots lead to a yellow circle where it lands (`AIM`, `aimStart`/`aimEnd`, `skTarget`,
   `ringSprite`, `?test=aim`); with the mark up a press warps at once. The flying dagger is ~30 px with a light streak and a
   soft glow, flies a little slower (900 px/s); the stuck one is bigger.
+- **Skills 2–4 (owner 2026-11-08, "เจนมาเลยจาก pixellab"):** E / ปุ่ม หมุน = **spin slash** (PixelLab `spin`, south only —
+  a spin looks the same from anywhere; played as wind-up, two turns with hits on both, recover; 2 × 13 to everything within
+  108; she can drift; usable straight out of the throw or the warp = the owner's combo throw → warp behind → spin).
+  R / ระเบิด = **smoke bomb** (PixelLab `bomb`, E S N NW, rest mirrored/aliased; aimed like skill 1, range 340; a high lob,
+  blast r 96, 12 damage, **blind** 4 s: blind slimes hop at random, aim their lunges off and miss half the time; grey smoke
+  circles their heads; `smokeSprite` cloud). F / พุ่ง = **flurry** (owner asked whether a vanishing move needs 8
+  directions — no: no new moves at all): aim at a monster (range 300, red ring on it), she vanishes and cuts through it
+  6 times 150° apart (`streak` fx + crescent + attack-frame after-images), 6 × 9 + 8, invulnerable, moves on to a monster
+  close by if it dies, lands behind it. Cooldowns 5 / 9 / 10 s; costs 15 / 20 / 25 stamina. Phone: 4 skill buttons in an
+  arc round ตี / กลิ้ง; PC: Q E R F (or 1–4) with squares under the bars. Tests `?test=spin|bomb|bomb2|flurry`.
 - Effects: PixelLab VFX Creator (owner's screenshot, "Slash arc" preset: sweep / thickness / size / angle / trail / speed /
   frames sliders; the chat "Send" costs 1 generation) → export "For a game (ZIP)" → `pixellab_import.py` (from bb.html).
 

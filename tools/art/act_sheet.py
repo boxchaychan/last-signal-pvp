@@ -160,7 +160,7 @@ def frames(folder, d, name):
         for f in fl.split(','):
             fs = sorted(glob.glob(os.path.join(base, 'animations', f, d, 'frame_*.png'))) or fs
     out = [Image.open(f).convert('RGBA') for f in fs]
-    if name in ('attack', 'chop') and out: return arcwhite([smear(im) for im in out])   # attacks keep their detached blade smears
+    if name in ('attack', 'chop', 'spin') and out: return arcwhite([smear(im) for im in out])   # attacks keep their detached blade smears
     return [dedust(im) for im in out]
 
 def hits(fr):
@@ -200,7 +200,7 @@ for name, A in data.items():
         an, d = key.split('/')
         if an == name and f in M: M[d] = dict(M[f], flip=mir, alias=f)
     sheet = shrink(sheet); sheet.save(f'{out}_{name}.png', optimize=True); meta['anims'][name] = M
-    if name == 'attack':
+    if name in ('attack', 'spin'):
         # glow layer: every arc pixel (exactly a SMEAR colour) blurred into a soft halo of GLOWC, added by the game
         import numpy as np
         from scipy import ndimage
