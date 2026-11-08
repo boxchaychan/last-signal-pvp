@@ -4,6 +4,7 @@ The owner speaks Thai. Reply in Thai, short and plain (they are not a programmer
 
 GPT / Codex is connected to this repository too (owner 2026-11-06). `AGENTS.md` (read by Codex) splits the work: Codex makes pictures on a `codex/<task>` branch into `art/incoming/<task>/` with a `REPORT_TH.txt` and opens a PR without merging; Claude writes the code and brings the art in. Check for new `codex/*` branches or PRs when the owner says pictures are ready; don't merge Codex PRs as they are, take the pictures, convert them, and ship them in our own PR.
 
+**Action game (class-based, Dimraeth-like): progress, decisions and the PixelLab job log are in `docs/action-game.md` — read it and add every PixelLab job there so nothing is generated twice.**
 **Handoff 2026-11-08 (owner moved to the PC, "ขอข้อมูลเอาไปทำ Claude PC"): read `docs/handoff-pc.md` first.** Next direction: an action game like Dimraeth (top-down pixel action RPG, Souls-lite: combo, dodge roll, stamina) with the Realms of Pixel look (small chibi pixel sprites, few colours, outlines, isometric field, bright day); start from the 8 views of "Sun Wukong chibi 64" (PixelLab id 51b049d7…, files in `art/incoming/legends/anim_raw/god_warrior_chibi64/`); moves (run + attack first, 5 directions, mirror the rest) wait for the owner's OK because they cost PixelLab credits (trial, ~19 left).
 
 ## >>> Current project: Babies & Beasts (`bb.html`) <<<
