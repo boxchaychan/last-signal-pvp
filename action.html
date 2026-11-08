@@ -167,11 +167,13 @@ function ellipseSprite(w, h, col, ring) {
 const DIG = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001', '111100111001111', '111100111101111', '111001001010010', '111101111101111', '111101111001111'];
 
 // ---------- assets ----------
-const IMG = new Image(); let META = null, BG = null;
+const IMGS = {}; let META = null, BG = null;   // one sheet per move (art/action/rogue_<move>.png) + the stills
 const SL = {}, SHP = ellipseSprite(46, 12, '#000000'), SHS = ellipseSprite(40, 10, '#000000'), RING = ellipseSprite(70, 24, '#ff3b3b', 1);
 async function load() {
-  const [m] = await Promise.all([fetch('art/action/rogue.json').then(r => r.json()), new Promise((ok, no) => { IMG.onload = ok; IMG.onerror = no; IMG.src = 'art/action/rogue.png'; })]);
-  META = m; BG = makeGround();
+  META = await fetch('art/action/rogue.json', {cache: 'no-cache'}).then(r => r.json());
+  const files = [META.still, ...Object.values(META.anims).map(a => a.img)];
+  await Promise.all(files.map(f => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = no; im.src = 'art/action/' + f + '?v=' + (META.v || 1); IMGS[f] = im; })));
+  BG = makeGround();
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
   SL.blue = makeSlime(['#284a8a', '#4a7fd0', '#86b8f4', '#eef6ff']);
 }
@@ -193,11 +195,12 @@ function atkPlan(dir) {
   const ms = []; for (let f = 0; f < ar.n; f++) ms.push(hits.includes(f) ? ATK.hitMs : hits.includes(f + 1) ? ATK.preMs : ATK.base);
   return {ar, hits, dmg, ms, first: hits[0], last: hits[n - 1]};
 }
-const ROLL = {t: .32, sp: 430, cost: 26};
+const ROLL = {t: .4, sp: 380, cost: 26}, HURT_T = .28, DEATH_T = .9, RUN = 230;   // run speed for the wide field
 function dirOf(dx, dy) { return ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8; }
 const DV = [...Array(8)].map((_, i) => [Math.cos(i * Math.PI / 4), Math.sin(i * Math.PI / 4)]);
 function animRow(name, dir) {
-  const A = META.anims[name] || {}, R = (v, flip) => ({r: v.r, n: v.n, hits: v.hits, flip: flip !== !!v.flip});
+  const A = META.anims[name]; if (!A) return null;
+  const R = (v, flip) => ({img: IMGS[A.img], r: v.r, n: v.n, hits: v.hits, flip: flip !== !!v.flip});
   if (A[DIRS[dir]]) return R(A[DIRS[dir]], false);
   const m = (12 - dir) % 8; if (A[DIRS[m]]) return R(A[DIRS[m]], true);        // mirror (weapon swaps hands)
   for (let k = 1; k < 5; k++) for (const s of [1, -1]) { const d = (dir + s * k + 8) % 8; if (A[DIRS[d]]) return R(A[DIRS[d]], false); }
@@ -276,9 +279,9 @@ function hurtPlayer(dmg, fromX, fromY) {
   const p = G.p; if (p.inv > 0 || G.over) return;
   p.hp -= dmg; p.inv = .7; G.shake = 6; G.hs = .06;
   const dx = p.x - fromX, dy = p.y - fromY, l = Math.hypot(dx, dy) || 1; p.kx = dx / l * 260; p.ky = dy / l * 260;
-  if (p.state === 'atk') { p.state = 'idle'; p.a = null; }
+  p.a = null; p.state = 'hurt'; p.hurtT = HURT_T; p.dir = dirOf(-dx, -dy);    // flinch facing the hitter
   G.nums.push({x: p.x, y: p.y - 130, v: dmg, t: 0, big: true, red: true});
-  if (p.hp <= 0) { p.hp = 0; G.over = true; setTimeout(() => showOver(), 700); }
+  if (p.hp <= 0) { p.hp = 0; G.over = true; p.state = 'dead'; p.deadT = 0; setTimeout(() => showOver(), 1600); }
 }
 function spawnWave() {
   G.wave++; const n = 3 + G.wave * 2, far = Math.max(560, Math.min(VW, VH) * .55);
@@ -295,6 +298,7 @@ function stepPlayer(dt) {
   p.stT -= dt; if (p.stT <= 0) p.st = Math.min(100, p.st + 42 * dt);
   if (p.kx || p.ky) { p.x += p.kx * dt; p.y += p.ky * dt; p.kx *= Math.pow(.0005, dt); p.ky *= Math.pow(.0005, dt); if (Math.abs(p.kx) + Math.abs(p.ky) < 5) p.kx = p.ky = 0; }
   const [mx, my] = moveInput();
+  if (p.state === 'hurt') { p.hurtT -= dt; if (p.hurtT <= 0) p.state = 'idle'; }
   if (p.state === 'roll') {
     const r = p.roll; r.t += dt; const k = 1 - r.t / ROLL.t, sp = ROLL.sp * (.35 + .65 * k);
     p.x += r.vx * sp * dt; p.y += r.vy * sp * dt; r.g -= dt;
@@ -322,7 +326,7 @@ function stepPlayer(dt) {
   }
   if (p.state === 'idle' || p.state === 'move') {
     if (mx || my) {
-      p.state = 'move'; const sp = 175; p.x += mx * sp * dt; p.y += my * sp * dt; p.dir = dirOf(mx, my);
+      p.state = 'move'; const sp = RUN; p.x += mx * sp * dt; p.y += my * sp * dt; p.dir = dirOf(mx, my);
       p.step += dt; if (p.step > .14) { p.step = 0; p.bob ^= 1; if (p.bob) puff(p.x - DV[p.dir][0] * 8, p.y, '#cfe3a8'); }
     } else { p.state = 'idle'; p.bob = 0; }
   }
@@ -361,6 +365,7 @@ function stepMobs(dt) {
 }
 const TEST = new URLSearchParams(location.search).get('test');   // ?test=atk: screenshot helper, freezes on the second hit
 function testSetup() {
+  if (TEST === 'run') { G.next = 1e9; keys.KeyD = keys.KeyS = true; for (let i = 0; i < 20; i++) step(1 / 60); return; }   // ?test=run: runs down-right
   if (TEST !== 'atk') return; const p = G.p; G.next = 1e9; p.dir = 0;
   for (let i = 0; i < 3; i++) G.mobs.push({kind: i ? 'green' : 'blue', x: p.x + 80 + i * 18, y: p.y + (i - 1) * 26, r: 18, hp: 99, max: 99, st: 'idle', t: -9, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 1, tell: .5, fr: 0, born: 0});
   const d = +(new URLSearchParams(location.search).get('dir') || 0); p.dir = d;
@@ -372,7 +377,7 @@ function step(dt) {
   if (TEST === 'atk' && G.p.a && G.p.a.i >= G.p.a.plan.last && G.p.a.t > 20) return;
   G.t += dt;
   if (G.hs > 0) { G.hs -= dt; return; }       // hit-stop: everything holds for a moment
-  if (!G.over) stepPlayer(dt);
+  if (!G.over) stepPlayer(dt); else if (G.p.state === 'dead') G.p.deadT += dt;
   stepMobs(dt);
   for (const f of G.fx) { f.t += dt; if (f.vx !== undefined) { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= .9; f.vy *= .9; } }
   G.fx = G.fx.filter(f => f.t < f.life);
@@ -383,19 +388,31 @@ function step(dt) {
 }
 
 // ---------- drawing ----------
-function drawCell(r, c, x, y, flip, alpha) {
+function drawCell(img, r, c, x, y, flip, alpha) {
   const C = META.cell; x = Math.round(x); y = Math.round(y);
   if (alpha !== undefined) ctx.globalAlpha = alpha;
-  if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(IMG, c * C, r * C, C, C, -META.fx, y - META.fy, C, C); ctx.restore(); }
-  else ctx.drawImage(IMG, c * C, r * C, C, C, x - META.fx, y - META.fy, C, C);
+  if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(img, c * C, r * C, C, C, -META.fx, y - META.fy, C, C); ctx.restore(); }
+  else ctx.drawImage(img, c * C, r * C, C, C, x - META.fx, y - META.fy, C, C);
   ctx.globalAlpha = 1;
 }
+const drawStill = (dir, x, y, alpha) => drawCell(IMGS[META.still], 0, dir, x, y, false, alpha);
+// play a move's row: by time t at fps (loop) or by progress k 0..1 (once); false when that move is not in yet
+function drawMove(name, dir, x, y, t, fps, k) {
+  const ar = animRow(name, dir); if (!ar) return false;
+  const f = k !== undefined ? Math.min(ar.n - 1, Math.floor(k * ar.n)) : Math.floor(t * fps) % ar.n;
+  drawCell(ar.img, ar.r, f, x, y, ar.flip); return true;
+}
 function drawPlayer(p) {
-  if (p.inv > 0 && p.state !== 'roll' && ((G.t * 14) | 0) % 2) return;     // blink while hurt
-  if (p.state === 'atk' && p.a) { const ar = p.a.plan.ar; drawCell(ar.r, Math.min(p.a.i, ar.n - 1), p.x, p.y, ar.flip); return; }
+  if (p.inv > 0 && p.state !== 'roll' && p.state !== 'hurt' && p.state !== 'dead' && ((G.t * 14) | 0) % 2) return;   // blink after a hit
+  if (p.state === 'atk' && p.a) { const ar = p.a.plan.ar; drawCell(ar.img, ar.r, Math.min(p.a.i, ar.n - 1), p.x, p.y, ar.flip); return; }
+  if (p.state === 'dead' && drawMove('death', p.dir, p.x, p.y, 0, 0, Math.min(1, p.deadT / DEATH_T))) return;
+  if (p.state === 'hurt' && drawMove('hurt', p.dir, p.x, p.y, 0, 0, 1 - p.hurtT / HURT_T)) return;
+  if (p.state === 'roll' && p.roll && drawMove('roll', p.dir, p.x, p.y, 0, 0, p.roll.t / ROLL.t)) return;
+  if (p.state === 'move' && drawMove('run', p.dir, p.x, p.y, G.t, 13)) return;
+  if (p.state === 'idle' && drawMove('idle', p.dir, p.x, p.y, G.t, 7)) return;
   let y = p.y; if (p.state === 'move' && p.bob) y -= 2;
   if (p.state === 'roll' && p.roll) y -= Math.round(Math.sin(p.roll.t / ROLL.t * Math.PI) * 10);
-  drawCell(META.idle, p.dir, p.x, y, false);
+  drawStill(p.dir, p.x, y);
 }
 function drawMob(m) {
   const S2 = SL[m.kind], i = m.fr || 0, img = (m.hit > 0 || (m.st === 'tell' && ((m.t * 18) | 0) & 1)) ? S2.w[i] : S2.f[i];
@@ -432,7 +449,7 @@ function draw() {
   for (const f of G.fx) if (f.k === 'puff') { ctx.globalAlpha = 1 - f.t / f.life; ctx.fillStyle = f.c; const s = (f.t < f.life * .5 ? 2 : 1) * Math.ceil(U / 2) * 2; ctx.fillRect(Math.round(f.x), Math.round(f.y), s, s); }
   ctx.globalAlpha = 1;
   // dodge after-images
-  for (const g of G.ghosts) drawCell(META.idle, g.dir, g.x, g.y, false, .35 * (1 - g.t / .22));
+  for (const g of G.ghosts) drawStill(g.dir, g.x, g.y, .35 * (1 - g.t / .22));
   // bodies, back to front
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)}))].sort((a, b) => a.y - b.y);
   for (const o of list) o.d();

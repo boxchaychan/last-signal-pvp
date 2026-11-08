@@ -1,65 +1,90 @@
-# PixelLab character download (unzipped) -> one sprite sheet + json for action.html (owner 2026-11-08, dagger rogue).
-#   python3 tools/art/act_sheet.py <unzipped dir>/<state> <out.png> <anim>=<folder> [<anim>=<folder> ...]
-#   e.g. python3 tools/art/act_sheet.py art/incoming/action/rogue/pl_dl/Idle art/action/rogue.png attack=attack_2hit_b
-# Row 0 = the 8 still rotations (padded to the animation cell, PixelLab centres a 128 still inside its 172 frames, +22 px).
-# Then one row per animation per direction, in DIRS order (east, south-east, south, ... clockwise on screen). A direction
-# the download does not have yet is left empty and listed as missing; the game falls back to a mirrored / nearby one.
+# PixelLab character download (unzipped) -> sprite sheets + json for action.html (owner 2026-11-08, dagger rogue).
+#   python3 tools/art/act_sheet.py <unzipped dir>/<state> <out prefix> <anim>=<folder> [<anim>=<folder> ...] [options]
+#   e.g. python3 tools/art/act_sheet.py art/incoming/action/rogue/pl2_dl/Idle art/action/rogue run=run idle=idle \
+#        attack=@art/incoming/action/rogue/pl_dl/Idle::attack_2hit_b,attack_back
+# Writes <prefix>.json, <prefix>_still.png (the 8 rotations in one row) and <prefix>_<anim>.png per animation (one
+# row per direction it has, so no sheet gets too big for phones). PixelLab centres a 128 still inside its bigger
+# animation canvas (+22 px at 172), so every cell is the biggest canvas and smaller frames are centred in it.
+# <folder> can be a,b (a redo in b replaces a for the directions b has) and @<other download state dir>::a,b.
+# Options: --hits=<dir>:<f>,<f>[;...] hit frames by hand (attack only) · --skip=<dir>,... leave directions empty
+# (the game mirrors the other side) · --alias=<dir>:<from>[~],... play another direction's row (~ = mirrored).
 import sys, os, glob, json
 from PIL import Image
 
 src, out = sys.argv[1], sys.argv[2]
-# --hits=<dir>:<f>,<f>[;<dir>:...] sets a direction's hit frames by hand when the width rule misses one
-FIX = {}
-for a in sys.argv[3:]:
+opts = [a for a in sys.argv[3:] if a.startswith('--')]
+FIX, SKIP, ALIAS = {}, set(), {}
+for a in opts:
     if a.startswith('--hits='):
         for part in a[7:].split(';'):
-            d, fs = part.split(':'); FIX[d] = [int(f) for f in fs.split(',')]
-# --skip=<dir>,<dir> leaves those directions empty so the game mirrors the opposite side instead (a bad run)
-SKIP = set(sum([a[7:].split(',') for a in sys.argv[3:] if a.startswith('--skip=')], []))
-# --alias=<dir>:<from dir>[~],... plays another direction's frames instead (~ = mirrored), e.g. the clean east clip
-ALIAS = {}
-for a in sys.argv[3:]:
-    if a.startswith('--alias='):
+            d, fs = part.split(':'); FIX[d if '/' in d else 'attack/' + d] = [int(f) for f in fs.split(',')]
+    # --skip / --alias entries are "<anim>/<dir>"; a bare "<dir>" means the attack
+    elif a.startswith('--skip='): SKIP |= {p if '/' in p else 'attack/' + p for p in a[7:].split(',')}
+    elif a.startswith('--alias='):
         for part in a[8:].split(','):
-            d, f = part.split(':'); ALIAS[d] = (f.rstrip('~'), f.endswith('~')); SKIP.add(d)
-anims = [a.split('=') for a in sys.argv[3:] if not a.startswith('--')]
+            d, f = part.split(':'); d = d if '/' in d else 'attack/' + d
+            ALIAS[d] = (f.rstrip('~'), f.endswith('~')); SKIP.add(d)
+anims = [a.split('=', 1) for a in sys.argv[3:] if not a.startswith('--')]
 DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east']
-rows = []  # (name, dir, [frames])
-rot = [Image.open(os.path.join(src, 'rotations', d + '.png')).convert('RGBA') for d in DIRS]
-C = rot[0].width
-for name, folder in anims:
-    for d in DIRS:
-        fs = []
-        for f in folder.split(','):   # attack=a,b: a redo in folder b replaces folder a for the directions b has
-            fs = sorted(glob.glob(os.path.join(src, 'animations', f, d, 'frame_*.png'))) or fs
-        if d in SKIP: fs = []
-        fr = [Image.open(f).convert('RGBA') for f in fs]
-        if fr: C = max(C, fr[0].width)
-        rows.append((name, d, fr))
-cols = max([8] + [len(r[2]) for r in rows])
-sheet = Image.new('RGBA', (cols * C, (1 + len(rows)) * C))
-pad = (C - rot[0].width) // 2
-for i, im in enumerate(rot): sheet.alpha_composite(im, (i * C + pad, pad))
-meta = {'cell': C, 'fx': C // 2, 'fy': pad + 125 if rot[0].height == 128 else C - 25, 'dirs': DIRS, 'idle': 0, 'anims': {}}
+
+def dedust(im):
+    # PixelLab leaves dust puffs / specks floating beside a run or a roll even when told not to: drop every
+    # see-through-separated blob except the biggest that is small (< 120 px) or mostly pale (light dust)
+    import numpy as np
+    from scipy import ndimage
+    a = np.array(im); m = a[..., 3] > 0
+    lab, n = ndimage.label(m, structure=np.ones((3, 3)))
+    if n < 2: return im
+    sz = ndimage.sum(m, lab, range(1, n + 1)); big = 1 + int(np.argmax(sz))
+    for k in range(1, n + 1):
+        if k == big: continue
+        blob = lab == k; px = a[blob][:, :3].astype(int)
+        pale = (px.min(1) > 165).mean() > .6
+        if sz[k - 1] < 120 or (pale and sz[k - 1] < 900): a[blob] = 0
+    return Image.fromarray(a)
+
+def frames(folder, d, name):
+    # folder: a,b | @<state dir>::a,b | several of those joined by "|" (later ones win per direction)
+    fs = []
+    for seg in folder.split('|'):
+        base, fl = src, seg
+        if seg.startswith('@'): base, fl = seg[1:].split('::')
+        for f in fl.split(','):
+            fs = sorted(glob.glob(os.path.join(base, 'animations', f, d, 'frame_*.png'))) or fs
+    out = [Image.open(f).convert('RGBA') for f in fs]
+    return out if name in ('attack', 'chop') else [dedust(im) for im in out]   # attacks keep their detached blade smears
+
 def hits(fr):
     # swing frames: PixelLab draws a blade smear there, so the figure is widest; a hit = a local maximum of the
-    # width that is at least 1.25x the median width (checked on the rogue's 5 directions 2026-11-08)
-    w = []
-    for im in fr:
-        bb = im.getbbox(); w.append(bb[2] - bb[0] if bb else 0)
+    # width that is at least 1.25x the median width (checked on the rogue's directions 2026-11-08)
+    w = [(lambda b: b[2] - b[0] if b else 0)(im.getbbox()) for im in fr]
     med = sorted(w)[len(w) // 2]
     return [i for i in range(1, len(w) - 1) if w[i] >= 1.25 * med and w[i] >= w[i - 1] and w[i] >= w[i + 1] and (w[i] > w[i - 1] or w[i] > w[i + 1])]
 
-for j, (name, d, fr) in enumerate(rows):
-    o = (C - fr[0].width) // 2 if fr else 0
-    for i, im in enumerate(fr): sheet.alpha_composite(im, (i * C + o, (1 + j) * C + o))
-    meta['anims'].setdefault(name, {})[d] = {'r': 1 + j, 'n': len(fr), 'hits': FIX.get(d) or hits(fr)} if fr else None
-for name in meta['anims']:
-    for d, (f, mir) in ALIAS.items():
-        v = meta['anims'][name].get(f)
-        if v: meta['anims'][name][d] = dict(v, flip=mir, alias=f)
+rot = [Image.open(os.path.join(src, 'rotations', d + '.png')).convert('RGBA') for d in DIRS]
+data = {name: {d: ([] if f'{name}/{d}' in SKIP else frames(folder, d, name)) for d in DIRS} for name, folder in anims}
+C = max([rot[0].width] + [fr[0].width for a in data.values() for fr in a.values() if fr])
+pad = (C - rot[0].width) // 2
+pre = os.path.basename(out)
 os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
-sheet.save(out, optimize=True)
-json.dump(meta, open(os.path.splitext(out)[0] + '.json', 'w'), indent=1)
-have = {n: [d for d, v in a.items() if v] for n, a in meta['anims'].items()}
-print(sheet.size, 'cell', C, 'feet', meta['fx'], meta['fy'], have)
+still = Image.new('RGBA', (8 * C, C))
+for i, im in enumerate(rot): still.alpha_composite(im, (i * C + pad, pad))
+still.save(out + '_still.png', optimize=True)
+meta = {'cell': C, 'fx': C // 2, 'fy': pad + 125, 'dirs': DIRS, 'still': pre + '_still.png', 'anims': {}}
+for name, A in data.items():
+    have = [d for d in DIRS if A[d]]
+    if not have: continue
+    cols = max(len(A[d]) for d in have)
+    sheet = Image.new('RGBA', (cols * C, len(have) * C)); M = {'img': f'{pre}_{name}.png'}
+    for r, d in enumerate(have):
+        fr = A[d]; o = (C - fr[0].width) // 2
+        for i, im in enumerate(fr): sheet.alpha_composite(im, (i * C + o, r * C + o))
+        M[d] = {'r': r, 'n': len(fr)}
+        if name not in ('run', 'idle'): M[d]['hits'] = FIX.get(f'{name}/{d}') or hits(fr)
+    for key, (f, mir) in ALIAS.items():
+        an, d = key.split('/')
+        if an == name and f in M: M[d] = dict(M[f], flip=mir, alias=f)
+    sheet.save(f'{out}_{name}.png', optimize=True); meta['anims'][name] = M
+    print(name.ljust(7), sheet.size, 'dirs', len(have), 'frames', cols, {d: M[d].get('hits') for d in DIRS if d in M and 'hits' in M[d]})
+json.dump(meta, open(out + '.json', 'w'), indent=1)
+print('cell', C, 'feet', meta['fx'], meta['fy'])
