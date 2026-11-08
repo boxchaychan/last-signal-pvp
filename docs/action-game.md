@@ -135,6 +135,15 @@ the PC); walking across the map: median 0.3 ms, 1 frame of ~675 over 16 ms. A "h
 low-top-down art: the same feel comes from the smaller rogue (on a DPR-3 phone the screen shows 1170 world px of height,
 she is ~1/17 of it).
 
+## Skills (design in progress, owner 2026-11-08)
+Proposed shape (owner asked "เอากี่สกิลดี"): 4 skill buttons on screen at once (room for thumbs round the attack button on a
+phone) + attack + roll; about 8 skills per class to unlock up to level 50, the player picks which 4 to carry.
+- **Skill 1 — throw dagger (owner):** throw at a spot on the ground (aimed area, not a target); if it hits a monster, the
+  skill can be pressed again within 5 s → she appears BEHIND that monster. Not built yet; a throw move would cost PixelLab
+  credits (ask first), the existing attack pose can stand in for free.
+- Effects: PixelLab VFX Creator (owner's screenshot, "Slash arc" preset: sweep / thickness / size / angle / trail / speed /
+  frames sliders; the chat "Send" costs 1 generation) → export "For a game (ZIP)" → `pixellab_import.py` (from bb.html).
+
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
 dither, dirt path, tufts, flowers, rocks, bushes, a ring of trees), whole-number screen scale `S` (about 560 world px of
