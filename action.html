@@ -732,7 +732,7 @@ async function load() {
   // pixelfx effects already in the repo (MIT, vendor/pixelfx; owner 2026-11-08 "อันนี้เราเคยใช้นิ"): darkx = the smoke
   // bomb's blast, poof = vanishing / warping, nslash = the flurry's cross cuts
   try { const man = await fetch('fx/manifest.json').then(r => r.json());
-    await Promise.all(['darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
+    await Promise.all(['dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -947,7 +947,7 @@ function blinkBehind(p) {         // second press: appear behind the marked mons
 // and cuts through it 6 times from different sides (streaks + after-images, no new moves needed), then lands behind it.
 const SK2 = {cost: 15, cd: 5, dmg: 13, r: 140, wind: 70, step: 30, steps: 16, rec: 90, hits: [8, 16]};
 const SK3 = {range: 340, r: 96, dmg: 12, cost: 20, cd: 9, blind: 4, fly: .55, ms: [55, 55, 55, 55, 55, 75, 50, 50, 50]};
-const SK4 = {range: 300, r: 0, dmg: 9, n: 6, gap: .085, cost: 25, cd: 10};
+const SK4 = {range: 320, r: 140, dmg: 9, fin: 16, n: 5, cost: 25, cd: 10, open: .22, cut: .11, end: .32};
 const SKS = {1: SK1, 2: SK2, 3: SK3, 4: SK4};
 function startSk(p, k) { return k === 1 ? startSk1(p) : k === 2 ? startSpin(p) : k === 3 ? startBomb(p) : startFlurry(p); }
 function payFor(p, k) {
@@ -992,35 +992,47 @@ function bombBlast(b) {
   spark(b.tx, b.ty - 10, 12, '#ffcf6a'); G.shake = Math.max(G.shake, 5); G.hs = Math.max(G.hs, .05);
 }
 function startFlurry(p) {
-  const [, , m] = p.skT || skTarget(p, 4); p.skT = null;
-  if (!m || m.hp <= 0 || !payFor(p, 4)) return false;
-  for (let k = 0; k < 10; k++) puff(p.x + (rnd() - .5) * 26, p.y - rnd() * 40, '#eafcff'); pfx('poof', p.x, p.y - 34);
-  G.ghosts.push({x: p.x, y: p.y, dir: p.dir, t: 0, k: .5, still: 1});
-  p.state = 'flurry'; p.a = null; p.th = null; p.fl = {m, n: 0, t: SK4.gap, a0: Math.atan2(m.y - p.y, m.x - p.x)}; p.inv = Math.max(p.inv, 1.2); return true;
+  const [tx, ty] = p.skT || skTarget(p, 4); p.skT = null;
+  if (!payFor(p, 4)) return false;
+  p.dir = dirOf(tx - p.x, ty - p.y); p.state = 'flurry'; p.a = null; p.th = null;
+  p.fl = {cx: tx, cy: ty, ph: 'open', t: 0, n: -1, a0: Math.atan2(p.y - ty, p.x - tx), ax: p.x, ay: p.y, bx: p.x, by: p.y, u: 0, gh: 0};
+  p.inv = Math.max(p.inv, SK4.open + SK4.n * SK4.cut + SK4.end + .2);
+  G.fx.push({k: 'field', x: tx, y: ty, t: 0, life: SK4.open + SK4.n * SK4.cut + SK4.end + .25});
+  pfx('dashcharge', p.x, p.y - 34);
+  return true;
 }
+function inField(m, f) { return ((m.x - f.cx) / (SK4.r + m.r)) ** 2 + ((m.y - f.cy) / ((SK4.r + m.r) * .6)) ** 2 < 1; }
 function flurryStep(p, dt) {
   const f = p.fl; f.t += dt;
-  while (p.fl && f.t >= SK4.gap) {
-    f.t -= SK4.gap;
-    if (f.m.hp <= 0) {                                         // the monster fell: carry on to the next one close by
-      let nx = null, nd = 240; for (const m of G.mobs) { const d = Math.hypot(m.x - f.m.x, m.y - f.m.y); if (m.hp > 0 && d < nd) { nd = d; nx = m; } }
-      if (!nx) { flurryEnd(p); break; } f.m = nx; }
-    const m = f.m, a = f.a0 + f.n * Math.PI * 5 / 6, c = Math.cos(a), sn = Math.sin(a);   // 150 degrees apart: a star of cuts
-    const ax = m.x - c * 86, ay = m.y - sn * 58, bx = m.x + c * 96, by = m.y + sn * 66, dir = dirOf(c, sn);
-    G.fx.push({k: 'streak', x: ax, y: ay - 26, x2: bx, y2: by - 26, t: 0, life: .2});
-    G.fx.push({k: 'air', x: m.x, y: m.y - 22, dir, t: 0, life: .16, big: f.n === SK4.n - 1}); if (f.n % 2) pfx('nslash', m.x, m.y - 22);
-    const ar = animRow('attack', dir); G.ghosts.push({x: bx, y: by, dir, t: 0, k: .5, atk: ar ? (ar.hits || [4])[0] : 0, a: 1.8});
-    hitMob(m, SK4.dmg + (f.n === SK4.n - 1 ? 8 : 0), ax, ay, f.n === SK4.n - 1 ? 40 : 6, '#eafcff', f.n === SK4.n - 1);
-    G.hs = Math.max(G.hs, .03); G.shake = Math.max(G.shake, 2);
-    p.x = bx; p.y = by; p.dir = dirOf(m.x - bx, m.y - by);   // the camera follows the cuts
-    if (++f.n >= SK4.n) { flurryEnd(p); break; }
+  if (f.ph === 'open' && f.t >= SK4.open) { f.ph = 'cut'; f.t = 0; f.n = 0; nextCut(p, f); }
+  if (f.ph === 'cut') {
+    f.u = Math.min(1, f.t / (SK4.cut * .75));
+    p.x = f.ax + (f.bx - f.ax) * f.u; p.y = f.ay + (f.by - f.ay) * f.u;
+    f.gh -= dt; if (f.gh <= 0 && f.u < 1) { f.gh = .018; G.ghosts.push({x: p.x, y: p.y, dir: f.bx >= f.ax ? 0 : 4, t: 0, k: .5, atk: 3, an: 'dash', a: 1.6}); }
+    if (!f.hit && f.u >= .5) { f.hit = 1; let any = false;
+      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 10, '#a8f4f4'); any = true; }
+      if (any) { G.hs = Math.max(G.hs, .03); G.shake = Math.max(G.shake, 2); } }
+    if (f.t >= SK4.cut) { f.t = 0; if (++f.n < SK4.n) nextCut(p, f); else { f.ph = 'end';
+      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) hitMob(m, SK4.fin, f.cx, f.cy, 90, '#ffffff', true);
+      pfx('dashhit', f.cx, f.cy - 20); G.fx.push({k: 'burst', x: f.cx, y: f.cy - 20, t: 0, life: .3, big: true});
+      G.hs = Math.max(G.hs, .09); G.shake = Math.max(G.shake, 7); G.kick = {x: 0, y: 6, t: .12}; } }
   }
+  if (f.ph === 'end' && f.t >= SK4.end) flurryEnd(p);
+}
+function nextCut(p, f) {         // a pentagram: each pass 144 degrees round from the last, edge to edge through the middle
+  const a = f.a0 + Math.PI + f.n * Math.PI * 4 / 5, c = Math.cos(a), sn = Math.sin(a), R = SK4.r * 1.05;
+  f.ax = f.n === 0 ? p.x : f.bx; f.ay = f.n === 0 ? p.y : f.by;
+  f.bx = f.cx + c * R; f.by = f.cy + sn * R * .6; f.hit = 0; f.u = 0;
+  if (f.n > 0) { f.ax = f.cx - c * R; f.ay = f.cy - sn * R * .6; }
+  G.fx.push({k: 'streak', x: f.ax, y: f.ay - 30, x2: f.bx, y2: f.by - 30, t: 0, life: .26, cy: 1});
+  G.fx.push({k: 'air', x: f.cx, y: f.cy - 24, dir: dirOf(c, sn), t: 0, life: .16, big: f.n === SK4.n - 1});
+  if (f.n % 2 === 1) pfx('nslash', f.cx, f.cy - 24);
+  p.dir = f.bx >= f.ax ? 0 : 4;
 }
 function flurryEnd(p) {
-  const m = p.fl && p.fl.m; p.fl = null; p.state = 'idle'; p.inv = Math.max(p.inv, .25); p.noFl = G.t + .3;
-  if (waterAt(p.x, p.y)) { p.x = m ? m.x : p.x; p.y = m ? m.y + 30 : p.y; }
-  if (m) p.dir = dirOf(m.x - p.x, m.y - p.y);
-  for (let k = 0; k < 8; k++) puff(p.x + (rnd() - .5) * 24, p.y - rnd() * 40, '#eafcff'); blockProps(p, 14); pfx('poof', p.x, p.y - 34);
+  const f = p.fl; p.fl = null; p.state = 'idle'; p.inv = Math.max(p.inv, .25); p.noFl = G.t + .3;
+  if (waterAt(p.x, p.y)) { p.x = f.cx; p.y = f.cy + 40; }
+  p.dir = dirOf(f.cx - p.x, f.cy - p.y); blockProps(p, 14);
 }
 function puff(x, y, c) { G.fx.push({k: 'puff', x, y, vx: (rnd() - .5) * 40, vy: -10 - rnd() * 20, t: 0, life: .35 + rnd() * .2, c}); }
 function spark(x, y, n, c) { for (let k = 0; k < n; k++) { const a = rnd() * Math.PI * 2, s = 80 + rnd() * 160; G.fx.push({k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, life: .18 + rnd() * .12, c}); } }
@@ -1233,12 +1245,15 @@ function drawMove(name, dir, x, y, t, fps, k) {
 }
 function drawPlayer(p) {
   // after a hit she flickers see-through instead of vanishing (owner's clip: she seemed to disappear)
-  const blink = p.inv > 0 && G.t > (p.noFl || 0) && p.state !== 'roll' && p.state !== 'hurt' && p.state !== 'dead' && ((G.t * 14) | 0) % 2;
+  const blink = p.inv > 0 && G.t > (p.noFl || 0) && p.state !== 'roll' && p.state !== 'flurry' && p.state !== 'hurt' && p.state !== 'dead' && ((G.t * 14) | 0) % 2;
   if (blink) ctx.globalAlpha = .45;
   drawPlayerBody(p); ctx.globalAlpha = 1;
 }
 function drawPlayerBody(p) {
-  if (p.state === 'flurry') return;                             // gone: only the cuts and after-images show
+  if (p.state === 'flurry' && p.fl) { const f = p.fl, ar = animRow('dash', p.dir);
+    const fr = f.ph === 'open' ? 2 : f.ph === 'end' ? 6 : f.u < .45 ? 3 : f.u < .9 ? 4 : 5;
+    if (ar) { drawCell(ar.img, ar.r, fr, p.x, p.y, ar.flip); if (ar.glow) { ctx.globalCompositeOperation = 'lighter'; drawCell(ar.glow, ar.r, fr, p.x, p.y, ar.flip, .9); ctx.globalCompositeOperation = 'source-over'; } }
+    return; }
   if (p.state === 'spin' && p.sp) { const q = p.sp;
     if (q.s < 0) { const ar = animRow('attack', q.d0); drawCell(ar.img, ar.r, Math.max(0, (ar.hits || [4])[0] - 1), p.x, p.y, ar.flip); return; }   // wind-up
     if (q.s >= SK2.steps) { drawMove('idle', q.d0, p.x, p.y, 0, 7) || drawStill(q.d0, p.x, p.y); return; }                             // settle
@@ -1282,6 +1297,14 @@ function drawPfx(f) {
   if (Gl && Gl.m) { const g = Gl.m, j = Math.min(g.n - 1, i); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .75;
     ctx.drawImage(Gl.img, j * g.w, 0, g.w, g.h, Math.round(x - g.ax), Math.round(y - g.ay), g.w, g.h); ctx.globalCompositeOperation = 'source-over'; }
   ctx.globalAlpha = 1;
+}
+function fieldSprite(R) {         // ground field: dithered see-through cyan inside, a 3 px bright rim with a dark edge
+  const W = R * 2 + 8, H = (R * 1.2 | 0) + 8, P = painter(W, H), cx = W / 2, cy = H / 2, C = ['#0e3a44', '#1f7f8c', '#3fd0d8', '#a8f4f4', '#ffffff'].map(hex);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const d = Math.hypot((x + .5 - cx) / R, (y + .5 - cy) / (R * .6)); if (d > 1.02) continue;
+    const e = (1 - d) * R;
+    if (e < 1) P.set(x, y, C[1]); else if (e < 2.5) P.set(x, y, C[4]); else if (e < 4) P.set(x, y, C[3]);
+    else if (BAYER[(y & 3) * 4 + (x & 3)] < .22 + (1 - d) * .1) P.set(x, y, C[d > .8 ? 3 : 2], 120); }
+  return P.done();
 }
 function drawBomb(b) {            // a black round bomb with a fizzing fuse, its shadow on the ground under it
   const k = Math.min(1, b.t / b.T), gx = b.sx + (b.tx - b.sx) * k, gy = b.sy + 40 + (b.ty - b.sy - 40) * k, x = Math.round(b.x), y = Math.round(b.y);
@@ -1349,7 +1372,7 @@ function draw() {
     if (!FXS['rng' + k]) { FXS['rng' + k] = ringSprite(SA.range, '#ffffff', 1); FXS['rngD' + k] = ringSprite(SA.range + 2, '#1d1a22', 1);
       FXS['tgt' + k] = ringSprite(Math.max(20, SA.r), k === 3 ? '#c9a8ff' : '#ffe066'); FXS['tgt2' + k] = ringSprite(Math.max(17, SA.r - 3), '#1d1a22'); }
     FXS.rng = FXS['rng' + k]; FXS.rngD = FXS['rngD' + k]; FXS.tgt = FXS['tgt' + k]; FXS.tgt2 = FXS['tgt2' + k];
-    if (k === 4 && tm) { ctx.globalAlpha = .9; ctx.drawImage(RING, Math.round(tm.x - 35), Math.round(tm.y - 12)); ctx.globalAlpha = 1; }
+    void tm;
     ctx.globalAlpha = .35; ctx.drawImage(FXS.rngD, Math.round(p.x - FXS.rngD.width / 2), Math.round(p.y - FXS.rngD.height / 2));
     ctx.globalAlpha = .8; ctx.drawImage(FXS.rng, Math.round(p.x - FXS.rng.width / 2), Math.round(p.y - FXS.rng.height / 2));
     const n = Math.hypot(tx - p.x, ty - p.y) / 16 | 0;
@@ -1364,7 +1387,7 @@ function draw() {
   ctx.globalAlpha = 1;
   // dodge after-images
   for (const g of G.ghosts) { if (g.t < 0) continue; const ar = animRow('roll', g.dir), a = .35 * (1 - g.t / .22);   // after-images copy the roll pose
-    if (g.atk !== undefined) { const ar2 = animRow('attack', g.dir); if (ar2) drawCell(ar2.img, ar2.r, g.atk, g.x, g.y, ar2.flip, Math.min(1, a * (g.a || 1))); }
+    if (g.atk !== undefined) { const ar2 = animRow(g.an || 'attack', g.dir); if (ar2) drawCell(ar2.img, ar2.r, g.atk, g.x, g.y, ar2.flip, Math.min(1, a * (g.a || 1))); }
     else if (g.still) drawStill(g.dir, g.x, g.y, a);
     else if (ar) drawCell(ar.img, ar.r, Math.min(ar.n - 1, Math.floor(g.k * ar.n)), g.x, g.y, ar.flip, a); else drawStill(g.dir, g.x, g.y, a); }
   // bodies, back to front
@@ -1402,12 +1425,18 @@ function draw() {
       ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
     if (f.k === 'burst') { const k = f.t / f.life, R = f.big ? 34 : 24; glowAt(f.x, f.y, R, R, FXS.glowHit, (1 - k) * .5); }
     if (f.k === 'pfx' && !f.depth) drawPfx(f);
+    if (f.k === 'field') { const age = f.t, k = Math.min(1, age / .16), fade = Math.min(1, (f.life - age) / .25), st = Math.min(3, k * 4 | 0);
+      if (!FXS.field) FXS.field = [.45, .65, .85, 1].map(q => fieldSprite(SK4.r * q | 0));
+      const im = FXS.field[st]; ctx.globalAlpha = .85 * fade; ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2));
+      ctx.globalAlpha = 1; glowAt(f.x, f.y, SK4.r * 1.1, SK4.r * .7, FXS.glowArc, .35 * fade);
+      ctx.fillStyle = '#ffffff'; for (let g = 0; g < 6; g++) { const a = f.t * 2.4 + g * 1.05, x = Math.round(f.x + Math.cos(a) * SK4.r), y = Math.round(f.y + Math.sin(a) * SK4.r * .6);
+        if (((f.t * 12 | 0) + g) % 3) { ctx.globalAlpha = fade; ctx.fillRect(x - 3, y, 7, 1); ctx.fillRect(x, y - 3, 1, 7); } } ctx.globalAlpha = 1; }
     if (f.k === 'smoke') { if (!FXS.smoke) FXS.smoke = smokeSprite(SK3.r); const k = f.t / f.life, im = FXS.smoke[(f.t * 6 | 0) % 2];
       ctx.globalAlpha = (k < .1 ? k / .1 : 1 - (k - .1) / .9) * .85; ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2 - 10)); ctx.globalAlpha = 1; }
     if (f.k === 'streak') { const k = f.t / f.life, n = Math.hypot(f.x2 - f.x, f.y2 - f.y) | 0, a = 1 - k;
       glowAt((f.x + f.x2) / 2, (f.y + f.y2) / 2, n * .5, 14, FXS.glowArc, a * .5);
       for (let i = 0; i <= n; i += 2) { const x = Math.round(f.x + (f.x2 - f.x) * i / n), y = Math.round(f.y + (f.y2 - f.y) * i / n), w = i < n * .15 || i > n * .85 ? 1 : 2;
-        ctx.globalAlpha = a * .7; ctx.fillStyle = '#a8d8ee'; ctx.fillRect(x - w, y - w, w * 2 + 1, w * 2 + 1); ctx.globalAlpha = a; ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 2, 2); } ctx.globalAlpha = 1; }
+        ctx.globalAlpha = a * .7; ctx.fillStyle = f.cy ? '#3fd0d8' : '#a8d8ee'; ctx.fillRect(x - w, y - w, w * 2 + 1, w * 2 + 1); ctx.globalAlpha = a; ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 2, 2); } ctx.globalAlpha = 1; }
     if (f.k === 'burst') { const set = f.big ? FXS.burstB : FXS.burst, im = set[Math.min(set.length - 1, Math.floor(f.t / f.life * set.length))];
       ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
     if (f.k === 'splat') { const set = FXS['splat_' + f.c], im = set[Math.min(set.length - 1, Math.floor(f.t / f.life * set.length))];

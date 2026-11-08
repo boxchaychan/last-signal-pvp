@@ -42,6 +42,7 @@ user env var, never printed; `--upload` for images). Balance at start: 40 + 20 d
 | 2026-11-08 | import "Dagger Rogue 128": all 8 views from `pl_rot/` (the first account's PixelLab rotations) | 6f024d02-2df1-4fb1-aaae-43922ac724ce | 0.25 | ✅ "nothing generated"; downloaded back to `pl2_rot/` and compared: all 8 views identical to `pl_rot/` (0 pixels differ) |
 | 2026-11-08 | NW attack redo "attack_ul" (owner: the upper diagonals still had one sweep + a stab): two wide SIDEWAYS sweeps, seen from behind, never facing the camera; NE mirrors it | group d9721383-636b-4fb0-9421-c5b2feab6d6e | 1 | ✅ owner chose it ("B") over attack_2hit_b NW: NW = attack_ul, NE = its mirror (`rogue_build.sh`) |
 | 2026-11-08 | base moves, owner "เอาทุกอย่างที่ใช้เจนไป ยกเว้นสกิล": run 8f ×8 (loop, keep_first_frame off), idle 8f ×8 (loop), roll 8f ×8, hurt 4f ×8, death 8f ×4 (E S W N) — 36 jobs from `art/incoming/action/rogue/jobs_base.json` via `tools/pl_queue.py` (one at a time, ZIP into `pl2_dl/` after each, log `pl2_dl/queue.log`, group ids `pl2_dl/groups.json`; rerunning skips what is downloaded) | see groups.json | 36 (3.75 + daily bonus left) | ✅ all 36 done 15:13–15:49; dust puffs beside the run / roll are cut by `act_sheet.py` (`dedust`: small or pale separate blobs). In the game: idle loop 7 fps, run loop 13 fps at speed 230, roll 0.4 s, hit 0.28 s, death 0.9 s (nearest of E S W N) |
+| 2026-11-08 | dash cut for skill 4 (`jobs_dash.json`): crouch, low lunge, slash, follow-through; E S N NW, 8 frames | group 1c6f5ef3-04e7-4e97-97c4-93dfbab67f9f | 4 | E good; S and N turned side-on / to the camera, so the game plays E (mirrored) for every direction |
 | 2026-11-08 | skill moves (owner "เจนมาเลย"), `jobs_skills.json` via `pl_queue.py` (log `pl2_dl/queue_skills.log`): spin 16f south · bomb (lob a bomb with the LEFT hand) 8f east, south, north, north-west | spin d8158151-c872-4016-ae19-02844bacbe4b · bomb 512ebe0e-3e33-476b-bd3b-5467d242c0c7 | 5 (1985 left of the 2000 subscription) | ✅ spin: side crouch wind-up 1–4, turns 6–8 with a white ring PixelLab drew itself (kept, recoloured + glow like the attack), back to front 9–16. bomb: E / N / NW clean lobs; S drops the bomb at her feet instead of throwing (fine: the flying bomb is drawn by the game and `dedust` cuts PixelLab's loose bomb) |
 **Back views (N, NE, NW): ask for VERTICAL cuts** (overhead chop, rising slash) plus "seen from BEHIND … never turns … face never visible"; sideways swings make PixMiniMax turn her side-on or toward the camera.
 Download the ZIP only between jobs (`/mcp/characters/<id>/download` answers "still being generated" while a job runs).
@@ -205,6 +206,16 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   start of each turn; a ring of dust at the feet. `?test=spin&n=<steps>`.
   Owner "เอฟเฟกต์ทำใสหน่อย มีแสง": `fx/<key>_glow.png` = a blurred, tinted copy of an effect (12 px padding, light cyan;
   lavender for nslash) for spinring_b / spinring_f / nslash; `drawPfx` draws such effects at 78% and adds the glow with 'lighter'.
+- **Skill 4 redone like Murad's ultimate in ROV** (owner: "สกิล 4 ไม่สวยเลย" + a GPT pose sheet, then a clip of Murad, "พุ่งฟัน 5 ที"):
+  aim at a spot (range 320); a see-through cyan field opens on the ground there (`fieldSprite`, an ellipse r 140 × .6, four
+  opening steps, glow, glints round the rim); she dashes across it 5 times in a pentagram (`nextCut`, 144° apart) with the
+  PixelLab `dash` move (generated 2026-11-08: E S N NW, group 1c6f5ef3-04e7-4e97-97c4-93dfbab67f9f, 4 generations; only the
+  side view kept its facing, so every direction plays east / mirrored: crouch 2, lunge 3–4, slash 5 with its arc + glow,
+  follow-through 6), after-images on the way, a cyan streak per pass, every monster in the field hit each pass (5 × 9),
+  then a cyan burst in the middle (16, VFX `crit_hit` recoloured cyan = `fx/dashhit.png`) and she ends at the edge; a
+  VFX `charge_up` (`fx/dashcharge.png`) at the start. Invulnerable throughout.
+- Bomb blast (owner "ระเบิดเปลี่ยนเอฟเฟกต์ ใส่ระเบิดกับควันให้เข้าสกิล ตาบอด"): VFX `cartoon_boom` + a dark `smoke_puff`, ×1.85,
+  1.5 s (My effects "rogue_smoke_bomb") → `fx/smokebomb.png` via `tools/art/vfx_import.py`.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
   pixelfx sheets already in `fx/` (bb.html) are loaded by action.html (`PFX`, `pfx(key, x, y)`, fx kind `pfx`): `darkx` =
   the smoke bomb's blast (the code `smokeSprite` stays as a fallback), `poof` = warp / flurry vanish and return, `nslash` =
