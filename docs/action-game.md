@@ -243,6 +243,8 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   dashbolt / dashbolt_l / woundcut / woundcut_m / dashhit / dashcharge (each pixel moved onto a green ramp by its brightness)
   + green glows, the field sprite's colours, the field glow, the hit sparks, a green glow on her while she dashes.
   Owner then "เปลี่ยนสีฟ้าดีกว่า": back to cyan-blue (the `_g` sheets stay in fx/, not loaded).
+  Then "ไม่ฟ้าแบบนี้ ฟ้าแบบน้ำเงินสายฟ้า": electric blue `_b` sheets (ramp #0a1248 #1c3cd2 #4080ff #a5cdff #f5faff, glow 70,130,255) for
+  every skill-4 effect, the field and her glow — current.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
 - Skill effects (owner "สกิลได้ไปเอาจาก vfx ในpixellab ไหม" → "pixelfx อันนี้เราเคยใช้" → "ถ้าไม่มีก็เจนจาก pixellab"):
