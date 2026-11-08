@@ -43,7 +43,44 @@ def dedust(im):
         if sz[k - 1] < 120 or (pale and sz[k - 1] < 900): a[blob] = 0
     return Image.fromarray(a)
 
-SMEAR = [(214, 198, 164), (238, 226, 200), (255, 251, 239)]   # one blade-arc ramp for every direction (owner 2026-11-08)
+# one WHITE blade-arc ramp for every direction (owner 2026-11-08: the arcs looked brown; then "ไม่ต้องทำมาซ้อน" =
+# fix the arc inside the attack frames, no extra wave drawn on top)
+SMEAR = [(196, 210, 226), (228, 236, 244), (255, 255, 255)]
+
+def arcwhite(fr, grow=3):
+    # PixelLab often paints the arc with the skin's own colours, so colour alone cannot find it: on a swing frame
+    # (much wider than the median) every pixel outside the nearby narrow frames' silhouettes (grown by `grow` px) is arc
+    import numpy as np
+    from scipy import ndimage
+    A = [np.array(im) for im in fr]
+    w = [(lambda xs: xs[-1] - xs[0] if len(xs) else 0)(np.where((a[..., 3] > 0).any(0))[0]) for a in A]
+    med = sorted(w)[len(w) // 2]; out = []
+    for i, a in enumerate(A):
+        a = a.copy()
+        if w[i] > 1.15 * med:
+            near = [j for j in range(max(0, i - 3), min(len(A), i + 4)) if j != i and w[j] <= 1.1 * med]
+            ref = np.zeros(a.shape[:2], bool)
+            for j in near: ref |= A[j][..., 3] > 0
+            rgb = a[..., :3].astype(int); L = .3 * rgb[..., 0] + .59 * rgb[..., 1] + .11 * rgb[..., 2]
+            arc = (a[..., 3] > 0) & ~ndimage.binary_dilation(ref, iterations=grow) & (L > 100)   # dark limb outlines stay
+            lab, n = ndimage.label(arc, structure=np.ones((3, 3)))
+            if n:   # thin slivers left by a head or leg that moved a few pixels are not arcs: keep blobs of 30+ px only
+                sz = ndimage.sum(arc, lab, range(1, n + 1)); arc &= np.isin(lab, 1 + np.where(sz >= 30)[0])
+            if arc.sum() >= 120 and near:
+                # where the arc crosses the body it is painted in light skin tones over the dark clothes: grow the arc
+                # into light pixels that were dark / empty in the nearest narrow frame (owner: one tone for every arc)
+                pj = min(near, key=lambda j: abs(j - i)); pr = A[pj][..., :3].astype(int)
+                Lp = .3 * pr[..., 0] + .59 * pr[..., 1] + .11 * pr[..., 2]
+                cand = (a[..., 3] > 0) & (L > 120) & ((A[pj][..., 3] == 0) | (Lp < L - 55))
+                ys = np.where((a[..., 3] > 0).any(1))[0]
+                cand[:ys[0] + int((ys[-1] - ys[0]) * .3)] = False   # never into the head (her face moved between frames)
+                for _ in range(60):
+                    nb = ndimage.binary_dilation(arc) & cand & ~arc
+                    if not nb.any(): break
+                    arc |= nb
+            for lo, c in zip([-1, 120, 190], SMEAR): a[arc & (L > lo), :3] = c
+        out.append(Image.fromarray(a))
+    return out
 PAL = None
 
 def smear(im):
@@ -56,7 +93,7 @@ def smear(im):
     for c in PAL: d = np.minimum(d, ((rgb - c) ** 2).sum(2))
     L = .3 * rgb[..., 0] + .59 * rgb[..., 1] + .11 * rgb[..., 2]
     arc = m & (d > 30 * 30) & ((L > 150) | (rgb[..., 2] > rgb[..., 0] + 35))
-    for lo, c in zip([-1, 150, 205], SMEAR): a[arc & (L > lo), :3] = c
+    for lo, c in zip([-1, 120, 190], SMEAR): a[arc & (L > lo), :3] = c
     return Image.fromarray(a.astype('uint8'))
 
 def frames(folder, d, name):
@@ -68,7 +105,7 @@ def frames(folder, d, name):
         for f in fl.split(','):
             fs = sorted(glob.glob(os.path.join(base, 'animations', f, d, 'frame_*.png'))) or fs
     out = [Image.open(f).convert('RGBA') for f in fs]
-    if name in ('attack', 'chop'): return [smear(im) for im in out]   # attacks keep their detached blade smears
+    if name in ('attack', 'chop') and out: return [smear(im) for im in arcwhite(out)]   # attacks keep their detached blade smears
     return [dedust(im) for im in out]
 
 def hits(fr):

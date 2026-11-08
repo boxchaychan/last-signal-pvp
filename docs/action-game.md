@@ -57,6 +57,10 @@ the last hit), slime splat on a kill (`splatFrames`), a 16% white screen flash +
 run dust, roll after-images that copy the roll frame. Slash wave (owner "ทำคลื่นฟันให้สวยๆ ใช้กับทุกทิศ"): `waveFrames(dir, R)`
 = a pixel crescent on the ground plane (y ×0.6) drawn per direction (no runtime rotation), 4 frames, white cutting edge, a
 cream trail that fades out in Bayer dither, sparkles at the end; on every swing (`doHit`), bigger on the last hit.
+Then (owner "ไม่ต้องทำมาซ้อน" + "สีฟันคนละสี ทำให้อยู่โทนเดียวกัน"): the code wave is OFF (kept in `waveFrames` for skills); the
+arcs INSIDE the attack frames are made white instead: `act_sheet.py arcwhite()` (on a swing frame, light pixels outside the
+nearby narrow frames' silhouettes grown 3 px, blobs ≥ 30 px, then grown into light pixels that were dark in the nearest
+narrow frame, never into the top 30% = the head) + `smear()` (non-still colours), both onto one white ramp `SMEAR`.
 **Longer dagger (owner asked): not possible in code** — the blade uses exactly the skin colours (246,215,191 / 214,185,159 /
 173,147,123), so it cannot be picked out; a longer blade means regenerating every move (~50 credits). Plan: order longer
 blades in the GPT design of rank 2 (dual daggers).
