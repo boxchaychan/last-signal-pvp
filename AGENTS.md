@@ -18,6 +18,7 @@ Who does what (owner 2026-11-06, after connecting the repo to GPT):
 If the owner just says "ทำท่าตัวต่อไป" / "ทำงานต่อ" / "next animation" (or a GitHub issue comment asks for it), follow `docs/codex/legends/ANIM_QUEUE.md`: take the first `todo` row, run its prompt with `$game-character-sprites`, push the full run folder on `codex/anim-<key>` and open a pull request. No need to ask the owner to attach or paste anything: the reference picture and the prompt are in the repository.
 
 ## Where the briefs are
+- `docs/codex/action/MOBS.md`: the monster set for the action game `action.html` (queue, one picture per monster, style picture `docs/codex/action/refs/00_STYLE_hero.png`, branch `codex/mobs`; "ทำมอนต่อ" = the next `todo` row).
 - `docs/codex/legends/ANIM_QUEUE.md`: animation queue for the new cast (heroes + gods), with the reference picture and prompt file for each.
 - `docs/codex/legends/PROMPT.md` and `docs/legends-prompts.html`: all prompts for the new cast (pictures, animations, skill effects).
 - `docs/codex/dino/PROMPT.md`: prehistoric armour forms (pictures already in the game).

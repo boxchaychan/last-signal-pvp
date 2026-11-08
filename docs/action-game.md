@@ -290,6 +290,15 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   star on each monster hit instead of a crit-hit each.
   Throws (owner "ปาให้ดูแรงกว่านี้ ไม่เอาย้อย"): the dagger flies straight at 1700 px/s with a longer streak and lands with an
   impact star, sparks and a shake; the bomb is thrown flat (arc 16 px, .26 s) trailing fuse smoke.
+- **New heroes + monster brief** (owner 2026-11-09 "ทำพรอมต์สร้างตัว ดาบชาย เมจชาย", "คำสั่งเจนมอนเป็นชุด จะให้ Codex ทำ"):
+  the owner made both heroes in GPT from my prompts (pixel-style turnarounds, front / right profile / back, both correct):
+  `art/incoming/action/swordsman/turnaround_gpt.png` (2000x667 as pasted, greatsword on the right shoulder, red scarf) and
+  `art/incoming/action/mage/turnaround_gpt.png` (1448x1086, indigo hood + robe, teal cape, staff with a teal crystal).
+  The figures are different sizes only because GPT drew them on different canvases; they are scaled to one height when
+  they go into PixelLab / the game. PixelLab characters for them wait for the owner's go (credits).
+  Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
+  picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
+  `art/incoming/mobs/`.
 - **Poison 10 s + passive** (owner 2026-11-09 "บัพพิษอยู่นานกว่านี้ 10 วิ ... เพิ่มคูลดาวน์ เพิ่มพาสซีฟสกิล"): `SK6` dur 10, cd 20.
   Passive "จังหวะสังหาร" (`PAS`): every 4th strike that lands (one count per game step, so a swing that hits 3 monsters
   counts once and all 3 crit) does ×2 with a gold crit-hit (`fx/critg.png` = `critx_ice` recoloured gold, free) and big
