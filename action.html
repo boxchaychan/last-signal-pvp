@@ -43,7 +43,7 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 <div id="hud"><div class="bar" id="hpb"><i></i></div><div class="bar" id="stb"><i></i></div></div>
 <div id="score"></div>
 <div id="sk1pc"><span>Q</span><b></b></div>
-<div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ · Q ปามีด (โดนแล้วกด Q อีกที = วาร์ปไปหลังมอน)</div>
+<div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ · กด Q ค้างเล็งด้วยเมาส์ ปล่อย = ปามีด (โดนแล้วกด Q อีกที = วาร์ปไปหลังมอน)</div>
 <div id="btns"><div class="bt small sk" id="bSk1"><span>ปา</span><b></b></div><div class="bt small" id="bRoll">กลิ้ง</div><div class="bt" id="bAtk">ตี</div></div>
 <div id="ov"><div><h1>นักมีด</h1><p>ต้นแบบเกมแอคชัน · ตี 2 ฮิต · กลิ้งหลบ · แถบแรง</p>
 <p>สไลม์จะกะพริบ + วงแดงก่อนพุ่งใส่ กลิ้งหลบให้ทัน</p><button id="go" disabled>กำลังสร้างแผนที่…</button></div></div>
@@ -432,7 +432,8 @@ function drawFlies() {
     if (open) { ctx.fillRect(x - 3, y - 1, 3, 3); ctx.fillRect(x + 1, y - 1, 3, 3); } else { ctx.fillRect(x - 1, y - 2, 1, 3); ctx.fillRect(x + 1, y - 2, 1, 3); } }
 }
 // GPT props (art/action/props/*.png): base = the bottom middle; how solid each one is
-const GPDEF = {oak: {rad: 20}, pine: {rad: 16}, blossom: {rad: 15}, boulder: {rad: 44}, bush: {rad: 18}, rocks: {rad: 12},
+const GPDEF = {oak: {rad: 30}, pine: {rad: 24}, blossom: {rad: 22},   // trees re-cut 1.5x (oak 425 px)
+  boulder: {rad: 44}, bush: {rad: 18}, rocks: {rad: 12},
   grass: {soft: 1}, flowers: {soft: 1},
   // village sheet (owner's GPT "Charming Fantasy Village Asset Sheet"): houses and the fence block as boxes
   house_red: {rect: {w: 292, d: 66}, nf: 1}, house_blue: {rect: {w: 282, d: 64}, nf: 1}, tower: {rad: 100, nf: 1},   // 1.5x (owner: bigger buildings)
@@ -472,12 +473,12 @@ function makeProps() {
   // fallback if the pictures did not load
   const T = () => GPROP.oak ? gp(['oak', 'oak', 'pine', 'blossom'][rnd() * 4 | 0]) : bigTree(80 + rnd() * 44 | 0, 110 + rnd() * 70 | 0, PAL_TREE[rnd() * 2 | 0]);
   // edge forest: huge trees all round the field (behind the margins)
-  for (let x = 40; x < WW; x += 230 + rnd() * 110) {   // owner: fewer trees
+  for (let x = 40; x < WW; x += 320 + rnd() * 150) {   // owner: fewer trees (and 1.5x bigger)
     add(T(), x, 160 + rnd() * 30 | 0); add(T(), x + 60, WH - 30 - rnd() * 20 | 0); }
-  for (let y = 320; y < WH - 140; y += 240 + rnd() * 110) { add(T(), 70 + rnd() * 50 | 0, y); add(T(), WW - 70 - rnd() * 50 | 0, y); }
+  for (let y = 320; y < WH - 140; y += 330 + rnd() * 150) { add(T(), 70 + rnd() * 50 | 0, y); add(T(), WW - 70 - rnd() * 50 | 0, y); }
   // a hamlet of big cottages and two ruined watchtowers (the rogue reaches about to a door's top)
   const hx = WW * .27, hy = WH * .28, RC = [['#5a1f1f', '#8a3426', '#b04a33'], ['#1f3550', '#2f5680', '#4778aa'], ['#3d3020', '#6b5233', '#8f6f45']];
-  for (let k = 0; k < 4; k++) { const x = hx + (k % 2) * 600 + rnd() * 40, y = hy + (k >> 1) * 520 + rnd() * 30;
+  for (let k = 0; k < 4; k++) { const x = hx + (k % 2) * 600 + rnd() * 40, y = hy + (k >> 1) * 470 + rnd() * 16;   // the lower row stays clear of the road
     if (pathOk(x, y)) add(GPROP.house_red ? gp(k % 3 === 1 ? 'house_blue' : 'house_red') : house(230 + rnd() * 70 | 0, RC[k % 3]), x | 0, y | 0); }
   // the yard: a well in the middle, barrels and crates by the cottages, fences round the edge with gaps
   add(GPROP.well ? gp('well') : well(), HAMLET.x | 0, HAMLET.y + 20 | 0);
@@ -495,19 +496,19 @@ function makeProps() {
   // inside the field: groves, big boulders and tall ruined pillars, kept off the path, the water, the yard and the start
   // the forests: trees close together (pines first), bushes and rocks under them, clearings left by the spacing
   const TF = () => gp(['pine', 'pine', 'oak', 'oak', 'pine', 'blossom'][rnd() * 6 | 0]);
-  if (GPROP.pine) for (const F of FORESTS) for (let tries = 0, k = 0; tries < 3000 && k < F.rx * F.ry / 8000; tries++) {
+  if (GPROP.pine) for (const F of FORESTS) for (let tries = 0, k = 0; tries < 3000 && k < F.rx * F.ry / 15000; tries++) {
     const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
-    if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 118) || TOWERS.some(([tx, ty]) => Math.hypot(x - tx, (y - ty) * 1.4) < 240)) continue;
+    if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 165) || TOWERS.some(([tx, ty]) => Math.hypot(x - tx, (y - ty) * 1.4) < 240)) continue;
     add(TF(), x | 0, y | 0); k++; }
   if (GPROP.bush) for (const F of FORESTS) for (let i = 0; i < 70; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
-    if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(rnd() < .6 ? 'bush' : rnd() < .5 ? 'rocks' : 'grass'), x | 0, y | 0); }
+    if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(rnd() < .65 ? 'bush' : 'rocks'), x | 0, y | 0); }
   // the ruins: boulders and rock piles round the broken floor of the south tower
   if (GPROP.boulder) for (let i = 0; i < 40; i++) { const a = rnd() * 6.28, r = .55 + rnd() * .55, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
-    if (pathOk(x, y) && far(x, y, 80)) add(gp(rnd() < .35 ? 'boulder' : rnd() < .6 ? 'rocks' : 'grass'), x | 0, y | 0); }
-  const n = WW * WH / 200000 | 0;   // owner 2026-11-08 "เบาๆ ต้นไม้หน่อย": about half as many
+    if (pathOk(x, y) && far(x, y, 80)) add(gp(rnd() < .4 ? 'boulder' : 'rocks'), x | 0, y | 0); }
+  const n = WW * WH / 290000 | 0;   // owner 2026-11-08 "เบาๆ ต้นไม้หน่อย": about half as many (fewer again with the 1.5x trees)
   for (let k = 0, tries = 0; k < n && tries < 3000; tries++) {
     const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
-    if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.6 || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 300)) continue;
+    if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.6 || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 430)) continue;   // spacing (not the count) sets how thick the field is
     const t = rnd();
     if (t < .6) add(T(), x | 0, y | 0);
     else if (t < .8) add(GPROP.boulder ? gp('boulder') : boulder(90 + rnd() * 90 | 0), x | 0, y | 0);
@@ -518,15 +519,12 @@ function makeProps() {
   // small stuff from the GPT sheet: bushes and rock clusters scattered round the field
   if (GPROP.rocks) for (let i = 0; i < 90 * AR; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
     if (pathOk(x, y) && !inYard(x, y) && far(x, y, 70)) add(gp(rnd() < .55 ? 'bush' : 'rocks'), x | 0, y | 0); }
-  // tall grass: thick in the meadows and along the water, a few everywhere
-  for (let i = 0; i < 260 * AR; i++) {
-    const m = MEADOWS[i % MEADOWS.length], near = i % 3 === 0;
-    const x = near ? m[0] + (rnd() - .5) * 520 : 220 + rnd() * (WW - 440), y = near ? m[1] + (rnd() - .5) * 360 : 300 + rnd() * (WH - 600);
-    if (Math.abs(y - GROUND_PATH(x)) < 50 || !dry(x, y, 20) || inYard(x, y)) continue;
-    add(GPROP.grass ? gp(near && rnd() < .5 ? 'flowers' : 'grass') : grassClump(), x | 0, y | 0);
+  // flower clumps in the meadows (the grass clumps are gone: owner 2026-11-08 "เอาหญ้าออก")
+  if (GPROP.flowers) for (let i = 0; i < 30 * MEADOWS.length; i++) {
+    const m = MEADOWS[i % MEADOWS.length], x = m[0] + (rnd() - .5) * 480, y = m[1] + (rnd() - .5) * 330;
+    if (Math.abs(y - GROUND_PATH(x)) < 50 || sideD(x, y) < 40 || !dry(x, y, 20) || inYard(x, y) || forestF(x, y) > 0) continue;
+    add(gp('flowers'), x | 0, y | 0);
   }
-  for (let i = 0; i < 130; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 630, y = LAKE.cy + Math.sin(a) * 345;
-    if (dry(x, y, 14) && lakeF(x, y) > -.4) add(GPROP.grass ? gp('grass') : grassClump(), x | 0, y | 0); }
   PROPS.sort((a, b) => a.y - b.y);
 }
 // water blocks walking (the bridge deck is open): slide along the shore by undoing one axis, else stay
@@ -716,7 +714,7 @@ const ROLL = {t: .4, sp: 380, cost: 26}, HURT_T = .28, DEATH_T = .9, RUN = 230; 
 // skill 1, throw dagger (owner 2026-11-08): thrown at a spot on the ground; if it hits a monster the skill can be pressed
 // again within 5 s and she appears behind that monster. The throw pose = the attack's second swing (owner: "เอาคลื่นก็
 // เหมือนปาแล้ว"): wind-up from 2 frames after the first hit, the dagger leaves her hand on the big arc, then follow-through
-const SK1 = {range: 380, r: 46, dmg: 18, cost: 18, speed: 1100, mark: 5, cd: 6, wind: 45, rel: 85, after: 55};
+const SK1 = {range: 380, r: 46, dmg: 18, cost: 18, speed: 900, mark: 5, cd: 6, wind: 45, rel: 85, after: 55};
 // the attack sheet without its slash arcs, for the throw (owner "เอาคลื่นฟันออก"): the arcs are the 3 ramp colours in
 // META.arc; see-through arc pixels go, solid ones (where the arc crossed her body) take the most common colour round
 // them, filled in from the edges over a few passes
@@ -761,8 +759,20 @@ function animRow(name, dir) {
 
 // ---------- input ----------
 const keys = {}, stick = {id: null, ox: 0, oy: 0, x: 0, y: 0, on: false}, mouse = {x: 0, y: 0, used: false};
-addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'KeyJ') wantAtk(); if (e.code === 'Space' || e.code === 'KeyK') { wantRoll(); e.preventDefault(); } if (e.code === 'KeyQ' || e.code === 'Digit1') wantSk1(); });
-addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'KeyJ') wantAtk(); if (e.code === 'Space' || e.code === 'KeyK') { wantRoll(); e.preventDefault(); }
+  if ((e.code === 'KeyQ' || e.code === 'Digit1') && !e.repeat) aimStart('key'); });
+addEventListener('keyup', e => { keys[e.code] = false; if ((e.code === 'KeyQ' || e.code === 'Digit1') && AIM.src === 'key') aimEnd(); });
+const AIM = {src: null, id: null, ox: 0, oy: 0, dx: 0, dy: 0};
+function aimStart(src, e) {
+  if (!G || G.over) return;
+  if (G.p.mark) { wantSk1(); return; }                          // the warp needs no aiming
+  if (!sk1Ready(G.p)) return;
+  AIM.src = src; AIM.dx = AIM.dy = 0; if (e) { AIM.id = e.pointerId; AIM.ox = e.clientX; AIM.oy = e.clientY; }
+}
+function aimEnd() { if (!AIM.src || !G) return; G.p.skT = skTarget(G.p); AIM.src = null; AIM.id = null; wantSk1(); }
+addEventListener('pointermove', e => { if (AIM.src === 'touch' && e.pointerId === AIM.id) { AIM.dx = e.clientX - AIM.ox; AIM.dy = e.clientY - AIM.oy; } });
+addEventListener('pointerup', e => { if (AIM.src === 'touch' && e.pointerId === AIM.id) aimEnd(); });
+addEventListener('pointercancel', e => { if (AIM.src === 'touch' && e.pointerId === AIM.id) { AIM.src = null; AIM.id = null; } });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerdown', e => {
   if (e.pointerType === 'touch') { if (e.clientX < innerWidth * .55 && stick.id === null) { stick.id = e.pointerId; stick.ox = stick.x = e.clientX; stick.oy = stick.y = e.clientY; stick.on = true; } return; }
@@ -772,9 +782,9 @@ cv.addEventListener('pointerdown', e => {
 addEventListener('pointermove', e => { if (e.pointerId === stick.id) { stick.x = e.clientX; stick.y = e.clientY; } else if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.used = true; } });
 const endStick = e => { if (e.pointerId === stick.id) { stick.id = null; stick.on = false; } };
 addEventListener('pointerup', endStick); addEventListener('pointercancel', endStick);
-for (const [id, fn] of [['bAtk', () => wantAtk()], ['bRoll', () => wantRoll()], ['bSk1', () => wantSk1()]]) {
+for (const [id, fn] of [['bAtk', () => wantAtk()], ['bRoll', () => wantRoll()], ['bSk1', e => aimStart('touch', e)]]) {
   const b = document.getElementById(id);
-  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('on'); fn(); });
+  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('on'); fn(e); });
   b.addEventListener('pointerup', () => b.classList.remove('on')); b.addEventListener('pointerleave', () => b.classList.remove('on'));
 }
 function moveInput() {
@@ -813,16 +823,29 @@ function startRoll(p) {
   return true;
 }
 function sk1Ready(p) { return G.t >= (p.sk1cd || 0); }
+function skTarget(p) {
+  let tx, ty;
+  if (AIM.src === 'key' && !TOUCH && mouse.used) { tx = mouse.x * DPR / S + cam.x; ty = mouse.y * DPR / S + cam.y + 20; }
+  else if (AIM.src === 'touch' && Math.hypot(AIM.dx, AIM.dy) > 12) {          // drag: direction + how far (70 px = full range)
+    const l = Math.hypot(AIM.dx, AIM.dy), k = Math.min(1, l / 70) * SK1.range; tx = p.x + AIM.dx / l * k; ty = p.y + AIM.dy / l * k; }
+  else { let best = null, bd = SK1.range + 60; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
+    if (best) { tx = best.x; ty = best.y; } else { const [mx, my] = moveInput(), d = (mx || my) ? dirOf(mx, my) : p.dir; tx = p.x + DV[d][0] * SK1.range; ty = p.y + DV[d][1] * SK1.range; } }
+  const dx = tx - p.x, dy = ty - p.y, l = Math.hypot(dx, dy) || 1, k = Math.min(1, SK1.range / l);
+  return [p.x + dx * k, p.y + dy * k];
+}
+function ringSprite(R, col, dash) {   // thin pixel ring (2 px), dashed if asked
+  const S2 = R * 2 + 4, P = painter(S2, S2), c = hex(col), m = S2 / 2;
+  for (let y = 0; y < S2; y++) for (let x = 0; x < S2; x++) { const d = Math.hypot(x + .5 - m, y + .5 - m); if (Math.abs(d - R) > 1) continue;
+    if (dash && ((Math.atan2(y - m, x - m) + Math.PI) / (2 * Math.PI) * R / 5 | 0) % 2) continue; P.set(x, y, c); }
+  return P.done();
+}
 function startSk1(p) {
   if (p.mark && p.mark.m.hp > 0 && G.t < p.mark.until) return blinkBehind(p);
   if (!sk1Ready(p)) return false;
   if (p.st < SK1.cost * .5) { noStamina(); return false; }
   // where: the mouse on PC; else the nearest slime in range; else straight ahead at full range
-  let tx, ty;
-  if (!TOUCH && mouse.used) { tx = mouse.x * DPR / S + cam.x; ty = mouse.y * DPR / S + cam.y + 20; }
-  else { let best = null, bd = SK1.range + 60; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
-    if (best) { tx = best.x; ty = best.y; } else { const [mx, my] = moveInput(), d = (mx || my) ? dirOf(mx, my) : p.dir; tx = p.x + DV[d][0] * SK1.range; ty = p.y + DV[d][1] * SK1.range; } }
-  const dx = tx - p.x, dy = ty - p.y, l = Math.hypot(dx, dy) || 1, k = Math.min(1, SK1.range / l); tx = p.x + dx * k; ty = p.y + dy * k;
+  let [tx, ty] = p.skT || skTarget(p); p.skT = null;
+  const dx = tx - p.x, dy = ty - p.y;
   const d = dirOf(dx, dy), ar = animRow('attack', d); if (!ar) return false;
   p.st = Math.max(0, p.st - SK1.cost); p.stT = .6; p.sk1cd = G.t + SK1.cd;
   p.dir = d; p.state = 'throw'; p.a = null; p.th = {t: 0, i: 0, ar, ...throwPlan(ar), tx, ty, out: false};
@@ -830,7 +853,7 @@ function startSk1(p) {
 }
 function throwDagger(p) {         // the dagger leaves her hand: flies to the spot (a little arc) and lands
   const t = p.th, sx = p.x + DV[p.dir][0] * 18, sy = p.y - 34 + DV[p.dir][1] * 8, d = Math.hypot(t.tx - sx, t.ty - sy);
-  G.knives.push({sx, sy, x: sx, y: sy, tx: t.tx, ty: t.ty, t: 0, T: Math.max(.12, d / SK1.speed), dir: p.dir, land: -1});
+  G.knives.push({sx, sy, x: sx, y: sy, tx: t.tx, ty: t.ty, t: 0, T: Math.max(.16, d / SK1.speed), dir: dirOf(t.tx - sx, t.ty - sy - 20), land: -1, tr: []});
 }
 function knifeLand(kn) {          // area hit where it lands; the monster nearest the spot gets the mark
   const p = G.p; let mk = null, md = 1e9;
@@ -983,6 +1006,9 @@ function testSetup() {
   if (TEST === 'view') { const q = new URLSearchParams(location.search); G.next = 1e9; G.p.x = +q.get('x'); G.p.y = +q.get('y');   // ?test=view&x=&y=
     cam.x = G.p.x - VW / 2; cam.y = G.p.y - 60 - VH / 2; return; }
   if (TEST === 'run') { G.next = 1e9; keys.KeyD = keys.KeyS = true; for (let i = 0; i < 20; i++) step(1 / 60); return; }   // ?test=run: runs down-right
+  if (TEST === 'aim') { const p = G.p; G.next = 1e9; cam.x = p.x - VW / 2; cam.y = p.y - 60 - VH / 2;   // ?test=aim: Q held, mouse on a slime
+    G.mobs.push({kind: 'green', x: p.x + 260, y: p.y + 70, r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
+    mouse.used = true; mouse.x = (p.x + 260 - cam.x) * S / DPR; mouse.y = (p.y + 50 - cam.y) * S / DPR; AIM.src = 'key'; G.freeze = 1; return; }
   if (TEST === 'sk1' || TEST === 'sk1b') { const p = G.p; G.next = 1e9;
     G.mobs.push({kind: 'green', x: p.x + 240, y: p.y + 90, r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
     startSk1(p); for (let i = 0; i < (TEST === 'sk1' ? 14 : 50); i++) step(1 / 60);
@@ -1002,7 +1028,7 @@ function step(dt) {
   if (!G.over) stepPlayer(dt); else if (G.p.state === 'dead') G.p.deadT += dt;
   stepAmbient(dt);
   stepMobs(dt);
-  for (const kn of G.knives) { if (kn.land >= 0) { kn.land += dt; continue; } kn.t += dt; const k = Math.min(1, kn.t / kn.T);
+  for (const kn of G.knives) { if (kn.land >= 0) { kn.land += dt; continue; } kn.t += dt; const k = Math.min(1, kn.t / kn.T); kn.tr.push([kn.x, kn.y]); if (kn.tr.length > 10) kn.tr.shift();
     kn.x = kn.sx + (kn.tx - kn.sx) * k; kn.y = kn.sy + (kn.ty - kn.sy) * k - Math.sin(k * Math.PI) * 18;   // hand height down to the ground, a slight arc
     if (k >= 1) knifeLand(kn); }
   G.knives = G.knives.filter(kn => kn.land < .9);
@@ -1067,13 +1093,18 @@ function drawMob(m) {
 function drawKnife(kn) {
   const D = DV[kn.dir], x = Math.round(kn.x), y = Math.round(kn.y);
   if (kn.land >= 0) { const a = kn.land > .6 ? 1 - (kn.land - .6) / .3 : 1; ctx.globalAlpha = Math.max(0, a);   // stuck in the ground
-    const tx = Math.round(kn.tx), ty = Math.round(kn.ty); ctx.fillStyle = '#1d1a22'; ctx.fillRect(tx - 1, ty - 12, 4, 13);
-    ctx.fillStyle = '#5a3a22'; ctx.fillRect(tx, ty - 11, 2, 4); ctx.fillStyle = '#c8a24a'; ctx.fillRect(tx - 1, ty - 7, 4, 1); ctx.fillStyle = '#d8e0ea'; ctx.fillRect(tx, ty - 6, 2, 6);
+    const tx = Math.round(kn.tx), ty = Math.round(kn.ty); ctx.fillStyle = '#1d1a22'; ctx.fillRect(tx - 2, ty - 24, 6, 25); ctx.fillRect(tx - 4, ty - 15, 10, 4);
+    ctx.fillStyle = '#5a3a22'; ctx.fillRect(tx - 1, ty - 23, 4, 8); ctx.fillStyle = '#c8a24a'; ctx.fillRect(tx - 3, ty - 14, 8, 2);
+    ctx.fillStyle = '#c9d3df'; ctx.fillRect(tx - 1, ty - 12, 4, 12); ctx.fillStyle = '#ffffff'; ctx.fillRect(tx - 1, ty - 12, 1, 11);
     ctx.globalAlpha = 1; return; }
-  for (let i = -5; i <= 7; i++) { const px = x + Math.round(D[0] * i), py = y + Math.round(D[1] * i * .8);
-    ctx.fillStyle = '#1d1a22'; ctx.fillRect(px - 1, py - 1, 3, 3); }
-  for (let i = -5; i <= 7; i++) { const px = x + Math.round(D[0] * i), py = y + Math.round(D[1] * i * .8);
-    ctx.fillStyle = i < -1 ? '#6e4a2a' : i === -1 ? '#c8a24a' : i > 5 ? '#ffffff' : '#c9d3df'; ctx.fillRect(px, py, 1, 1); }
+  // streak: where it has been, fading
+  for (let i = 0; i < kn.tr.length; i++) { const q = kn.tr[i], a = (i + 1) / (kn.tr.length + 1); ctx.globalAlpha = a * .55; ctx.fillStyle = '#eafcff';
+    ctx.fillRect(Math.round(q[0]) - 2, Math.round(q[1]) - 2, 4, 4); }
+  ctx.globalAlpha = 1; glowAt(x, y, 24, 18, FXS.glowArc, .6);
+  const L = (i, w, col) => { for (let k = -w; k <= w; k++) { const px = x + Math.round(D[0] * i - D[1] * k), py = y + Math.round(D[1] * i * .8 + D[0] * k); ctx.fillStyle = col; ctx.fillRect(px, py, 2, 2); } };
+  for (let i = -13; i <= 18; i++) L(i, i === -5 ? 3 : 2, '#1d1a22');                             // outline
+  for (let i = -12; i <= 17; i++) L(i, i === -5 ? 2 : i > 14 ? 0 : 1, i < -5 ? '#6e4a2a' : i === -5 ? '#c8a24a' : i > 14 ? '#ffffff' : '#c9d3df');
+  for (let i = -3; i <= 14; i++) { const px = x + Math.round(D[0] * i - D[1]), py = y + Math.round(D[1] * i * .8 + D[0]); ctx.fillStyle = '#ffffff'; ctx.fillRect(px, py, 1, 1); }   // edge shine
 }
 function drawDigits(n, x, y, sc, col) {
   const s = String(n), w = s.length * 4 * sc - sc; x = Math.round(x - w / 2); y = Math.round(y);
@@ -1107,6 +1138,15 @@ function draw() {
   ctx.globalAlpha = 1;
   if (G.p.mark) { const m = G.p.mark.m, left = (G.p.mark.until - G.t) / SK1.mark;   // mark ring under the monster
     ctx.globalAlpha = left < .3 && ((G.t * 10) | 0) & 1 ? .3 : .85; ctx.drawImage(MRING, Math.round(m.x - 30), Math.round(m.y - 11)); ctx.globalAlpha = 1; }
+  if (AIM.src && !G.over) { const [tx, ty] = skTarget(p);       // the throw's reach and where it will land
+    if (!FXS.rng) { FXS.rng = ringSprite(SK1.range, '#ffffff', 1); FXS.rngD = ringSprite(SK1.range + 2, '#1d1a22', 1); FXS.tgt = ringSprite(SK1.r, '#ffe066'); FXS.tgt2 = ringSprite(SK1.r - 3, '#1d1a22'); }
+    ctx.globalAlpha = .35; ctx.drawImage(FXS.rngD, Math.round(p.x - FXS.rngD.width / 2), Math.round(p.y - FXS.rngD.height / 2));
+    ctx.globalAlpha = .8; ctx.drawImage(FXS.rng, Math.round(p.x - FXS.rng.width / 2), Math.round(p.y - FXS.rng.height / 2));
+    const n = Math.hypot(tx - p.x, ty - p.y) / 16 | 0;
+    for (let i = 1; i < n; i++) { const x = Math.round(p.x + (tx - p.x) * i / n), y = Math.round(p.y + (ty - p.y) * i / n);
+      ctx.globalAlpha = .5; ctx.fillStyle = '#1d1a22'; ctx.fillRect(x - 1, y - 1, 5, 5); ctx.globalAlpha = .95; ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 3, 3); }
+    ctx.globalAlpha = .5; ctx.drawImage(FXS.tgt2, Math.round(tx - FXS.tgt2.width / 2), Math.round(ty - FXS.tgt2.height / 2));
+    ctx.globalAlpha = .95; ctx.drawImage(FXS.tgt, Math.round(tx - FXS.tgt.width / 2), Math.round(ty - FXS.tgt.height / 2)); ctx.globalAlpha = 1; }
   for (const kn of G.knives) {   // ground shadow of a flying dagger
     if (kn.land < 0) { const k = Math.min(1, kn.t / kn.T), gx = kn.sx + (kn.tx - kn.sx) * k, gy = kn.sy + 34 + (kn.ty - kn.sy - 34) * k; ctx.globalAlpha = .3; ctx.drawImage(KSH, Math.round(gx - 7), Math.round(gy - 2)); ctx.globalAlpha = 1; } }
   for (const m of G.mobs) if (m.st === 'tell' && m.hp > 0) { ctx.globalAlpha = .5 + .5 * Math.sin(m.t * 30); ctx.drawImage(RING, Math.round(m.x - 35), Math.round(m.y - 12)); ctx.globalAlpha = 1; }

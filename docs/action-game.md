@@ -142,6 +142,10 @@ south-west; `forestF` > 0 inside): trees every ~118 px (pines first), bushes / r
 (Catmull-Rom `crv`, `sideD` with per-segment and per-path boxes) from the road to the three `TOWERS`; meadows moved out of
 the forests. `ZF` = 32 px cells near a side path / forest, so most pixels skip those checks (`terr` 18 ms per chunk).
 `?test=map` draws the whole world shrunk onto the screen (`drawMap`; picture `art/incoming/action/map/overview.png`).
+Owner after playing: "เอาหญ้าออก ต้นไม้ใหญ่กว่านี้" → grass clumps gone (only flower clumps in the meadows); oak / pine /
+blossom re-cut 1.5× (`props_px.py gpt_nature_cut.png <out> 0=423 20 oak,pine,blossom,bush,boulder,rocks,grass,flowers`,
+only the three trees copied: oak 389×425, pine 275×446, blossom 274×324), trunk radii 30 / 24 / 22, edge trees every
+320–470 px, forest trees ≥165 apart, field props ≥430 apart (the spacing, not the count, decides how thick the field is).
 Next art: GPT sheet `art/incoming/action/map/PROMPT_ruins_forest.txt` (ruin walls, arch, pillars, rubble, stairs, statue,
 stump, log, mushrooms, fern, dead tree, mossy rock, campfire, tent, signpost, cart; attach `gpt_village.png` for style).
 
@@ -160,6 +164,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   on the far side facing it (sides / stays put if that is water), .3 s i-frames. The flying dagger is a few code pixels
   (`drawKnife`) until the GPT dagger sheet arrives (`art/incoming/action/skills/PROMPT_dagger.txt` + `ref_rogue_dagger.png`:
   8 directions, 4 spin frames, 3 stuck-in-ground frames). Tests: `?test=sk1` (in flight), `?test=sk1b` (after the warp).
+  Then (owner "มีดทำอันใหญ่กว่านี้นิด กำหนดระยะช่องสกิล มีดตอนปาทำแสดงด้วยจะได้เห็น"): aiming — hold Q (aims at the mouse)
+  or press the ปา button and drag (70 css px = full range; a tap auto-aims), let go to throw; while aiming a dashed ring
+  shows the longest throw, dots lead to a yellow circle where it lands (`AIM`, `aimStart`/`aimEnd`, `skTarget`,
+  `ringSprite`, `?test=aim`); with the mark up a press warps at once. The flying dagger is ~30 px with a light streak and a
+  soft glow, flies a little slower (900 px/s); the stuck one is bigger.
 - Effects: PixelLab VFX Creator (owner's screenshot, "Slash arc" preset: sweep / thickness / size / angle / trail / speed /
   frames sliders; the chat "Send" costs 1 generation) → export "For a game (ZIP)" → `pixellab_import.py` (from bb.html).
 
