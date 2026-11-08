@@ -43,6 +43,22 @@ def dedust(im):
         if sz[k - 1] < 120 or (pale and sz[k - 1] < 900): a[blob] = 0
     return Image.fromarray(a)
 
+SMEAR = [(214, 198, 164), (238, 226, 200), (255, 251, 239)]   # one blade-arc ramp for every direction (owner 2026-11-08)
+PAL = None
+
+def smear(im):
+    # PixelLab paints each direction's blade arc in its own colours (white, beige, cyan...). Arc pixels = colours the
+    # character's still pictures do not have (more than 30 away from every still colour) that are light or bluish;
+    # they are repainted on SMEAR by brightness, so every direction's arc looks the same. Body colours are untouched.
+    import numpy as np
+    a = np.array(im).astype(int); rgb = a[..., :3]; m = a[..., 3] > 0
+    d = np.full(m.shape, 1e9)
+    for c in PAL: d = np.minimum(d, ((rgb - c) ** 2).sum(2))
+    L = .3 * rgb[..., 0] + .59 * rgb[..., 1] + .11 * rgb[..., 2]
+    arc = m & (d > 30 * 30) & ((L > 150) | (rgb[..., 2] > rgb[..., 0] + 35))
+    for lo, c in zip([-1, 150, 205], SMEAR): a[arc & (L > lo), :3] = c
+    return Image.fromarray(a.astype('uint8'))
+
 def frames(folder, d, name):
     # folder: a,b | @<state dir>::a,b | several of those joined by "|" (later ones win per direction)
     fs = []
@@ -52,7 +68,8 @@ def frames(folder, d, name):
         for f in fl.split(','):
             fs = sorted(glob.glob(os.path.join(base, 'animations', f, d, 'frame_*.png'))) or fs
     out = [Image.open(f).convert('RGBA') for f in fs]
-    return out if name in ('attack', 'chop') else [dedust(im) for im in out]   # attacks keep their detached blade smears
+    if name in ('attack', 'chop'): return [smear(im) for im in out]   # attacks keep their detached blade smears
+    return [dedust(im) for im in out]
 
 def hits(fr):
     # swing frames: PixelLab draws a blade smear there, so the figure is widest; a hit = a local maximum of the
@@ -62,6 +79,8 @@ def hits(fr):
     return [i for i in range(1, len(w) - 1) if w[i] >= 1.25 * med and w[i] >= w[i - 1] and w[i] >= w[i + 1] and (w[i] > w[i - 1] or w[i] > w[i + 1])]
 
 rot = [Image.open(os.path.join(src, 'rotations', d + '.png')).convert('RGBA') for d in DIRS]
+import numpy as _np
+PAL = _np.unique(_np.concatenate([_np.array(r)[_np.array(r)[..., 3] > 0][:, :3] for r in rot]), axis=0).astype(int)
 data = {name: {d: ([] if f'{name}/{d}' in SKIP else frames(folder, d, name)) for d in DIRS} for name, folder in anims}
 C = max([rot[0].width] + [fr[0].width for a in data.values() for fr in a.values() if fr])
 pad = (C - rot[0].width) // 2

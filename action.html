@@ -163,6 +163,38 @@ function ellipseSprite(w, h, col, ring) {
     if (r <= 1 && (!ring || r > .62)) P.set(x, y, c, ring ? 255 : 255); }
   return P.done();
 }
+// hit effects as pixel sprites (owner: effects like the reference game): impact star -> ring -> sparkles; slime splat
+function starFrames(R, n) {
+  const W = [255, 255, 255], Y = [255, 236, 150], out = [];
+  for (let f = 0; f < n; f++) {
+    const S = R * 2 + 6, P = painter(S, S), c = S >> 1, k = f / (n - 1);
+    if (f === 0) {                                   // bright core, 4 long rays, 4 short diagonals
+      for (let i = -R; i <= R; i++) { const a = Math.abs(i), w = a < R * .3 ? 2 : a < R * .65 ? 1 : 0, col = a > R * .7 ? Y : W;
+        for (let t = -w; t <= w; t++) { P.set(c + i, c + t, col); P.set(c + t, c + i, col); } }
+      const q = R * .5 | 0; for (let i = -q; i <= q; i++) { P.set(c + i, c + i, Y); P.set(c + i, c - i, Y); }
+      P.disc(c, c, Math.max(2, R * .22 | 0), Math.max(2, R * .22 | 0), W);
+    } else {                                         // expanding ring that thins out, with sparkles round it
+      const rr = R * (.45 + .55 * k), th = f === n - 1 ? .6 : 1.3;
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (Math.abs(Math.hypot(x - c, y - c) - rr) < th) P.set(x, y, f < n - 1 ? W : Y);
+      if (f === 1) { const q = R * .55 | 0; for (let i = -q; i <= q; i++) { P.set(c + i, c, W); P.set(c, c + i, W); } P.disc(c, c, 2, 2, W); }
+      for (let s = 0; s < 6; s++) { const a = s * Math.PI / 3 + f * .4, d = rr + 3; P.set(c + Math.cos(a) * d, c + Math.sin(a) * d, Y); P.set(c + Math.cos(a) * d + 1, c + Math.sin(a) * d, Y); }
+    }
+    out.push(P.done());
+  }
+  return out;
+}
+function splatFrames(dk, lt) {
+  const D = hex(dk), L = hex(lt), out = [];
+  for (let f = 0; f < 4; f++) {
+    const S = 64, P = painter(S, S), c = S >> 1, rr = 6 + f * 7, r = Math.max(1, 3 - f);
+    P.disc(c, c + 10, 12 + f * 3, 3 + (f > 1 ? 0 : 1), D);                 // puddle spreading on the ground
+    for (let s = 0; s < 10; s++) { const a = s * Math.PI / 5 + .3, x = c + Math.cos(a) * rr, y = c + Math.sin(a) * rr * .6 - (f < 2 ? 4 : 0);
+      P.disc(x | 0, y | 0, r, r, f < 2 ? L : D); }
+    out.push(P.done());
+  }
+  return out;
+}
+const FXS = {};
 // 3x5 pixel digits for damage numbers
 const DIG = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001', '111100111001111', '111100111101111', '111001001010010', '111101111101111', '111101111001111'];
 
@@ -176,6 +208,8 @@ async function load() {
   BG = makeGround();
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
   SL.blue = makeSlime(['#284a8a', '#4a7fd0', '#86b8f4', '#eef6ff']);
+  FXS.burst = starFrames(13, 4); FXS.burstB = starFrames(22, 5);
+  FXS.splat_green = splatFrames('#2f6f2a', '#8fe070'); FXS.splat_blue = splatFrames('#284a8a', '#86b8f4');
 }
 
 // ---------- state ----------
@@ -269,10 +303,13 @@ function doHit(p, h) {
     any = true; m.hp -= h.dmg; m.hit = .12; m.st = 'hurt'; m.t = 0;
     const k = h.kb / Math.max(d, 1); m.kx = dx * k * 4; m.ky = dy * k * 4;
     spark(m.x, m.y - 16, 8, '#ffffff'); spark(m.x, m.y - 16, 4, '#ffe066');
+    G.fx.push({k: 'burst', x: m.x - dx / Math.max(d, 1) * 10, y: m.y - 18, t: 0, life: .2, big: h.kb > 60});   // impact star
     G.nums.push({x: m.x + (rnd() - .5) * 10, y: m.y - 46, v: h.dmg, t: 0, big: h.dmg >= 20});
-    if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k2 = 0; k2 < 10; k2++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070'); }
+    if (m.hp <= 0) { G.kills++; m.dieT = 0; for (let k2 = 0; k2 < 10; k2++) puff(m.x + (rnd() - .5) * 30, m.y - 8, m.kind === 'blue' ? '#86b8f4' : '#8fe070');
+      G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); }
   }
-  if (any) { G.hs = Math.max(G.hs, h.hs); G.shake = Math.max(G.shake, h.sh); }
+  if (any) { G.hs = Math.max(G.hs, h.hs); G.shake = Math.max(G.shake, h.sh);
+    if (h.kb > 60) { G.flash = .09; G.kick = {x: fx * 6, y: fy * 6, t: .12}; } }   // last hit: white flash + camera kick
   // no code-drawn slash arc: the PixelLab frames carry their own blade smears (owner found the extra arc odd)
 }
 function hurtPlayer(dmg, fromX, fromY) {
@@ -302,7 +339,7 @@ function stepPlayer(dt) {
   if (p.state === 'roll') {
     const r = p.roll; r.t += dt; const k = 1 - r.t / ROLL.t, sp = ROLL.sp * (.35 + .65 * k);
     p.x += r.vx * sp * dt; p.y += r.vy * sp * dt; r.g -= dt;
-    if (r.g <= 0) { r.g = .035; G.ghosts.push({x: p.x, y: p.y, dir: p.dir, t: 0}); }
+    if (r.g <= 0) { r.g = .035; G.ghosts.push({x: p.x, y: p.y, dir: p.dir, t: 0, k: r.t / ROLL.t}); if (rnd() < .6) puff(p.x + (rnd() - .5) * 16, p.y, '#e6dcc0'); }
     if (r.t >= ROLL.t) { p.state = 'idle'; p.roll = null; puff(p.x, p.y, '#e6dcc0'); }
   } else if (p.state === 'atk') {
     const a = p.a, P = a.plan; a.t += dt * 1000;
@@ -327,7 +364,7 @@ function stepPlayer(dt) {
   if (p.state === 'idle' || p.state === 'move') {
     if (mx || my) {
       p.state = 'move'; const sp = RUN; p.x += mx * sp * dt; p.y += my * sp * dt; p.dir = dirOf(mx, my);
-      p.step += dt; if (p.step > .14) { p.step = 0; p.bob ^= 1; if (p.bob) puff(p.x - DV[p.dir][0] * 8, p.y, '#cfe3a8'); }
+      p.step += dt; if (p.step > .15) { p.step = 0; p.bob ^= 1; puff(p.x - DV[p.dir][0] * 10 + (rnd() - .5) * 8, p.y - 1, p.bob ? '#efe6c9' : '#d9e8b4'); }   // kicked-up dust
     } else { p.state = 'idle'; p.bob = 0; }
   }
   p.x = clamp(p.x, MARGIN.l, WW - MARGIN.r); p.y = clamp(p.y, MARGIN.t, WH - MARGIN.b);
@@ -385,6 +422,7 @@ function step(dt) {
   for (const g of G.ghosts) g.t += dt; G.ghosts = G.ghosts.filter(g => g.t < .22);
   if (G.banner) { G.banner.t += dt; if (G.banner.t > 1.6) G.banner = null; }
   G.shake = Math.max(0, G.shake - dt * 30);
+  if (G.flash > 0) G.flash -= dt; if (G.kick) { G.kick.t -= dt; if (G.kick.t <= 0) G.kick = null; }
 }
 
 // ---------- drawing ----------
@@ -438,6 +476,7 @@ function draw() {
   cam.x = clamp(cam.x, 0, Math.max(0, WW - VW)); cam.y = clamp(cam.y, 0, Math.max(0, WH - VH));
   let cx = Math.round(cam.x), cy = Math.round(cam.y);
   if (G.shake > 0) { cx += Math.round((rnd() - .5) * G.shake * 2); cy += Math.round((rnd() - .5) * G.shake * 2); }
+  if (G.kick) { const k = G.kick.t / .12; cx += Math.round(G.kick.x * k); cy += Math.round(G.kick.y * k); }
   ctx.setTransform(S, 0, 0, S, -cx * S, -cy * S);
   ctx.drawImage(BG, 0, 0);
   // shadows + warning rings
@@ -449,7 +488,8 @@ function draw() {
   for (const f of G.fx) if (f.k === 'puff') { ctx.globalAlpha = 1 - f.t / f.life; ctx.fillStyle = f.c; const s = (f.t < f.life * .5 ? 2 : 1) * Math.ceil(U / 2) * 2; ctx.fillRect(Math.round(f.x), Math.round(f.y), s, s); }
   ctx.globalAlpha = 1;
   // dodge after-images
-  for (const g of G.ghosts) drawStill(g.dir, g.x, g.y, .35 * (1 - g.t / .22));
+  for (const g of G.ghosts) { const ar = animRow('roll', g.dir), a = .35 * (1 - g.t / .22);   // after-images copy the roll pose
+    if (ar) drawCell(ar.img, ar.r, Math.min(ar.n - 1, Math.floor(g.k * ar.n)), g.x, g.y, ar.flip, a); else drawStill(g.dir, g.x, g.y, a); }
   // bodies, back to front
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)}))].sort((a, b) => a.y - b.y);
   for (const o of list) o.d();
@@ -460,10 +500,15 @@ function draw() {
       for (let s = -1; s <= 1; s += .06) { const a = a0 + s * 1.2, rr = R * (1 - .25 * Math.abs(s)), w = Math.round((1 - Math.abs(s)) * (f.big ? 4 : 3)) + 1;
         if (Math.abs(s) > .3 + k * 1.2) continue; ctx.fillRect(Math.round(f.x + Math.cos(a) * rr), Math.round(f.y + Math.sin(a) * rr * .6), w, w); } }
     if (f.k === 'spark') { ctx.fillStyle = f.c; ctx.globalAlpha = 1 - f.t / f.life; ctx.fillRect(Math.round(f.x), Math.round(f.y), U + 1, U + 1); ctx.globalAlpha = 1; }
+    if (f.k === 'burst') { const set = f.big ? FXS.burstB : FXS.burst, im = set[Math.min(set.length - 1, Math.floor(f.t / f.life * set.length))];
+      ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
+    if (f.k === 'splat') { const set = FXS['splat_' + f.c], im = set[Math.min(set.length - 1, Math.floor(f.t / f.life * set.length))];
+      ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
   }
   for (const n of G.nums) { const k = n.t / .75; ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; drawDigits(n.v, n.x, n.y - k * 26 - (k < .15 ? (1 - k / .15) * -6 : 0), n.big ? U + 1 : U, n.red ? '#ff6060' : n.big ? '#ffe066' : '#ffffff'); ctx.globalAlpha = 1; }
-  // screen-space: joystick + wave banner
+  // screen-space: hit flash, joystick, wave banner
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (G.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (G.flash / .09 * .16).toFixed(3) + ')'; ctx.fillRect(0, 0, innerWidth, innerHeight); }
   if (stick.on) { ctx.globalAlpha = .35; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(stick.ox, stick.oy, 50, 0, 7); ctx.fill();
     const dx = stick.x - stick.ox, dy = stick.y - stick.oy, l = Math.hypot(dx, dy), k = l > 50 ? 50 / l : 1;
     ctx.globalAlpha = .7; ctx.beginPath(); ctx.arc(stick.ox + dx * k, stick.oy + dy * k, 22, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }

@@ -40,7 +40,7 @@ user env var, never printed; `--upload` for images). Balance at start: 40 + 20 d
 | date | what | id | cost | result |
 |---|---|---|---|---|
 | 2026-11-08 | import "Dagger Rogue 128": all 8 views from `pl_rot/` (the first account's PixelLab rotations) | 6f024d02-2df1-4fb1-aaae-43922ac724ce | 0.25 | ✅ "nothing generated"; downloaded back to `pl2_rot/` and compared: all 8 views identical to `pl_rot/` (0 pixels differ) |
-| 2026-11-08 | NW attack redo "attack_ul" (owner: the upper diagonals still had one sweep + a stab): two wide SIDEWAYS sweeps, seen from behind, never facing the camera; NE mirrors it | group d9721383-636b-4fb0-9421-c5b2feab6d6e | 1 | done, NOT used: the owner had already approved the earlier upper attacks (N = attack_back, NW = attack_2hit_b, NE = NW mirrored) |
+| 2026-11-08 | NW attack redo "attack_ul" (owner: the upper diagonals still had one sweep + a stab): two wide SIDEWAYS sweeps, seen from behind, never facing the camera; NE mirrors it | group d9721383-636b-4fb0-9421-c5b2feab6d6e | 1 | ✅ owner chose it ("B") over attack_2hit_b NW: NW = attack_ul, NE = its mirror (`rogue_build.sh`) |
 | 2026-11-08 | base moves, owner "เอาทุกอย่างที่ใช้เจนไป ยกเว้นสกิล": run 8f ×8 (loop, keep_first_frame off), idle 8f ×8 (loop), roll 8f ×8, hurt 4f ×8, death 8f ×4 (E S W N) — 36 jobs from `art/incoming/action/rogue/jobs_base.json` via `tools/pl_queue.py` (one at a time, ZIP into `pl2_dl/` after each, log `pl2_dl/queue.log`, group ids `pl2_dl/groups.json`; rerunning skips what is downloaded) | see groups.json | 36 (3.75 + daily bonus left) | ✅ all 36 done 15:13–15:49; dust puffs beside the run / roll are cut by `act_sheet.py` (`dedust`: small or pale separate blobs). In the game: idle loop 7 fps, run loop 13 fps at speed 230, roll 0.4 s, hit 0.28 s, death 0.9 s (nearest of E S W N) |
 **Back views (N, NE, NW): ask for VERTICAL cuts** (overhead chop, rising slash) plus "seen from BEHIND … never turns … face never visible"; sideways swings make PixMiniMax turn her side-on or toward the camera.
 Download the ZIP only between jobs (`/mcp/characters/<id>/download` answers "still being generated" while a job runs).
@@ -49,6 +49,12 @@ Download the ZIP only between jobs (`/mcp/characters/<id>/download` answers "sti
 did not match the sideways slashes of the other directions, so the attack is the FIRST run (`attack_2hit_b`) in N, NE, NW
 again (they turn a bit, accepted); the vertical chops are kept as `chop` (N + NW) for a skill later. Lower diagonals + W
 still play the east clip. Build: `bash tools/art/rogue_build.sh` (writes `art/action/rogue.json` + one PNG per move).
+
+Blade arcs: PixelLab painted each direction's arc its own colour (white, beige, cyan); `act_sheet.py smear()` repaints every
+pixel that is not a colour of the stills and is light or bluish onto one cream-white ramp (owner "ทำสีให้เหมือนกันทุกทิศ").
+Hit effects (owner "ใส่เอฟเฟคให้เหมือนเกมต้นแบบ"): pixel impact star → ring → sparkles at the hit point (`starFrames`, big on
+the last hit), slime splat on a kill (`splatFrames`), a 16% white screen flash + camera kick toward the swing on the last hit,
+run dust, roll after-images that copy the roll frame.
 
 ## Game: `action.html` (prototype, 2026-11-08)
 One file. Bright meadow painted in code at 1 world px = 1 art px (`makeGround`: diamond tiles, grass tones with Bayer
