@@ -826,7 +826,7 @@ async function load() {
   // pixelfx effects already in the repo (MIT, vendor/pixelfx; owner 2026-11-08 "อันนี้เราเคยใช้นิ"): darkx = the smoke
   // bomb's blast, poof = vanishing / warping, nslash = the flurry's cross cuts
   try { const man = await fetch('fx/manifest.json').then(r => r.json());
-    await Promise.all([...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
+    await Promise.all([...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png'; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -871,7 +871,7 @@ const ROLL = {t: .4, sp: 380, cost: 26}, HURT_T = .28, DEATH_T = .9, RUN = 230; 
 // skill 1, throw dagger (owner 2026-11-08): thrown at a spot on the ground; if it hits a monster the skill can be pressed
 // again within 5 s and she appears behind that monster. The throw pose = the attack's second swing (owner: "เอาคลื่นก็
 // เหมือนปาแล้ว"): wind-up from 2 frames after the first hit, the dagger leaves her hand on the big arc, then follow-through
-const SK1 = {range: 380, r: 46, dmg: 18, cost: 18, speed: 900, mark: 5, cd: 6, wind: 45, rel: 85, after: 55};
+const SK1 = {range: 380, r: 46, dmg: 18, cost: 18, speed: 1700, mark: 5, cd: 6, wind: 45, rel: 85, after: 55};
 // the attack sheet without its slash arcs, for the throw (owner "เอาคลื่นฟันออก"): the arcs are the 3 ramp colours in
 // META.arc; see-through arc pixels go, solid ones (where the arc crossed her body) take the most common colour round
 // them, filled in from the edges over a few passes
@@ -1018,7 +1018,7 @@ function startSk1(p) {
 }
 function throwDagger(p) {         // the dagger leaves her hand: flies to the spot (a little arc) and lands
   const t = p.th, sx = p.x + DV[p.dir][0] * 18, sy = p.y - 34 + DV[p.dir][1] * 8, d = Math.hypot(t.tx - sx, t.ty - sy);
-  G.knives.push({sx, sy, x: sx, y: sy, tx: t.tx, ty: t.ty, t: 0, T: Math.max(.16, d / SK1.speed), dir: dirOf(t.tx - sx, t.ty - sy - 20), land: -1, tr: []});
+  G.knives.push({sx, sy, x: sx, y: sy, tx: t.tx, ty: t.ty, t: 0, T: Math.max(.09, d / SK1.speed), dir: dirOf(t.tx - sx, t.ty - sy - 20), land: -1, tr: []});
 }
 function knifeLand(kn) {          // area hit where it lands; the monster nearest the spot gets the mark
   const p = G.p; let mk = null, md = 1e9;
@@ -1030,6 +1030,7 @@ function knifeLand(kn) {          // area hit where it lands; the monster neares
       G.fx.push({k: 'splat', x: m.x, y: m.y - 8, t: 0, life: .4, c: m.kind}); }
     else if (d < md) { md = d; mk = m; } }
   for (let k = 0; k < 7; k++) puff(kn.tx + (rnd() - .5) * 26, kn.ty, '#e6dcc0');
+  G.fx.push({k: 'burst', x: kn.tx, y: kn.ty - 6, t: 0, life: .22, big: true}); spark(kn.tx, kn.ty - 6, 8, '#eafcff'); G.shake = Math.max(G.shake, 3);
   if (mk) { p.mark = {m: mk, until: G.t + SK1.mark}; G.hs = Math.max(G.hs, .04); G.shake = Math.max(G.shake, 2); }
   kn.land = 0;
 }
@@ -1052,7 +1053,7 @@ function blinkBehind(p) {         // second press: appear behind the marked mons
 // (blind monsters hop about at random and their lunges miss half the time). Skill 4 flurry: pick a monster, she vanishes
 // and cuts through it 6 times from different sides (streaks + after-images, no new moves needed), then lands behind it.
 const SK2 = {cost: 15, cd: 5, dmg: 13, r: 140, wind: 70, step: 30, steps: 16, rec: 90, hits: [8, 16]};
-const SK3 = {range: 340, r: 96, dmg: 12, cost: 20, cd: 9, blind: 4, fly: .55, ms: [55, 55, 55, 55, 55, 75, 50, 50, 50]};
+const SK3 = {range: 340, r: 96, dmg: 12, cost: 20, cd: 9, blind: 4, fly: .26, ms: [55, 55, 55, 55, 55, 75, 50, 50, 50]};
 const SK4 = {range: 320, r: 140, dmg: 9, fin: 16, n: 5, cost: 25, cd: 10, open: .22, cut: .11, end: .32};
 const SKS = {1: SK1, 2: SK2, 3: SK3, 4: SK4};
 function startSk(p, k) { return k === 1 ? startSk1(p) : k === 2 ? startSpin(p) : k === 3 ? startBomb(p) : startFlurry(p); }
@@ -1116,8 +1117,7 @@ function flurryStep(p, dt) {
     p.x = f.ax + (f.bx - f.ax) * f.u; p.y = f.ay + (f.by - f.ay) * f.u;
     f.gh -= dt; if (f.gh <= 0 && f.u < 1) { f.gh = .018; G.ghosts.push({x: p.x, y: p.y, dir: f.bx >= f.ax ? 0 : 4, t: 0, k: .5, atk: 3, an: 'dash', a: 1.6}); }
     if (!f.hit && f.u >= .5) { f.hit = 1; let any = false;
-      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 10, '#a8f4f4'); pfx('xcut', m.x + (rnd() - .5) * 10, m.y - 22); any = true; }
-      if (!any) pfx('xcut', f.cx, f.cy - 24);
+      for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) { hitMob(m, SK4.dmg, f.ax, f.ay, 10, '#a8f4f4'); pfx(f.n % 2 ? 'swordcut_m' : 'swordcut', m.x + (rnd() - .5) * 8, m.y - 24); any = true; }   // a thin cut on each (owner's VFX)
       if (any) { G.hs = Math.max(G.hs, .03); G.shake = Math.max(G.shake, 2); } }
     if (f.t >= SK4.cut) { f.t = 0; if (++f.n < SK4.n) nextCut(p, f); else { f.ph = 'end';
       for (const m of G.mobs) if (m.hp > 0 && inField(m, f)) hitMob(m, SK4.fin, f.cx, f.cy, 90, '#ffffff', true);
@@ -1323,11 +1323,12 @@ function step(dt) {
   if (!G.over) stepPlayer(dt); else if (G.p.state === 'dead') G.p.deadT += dt;
   stepAmbient(dt);
   stepMobs(dt);
-  for (const kn of G.knives) { if (kn.land >= 0) { kn.land += dt; continue; } kn.t += dt; const k = Math.min(1, kn.t / kn.T); kn.tr.push([kn.x, kn.y]); if (kn.tr.length > 10) kn.tr.shift();
-    kn.x = kn.sx + (kn.tx - kn.sx) * k; kn.y = kn.sy + (kn.ty - kn.sy) * k - Math.sin(k * Math.PI) * 18;   // hand height down to the ground, a slight arc
+  for (const kn of G.knives) { if (kn.land >= 0) { kn.land += dt; continue; } kn.t += dt; const k = Math.min(1, kn.t / kn.T); kn.tr.push([kn.x, kn.y]); if (kn.tr.length > 14) kn.tr.shift();
+    kn.x = kn.sx + (kn.tx - kn.sx) * k; kn.y = kn.sy + (kn.ty - kn.sy) * k;   // straight from her hand, hard and fast
     if (k >= 1) knifeLand(kn); }
   G.knives = G.knives.filter(kn => kn.land < .9);
-  for (const b of G.bombs) { b.t += dt; const k = Math.min(1, b.t / b.T); b.x = b.sx + (b.tx - b.sx) * k; b.y = b.sy + (b.ty - b.sy) * k - Math.sin(k * Math.PI) * 95;
+  for (const b of G.bombs) { b.t += dt; const k = Math.min(1, b.t / b.T); b.x = b.sx + (b.tx - b.sx) * k; b.y = b.sy + (b.ty - b.sy) * k - Math.sin(k * Math.PI) * 16;   // a hard, flat throw
+    if (!b.done && ((G.t * 60) | 0) % 2) puff(b.x, b.y, '#9a92a8');   // smoke from the fuse along the way
     if (k >= 1 && !b.done) { b.done = 1; bombBlast(b); } }
   G.bombs = G.bombs.filter(b => !b.done);
   if (G.p.mark && (G.t >= G.p.mark.until || G.p.mark.m.hp <= 0)) G.p.mark = null;
