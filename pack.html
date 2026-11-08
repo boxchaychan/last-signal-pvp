@@ -164,8 +164,9 @@ const ULT={god_warrior:'ตีลังกาเมฆ',god_assassin:'ราช�
   hero_warrior:'ทะลวงหมื่นทัพ',hero_assassin:'คาถาแยกเงา',hero_hunter:'ฝนธนูเชอร์วูด',hero_mage:'ฝนดาวตก',hero_support:'ศึกผาแดง',hero_curse:'คำสาปฟาโรห์'};
 // animation sheets (owner 2026-11-08 "ทำอนิเมชันให้หงอคง เอาที่มีอยู่ ลงแค่หงอคงตัวเดียวก่อน"): rows idle / attack / ult, feet at fx,fy, h0 = figure height
 // Wukong (owner 2026-11-08 "ลื่นกว่านี้ได้ไหม"): every frame we have = idle 4 (breathing loop) + attack 6 + ult 25 (the full somersault), 13 columns
-const LANIM={god_warrior:{src:'art/incoming/legends/anim/god_warrior_as2.png',cw:384,ch:386,fx:166,fy:370,h0:140,cols:13,nr:4,
-  rows:{idle:{r:0,n:4},attack:{r:1,n:6},skill:{r:2,n:25}},hit:3,shit:12,leap:1,ud:1.7}};
+// + walk 25 (owner "หงอคงก็มีท่าเดินด้วยที่ติดมา": the site run that made a walk instead of an attack)
+const LANIM={god_warrior:{src:'art/incoming/legends/anim/god_warrior_as2.png',cw:384,ch:386,fx:166,fy:370,h0:140,cols:13,nr:6,
+  rows:{idle:{r:0,n:4},attack:{r:1,n:6},skill:{r:2,n:25},walk:{r:4,n:25}},hit:3,shit:12,leap:1,ud:1.7}};
 const LEAD=.3,PA=.36;  // attack frames: wind up during the last LEAD s before a hit, follow through for PA s after it
 // ---------- monsters (old pictures from the city game for now)
 const MON={walker:{n:'ซอมบี้',img:'art/px/z_walker.png',px:1,sc:.9,R:{rg:30,sp:48,cd:1.15},hp:260,dm:34,x:545},
@@ -358,6 +359,7 @@ function animFrame(u,A,t){const R_=A.rows,sk=R_.skill.n,ni=R_.idle.n;
   const na=R_.attack.n;
   if(u.pa>0){const q=A.hit+(1-u.pa/PA)*(na-A.hit),f=Math.min(na-1,Math.floor(q)),fr=q-f;return['attack',f,Math.min(na-1,f+1),f<na-1&&fr>.55?(fr-.55)/.45*.6:0]}
   if(u.ir&&!u.mv&&u.cd<LEAD&&!u.dead){const q=(LEAD-Math.max(0,u.cd))/LEAD*A.hit,f=Math.min(A.hit-1,Math.floor(q)),fr=q-f;return['attack',f,Math.min(A.hit,f+1),fr>.55?(fr-.55)/.45*.6:0]}
+  if(u.mv&&R_.walk){const nw=R_.walk.n,q=t*17,f=Math.floor(q)%nw;return['walk',f,(f+1)%nw,q-Math.floor(q)]}
   const q=t*(u.mv?8:4.5)+u.x*.013,f=Math.floor(q)%ni;return['idle',f,(f+1)%ni,q-Math.floor(q)]}
 function framePos(A,row,f,k){const R_=A.rows[row];return(-(f%A.cols)*A.cw*k)+'px '+(-(R_.r+Math.floor(f/A.cols))*A.ch*k)+'px'}
 function syncAnim(u,F,bs){const A=u.an,k=60*(u.sc||1)/A.h0;
@@ -367,7 +369,7 @@ function syncAnim(u,F,bs){const A=u.an,k=60*(u.sc||1)/A.h0;
     FIELD.appendChild(e);u.el=e;u.fa=e.children[0];u.fb=e.children[1]}
   const [row,f,f2,b]=animFrame(u,A,F.t);u.fa.style.backgroundPosition=framePos(A,row,f,k);
   if(b>.02&&f2!==f){u.fb.style.backgroundPosition=framePos(A,row,f2,k);u.fb.style.opacity=b.toFixed(2)}else u.fb.style.opacity=0;
-  const step=u.mv?Math.abs(Math.sin(F.t*10+u.x)):0,bob=-step*4,lean=u.mv?3.5:0,br=u.mv||row!=='idle'?1:1+.012*Math.sin(F.t*2.6+u.x),hk=u.hk>0?u.hk/.2:0;
+  const fake=u.mv&&!A.rows.walk,step=fake?Math.abs(Math.sin(F.t*10+u.x)):0,bob=-step*4,lean=fake?3.5:0,br=u.mv||row!=='idle'?1:1+.012*Math.sin(F.t*2.6+u.x),hk=u.hk>0?u.hk/.2:0;
   u.el.style.left=(u.x-A.fx*k)+'px';u.el.style.top=(fy(u.z)-A.fy*k)+'px';u.el.style.zIndex=10+Math.round(u.z);
   u.el.style.transform='translate('+(u.hd*4*hk)+'px,'+(bob+(u.dead?10:0))+'px) rotate('+(u.face*lean)+'deg) scale('+(u.face*bs*(1+.04*hk))+','+(bs*br*(1-.04*hk))+')';
   u.el.style.opacity=u.dead?.15:1;u.el.style.filter=u.ht>0?'brightness(1.8)':'';
