@@ -299,6 +299,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Monster frames by Codex** (owner 2026-11-09 "มอนไม่เจน PixelLab", "เฟรมเจนเอา ให้ codex ทำ"): `tools/art/mob_anim.py` →
+  `docs/codex/action/MOB_ANIM.md` (45 jobs = 15 monsters × walk / attack / death; one picture each, 6 frames in a 3x2 grid
+  of 512 px cells on white, side view facing right only, the game mirrors it; the monster's turnaround attached;
+  attack frame 4 = the hit). Files arrive as `art/incoming/mobs/anim/<key>_<action>.png`. The same prompts are on
+  `docs/action-prompts.html` for ChatGPT. Monsters only face left / right in the game (no front / back rows).
 - **Monsters from Codex** (2026-11-09, ~8 min, Codex worked straight in this folder on `main` instead of a branch): all 15
   in `art/incoming/mobs/<key>.png` (1536x1024, cel-shaded chibi turnarounds, front / right profile / back, all usable) +
   `REPORT_TH.txt`; 128 px views (free, `white_cut.py --no-ring` → `turn128.py`, each figure 118 px tall for now) in
