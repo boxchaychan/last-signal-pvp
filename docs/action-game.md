@@ -368,6 +368,15 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Archer X ฝนดาว redone** (owner 2026-11-09 "Starfall Barrage ของนักธนูดูใช้จริงไม่รุ่นแรงเลย"): the green copy of ParticleFX's
+  sheet (`pfx_starfall_g`) was pale lime on green grass, two thin streaks, nothing hit for 1.3 s. Now all code (`starRain`,
+  `SF`): the ground in the circle darkens (flat dark disc `FXS.darkEm`) with two turning rune rings (`drawStarZone`), a white
+  diamond star opens in the sky over it (`drawStarOrb`) and pours 20 comets (`drawComet`: white head, green body, dark edge,
+  trail glow) from 0.28 s, one every 0.075 s; every 2nd is a damage tick (S.dmg on everything in the circle, 10 ticks as
+  before) and lands on a monster in it; each landing (`starLand`): light pillar + white cross (`drawStarBang`), two rings, a
+  burnt crater with a cooling rim (`drawStarCrater`), green/white sparks, dirt, embers, shake + hit-stop. Then a giant star:
+  2 x S.dmg in 1.15 x the circle, kb 30, two shockwaves with light rays (`drawStarShock`), flash, kick, shake 13. First
+  damage now at ~0.6 s (was 1.4). The sheet is kept for the skill icon. Check: `?test=hsk&hero=archer&k=6&n=<steps>`.
 - **Norse: draugr moves in** (cloud session 2026-11-09): Codex's `codex/mobs-china` had draugr walk / attack / death
   (rows 145-147, hurt not drawn yet); copied into `art/incoming/mobs/anim/` with its REPORT_TH lines, `mob_frames.py draugr`
   → `art/action/mobs/draugr.png` (cell 90×84, anchor 50,81). The game picks it up from `index.json`; on `?set=norse` it is
