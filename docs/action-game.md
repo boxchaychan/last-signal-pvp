@@ -335,6 +335,23 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   (`art/incoming/action/archer/jobs_se.json`, log `queue_se.log`; rebuild her sheets with hero_build.sh and drop the
   south-east / south-west aliases for attack + crit when they land). Auto attack for every hero: button ออโต้ (T),
   saved in `act.auto`; while standing still it attacks whenever a monster is within `AUTOR[HERO]`.
+- **Afternoon pass 2026-11-09** (owner woke up: "ทำไมหยุด"; the overnight queues had finished at 14:16 and pushed the
+  priestess's full sheets + the archer's own south-east shot; Codex had stopped to report, told to go on): Japan + mummy +
+  scarab move frames in (`mob_frames.py`). Thai map: rice paddies painted in code (`paddyPx`: flooded cells, rows of green
+  rice 7 px deep with 2 px of sky-tinted water, a dark drop under each grassy dike, a dike all round; was the brown
+  `reeds` swamp square), ruin floor moss = small round patches per 44×36 cell (`hash2`; was long diagonal streaks).
+  Archer effects on green grass: `PRIM` = a dark rim (the sheet grown 2 px, `rimOf`) drawn under `pfx_dashstrike_g`,
+  `pfx_skyarrow_g`, `pfx_starfall_g` (.22, its soft glow made a dark haze at more) and `croots_g`; arrows get a dark
+  underline; root shot = green vines `fx/croots_g.png` (fx_tint of croots). **Start menu** (the first thing seen was a dark
+  box on black): the real map pans behind it (`G.menu`, `menuCam`, only `stepAmbient` runs, the hero is not drawn),
+  logo LAST SIGNAL / สัญญาณสุดท้าย, five hero cards (south-east still, the chosen one plays its idle in `menuTick`), role
+  + kit line (`HROLE`, `HDESC`), start map (`MAPN`), เริ่มเล่น; another hero / map reloads with `&auto=1`, which starts at
+  once. **HUD**: framed panel with the hero's face (front view's head, `#hpor`), level badge, HP number + a pale trail that
+  holds .45 s after a hit then drains (`HUDL`), banded bars; score in the same panel style; boss bar clear of the panel;
+  defeat screen with wave / kills / level, เล่นใหม่ / เลือกตัวละคร. Trees fade when a fighting monster stands behind them
+  too. Camps keep `cityD` ≥ 1.7 (were right against the wall). Tests: `?test=view&camp=1&n=<steps>` (next to the nearest
+  camp, auto on). The Codex wall kit (`thai_wall_kit.png`, big boxy pieces) was looked at and not used: the code walls
+  read better at game scale.
 - **Rogue Q and E in the black-purple tone** (owner "สกิล q e ทำให้เข้าโทนด้วย", "e ให้หมุน ละจังหวะสุดท้ายให้ลมสะบัดออก"):
   Q's dagger trail is black-edged purple with a violet glow, its landing and each hit play Dash Strike's hit flash from
   `pfx_dashstrike_v` (frames 13-24), puffs purple, the blink behind uses `pfx_step_v`. E's ring is `pfx_whirl_k` (the
