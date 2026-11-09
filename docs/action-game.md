@@ -305,13 +305,16 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   whirlwind in the same tone, made by `rogue_dash_fx.py`), hits flash `pfx_dashstrike_v`, the spin frames lose their
   pale air arcs (`noArcOf`) and the glow and after-images are violet (`vioOf`); when the spin ends `rogueGust`: everything
   within 1.7 x its radius takes `SK2.fin` (24, scales with level) and is blown back, a big whirl, two rings, wind lines.
-- **Rogue skill 4, new look approved, NOT in the game yet** (owner "เออสวย" on the demo, earlier "อย่าเพิ่งลงเกม เดี๋ยวบอก"):
+- **Rogue skill 4, new look, IN THE GAME** (owner "เออสวย" on the demo, then "ใส่เลย"):
   six dashes along the same zigzag as now (`nextCut`), each one ParticleFX's Dash Strike black with a neon purple rim like the X
   (owner "Dash Strike โทนเดียวกันได้ไหม"; `fx/pfx_dashstrike_v.png`, the monster's hit flash violet: streak frames 0-11 along the dash, its own hit flash 13-28 on every monster), no
   thousand cuts, then the closing X = twin fang black from its first frame with a neon purple rim
   (`fx/pfx_twinfang_k.png`); colours sampled from the owner's neon samurai picture; one dash 0.2 s (SK4.cut is 0.12
   now), Dash Strike played at 20 fps; she holds the dash row's frame 6 with a violet glow until the X ends. Sheets made
-  by `tools/art/rogue_dash_fx.py`. Wait for the owner's word before wiring it in.
+  by `tools/art/rogue_dash_fx.py`. In the game: `nextCut` lays the streak along each dash (frames 0-11, rotated, scaled to the
+  dash length, `fps: 20`), every hit plays frames 13-28 on each monster in the circle, `starFinish` plays
+  `pfx_twinfang_k` x1.3 at the circle's middle, she glows violet; SK4 cut .2, end .85; `drawPfx` now takes `f.fps` and
+  scales turned effects (`rot` + `sc`).
 - **Archer fixes** (owner "ลูกธนูไม่ตรง สกิลไม่สวย", "6 ให้นักธนู"): PixelLab drew its own arrow flying off (often upward) in
   the attack / crit frames while the game shot its cyan arrow at the target = two arrows that did not line up; those rows
   are now built with `act_sheet.py --detach=attack,crit` (only the blob joined to the figure stays; `hero_build.sh`
