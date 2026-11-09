@@ -13,8 +13,12 @@ fps = int(sys.argv[5]) if len(sys.argv) > 5 else 30
 anchor = sys.argv[6] if len(sys.argv) > 6 else 'c'
 nmax = int(sys.argv[7]) if len(sys.argv) > 7 else 0
 cols, rows = (int(v) for v in grid.split('x'))
-im = Image.open(src).convert('RGBA'); W, H = im.size; cw, ch = W / cols, H / rows
-fr = [np.array(im.crop((round(c * cw), round(r * ch), round((c + 1) * cw), round((r + 1) * ch)))) for r in range(rows) for c in range(cols)]
+import os, glob
+if os.path.isdir(src):   # a folder of PNG frames (ParticleFX "PNG frames" export); the grid argument is ignored
+    fr = [np.array(Image.open(f).convert('RGBA')) for f in sorted(glob.glob(os.path.join(src, '*.png')))]
+else:
+    im = Image.open(src).convert('RGBA'); W, H = im.size; cw, ch = W / cols, H / rows
+    fr = [np.array(im.crop((round(c * cw), round(r * ch), round((c + 1) * cw), round((r + 1) * ch)))) for r in range(rows) for c in range(cols)]
 h0, w0 = min(f.shape[0] for f in fr), min(f.shape[1] for f in fr); fr = [f[:h0, :w0] for f in fr]
 while len(fr) > 1 and (fr[-1][..., 3] > 8).sum() < 20: fr.pop()
 if nmax: fr = fr[:nmax]

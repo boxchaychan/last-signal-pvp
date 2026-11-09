@@ -299,6 +299,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Dodge → teleport upgrade** (owner 2026-11-09 "เอาท่าเทเลพอร์ตไปใส่แทนกลิ้ง ให้อัพสกิลที่วิ 1 พอยท์"): a row in the skill book
+  (Space · กลิ้งหลบ, + = 1 point) sets `p.tele`; `startRoll` then calls `startTele` (`TELE`: 210 px in the move direction,
+  avoids water, 0.35 s untouchable, 22 stamina) with ParticleFX's shadow step at both ends (`fx/pfx_step_v` violet for the
+  rogue, `pfx_step_t` the original teal for the others; 48 frames, `pfx_sheet_import.py` now takes a frames folder).
+  Carried between maps; the phone button reads วาร์ป.
 - **Rogue R smoke = ParticleFX cartoon smoke poof** (owner 2026-11-09 "ควันใช้อันนี้"): `art/incoming/pfx/smoke-poof-sheet.png`
   (870x864 = 6x6 cells of 145x144, 36 frames; 6x7 cut the clouds) → `fx/pfx_smoke.png` (200 px wide, 30 fps). Also from
   ParticleFX, waiting for the owner: frost crescent slash (`fx/pfxfrost<deg>`), teal star missile (came out white / red,
