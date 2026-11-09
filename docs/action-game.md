@@ -299,6 +299,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Meteor experiments** (2026-11-09): `?mfx=parts` (Codex pieces moved by code, owner: "ไม่ผ่าน"), `?mfx=codex`, `?mfx=star`
+  (ParticleFX Studio's starfall barrage, `tools/art/pfx_sheet_import.py`, sheets the owner downloaded in
+  `art/incoming/pfx/`); owner "ใช้ของเดิม": the default stays pixelfx (first meteor = Codex ink comet). ParticleFX Studio
+  (particlefx.studio) has an MCP server (https://mcp.particlefx.studio/mcp, `Authorization: Bearer ${PFX_API_KEY}`, key from
+  its billing page, MCP calls paid from build packs); not connected yet (adding it to `.mcp.json` needs the owner's OK).
+  Reference pictures for its "Match a reference" in `art/incoming/pfx_ref/`.
 - **Living effects** (owner 2026-11-09, a clip of a side-view pixel action game: "การแพรี่ การฟัน สกิล มันเหมือนมีชีวิต",
   "สกิลเหมือนมันแยกกัน", "เค้าไม่ได้เจนภาพมาเป็นก้อนไหม"; note: pixelfx's meteor is 46 frames, Codex's pictures 6): code
   parts tie the effects to the body: `parts()` shards with gravity and bounce / embers / speed lines (`G.fx` k 'pt');
