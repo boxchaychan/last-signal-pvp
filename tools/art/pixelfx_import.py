@@ -13,10 +13,13 @@ L={'slash2':('melee/double-slash','c',13,18),'flurry':('melee/dagger-flurry','c'
  'parry':('impacts/parry','c',16,18),'tstop':('arcane/time-stop','c',44,15),'starfall':('arcane/star-fall','g',31,15),
  'healaoe':('holy/heal-aoe','g',36,15),'feather':('holy/feather-burst','c',37,15),'hex':('shadow/hex-sigil','c',51,16),
  'mburst':('arcane/mana-burst','c',23,15),'quake':('nature/quake','g',30,15),'darkx':('shadow/dark-explosion','c',30,12),
- 'pillar':('holy/holy-pillar','g',30,12),'firering':('fire/fire-ring','g',30,10)}
+ 'pillar':('holy/holy-pillar','g',30,12),'firering':('fire/fire-ring','g',30,10),
+ 'pmeteor':('fire/meteor','g',46,15)}   # owner 2026-11-09: the mage's meteor (falls in, explodes, smokes)
+ONLY=sys.argv[3:]   # optional keys: import just these
 man=json.load(open(os.path.join(DST,'manifest.json')))
 tot=0
 for key,(fid,mode,maxn,pfps) in L.items():
+  if ONLY and key not in ONLY: continue
   name=fid.split('/')[1];j=json.load(open(os.path.join(SRC,fid,name+'.json')));m=j['meta']['pixelfx']
   im=np.array(Image.open(os.path.join(SRC,fid,name+'.png')).convert('RGBA'));fw,fh=m['frameSize'];cols=m['columns'];n=min(m['frames'],maxn)
   fr=[im[(i//cols)*fh:(i//cols)*fh+fh,(i%cols)*fw:(i%cols)*fw+fw] for i in range(m['frames'])]

@@ -299,6 +299,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Rogue E = whirlwind, mage Z = pixelfx meteor** (owner 2026-11-09 "สกิล E นักดาบเอาไปใส่ให้มีด", then pasted pixelfx's
+  meteor code + "สกิลอุกกาบาตเมจ"): `startWhirl(p, S, k)` shared by both (rogue: tap = a short spin, held = keeps
+  spinning; her body turns through the 8 swing frames `whirlDrawRogue` like the old spin, Codex's wind ring, after-images;
+  old `startSpinOld` kept). Meteor: pixelfx `fire/meteor` → `fx/pmeteor.png` (`pixelfx_import.py <dir> fx pmeteor`, 46
+  frames, lands at 0.8 s), spawned 0.8 s before the impact so it lands on time; Codex's meteor stays as the fallback.
 - **Codex effects in** (2026-11-09, 17 pictures on black from `codex/fx`, squashed in): `tools/art/fx_codex_import.py` →
   `fx/c*.png` (mode add = brightness becomes see-through, solid = black joined to the edge goes; size = widest frame in
   game px; fireball, ghost fire and the ground crack also as 24 turned copies `<key><deg>`, the crack squashed to the
