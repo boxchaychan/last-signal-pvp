@@ -756,3 +756,8 @@ roll 26, regen after 0.6 s). Mouse aims on PC; on phones a left-side stick, butt
 slime. Slimes (code-drawn pixel sprites, green / blue from wave 3) hop, then warn (flash + red ring) and lunge.
 `?test=atk&dir=N` freezes on the last hit for screenshots (headless Edge: `msedge --headless=new --screenshot=...`).
 Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner asked about a leveling map).
+- **Berserker skill kit planned** (owner 2026-11-09 "สกิลจุดเด่นแรง ท่าค่อนข้างกว้าง แต่ช้า แต่หนักหน่วง ให้มีท่ารวบโดยใช้โซ่ โทนดำแดงนีออน"):
+  `docs/berserker.md` (passive + Q chain gather → 360 cleave, E triple cleave, R charged ground slam, F chain hook dash, Z chain
+  shackle ring, X berserk ult; wide, slow wind-ups with super armor, heavy stagger; the PixelLab moves list). Side view fixed in code
+  (`tools/art/berserker_side_fix.py`: red X moved off the sword hand, shorter grip) → `side_v4_fix.png`. Effect prompts `bz_*` in
+  `docs/fx-prompts.html` (tone black + neon red); `archer_fx.py --tone=red <key>` makes `fx/<key>_r.png` in that tone. Not in the game yet.
