@@ -299,6 +299,17 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Priestess (5th hero, `?hero=priest`)** (owner: "นักบวช มีหน้าที่บัพ ดีบัพ เกมส์เรายาแพง หายาก ต้องการให้ทุกคลาสมีที่ยืน"; GPT
+  turnaround from the archer style picture → `art/incoming/action/priest/`, `turn128.py` after cutting 9 white pockets
+  between the staff and her body; PixelLab character f1767069-1186-47bb-8d7f-af569369a329 "Sun Priestess 128" (v3 import,
+  ~2 gen); 49 move jobs (`jobs_all.json`: idle/run/roll/hurt 8 dirs, attack 5, death 4, pray + bless 4 dirs) run by
+  pl_queue in the background with `tools/keep_awake.py` holding the PC awake; `hero_build.sh priest` builds whatever has
+  arrived). Role: survives without potions. Basic attack = gold holy bolt (`holyBolt`, homing, medium range), passive
+  ศรัทธา = every hit heals 1 (max 4/s), her heals +20% (`healP`). `PRS`: Q ฟื้นฟู heal 25 + 15 over 4 s (pray move), E
+  ทัณฑ์สวรรค์ gold sky pillar (`pfx_skyarrow_y`), 26 dmg and frail 5 s (+25% damage taken, `m.frail`), R พรนักรบ +30%
+  damage 8 s (bless move, `p.bless`), F ก้าวแสง short blink leaving a healing patch (`G.zones`), Z คำสาป slow 40% + hits
+  30% weaker 6 s (`m.curse`, purple rune ring), X ปาฏิหาริย์ 10 s: a killing blow leaves her at 40, else heal 30 at the
+  end (`p.mir`). Gold / green effect copies: `pfx_skyarrow_y`, `pfx_dashstrike_y`, `pfx_heal_y` (fx_tint.py).
 - **Map pass** (owner asleep, 30/100: "แมพให้มันไม่รก ดูสภาพแมพก่อนใส่ของ ใส่กองทับกันมั่ว ... น้ำให้กว้างๆ ... บ้านติดกันเกิน ... ตัดไม่หมด
   ... วางตำแหน่งคลายกัน ทำแบบแผน ... มอนให้เยอะกว่านี้"): every prop picture knows its opaque box (`GPROP[n].bbA/bbB`,
   `gp().bb`); `add(s, x, y, o)` refuses a spot whose box overlaps anything already placed by more than 5% (10% with soft

@@ -31,5 +31,5 @@ for i in range(n):
     c = Image.new('RGBA', (W, H)); c.alpha_composite(im.crop(((i % cols) * w, (i // cols) * h, (i % cols + 1) * w, (i // cols + 1) * h)), (pad, pad))
     out.alpha_composite(tint(c), ((i % cols) * W, (i // cols) * H))
 out.save('fx/' + dst + '.png', optimize=True)
-man[dst] = dict(m, w=W, h=H, cols=cols, ax=m['ax'] + pad, ay=m['ay'] + pad, src=m['src'].split(' (')[0] + f' (tinted {ramp}, tools/art/fx_tint.py)')
+man[dst] = dict(m, w=W, h=H, cols=cols, ax=m['ax'] + pad, ay=m['ay'] + pad, src=m.get('src', src).split(' (')[0] + f' (tinted {ramp}, tools/art/fx_tint.py)')
 json.dump(man, open('fx/manifest.json', 'w'), separators=(',', ':')); print(dst, out.size)

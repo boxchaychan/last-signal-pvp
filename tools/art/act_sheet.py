@@ -17,6 +17,7 @@ FIX, SKIP, ALIAS = {}, set(), {}
 for a in opts:
     if a.startswith('--hits='):
         for part in a[7:].split(';'):
+            if ':' not in part: continue
             d, fs = part.split(':'); FIX[d if '/' in d else 'attack/' + d] = [int(f) for f in fs.split(',')]
     # --skip / --alias entries are "<anim>/<dir>"; a bare "<dir>" means the attack
     elif a.startswith('--skip='): SKIP |= {p if '/' in p else 'attack/' + p for p in a[7:].split(',')}
