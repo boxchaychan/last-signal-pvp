@@ -299,6 +299,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Skill bar + skill book** (owner 2026-11-09 "ทำ ui ให้มีสกิลลงช่องล่าง และตารางอัพสกิล"): PC hotbar of 6 slots bottom centre
+  (`#hotbar`, icons cropped from each skill's effect sheet `SKICON`, cooldown shade + seconds, level pips, hover tip); the old
+  PC squares `#skpc` are hidden; phones keep the round buttons. Levels: kills give XP (`gainXp`, max hp / 8), `needXp(lv)` =
+  40 + 30 (lv-1), up to 20, 1 skill point per level, XP bar under the stamina. Skill book (`B` or the สกิล button, pauses with
+  `G.paused`): name, description, cooldown, level 1-5 pips and a + button; each level = +20% damage, -8% cooldown
+  (`applySkLv` rescales the numbers in `SKS` from `SKBASE`). Level, XP, points and skill levels travel between the maps.
 - **Rogue E = whirlwind, mage Z = pixelfx meteor** (owner 2026-11-09 "สกิล E นักดาบเอาไปใส่ให้มีด", then pasted pixelfx's
   meteor code + "สกิลอุกกาบาตเมจ"): `startWhirl(p, S, k)` shared by both (rogue: tap = a short spin, held = keeps
   spinning; her body turns through the 8 swing frames `whirlDrawRogue` like the old spin, Codex's wind ring, after-images;
