@@ -3,7 +3,7 @@
 #   python3 tools/art/turn128.py <cut.png> <out dir> [canvas=128] [colours=32]
 #   <cut.png> = the turnaround with its white background already cut: tools/art/white_cut.py <in> <cut.png> --edge-only --no-ring
 # All three views share ONE scale (the tallest figure fills canvas-10 px) and one palette; feet sit 4 px above the bottom edge,
-# each figure centred on its own width. A 1 px dark outline goes round the outside. Writes south.png east.png north.png + preview.png.
+# each figure centred on its own width (wide figures shrink to keep T128_MARGIN=6 px free at the sides). A 1 px dark outline goes round the outside. Writes south.png east.png north.png + preview.png.
 import sys, os
 import numpy as np
 from PIL import Image
@@ -34,6 +34,9 @@ figs = []
 for x0, x1 in merged:
     sub = im.crop((x0, 0, x1, im.height)); figs.append(sub.crop(sub.getbbox()))
 k = (C - 10) / max(f.height for f in figs)
+# wide figures (the Berserker's greatsword, 2026-11-09) must keep T128_MARGIN px free at both sides, or PixelLab's turned views
+# and swings get cut at the canvas edge
+k = min(k, (C - 2 * int(os.environ.get('T128_MARGIN', 6))) / max(f.width for f in figs))
 
 def shrink(f):
     w, h = max(1, round(f.width * k)), max(1, round(f.height * k))

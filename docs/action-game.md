@@ -764,3 +764,13 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
 - **Swordsman X rage changed** (owner 2026-11-09 "เอาลดดาเมจออก เปลี่ยนโจมตีแรง 20 ... ของเดิมไม่มีดูดเลือด ต้องเป็นเบอร์เซิร์กก่อน"): no lifesteal, no
   damage reduction; faster swings + damage +2% per skill level (+20% at 10) (`SWS[6].atk`, in `heroDmg`); then 10 s, cooldown 60 s (Berserker awakened: 15 s, 60 s). Lifesteal etc. come with the
   Berserker's awakened rage (`docs/berserker.md`).
+- **Berserker PixelLab prep** (2026-11-09 evening, cloud session in "boxchaychan games"): `get_balance` there = the FIRST trial
+  account (1.25 of 40 + 5 daily bonus = 6.25 usable; its characters are the old rogue / Wukongs). The paid Apprentice account
+  (~1,800 left) is only on the owner's PC (`PL_KEY`); the cloud secret was never switched to it. 128 px views made (free):
+  `white_cut.py --no-ring` on front_v2 / side_v4_fix / back_v2 → `tools/art/join_views.py` (the three separate GPT pictures came at
+  different sizes: each scaled to the same body height, feet to head top over the feet, so the sword over the head does not
+  count) → `turn128.py ... 128 32` → `art/incoming/action/berserker/px128/` (south 113×111, east 113×107, north 116×105; the
+  greatsword makes him wide, so `turn128.py` now shrinks a figure to keep `T128_MARGIN`=6 px free at both sides). Body ≈105 px
+  vs the swordsman's 120 → build his sheets with `--scale=3/4` (not 2/3) so he stands as tall as the swordsman in the game.
+  Plan on the trial account: create_character v3 (south + east + north given, PixelLab draws the rest, 2) + 3 PixMiniMax
+  8-frame south-east jobs (horizontal sweep, 360 spin, overhead slam, 1 each) = 5 of the 6.25. Waiting for the owner's go.
