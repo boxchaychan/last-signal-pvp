@@ -380,7 +380,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   before PixelLab.
   Guardian side redo in: `art/incoming/action/guardian/side_right.png` (true right profile; the sword is in the near = LEFT hand and
   the shield on the far arm, the front view has them the other way round; fine for one diagonal + mirror). Berserker side redo in: `art/incoming/action/berserker/side_right.png` (true right profile, blade over the shoulder pointing back, glowing eye). Both ready for PixelLab (waiting for the owner's go).
-  Berserker v2 (owner: the sword was too small, then GPT kept drawing it bent; fixed by a new chat, the sword drawn alone first, then one view at a time with it attached): `front_v2.png` (straight sword as long as he is tall, one red rune line). Side and back v2: waiting.
+  Berserker v2 (owner: the sword was too small, then GPT kept drawing it bent; fixed by a new chat, the sword drawn alone first, then one view at a time with it attached): `front_v2.png` (straight sword as long as he is tall, one red rune line). `side_v2.png` (true right profile; the sword about 10-15% shorter against his height than in the front view, accepted). Back v2: waiting.
 - **Thai town hub** (owner 2026-11-09 "ฉากเมือง ทำแค่เมือง ไม่ต้องมีมอน เอาไว้รับเควส ละก็วาร์ป ... ใช้กำแพงเป็นแมพเลย ไม่ต้องกว้างมาก"): `?map=town`
   (`TOWN`, TH ground + `thaiProps`, so the walled city of the Thai map is reused): she can only move inside the walls
   (`cityD` > .86 pushes her back except on the road at the gates), the camera stays on the city, no camps / waves
