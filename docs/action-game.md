@@ -379,7 +379,9 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   px per world px (ceil of fit x DPR), `Q` = canvas px per CSS px (= DPR on a 3x phone, finer elsewhere, then the browser
   scales the canvas down smoothly: `image-rendering` auto unless Q = DPR), `OX`/`OY` = where the view starts; other screen
   shapes get dark bars (PC 16:9 thin top/bottom, 4:3 tablets big ones). Mouse → world = (mouse * Q - OX) / S + cam; the
-  screen-space overlay uses `setTransform(Q)`. A 2x phone now draws 2532 x 1170 (2.25x its own pixels) — watch speed there.
+  screen-space overlay uses `setTransform(Q)`. Owner then: "ไม่ได้บอกคมเท่ากัน หมายถึงระยะมองเห็นเท่ากัน" → every screen draws at its
+  own pixels (`Q` = DPR, `S` = fit x DPR, a whole number on a 3x phone, 1.33 on a 2x phone, 1.52 on a 1080p PC; the world
+  offset is rounded to whole pixels); `?sharp=1` brings back the finer whole-S drawing scaled down by the browser.
 - **Star rain v3** (owner "ทำไมเป็นแท่ง ในต้นแบบมันไม่ได้เป็นแบบนั้น"): the light pillars and code comets are gone; two copies of the
   original Starfall Barrage sheet in black + neon (`pfx_starfall_c_k` from the haze-free copy: `archer_fx.py` options `w_min`
   = near-white only, `thin` = strokes eroded so the glow is not a fat black stake, `hollow` = big shapes see-through inside a
