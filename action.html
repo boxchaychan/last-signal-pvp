@@ -2029,7 +2029,7 @@ function spawnWave() {
     G.mobs.push({kind: k, spr: 1, x, y, r: T.r, hp, max: hp, st: 'walk', t: rnd(), cd: .8 + rnd() * 1.2, face: x < G.p.x ? 1 : -1, wt: rnd() * 3, af: 0, kx: 0, ky: 0, hit: 0, fr: 0, born: 0}); }
   G.banner = {t: 0, txt: boss ? 'บอส: ' + MOBT[bk].boss : 'ระลอก ' + G.wave};
 }
-function stagger(m) { if (m.spr && MOBT[m.kind].stout) return; m.t = 0; m.st = 'hurt'; }
+function stagger(m) { if (m.spr && MOBT[m.kind].stout) { m.flT = G.t; return; } m.t = 0; m.st = 'hurt'; }
 function stepMob2(m, dt, dx, dy, d) {
   const T = MOBT[m.kind], p = G.p, hid = p.stealth > G.t || p.state === 'dead', bl = m.blind > G.t;
   m.cd -= dt; m.moving = false;
@@ -2212,7 +2212,7 @@ function testSetup() {
   if (TEST === 'mobs') { const p = G.p; G.next = 1e9; G.mobs = [];   // ?test=mobs[&map=thai]: every monster of the map in a row (walk / attack / death frames)
     const ks = [...ROSTER[MAP], BOSSK[MAP]].filter(k => MOBS[k]), ph = +(new URLSearchParams(location.search).get('ph') || 0);
     ks.forEach((k, i) => { const T = MOBT[k], col = i % 4, row = i / 4 | 0;
-      G.mobs.push({kind: k, spr: 1, x: p.x - 330 + col * 210, y: p.y - 150 + row * 170, r: T.r, hp: ph === 2 ? 0 : T.hp, max: T.hp, st: ph === 1 ? 'atk' : 'walk', t: 0, cd: 9, face: 1, wt: 0, af: 3, kx: 0, ky: 0, hit: 0, fr: 0, born: 0, moving: ph === 0, dieT: .45}); });
+      G.mobs.push({kind: k, spr: 1, x: p.x - 330 + col * 210, y: p.y - 150 + row * 170, r: T.r, hp: ph === 2 ? 0 : T.hp, max: T.hp, st: ph === 1 ? 'atk' : ph === 3 ? 'hurt' : 'walk', t: ph === 3 ? .1 : 0, cd: 9, face: 1, wt: 0, af: 3, kx: 0, ky: 0, hit: 0, fr: 0, born: 0, moving: ph === 0, dieT: .45}); });
     cam.x = p.x - VW / 2; cam.y = p.y - 40 - VH / 2; G.freeze = 1; return; }
   if (TEST === 'fxseq') { const p = G.p, q = new URLSearchParams(location.search), N = +q.get('n') || 120, tag2 = q.get('tag') || METEOR; G.next = 1e9; G.mobs = [];
     const tx = p.x + 150, ty = p.y + 20; G.meteors.push({x: tx, y: ty, t: 0, T: 1.25}); for (let i = 0; i < 60; i++) draw();   // let the camera settle
@@ -2380,6 +2380,7 @@ function drawMob2(m) {
   if (frz) ctx.filter = 'grayscale(1) brightness(1.25) sepia(1) hue-rotate(165deg) saturate(3)';
   const hr = M.rows.hurt !== undefined && m.hp > 0 && m.st === 'hurt', k = m.hp > 0 && !hr ? Math.max(0, m.hit / .12) : 0;
   if (hr) { row = M.rows.hurt; f = Math.min(5, m.t / .045 | 0); }
+  else if (M.rows.hurt !== undefined && m.hp > 0 && m.st !== 'atk' && G.t - (m.flT || -9) < .18) { row = M.rows.hurt; f = Math.min(2, (G.t - m.flT) / .06 | 0); }   // stout ones flinch without stopping
   const one = img => { ctx.save(); ctx.translate(X - m.face * 5 * k, Y); ctx.scale((m.face < 0 ? -1 : 1) * (1 + .12 * k), 1 - .12 * k);
     ctx.drawImage(img, f * M.w, row * M.h, M.w, M.h, -M.fx, -M.fy, M.w, M.h); ctx.restore(); };
   one(T.img); ctx.filter = 'none';

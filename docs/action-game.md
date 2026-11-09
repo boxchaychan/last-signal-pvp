@@ -299,6 +299,9 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Monster hurt rows in** (Codex, `codex/mob-hurt`, 15 pictures, made in its own worktree as asked): `mob_frames.py`
+  now builds 4 rows (walk / attack / death / hurt) and skips monsters without pictures (the China set); stout monsters
+  (golem, bosses) flinch with the first hurt frames without stopping (`m.flT`). `?test=mobs&ph=3` shows them.
 - **Buffs from ParticleFX** (owner 2026-11-09): orbiting rock shield ("เอาไว้เป็นบัฟให้ตัวเพิ่มป้องกัน", 10x9 frames →
   `fx/pfx_rockshield`) = the swordsman's iron shield (passive renamed เกราะหิน): rocks orbit him while the shield has points
   (bigger as it fills, far half behind him, near half in front: `rockRing`), and hits are cut 15% before the shield takes

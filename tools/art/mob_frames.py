@@ -85,7 +85,7 @@ def build(key):
     return meta
 
 if __name__ == '__main__':
-    keys = sys.argv[1:] or list(SIZE)
+    keys = sys.argv[1:] or [k for k in SIZE if all(os.path.exists(f'{SRC}/{k}_{a}.png') for a in ACTS)]   # skip monsters Codex has not drawn yet
     idx = {}
     if os.path.exists(f'{OUT}/index.json'): idx = json.load(open(f'{OUT}/index.json'))
     for k in keys: idx[k] = build(k)
