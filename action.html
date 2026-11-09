@@ -1374,18 +1374,19 @@ const SKNAME = {rogue: ['ปามีด / วาร์ป', 'พายุใบ
   mage: ['ลูกไฟ', 'สายฟ้าโซ่', 'วงน้ำแข็ง', 'วาร์ป', 'อุกกาบาต', 'โล่เวท']};
 const SKDESC = {rogue: ['ปามีดใส่จุดที่เล็ง ถ้าโดนกดอีกครั้งใน 5 วิ วาร์ปไปหลังเป้า', 'กดค้างเพื่อหมุนฟันรอบตัวต่อเนื่อง เดินได้', 'ปาระเบิดควัน มอนในวงตาบอด ตีพลาดบ่อย', 'พุ่งฟันซิกแซก 6 ครั้งในวงที่เล็ง', 'หายเป็นเงา 4 วิ มอนหาไม่เจอ ตีแรกออกมาแรง 3 เท่า', 'มีดเคลือบพิษ 10 วิ พิษซ้อน 5 ชั้นแล้วระเบิด'],
   swordsman: ['ฟาดพื้นให้แยกเป็นเส้นไปถึงจุดที่เล็ง มอนที่โดนมึน', 'กดค้างหมุนดาบใหญ่ฟันรอบตัว เดินได้ กินแรง', 'กดค้างชาร์จ 3 ระดับ ปล่อยแล้วฟันกวาด ระดับ 3 คริ', 'กระโดดไปทุบจุดที่เล็ง มอนรอบๆ มึน', 'ตั้งท่าป้อง ถ้าโดนตีจะไม่เจ็บและสวนกลับ 3 เท่า', 'คลั่ง 8 วิ ตีเร็ว ดูดเลือด รับดาเมจน้อยลง'],
-  mage: ['ยิงลูกไฟไปจุดที่เล็ง ระเบิดเป็นวง มอนติดไฟ', 'สายฟ้ากระโดดโดนมอน 5 ตัว มอนติดช็อต', 'แช่แข็งมอนรอบตัว 2 วิ', 'วาร์ปไปทางที่เดิน', 'เรียกอุกกาบาตตกใส่จุดที่เล็ง แรงที่สุด มอนมึน', 'โล่ดูดดาเมจ ถ้าแตกจะช็อตมอนรอบตัว']};
+  mage: ['ยิงลูกไฟไปจุดที่เล็ง ระเบิดเป็นวง มอนติดไฟ', 'สายฟ้ากระโดดโดนมอน 5 ตัว มอนติดช็อต', 'แช่แข็งมอนรอบตัว 2 วิ', 'วาร์ปไปทางที่เดิน', 'เรียกอุกกาบาตตกใส่จุดที่เล็ง มอนมึน · ระดับ 2 ได้ 2 ลูก แล้วเพิ่ม 1 ลูกทุก 2 ระดับ (สูงสุด 5)', 'โล่ดูดดาเมจ ถ้าแตกจะช็อตมอนรอบตัว']};
 const PASDESC = {rogue: 'ติดตัว: ตีโดนครั้งที่ 4 คริ x2 · ฆ่าได้คืนแรง', swordsman: 'ติดตัว: ตีโดนได้โล่ใจเหล็ก', mage: 'ติดตัว: ธาตุประสาน ไฟ+น้ำแข็ง / น้ำแข็ง+สายฟ้า / สายฟ้า+ไฟ'};
 const SKICON = {rogue: [['nslash', .4], ['cwhirl', .3], ['smokebomb', .4], ['zstreak0', .3], ['vanish', .3], ['pburst', .3]],
   swordsman: [['ccrack0', .7], ['cwhirl', .3], ['dashcharge', .5], ['cslam', .2], ['parry', .3], ['crage', .3]],
   mage: [['cfire0', .3], ['zap', .3], ['cnova', .5], ['cblink', .4], ['cmeteor', .3], ['cshield', .3]]};
-const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 5, LVMAX = 20;
+const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 40, SKUPD = .1, SKUPC = .04;
 const SKBASE = {}; for (let k = 1; k <= 6; k++) SKBASE[k] = JSON.parse(JSON.stringify(SKS[k]));
 const needXp = lv => 40 + 30 * (lv - 1);
+const meteorN = lv => Math.min(5, 1 + Math.floor(lv / 2));   // 1 · 2 at level 2 · +1 every 2 levels · 5 from level 8
 function applySkLv(k, lv) {
-  const B = SKBASE[k], S = SKS[k], f = 1 + .2 * (lv - 1);
+  const B = SKBASE[k], S = SKS[k], f = 1 + SKUPD * (lv - 1);
   for (const key of ['dmg', 'fin', 'burst', 'per', 'hp']) if (B[key] !== undefined) S[key] = Array.isArray(B[key]) ? B[key].map(v => Math.round(v * f)) : (key === 'per' ? B[key] * f : Math.round(B[key] * f));
-  S.cd = +(B.cd * (1 - .08 * (lv - 1))).toFixed(2);
+  S.cd = +(B.cd * (1 - SKUPC * (lv - 1))).toFixed(2);
 }
 function gainXp(n) {
   const p = G.p; if (p.lv >= LVMAX) return; p.xp += n;
@@ -1427,7 +1428,7 @@ function renderBook() {
   let h = '<div><h2><span>' + HNAME[HERO] + ' · เลเวล ' + p.lv + ' · แต้มสกิล ' + p.pts + '</span><button id="bookX">ปิด (B)</button></h2>';
   for (let k = 1; k <= 6; k++) { const lv = p.skl[k] || 1, S = SKS[k], B = SKBASE[k];
     h += '<div class="br"><canvas width="44" height="44" data-k="' + k + '"></canvas><div class="bt2"><b>' + SKEYL[k - 1] + ' · ' + SKNAME[HERO][k - 1] + '</b> <span>ระดับ ' + lv + '/' + SKMAX + '</span>'
-      + '<small>' + SKDESC[HERO][k - 1] + '</small><small>คูลดาวน์ ' + S.cd + ' วิ' + (B.dmg !== undefined ? ' · แรง x' + (1 + .2 * (lv - 1)).toFixed(1) : '') + (lv < SKMAX ? ' → ระดับต่อไป แรง +20% คูลดาวน์ -8%' : ' · เต็มแล้ว') + '</small>'
+      + '<small>' + SKDESC[HERO][k - 1] + '</small><small>คูลดาวน์ ' + S.cd + ' วิ' + (B.dmg !== undefined ? ' · แรง x' + (1 + SKUPD * (lv - 1)).toFixed(1) : '') + (HERO === 'mage' && k === 5 ? ' · ' + meteorN(lv) + ' ลูก' + (lv < SKMAX && meteorN(lv + 1) > meteorN(lv) ? ' (ระดับต่อไป ' + meteorN(lv + 1) + ' ลูก)' : '') : '') + (lv < SKMAX ? ' → ระดับต่อไป แรง +' + SKUPD * 100 + '% คูลดาวน์ -' + SKUPC * 100 + '%' : ' · เต็มแล้ว') + '</small>'
       + '<div class="pips">' + [...Array(SKMAX)].map((_, j) => '<i' + (j < lv ? ' class="f"' : '') + '></i>').join('') + '</div></div>'
       + '<button class="up" data-k="' + k + '"' + (p.pts > 0 && lv < SKMAX ? '' : ' disabled') + '>+</button></div>'; }
   h += '<div class="br"><div class="bt2"><small>' + PASDESC[HERO] + '</small><small>เลเวลถัดไป: ' + (p.lv >= LVMAX ? 'สูงสุดแล้ว' : p.xp + ' / ' + needXp(p.lv) + ' (ฆ่ามอนเพื่อเก็บค่าประสบการณ์)') + '</small></div></div></div>';
@@ -1584,7 +1585,10 @@ function mageSk(p, k) {
   if (k === 3) { if (!payFor(p, 3)) return false; return castAnim(p, 'staff_slam', .5, () => frostNova(p)); }
   if (k === 4) { if (!payFor(p, 4)) return false; blink(p); return true; }
   if (k === 5) { const [tx, ty] = p.skT || skTarget(p, 5); p.skT = null; if (!payFor(p, 5)) return false; p.dir = dirOf(tx - p.x, ty - p.y);
-    G.meteors.push({x: tx, y: ty, t: 0, T: S.delay + .25}); return castAnim(p, 'cast_up', .45, () => { G.flash = .04; }); }
+    const n = meteorN(p.skl[5] || 1);
+    for (let i = 0; i < n; i++) { const a = i * 2.4 + rnd() * .6, r = i ? 70 + rnd() * 50 : 0;   // the first on the spot, the rest around it, one after another
+      G.meteors.push({x: tx + Math.cos(a) * r, y: ty + Math.sin(a) * r * .55, t: -i * .2, T: S.delay + .25}); }
+    return castAnim(p, 'cast_up', .45, () => { G.flash = .04; }); }
   if (k === 6) { if (!payFor(p, 6)) return false;
     return castAnim(p, 'cast_up', .45, () => { p.msh = S.hp; p.mshT = G.t + S.dur; pfx('mburst', p.x, p.y - 30); G.flash = .05; tag(p.x, p.y - 96, 'โล่เวท', '#9ff4ff'); }); }
   return false;
@@ -1742,6 +1746,7 @@ function drawPShot(s) {
   ctx.fillStyle = '#1aa0c8'; ctx.fillRect(x - 4, y - 4, 8, 8); ctx.fillStyle = '#eaffff'; ctx.fillRect(x - 2, y - 2, 4, 4);
 }
 function drawMeteor(mt) {
+  if (mt.t < 0) return;
   const S = MGS[5], k = Math.min(1, mt.t / mt.T), pulse = .5 + .5 * Math.sin(G.t * 18);
   if (!FXS.glowFire) FXS.glowFire = glowSprite([255, 140, 40]);
   glowAt(mt.x, mt.y, S.r * k, S.r * .42 * k, FXS.glowFire, .25 + .2 * pulse);
@@ -2023,6 +2028,7 @@ function testSetup() {
     G.next = 1e9; G.mobs = []; const ks = ROSTER[MAP].filter(x => MOBS[x]);
     [[150, -40], [190, 30], [120, 70], [240, -10]].forEach(([dx, dy], i) => { const kk = ks[i % ks.length], T = MOBT[kk]; G.mobs.push({kind: kk, spr: 1, x: p.x + dx, y: p.y + dy, r: T.r, hp: 999, max: 999, st: 'walk', t: 0, cd: 99, face: -1, wt: 0, af: 0, kx: 0, ky: 0, hit: 0, fr: 0, born: 0}); });
     p.dir = 0; p.skT = [p.x + 200, p.y + 10]; if (HOLDK.includes(k)) { HOLD.k = k; HOLD.on = true; }
+    if (k && q.get('lv')) { p.skl[k] = +q.get('lv'); applySkLv(k, p.skl[k]); }   // &lv= skill level
     if (k) startSk(p, k); else startAtk(p);
     for (let i = 0; i < nn; i++) { if (rel && i === rel) HOLD.on = false; for (const m of G.mobs) m.cd = 99; step(1 / 60); }
     cam.x = p.x + 60 - VW / 2; cam.y = p.y - 40 - VH / 2; G.freeze = 1; return; }

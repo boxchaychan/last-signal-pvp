@@ -299,6 +299,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Skill levels to 10, meteor shower** (owner 2026-11-09 "สกิลเมเทโอ ... เลเวล 10 5 ลูก ดาเมจคำนวณเอาไปก่อน"): `SKMAX` 10,
+  `SKUPD` +10% damage and `SKUPC` -4% cooldown per level, heroes up to level 40. Mage Z drops `meteorN(lv)` meteors
+  (1, 2 at level 2, +1 every 2 levels, 5 from level 8), the first on the aimed spot, the rest around it 0.2 s apart, each
+  full damage (60 x level factor). Test `?test=hsk&hero=mage&k=5&lv=8&n=96`.
 - **Skill bar + skill book** (owner 2026-11-09 "ทำ ui ให้มีสกิลลงช่องล่าง และตารางอัพสกิล"): PC hotbar of 6 slots bottom centre
   (`#hotbar`, icons cropped from each skill's effect sheet `SKICON`, cooldown shade + seconds, level pips, hover tip); the old
   PC squares `#skpc` are hidden; phones keep the round buttons. Levels: kills give XP (`gainXp`, max hp / 8), `needXp(lv)` =
