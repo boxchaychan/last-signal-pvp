@@ -18,8 +18,8 @@ city; the village, nature, props and ground sheets are for those field maps.
 Owner 2026-11-09 "เมืองต่อเป็นเมืองใหญ่เลยนะ": the China map is a BIG walled city (much bigger than the Thai one), so it gets two building sheets (2 and 2b).
 | # | key | status | style picture to attach | what |
 |---|-----|--------|-------------------------|------|
-| 0a | thai_gate_4view | todo (URGENT, do first) | art/action/props/t_gate.png + art/action/props/wall_front.png + art/action/props/wall_side.png | the Thai city gate from 4 views |
-| 0b | thai_wall_kit | todo (URGENT, right after 0a) | art/action/props/wall_front.png + art/action/props/t_gate.png + art/action/props/t_fort_w.png | wall pieces that fit together: straight runs, corners, ends, wall walk |
+| 0a | thai_gate_4view | done | art/action/props/t_gate.png + art/action/props/wall_front.png + art/action/props/wall_side.png | the Thai city gate from 4 views |
+| 0b | thai_wall_kit | done | art/action/props/wall_front.png + art/action/props/t_gate.png + art/action/props/t_fort_w.png | wall pieces that fit together: straight runs, corners, ends, wall walk |
 | 1 | thai_wall_top | dropped (part of 0b) | art/action/props/wall_front.png + art/action/props/t_gate.png | Thai city wall pieces seen from above |
 | 2 | china_buildings | todo | art/incoming/action/map/gpt_thai_city.png | China city buildings |
 | 2b | china_buildings2 | todo | art/incoming/action/map/gpt_thai_city.png | more China city buildings (the China map is a BIG city) |

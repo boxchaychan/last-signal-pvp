@@ -55,10 +55,10 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 20 | fox_spirit | done | China | medium |
 | 21 | toad_demon | done | China | large |
 | 22 | boss_nian | done | China boss | huge |
-| 23 | kappa | todo | Japan | small |
-| 24 | kasa_obake | todo | Japan | small |
-| 25 | oni | todo | Japan | large |
-| 26 | tengu | todo | Japan | medium |
+| 23 | kappa | done | Japan | small |
+| 24 | kasa_obake | done | Japan | small |
+| 25 | oni | done | Japan | large |
+| 26 | tengu | done | Japan | medium |
 | 27 | rokurokubi | todo | Japan | medium |
 | 28 | nekomata | todo | Japan | medium |
 | 29 | boss_orochi | todo | Japan boss | huge |
