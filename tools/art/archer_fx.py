@@ -10,13 +10,16 @@ from scipy import ndimage
 
 RIM, INK, GLOW = [70, 255, 125], [2, 18, 8], [40, 225, 95]
 
-def shadow(c, a_min=110, v_min=90, rim=2, keep_white=0):
+def shadow(c, a_min=110, v_min=90, rim=2, keep_white=0, w_min=0, thin=0, hollow=0):
     # strokes (opaque + bright enough) -> black, a neon green rim round them, a soft green light behind;
     # keep_white > 0: the hottest pixels (white cores) stay white-green so a flash still flashes
-    a = np.array(c).astype(float); v = a[..., :3].max(-1); m = (a[..., 3] > a_min) & (v > v_min)
+    a = np.array(c).astype(float); v = a[..., :3].max(-1); m = (a[..., 3] > a_min) & (v > v_min) & (a[..., :3].min(-1) > w_min)   # w_min: only near-white parts (skips a coloured haze)
+    if thin: m = ndimage.binary_erosion(m, iterations=thin)   # thin: strokes eroded so a wide glow does not turn into a fat black stake
     edge = ndimage.binary_dilation(m, iterations=rim) & ~m
     o = np.zeros(a.shape, np.uint8)
     o[edge] = RIM + [255]; o[m, :3] = INK; o[m, 3] = np.clip(a[m, 3] * 1.3, 0, 255).astype(np.uint8)
+    if hollow:                      # big shapes (landing splashes, the orb): see-through inside a black band, a neon line on both sides
+        inner = ndimage.binary_erosion(m, iterations=hollow); o[inner] = 0; o[m & ndimage.binary_dilation(inner, iterations=1) & ~inner] = RIM + [255]
     if keep_white:
         hot = m & (a[..., :3].min(-1) > keep_white) & (a[..., 3] > 200)
         hot &= ndimage.binary_erosion(m, iterations=rim)          # only well inside a stroke, the black still frames it
@@ -40,7 +43,8 @@ JOBS = {
     'pfx_chargeshot': dict(pad=10, a_min=28, v_min=70),                  # R charged shot (owner's sheet, gold); the faint charge rings too
     'pfx_skyarrow': dict(pad=12, a_min=90, v_min=90),                    # E thunder javelin
     'pfx_dashstrike': dict(pad=14, a_min=110, v_min=90),                 # the hit flash on her arrows
-    'pfx_vine': dict(pad=10, a_min=60, v_min=40),                        # Z thorn vine trap (owner's sheet)
+    'pfx_vine': dict(pad=10, a_min=60, v_min=40),
+    'pfx_starfall_c': dict(pad=10, a_min=120, v_min=110, w_min=205, thin=2, hollow=3),                 # X star rain: the original ParticleFX sheet with its haze faded (owner: "ในต้นแบบมันไม่ได้เป็นแบบนั้น")                        # Z thorn vine trap (owner's sheet)
 }
 for k in (sys.argv[1:] or JOBS):
     j = dict(JOBS[k]); remake(k, k + '_k', j.pop('pad'), **j)
