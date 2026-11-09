@@ -299,6 +299,15 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **China monster set queued** (owner 2026-11-09 "มอนเราเป็นแถบประเทศ ต่อไปเป็นจีน"): MOBS.md rows 16-22 (jiangshi, paper_doll,
+  terracotta_archer, terracotta_general, fox_spirit, toad_demon, boss_nian; folklore only, no worshipped gods) and their
+  walk / attack / death in MOB_ANIM.md rows 46-66 (after the turnarounds); sizes already in `mob_frames.py`.
+- **pixelfx without Node** (owner: "มี md ที่จะทำให้ Claude ทำ vfx สวยๆ ไหม"): the pixelfx Claude skill is installed as
+  `.claude/skills/pixelfx/SKILL.md` (with a local note); checkout in `.tools/pixelfx` (untracked, re-clone on a new
+  machine); `python tools/pfx_export.py` serves it with an export page for the built-in browser (`contact()`, 
+  `exportAll()` → `.tools/pfx_out/`). 35 effects already rendered as a fallback (meteor, fireball, frost-nova,
+  ice-shatter, chain-lightning, blink, divine-shield, spin-slash, ground-slam, root-snare, spore-burst, status
+  rage / stunned / frozen / burning ...). Owner: Codex's effects first, pixelfx when those are not pretty.
 - **Monster frames in** (Codex finished 45/45 by 07:55 on 2026-11-09, `codex/mob-anim` squashed into main): pixel sheets
   `art/action/mobs/<key>.png` + `.json` + `index.json` from `tools/art/mob_frames.py` (white cut, 3x2 cells, each action
   scaled so its frame 1 is `SIZE[key]` px tall: small ~46-58, medium ~60-80, large ~96-118, bosses ~160; feet of frame 1 =

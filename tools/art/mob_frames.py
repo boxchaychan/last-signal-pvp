@@ -12,7 +12,8 @@ from scipy import ndimage
 
 SIZE = {'shroom': 46, 'wolf': 60, 'goblin_archer': 58, 'boar_guard': 96, 'skeleton': 76, 'wisp': 56, 'golem': 100,
         'boss_treant': 168, 'krahang': 76, 'khamot': 46, 'phrai': 80, 'pret': 118, 'monkey': 56, 'croc_guard': 100,
-        'boss_chalawan': 158}
+        'boss_chalawan': 158, 'jiangshi': 74, 'paper_doll': 50, 'terracotta_archer': 74, 'terracotta_general': 100,
+        'fox_spirit': 72, 'toad_demon': 92, 'boss_nian': 150}
 FLIP = {'khamot'}          # drawn facing left by Codex
 ACTS = ['walk', 'attack', 'death']
 SRC, CUT, OUT = 'art/incoming/mobs/anim', 'art/incoming/mobs/anim_cut', 'art/action/mobs'
