@@ -299,6 +299,15 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Thai city walls rebuilt** (owner "แมพไทยไม่สวย กำแพง"): the city is a rounded rectangle (`cityD`, |dx/rx|^8 + |dy/ry|^8;
+  ground, yard checks and walls follow it; the west map keeps its ellipse). `tools/art/thai_wall.py` makes a seamless
+  54 px front tile from wall_sema (no bushes: they were painted on both ends and piled up), a raised side-wall walkway
+  piece (`wall_side`, its feet = picture bottom so the walkway sits 80 px up) and the corner fort in whitewash
+  (`t_fort_w`, brick mapped onto the plaster ramp, roof kept). Straight north/south runs, straight east/west runs open at
+  the road, forts on the 4 corners, gates where the road crosses.
+- **2nd class at level 50** (owner 2026-11-09 "เปลี่ยนคลาส 2 ที่ 50 ยังไม่ได้ทำ", "มอนเราจะต้องเยอะ"): hero level cap raised to
+  50; the class change itself is not built (rogue rank 2 = two daggers, needs new moves). Many more monsters needed for
+  50 levels: one set per country map (forest/ruins, Thai, China next).
 - **Archer playable** (2026-11-09, `?hero=archer`, pick button นักธนู): sheets from `hero_build.sh archer` (adds the `crit`
   row; hurt / death merged from two download groups; release frames by hand). Normal shot = one cyan code-drawn arrow
   (`arrow`, `archerShot`); crit (12% base, +40% in hawk eye, or the nearest monster beyond 420 = passive) plays the

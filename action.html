@@ -152,6 +152,8 @@ function streamD(x, y) {          // distance to the stream's middle line (1e9 w
     const t = l ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0, ex = ax + dx * t - x, ey = ay + dy * t - y, d = ex * ex + ey * ey; if (d < best) best = d; }
   return Math.sqrt(best);
 }
+const CITYP = 8;   // the Thai city's shape: |dx/rx|^8 + |dy/ry|^8 < 1 = a rounded rectangle (the other map keeps the ellipse)
+function cityD(x, y) { const dx = (x - HAMLET.x) / HAMLET.rx, dy = (y - HAMLET.y) / HAMLET.ry; return TH ? dx ** CITYP + dy ** CITYP : dx * dx + dy * dy; }
 const HAMLET = TH ? {x: WW * .26, y: WH * .52, rx: 1150, ry: 720} : {x: WW * .27 + 300, y: WH * .28 + 170, rx: 980, ry: 640};   // a town since the GPT buildings sheet (was 720 x 520)   // wider for the 1.5x cottages   // the cottages stand round its middle
 const MEADOWS = TH ? [[WW * .74, WH * .34], [WW * .5, WH * .26], [WW * .5, WH * .78], [WW * .76, WH * .5]] : [[WW * .5, WH * .78], [WW * .14, WH * .6], [WW * .64, WH * .36], [WW * .55, WH * .2], [WW * .34, WH * .9], [WW * .9, WH * .82], [WW * .1, WH * .2]];
 // zones (owner 2026-11-08 "ทำแมพต่อ"): two thick forests with darker ground (north-east round a ruined tower, south-west),
@@ -215,7 +217,7 @@ function terr(x, y) {            // x, y whole numbers inside the world
   if (dpath < pw + 8 && sd < sw + 12) { TK = dpath < pw + 2 ? 5 : 6; TA = dpath > pw + 5 ? 1 : 0; return; }
   if (lf > 0 || sd < sw) { TK = 4; TA = Math.max(lf > 0 ? lf / .5 : 0, sd < sw ? 1 - sd / sw : 0); return; }
   if (lf > -.13 || sd < sw + SHORE) { TK = 3; TA = lf > -.13 ? (-lf) / .13 : (sd - sw) / SHORE; return; }
-  const hd = ((x - hz.x) / hz.rx) ** 2 + ((y - hz.y) / hz.ry) ** 2;
+  const hd = cityD(x, y);
   if (hd < 1 && dpath >= pw) { TK = 2; TA = hd; return; }
   if (dpath < pw) { TK = 1; TA = dpath; TB = pw; return; }
   const zf = ZF[(y >> 5) * ZW + (x >> 5)];
@@ -515,7 +517,7 @@ const GPDEF = {oak: {rad: 30}, pine: {rad: 24}, blossom: {rad: 22},   // trees r
   t_gate: {soft: 1, shade: {w: 300, d: 40}, nf: 1}, v_watchtower: {rad: 40, nf: 1}, v_well: {rad: 34, nf: 1}, v_raintree: {rad: 40, tree: 1}, v_bridge: {soft: 1, nf: 1},
   jar_dragon: {rad: 18, nf: 1}, pots: {rad: 18}, boat_fruit: {soft: 1}, lotus: {soft: 1}, banana: {rad: 18, tree: 1}, coconut: {rad: 16, tree: 1}, sugarpalm: {rad: 16, tree: 1},
   fence_bamboo: {rect: {w: 80, d: 10}}, baskets: {rad: 16}, oxcart: {rect: {w: 140, d: 30}}, lantern_thai: {rad: 8, nf: 1}, lion: {rad: 24, nf: 1}, elephant_statue: {rad: 30, nf: 1},
-  flagpole: {rad: 8, nf: 1}, fruit_mat: {soft: 1}, wall_sema: {rect: {w: 140, d: 24}, nf: 1}, noticeboard: {rad: 14, nf: 1}, bridge_curve: {soft: 1, nf: 1}};
+  flagpole: {rad: 8, nf: 1}, fruit_mat: {soft: 1}, wall_sema: {rect: {w: 140, d: 24}, nf: 1}, wall_front: {rect: {w: 54, d: 24}, nf: 1}, wall_side: {rect: {w: 34, d: 28}, nf: 1}, t_fort_w: {bld: 1, nf: 1}, noticeboard: {rad: 14, nf: 1}, bridge_curve: {soft: 1, nf: 1}};
 const GPROP = {};
 function gp(name) {
   const g = GPROP[name], d = GPDEF[name], img = d.nf || rnd() < .5 ? g.a : g.b;   // a / b = as drawn / mirrored (not for houses: their light comes from one side)
@@ -535,14 +537,14 @@ async function loadProps() {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
     const ad = x.getImageData(0, 0, im.width, im.height).data; let foot = im.height - 1;
     for (; foot > 0; foot--) { let hit = false; for (let q = 0; q < im.width; q++) if (ad[(foot * im.width + q) * 4 + 3] > 40) { hit = true; break; } if (hit) break; }
-    GPROP[n] = {a: im, b, foot}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
+    GPROP[n] = {a: im, b, foot: n === 'wall_side' ? im.height - 1 : foot}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
 }
 let PROPS = [];
 function makeProps() {
   PROPS = [];
   const far = (x, y, d) => PROPS.every(p => Math.hypot(p.x - x, p.y - y) > d);
   const dry = (x, y, r) => !waterAt(x, y) && !waterAt(x - r, y) && !waterAt(x + r, y) && !waterAt(x, y - r * .5) && !waterAt(x, y + r * .5);
-  const inYard = (x, y) => ((x - HAMLET.x) / HAMLET.rx) ** 2 + ((y - HAMLET.y) / HAMLET.ry) ** 2 < 1;
+  const inYard = (x, y) => cityD(x, y) < 1;
   const pathOk = (x, y) => Math.abs(y - GROUND_PATH(x)) > 70 && sideD(x, y) > 60 && dry(x, y, 90);
   const add = (s, x, y) => {
     const shades = [];
@@ -660,13 +662,16 @@ function thaiProps({add, far, dry, pathOk, inYard}) {
   // the way back: a notice board where the road leaves at the west edge
   { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0); }
   // the royal city: walls of sema bricks round the yard, forts on the diagonals, a gate where the road goes in and out
-  const C = HAMLET, FA = [.79, 2.36, 3.93, 5.5];
-  for (let a = 0; a < 6.283; a += .082) { const x = C.x + Math.cos(a) * C.rx * .99, y = C.y + Math.sin(a) * C.ry * .99;
-    if (Math.abs(y - GROUND_PATH(x)) < 120 || FA.some(c => Math.abs(a - c) < .1) || x < 60) continue;
-    add(gp('wall_sema'), x | 0, y | 0); }
-  for (const c of FA) add(gp('t_fort'), C.x + Math.cos(c) * C.rx * .99 | 0, C.y + Math.sin(c) * C.ry * .99 + 30 | 0);
-  for (const s of [-1, 1]) { let x = C.x + s * C.rx; for (let k = 0; k < 8; k++) { const y = GROUND_PATH(x), q = 1 - ((y - C.y) / C.ry) ** 2; x = C.x + s * C.rx * Math.sqrt(Math.max(0, q)) * .99; }
-    if (x > 100) add(gp('t_gate'), x | 0, GROUND_PATH(x) + 34 | 0); }
+  const C = HAMLET, edgeY = (x, s) => C.y + s * C.ry * Math.max(0, 1 - Math.abs((x - C.x) / C.rx) ** CITYP) ** (1 / CITYP),
+    edgeX = (y, s) => C.x + s * C.rx * Math.max(0, 1 - Math.abs((y - C.y) / C.ry) ** CITYP) ** (1 / CITYP);
+  const FW = GPROP.wall_front ? GPROP.wall_front.a.width : 54, CX = C.rx * .9, CY = C.ry * .9;
+  const gateY = [-1, 1].map(s => { let x = C.x + s * C.rx; for (let k = 0; k < 8; k++) x = edgeX(GROUND_PATH(x), s); return [x, GROUND_PATH(x)]; });
+  for (const s of [-1, 1]) for (let x = C.x - CX; x < C.x + CX; x += FW) { const y = C.y + s * C.ry * .975;   // north and south runs, straight, tile against tile
+    if (dry(x + FW / 2, y, 10)) add(gp('wall_front'), x + FW / 2 | 0, y | 0); }
+  for (const s of [-1, 1]) { const [gx, gy] = gateY[s < 0 ? 0 : 1];                                     // west and east runs, open at the gate
+    for (let y = C.y - C.ry * .94; y < C.y + C.ry * .9; y += 28) { if (Math.abs(y - gy) < 120) continue; const x = C.x + s * C.rx * .975; add(gp('wall_side'), x | 0, y | 0); } }
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(gp('t_fort_w'), C.x + sx * C.rx * .93 | 0, C.y + sy * C.ry * .96 + 30 | 0);   // whitewashed forts on the corners
+  for (const [gx, gy] of gateY) if (gx > 100) add(gp('t_gate'), gx | 0, gy + 34 | 0);
   // inside: the palace in the middle of the north half, temple and stupa beside it, the library hall on the lotus pond,
   // lions and flags before the palace, houses, smithy, tea house, elephant stable, a market along the road
   const IN = [['t_palace', 0, -330], ['t_temple', 560, -300], ['t_stupa', 900, -170], ['t_belltower', 330, -110], ['t_sala', -420, -360],
@@ -1411,7 +1416,8 @@ const SKICON = {rogue: [['nslash', .4], ['pfx_whirl', .3], ['pfx_smoke', .3], ['
   swordsman: [['ccrack0', .7], ['pfx_whirl', .3], ['dashcharge', .5], ['cslam', .2], ['parry', .3], ['crage', .3]],
   archer: [['zstar', .3], ['pfx_skyarrow', .35], ['critx_ice', .3], ['pfx_wind', .3], ['croots', .5], ['critg', .3]],
   mage: [['cfire0', .3], ['pfx_orb', .3], ['cnova', .5], ['cblink', .4], ['cmeteor', .3], ['cshield', .3]]};
-const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 40, SKUPD = .1, SKUPC = .04;
+// level cap 50: the 2nd class comes at level 50 (owner 2026-11-09, not built yet)
+const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 50, SKUPD = .1, SKUPC = .04;
 const SKBASE = {}; for (let k = 1; k <= 6; k++) SKBASE[k] = JSON.parse(JSON.stringify(SKS[k]));
 const needXp = lv => 40 + 30 * (lv - 1);
 const meteorN = lv => Math.max(1, Math.min(5, Math.floor(lv / 2)));   // owner: every 2 levels = 1 meteor (level 8 = 4, level 10 = 5)
