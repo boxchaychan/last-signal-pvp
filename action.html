@@ -1318,7 +1318,7 @@ const ARS = {
   1: {btn: 'รัว', cost: 16, cd: 6, range: 440, r: 80, n: 8, dmg: 7, fin: 22},   // owner 2026-11-09 "Rapier Flurry ... แทนท่า 1" (was the split arrow)
   2: {btn: 'สายฟ้า', cost: 22, cd: 9, range: 440, r: 90, dmg: 30},
   3: {btn: 'ง้าง', cost: 18, cd: 7, lv: .45, max: 2, dmg: [28, 46, 74]},
-  4: {btn: 'ถอย', cost: 16, cd: 6, d: 230, dmg: 30, r: 95},   // the parting shot is a bomb arrow (owner's "Bomb Arrow")
+  4: {btn: 'ถอย', cost: 16, cd: 6, d: 330, dmg: 30, r: 95},   // the parting shot is a bomb arrow (owner's "Bomb Arrow")
   5: {btn: 'หนาม', cost: 18, cd: 12, range: 420, r: 150, root: 2, dmg: 24, n: 3, life: 12},   // thorn vine trap (owner's vine sheet)
   6: {btn: 'ฝนดาว', cost: 24, cd: 22, range: 460, r: 150, dur: 8, dmg: 12},   // owner 2026-11-09 "6 ให้นักธนู": a star rain (code-drawn since "ไม่รุ่นแรงเลย", see starRain) + the old hawk eye
 };
@@ -2104,8 +2104,9 @@ function archerSk(p, k) {
   if (k === 4) {                                         // F leap back, a parting shot
     const [ax, ay] = archerAim(p, 500), l = Math.hypot(ax, ay) || 1, bx = -ax / l, by = -ay / l, d = dirOf(ax, ay), ar = animRow('roll', dirOf(bx, by)); if (!ar || !payFor(p, 4)) return false;
     p.dir = d; p.inv = Math.max(p.inv, .45); let gone = 0;   // no dash dust here (owner: two dust effects, odd direction)
-    return playAct(p, ar, [...Array(ar.n).keys()], 38, {}, {canRoll: false, tick: (p2, dt) => { const sp = S.d / (ar.n * .038); p2.x += bx * sp * dt; p2.y += by * sp * dt; gone += dt;
-      if (((G.t * 40) | 0) % 2) G.ghosts.push({x: p2.x, y: p2.y, dir: dirOf(bx, by), t: 0, k: .5, life: .2}); },
+    const T = ar.n * .05;   // one leap (owner "ให้มันมารอบเดียวแต่ยาวขึ้น"): she only travels while rolling (frames ~2-6), standing frames stay put
+    return playAct(p, ar, [...Array(ar.n).keys()], 50, {}, {canRoll: false, tick: (p2, dt) => { const k = gone / T, w = k > .18 && k < .74 ? 1 : 0, sp = S.d / (T * .56) * w; p2.x += bx * sp * dt; p2.y += by * sp * dt; gone += dt;
+      if (w && ((G.t * 40) | 0) % 2) G.ghosts.push({x: p2.x, y: p2.y, dir: dirOf(bx, by), t: 0, k: .5, life: .2}); },
       end: p2 => { p2.dir = d; parts(p2.x, p2.y - 10, '#e8fbff', 8, {sp: 120, life: .4, floor: 8}); landDust(p2.x, p2.y, .8); const [ex, ey] = archerAim(p2, 600); bombArrow(p2, ex, ey, S); }}); }
   if (k === 5) {                                         // Z thorn vine: a seed shot into the ground, the vine lunges at whoever comes near
     const [tx, ty] = p.skT || skTarget(p, 5); p.skT = null; const d = faceDir('attack', tx - p.x, ty - p.y), ar = animRow('attack', d); if (!ar || !payFor(p, 5)) return false;
