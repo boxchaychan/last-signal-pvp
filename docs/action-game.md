@@ -299,6 +299,48 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Archer fixes** (owner "ลูกธนูไม่ตรง สกิลไม่สวย", "6 ให้นักธนู"): PixelLab drew its own arrow flying off (often upward) in
+  the attack / crit frames while the game shot its cyan arrow at the target = two arrows that did not line up; those rows
+  are now built with `act_sheet.py --detach=attack,crit` (only the blob joined to the figure stays; `hero_build.sh`
+  passes it for the archer). The game arrow starts at the bow (h 46), its tail never reaches back past the bow, it has
+  a pointed head, and arrows flying up the screen are depth-sorted behind bodies (`away`). X is now ฝนดาว: aim a spot,
+  she shoots up, ParticleFX's starfall barrage (`fx/pfx_starfall_c.png`, recoloured to the archer cyan, haze and cell
+  edges faded) rains for ~1.4 s from 1.3 s in (10 ticks of 12 on everything in r 150) and she gets the old hawk eye for
+  8 s. Owner: don't touch the rogue's skill 4 yet (they are making GPT art for it). Test views: `?test=arr&hero=archer&a=<deg>`
+  one shot at a monster in that direction.
+- **Thai forest map** (`?map=jungle`, owner "เมืองไทยก็ให้แผนที่ต่อไปเป็นป่าเมืองไทย มอนเมืองไทย ละค่อยๆ ไล่ไปจนถึงเมืองอื่น"):
+  `JG` (TH stays true, so the Thai ground and props are used), no city (`HAMLET` off the map), jungle groves
+  (`FORESTS` x7) round a winding road, a creek with the plank bridge, a lotus pond, prang ruins (`RUINS`), a hunters'
+  camp and a pavilion in two clearings (`MEADOWS`), Thai monsters (`ROSTER.jungle`, boss Chalawan); built by
+  `jungleProps`. Roads: `EXITS[MAP]` = west / east end → map (null = sign only): west ↔ thai ↔ jungle → China (sign
+  "เมืองจีน → (เร็วๆ นี้)" until the China city exists); `spawnAt` puts her at the end she came in by.
+- **World layout** (owner 2026-11-09 "อันนี้เมืองนะ ในเกมส์ให้มีเมืองแยกๆ ไป ละก็มีแมพต่อกันเป็นแผนที่ ไม่ต้องทำเมืองแบบนี้ตลอด"):
+  cities are their own places (the Thai walled city is one); between them come field maps joined edge to edge into a
+  world map. Not every map needs a walled city. Per country: one city (China's is big) + several linked field maps
+  (forest, village, river, ruins ...) with that country's monsters; the boss sits on a field map or at the city.
+- **China monsters in** (Codex `codex/mobs-china`, 2026-11-09): paper_doll, jiangshi (hops in, lunge), fox_spirit (blue
+  fox-fire shots), terracotta_archer (crossbow bolts), toad_demon (tongue, reach 130), terracotta_general (stout), boss
+  boss_nian (sheet once Codex finishes it); `ROSTER.china`, `BOSSK.china`; until the China map exists they can be tried
+  on any map with `?set=china` (`MSET`); `?test=mobs&set=china&x=3400&y=2700&clear=1` shows them in a row without props.
+  Owner: the China map is a BIG city ("เมืองต่อเป็นเมืองใหญ่เลยนะ") → MAPS.md 2 + 2b building sheets. Owner "ประตูเจนมาเลย
+  4 มุม" + "เจนแบบมาพร้อมประกอบ": MAPS 0a (Thai gate front / back / left / right) and 0b (wall kit: across runs front +
+  back, north-south runs west + east, end caps, 4 corners) go first; the grass gap the owner saw was only the join
+  between two of my screenshots (the game's fort tops are complete).
+- **Long Codex queue** (owner "สั่งเลย ไม่ต้องรอฉัน มอนเจนจนเครดิต Codex หมด"): 21 more monsters in MOBS.md rows 23-43
+  (Japan: kappa, kasa_obake, oni, tengu, rokurokubi, nekomata, boss_orochi; Egypt: mummy, scarab, jackal_warrior,
+  sand_scorpion, cobra_priest, sand_golem, boss_sphinx; Norse: draugr, frost_wolf, troll, ice_wraith, dwarf_berserker,
+  ice_golem, boss_jotun), their walk / attack / death / hurt in MOB_ANIM.md (`tools/art/mob_anim.py`, sizes in
+  `mob_frames.py`), and `docs/codex/action/MAPS.md` (Thai wall top pieces, China buildings / village / nature / props /
+  ground sheets). Owner sent a crop of a corner where the side walkway looked missing: "เจนบนกำแพงมาปิด" → MAPS row 1.
+- **Thai city walls rebuilt** (owner "แมพไทยไม่สวย กำแพง"): the city is a rounded rectangle (`cityD`, |dx/rx|^8 + |dy/ry|^8;
+  ground, yard checks and walls follow it; the west map keeps its ellipse). `tools/art/thai_wall.py` makes a seamless
+  54 px front tile from wall_sema (no bushes: they were painted on both ends and piled up), a raised side-wall walkway
+  piece (`wall_side`, its feet = picture bottom so the walkway sits 80 px up) and the corner fort in whitewash
+  (`t_fort_w`, brick mapped onto the plaster ramp, roof kept). Straight north/south runs, straight east/west runs open at
+  the road, forts on the 4 corners, gates where the road crosses.
+- **2nd class at level 50** (owner 2026-11-09 "เปลี่ยนคลาส 2 ที่ 50 ยังไม่ได้ทำ", "มอนเราจะต้องเยอะ"): hero level cap raised to
+  50; the class change itself is not built (rogue rank 2 = two daggers, needs new moves). Many more monsters needed for
+  50 levels: one set per country map (forest/ruins, Thai, China next).
 - **Archer playable** (2026-11-09, `?hero=archer`, pick button นักธนู): sheets from `hero_build.sh archer` (adds the `crit`
   row; hurt / death merged from two download groups; release frames by hand). Normal shot = one cyan code-drawn arrow
   (`arrow`, `archerShot`); crit (12% base, +40% in hawk eye, or the nearest monster beyond 420 = passive) plays the

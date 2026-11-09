@@ -151,6 +151,24 @@ def smear(im):
     for lo, c in zip([-1, 120, 190], SMEAR): a[arc & (L > lo), :3] = c
     return Image.fromarray(a.astype('uint8'))
 
+# --detach=attack,crit (the archer, owner 2026-11-09 "ลูกธนูไม่ตรง"): PixelLab draws the shot arrow flying off on its own
+# path (often upward) while the game shoots its own arrow at the target, so those rows keep only the figure: every blob
+# that is not joined to the biggest one goes (the arrow once it leaves the bow, specks); no blade-arc recolouring
+DETACH = set()
+for _a in sys.argv[3:]:
+    if _a.startswith('--detach='): DETACH = set(_a[9:].split(','))
+
+def solo(im):
+    import numpy as np
+    from scipy import ndimage
+    a = np.array(im); m = a[..., 3] > 0
+    lab, n = ndimage.label(m, structure=np.ones((3, 3)))
+    if n < 2: return im
+    sz = ndimage.sum(m, lab, range(1, n + 1)); big = 1 + int(np.argmax(sz))
+    for k in range(1, n + 1):
+        if k != big and sz[k - 1] < .4 * sz[big - 1]: a[lab == k] = 0
+    return Image.fromarray(a)
+
 def frames(folder, d, name):
     # folder: a,b | @<state dir>::a,b | several of those joined by "|" (later ones win per direction)
     fs = []
@@ -160,6 +178,7 @@ def frames(folder, d, name):
         for f in fl.split(','):
             fs = sorted(glob.glob(os.path.join(base, 'animations', f, d, 'frame_*.png'))) or fs
     out = [Image.open(f).convert('RGBA') for f in fs]
+    if name in DETACH: return [solo(im) for im in out]
     if name in ('attack', 'chop', 'spin', 'dash') and out: return arcwhite([smear(im) for im in out])   # attacks keep their detached blade smears
     return [dedust(im) for im in out]
 
