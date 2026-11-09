@@ -299,6 +299,21 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Map pass** (owner asleep, 30/100: "แมพให้มันไม่รก ดูสภาพแมพก่อนใส่ของ ใส่กองทับกันมั่ว ... น้ำให้กว้างๆ ... บ้านติดกันเกิน ... ตัดไม่หมด
+  ... วางตำแหน่งคลายกัน ทำแบบแผน ... มอนให้เยอะกว่านี้"): every prop picture knows its opaque box (`GPROP[n].bbA/bbB`,
+  `gp().bb`); `add(s, x, y, o)` refuses a spot whose box overlaps anything already placed by more than 5% (10% with soft
+  props, 30% between soft ones) or whose base stands on a road, the bridge or water (`o.water` for stilt houses, `o.force`
+  for walls, gates, forts, signs), and returns whether it placed. Planned buildings use `put` with a spiral of nearby
+  spots (`NUDGE`), so the plan holds without piles. Fewer filler props on every map (decoration counts about halved),
+  the Thai village is a plan (a slot every 460 px on each bank: a stilt house half on the bank in every other slot, a
+  land house behind, one pot / basket / banana), the ruins' planned pieces go down before the rocks. Rivers wider
+  (Thai SWC 190, forest 92). Thai city: side walls get Codex's side-view gates (`t_gate_l` / `_r`, from
+  `art/incoming/maps/thai_gate_4view.png` via props_px at 380 px), corner forts lost their outer wing
+  (`t_fort_wl` / `_wr`, the wing stuck out past the side wall). Plants cleaned with `tools/art/prop_clean.py --veg`
+  (white pockets between branches cut, the dull olive band inside the outline darkened). Monster camps:
+  `spawnCamps` puts 12 groups of 3-5 (two kinds each) round the map, they mill about until she comes within 330 or
+  hits one, refill 70 s after being cleared when she is far; waves are bigger (5 + 3 per wave, up to 24) and start when
+  no monster is chasing her.
 - **Archer pass 2** (owner asleep: "สกิลนักธนูไม่สวย ปรับโดนให้สีเขียว ให้มีระบบออโต้ ตีธรรมดาให้ลูกตรง"): her tone is green now
   (`ACY`, `HEX.leaf`/`RGB.leaf`); green copies of the effect sheets by `tools/art/fx_tint.py <src> <dst> <ramp> [pad glow gamma]`
   (`pfx_skyarrow_g`, `pfx_starfall_g` from the haze-free `_c`, `pfx_dashstrike_g`); every arrow hit plays Dash Strike's hit

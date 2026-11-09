@@ -144,10 +144,10 @@ const STREAM = (() => {
       pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
   pts.push(K[K.length - 1]);
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const mg = JG ? 110 : TH ? 260 : 50;   // the Thai map's stream is a wide river
+  const mg = JG ? 180 : TH ? 340 : 50;   // the Thai map's stream is a wide river
   return {pts, box: [Math.min(...xs) - mg, Math.min(...ys) - mg, Math.max(...xs) + mg, Math.max(...ys) + mg]};
 })();
-const RIVM = JG ? 100 : TH ? 240 : 64, SEGB = STREAM.pts.slice(1).map((b, i) => { const a = STREAM.pts[i]; return [Math.min(a[0], b[0]) - RIVM, Math.min(a[1], b[1]) - RIVM, Math.max(a[0], b[0]) + RIVM, Math.max(a[1], b[1]) + RIVM]; });
+const RIVM = JG ? 160 : TH ? 320 : 64, SEGB = STREAM.pts.slice(1).map((b, i) => { const a = STREAM.pts[i]; return [Math.min(a[0], b[0]) - RIVM, Math.min(a[1], b[1]) - RIVM, Math.max(a[0], b[0]) + RIVM, Math.max(a[1], b[1]) + RIVM]; });
 function riverX(y) { const P = STREAM.pts; for (let i = 0; i < P.length - 1; i++) if (y >= P[i][1] && y <= P[i + 1][1]) return P[i][0] + (P[i + 1][0] - P[i][0]) * (y - P[i][1]) / ((P[i + 1][1] - P[i][1]) || 1); return P[0][0]; }
 function streamD(x, y) {          // distance to the stream's middle line (1e9 when more than ~64 px away: nothing uses it then)
   let best = 1e9; const P = STREAM.pts;
@@ -171,7 +171,7 @@ function forestF(x, y) {         // > 0 inside a forest, about 1 in the middle
   return v < -.2 ? v : v + .07 * Math.sin(x / 53) * Math.sin(y / 41);   // the wobble only near / inside a forest
 }
 const RUINS = JG ? {x: WW * .74, y: WH * .38, rx: 560, ry: 340} : TH ? {x: WW * .84, y: WH * .24, rx: 440, ry: 270} : {x: WW * .44, y: WH * .84 + 40, rx: 480, ry: 300};
-const PADDY = JG ? null : TH ? {x0: WW * .67, y0: WH * .63, x1: WW * .84, y1: WH * .9} : null;   // rice fields east of the river
+const PADDY = JG ? null : TH ? {x0: WW * .7, y0: WH * .63, x1: WW * .84, y1: WH * .9} : null;   // rice fields east of the river
 const TOWERS = TH ? [] : [[WW * .86, WH * .3], [WW * .44, WH * .84], [WW * .1, WH * .3]];
 function crv(K) {                // Catmull-Rom through the key points
   const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
@@ -214,8 +214,8 @@ for (let gy = 0; gy < ZH; gy++) for (let gx = 0; gx < ZW; gx++) { const x = gx *
 // kinds: 0 grass, 1 path, 2 yard, 3 shore, 4 water, 5 bridge deck, 6 bridge rail, 7 ruins floor
 const PYC = new Float32Array(WW + 8), PWC = new Float32Array(WW + 8), SWC = new Float32Array(WH + 8);   // per column / row
 for (let x = 0; x < WW + 8; x++) { PYC[x] = pathY(x); PWC[x] = 34 + 8 * Math.sin(x / 57); }
-for (let y = 0; y < WH + 8; y++) SWC[y] = JG ? 46 + 8 * Math.sin(y / 110) : TH ? 118 + 16 * Math.sin(y / 130) : 22 + 5 * Math.sin(y / 70);
-const SHORE = JG ? 16 : TH ? 30 : 8;
+for (let y = 0; y < WH + 8; y++) SWC[y] = JG ? 92 + 12 * Math.sin(y / 110) : TH ? 190 + 22 * Math.sin(y / 130) : 22 + 5 * Math.sin(y / 70);
+const SHORE = JG ? 22 : TH ? 34 : 8;
 function terr(x, y) {            // x, y whole numbers inside the world
   const lb = LAKE.box, sb = STREAM.box, hz = HAMLET;
   const dpath = Math.abs(y - PYC[x]), pw = PWC[x];
@@ -518,18 +518,18 @@ const GPDEF = {oak: {rad: 30}, pine: {rad: 24}, blossom: {rad: 22},   // trees r
   pillar_down: {rect: {w: 160, d: 30}}, pillar: {rad: 28}, rubble: {rad: 40}, stairs: {rect: {w: 180, d: 60}}, stump: {rad: 30},
   log: {rect: {w: 140, d: 26}}, mushrooms: {soft: 1}, fern: {soft: 1}, dead_tree: {rad: 26, tree: 1}, mossy_rock: {rad: 50},
   campfire: {rad: 36}, tent: {rect: {w: 190, d: 40}, nf: 1}, signpost: {rad: 10, nf: 1}, cart: {rect: {w: 200, d: 34}},
-  // the Thai map (owner's four GPT sheets 2026-11-08; tools/art/thai_props.py)
+  // the Thai map (owner's four GPT sheets 2026-11-08; tools/art/thai_props.py); t_gate_l / _r = Codex's side views of the gate (west / east wall)
   ...Object.fromEntries(('v_stilt v_row v_hut v_kitchen v_granary v_veranda v_waterhouse v_fishhut v_boatshed v_stall v_pen v_temple v_stupa v_pavilion ' +
     't_house t_twin t_hut t_granary t_shophouse t_stall t_sala t_fort t_palace t_temple t_stupa t_prang t_belltower t_library t_elephant t_smithy t_teahouse').split(' ').map(n => [n, {bld: 1, nf: 1}])),
-  t_gate: {soft: 1, shade: {w: 300, d: 40}, nf: 1}, v_watchtower: {rad: 40, nf: 1}, v_well: {rad: 34, nf: 1}, v_raintree: {rad: 40, tree: 1}, v_bridge: {soft: 1, nf: 1},
+  t_gate: {soft: 1, shade: {w: 300, d: 40}, nf: 1}, t_gate_l: {soft: 1, shade: {w: 170, d: 40}, nf: 1}, t_gate_r: {soft: 1, shade: {w: 170, d: 40}, nf: 1}, v_watchtower: {rad: 40, nf: 1}, v_well: {rad: 34, nf: 1}, v_raintree: {rad: 40, tree: 1}, v_bridge: {soft: 1, nf: 1},
   jar_dragon: {rad: 18, nf: 1}, pots: {rad: 18}, boat_fruit: {soft: 1}, lotus: {soft: 1}, banana: {rad: 18, tree: 1}, coconut: {rad: 16, tree: 1}, sugarpalm: {rad: 16, tree: 1},
   fence_bamboo: {rect: {w: 80, d: 10}}, baskets: {rad: 16}, oxcart: {rect: {w: 140, d: 30}}, lantern_thai: {rad: 8, nf: 1}, lion: {rad: 24, nf: 1}, elephant_statue: {rad: 30, nf: 1},
-  flagpole: {rad: 8, nf: 1}, fruit_mat: {soft: 1}, wall_sema: {rect: {w: 140, d: 24}, nf: 1}, wall_front: {rect: {w: 54, d: 24}, nf: 1}, wall_side: {rect: {w: 34, d: 28}, nf: 1}, t_fort_w: {bld: 1, nf: 1}, noticeboard: {rad: 14, nf: 1}, bridge_curve: {soft: 1, nf: 1}};
+  flagpole: {rad: 8, nf: 1}, fruit_mat: {soft: 1}, wall_sema: {rect: {w: 140, d: 24}, nf: 1}, wall_front: {rect: {w: 54, d: 24}, nf: 1}, wall_side: {rect: {w: 34, d: 28}, nf: 1}, t_fort_w: {bld: 1, nf: 1}, t_fort_wl: {bld: 1, nf: 1}, t_fort_wr: {bld: 1, nf: 1}, noticeboard: {rad: 14, nf: 1}, bridge_curve: {soft: 1, nf: 1}};
 const GPROP = {};
 function gp(name) {
-  const g = GPROP[name], d = GPDEF[name], img = d.nf || rnd() < .5 ? g.a : g.b;   // a / b = as drawn / mirrored (not for houses: their light comes from one side)
+  const g = GPROP[name], d = GPDEF[name], useA = d.nf || rnd() < .5, img = useA ? g.a : g.b;   // a / b = as drawn / mirrored (not for houses: their light comes from one side)
   const rect = d.bld ? {w: img.width * .78 | 0, d: 70} : d.rect;
-  return {c: img, fx: img.width >> 1, fy: (g.foot || img.height - 3) - 2, rad: d.rad || 0, rect, soft: d.soft, shade: d.shade, top: d.tree || name === 'oak' || name === 'pine' || name === 'blossom' ? -200 : 0,
+  return {c: img, bb: useA ? g.bbA : g.bbB, name, fx: img.width >> 1, fy: (g.foot || img.height - 3) - 2, rad: d.rad || 0, rect, soft: d.soft, shade: d.shade, top: d.tree || name === 'oak' || name === 'pine' || name === 'blossom' ? -200 : 0,
     ao: name === 'oak' || name === 'pine' || name === 'blossom' || name === 'v_raintree'};   // crown shade only under real crowns (on palms it floated mid-trunk)
 }
 const TEX = {};   // GPT ground textures as pixel arrays (grass, dirt, sand, water, cobble, flowergrass)
@@ -544,7 +544,10 @@ async function loadProps() {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
     const ad = x.getImageData(0, 0, im.width, im.height).data; let foot = im.height - 1;
     for (; foot > 0; foot--) { let hit = false; for (let q = 0; q < im.width; q++) if (ad[(foot * im.width + q) * 4 + 3] > 40) { hit = true; break; } if (hit) break; }
-    GPROP[n] = {a: im, b, foot: n === 'wall_side' ? im.height - 1 : foot}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
+    let x0 = im.width, y0 = im.height, x1 = 0, y1 = 0;                 // the opaque box (every 2nd pixel is enough)
+    for (let yy = 0; yy < im.height; yy += 2) for (let xx = 0; xx < im.width; xx += 2) if (ad[(yy * im.width + xx) * 4 + 3] > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    if (x1 < x0) { x0 = y0 = 0; x1 = im.width; y1 = im.height; }
+    GPROP[n] = {a: im, b, foot: n === 'wall_side' ? im.height - 1 : foot, bbB: [x0, y0, x1 + 2, y1 + 2], bbA: [im.width - x1 - 2, y0, im.width - x0, y1 + 2]}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
 }
 let PROPS = [];
 function makeProps() {
@@ -553,14 +556,29 @@ function makeProps() {
   const dry = (x, y, r) => !waterAt(x, y) && !waterAt(x - r, y) && !waterAt(x + r, y) && !waterAt(x, y - r * .5) && !waterAt(x, y + r * .5);
   const inYard = (x, y) => cityD(x, y) < 1;
   const pathOk = (x, y) => Math.abs(y - GROUND_PATH(x)) > 70 && sideD(x, y) > 60 && dry(x, y, 90);
-  const add = (s, x, y) => {
+  // owner 2026-11-09 "ใส่กองทับกันมั่ว": a prop is only put down when its picture overlaps nothing already there (more than a
+  // sliver) and the ground under its base is right for it (no house or tree on the road, the bridge or in the river;
+  // o.water = stilt houses that stand in the water). o.force = walls, gates, forts, signs placed by the plan.
+  const box = (s, x, y) => s.bb ? [x - s.fx + s.bb[0], y - s.fy + s.bb[1], x - s.fx + s.bb[2], y - s.fy + s.bb[3]] : [x - s.fx, y - s.fy, x - s.fx + s.c.width, y - s.fy + s.c.height];
+  const ovl = (A, B) => Math.max(0, Math.min(A[2], B[2]) - Math.max(A[0], B[0])) * Math.max(0, Math.min(A[3], B[3]) - Math.max(A[1], B[1]));
+  const area = A => Math.max(1, (A[2] - A[0]) * (A[3] - A[1]));
+  const groundOk = (s, x, y, o) => { if (s.soft) return true; const B = s.bb ? (s.bb[2] - s.bb[0]) * .36 : s.c.width * .3;
+    for (const px of [x - B, x, x + B]) for (const py of [y - 4, y - 18]) { const X = px | 0, Y = py | 0; if (X < 0 || Y < 0 || X >= WW || Y >= WH) continue; terr(X, Y);
+      if (TK === 1 || TK === 5 || TK === 6) return false; if ((TK === 4 || TK === 3) && !o.water) return false; }
+    return true; };
+  const add = (s, x, y, o = {}) => {
+    const bb = box(s, x, y);
+    if (!o.force) { if (!groundOk(s, x, y, o)) return false;
+      for (const q of PROPS) { if (!q.bb) continue; const lim = o.ov ?? (s.soft && q.soft ? .3 : s.soft || q.soft ? .1 : .05);
+        if (ovl(bb, q.bb) > lim * Math.min(area(bb), area(q.bb))) return false; } }
     const shades = [];
     if (!s.soft || s.shade) {   // ground shadow (+ darker ground under a big canopy), painted into the ground chunks
       const R = s.rect || s.shade, sw = R ? R.w * 1.15 : s.rad * 4.6, shh = R ? Math.min(46, R.d * 1.4 + 6) : s.rad * 1.4;   // fences: a thin shadow
       const sh = ellipseSprite(Math.max(40, sw | 0), Math.max(14, shh | 0), '#203a18'); shades.push({img: sh, x: x - sh.width / 2 + 10 | 0, y: y - sh.height / 2 | 0, a: .28});
       if (s.ao) { const ao = ellipseSprite(s.c.width * .7 | 0, s.c.width * .24 | 0, '#1d3415'); shades.push({img: ao, x: x - ao.width / 2 + 6 | 0, y: y - ao.height * .35 | 0, a: .15}); }   // on the ground round the trunk
     }
-    PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft, shades});
+    PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft, shades, bb, name: s.name});
+    return true;
   };
   if (TH) { if (GPROP.t_palace) (JG ? jungleProps : thaiProps)({add, far, dry, pathOk, inYard}); PROPS.sort((a, b) => a.y - b.y); return; }
   // the first map's exit to the Thai map: a signpost where the road leaves at the east edge
@@ -575,7 +593,9 @@ function makeProps() {
   // a hamlet of big cottages and two ruined watchtowers (the rogue reaches about to a door's top)
   const hx = WW * .27, hy = WH * .28, RC = [['#5a1f1f', '#8a3426', '#b04a33'], ['#1f3550', '#2f5680', '#4778aa'], ['#3d3020', '#6b5233', '#8f6f45']];
   const roadClear = (x, y, w) => [x - w / 2, x, x + w / 2].every(xs => Math.abs(y - GROUND_PATH(xs)) > 90) && sideD(x, y) > 90 && dry(x, y, 60);
-  const put = (n, x, y, check = true) => { if (!GPROP[n]) return false; const w = GPROP[n].a.width; if (check && !roadClear(x, y, w)) return false; add(gp(n), x | 0, y | 0); return true; };
+  const NUDGE = [[0, 0]]; for (let r = 60; r <= 360; r += 60) for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + r / 200; NUDGE.push([Math.round(Math.cos(a) * r * 1.3), Math.round(Math.sin(a) * r * .8)]); }
+  const put = (n, x, y, check = true) => { if (!GPROP[n]) return false; const w = GPROP[n].a.width;   // a planned spot, nudged when something is in the way
+    for (const [ox, oy] of NUDGE) { const X = x + ox, Y = y + oy; if (check && !roadClear(X, Y, w)) continue; if (add(gp(n), X | 0, Y | 0)) return true; } return false; };
   if (GPROP.townhall) {
     // owner 2026-11-08 sent an 18-building sheet: the hamlet becomes a town round a plaza with the well
     const TOWN = [['townhall', 0, -400], ['chapel', -520, -370], ['library', 520, -370], ['shop', -600, 0], ['smithy', 600, 0],
@@ -610,23 +630,25 @@ function makeProps() {
   if (GPROP.pine) for (const F of FORESTS) for (let tries = 0, k = 0; tries < 3000 && k < F.rx * F.ry / 15000; tries++) {
     const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
     if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 165) || TOWERS.some(([tx, ty]) => Math.hypot(x - tx, (y - ty) * 1.4) < 240)) continue;
-    add(TF(), x | 0, y | 0); k++; }
-  if (GPROP.bush) for (const F of FORESTS) for (let i = 0; i < 70; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (add(TF(), x | 0, y | 0)) k++; }
+  if (GPROP.bush) for (const F of FORESTS) for (let i = 0; i < 35; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
     if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(rnd() < .65 ? 'bush' : 'rocks'), x | 0, y | 0); }
-  // the ruins: boulders and rock piles round the broken floor of the south tower
-  if (GPROP.boulder) for (let i = 0; i < 40; i++) { const a = rnd() * 6.28, r = .55 + rnd() * .55, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
-    if (pathOk(x, y) && far(x, y, 80)) add(gp(rnd() < .4 ? 'boulder' : 'rocks'), x | 0, y | 0); }
+  // the ruins: the planned pieces (below) go down first, boulders and rock piles fill in round them afterwards
+  const ruinRocks = () => { if (GPROP.boulder) for (let i = 0; i < 24; i++) { const a = rnd() * 6.28, r = .55 + rnd() * .55, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
+    if (pathOk(x, y) && far(x, y, 90)) add(gp(rnd() < .4 ? 'boulder' : 'rocks'), x | 0, y | 0); } };
+  if (!GPROP.wall) ruinRocks();
   if (GPROP.wall) {
     // the ruins round the south tower: an arch where the side path comes in, broken walls, pillars, two statues
     let ar = SIDE[1][0]; for (const q of SIDE[1]) if (Math.abs(q[1] - (RUINS.y - RUINS.ry * .8)) < Math.abs(ar[1] - (RUINS.y - RUINS.ry * .8))) ar = q;
-    add(gp('arch'), ar[0] | 0, ar[1] | 0); add(gp('statue'), ar[0] - 170 | 0, ar[1] + 10 | 0); add(gp('statue'), ar[0] + 170 | 0, ar[1] + 10 | 0);
+    add(gp('arch'), ar[0] | 0, ar[1] | 0, {force: 1}); add(gp('statue'), ar[0] - 170 | 0, ar[1] + 10 | 0); add(gp('statue'), ar[0] + 170 | 0, ar[1] + 10 | 0);
     const R = [['wall', -330, -120], ['wall_corner', 330, -110], ['pillar', -260, 150], ['pillar', 280, 160], ['pillar_down', 150, 240],
       ['rubble', -170, 230], ['stairs', -390, 90], ['wall', 400, 170], ['pillar', -430, -30], ['rubble', 420, 20]];
-    for (const [n, dx, dy] of R) { const x = RUINS.x + dx, y = RUINS.y + dy; if (sideD(x, y) > 70 && far(x, y, 70)) add(gp(n), x | 0, y | 0); }
+    for (const [n, dx, dy] of R) { const x = RUINS.x + dx, y = RUINS.y + dy; if (sideD(x, y) > 70) put(n, x, y, false); }
+    ruinRocks();
     for (let i = 0, k = 0; i < 40 && k < 3; i++) { const a = rnd() * 6.28, x = RUINS.x + Math.cos(a) * RUINS.rx * 1.25, y = RUINS.y + Math.sin(a) * RUINS.ry * 1.25;
-      if (pathOk(x, y) && far(x, y, 160)) { add(gp('dead_tree'), x | 0, y | 0); k++; } }
+      if (pathOk(x, y) && far(x, y, 160) && add(gp('dead_tree'), x | 0, y | 0)) k++; }
     // forest floor: stumps, fallen logs, mossy rocks, a dead tree; ferns and mushrooms (walk through)
-    for (const F of FORESTS) for (let i = 0; i < 90; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    for (const F of FORESTS) for (let i = 0; i < 40; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
       if (forestF(x, y) < .05 || !pathOk(x, y)) continue; const t = rnd(), n = t < .3 ? 'fern' : t < .5 ? 'mushrooms' : t < .65 ? 'stump' : t < .78 ? 'log' : t < .9 ? 'mossy_rock' : 'dead_tree';
       if (far(x, y, n === 'fern' || n === 'mushrooms' ? 45 : 90)) add(gp(n), x | 0, y | 0); }
     // a camp east of the lake: tent, fire, a log to sit on, a cart
@@ -641,17 +663,14 @@ function makeProps() {
     const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
     if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.6 || Math.hypot(x - WW / 2, y - WH / 2) < 420 || !far(x, y, 430)) continue;   // spacing (not the count) sets how thick the field is
     const t = rnd();
-    if (t < .6) add(T(), x | 0, y | 0);
-    else if (t < .8) add(GPROP.boulder ? gp('boulder') : boulder(90 + rnd() * 90 | 0), x | 0, y | 0);
-    else if (GPROP.bush) add(gp('bush'), x | 0, y | 0);
-    else add(pillar(170 + rnd() * 110 | 0, rnd() < .45), x | 0, y | 0);
-    k++;
+    if (t < .6 ? add(T(), x | 0, y | 0) : t < .8 ? add(GPROP.boulder ? gp('boulder') : boulder(90 + rnd() * 90 | 0), x | 0, y | 0)
+      : GPROP.bush ? add(gp('bush'), x | 0, y | 0) : add(pillar(170 + rnd() * 110 | 0, rnd() < .45), x | 0, y | 0)) k++;
   }
   // small stuff from the GPT sheet: bushes and rock clusters scattered round the field
-  if (GPROP.rocks) for (let i = 0; i < 90 * AR; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
+  if (GPROP.rocks) for (let i = 0; i < 40 * AR; i++) { const x = 240 + rnd() * (WW - 480), y = 300 + rnd() * (WH - 600);
     if (pathOk(x, y) && !inYard(x, y) && far(x, y, 70)) add(gp(rnd() < .55 ? 'bush' : 'rocks'), x | 0, y | 0); }
   // flower clumps in the meadows (the grass clumps are gone: owner 2026-11-08 "เอาหญ้าออก")
-  if (GPROP.flowers) for (let i = 0; i < 30 * MEADOWS.length; i++) {
+  if (GPROP.flowers) for (let i = 0; i < 16 * MEADOWS.length; i++) {
     const m = MEADOWS[i % MEADOWS.length], x = m[0] + (rnd() - .5) * 480, y = m[1] + (rnd() - .5) * 330;
     if (Math.abs(y - GROUND_PATH(x)) < 50 || sideD(x, y) < 40 || !dry(x, y, 20) || inYard(x, y) || forestF(x, y) > 0 || !far(x, y, 60)) continue;
     add(gp('flowers'), x | 0, y | 0);
@@ -662,30 +681,33 @@ function makeProps() {
 function thaiProps({add, far, dry, pathOk, inYard}) {
   const J = () => gp(['coconut', 'coconut', 'sugarpalm', 'banana', 'v_raintree'][rnd() * 5 | 0]);
   const roadOk = (x, y, w) => [x - w / 2, x, x + w / 2].every(xs => Math.abs(y - GROUND_PATH(xs)) > 95) && sideD(x, y) > 90 && dry(x, y, 60);
-  const put = (n, x, y, check = true) => { if (!GPROP[n]) return false; if (check && !roadOk(x, y, GPROP[n].a.width)) return false; add(gp(n), x | 0, y | 0); return true; };
+  const NUDGE = [[0, 0]]; for (let r = 60; r <= 360; r += 60) for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + r / 200; NUDGE.push([Math.round(Math.cos(a) * r * 1.3), Math.round(Math.sin(a) * r * .8)]); }   // a spiral of nearby spots
+  const put = (n, x, y, check = true, o = {}) => { if (!GPROP[n]) return false;   // a planned spot: nudged a little when something is in the way
+    for (const [ox, oy] of o.water ? [[0, 0]] : NUDGE) { const X = x + ox, Y = y + oy; if (check && !roadOk(X, Y, GPROP[n].a.width)) continue; if (add(gp(n), X | 0, Y | 0, o)) return true; } return false; };
   // jungle round the edges
   for (let x = 40; x < WW; x += 300 + rnd() * 140) { add(J(), x | 0, 170 + rnd() * 30 | 0); add(J(), x + 60 | 0, WH - 30 - rnd() * 20 | 0); }
   for (let y = 320; y < WH - 140; y += 320 + rnd() * 140) { add(J(), 70 + rnd() * 50 | 0, y | 0); add(J(), WW - 70 - rnd() * 50 | 0, y | 0); }
   // the way back: a notice board where the road leaves at the west edge
-  { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0); }
+  { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0, {force: 1}); }
   // the royal city: walls of sema bricks round the yard, forts on the diagonals, a gate where the road goes in and out
   const C = HAMLET, edgeY = (x, s) => C.y + s * C.ry * Math.max(0, 1 - Math.abs((x - C.x) / C.rx) ** CITYP) ** (1 / CITYP),
     edgeX = (y, s) => C.x + s * C.rx * Math.max(0, 1 - Math.abs((y - C.y) / C.ry) ** CITYP) ** (1 / CITYP);
-  const FW = GPROP.wall_front ? GPROP.wall_front.a.width : 54, CX = C.rx * .9, CY = C.ry * .9;
+  const FW = GPROP.wall_front ? GPROP.wall_front.a.width : 54, CX = C.rx * .9, CY = C.ry * .9, GATEUP = GPROP.t_gate_l ? 90 : 120, GATEDN = GPROP.t_gate_l ? 50 : 120;
   const gateY = [-1, 1].map(s => { let x = C.x + s * C.rx; for (let k = 0; k < 8; k++) x = edgeX(GROUND_PATH(x), s); return [x, GROUND_PATH(x)]; });
   for (const s of [-1, 1]) for (let x = C.x - CX; x < C.x + CX; x += FW) { const y = C.y + s * C.ry * .975;   // north and south runs, straight, tile against tile
-    if (dry(x + FW / 2, y, 10)) add(gp('wall_front'), x + FW / 2 | 0, y | 0); }
+    if (dry(x + FW / 2, y, 10)) add(gp('wall_front'), x + FW / 2 | 0, y | 0, {force: 1}); }
   for (const s of [-1, 1]) { const [gx, gy] = gateY[s < 0 ? 0 : 1];                                     // west and east runs, open at the gate
-    for (let y = C.y - C.ry * .94; y < C.y + C.ry * .9; y += 28) { if (Math.abs(y - gy) < 120) continue; const x = C.x + s * C.rx * .975; add(gp('wall_side'), x | 0, y | 0); } }
-  for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(gp('t_fort_w'), C.x + sx * C.rx * .93 | 0, C.y + sy * C.ry * .96 + 30 | 0);   // whitewashed forts on the corners
-  for (const [gx, gy] of gateY) if (gx > 100) add(gp('t_gate'), gx | 0, gy + 34 | 0);
+    for (let y = C.y - C.ry * .94; y < C.y + C.ry * .9; y += 28) { if (y > gy - GATEUP && y < gy + GATEDN) continue; const x = C.x + s * C.rx * .975; add(gp('wall_side'), x | 0, y | 0, {force: 1}); } }
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const fk = GPROP.t_fort_wl ? (sx < 0 ? 't_fort_wl' : 't_fort_wr') : 't_fort_w';   // the outer wing cut off (it stuck out past the side wall)
+    add(gp(fk), C.x + sx * C.rx * .93 | 0, C.y + sy * C.ry * .96 + 30 | 0, {force: 1}); }   // whitewashed forts on the corners
+  for (const [gx, gy] of gateY) if (gx > 100) { const side = gx < C.x ? 't_gate_l' : 't_gate_r'; add(gp(GPROP[side] ? side : 't_gate'), gx | 0, gy + 34 | 0, {force: 1}); }   // side walls get the side-view gate (Codex's 4 views)
   // inside: the palace in the middle of the north half, temple and stupa beside it, the library hall on the lotus pond,
   // lions and flags before the palace, houses, smithy, tea house, elephant stable, a market along the road
   const IN = [['t_palace', 0, -330], ['t_temple', 560, -300], ['t_stupa', 900, -170], ['t_belltower', 330, -110], ['t_sala', -420, -360],
     ['t_house', -760, -40], ['t_twin', -980, 120], ['t_shophouse', 700, 120], ['t_smithy', 980, 60], ['t_teahouse', -560, 120],
     ['t_elephant', -200, -60], ['t_granary', -900, -280], ['t_hut', 420, 320], ['t_house', -300, 380], ['t_twin', 760, 420]];
   for (const [n, dx, dy] of IN) put(n, C.x + dx, C.y + dy);
-  put('t_library', LAKE.cx + 10, LAKE.cy + 30, false);
+  put('t_library', LAKE.cx + 10, LAKE.cy + 30, false, {water: 1});   // the library hall stands in its lotus pond
   for (const sx of [-170, 170]) { put('lion', C.x + sx, C.y - 170); put('flagpole', C.x + sx * 1.6, C.y - 190); }
   put('elephant_statue', C.x + 560, C.y - 110); put('elephant_statue', C.x + 760, C.y - 110);
   for (let x = C.x - C.rx * .8; x < C.x + C.rx * .8; x += 260 + rnd() * 80) {        // market stalls both sides of the road
@@ -696,14 +718,14 @@ function thaiProps({add, far, dry, pathOk, inYard}) {
   for (let x = C.x - C.rx; x < C.x + C.rx; x += 230) { const y = GROUND_PATH(x) - 70; if (inYard(x, y) && far(x, y, 60)) add(gp('lantern_thai'), x | 0, y | 0); }
   // the riverside village: stilt houses standing in the water on both banks, more houses, kitchens and granaries behind
   const WAT = ['v_waterhouse', 'v_fishhut', 'v_boatshed', 'v_pavilion'], LAND = ['v_stilt', 'v_row', 'v_hut', 'v_kitchen', 'v_granary', 'v_veranda', 'v_well'];
-  for (let y = WH * .18; y < WH * .84; y += 300 + rnd() * 90) {
-    if (Math.abs(y - GROUND_PATH(riverX(y))) < 260) continue;                       // keep clear of the bridge
-    for (const s of [-1, 1]) { const rx = riverX(y), w = SWC[y | 0], xw = rx + s * (w - 40);
-      if (rnd() < .8) add(gp(WAT[rnd() * WAT.length | 0]), xw | 0, y | 0);
-      const xl = rx + s * (w + 230 + rnd() * 120), yl = y + (rnd() - .5) * 80;
-      if (roadOk(xl, yl, 340) && far(xl, yl, 230)) add(gp(LAND[rnd() * LAND.length | 0]), xl | 0, yl | 0);
-      if (rnd() < .6) { const x2 = xl + s * 120, y2 = yl + 90; if (dry(x2, y2, 20) && far(x2, y2, 60)) add(gp(['jar_dragon', 'pots', 'baskets', 'banana'][rnd() * 4 | 0]), x2 | 0, y2 | 0); } } }
-  for (let i = 0; i < 26; i++) { const y = 200 + rnd() * (WH - 400), rx = riverX(y);           // boats and lotus on the river
+  for (let y = WH * .16, i = 0; y < WH * .86; y += 460, i++) {
+    if (Math.abs(y - GROUND_PATH(riverX(y))) < 300) continue;                       // keep clear of the bridge
+    for (const s of [-1, 1]) { const yy = y + (s > 0 ? 230 : 0), rx = riverX(yy), w = SWC[yy | 0], xw = rx + s * (w + 15);   // half on the bank, the front stilts in the water
+      if ((i + (s > 0)) % 2 === 0) add(gp(WAT[(i * 2 + (s > 0)) % WAT.length]), xw | 0, yy | 0, {water: 1});
+      const xl = rx + s * (w + 260), yl = yy + 40;
+      if (roadOk(xl, yl, 340) && add(gp(LAND[(i + (s > 0) * 3) % LAND.length]), xl | 0, yl | 0)) {
+        const x2 = xl + s * 170, y2 = yl + 70; if (dry(x2, y2, 20)) add(gp(['jar_dragon', 'pots', 'baskets', 'banana'][(i + (s > 0)) % 4]), x2 | 0, y2 | 0); } } }
+  for (let i = 0; i < 16; i++) { const y = 200 + rnd() * (WH - 400), rx = riverX(y);           // boats and lotus on the river
     if (Math.abs(y - GROUND_PATH(rx)) < 160) continue;
     if (i % 2) add(gp('boat_fruit'), rx + (rnd() - .5) * 120 | 0, y | 0);
     else { const s = rnd() < .5 ? -1 : 1, w = SWC[y | 0]; add(gp('lotus'), rx + s * (w - 30 - rnd() * 30) | 0, y | 0); } }
@@ -717,51 +739,53 @@ function thaiProps({add, far, dry, pathOk, inYard}) {
     for (let i = 0; i < 24; i++) { const a = rnd() * 6.28, r = .5 + rnd() * .6, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
       if (pathOk(x, y) && far(x, y, 90)) add(gp(rnd() < .4 ? 'rubble' : rnd() < .5 ? 'mossy_rock' : 'fern'), x | 0, y | 0); } }
   // jungle groves: palms, bananas and big rain trees close together, ferns under them
-  for (const F of FORESTS) for (let tries = 0, k = 0; tries < 2500 && k < F.rx * F.ry / 14000; tries++) {
+  for (const F of FORESTS) for (let tries = 0, k = 0; tries < 2500 && k < F.rx * F.ry / 20000; tries++) {
     const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
     if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 150) || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.1) continue;
-    add(J(), x | 0, y | 0); k++; }
-  for (const F of FORESTS) for (let i = 0; i < 40; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (add(J(), x | 0, y | 0)) k++; }
+  for (const F of FORESTS) for (let i = 0; i < 20; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
     if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(rnd() < .5 ? 'fern' : rnd() < .5 ? 'bush' : 'mushrooms'), x | 0, y | 0); }
   // the open land: a few palms and bananas, bushes and rocks
-  for (let k = 0, tries = 0; k < 70 && tries < 3000; tries++) { const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
-    if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || (PADDY && x > PADDY.x0 - 60 && x < PADDY.x1 + 60 && y > PADDY.y0 - 60 && y < PADDY.y1 + 60) || !far(x, y, 380)) continue;
-    add(rnd() < .7 ? J() : gp(rnd() < .5 ? 'bush' : 'rocks'), x | 0, y | 0); k++; }
+  for (let k = 0, tries = 0; k < 40 && tries < 3000; tries++) { const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
+    if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || (PADDY && x > PADDY.x0 - 60 && x < PADDY.x1 + 60 && y > PADDY.y0 - 60 && y < PADDY.y1 + 60) || !far(x, y, 420)) continue;
+    if (add(rnd() < .7 ? J() : gp(rnd() < .5 ? 'bush' : 'rocks'), x | 0, y | 0)) k++; }
 }
 // the Thai forest (owner 2026-11-09 "เมืองไทยก็ให้แผนที่ต่อไปเป็นป่าเมืองไทย มอนเมืองไทย"): no city, a jungle all round a
 // winding road, a creek with a plank bridge, a lotus pond, a prang temple ruin in the trees, a hunters' camp
 function jungleProps({add, far, dry, pathOk}) {
   const J = () => gp(['coconut', 'sugarpalm', 'banana', 'v_raintree', 'v_raintree'][rnd() * 5 | 0]);
   const roadOk = (x, y, w) => [x - w / 2, x, x + w / 2].every(xs => Math.abs(y - GROUND_PATH(xs)) > 95) && sideD(x, y) > 90 && dry(x, y, 60);
-  const put = (n, x, y, check = true) => { if (!GPROP[n]) return false; if (check && !roadOk(x, y, GPROP[n].a.width)) return false; add(gp(n), x | 0, y | 0); return true; };
+  const NUDGE = [[0, 0], [70, 0], [-70, 0], [0, 60], [0, -60], [140, 0], [-140, 0], [100, 80], [-100, 80], [100, -80], [-100, -80]];
+  const put = (n, x, y, check = true) => { if (!GPROP[n]) return false;
+    for (const [ox, oy] of NUDGE) { const X = x + ox, Y = y + oy; if (check && !roadOk(X, Y, GPROP[n].a.width)) continue; if (add(gp(n), X | 0, Y | 0)) return true; } return false; };
   // a wall of trees round the edges (the road stays open where it leaves)
   for (let x = 40; x < WW; x += 220 + rnd() * 120) { add(J(), x | 0, 170 + rnd() * 30 | 0); add(J(), x + 60 | 0, WH - 30 - rnd() * 20 | 0); }
   for (let y = 300; y < WH - 120; y += 230 + rnd() * 110) for (const x of [70 + rnd() * 50, WW - 70 - rnd() * 50]) if (Math.abs(y - GROUND_PATH(x)) > 150) add(J(), x | 0, y | 0);
-  { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0); }
-  { const x = WW - MARGIN.r - 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0); }
+  { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0, {force: 1}); }
+  { const x = WW - MARGIN.r - 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0, {force: 1}); }
   // the prang ruins: two prangs and a stupa, broken walls, rubble, mossy rocks and pillars round them
-  put('t_prang', RUINS.x, RUINS.y - 40, false); put('t_prang', RUINS.x - 360, RUINS.y + 80, false); put('t_stupa', RUINS.x + 330, RUINS.y + 50, false);
+  put('t_prang', RUINS.x, RUINS.y - 40, false); put('t_prang', RUINS.x - 380, RUINS.y + 90, false); put('t_stupa', RUINS.x + 360, RUINS.y + 60, false);
   for (const [n, dx, dy] of [['wall', -250, 210], ['wall_corner', 260, 230], ['pillar', -120, 180], ['pillar_down', 120, 200], ['statue', 0, 150], ['arch', -470, -120]])
     if (GPROP[n]) { const x = RUINS.x + dx, y = RUINS.y + dy; if (sideD(x, y) > 70 && far(x, y, 70)) add(gp(n), x | 0, y | 0); }
-  for (let i = 0; i < 30; i++) { const a = rnd() * 6.28, r = .45 + rnd() * .65, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
-    if (pathOk(x, y) && far(x, y, 90)) add(gp(['rubble', 'mossy_rock', 'fern', 'pillar'][rnd() * 4 | 0]), x | 0, y | 0); }
+  for (let i = 0; i < 16; i++) { const a = rnd() * 6.28, r = .45 + rnd() * .65, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
+    if (pathOk(x, y) && far(x, y, 110)) add(gp(['rubble', 'mossy_rock', 'fern', 'pillar'][rnd() * 4 | 0]), x | 0, y | 0); }
   // lotus on the pond, reeds round it
-  for (let i = 0; i < 14; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 200 * rnd(), y = LAKE.cy + Math.sin(a) * 100 * rnd(); if (lakeF(x, y) > .15) add(gp('lotus'), x | 0, y | 0); }
+  for (let i = 0; i < 10; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 200 * rnd(), y = LAKE.cy + Math.sin(a) * 100 * rnd(); if (lakeF(x, y) > .15) add(gp('lotus'), x | 0, y | 0); }
   // a hunters' camp in a clearing south-west of the road, a lookout tower by the creek
   { const [cx, cy] = MEADOWS[0]; put('campfire', cx, cy); put('tent', cx - 170, cy - 40); put('v_hut', cx + 220, cy - 60); put('log', cx + 40, cy + 110); put('jar_dragon', cx - 60, cy + 90); }
   { const y = WH * .3, x = riverX(y) + SWC[y | 0] + 140; put('v_watchtower', x, y); }
   { const [cx, cy] = MEADOWS[1]; put('v_pavilion', cx, cy); put('v_well', cx + 200, cy + 40); put('pots', cx - 150, cy + 60); }
   // the jungle: palms, bananas and rain trees close together, ferns, bushes and mushrooms under them, logs and stumps
-  for (const F of FORESTS) for (let tries = 0, k = 0; tries < 3000 && k < F.rx * F.ry / 11000; tries++) {
+  for (const F of FORESTS) for (let tries = 0, k = 0; tries < 3000 && k < F.rx * F.ry / 15000; tries++) {
     const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
-    if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 130) || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.1 || MEADOWS.some(([mx, my]) => Math.hypot(x - mx, y - my) < 300)) continue;
-    add(J(), x | 0, y | 0); k++; }
-  for (const F of FORESTS) for (let i = 0; i < 60; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 140) || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.1 || MEADOWS.some(([mx, my]) => Math.hypot(x - mx, y - my) < 300)) continue;
+    if (add(J(), x | 0, y | 0)) k++; }
+  for (const F of FORESTS) for (let i = 0; i < 25; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
     if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(['fern', 'fern', 'bush', 'mushrooms', 'log', 'stump', 'mossy_rock'][rnd() * 7 | 0]), x | 0, y | 0); }
   // between the groves: more palms and bushes, rocks, the odd dead tree
-  for (let k = 0, tries = 0; k < 110 && tries < 4000; tries++) { const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
+  for (let k = 0, tries = 0; k < 18 && tries < 4000; tries++) { const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);   // open ground stays open: groves are where the trees are
     if (!pathOk(x, y) || forestF(x, y) > -.05 || !far(x, y, 230) || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.2 || MEADOWS.some(([mx, my]) => Math.hypot(x - mx, y - my) < 260)) continue;
-    add(rnd() < .65 ? J() : gp(['bush', 'rocks', 'fern', 'dead_tree', 'boulder'][rnd() * 5 | 0]), x | 0, y | 0); k++; }
+    if (add(rnd() < .35 ? J() : gp(['bush', 'rocks', 'fern', 'dead_tree', 'boulder'][rnd() * 5 | 0]), x | 0, y | 0)) k++; }
 }
 // water blocks walking (the bridge deck is open): slide along the shore by undoing one axis, else stay
 function unwater(o, ox, oy) {
@@ -2294,7 +2318,7 @@ async function loadMobs() {
 function spawnWave() {
   const kinds = ROSTER[MSET].filter(k => MOBS[k]); if (!kinds.length) return spawnSlimes();
   G.wave++; const bk = BOSSK[MSET], boss = G.wave % 5 === 0 && MOBS[bk];
-  const n = boss ? 2 + (G.wave / 5 | 0) : Math.min(16, 3 + G.wave * 2), pool = kinds.slice(0, Math.min(kinds.length, 2 + (G.wave >> 1)));
+  const n = boss ? 3 + (G.wave / 5 | 0) : Math.min(24, 5 + G.wave * 3), pool = kinds.slice(0, Math.min(kinds.length, 3 + (G.wave >> 1)));   // owner: more monsters
   const far = Math.max(560, Math.min(VW, VH) * .55), list = boss ? [bk] : [];
   for (let i = 0; i < n; i++) list.push(pool[rnd() * pool.length | 0]);
   for (const k of list) { const T = MOBT[k]; let x, y, c = 0;
@@ -2304,12 +2328,44 @@ function spawnWave() {
     G.mobs.push({kind: k, spr: 1, x, y, r: T.r, hp, max: hp, st: 'walk', t: rnd(), cd: .8 + rnd() * 1.2, face: x < G.p.x ? 1 : -1, wt: rnd() * 3, af: 0, kx: 0, ky: 0, hit: 0, fr: 0, born: 0}); }
   G.banner = {t: 0, txt: boss ? 'บอส: ' + MOBT[bk].boss : 'ระลอก ' + G.wave};
 }
+// camps (owner 2026-11-09 "มอนก็ใส่มาให้เยอะกว่านี้"): ~12 groups of 3-5 monsters spread over the map, two kinds each; they
+// stand and mill about round their spot until she comes within CAMP.wake or hits one, then the whole group comes for her.
+// A wiped-out camp fills up again CAMP.back s later when she is far away. Waves only count monsters that are after her.
+const CAMP = {n: 12, wake: 330, gap: 700, back: 70};
+function spawnCamps() {
+  const kinds = ROSTER[MSET].filter(k => MOBS[k]); G.camps = []; if (!kinds.length) return;
+  const spots = [];
+  for (let tries = 0; tries < 5000 && spots.length < CAMP.n; tries++) {
+    const x = MARGIN.l + 220 + rnd() * (WW - MARGIN.l - MARGIN.r - 440), y = MARGIN.t + 220 + rnd() * (WH - MARGIN.t - MARGIN.b - 440);
+    if (Math.hypot(x - G.p.x, y - G.p.y) < 900 || spots.some(([a, b]) => Math.hypot(a - x, b - y) < CAMP.gap) || waterAt(x, y) || cityD(x, y) < 1.08
+      || Math.abs(y - GROUND_PATH(x)) < 120 || PROPS.some(q => !q.soft && Math.hypot(q.x - x, (q.y - y) * 1.6) < (q.rad || (q.rect ? q.rect.w / 2 : 0)) + 110)) continue;
+    spots.push([x, y]); }
+  spots.forEach(([x, y], i) => { const c = {x, y, kinds: [kinds[i % kinds.length], kinds[(i * 3 + 1) % kinds.length]], n: 3 + i % 3, wait: 0}; G.camps.push(c); fillCamp(c); });
+}
+function fillCamp(c) {
+  for (let j = 0; j < c.n; j++) { const k = c.kinds[j % 2], T = MOBT[k], a = j / c.n * 6.283, x = c.x + Math.cos(a) * 75, y = c.y + Math.sin(a) * 48;
+    if (!T.fly && waterAt(x, y)) continue;
+    const hp = Math.round(T.hp * (1 + G.wave * .06));
+    G.mobs.push({kind: k, spr: 1, x, y, r: T.r, hp, max: hp, st: 'walk', t: rnd() * 2, cd: 1 + rnd(), face: rnd() < .5 ? 1 : -1, wt: rnd() * 3, af: 0, kx: 0, ky: 0, hit: 0, fr: 0, born: 0, camp: c}); }
+}
+function stepCamps() {
+  for (const c of G.camps || []) {
+    if (G.mobs.some(m => m.camp === c && m.hp > 0)) continue;
+    if (!c.wait) c.wait = G.t + CAMP.back;
+    else if (G.t > c.wait && Math.hypot(G.p.x - c.x, G.p.y - c.y) > 1000) { c.wait = 0; fillCamp(c); } }
+}
 function stagger(m) { if (m.spr && MOBT[m.kind].stout) { m.flT = G.t; return; } m.t = 0; m.st = 'hurt'; }
 function stepMob2(m, dt, dx, dy, d) {
   const T = MOBT[m.kind], p = G.p, hid = p.stealth > G.t || p.state === 'dead', bl = m.blind > G.t;
   m.cd -= dt; m.moving = false;
   if (m.stun > G.t || m.frz > G.t) { if (m.st === 'atk') { m.st = 'walk'; m.af = 0; } return; }
   if (m.st === 'hurt') { if (m.t > .22) { m.st = 'walk'; m.t = 0; } return; }
+  if (m.camp && !m.aggro) {                              // a camp: mill about the spot until she comes near or hits one
+    if ((d < CAMP.wake && !hid) || m.hp < m.max) { for (const o of G.mobs) if (o.camp === m.camp) o.aggro = 1; }
+    else { if (!m.wan || m.t > 1.6) { const a = rnd() * 6.28; m.wan = rnd() < .45 ? [0, 0] : [Math.cos(a) * .3, Math.sin(a) * .3]; m.t = 0; }
+      const hx = m.camp.x - m.x, hy = m.camp.y - m.y, hd = Math.hypot(hx, hy); if (hd > 120) m.wan = [hx / hd * .35, hy / hd * .35];
+      if (m.wan[0] || m.wan[1]) { m.x += m.wan[0] * T.sp * dt; m.y += m.wan[1] * T.sp * dt; m.moving = true; m.wt += dt; if (Math.abs(m.wan[0]) > .05) m.face = m.wan[0] > 0 ? 1 : -1; }
+      return; } }
   if (m.st === 'atk') {
     const A = m.at, ft = [T.tell / 3, T.tell / 3, T.tell / 3, .1, .13, .13]; A.t += dt;
     while (m.st === 'atk' && A.t >= ft[m.af]) { A.t -= ft[m.af]; m.af++;
@@ -2481,7 +2537,8 @@ function stepMobs(dt) {
   const all = G.mobs.filter(m => m.hp > 0);
   for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) { const a = all[i], b = all[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy); const R2 = a.spr || b.spr ? (a.r + b.r) * .85 : 36; if (d > 0 && d < R2) { const k = (R2 - d) / 2 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; } }
   G.mobs = G.mobs.filter(m => m.hp > 0 || m.dieT < (m.spr ? 1.5 : .3));
-  if (!G.mobs.some(m => m.hp > 0)) { G.next -= dt; if (G.next <= 0) { G.next = 2; spawnWave(); } }
+  stepCamps();
+  if (!G.mobs.some(m => m.hp > 0 && (!m.camp || m.aggro))) { G.next -= dt; if (G.next <= 0) { G.next = 2; spawnWave(); } }
 }
 const TEST = new URLSearchParams(location.search).get('test');   // ?test=atk: screenshot helper, freezes on the second hit
 function testSetup() {
@@ -2932,7 +2989,7 @@ const ov = document.getElementById('ov');
   if (go) go.parentNode.insertBefore(pk, go); }
 function showOver() { ov.innerHTML = '<div><h1>แพ้แล้ว</h1><p>ถึงระลอก ' + G.wave + ' · ล้มมอน ' + G.kills + ' ตัว</p><button id="go">เล่นใหม่</button></div>'; ov.style.display = 'flex'; document.getElementById('go').onclick = start; }
 function start() {
-  ov.style.display = 'none'; newGame(); document.getElementById('bRoll').textContent = G.p.tele ? 'วาร์ป' : 'กลิ้ง'; for (let k = 1; k <= 6; k++) applySkLv(k, G.p.skl[k] || 1); buildHotbar();
+  ov.style.display = 'none'; newGame(); if (!TEST) spawnCamps(); document.getElementById('bRoll').textContent = G.p.tele ? 'วาร์ป' : 'กลิ้ง'; for (let k = 1; k <= 6; k++) applySkLv(k, G.p.skl[k] || 1); buildHotbar();
   if (TOUCH) { try { document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {}); } catch (e) {} }
 }
 let last = performance.now();
