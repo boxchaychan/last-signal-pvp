@@ -368,6 +368,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Berserker (class 2 of the swordsman) design kept** (owner 2026-11-09 "เอาแบบนี้เก็บไว้ก่อน"): GPT turnaround from my prompt
+  (black full plate, spiked pauldrons, horned helm with red eyes, torn red cape + tabard, chains, huge chipped greatsword with
+  red cracks on the right shoulder) → `art/incoming/action/berserker/turnaround_gpt.png` (1536x1024). The first prompt's
+  wolf-skull helm read like Guts (Berserk); this run has a horned helm instead. Before PixelLab: the middle view is a 3/4
+  view, not a true right profile, so the east view needs a redo or a fix; the owner has not given the PixelLab go.
 - **Thai town hub** (owner 2026-11-09 "ฉากเมือง ทำแค่เมือง ไม่ต้องมีมอน เอาไว้รับเควส ละก็วาร์ป ... ใช้กำแพงเป็นแมพเลย ไม่ต้องกว้างมาก"): `?map=town`
   (`TOWN`, TH ground + `thaiProps`, so the walled city of the Thai map is reused): she can only move inside the walls
   (`cityD` > .86 pushes her back except on the road at the gates), the camera stays on the city, no camps / waves
