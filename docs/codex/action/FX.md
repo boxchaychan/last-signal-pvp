@@ -13,7 +13,7 @@ Owner 2026-11-09. Reply to the owner in Thai, short and plain.
 ## Queue
 | # | key | status | thai | for |
 |---|-----|--------|------|-----|
-| 1 | fireball | todo | ลูกไฟ | mage Q |
+| 1 | fireball | done | ลูกไฟ | mage Q |
 | 2 | meteor | todo | อุกกาบาต | mage Z |
 | 3 | meteor_hit | todo | อุกกาบาตตก | mage Z |
 | 4 | frost_nova | todo | วงน้ำแข็ง | mage R |
