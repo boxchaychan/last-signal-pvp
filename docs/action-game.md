@@ -368,6 +368,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Norse: draugr moves in** (cloud session 2026-11-09): Codex's `codex/mobs-china` had draugr walk / attack / death
+  (rows 145-147, hurt not drawn yet); copied into `art/incoming/mobs/anim/` with its REPORT_TH lines, `mob_frames.py draugr`
+  → `art/action/mobs/draugr.png` (cell 90×84, anchor 50,81). The game picks it up from `index.json`; on `?set=norse` it is
+  the only Norse monster with a sheet until the others arrive. Check: `?test=mobs&set=norse&clear=1&ph=0|1|2`.
 - **Rogue Q and E in the black-purple tone** (owner "สกิล q e ทำให้เข้าโทนด้วย", "e ให้หมุน ละจังหวะสุดท้ายให้ลมสะบัดออก"):
   Q's dagger trail is black-edged purple with a violet glow, its landing and each hit play Dash Strike's hit flash from
   `pfx_dashstrike_v` (frames 13-24), puffs purple, the blink behind uses `pfx_step_v`. E's ring is `pfx_whirl_k` (the
