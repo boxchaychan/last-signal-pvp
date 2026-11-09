@@ -108,7 +108,7 @@ FX = [
     ('berserker', 'bz_shackle', 'Z ตรวนนรก', 'โซ่พุ่งจากพื้นเป็นวงรัดมอนไว้',
      'a ring of black chains bursting up from cracks in the ground, a glowing red rune circle on the ground (flat ellipse), the chains '
      'whip up, cross over the middle and pull tight, then hold there with red light pulsing along the links', 'ground', 'berserker', (6, 4), False),
-    ('berserker', 'bz_rage', 'X ร่างคลั่งโลหิต', 'ไม้ตาย 12 วิ ไอแดงนีออนรอบตัว (ภาพวนซ้ำ)',
+    ('berserker', 'bz_rage', 'X ร่างคลั่งโลหิต', 'ไม้ตาย 15 วิ ไอแดงนีออนรอบตัว (ภาพวนซ้ำ)',
      'a berserk aura: black smoke and neon red flame wisps rising round the character, glowing red cracks of light flickering in the air, '
      'red embers drifting upward, an occasional crimson pulse', 'self', 'berserker', (4, 4), True),
     ('berserker', 'bz_wave', 'X คลื่นฟัน (ตอนคลั่ง)', 'ระหว่างไม้ตาย ตีธรรมดาแต่ละครั้งปล่อยคลื่นฟันสั้น ๆ',

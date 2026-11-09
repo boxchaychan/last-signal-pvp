@@ -762,5 +762,5 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   (`tools/art/berserker_side_fix.py`: red X moved off the sword hand, shorter grip) → `side_v4_fix.png`. Effect prompts `bz_*` in
   `docs/fx-prompts.html` (tone black + neon red); `archer_fx.py --tone=red <key>` makes `fx/<key>_r.png` in that tone. Not in the game yet.
 - **Swordsman X rage changed** (owner 2026-11-09 "เอาลดดาเมจออก เปลี่ยนโจมตีแรง 20 ... ของเดิมไม่มีดูดเลือด ต้องเป็นเบอร์เซิร์กก่อน"): no lifesteal, no
-  damage reduction; faster swings + damage +2% per skill level (+20% at 10) (`SWS[6].atk`, in `heroDmg`). Lifesteal etc. come with the
+  damage reduction; faster swings + damage +2% per skill level (+20% at 10) (`SWS[6].atk`, in `heroDmg`); then 10 s, cooldown 60 s (Berserker awakened: 15 s, 60 s). Lifesteal etc. come with the
   Berserker's awakened rage (`docs/berserker.md`).
