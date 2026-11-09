@@ -1318,7 +1318,7 @@ const ARS = {
   1: {btn: 'รัว', cost: 16, cd: 6, range: 440, r: 80, n: 8, dmg: 7, fin: 22},   // owner 2026-11-09 "Rapier Flurry ... แทนท่า 1" (was the split arrow)
   2: {btn: 'สายฟ้า', cost: 22, cd: 9, range: 440, r: 90, dmg: 30},
   3: {btn: 'ง้าง', cost: 18, cd: 7, lv: .45, max: 2, dmg: [28, 46, 74]},
-  4: {btn: 'ถอย', cost: 16, cd: 6, d: 330, dmg: 30, r: 95},   // the parting shot is a bomb arrow (owner's "Bomb Arrow")
+  4: {btn: 'ถอย', cost: 16, cd: 6, d: 230, dmg: 30, r: 95},   // the parting shot is a bomb arrow (owner's "Bomb Arrow")
   5: {btn: 'หนาม', cost: 18, cd: 12, range: 420, r: 150, root: 2, dmg: 24, n: 3, life: 12},   // thorn vine trap (owner's vine sheet)
   6: {btn: 'ฝนดาว', cost: 24, cd: 22, range: 460, r: 150, dur: 8, dmg: 12},   // owner 2026-11-09 "6 ให้นักธนู": a star rain (code-drawn since "ไม่รุ่นแรงเลย", see starRain) + the old hawk eye
 };
@@ -2103,10 +2103,9 @@ function archerSk(p, k) {
     return playAct(p, ar, fr, 55, {}, {loopFrom: hold, t0: G.t, lv: 0, rel, tick: drawTick, canRoll: true}); }
   if (k === 4) {                                         // F leap back, a parting shot
     const [ax, ay] = archerAim(p, 500), l = Math.hypot(ax, ay) || 1, bx = -ax / l, by = -ay / l, d = dirOf(ax, ay), ar = animRow('roll', dirOf(bx, by)); if (!ar || !payFor(p, 4)) return false;
-    p.dir = d; p.inv = Math.max(p.inv, .45); let gone = 0;   // no dash dust here (owner: two dust effects, odd direction)
-    const T = ar.n * .05;   // one leap (owner "ให้มันมารอบเดียวแต่ยาวขึ้น"): she only travels while rolling (frames ~2-6), standing frames stay put
-    return playAct(p, ar, [...Array(ar.n).keys()], 50, {}, {canRoll: false, tick: (p2, dt) => { const k = gone / T, w = k > .18 && k < .74 ? 1 : 0, sp = S.d / (T * .56) * w; p2.x += bx * sp * dt; p2.y += by * sp * dt; gone += dt;
-      if (w && ((G.t * 40) | 0) % 2) G.ghosts.push({x: p2.x, y: p2.y, dir: dirOf(bx, by), t: 0, k: .5, life: .2}); },
+    p.dir = d; p.inv = Math.max(p.inv, .45); let gone = 0; dashDust(p.x, p.y, bx, by, .45);
+    return playAct(p, ar, [...Array(ar.n).keys()], 38, {}, {canRoll: false, tick: (p2, dt) => { const sp = S.d / (ar.n * .038); p2.x += bx * sp * dt; p2.y += by * sp * dt; gone += dt;
+      if (((G.t * 40) | 0) % 2) G.ghosts.push({x: p2.x, y: p2.y, dir: dirOf(bx, by), t: 0, k: .5, life: .2}); },
       end: p2 => { p2.dir = d; parts(p2.x, p2.y - 10, '#e8fbff', 8, {sp: 120, life: .4, floor: 8}); landDust(p2.x, p2.y, .8); const [ex, ey] = archerAim(p2, 600); bombArrow(p2, ex, ey, S); }}); }
   if (k === 5) {                                         // Z thorn vine: a seed shot into the ground, the vine lunges at whoever comes near
     const [tx, ty] = p.skT || skTarget(p, 5); p.skT = null; const d = faceDir('attack', tx - p.x, ty - p.y), ar = animRow('attack', d); if (!ar || !payFor(p, 5)) return false;
@@ -2189,20 +2188,18 @@ function drawSeeds() {                                  // the planted seeds: a 
 // over it and rains SF.n comets (white-hot head, green body, dark edge so they read on grass) for ~1.5 s; every 2nd one
 // is a damage tick on everything in the circle (S.dmg, 10 ticks as before) and lands on a monster in it; each landing:
 // flash, light pillar, rings, a burnt crater, sparks and dirt. Last a giant star: SF.fin x S.dmg, a big shockwave.
-const SF = {n: 20, t0: .28, gap: .075, fall: .24, fin: 2, sky: 190, sx: 40};
+const SF = {n: 20, t0: .28, gap: .075, fall: .24, fin: 2, sky: 190, sx: 40, fps: 18};
 function starRain(tx, ty, S) {
-  // owner 2026-11-09 "ทำไมเป็นแท่ง ในต้นแบบมันไม่ได้เป็นแบบนั้น": back to the original Starfall Barrage sheet, in the archer's black +
-  // neon (`pfx_starfall_c_k`, its haze left out): two copies over the circle (the second mirrored, started later), each from
-  // frame 28 so its streaks land from ~0.4 s; S.dmg ticks on everything in the circle while they land, at each tick a small
-  // landing burst on a monster in it; then a bigger copy in the middle and the closing blast (SF.fin x S.dmg)
-  const K = 'pfx_starfall_c_k', P = PFX[K] && PFX[K].m, L = P ? (P.n - 28) / P.fps : 1.6, end = .36 + L;
-  G.fx.push({k: 'sfz', x: tx, y: ty, r: S.r, t: 0, life: end + 1});
-  if (P) { pfx(K, tx - 50 + 35, ty - 25, {f0: 28, sc: 1.05, life: L}); G.later.push({t: .36, fn: () => pfx(K, tx + 50 - 35, ty + 25, {f0: 28, sc: 1.05, flip: 1, life: L})}); }
-  const inside = () => G.mobs.filter(m => m.hp > 0 && Math.hypot(m.x - tx, (m.y - ty) * 1.25) < S.r + m.r);
-  for (let i = 0; i < 10; i++) G.later.push({t: .42 + i * .13, fn: () => { const ms = inside(), m = ms[rnd() * ms.length | 0];
+  // the original Starfall Barrage sheet in the archer's black + neon (`pfx_starfall_c_k`). Owner 2026-11-09 "ทิศสกิลมันแปลก ...
+  // ให้มันมารอบเดียวแต่ยาวขึ้น": ONE copy (the mirrored second copy made the streaks fall two ways), played at SF.fps (slower
+  // than the sheet's 30) so the rain lasts longer; S.dmg ticks spread over the landing part, then the closing blast
+  const K = 'pfx_starfall_c_k', P = PFX[K] && PFX[K].m, L = P ? (P.n - 28) / SF.fps : 2.4, hit0 = P ? (36 - 28) / SF.fps : .4;
+  G.fx.push({k: 'sfz', x: tx, y: ty, r: S.r, t: 0, life: L + 1});
+  if (P) pfx(K, tx + 35 * 1.25, ty, {f0: 28, sc: 1.25, fps: SF.fps, life: L});
+  const inside = () => G.mobs.filter(m => m.hp > 0 && Math.hypot(m.x - tx, (m.y - ty) * 1.25) < S.r + m.r), gap = (L - hit0 - .3) / 10;
+  for (let i = 0; i < 10; i++) G.later.push({t: hit0 + i * gap, fn: () => { const ms = inside(), m = ms[rnd() * ms.length | 0];
     const lx = m ? m.x : tx + (rnd() - .5) * S.r, ly = m ? m.y : ty + (rnd() - .5) * S.r * .7; starLand(lx, ly, tx, ty, S, S.dmg, false); }});
-  G.later.push({t: end - .2, fn: () => { if (P) pfx(K, tx + 35 * 1.35, ty, {f0: 36, sc: 1.35, life: (P.n - 36) / P.fps}); }});
-  G.later.push({t: end + .1, fn: () => starLand(tx, ty, tx, ty, S, S.dmg * SF.fin, true)});
+  G.later.push({t: L - .1, fn: () => starLand(tx, ty, tx, ty, S, S.dmg * SF.fin, true)});
 }
 function starLand(lx, ly, tx, ty, S, dmg, big) {
   const k = big ? 1.9 : 1;
