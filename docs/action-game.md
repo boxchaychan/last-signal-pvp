@@ -299,6 +299,16 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Archer pass 2** (owner asleep: "สกิลนักธนูไม่สวย ปรับโดนให้สีเขียว ให้มีระบบออโต้ ตีธรรมดาให้ลูกตรง"): her tone is green now
+  (`ACY`, `HEX.leaf`/`RGB.leaf`); green copies of the effect sheets by `tools/art/fx_tint.py <src> <dst> <ramp> [pad glow gamma]`
+  (`pfx_skyarrow_g`, `pfx_starfall_g` from the haze-free `_c`, `pfx_dashstrike_g`); every arrow hit plays Dash Strike's hit
+  frames in green along the arrow, arrows bigger with a ring at the bow; split arrow = 5 arrows plunging straight out of the
+  sky onto the monsters; the charged beam flashes on each monster. Straight shots: `faceDir(name, dx, dy)` picks the
+  direction whose pose (`rowFacing`, follows aliases and mirrors) points closest to the target, so a down-right target no
+  longer shows the side pose; her real south-east attack + crit (4 gen) are queued after the priestess
+  (`art/incoming/action/archer/jobs_se.json`, log `queue_se.log`; rebuild her sheets with hero_build.sh and drop the
+  south-east / south-west aliases for attack + crit when they land). Auto attack for every hero: button ออโต้ (T),
+  saved in `act.auto`; while standing still it attacks whenever a monster is within `AUTOR[HERO]`.
 - **Rogue Q and E in the black-purple tone** (owner "สกิล q e ทำให้เข้าโทนด้วย", "e ให้หมุน ละจังหวะสุดท้ายให้ลมสะบัดออก"):
   Q's dagger trail is black-edged purple with a violet glow, its landing and each hit play Dash Strike's hit flash from
   `pfx_dashstrike_v` (frames 13-24), puffs purple, the blink behind uses `pfx_step_v`. E's ring is `pfx_whirl_k` (the

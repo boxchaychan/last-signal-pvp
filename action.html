@@ -52,6 +52,8 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 .hs.on5,.hs.on6{border-color:#ffe066;box-shadow:0 0 8px #ffe066} .hs.rdy{border-color:#bfefff}
 .hs .tip{display:none;position:absolute;bottom:60px;left:50%;transform:translateX(-50%);width:200px;padding:6px 8px;background:var(--panel);border:2px solid var(--ink);font-size:12px;line-height:1.4;pointer-events:none}
 #bookBtn{position:fixed;font:inherit;font-size:13px;font-weight:800;padding:4px 10px;border:3px solid var(--ink);background:#f0ece0;color:var(--ink);box-shadow:0 3px 0 #8c8678;left:max(10px,env(safe-area-inset-left));top:104px;z-index:5}
+#autoBtn{position:fixed;font:inherit;font-size:13px;font-weight:800;padding:4px 10px;border:3px solid var(--ink);background:#f0ece0;color:var(--ink);box-shadow:0 3px 0 #8c8678;left:calc(max(10px,env(safe-area-inset-left)) + 74px);top:104px;z-index:5}
+#autoBtn.on{background:#9cf27a;box-shadow:0 3px 0 #1e6a24}
 #bookBtn em{display:none;margin-left:4px;padding:0 5px;background:#e04848;color:#fff;font-style:normal;border-radius:8px} #bookBtn.pts em{display:inline} #bookBtn.pts{animation:skp .5s infinite alternate}
 #book{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,14,10,.55);z-index:20}
 #book>div{background:var(--panel);border:3px solid var(--ink);padding:12px 16px;width:min(560px,94vw);max-height:88vh;overflow:auto}
@@ -76,7 +78,7 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 <canvas id="cv"></canvas>
 <div id="hud"><div class="bar" id="hpb"><i></i></div><div class="bar" id="stb"><i></i></div><div id="xpb"><b>Lv 1</b><span><i></i></span></div><div id="pas"><i></i><i></i><i></i><i></i><span>จังหวะสังหาร</span></div></div>
 <div id="score"></div>
-<div id="hotbar"></div><button id="bookBtn">สกิล<em></em></button><div id="book"></div>
+<div id="hotbar"></div><button id="bookBtn">สกิล<em></em></button><button id="autoBtn">ออโต้</button><div id="book"></div>
 <div id="skpc"><div class="sq" id="q1"><span>Q</span><b></b></div><div class="sq" id="q2"><span>E</span><b></b></div><div class="sq" id="q3"><span>R</span><b></b></div><div class="sq" id="q4"><span>F</span><b></b></div><div class="sq" id="q5"><span>Z</span><b></b></div><div class="sq" id="q6"><span>X</span><b></b></div></div>
 <div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ · Q ปามีด (กดค้างเล็ง โดนแล้วกดอีกที = วาร์ป) · E หมุนตัวฟัน · R ปาระเบิดควันตาบอด · Z ล่องหน · X มีดพิษ · F พุ่งฟัน 6 ครั้ง · ติดตัว: ตีโดนครั้งที่ 4 คริ ×2, ฆ่าได้คืนสตามินา</div>
 <div id="btns"><div class="bt sk" id="bSk1"><span>ปา</span><b></b></div><div class="bt sk" id="bSk2"><span>หมุน</span><b></b></div><div class="bt sk" id="bSk3"><span>ระเบิด</span><b></b></div><div class="bt sk" id="bSk4"><span>พุ่ง</span><b></b></div><div class="bt sk" id="bSk5"><span>ล่องหน</span><b></b></div><div class="bt sk" id="bSk6"><span>พิษ</span><b></b></div><div class="bt small" id="bRoll">กลิ้ง</div><div class="bt" id="bAtk">ตี</div></div>
@@ -928,7 +930,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_skyarrow_g', 'pfx_starfall_g', 'pfx_dashstrike_g', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1033,7 +1035,7 @@ function animRow(name, dir) {
 
 // ---------- input ----------
 const keys = {}, stick = {id: null, ox: 0, oy: 0, x: 0, y: 0, on: false}, mouse = {x: 0, y: 0, used: false};
-addEventListener('keydown', e => { if (e.code === 'KeyB' && !e.repeat) { openBook(!(G && G.paused)); return; } if (e.code === 'Escape' && G && G.paused) { openBook(false); return; } if (G && G.paused) return; keys[e.code] = true; if (e.code === 'KeyJ') wantAtk(); if (e.code === 'Space' || e.code === 'KeyK') { wantRoll(); e.preventDefault(); }
+addEventListener('keydown', e => { if (e.code === 'KeyB' && !e.repeat) { openBook(!(G && G.paused)); return; } if (e.code === 'KeyT' && !e.repeat && typeof setAuto === 'function') { setAuto(!AUTO.on); return; } if (e.code === 'Escape' && G && G.paused) { openBook(false); return; } if (G && G.paused) return; keys[e.code] = true; if (e.code === 'KeyJ') wantAtk(); if (e.code === 'Space' || e.code === 'KeyK') { wantRoll(); e.preventDefault(); }
   const k = SKEY[e.code]; if (k && !e.repeat) aimStart('key', null, k); });
 addEventListener('keyup', e => { keys[e.code] = false; const k = SKEY[e.code]; if (k && HOLD.k === k) HOLD.on = false; if (k && AIM.src === 'key' && AIM.k === k) aimEnd(); });
 const SKEY = {KeyQ: 1, Digit1: 1, KeyE: 2, Digit2: 2, KeyR: 3, Digit3: 3, KeyF: 4, Digit4: 4, KeyZ: 5, Digit5: 5, KeyX: 6, Digit6: 6};
@@ -1089,7 +1091,7 @@ function wantSk1() { wantSk(1); }
 // ---------- rules ----------
 function startAtk(p) {
   if (p.st < 1) { noStamina(); return false; }
-  const d = aimDir(), plan = atkPlan(d, HERO === 'archer' && archerCrit(p) ? 'crit' : 'attack'); if (!plan) return false;
+  const cr = HERO === 'archer' && archerCrit(p), d = HERO === 'archer' ? faceDir(cr ? 'crit' : 'attack', ...aimVec()) : aimDir(), plan = atkPlan(d, cr ? 'crit' : 'attack'); if (!plan) return false;
   unstealth(p); p.st = Math.max(0, p.st - ATK.cost); p.stT = .6;
   p.dir = d; p.state = 'atk'; p.a = {i: 0, t: 0, done: {}, plan}; return true;
 }
@@ -1476,7 +1478,7 @@ const SKDESC = {rogue: ['ปามีดใส่จุดที่เล็ง 
 const PASDESC = {archer: 'ติดตัว: ล่าเหยื่อ ยิงไกลยิ่งแรง (สูงสุด +50%) มอนไกลกว่า 420 โดนคริทุกดอก', rogue: 'ติดตัว: ตีโดนครั้งที่ 4 คริ x2 · ฆ่าได้คืนแรง', swordsman: 'ติดตัว: เกราะหิน ตีโดนได้โล่ หินหมุนรอบตัว รับดาเมจน้อยลง 15%', mage: 'ติดตัว: ธาตุประสาน ไฟ+น้ำแข็ง / น้ำแข็ง+สายฟ้า / สายฟ้า+ไฟ'};
 const SKICON = {rogue: [['nslash', .4], ['pfx_whirl', .3], ['pfx_smoke', .3], ['zstreak0', .3], ['vanish', .3], ['pburst', .3]],
   swordsman: [['ccrack0', .7], ['pfx_whirl', .3], ['dashcharge', .5], ['cslam', .2], ['parry', .3], ['crage', .3]],
-  archer: [['zstar', .3], ['pfx_skyarrow', .35], ['critx_ice', .3], ['pfx_wind', .3], ['croots', .5], ['pfx_starfall_c', .55]],
+  archer: [['zstar', .3], ['pfx_skyarrow_g', .35], ['critx_ice', .3], ['pfx_wind', .3], ['croots', .5], ['pfx_starfall_g', .55]],
   mage: [['cfire0', .3], ['pfx_orb', .3], ['cnova', .5], ['cblink', .4], ['cmeteor', .3], ['cshield', .3]]};
 // level cap 50: the 2nd class comes at level 50 (owner 2026-11-09, not built yet)
 const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 50, SKUPD = .1, SKUPC = .04;
@@ -1564,6 +1566,12 @@ function renderBook() {
 }
 const xpB = document.querySelector('#xpb>b'), xpI = document.querySelector('#xpb i'), bookBtn = document.getElementById('bookBtn'), bookPts = document.querySelector('#bookBtn em');
 bookBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); openBook(!G || !G.paused); });
+const AUTO = {on: false}; try { AUTO.on = localStorage.getItem('act.auto') === '1'; } catch (e) {}
+const autoBtn = document.getElementById('autoBtn');
+function setAuto(v) { AUTO.on = v; autoBtn.classList.toggle('on', v); autoBtn.textContent = v ? 'ออโต้ ✓' : 'ออโต้'; try { localStorage.setItem('act.auto', v ? '1' : '0'); } catch (e) {} }
+setAuto(AUTO.on); autoBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setAuto(!AUTO.on); });
+const AUTOR = {archer: 470, mage: 440, priest: 380, swordsman: 110, rogue: 95};   // how close a monster must be
+function autoTarget(p) { const R = AUTOR[HERO] || 110; for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.2) < R + (m.r || 0)) return m; return null; }
 document.getElementById('book').addEventListener('pointerdown', e => { if (e.target.id === 'book') openBook(false); });
 
 // ---------- living effects (owner 2026-11-09, a clip of a pixel action game: "การแพรี่ การฟัน สกิล มันเหมือนมีชีวิต",
@@ -1571,8 +1579,8 @@ document.getElementById('book').addEventListener('pointerdown', e => { if (e.tar
 // tie them to the body: light gathers at the weapon before a release, the hero glows in the skill's colour with sparks
 // crawling on the body, shards / embers / speed lines fly out with gravity, monsters light up in the colour that hit them,
 // the parry is a ring round the body that shatters, chain lightning also runs along the ground
-const RGB = {fire: [255, 140, 40], ice: [120, 210, 255], shock: [200, 150, 255], gold: [255, 210, 80], teal: [90, 230, 255], white: [255, 255, 255], red: [255, 60, 80], violet: [190, 90, 255]};
-const HEX = {fire: '#ffb040', ice: '#bff0ff', shock: '#e0c8ff', gold: '#ffe066', teal: '#9ff4ff', white: '#ffffff', red: '#ff6070', violet: '#d8a8ff'};
+const RGB = {leaf: [110, 230, 80], fire: [255, 140, 40], ice: [120, 210, 255], shock: [200, 150, 255], gold: [255, 210, 80], teal: [90, 230, 255], white: [255, 255, 255], red: [255, 60, 80], violet: [190, 90, 255]};
+const HEX = {leaf: '#a8f070', fire: '#ffb040', ice: '#bff0ff', shock: '#e0c8ff', gold: '#ffe066', teal: '#9ff4ff', white: '#ffffff', red: '#ff6070', violet: '#d8a8ff'};
 function glowOf(c) { const k = 'glowE' + c; if (!FXS[k]) FXS[k] = glowSprite(RGB[c]); return FXS[k]; }
 function weaponTip(p, up) {                              // where the energy gathers: the staff's crystal / the blade
   const dx = DV[p.dir][0], dy = DV[p.dir][1];
@@ -1667,6 +1675,27 @@ function playAct(p, ar, fr, ms, ev = {}, opt = {}) {
   return true;
 }
 function endAct(p, silent) { const q = p.ac; p.ac = null; if (p.state === 'act') p.state = 'idle'; if (q && q.end && !silent) q.end(p); }
+// the screen angle the pose shown for direction d really faces (a direction without its own row borrows another, maybe
+// mirrored), and the direction whose pose points closest to (dx, dy)
+function rowFacing(name, d) {
+  const A = META.anims[name]; if (!A) return d * 45;
+  let v = A[DIRS[d]], src = d, fl = false;
+  if (!v) { const m = (12 - d) % 8; if (!A[DIRS[m]]) return d * 45; v = A[DIRS[m]]; src = m; fl = true; }
+  if (v.alias) { src = DIRS.indexOf(v.alias); fl = fl !== !!v.flip; }
+  const a = fl ? 180 - src * 45 : src * 45; return ((a % 360) + 360) % 360;
+}
+function faceDir(name, dx, dy) {
+  const t = Math.atan2(dy, dx) * 180 / Math.PI, df = a => Math.abs(((a - t) % 360 + 540) % 360 - 180); let best = 0, bd = 1e9;
+  for (let d = 0; d < 8; d++) { const e = df(rowFacing(name, d)) + df(d * 45) * .01; if (e < bd) { bd = e; best = d; } }
+  return best;
+}
+function aimVec() {                // like aimDir, as a vector
+  const p = G.p;
+  if (!TOUCH && p.bufMouse) { const wx = mouse.x * DPR / S + cam.x, wy = mouse.y * DPR / S + cam.y; return [wx - p.x, wy - (p.y - 50)]; }
+  let best = null, bd = HERO === 'mage' || HERO === 'archer' || HERO === 'priest' ? 520 : 260; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
+  if (best) return [best.x - p.x, best.y - p.y];
+  const [mx, my] = moveInput(); return (mx || my) ? [mx, my] : DV[p.dir];
+}
 function nearestMob(p, R, cone) {
   let best = null, bd = R;
   for (const m of G.mobs) { if (m.hp <= 0) continue; const dx = m.x - p.x, dy = m.y - p.y, d = Math.hypot(dx, dy);
@@ -1892,30 +1921,33 @@ function react(m, a, b) {
 // spot, a star flash and ring, five arrows burst out and drop onto the monsters round it, each landing flashes, sparks, rings
 // and leaves a glow on the ground), E thunder javelin from the sky (ParticleFX sheet), R charged shot (hold to draw, a long
 // piercing beam "ชาร์จง้าง ดูยิงรุนแรงไกล"), F leap back + a parting shot, Z vine arrow (roots), X hawk eye (faster, more crits)
-const ACY = {core: '#ffffff', mid: '#7ff8ff', edge: '#1fb8d8', dark: '#0a4a66', rgb: [90, 230, 255]};
+const ACY = {core: '#f4ffd8', mid: '#86f24e', edge: '#1fa83a', dark: '#0a4418', rgb: [110, 230, 80], crit: '#e2ff4a'};   // green (owner "ปรับโดนให้สีเขียว"), was cyan
 function archerAim(p, R = 640) { const m = nearestMob(p, R, .2); return m ? [m.x - p.x, m.y - p.y, m] : [DV[p.dir][0], DV[p.dir][1], null]; }
 function arrow(p, vx, vy, o = {}) {           // one arrow from her hands
   const l = Math.hypot(vx, vy) || 1, sp = o.sp || 980, sx = p.x + vx / l * 20, sy = p.y + vy / l * 12;   // at the bow (owner "ลูกธนูไม่ตรง")
   G.pshots.push({k: 'arrow', x: sx, y: sy, ox: sx, oy: sy, h: 46, vx: vx / l * sp, vy: vy / l * sp, t: 0, life: (o.range || 680) / sp, dmg: o.dmg || 16,
-    crit: !!o.crit, pierce: o.pierce || 0, hit: [], w: o.w || (o.crit ? 3 : 2), len: o.len || (o.crit ? 64 : 34), root: o.root});
+    crit: !!o.crit, pierce: o.pierce || 0, hit: [], w: o.w || (o.crit ? 4 : 3), len: o.len || (o.crit ? 84 : 48), root: o.root});
 }
 function archerShot(p, dmg, crit) {
   const [dx, dy] = archerAim(p); arrow(p, dx, dy, {dmg, crit, pierce: crit ? 2 : 0, sp: crit ? 1400 : 980, range: crit ? 900 : 680});
-  const [tx, ty] = weaponTip(p); parts(tx, ty, crit ? 'gold' : ACY.mid, crit ? 12 : 5, {k: 'ln', dir: Math.atan2(dy, dx), spread: .7, sp: crit ? 520 : 320, life: .16});
-  if (crit) { G.kick = {x: -dx / (Math.hypot(dx, dy) || 1) * 6, y: -dy / (Math.hypot(dx, dy) || 1) * 6, t: .12}; G.shake = Math.max(G.shake, 4); heroGlow(p, 'gold', .3); }
+  const l0 = Math.hypot(dx, dy) || 1, bx = p.x + dx / l0 * 20, by = p.y + dy / l0 * 12 - 46;   // the bow
+  parts(bx, by, crit ? ACY.crit : ACY.mid, crit ? 12 : 6, {k: 'ln', dir: Math.atan2(dy, dx), spread: .6, sp: crit ? 560 : 340, life: .16});
+  G.fx.push({k: 'ring', x: bx, y: by + 46, r0: 4, r1: crit ? 30 : 18, t: 0, life: .16, c: crit ? ACY.crit : ACY.mid});
+  if (crit) { G.kick = {x: -dx / l0 * 6, y: -dy / l0 * 6, t: .12}; G.shake = Math.max(G.shake, 4); heroGlow(p, 'leaf', .3); }
 }
 function archerHit(s, m) {                    // passive: further = harder, beyond 420 always a crit
   const p = G.p, d = Math.hypot(m.x - s.ox, m.y - s.oy), far = d > ARC.far;
   let dmg = s.dmg * (1 + Math.min(.5, d / 840)); if (s.crit || far) { dmg *= 2; p.forceCrit = G.t; }
   hitMob(m, Math.round(dmg), s.x - s.vx * .03, s.y - s.vy * .03, s.crit ? 70 : 24, ACY.mid, s.crit, true);
   G.hs = Math.max(G.hs, s.crit || far ? .07 : .035); G.shake = Math.max(G.shake, s.crit || far ? 4 : 2);   // the thud (pixelfx arrow-shot: stop .07, shake)
-  parts(m.x, m.y - 24, s.crit || far ? 'gold' : ACY.mid, s.crit ? 10 : 5, {k: 'ln', sp: 300, life: .18});
+  parts(m.x, m.y - 24, s.crit || far ? ACY.crit : ACY.mid, s.crit ? 10 : 5, {k: 'ln', sp: 300, life: .18});
+  pfx('pfx_dashstrike_g', m.x, m.y - 26, {f0: 13, fn: 22, fps: 30, rot: Math.atan2(s.vy, s.vx), sc: s.crit || far ? 1 : .7, life: 9 / 30});   // a green strike flash along the arrow
   if (s.root) { m.stun = G.t + ARS[5].root; m.rootT = G.t + ARS[5].root; pfx('croots', m.x, m.y + 4, {sc: .7}); }
 }
 function archerSk(p, k) {
   const S = ARS[k];
   if (k === 1) {                                         // Q split arrow
-    const [tx, ty] = p.skT || skTarget(p, 1); p.skT = null; const d = dirOf(tx - p.x, ty - p.y), ar = animRow('attack', d); if (!ar || !payFor(p, 1)) return false;
+    const [tx, ty] = p.skT || skTarget(p, 1); p.skT = null; const d = faceDir('attack', tx - p.x, ty - p.y), ar = animRow('attack', d); if (!ar || !payFor(p, 1)) return false;
     p.dir = d; return playShot(p, ar, () => { const l = Math.hypot(tx - p.x, ty - p.y) || 1, sx = p.x + (tx - p.x) / l * 22, sy = p.y + (ty - p.y) / l * 10;
       G.pshots.push({k: 'lead', x: sx, y: sy, h: 40, tx, ty, vx: (tx - sx) / l * 900, vy: (ty - sy) / l * 900, t: 0, life: Math.max(.08, Math.hypot(tx - sx, ty - sy) / 900)}); }); }
   if (k === 2) {                                         // E thunder javelin from the sky
@@ -1924,7 +1956,7 @@ function archerSk(p, k) {
     return playShot(p, ar, () => { parts(p.x, p.y - 70, ACY.mid, 8, {k: 'ln', dir: -Math.PI / 2, spread: .3, sp: 520, life: .2});
       for (let i = 0; i < n; i++) { const a = i * 2.4, r = i ? 70 : 0, x = tx + Math.cos(a) * r, y = ty + Math.sin(a) * r * .55; G.later.push({t: .25 + i * .18, fn: () => javelin(x, y)}); } }); }
   if (k === 3) {                                         // R charged shot: hold to draw
-    const d = aimDir(), ar = animRow('crit', d) || animRow('attack', d); if (!ar || !payFor(p, 3)) return false;
+    const d = faceDir('crit', ...aimVec()), ar = animRow('crit', d) || animRow('attack', d); if (!ar || !payFor(p, 3)) return false;
     p.dir = d; const rel = (ar.hits && ar.hits[0]) || 10, hold = Math.max(2, rel - 2), fr = [...Array(hold + 1).keys()];
     return playAct(p, ar, fr, 55, {}, {loopFrom: hold, t0: G.t, lv: 0, rel, tick: drawTick, canRoll: true}); }
   if (k === 4) {                                         // F leap back, a parting shot
@@ -1934,14 +1966,14 @@ function archerSk(p, k) {
       if (((G.t * 40) | 0) % 2) G.ghosts.push({x: p2.x, y: p2.y, dir: dirOf(bx, by), t: 0, k: .5, life: .2}); },
       end: p2 => { p2.dir = d; parts(p2.x, p2.y - 10, '#e8fbff', 8, {sp: 120, life: .4, floor: 8}); const [ex, ey] = archerAim(p2, 600); arrow(p2, ex, ey, {dmg: S.dmg, pierce: 1}); }}); }
   if (k === 5) {                                         // Z vine arrow: roots everything round the landing spot
-    const [tx, ty] = p.skT || skTarget(p, 5); p.skT = null; const d = dirOf(tx - p.x, ty - p.y), ar = animRow('attack', d); if (!ar || !payFor(p, 5)) return false;
+    const [tx, ty] = p.skT || skTarget(p, 5); p.skT = null; const d = faceDir('attack', tx - p.x, ty - p.y), ar = animRow('attack', d); if (!ar || !payFor(p, 5)) return false;
     p.dir = d; return playShot(p, ar, () => { const l = Math.hypot(tx - p.x, ty - p.y) || 1;
       G.pshots.push({k: 'lead', vine: 1, x: p.x, y: p.y, h: 40, tx, ty, vx: (tx - p.x) / l * 900, vy: (ty - p.y) / l * 900, t: 0, life: Math.max(.08, l / 900)}); }); }
   if (k === 6) {                                         // X star rain: she shoots up, stars rain on the spot for ~1.4 s, hawk eye for 8 s
     const [tx, ty] = p.skT || skTarget(p, 6); p.skT = null; const d = dirOf(tx - p.x, ty - p.y), ar = animRow('attack', 6) || animRow('attack', d); if (!ar || !payFor(p, 6)) return false;
     p.dir = d; return playShot(p, ar, () => { parts(p.x, p.y - 70, ACY.mid, 12, {k: 'ln', dir: -Math.PI / 2, spread: .25, sp: 620, life: .22});
-      p.hawk = G.t + S.dur; heroGlow(p, 'gold', .5); tag(p.x, p.y - 96, 'ฝนดาว!', '#9ff8ff');
-      G.later.push({t: .12, fn: () => { if (!pfx('pfx_starfall_c', tx, ty + 8)) pfx('pfx_skyarrow', tx, ty + 4); }});
+      p.hawk = G.t + S.dur; heroGlow(p, 'leaf', .5); tag(p.x, p.y - 96, 'ฝนดาว!', ACY.mid);
+      G.later.push({t: .12, fn: () => { if (!pfx('pfx_starfall_g', tx, ty + 8) && !pfx('pfx_starfall_c', tx, ty + 8)) pfx('pfx_skyarrow', tx, ty + 4); }});
       for (let i = 0; i < 10; i++) G.later.push({t: .12 + 1.3 + i * .14, fn: () => {   // the streaks land from ~1.3 s on
         const a = rnd() * 6.283, r = rnd() * S.r * .8, lx = tx + Math.cos(a) * r, ly = ty + Math.sin(a) * r * .5;
         for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - tx, (m.y - ty) * 1.25) < S.r + m.r) hitMob(m, S.dmg, lx, ly - 20, 14, ACY.mid, false, true);
@@ -1951,24 +1983,24 @@ function archerSk(p, k) {
 }
 function playShot(p, ar, fn) {                // the attack row up to the release, the rest as follow-through
   const rel = (ar.hits && ar.hits[0]) || 10, fr = [...Array(ar.n).keys()].filter(f => f >= Math.max(0, rel - 6));
-  const ri = fr.indexOf(rel); return playAct(p, ar, fr, fr.map((f, i) => i === ri ? 90 : i < ri ? 42 : 46), {[ri]: p2 => { releaseAt(p2, 'ice', false, false); fn(p2); }}, {wind: {i: ri, c: 'ice'}});
+  const ri = fr.indexOf(rel); return playAct(p, ar, fr, fr.map((f, i) => i === ri ? 90 : i < ri ? 42 : 46), {[ri]: p2 => { releaseAt(p2, 'leaf', false, false); fn(p2); }}, {wind: {i: ri, c: 'leaf'}});
 }
 function drawTick(p, dt, q) {                 // the charged shot: three levels while she holds the string
   const S = ARS[3], lv = Math.min(3, 1 + Math.floor((G.t - q.t0) / S.lv));
-  if (lv > q.lv) { q.lv = lv; if (lv > 1) { G.shake = Math.max(G.shake, lv); tag(p.x, p.y - 96, 'ง้าง ' + lv, lv === 3 ? '#ffe066' : '#c8f8ff'); } }
+  if (lv > q.lv) { q.lv = lv; if (lv > 1) { G.shake = Math.max(G.shake, lv); tag(p.x, p.y - 96, 'ง้าง ' + lv, lv === 3 ? ACY.crit : ACY.mid); } }
   const [tx, ty] = weaponTip(p); if (((G.t * 40) | 0) % 2) { const a = rnd() * 6.283, r = 26 + rnd() * 16;
-    G.fx.push({k: 'pt', pk: 'ln', x: tx + Math.cos(a) * r, y: ty + Math.sin(a) * r, vx2: -Math.cos(a) * r * 8, vy2: -Math.sin(a) * r * 8, z0: 0, t: 0, life: .12, c: lv === 3 ? '#ffe066' : ACY.mid, w: 1}); }
+    G.fx.push({k: 'pt', pk: 'ln', x: tx + Math.cos(a) * r, y: ty + Math.sin(a) * r, vx2: -Math.cos(a) * r * 8, vy2: -Math.sin(a) * r * 8, z0: 0, t: 0, life: .12, c: lv === 3 ? ACY.crit : ACY.mid, w: 1}); }
   if ((!holding(3) && G.t - q.t0 > .2) || G.t - q.t0 > S.max) {
     const ar = q.ar, rel = q.rel, lvl = q.lv; endAct(p, true);
     const fr = []; for (let f = rel - 1; f < ar.n; f++) fr.push(f);
-    playAct(p, ar, fr, fr.map((f, i) => i === 1 ? 110 : 44), {1: p2 => { const [dx, dy] = archerAim(p2, 900);
+    playAct(p, ar, fr, fr.map((f, i) => i === 1 ? 110 : 44), {1: p2 => { const fa = rowFacing('crit', p2.dir) * Math.PI / 180, m0 = nearestMob(p2, 900), [dx, dy] = m0 && Math.abs(((Math.atan2(m0.y - p2.y, m0.x - p2.x) - fa) % 6.283 + 9.425) % 6.283 - 3.1416) < .5 ? [m0.x - p2.x, m0.y - p2.y] : [Math.cos(fa), Math.sin(fa)];
       G.pshots.push({k: 'beam', x: p2.x, y: p2.y, ox: p2.x, oy: p2.y, h: 40, vx: dx, vy: dy, t: 0, life: .45, dmg: S.dmg[lvl - 1], lv: lvl, len: 300 + lvl * 220, hit: []});
       G.kick = {x: -DV[p2.dir][0] * (4 + lvl * 3), y: -DV[p2.dir][1] * (4 + lvl * 3), t: .16}; G.shake = Math.max(G.shake, 3 + lvl * 2); G.hs = Math.max(G.hs, .03 + lvl * .02);
-      heroGlow(p2, lvl === 3 ? 'gold' : 'ice', .4); const [tx2, ty2] = weaponTip(p2); parts(tx2, ty2, ACY.mid, 10 + lvl * 6, {k: 'ln', sp: 600, life: .2}); }});
+      heroGlow(p2, 'leaf', .4); const [tx2, ty2] = weaponTip(p2); parts(tx2, ty2, ACY.mid, 10 + lvl * 6, {k: 'ln', sp: 600, life: .2}); }});
   }
 }
-function javelin(x, y) {                       // ParticleFX's thunder javelin: it lands about 0.43 s in
-  pfx('pfx_skyarrow', x, y + 4); G.later.push({t: .43, fn: () => { const S = ARS[2];
+function javelin(x, y) {                       // ParticleFX's thunder javelin (green copy): it lands about 0.43 s in
+  if (!pfx('pfx_skyarrow_g', x, y + 4)) pfx('pfx_skyarrow', x, y + 4); G.later.push({t: .43, fn: () => { const S = ARS[2];
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - x, (m.y - y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, x, y, 60, ACY.mid, true, true); m.stun = Math.max(m.stun || 0, G.t + .5); }
     G.fx.push({k: 'ring', x, y, r0: 10, r1: S.r, t: 0, life: .3, c: ACY.mid}); parts(x, y - 10, ACY.mid, 14, {k: 'ln', sp: 420, life: .22});
     G.shake = Math.max(G.shake, 6); G.hs = Math.max(G.hs, .05); }});
@@ -1981,12 +2013,14 @@ function splitAt(x, y, vine) {                 // the lead arrow arrives: a star
     G.fx.push({k: 'ring', x, y, r0: 10, r1: R.r, t: 0, life: .35, c: '#9cf27a'}); return; }
   const near = G.mobs.filter(m => m.hp > 0 && Math.hypot(m.x - x, m.y - y) < S.r).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y)).slice(0, S.n);
   const spots = near.map(m => [m.x, m.y]); while (spots.length < S.n) { const a = spots.length / S.n * 6.283 + rnd() * .5, r = 50 + rnd() * 80; spots.push([x + Math.cos(a) * r, y + Math.sin(a) * r * .6]); }
-  spots.forEach(([lx, ly], i) => G.pshots.push({k: 'drop', x, y, sx: x, sy: y, lx, ly, h: 40, t: -i * .035, life: .3, vx: lx - x, vy: ly - y}));
+  spots.forEach(([lx, ly], i) => G.pshots.push({k: 'drop', x, y, sx: x, sy: y, lx, ly, h: 40, t: -.12 - i * .06, life: .22, vx: lx - x, vy: ly - y}));
+  pfx('pfx_dashstrike_g', x, y - 40, {f0: 13, fn: 24, sc: 1.2, rot: -Math.PI / 2, life: 11 / 30});
 }
 function dropLand(s) {
   const S = ARS[1], x = s.lx, y = s.ly;
   for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - x, (m.y - y) * 1.25) < 30 + m.r) hitMob(m, S.dmg, x, y - 20, 30, ACY.mid, false, true);
-  G.fx.push({k: 'burst', x, y: y - 6, t: 0, life: .16, big: false}); G.fx.push({k: 'ring', x, y, r0: 4, r1: 30, t: 0, life: .25, c: ACY.mid});
+  G.fx.push({k: 'burst', x, y: y - 6, t: 0, life: .16, big: false}); G.fx.push({k: 'ring', x, y, r0: 4, r1: 34, t: 0, life: .25, c: ACY.mid});
+  pfx('pfx_dashstrike_g', x, y - 16, {f0: 13, fn: 24, rot: Math.PI / 2 - .17, sc: .9, life: 11 / 30}); G.shake = Math.max(G.shake, 3);
   G.fx.push({k: 'gmark', x, y, t: 0, life: 1.1}); parts(x, y - 6, ACY.mid, 6, {sp: 160, lift: 80, life: .4, floor: 6}); parts(x, y - 6, '#ffffff', 3, {k: 'ln', sp: 260, life: .15});
 }
 function stepArcher(s, dt) {                   // returns true when it handled the shot
@@ -1996,7 +2030,7 @@ function stepArcher(s, dt) {                   // returns true when it handled t
     if (s.t >= s.life) s.done = 1; return true; }
   if (s.k === 'beam') { s.t += dt; const l = Math.hypot(s.vx, s.vy) || 1, ux = s.vx / l, uy = s.vy / l, reach = Math.min(1, s.t / .08) * s.len;
     for (const m of G.mobs) { if (m.hp <= 0 || s.hit.includes(m)) continue; const px = m.x - s.ox, py = m.y - s.oy, along = px * ux + py * uy, off = Math.abs(px * uy - py * ux);
-      if (along > 0 && along < reach && off < m.r + 14 + s.lv * 4) { s.hit.push(m); if (s.lv >= 3) G.p.forceCrit = G.t; hitMob(m, s.dmg, s.ox, s.oy, 80 + s.lv * 40, ACY.mid, true, true); parts(m.x, m.y - 24, s.lv === 3 ? 'gold' : ACY.mid, 8, {k: 'ln', sp: 360, life: .2}); G.hs = Math.max(G.hs, .04); } }
+      if (along > 0 && along < reach && off < m.r + 14 + s.lv * 4) { s.hit.push(m); if (s.lv >= 3) G.p.forceCrit = G.t; hitMob(m, s.dmg, s.ox, s.oy, 80 + s.lv * 40, ACY.mid, true, true); parts(m.x, m.y - 24, s.lv === 3 ? ACY.crit : ACY.mid, 8, {k: 'ln', sp: 360, life: .2}); pfx('pfx_dashstrike_g', m.x, m.y - 26, {f0: 13, fn: 24, rot: Math.atan2(uy, ux), sc: .8 + s.lv * .2, life: 11 / 30}); G.hs = Math.max(G.hs, .04); } }
     if (s.t >= s.life) s.done = 1; return true; }
   if (s.k === 'lead') { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; if (s.t >= s.life) { s.done = 1; splitAt(s.tx, s.ty, s.vine); } return true; }
   if (s.k === 'drop') { s.t += dt; if (s.t >= s.life) { s.done = 1; dropLand(s); } return true; }
@@ -2021,9 +2055,9 @@ function drawArcher(s) {                       // returns true when it drew the 
     ctx.fillStyle = '#ffffff'; ctx.globalAlpha = a; ctx.fillRect(Math.round(x1) - w - 1, Math.round(y1) - w - 1, w * 2 + 2, w * 2 + 2); ctx.globalAlpha = 1;
     if (k < .3) for (let i = 0; i < 3; i++) { const q = rnd() * reach; ctx.fillStyle = ACY.mid; ctx.fillRect(Math.round(x0 + ux * q + (rnd() - .5) * 10), Math.round(y0 + uy * q + (rnd() - .5) * 10), 2, 2); }
     return true; }
-  if (s.k === 'lead') { const l = Math.hypot(s.vx, s.vy) || 1; if (s.vine) { ctx.filter = 'hue-rotate(-75deg)'; } drawArrowStreak(s.x, s.y - s.h, s.vx / l, s.vy / l, 46, 3, 1, false); ctx.filter = 'none'; return true; }
-  if (s.k === 'drop') { if (s.t < 0) return true; const u = Math.min(1, s.t / s.life), x = s.sx + (s.lx - s.sx) * u, hy = 40 * (1 - u * u) + (1 - u) * 20, y = s.sy + (s.ly - s.sy) * u - hy;
-    const vx = s.lx - s.sx, vy = (s.ly - s.sy) + 80 * u, l = Math.hypot(vx, vy) || 1; drawArrowStreak(x, y, vx / l, vy / l, 26, 2, 1, false); return true; }
+  if (s.k === 'lead') { const l = Math.hypot(s.vx, s.vy) || 1; drawArrowStreak(s.x, s.y - s.h, s.vx / l, s.vy / l, 66, 4, 1, !!s.vine); return true; }
+  if (s.k === 'drop') { if (s.t < 0) return true; const u = Math.min(1, s.t / s.life), e = u * u, x = s.lx + 40 * (1 - e), y = s.ly - 30 - 230 * (1 - e);   // straight down out of the sky
+    drawArrowStreak(x, y, -.17, .985, 70, 3, 1, false); return true; }
   return false;
 }
 
@@ -2392,6 +2426,7 @@ function stepPlayer(dt) {
       if (p.buf === 'roll' && (free || early || p.a.i > P.last)) { p.buf = null; startRoll(p); }
       else if (/^sk/.test(p.buf || '') && (free || p.a.i > P.last)) { const k = +p.buf[2]; p.buf = null; startSk(p, k); }
       else if (free && p.buf === 'atk') { p.buf = null; startAtk(p); }
+      else if (free && AUTO.on && !p.buf && !(mx || my) && p.st >= 8 && autoTarget(p)) startAtk(p);
       else if (free && (mx || my)) { p.state = 'idle'; p.a = null; }
     }
   }
@@ -2401,6 +2436,7 @@ function stepPlayer(dt) {
     if (/^sk/.test(p.buf || '')) { const k = +p.buf[2]; p.buf = null; startSk(p, k); }
     else if (p.buf === 'roll') { p.buf = null; startRoll(p); }
     else if (p.buf === 'atk') { p.buf = null; startAtk(p); }
+    else if (AUTO.on && !p.buf && !(mx || my) && p.st >= 8 && autoTarget(p)) startAtk(p);   // auto: standing still with a monster in reach
   }
   if (p.state === 'idle' || p.state === 'move') {
     if (mx || my) {
