@@ -299,6 +299,13 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Codex effects in** (2026-11-09, 17 pictures on black from `codex/fx`, squashed in): `tools/art/fx_codex_import.py` →
+  `fx/c*.png` (mode add = brightness becomes see-through, solid = black joined to the edge goes; size = widest frame in
+  game px; fireball, ghost fire and the ground crack also as 24 turned copies `<key><deg>`, the crack squashed to the
+  ground). Used for: mage fireball flight + hit, meteor fall (from the top left) + hit, frost nova, mana shield bubble,
+  blink; swordsman ground crack, whirlwind ring, berserk aura, leap slam; reactions steam / shatter / overload; monster
+  ghost shots (khamot = hue-shifted green), shroom spores, treant roots, Chalawan / phrai water wave (`MOBT.fx`, mirrored
+  with `pfx(..., {flip})`). The three ink-style big skills (FX.md rows 18-20) are still to do by Codex.
 - **Swordsman + mage playable** (2026-11-09; pick on the start screen, `?hero=` or the last pick in localStorage `act.hero`;
   `HERO`, sheets `art/action/<hero>*.png` from `bash tools/art/hero_build.sh <hero>` (hit frames by hand there, leap landing
   frame = the leap row's hit)). PixelLab: base moves 41 jobs each (idle / run / roll / hurt 8 dirs, attack 16 f E S N NE NW,

@@ -829,7 +829,8 @@ const FXS = {}, PFX = {};
 const SLB = [41, 99, 150, -175, -138, -84, -33, 3];
 function slashFor(deg, t = '') { let b = 0, bd = 999; for (let k = 0; k < 8; k++) { const d = Math.abs(((SLB[k] - deg) % 360 + 540) % 360 - 180); if (d < bd) { bd = d; b = k; } } return 'dslash' + t + b; }
 const PFXA = {critg: [.9, .2], critx_ice: [.85, .18], zspark: [1, .3], zstar: [1, .45]};   // [picture alpha, glow alpha] per effect
-function pfx(k, x, y) { const P = PFX[k]; if (!P || !P.m) return false; G.fx.push({k: 'pfx', key: k, x, y, t: 0, life: P.m.n / P.m.fps}); return true; }
+function pfx(k, x, y, o) { const P = PFX[k]; if (!P || !P.m) return false; G.fx.push({k: 'pfx', key: k, x, y, t: 0, life: P.m.n / P.m.fps, ...(o || {})}); return true; }
+const h15 = (dx, dy) => ((Math.round(Math.atan2(dy, dx) * 180 / Math.PI / 15) * 15) % 360 + 360) % 360;   // heading of a turned copy
 // soft light (bloom) for arcs and hits, added with 'lighter' like the glowing slashes in the owner's reference clip
 function glowSprite(c) {
   const g = document.createElement('canvas'); g.width = g.height = 64; const x = g.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -860,7 +861,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all([...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1407,7 +1408,7 @@ function groundSplit(p, tx, ty) {
   const x1 = p.x + ux * 24, y1 = p.y + uy * 14, x2 = p.x + ux * S.range, y2 = p.y + uy * S.range, L = Math.hypot(x2 - x1, y2 - y1);
   const pts = [], nseg = Math.max(4, L / 18 | 0);
   for (let i = 0; i <= nseg; i++) { const j = i === 0 || i === nseg ? 0 : (rnd() - .5) * 14; pts.push([x1 + (x2 - x1) * i / nseg - uy * j, y1 + (y2 - y1) * i / nseg + ux * j * .6]); }
-  G.fx.push({k: 'crack', pts, t: 0, life: 1});
+  if (!pfx('ccrack' + h15(ux, uy / .6), x1, y1)) G.fx.push({k: 'crack', pts, t: 0, life: 1});   // Codex crack, turned to the aim (squashed to the ground)
   for (const m of G.mobs) { if (m.hp <= 0) continue;
     const t = clamp(((m.x - x1) * (x2 - x1) + (m.y - y1) * (y2 - y1)) / (L * L), 0, 1), cx = x1 + (x2 - x1) * t, cy = y1 + (y2 - y1) * t;
     if (Math.hypot(m.x - cx, (m.y - cy) * 1.3) > S.w + m.r) continue;
@@ -1421,7 +1422,7 @@ function whirlTick(p, dt, q) {
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.3) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 26, '#eafcff', false, true); any = true;
       if (rnd() < .5) cutFx(m.x, m.y - 22, 0, 1); }
     if (any) { G.hs = Math.max(G.hs, .02); G.shake = Math.max(G.shake, 2); } }
-  q.rk -= dt; if (q.rk <= 0) { q.rk = .32; spinRing(); }
+  q.rk -= dt; if (q.rk <= 0) { const W = PFX.cwhirl; if (W && W.m) { q.rk = W.m.n / W.m.fps; G.fx.push({k: 'pfx', key: 'cwhirl', follow: 1, ox: 0, oy: -12, a: .9, depth: 'b', t: 0, life: q.rk}); } else { q.rk = .32; spinRing(); } }
   if ((!holding(2) && G.t - q.t0 > .5) || p.st <= 0 || G.t - q.t0 > S.max) endAct(p);
 }
 function chargeTick(p, dt, q) {
@@ -1440,7 +1441,7 @@ function chargeRelease(p, lv) {
 function leapLand(p) {
   const S = SWS[4];
   for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 150, '#ffd080', true, true); m.stun = G.t + S.stun; }
-  pfx('quake', p.x, p.y + 6); pfx('gslam', p.x, p.y); G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 20, r1: S.r, t: 0, life: .35, c: '#ffe6b0'});
+  if (!pfx('cslam', p.x, p.y + 8)) { pfx('quake', p.x, p.y + 6); pfx('gslam', p.x, p.y); } G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 20, r1: S.r, t: 0, life: .35, c: '#ffe6b0'});
   for (let i = 0; i < 16; i++) { const a = i / 16 * 6.28; puff(p.x + Math.cos(a) * 40, p.y + Math.sin(a) * 15, '#cbbf9e'); }
   G.shake = Math.max(G.shake, 10); G.hs = Math.max(G.hs, .1); G.kick = {x: 0, y: 8, t: .14};
 }
@@ -1487,7 +1488,7 @@ function mageBolt(p, dmg, fin) {
 function explodeFire(x, y) {
   const S = MGS[1];
   for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - x, (m.y - y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, x, y, 60, '#ff8a2a', true, true); applyEl(m, 'fire'); }
-  pfx('blast', x, y + 4); if (!FXS.glowFire) FXS.glowFire = glowSprite([255, 140, 40]);
+  if (!pfx('cfirehit', x, y + 10)) pfx('blast', x, y + 4); if (!FXS.glowFire) FXS.glowFire = glowSprite([255, 140, 40]);
   G.fx.push({k: 'burst', x, y: y - 20, t: 0, life: .3, big: true}); for (let i = 0; i < 12; i++) puff(x + (rnd() - .5) * 50, y - rnd() * 30, i & 1 ? '#ff8a2a' : '#ffd060');
   G.shake = Math.max(G.shake, 4); G.hs = Math.max(G.hs, .04);
 }
@@ -1502,15 +1503,15 @@ function chainLightning(p) {
 function frostNova(p) {
   const S = MGS[3];
   for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 40, '#bfefff', false, true); m.frz = G.t + S.frz; applyEl(m, 'frost'); }
-  pfx('ibloom', p.x, p.y - 10); G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 16, r1: S.r, t: 0, life: .38, c: '#bfefff'});
+  if (!pfx('cnova', p.x, p.y)) { pfx('ibloom', p.x, p.y - 10); G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 16, r1: S.r, t: 0, life: .38, c: '#bfefff'}); }
   for (let i = 0; i < 16; i++) { const a = i / 16 * 6.28; puff(p.x + Math.cos(a) * 60, p.y + Math.sin(a) * 24, i & 1 ? '#e8fbff' : '#9fe8ff'); }
   G.shake = Math.max(G.shake, 4); G.hs = Math.max(G.hs, .05);
 }
 function blink(p) {
   const [mx, my] = moveInput(), d = (mx || my) ? dirOf(mx, my) : p.dir, R = MGS[4].range;
   let k = 1, tx, ty; do { tx = clamp(p.x + DV[d][0] * R * k, MARGIN.l, WW - MARGIN.r); ty = clamp(p.y + DV[d][1] * R * k, MARGIN.t, WH - MARGIN.b); k -= .1; } while (k > .1 && waterAt(tx, ty));
-  pfx('poof', p.x, p.y - 30); G.fx.push({k: 'streak', x: p.x, y: p.y - 34, x2: tx, y2: ty - 34, t: 0, life: .22, cy: 1});
-  p.x = tx; p.y = ty; p.dir = d; p.inv = Math.max(p.inv, .3); pfx('mburst', p.x, p.y - 30);
+  pfx('cblink', p.x, p.y - 34) || pfx('poof', p.x, p.y - 30); G.fx.push({k: 'streak', x: p.x, y: p.y - 34, x2: tx, y2: ty - 34, t: 0, life: .22, cy: 1});
+  p.x = tx; p.y = ty; p.dir = d; p.inv = Math.max(p.inv, .3); pfx('cblink', p.x, p.y - 34) || pfx('mburst', p.x, p.y - 30);
   if (p.state === 'act') endAct(p);
 }
 function shieldPop(p) {
@@ -1530,12 +1531,12 @@ function react(m, a, b) {
   if (has('fire') && has('frost')) {                     // steam burst
     zapDmg(m, ELEM.steam, '#ffffff'); for (const o of G.mobs) if (o !== m && o.hp > 0 && Math.hypot(o.x - m.x, o.y - m.y) < 90) zapDmg(o, 15, '#ffffff');
     for (let i = 0; i < 16; i++) puff(m.x + (rnd() - .5) * 60, m.y - 10 - rnd() * 40, i & 1 ? '#ffffff' : '#dfe8ef');
-    G.fx.push({k: 'ring', x: m.x, y: m.y, r0: 10, r1: 90, t: 0, life: .3, c: '#ffffff'}); tag(m.x, m.y - 70, 'ไอน้ำระเบิด!', '#ffffff');
+    pfx('csteam', m.x, m.y - 30); G.fx.push({k: 'ring', x: m.x, y: m.y, r0: 10, r1: 90, t: 0, life: .3, c: '#ffffff'}); tag(m.x, m.y - 70, 'ไอน้ำระเบิด!', '#ffffff');
   } else if (has('frost') && has('shock')) {             // shatter
-    zapDmg(m, ELEM.shatter, '#bfefff'); pfx('zapice', m.x, m.y - 24); m.frz = G.t + 1; tag(m.x, m.y - 70, 'น้ำแข็งแตก!', '#bfefff');
+    zapDmg(m, ELEM.shatter, '#bfefff'); pfx('cshatter', m.x, m.y - 24) || pfx('zapice', m.x, m.y - 24); m.frz = G.t + 1; tag(m.x, m.y - 70, 'น้ำแข็งแตก!', '#bfefff');
   } else {                                               // overload
     for (const o of G.mobs) if (o.hp > 0 && Math.hypot(o.x - m.x, (o.y - m.y) * 1.25) < ELEM.overR) zapDmg(o, ELEM.over, '#ffb0ff');
-    pfx('blast', m.x, m.y + 4); pfx('zap', m.x, m.y - 24); G.fx.push({k: 'ring', x: m.x, y: m.y, r0: 14, r1: ELEM.overR, t: 0, life: .3, c: '#ffb0ff'});
+    if (!pfx('coverload', m.x, m.y - 30)) { pfx('blast', m.x, m.y + 4); pfx('zap', m.x, m.y - 24); } G.fx.push({k: 'ring', x: m.x, y: m.y, r0: 14, r1: ELEM.overR, t: 0, life: .3, c: '#ffb0ff'});
     tag(m.x, m.y - 70, 'ระเบิดสายฟ้า!', '#ffb0ff'); G.shake = Math.max(G.shake, 6);
   }
   G.hs = Math.max(G.hs, .06);
@@ -1557,7 +1558,7 @@ function stepPShots(dt) {
   G.pshots = G.pshots.filter(s => !s.done);
   for (const mt of G.meteors) { mt.t += dt; if (mt.t >= mt.T && !mt.done) { mt.done = 1; const S = MGS[5];
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - mt.x, (m.y - mt.y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, mt.x, mt.y, 160, '#ff8a2a', true, true); m.stun = G.t + S.stun; applyEl(m, 'fire'); }
-    pfx('boom', mt.x, mt.y + 10); pfx('quake', mt.x, mt.y + 6); G.fx.push({k: 'ring', x: mt.x, y: mt.y, r0: 20, r1: S.r, t: 0, life: .4, c: '#ffb060'});
+    if (!pfx('cmeteorhit', mt.x, mt.y + 16)) { pfx('boom', mt.x, mt.y + 10); pfx('quake', mt.x, mt.y + 6); } G.fx.push({k: 'ring', x: mt.x, y: mt.y, r0: 20, r1: S.r, t: 0, life: .4, c: '#ffb060'});
     G.shake = Math.max(G.shake, 12); G.hs = Math.max(G.hs, .12); G.flash = .1; G.kick = {x: 0, y: 10, t: .16}; } }
   G.meteors = G.meteors.filter(mt => !mt.done);
 }
@@ -1614,9 +1615,15 @@ function drawRingFx(f) {
   for (let i = 0; i < n; i++) { const a = i / n * 6.283; ctx.fillRect(Math.round(f.x + Math.cos(a) * r) - 1, Math.round(f.y + Math.sin(a) * r * .42) - 1, 3, 2); }
   ctx.globalAlpha = 1;
 }
+function cfxDraw(key, x, y, t, filter) {
+  const P = PFX[key]; if (!P || !P.m) return false; const m = P.m, i = (t * m.fps | 0) % m.n, cols = m.cols || m.n;
+  if (filter) ctx.filter = filter;
+  ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(x - m.ax), Math.round(y - m.ay), m.w, m.h); ctx.filter = 'none'; return true;
+}
 function drawPShot(s) {
   const x = Math.round(s.x), y = Math.round(s.y - s.h);
   ctx.globalAlpha = .3; ctx.drawImage(KSH, Math.round(s.x - 7), Math.round(s.y - 2)); ctx.globalAlpha = 1;
+  if (s.k === 'fire' && cfxDraw('cfire' + h15(s.vx, s.vy), x, y, s.t)) { if (!FXS.glowFire) FXS.glowFire = glowSprite([255, 140, 40]); glowAt(x, y, 22, 18, FXS.glowFire, .6); return; }
   if (s.k === 'fire') { if (!FXS.glowFire) FXS.glowFire = glowSprite([255, 140, 40]); glowAt(x, y, 26, 22, FXS.glowFire, .9);
     ctx.fillStyle = '#7a1a08'; ctx.fillRect(x - 6, y - 6, 12, 12); ctx.fillStyle = '#ff8a2a'; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#ffe9a0'; ctx.fillRect(x - 3, y - 3, 6, 6); return; }
   if (!FXS.glowTeal) FXS.glowTeal = glowSprite([90, 230, 255]); glowAt(x, y, s.big ? 20 : 16, s.big ? 18 : 14, FXS.glowTeal, .9);
@@ -1630,14 +1637,15 @@ function drawMeteor(mt) {
   for (let i = 0; i < n; i++) { const a = i / n * 6.283; ctx.fillRect(Math.round(mt.x + Math.cos(a) * S.r) - 1, Math.round(mt.y + Math.sin(a) * S.r * .42) - 1, 3, 2); }
   ctx.globalAlpha = 1;
   const fall = .38, u = (mt.t - (mt.T - fall)) / fall; if (u < 0) return;
-  const rx = mt.x + 170 * (1 - u), ry = mt.y - 540 * (1 - u) - 10;
+  const rx = mt.x - 170 * (1 - u), ry = mt.y - 540 * (1 - u) - 10;   // from the top left, like Codex's meteor picture
+  if (cfxDraw('cmeteor', rx - 22, ry - 26, mt.t)) { glowAt(rx, ry, 30, 30, FXS.glowFire, .8); return; }
   glowAt(rx, ry, 30, 30, FXS.glowFire, 1); puff(rx + (rnd() - .5) * 10, ry, rnd() < .5 ? '#ff8a2a' : '#ffd060');
   ctx.fillStyle = '#3a1408'; ctx.fillRect(Math.round(rx) - 8, Math.round(ry) - 8, 16, 16); ctx.fillStyle = '#c84418'; ctx.fillRect(Math.round(rx) - 6, Math.round(ry) - 6, 12, 12); ctx.fillStyle = '#ffd060'; ctx.fillRect(Math.round(rx) - 3, Math.round(ry) - 3, 6, 6);
 }
 function heroAura(p, front) {
   if (!front) {
     if (p.rage > G.t) { if (!FXS.glowRed) FXS.glowRed = glowSprite([255, 40, 70]); glowAt(p.x, p.y - 30, 36, 46, FXS.glowRed, .45 + .15 * Math.sin(G.t * 9));
-      const P = PFX.au_red; if (P && P.m) { const m = P.m, i = (G.t * m.fps | 0) % m.n, cols = m.cols || m.n; ctx.globalAlpha = .85;
+      const P = PFX.crage || PFX.au_red; if (P && P.m) { const m = P.m, i = (G.t * m.fps | 0) % m.n, cols = m.cols || m.n; ctx.globalAlpha = .85;
         ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(p.x - m.ax), Math.round(p.y - m.ay), m.w, m.h); ctx.globalAlpha = 1; } }
     if (p.iron > 0) { if (!FXS.glowIce) FXS.glowIce = glowSprite([150, 210, 255]); glowAt(p.x, p.y - 4, 26, 9, FXS.glowIce, Math.min(.55, p.iron / IRON.max * .55)); }
     const q = p.ac; if (p.state === 'act' && q && q.lv) { if (!FXS.glowGold) FXS.glowGold = glowSprite([255, 200, 60]);
@@ -1645,7 +1653,8 @@ function heroAura(p, front) {
       if (((G.t * 30) | 0) % (5 - q.lv) === 0) spark(p.x + (rnd() - .5) * 30, p.y - 10 - rnd() * 50, 1, q.lv === 3 ? '#ffd23c' : '#fff3c0'); }
     return;
   }
-  if (p.msh > 0 && p.mshT > G.t) { const left = p.mshT - G.t; if (left > 1 || ((G.t * 10) | 0) % 2) {
+  if (p.msh > 0 && p.mshT > G.t && PFX.cshield) { const left = p.mshT - G.t; if (left > 1 || ((G.t * 10) | 0) % 2) { if (!FXS.glowTeal) FXS.glowTeal = glowSprite([90, 230, 255]); glowAt(p.x, p.y - 34, 38, 48, FXS.glowTeal, .3); ctx.globalAlpha = .9; cfxDraw('cshield', p.x, p.y - 34, G.t); ctx.globalAlpha = 1; } }
+  else if (p.msh > 0 && p.mshT > G.t) { const left = p.mshT - G.t; if (left > 1 || ((G.t * 10) | 0) % 2) {
     if (!FXS.glowTeal) FXS.glowTeal = glowSprite([90, 230, 255]); glowAt(p.x, p.y - 34, 38, 48, FXS.glowTeal, .3);
     const n = 64; for (let i = 0; i < n; i++) { const a = i / n * 6.283 + G.t * .8; ctx.globalAlpha = .55 + .35 * Math.sin(a * 3 + G.t * 4); ctx.fillStyle = i % 8 ? '#7af0ff' : '#ffffff';
       ctx.fillRect(Math.round(p.x + Math.cos(a) * 34) - 1, Math.round(p.y - 34 + Math.sin(a) * 46) - 1, 2, 2); } ctx.globalAlpha = 1; } }
@@ -1672,21 +1681,21 @@ function hurtPlayer(dmg, fromX, fromY) {
 // keep = the distance shooters hold, lunge = they jump forward on the hit, kb = how far hits push them, stout = hits do
 // not interrupt them, fly = ignores water
 const MOBT = {
-  shroom:        {hp: 34,   sp: 80,  r: 16, dmg: 9,  reach: 52,  tell: .55, cd: 1.8},
+  shroom:        {hp: 34,   sp: 80,  r: 16, dmg: 9,  reach: 52,  tell: .55, cd: 1.8, fx: 'cspore', fxY: -18},
   wolf:          {hp: 42,   sp: 165, r: 20, dmg: 11, reach: 70,  tell: .4,  cd: 1.5, lunge: 360},
   goblin_archer: {hp: 30,   sp: 100, r: 16, dmg: 9,  reach: 330, tell: .55, cd: 2.2, shot: 'arrow', keep: 230},
   boar_guard:    {hp: 130,  sp: 72,  r: 26, dmg: 18, reach: 78,  tell: .7,  cd: 2.2, kb: .4},
   skeleton:      {hp: 55,   sp: 100, r: 18, dmg: 12, reach: 64,  tell: .5,  cd: 1.6},
   wisp:          {hp: 32,   sp: 90,  r: 16, dmg: 10, reach: 300, tell: .6,  cd: 2.4, shot: 'ghost', keep: 220, fly: 1, c: '#7ad8ff'},
   golem:         {hp: 170,  sp: 58,  r: 30, dmg: 22, reach: 84,  tell: .8,  cd: 2.6, kb: .2, stout: 1},
-  boss_treant:   {hp: 900,  sp: 52,  r: 46, dmg: 26, reach: 140, tell: .9,  cd: 2.4, kb: .05, stout: 1, boss: 'ต้นไม้อสูร'},
+  boss_treant:   {hp: 900,  sp: 52,  r: 46, dmg: 26, reach: 140, tell: .9,  cd: 2.4, kb: .05, stout: 1, boss: 'ต้นไม้อสูร', fx: 'croots', fxAt: .8, fxY: 6},
   krahang:       {hp: 46,   sp: 150, r: 20, dmg: 12, reach: 70,  tell: .45, cd: 1.6, fly: 1, lunge: 320},
   khamot:        {hp: 28,   sp: 115, r: 16, dmg: 8,  reach: 280, tell: .5,  cd: 2.0, shot: 'ghost', keep: 200, fly: 1, c: '#9cf27a'},
-  phrai:         {hp: 62,   sp: 88,  r: 18, dmg: 13, reach: 80,  tell: .55, cd: 1.8},
+  phrai:         {hp: 62,   sp: 88,  r: 18, dmg: 13, reach: 80,  tell: .55, cd: 1.8, fx: 'cwave', fxAt: .4, fxY: 4},
   pret:          {hp: 115,  sp: 62,  r: 22, dmg: 16, reach: 112, tell: .7,  cd: 2.2, kb: .5},
   monkey:        {hp: 34,   sp: 125, r: 16, dmg: 8,  reach: 300, tell: .45, cd: 1.8, shot: 'fruit', keep: 210},
   croc_guard:    {hp: 125,  sp: 76,  r: 26, dmg: 18, reach: 100, tell: .7,  cd: 2.2, kb: .4},
-  boss_chalawan: {hp: 1000, sp: 62,  r: 46, dmg: 28, reach: 140, tell: .8,  cd: 2.2, kb: .05, stout: 1, boss: 'ชาละวัน'},
+  boss_chalawan: {hp: 1000, sp: 62,  r: 46, dmg: 28, reach: 140, tell: .8,  cd: 2.2, kb: .05, stout: 1, boss: 'ชาละวัน', fx: 'cwave', fxAt: .55, fxY: 6},
 };
 const ROSTER = {west: ['shroom', 'wolf', 'skeleton', 'goblin_archer', 'wisp', 'boar_guard', 'golem'], thai: ['khamot', 'monkey', 'krahang', 'phrai', 'croc_guard', 'pret']};
 const BOSSK = {west: 'boss_treant', thai: 'boss_chalawan'};
@@ -1743,6 +1752,7 @@ function mobStrike(m, T) {
     const l = Math.hypot(ax, ay) || 1, sp = T.shot === 'fruit' ? 360 : T.shot === 'ghost' ? 290 : 540;
     G.mshots.push({k: T.shot, x: m.x + m.face * 12, y: m.y, h: MOBS[m.kind].m.size * .55, vx: ax / l * sp, vy: ay / l * sp, t: 0, life: (T.reach + 90) / sp, dmg: T.dmg, c: T.c}); return; }
   const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy);
+  if (T.fx) pfx(T.fx, m.x + m.face * T.reach * (T.fxAt ?? .6), m.y + (T.fxY || 0), {flip: m.face < 0});
   if (d < T.reach + 18 && dx * m.face > -T.r) { if (bl && rnd() < .5) puff(m.x + m.face * 20, m.y - 20, '#9a92a8'); else if (p.inv <= 0) hurtPlayer(T.dmg, m.x, m.y); }
   if (T.kb !== undefined && T.kb < .6) { const sx = m.x + m.face * T.reach * .6; for (let k = 0; k < 8; k++) puff(sx + (rnd() - .5) * T.r * 2, m.y + (rnd() - .5) * 12, '#cbbf9e');
     G.shake = Math.max(G.shake, T.boss ? 7 : 3); }
@@ -2063,6 +2073,7 @@ function drawMShot(s) {
   if (s.k === 'arrow') { const l = Math.hypot(s.vx, s.vy) || 1, ux = s.vx / l, uy = s.vy / l;
     for (let i = 0; i < 18; i++) { ctx.fillStyle = i < 4 ? '#e8e8f0' : i > 14 ? '#f4efe2' : '#6b4a2a'; ctx.fillRect(Math.round(x - ux * i), Math.round(y - uy * i * .7), 2, 2); } return; }
   if (s.k === 'fruit') { ctx.fillStyle = '#2a1416'; ctx.fillRect(x - 4, y - 4, 9, 9); ctx.fillStyle = '#e04848'; ctx.fillRect(x - 3, y - 3, 7, 7); ctx.fillStyle = '#ffb0a0'; ctx.fillRect(x - 2, y - 2, 2, 2); ctx.fillStyle = '#4caf50'; ctx.fillRect(x, y - 6, 3, 2); return; }
+  if (s.k === 'ghost' && cfxDraw('cghost' + h15(s.vx, s.vy), x, y, s.t, s.c === '#9cf27a' ? 'hue-rotate(-115deg) saturate(1.4)' : '')) return;
   const c = s.c || '#7ad8ff', key = 'glowS' + c; if (!FXS[key]) { const n = parseInt(c.slice(1), 16); FXS[key] = glowSprite([n >> 16, (n >> 8) & 255, n & 255]); }
   glowAt(x, y, 20, 16, FXS[key], .8); ctx.fillStyle = c; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#f4ffff'; ctx.fillRect(x - 3, y - 3, 6, 6);
 }
@@ -2085,7 +2096,8 @@ function drawPfx(f) {
   // owner "เอฟเฟกต์ทำใสหน่อย มีแสง": effects with a glow copy are drawn a little see-through, with the soft light added on top
   const PA = PFXA[f.key]; ctx.globalAlpha = f.a || (PA ? PA[0] : Gl && Gl.m ? .78 : 1);
   if (f.filter) ctx.filter = f.filter;
-  ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(x - m.ax), Math.round(y - m.ay), m.w, m.h);
+  if (f.flip) { ctx.save(); ctx.translate(Math.round(x), 0); ctx.scale(-1, 1); ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, -m.ax, Math.round(y - m.ay), m.w, m.h); ctx.restore(); }
+  else ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(x - m.ax), Math.round(y - m.ay), m.w, m.h);
   if (Gl && Gl.m) { const g = Gl.m, j = Math.min(g.n - 1, i); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = f.ga || (PA ? PA[1] : .75);
     ctx.drawImage(Gl.img, j * g.w, 0, g.w, g.h, Math.round(x - g.ax), Math.round(y - g.ay), g.w, g.h); ctx.globalCompositeOperation = 'source-over'; }
   ctx.filter = 'none';

@@ -15,22 +15,22 @@ Owner 2026-11-09. Reply to the owner in Thai, short and plain.
 | # | key | status | thai | for |
 |---|-----|--------|------|-----|
 | 1 | fireball | done | ลูกไฟ | mage Q |
-| 2 | meteor | todo | อุกกาบาต | mage Z |
-| 3 | meteor_hit | todo | อุกกาบาตตก | mage Z |
-| 4 | frost_nova | todo | วงน้ำแข็ง | mage R |
-| 5 | mana_shield | todo | โล่เวท | mage X |
-| 6 | blink | todo | วาร์ป | mage F |
-| 7 | ground_crack | todo | รอยแยกพื้น | swordsman Q |
-| 8 | whirlwind | todo | พายุดาบ | swordsman E |
-| 9 | berserk | todo | คลั่ง | swordsman X |
-| 10 | leap_slam | todo | กระโดดทุบ | swordsman F |
-| 11 | spore_cloud | todo | สปอร์เห็ด | mushroom attack |
-| 12 | ghost_fire | todo | ไฟผี | lantern wisp + khamot shots |
-| 13 | root_spikes | todo | รากแทงพื้น | treant boss |
-| 14 | water_wave | todo | คลื่นน้ำ | Chalawan boss + phrai |
-| 15 | steam | todo | ไอน้ำระเบิด | mage reaction fire+ice |
-| 16 | shatter | todo | น้ำแข็งแตก | mage reaction ice+lightning |
-| 17 | overload | todo | ระเบิดสายฟ้า | mage reaction lightning+fire |
+| 2 | meteor | done | อุกกาบาต | mage Z |
+| 3 | meteor_hit | done | อุกกาบาตตก | mage Z |
+| 4 | frost_nova | done | วงน้ำแข็ง | mage R |
+| 5 | mana_shield | done | โล่เวท | mage X |
+| 6 | blink | done | วาร์ป | mage F |
+| 7 | ground_crack | done | รอยแยกพื้น | swordsman Q |
+| 8 | whirlwind | done | พายุดาบ | swordsman E |
+| 9 | berserk | done | คลั่ง | swordsman X |
+| 10 | leap_slam | done | กระโดดทุบ | swordsman F |
+| 11 | spore_cloud | done | สปอร์เห็ด | mushroom attack |
+| 12 | ghost_fire | done | ไฟผี | lantern wisp + khamot shots |
+| 13 | root_spikes | done | รากแทงพื้น | treant boss |
+| 14 | water_wave | done | คลื่นน้ำ | Chalawan boss + phrai |
+| 15 | steam | done | ไอน้ำระเบิด | mage reaction fire+ice |
+| 16 | shatter | done | น้ำแข็งแตก | mage reaction ice+lightning |
+| 17 | overload | done | ระเบิดสายฟ้า | mage reaction lightning+fire |
 | 18 | ink_flurry | todo | พายุฟันหมึก | rogue big skill |
 | 19 | ink_crescent | todo | ดาบจันทร์เสี้ยวหมึก | swordsman big skill |
 | 20 | ink_comet | todo | ดาวหางหมึก | mage big skill |
