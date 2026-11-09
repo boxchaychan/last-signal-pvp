@@ -352,6 +352,16 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   too. Camps keep `cityD` ≥ 1.7 (were right against the wall). Tests: `?test=view&camp=1&n=<steps>` (next to the nearest
   camp, auto on). The Codex wall kit (`thai_wall_kit.png`, big boxy pieces) was looked at and not used: the code walls
   read better at game scale.
+- **Prop background leftovers** (owner 2026-11-09, a crop of the stilt house: "ดูด้วยตายังเห็นเลยตัดยังไง"): the cut kept the
+  GPT background as one flat cream colour (a different shade per picture, e.g. v_stilt 254,250,213) between stilts / rails /
+  under floors, and a 1-2 px cream line between props_px's added outline (29,26,34) and the picture's own edge (the pale
+  dots). `tools/art/prop_bgclean.py`: A. holes = a flat pale colour patch ≥ 16 px, still ≥ 4 px after 3 erosions (roof
+  ridges and beams are thinner), ≥ 40% of its 2 px ring dark outline, and only the picture's main hole colour (the
+  grindstone in t_smithy is the same cream but ringed less) → see-through; B. fringe = light pixels next to the added
+  outline in a mostly non-light neighbourhood → removed (twice) and the 1 px outline put back. Holes only on t_granary
+  t_library t_palace t_smithy t_teahouse t_twin v_boatshed v_fishhut v_stilt cart oxcart (the western houses' cream
+  plaster walls read as holes), `--noholes` (fringe only) on every other prop. Props no longer stand on the rice paddies
+  (`groundOk` rejects TK 8).
 - **Rogue Q and E in the black-purple tone** (owner "สกิล q e ทำให้เข้าโทนด้วย", "e ให้หมุน ละจังหวะสุดท้ายให้ลมสะบัดออก"):
   Q's dagger trail is black-edged purple with a violet glow, its landing and each hit play Dash Strike's hit flash from
   `pfx_dashstrike_v` (frames 13-24), puffs purple, the blink behind uses `pfx_step_v`. E's ring is `pfx_whirl_k` (the
