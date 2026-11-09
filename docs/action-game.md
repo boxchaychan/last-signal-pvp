@@ -299,6 +299,17 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Archer playable** (2026-11-09, `?hero=archer`, pick button นักธนู): sheets from `hero_build.sh archer` (adds the `crit`
+  row; hurt / death merged from two download groups; release frames by hand). Normal shot = one cyan code-drawn arrow
+  (`arrow`, `archerShot`); crit (12% base, +40% in hawk eye, or the nearest monster beyond 420 = passive) plays the
+  kneeling crit row and fires a bigger piercing gold-edged arrow; passive ล่าเหยื่อ: up to +50% damage by distance, beyond
+  420 always a crit; hit timing from pixelfx's moves/arrow-shot (held breath `preMs` 120, thud = hit-stop .07 + shake).
+  Skills `ARS`: Q split arrow (the owner's ParticleFX emitter graph rebuilt in code, cyan: lead arrow → star flash + ring →
+  5 arrows drop on the nearest monsters, each with flash, sparks, ring, ground glow `gmark`), E thunder javelin
+  (`fx/pfx_skyarrow` from the owner's thunder-javelin sheet, lands 0.43 s in, +1 javelin every 3 levels; `G.later` timers),
+  R charged shot (hold, 3 draw levels on the crit row, release = a long piercing cyan beam, owner "ชาร์จง้าง ดูยิงรุนแรงไกล"),
+  F leap back on the roll row + a parting shot, Z vine arrow (roots 2 s, Codex root spikes), X hawk eye (`p.hawk`, 8 s).
+  All her effects share one cyan tone (`ACY`, owner "ปรับให้สีโทนเดียวกัน"). Skill moves (shoot up, leap back) not made.
 - **Frozen monsters in an ice block** (owner pasted pixelfx's `ice/freeze` code): exported with an empty actor so only the
   block, floor frost and shatter show (`fx/pfx_freeze`, 121 frames 176x128, pivot 88,108); `statusTick` notes when a
   freeze starts (`m.frzOn`, `m.frz0`), `drawMob2` plays the climb + seal (0.6 s), loops the held block, cracks in the last

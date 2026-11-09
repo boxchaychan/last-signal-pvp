@@ -8,7 +8,10 @@ K=$1; shift
 D=art/incoming/action/$K/pl_dl/Idle
 A=$D/animations
 args=(attack=attack run=run idle=idle roll=roll hurt=hurt death=death)
+# the archer: a crit shot row, and the hurt / death moves came in two groups (her queue was restarted)
+[ "$K" = archer ] && args=(attack=attack crit=crit run=run idle=idle roll=roll hurt=hurt,hurt-ba62d0b0 death=death,death-e16f77cc)
 alias="south-east:east,south-west:east~,west:east~"
+[ "$K" = archer ] && alias="$alias,crit/south-east:east,crit/south-west:east~,crit/west:east~"
 for m in leap guard charge cast_up staff_slam; do
   [ -d $A/$m ] || continue
   args+=($m=$m); alias="$alias,$m/south-east:east,$m/south-west:east~,$m/west:east~"
@@ -19,5 +22,6 @@ done
 case $K in
   swordsman) hits="east:3,9;south:4,10;north-west:4,9;north:4,9;north-east:2,7;leap/east:7;leap/south:4;leap/north-west:7;leap/north:6";;
   mage) hits="east:4,12;south:5,7;north-west:4,12;north:5,10;north-east:4,11";;
+  archer) hits="east:10;south:11;north-west:9;north:10;north-east:11;crit/east:10;crit/south:11;crit/north-west:12;crit/north:11;crit/north-east:10";;
 esac
 python tools/art/act_sheet.py $D art/action/$K "${args[@]}" "--alias=$alias" "--hits=$hits" --arc=air --scale=2/3 "$@"
