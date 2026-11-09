@@ -28,7 +28,14 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 #stb>i{background:linear-gradient(#fff2a8 0 30%,#e8c440 30% 72%,#a8841a 72%)}
 #stb.no{animation:no .25s 2}
 @keyframes no{50%{border-color:#ff5050}}
-#score{position:fixed;right:max(10px,env(safe-area-inset-right));top:8px;font-size:15px;font-weight:700;text-shadow:0 2px 0 var(--ink);pointer-events:none;text-align:right}
+#score{position:fixed;right:max(8px,env(safe-area-inset-right));top:8px;font-size:14px;font-weight:800;text-shadow:0 2px 0 var(--ink);pointer-events:none;text-align:right;
+  padding:4px 10px;background:linear-gradient(rgba(28,24,36,.86),rgba(18,16,24,.74));border:3px solid var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.35)}
+#score b{color:#ffe066}
+#ov .over{min-width:min(80vw,340px);padding:16px 26px 18px;background:linear-gradient(#2c2638,#16131c);border:3px solid var(--ink);box-shadow:0 0 0 3px #6a2a2a,0 8px 0 rgba(0,0,0,.4)}
+#ov .over h1{font-size:min(7vh,40px);color:#ff7a6a;text-shadow:0 3px 0 #4a1010,0 0 18px rgba(255,90,70,.4);letter-spacing:.04em}
+#ov .over .st{display:flex;gap:10px;justify-content:center;margin:10px 0 6px}
+#ov .over .st div{background:rgba(0,0,0,.3);border:2px solid #4a4258;padding:6px 14px;min-width:84px} #ov .over .st b{display:block;font-size:min(5vh,26px);color:#ffe066} #ov .over .st small{font-size:12px;opacity:.8}
+#ov .over .row{display:flex;gap:10px;justify-content:center} #ov .over #go{background:#7fdc6a;box-shadow:0 4px 0 #2f6a26}
 #help{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);font-size:12px;opacity:.8;text-shadow:0 1px 0 var(--ink);pointer-events:none;white-space:nowrap}
 #btns{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:16px;width:300px;height:240px;display:none;pointer-events:none}
 .touch #btns{display:block} .touch #help{display:none}
@@ -3172,7 +3179,7 @@ function hud() { if (!G) return; hudHotbar(); const hp = Math.max(0, G.p.hp), no
     for (const b of SKB[k - 1]) { b.lastChild.style.height = (cd * 100).toFixed(1) + '%'; b.classList.toggle('blink', mk);
       b.classList.toggle('on5', k === 5 && (G.p.stealth > G.t || G.p.guard > G.t)); b.classList.toggle('on6', k === 6 && (G.p.venom > G.t || G.p.rage > G.t || (G.p.msh > 0 && G.p.mshT > G.t)));
       if (k === 1) b.firstChild.textContent = mk ? (b.id === 'bSk1' ? 'วาร์ป' : 'Q!') : (b.id === 'bSk1' ? (SKS[1].btn || 'ปา') : 'Q'); } }
-  scoreEl.textContent = 'ระลอก ' + G.wave + ' · ล้ม ' + G.kills; }
+  const sc = 'ระลอก <b>' + G.wave + '</b> · ล้ม <b>' + G.kills + '</b>'; if (scoreEl._v !== sc) scoreEl.innerHTML = scoreEl._v = sc; }
 
 // ---------- overlay + loop ----------
 const ov = document.getElementById('ov');
@@ -3209,7 +3216,10 @@ function menuTick(dt) {                 // the chosen card plays the hero's idle
   const k = C / 116; g.clearRect(0, 0, 80, 100); g.imageSmoothingEnabled = false; g.save(); if (row.flip) { g.translate(80, 0); g.scale(-1, 1); }
   g.drawImage(row.img, f * C + 18 * k, row.r * C + 6 * k, 80 * k, 100 * k, 0, 0, 80, 100); g.restore();
 }
-function showOver() { ov.innerHTML = '<div><h1>แพ้แล้ว</h1><p>ถึงระลอก ' + G.wave + ' · ล้มมอน ' + G.kills + ' ตัว</p><button id="go">เล่นใหม่</button></div>'; ov.style.display = 'flex'; document.getElementById('go').onclick = start; }
+function showOver() {
+  ov.innerHTML = '<div class="over"><h1>พ่ายแพ้</h1><p>' + HNAME[HERO] + ' ล้มลงที่' + (MAPN[MAP] || '') + '</p><div class="st"><div><b>' + G.wave + '</b><small>ระลอก</small></div><div><b>' + G.kills + '</b><small>ล้มมอน</small></div><div><b>' + (G.p.lv || 1) + '</b><small>เลเวล</small></div></div>'
+    + '<div class="row"><button id="go">เล่นใหม่</button><button id="menu">เลือกตัวละคร</button></div></div>';
+  ov.style.display = 'flex'; document.getElementById('go').onclick = start; document.getElementById('menu').onclick = () => { location.href = 'action.html?hero=' + HERO + (MAP !== 'west' ? '&map=' + MAP : ''); }; }
 function start() {
   document.body.classList.remove('inmenu'); ov.classList.remove('menu');
   ov.style.display = 'none'; newGame(); if (!TEST) spawnCamps(); document.getElementById('bRoll').textContent = G.p.tele ? 'วาร์ป' : 'กลิ้ง'; for (let k = 1; k <= 6; k++) applySkLv(k, G.p.skl[k] || 1); buildHotbar();
