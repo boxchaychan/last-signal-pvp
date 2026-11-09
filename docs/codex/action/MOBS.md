@@ -48,13 +48,13 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 13 | monkey | done | Thai city | small |
 | 14 | croc_guard | done | Thai river | large |
 | 15 | boss_chalawan | done | Thai boss | huge |
-| 16 | jiangshi | todo | China | medium |
-| 17 | paper_doll | todo | China | small |
-| 18 | terracotta_archer | todo | China | medium |
-| 19 | terracotta_general | todo | China | large |
-| 20 | fox_spirit | todo | China | medium |
-| 21 | toad_demon | todo | China | large |
-| 22 | boss_nian | todo | China boss | huge |
+| 16 | jiangshi | done | China | medium |
+| 17 | paper_doll | done | China | small |
+| 18 | terracotta_archer | done | China | medium |
+| 19 | terracotta_general | done | China | large |
+| 20 | fox_spirit | done | China | medium |
+| 21 | toad_demon | done | China | large |
+| 22 | boss_nian | done | China boss | huge |
 | 23 | kappa | todo | Japan | small |
 | 24 | kasa_obake | todo | Japan | small |
 | 25 | oni | todo | Japan | large |
