@@ -299,6 +299,14 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Monsters in the game** (2026-11-09): slimes replaced by the sprite monsters (`MOBT` stats per kind, `ROSTER` per map:
+  west = shroom wolf skeleton goblin_archer wisp boar_guard golem, thai = khamot monkey krahang phrai croc_guard pret;
+  `BOSSK` treant / Chalawan every 5th wave with a boss bar at the top). `stepMob2`: walk to the player (shooters hold
+  `keep` distance and strafe), attack = frames 1-3 wind-up over `tell` with a red ring under them, frame 4 the hit
+  (`mobStrike`: melee reach in front, or a shot: arrow / fruit / ghost fire in `G.mshots`), frames 5-6 recover, then
+  `cd`; hits stagger them unless `stout`; `kb` scales knock-back; flying ones ignore water; blinded / player hidden =
+  wander. Death row plays, then fades. Slime code kept as the fallback (`spawnSlimes`) and for the old tests.
+  `?test=mobs[&map=thai]&ph=0|1|2` = every monster of the map in a row (walk / attack / death frame).
 - **China monster set queued** (owner 2026-11-09 "มอนเราเป็นแถบประเทศ ต่อไปเป็นจีน"): MOBS.md rows 16-22 (jiangshi, paper_doll,
   terracotta_archer, terracotta_general, fox_spirit, toad_demon, boss_nian; folklore only, no worshipped gods) and their
   walk / attack / death in MOB_ANIM.md rows 46-66 (after the turnarounds); sizes already in `mob_frames.py`.
