@@ -48,7 +48,7 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
   box-shadow:0 5px 0 #8c8678;display:flex;align-items:center;justify-content:center;touch-action:none}
 .bt.small{width:64px;height:64px;font-size:14px;background:#cfe8f0;box-shadow:0 5px 0 #6f8f99}
 .bt.on{transform:translateY(4px);box-shadow:0 1px 0 #8c8678}
-.bt.sk{width:60px;height:60px;font-size:13px;background:#f3dca0;box-shadow:0 5px 0 #9a7f3c;overflow:hidden}
+.bt.sk{width:60px;height:60px;font-size:13px;background:#f3dca0;box-shadow:0 5px 0 #9a7f3c;overflow:hidden;opacity:.84}   /* a little see-through: the zoomed phone view puts more of the fight under them */
 .bt.sk b{position:absolute;left:0;right:0;bottom:0;background:rgba(20,18,26,.55);height:0}
 .bt.sk span{position:relative;z-index:1}
 .bt.sk.blink{background:#c9a8ff;box-shadow:0 5px 0 #6c4fa8;animation:skp .5s infinite alternate}
@@ -144,7 +144,10 @@ function onResize() {
   cv.width = dw; cv.height = dh;
   // whole-number pixel size only (no blur): 1 art px = 1 screen px up to ~1900 px tall screens. The owner does not want
   // the rogue shrunk (2026-11-08 "ไม่อยากลดตัวละคร เดี๋ยวเบลอ"): the world is made bigger instead (big props, see makeProps)
-  S = Math.max(1, Math.floor(dh / 950));
+  // phones (owner 2026-11-09 "เอาซูม2เท่าเลย", after the side-by-side test): the whole-number zoom that brings the view closest to
+  // ~600 world px tall, so a 3x phone (1170 px) gets 2x = 585 and a 2x phone (780) stays at 1x; ?zoom=N forces one for tests
+  const qz = +new URLSearchParams(location.search).get('zoom'), phone = TOUCH && Math.min(innerWidth, innerHeight) < 600;
+  S = qz >= 1 ? Math.round(qz) : phone ? Math.max(1, Math.round(dh / 600)) : Math.max(1, Math.floor(dh / 950));
   VW = Math.ceil(dw / S); VH = Math.ceil(dh / S);
   U = Math.max(2, Math.round(DPR * 2 / S));        // size of numbers / sparks so they stay readable on phones
 }
