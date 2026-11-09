@@ -299,6 +299,49 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Codex effects in** (2026-11-09, 17 pictures on black from `codex/fx`, squashed in): `tools/art/fx_codex_import.py` →
+  `fx/c*.png` (mode add = brightness becomes see-through, solid = black joined to the edge goes; size = widest frame in
+  game px; fireball, ghost fire and the ground crack also as 24 turned copies `<key><deg>`, the crack squashed to the
+  ground). Used for: mage fireball flight + hit, meteor fall (from the top left) + hit, frost nova, mana shield bubble,
+  blink; swordsman ground crack, whirlwind ring, berserk aura, leap slam; reactions steam / shatter / overload; monster
+  ghost shots (khamot = hue-shifted green), shroom spores, treant roots, Chalawan / phrai water wave (`MOBT.fx`, mirrored
+  with `pfx(..., {flip})`). The three ink-style big skills (FX.md rows 18-20) are still to do by Codex.
+- **Swordsman + mage playable** (2026-11-09; pick on the start screen, `?hero=` or the last pick in localStorage `act.hero`;
+  `HERO`, sheets `art/action/<hero>*.png` from `bash tools/art/hero_build.sh <hero>` (hit frames by hand there, leap landing
+  frame = the leap row's hit)). PixelLab: base moves 41 jobs each (idle / run / roll / hurt 8 dirs, attack 16 f E S N NE NW,
+  death E S W N) + skills (`hero_jobs.py <hero> skills`: swordsman spin S, leap 16 f / guard 4 f / charge 8 f in E S N NW;
+  mage cast_up / staff_slam 8 f in E S N NW) = ~100 generations for both; 1847.5 left on 2026-11-09. The queues stopped
+  when the PC slept; `pl_queue.py` now downloads a job the server already finished instead of stopping.
+  Code: skills play frame lists in an `act` state (`playAct` / `endAct`: frames, times, events per frame, tick, loop for
+  held skills; `HOLD` + `holding(k)` for E / R of the swordsman). Swordsman (`SWS`): normal attack sweep + slam with
+  streak cuts + a white X flash (`cutFx`) and a big ice crescent per swing (`swordArc` = the rogue's PixelLab `dslashl` crescents;
+  owner's clips 2026-11-09: clip 3 ice sword = normal, clip 2 crimson = while berserk, `CUTP` + a hue filter on the crescent); Q `groundSplit` crack line + stun,
+  E whirlwind while held (stamina drain, rogue's spin ring), R charge 3 levels then the sweep (level 3 = gold crit), F leap
+  to the aimed spot (lands on the hit frame, ring + quake + stun), Z parry (`swCounter`: no damage, x3 counter), X berserk
+  (`p.rage`: 28% faster swings, lifesteal, -20% damage, red aura `au_red`); passive iron shield (`IRON`, bar under the
+  stamina). Mage (`MGS`): two homing bolts per attack (`mageBolt`, `G.pshots`), Q fireball (burn), E chain lightning,
+  R frost nova (`m.frz`), F blink (move direction), Z meteor (`G.meteors`, telegraph ring, 1 s), X mana shield (`p.msh`,
+  bursts into lightning when broken); passive elements (`applyEl` / `react`: steam, shatter, overload, floating Thai text
+  `G.tags`). Mob statuses: `m.stun`, `m.frz` (blue tint), `m.burn`. Test `?test=hsk&hero=..&k=0..6&n=steps[&rel=]`.
+  Codex works in the same folder and switches branches, so Claude now works in a separate worktree
+  (`C:\last-signal-pvp-claude`, branch `claude/work`, preview "game-claude" on port 8001) and pushes to main.
+- **Monsters in the game** (2026-11-09): slimes replaced by the sprite monsters (`MOBT` stats per kind, `ROSTER` per map:
+  west = shroom wolf skeleton goblin_archer wisp boar_guard golem, thai = khamot monkey krahang phrai croc_guard pret;
+  `BOSSK` treant / Chalawan every 5th wave with a boss bar at the top). `stepMob2`: walk to the player (shooters hold
+  `keep` distance and strafe), attack = frames 1-3 wind-up over `tell` with a red ring under them, frame 4 the hit
+  (`mobStrike`: melee reach in front, or a shot: arrow / fruit / ghost fire in `G.mshots`), frames 5-6 recover, then
+  `cd`; hits stagger them unless `stout`; `kb` scales knock-back; flying ones ignore water; blinded / player hidden =
+  wander. Death row plays, then fades. Slime code kept as the fallback (`spawnSlimes`) and for the old tests.
+  `?test=mobs[&map=thai]&ph=0|1|2` = every monster of the map in a row (walk / attack / death frame).
+- **China monster set queued** (owner 2026-11-09 "มอนเราเป็นแถบประเทศ ต่อไปเป็นจีน"): MOBS.md rows 16-22 (jiangshi, paper_doll,
+  terracotta_archer, terracotta_general, fox_spirit, toad_demon, boss_nian; folklore only, no worshipped gods) and their
+  walk / attack / death in MOB_ANIM.md rows 46-66 (after the turnarounds); sizes already in `mob_frames.py`.
+- **pixelfx without Node** (owner: "มี md ที่จะทำให้ Claude ทำ vfx สวยๆ ไหม"): the pixelfx Claude skill is installed as
+  `.claude/skills/pixelfx/SKILL.md` (with a local note); checkout in `.tools/pixelfx` (untracked, re-clone on a new
+  machine); `python tools/pfx_export.py` serves it with an export page for the built-in browser (`contact()`, 
+  `exportAll()` → `.tools/pfx_out/`). 35 effects already rendered as a fallback (meteor, fireball, frost-nova,
+  ice-shatter, chain-lightning, blink, divine-shield, spin-slash, ground-slam, root-snare, spore-burst, status
+  rage / stunned / frozen / burning ...). Owner: Codex's effects first, pixelfx when those are not pretty.
 - **Monster frames in** (Codex finished 45/45 by 07:55 on 2026-11-09, `codex/mob-anim` squashed into main): pixel sheets
   `art/action/mobs/<key>.png` + `.json` + `index.json` from `tools/art/mob_frames.py` (white cut, 3x2 cells, each action
   scaled so its frame 1 is `SIZE[key]` px tall: small ~46-58, medium ~60-80, large ~96-118, bosses ~160; feet of frame 1 =

@@ -1,6 +1,9 @@
 # Skill / attack effects for the action game, made by Codex (owner 2026-11-09 "มีเอฟเฟคที่อยากได้ไหม"). One picture per
-# effect: 6 frames in a 3x2 grid of 512 px cells on PURE BLACK, so the importer can turn brightness into see-through
-# (glows stay soft). Seen from the game's camera: low top-down, so things lying on the ground are flat ellipses.
+# effect: 6 frames in a 3x2 grid of 512 px cells. Seen from the game's camera: low top-down, so things lying on the
+# ground are flat ellipses. Owner 2026-11-09 sent a clip of a 2D MMO's sword class ("อยากได้สกิลประมาณนี้ สีสันจะออกสด"):
+# the look, not the skills, is taken: bold black ink-brush strokes splashed with ONE vivid accent colour, white-hot
+# flashes, petals / sparks, big and dramatic. Black ink cannot survive a black background, so from then on the pictures
+# are on PURE GREEN (#00FF00) and keyed out (the first one, fireball, was done on black).
 #   python tools/art/fx_codex.py       -> docs/codex/action/FX.md (queue + full prompts; keeps rows marked done)
 import re, os
 FX = [   # key, thai, for, what happens over the 6 frames
@@ -21,13 +24,18 @@ FX = [   # key, thai, for, what happens over the 6 frames
  ('steam', 'ไอน้ำระเบิด', 'mage reaction fire+ice', 'a steam explosion: frame 1 a bright white flash, frames 2-4 a big billowing burst of white steam with a little orange and ice-blue light inside, frames 5-6 the steam spreading thin and fading'),
  ('shatter', 'น้ำแข็งแตก', 'mage reaction ice+lightning', 'ice shattering: frame 1 a block of ice cracked with yellow lightning lines, frames 2-3 the ice exploding into many sharp ice shards flying outward with sparks, frames 4-6 the shards falling and sparkling out'),
  ('overload', 'ระเบิดสายฟ้า', 'mage reaction lightning+fire', 'an electric fire explosion: frame 1 a violet-white flash, frames 2-3 a round blast of orange fire laced with purple and yellow lightning arcs, frames 4-6 crackling sparks and smoke fading'),
+ ('ink_flurry', 'พายุฟันหมึก', 'rogue big skill', 'a storm of criss-crossing sword cuts: long thin white-hot slash lines edged with black ink brush strokes and hot crimson-pink light, ink splatters and pink petals flying; frame 1 one white flash cut, frames 2-4 more and more crossing cuts filling the cell, frames 5-6 the cuts fading into drifting petals'),
+ ('ink_crescent', 'ดาบจันทร์เสี้ยวหมึก', 'swordsman big skill', 'a giant crescent sword slash sweeping to the RIGHT: a thick curved black ink brush stroke with a blazing azure-white cutting edge, ink splatters and azure sparks spraying off it; frame 1 a white flash, frames 2-3 the crescent sweeping wide, frames 4-6 the ink breaking apart into drops and fading'),
+ ('ink_comet', 'ดาวหางหมึก', 'mage big skill', 'a violet comet diving down onto the ground: a bright violet-white star core with a long tail of black ink brush strokes and violet light, then a burst of ink and violet light splashing outward on the ground as a flat ellipse; frame 1 the comet high at the top left, frame 2 near the ground, frame 3 the white-hot impact, frames 4-6 the ink splash and violet sparks fading'),
 ]
 def prompt(key, what):
     return ('Visual effect frames for a 2D pixel-art action game, ONE picture. Effect: ' + what + '.\n'
-            'Style: bright, clean and bold game effect, crisp shapes with a soft glow, matching a cute chibi fantasy action game.\n'
+            'Style: vivid and dramatic: bold black ink-brush strokes splashed with bright saturated colour (the colours named above), '
+            'white-hot flashes on the strongest moment, small flying petals or sparks, crisp shapes with a soft glow; for a cute chibi '
+            'fantasy action game. Big and punchy, filling most of the cell at its peak.\n'
             'LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size; '
-            'the effect is centred in its cell with empty black space around it; nothing crosses into the next cell.\n'
-            'Background: PURE BLACK (#000000) everywhere, no gradient, no stars, no ground, no character, no text, no numbers, '
+            'the effect is centred in its cell with empty space around it; nothing crosses into the next cell.\n'
+            'Background: PURE FLAT GREEN (#00FF00) everywhere (it is keyed out), no gradient, no stars, no ground, no character, no text, no numbers, '
             'no grid lines. Every frame must be clearly different.\n'
             'Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.')
 if __name__ == '__main__':
@@ -40,7 +48,8 @@ if __name__ == '__main__':
 Owner 2026-11-09. Reply to the owner in Thai, short and plain.
 
 ## Rules
-- ONE picture per row: one effect, 6 frames in a 3x2 grid on PURE BLACK (the game turns the black into see-through).
+- ONE picture per row: one effect, 6 frames in a 3x2 grid on PURE GREEN #00FF00 (the game keys the green out; the style
+  uses black ink strokes, so the background can no longer be black). Fireball (row 1) was done on black: keep it.
   No reference picture is needed.
 - Save full size as `art/incoming/fx_codex/<key>.png`; one Thai line per file in `art/incoming/fx_codex/REPORT_TH.txt`.
 - Mark the row `done` here. Work in the order of the queue; "ทำเอฟเฟคต่อ" = continue at the first `todo`.

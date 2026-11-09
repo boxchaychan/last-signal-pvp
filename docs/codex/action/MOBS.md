@@ -48,6 +48,13 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 13 | monkey | done | Thai city | small |
 | 14 | croc_guard | done | Thai river | large |
 | 15 | boss_chalawan | done | Thai boss | huge |
+| 16 | jiangshi | todo | China | medium |
+| 17 | paper_doll | todo | China | small |
+| 18 | terracotta_archer | todo | China | medium |
+| 19 | terracotta_general | todo | China | large |
+| 20 | fox_spirit | todo | China | medium |
+| 21 | toad_demon | todo | China | large |
+| 22 | boss_nian | todo | China boss | huge |
 
 ## Monster lines (add after the shared prompt)
 
@@ -135,3 +142,49 @@ jade-green scales with a pale belly, glowing gold eyes, a tall pointed gold Thai
 collar, a red and gold royal sash, a big curved Thai sword in the right hand, a long heavy tail. Proud and menacing,
 still chibi.
 ```
+
+### China set (owner 2026-11-09: monsters go by country, "ต่อไปเป็นจีน"; Chinese folklore, no worshipped gods)
+
+**16 jiangshi** (ผีกระโดดจีน)
+```
+Monster: a Chinese hopping vampire (jiangshi). Pale grey-green skin, a stiff body, arms stretched straight out in front,
+an old Qing-dynasty official's robe in dark blue with a square embroidered badge on the chest, a round official's hat,
+a yellow paper talisman with red brush marks stuck on the forehead hanging over the face, long fingernails. Creepy but cute.
+```
+**17 paper_doll** (ตุ๊กตากระดาษ)
+```
+Monster: a small paper effigy servant come alive. A flat figure made of folded white and red paper with painted pink
+cheeks, a painted smile and black painted hair buns, paper sleeves that flutter, a little paper fan in the right hand,
+thin paper legs. Light and eerie, not gory.
+```
+**18 terracotta_archer** (ทหารดินเผานักธนู)
+```
+Monster: an animated clay soldier archer. Body of reddish-brown terracotta with cracks and chipped edges, a topknot,
+layered clay armour plates, a wooden crossbow held in both hands, a quiver of bolts on the hip, small glowing amber
+eyes. The crossbow bolts point the right way: the head at the front.
+```
+**19 terracotta_general** (นายพลดินเผา)
+```
+Monster: a big animated clay general. Bulky reddish-brown terracotta body with cracks, a tall general's headdress,
+heavy layered clay scale armour with bronze-green studs, a long bronze halberd (a spear with a side blade) held
+upright in the right hand, glowing amber eyes, a stern face. Heavy and slow-looking.
+```
+**20 fox_spirit** (ปีศาจจิ้งจอก)
+```
+Monster: a sly fox demon standing on its hind legs. White fur with pale gold tips, three big fluffy tails, narrow
+glowing violet eyes, a red tassel charm hanging from its neck, small floating blue fox-fire flames by its paws. An
+animal, not a human woman. Elegant and tricky.
+```
+**21 toad_demon** (ปีศาจคางคก)
+```
+Monster: a fat toad demon standing on two short legs. Warty olive-green skin with a yellow belly, big bulging orange
+eyes, a huge wide mouth with a long sticky tongue curled inside, a torn brown cloth vest, a small wooden club in one
+hand. Bulky and gross-cute, not scary.
+```
+**22 boss_nian** (บอส เหนียนโซ่ว)
+```
+Monster: Nian, the New Year beast from Chinese folklore, the China map boss. A huge lion-like beast standing on four
+legs with a big round head, a single curved horn, a wide toothy mouth, bulging eyes, a thick red and gold mane, a red
+scaly back with gold spikes, a fluffy tail, firecracker-red colours. Fierce but still chibi, like a festival beast.
+```
+
