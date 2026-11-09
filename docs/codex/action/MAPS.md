@@ -12,9 +12,10 @@ Owner 2026-11-09: monsters and maps go by country; keep generating until the cre
   to `main`, never merge. Before a new batch: `git -C ../last-signal-pvp-codex merge origin/main` to get new rows.
 
 ## Queue
+Row 1 is for later: the gap the owner saw was only the join between two screenshots, the game's wall is complete.
 | # | key | status | style picture to attach | what |
 |---|-----|--------|-------------------------|------|
-| 1 | thai_wall_top | todo | art/action/props/wall_front.png + art/action/props/t_gate.png | Thai city wall pieces seen from above |
+| 1 | thai_wall_top | later (do it after 2-6) | art/action/props/wall_front.png + art/action/props/t_gate.png | Thai city wall pieces seen from above |
 | 2 | china_buildings | todo | art/incoming/action/map/gpt_thai_city.png | China city buildings |
 | 3 | china_village | todo | art/incoming/action/map/gpt_thai_city.png | China village buildings |
 | 4 | china_nature | todo | art/incoming/action/map/gpt_nature.png | China trees and rocks |
