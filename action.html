@@ -137,19 +137,20 @@ const QS = new URLSearchParams(location.search), MAP = ['thai', 'jungle'].includ
 const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'mage', 'archer', 'priest'].includes(h) ? h : 'rogue'; })();
 const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', mage: 'เมจ', archer: 'นักธนู', priest: 'นักบวช'};
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
-let S = 1, VW = 960, VH = 540, DPR = 1, U = 2;
+let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0;
+// owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู": every screen shows the same piece of the map, FVW x FVH
+// world px (the 2x phone view the owner saw). S = whole canvas px per world px (sharp); the canvas is Q px per CSS px, which is
+// the device's own pixels on a 3x phone (2x exactly) and finer elsewhere, then the browser scales it down smoothly; a screen of
+// another shape gets dark bars (OX / OY = where the view starts on the canvas).
+const FVW = 1266, FVH = 585;
 function onResize() {
   DPR = window.devicePixelRatio || 1;
-  const dw = Math.round(innerWidth * DPR), dh = Math.round(innerHeight * DPR);
-  cv.width = dw; cv.height = dh;
-  // whole-number pixel size only (no blur): 1 art px = 1 screen px up to ~1900 px tall screens. The owner does not want
-  // the rogue shrunk (2026-11-08 "ไม่อยากลดตัวละคร เดี๋ยวเบลอ"): the world is made bigger instead (big props, see makeProps)
-  // phones (owner 2026-11-09 "เอาซูม2เท่าเลย", after the side-by-side test): the whole-number zoom that brings the view closest to
-  // ~600 world px tall, so a 3x phone (1170 px) gets 2x = 585 and a 2x phone (780) stays at 1x; ?zoom=N forces one for tests
-  const qz = +new URLSearchParams(location.search).get('zoom'), phone = TOUCH && Math.min(innerWidth, innerHeight) < 600;
-  S = qz >= 1 ? Math.round(qz) : phone ? Math.max(1, Math.round(dh / 600)) : Math.max(1, Math.floor(dh / 950));
-  VW = Math.ceil(dw / S); VH = Math.ceil(dh / S);
-  U = Math.max(2, Math.round(DPR * 2 / S));        // size of numbers / sparks so they stay readable on phones
+  const fit = Math.min(innerWidth / FVW, innerHeight / FVH);
+  S = Math.max(1, Math.ceil(fit * DPR - .02)); Q = S / fit;
+  cv.width = Math.round(innerWidth * Q); cv.height = Math.round(innerHeight * Q);
+  VW = FVW; VH = FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
+  cv.style.imageRendering = Math.abs(Q - DPR) < .01 ? 'pixelated' : 'auto';
+  U = Math.max(2, Math.round(Q * 2 / S));        // size of numbers / sparks so they stay readable on phones
 }
 addEventListener('resize', onResize); onResize();
 const rnd = (() => { let s = 12345; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
@@ -1013,7 +1014,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_skyarrow_y', 'pfx_dashstrike_y', 'pfx_heal_y', 'pfx_skyarrow_g', 'pfx_starfall_g', 'pfx_dashstrike_g', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k', 'croots_g', 'pfx_rapier_k', 'pfx_chargeshot_k', 'pfx_skyarrow_k', 'pfx_dashstrike_k', 'pfx_bombarrow', 'pfx_vine_k', 'pfx_earthsplit'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_skyarrow_y', 'pfx_dashstrike_y', 'pfx_heal_y', 'pfx_skyarrow_g', 'pfx_starfall_g', 'pfx_dashstrike_g', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k', 'croots_g', 'pfx_rapier_k', 'pfx_chargeshot_k', 'pfx_skyarrow_k', 'pfx_dashstrike_k', 'pfx_bombarrow', 'pfx_vine_k', 'pfx_earthsplit', 'pfx_starfall_c_k'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1160,7 +1161,7 @@ function aimDir() {
   const p = G.p;
   // a mouse click aims at the mouse; J / the touch button aim at the nearest slime (owner's clip 2026-11-08: the cursor
   // was left at the top of the screen and every J attack swung that way while the slime came from below)
-  if (!TOUCH && p.bufMouse) { const wx = mouse.x * DPR / S + cam.x, wy = mouse.y * DPR / S + cam.y; return dirOf(wx - p.x, wy - (p.y - 50)); }
+  if (!TOUCH && p.bufMouse) { const wx = (mouse.x * Q - OX) / S + cam.x, wy = (mouse.y * Q - OY) / S + cam.y; return dirOf(wx - p.x, wy - (p.y - 50)); }
   let best = null, bd = HERO === 'mage' || HERO === 'archer' || HERO === 'priest' ? 520 : 260; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
   if (best) return dirOf(best.x - p.x, best.y - p.y);
   const [mx, my] = moveInput(); return (mx || my) ? dirOf(mx, my) : p.dir;
@@ -1208,7 +1209,7 @@ function sk1Ready(p) { return skReady(p, 1); }
 function skTarget(p, k = 1) {
   const SKR = SKS[k].range;
   let tx, ty;
-  if (AIM.src === 'key' && !TOUCH && mouse.used) { tx = mouse.x * DPR / S + cam.x; ty = mouse.y * DPR / S + cam.y + 20; }
+  if (AIM.src === 'key' && !TOUCH && mouse.used) { tx = (mouse.x * Q - OX) / S + cam.x; ty = (mouse.y * Q - OY) / S + cam.y + 20; }
   else if (AIM.src === 'touch' && Math.hypot(AIM.dx, AIM.dy) > 12) {          // drag: direction + how far (70 px = full range)
     const l = Math.hypot(AIM.dx, AIM.dy), q = Math.min(1, l / 70) * SKR; tx = p.x + AIM.dx / l * q; ty = p.y + AIM.dy / l * q; }
   else { let best = null, bd = SKR + 60; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
@@ -1576,7 +1577,7 @@ const SKDESC = {priest: ['ฟื้นเลือด 25 ทันที แล�
 const PASDESC = {archer: 'ติดตัว: ล่าเหยื่อ ยิงไกลยิ่งแรง (สูงสุด +50%) มอนไกลกว่า 420 โดนคริทุกดอก', rogue: 'ติดตัว: ตีโดนครั้งที่ 4 คริ x2 · ฆ่าได้คืนแรง', swordsman: 'ติดตัว: เกราะหิน ตีโดนได้โล่ หินหมุนรอบตัว รับดาเมจน้อยลง 15%', mage: 'ติดตัว: ธาตุประสาน ไฟ+น้ำแข็ง / น้ำแข็ง+สายฟ้า / สายฟ้า+ไฟ'};
 const SKICON = {priest: [['pfx_heal_y', .4], ['pfx_skyarrow_y', .35], ['critg', .3], ['pfx_step_t', .3], ['croots', .5], ['zstar', .3]], rogue: [['nslash', .4], ['pfx_whirl', .3], ['pfx_smoke', .3], ['zstreak0', .3], ['vanish', .3], ['pburst', .3]],
   swordsman: [['pfx_earthsplit', .2], ['pfx_whirl', .3], ['dashcharge', .5], ['cslam', .2], ['parry', .3], ['crage', .3]],
-  archer: [['pfx_rapier_k', .62], ['pfx_skyarrow_k', .35], ['pfx_chargeshot_k', .42], ['pfx_bombarrow', .5], ['pfx_vine_k', .3], ['pfx_starfall_g', .55]],
+  archer: [['pfx_rapier_k', .62], ['pfx_skyarrow_k', .35], ['pfx_chargeshot_k', .42], ['pfx_bombarrow', .5], ['pfx_vine_k', .3], ['pfx_starfall_c_k', .55]],
   mage: [['cfire0', .3], ['pfx_orb', .3], ['cnova', .5], ['cblink', .4], ['cmeteor', .3], ['cshield', .3]]};
 // level cap 50: the 2nd class comes at level 50 (owner 2026-11-09, not built yet)
 const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 50, SKUPD = .1, SKUPC = .04;
@@ -1789,7 +1790,7 @@ function faceDir(name, dx, dy) {
 }
 function aimVec() {                // like aimDir, as a vector
   const p = G.p;
-  if (!TOUCH && p.bufMouse) { const wx = mouse.x * DPR / S + cam.x, wy = mouse.y * DPR / S + cam.y; return [wx - p.x, wy - (p.y - 50)]; }
+  if (!TOUCH && p.bufMouse) { const wx = (mouse.x * Q - OX) / S + cam.x, wy = (mouse.y * Q - OY) / S + cam.y; return [wx - p.x, wy - (p.y - 50)]; }
   let best = null, bd = HERO === 'mage' || HERO === 'archer' || HERO === 'priest' ? 520 : 260; for (const m of G.mobs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd && m.hp > 0) { bd = d; best = m; } }
   if (best) return [best.x - p.x, best.y - p.y];
   const [mx, my] = moveInput(); return (mx || my) ? [mx, my] : DV[p.dir];
@@ -2157,18 +2158,18 @@ function drawSeeds() {                                  // the planted seeds: a 
 // flash, light pillar, rings, a burnt crater, sparks and dirt. Last a giant star: SF.fin x S.dmg, a big shockwave.
 const SF = {n: 20, t0: .28, gap: .075, fall: .24, fin: 2, sky: 190, sx: 40};
 function starRain(tx, ty, S) {
-  const T = SF.t0 + SF.n * SF.gap + SF.fall, ox = tx + SF.sx, oy = ty - SF.sky;
-  G.fx.push({k: 'sfz', x: tx, y: ty, r: S.r, t: 0, life: T + .75});
-  G.fx.push({k: 'sorb', x: ox, y: oy, t: 0, life: T + .35});
+  // owner 2026-11-09 "ทำไมเป็นแท่ง ในต้นแบบมันไม่ได้เป็นแบบนั้น": back to the original Starfall Barrage sheet, in the archer's black +
+  // neon (`pfx_starfall_c_k`, its haze left out): two copies over the circle (the second mirrored, started later), each from
+  // frame 28 so its streaks land from ~0.4 s; S.dmg ticks on everything in the circle while they land, at each tick a small
+  // landing burst on a monster in it; then a bigger copy in the middle and the closing blast (SF.fin x S.dmg)
+  const K = 'pfx_starfall_c_k', P = PFX[K] && PFX[K].m, L = P ? (P.n - 28) / P.fps : 1.6, end = .36 + L;
+  G.fx.push({k: 'sfz', x: tx, y: ty, r: S.r, t: 0, life: end + 1});
+  if (P) { pfx(K, tx - 50 + 35, ty - 25, {f0: 28, sc: 1.05, life: L}); G.later.push({t: .36, fn: () => pfx(K, tx + 50 - 35, ty + 25, {f0: 28, sc: 1.05, flip: 1, life: L})}); }
   const inside = () => G.mobs.filter(m => m.hp > 0 && Math.hypot(m.x - tx, (m.y - ty) * 1.25) < S.r + m.r);
-  for (let i = 0; i < SF.n; i++) { const dmg = i % 2 === 1;
-    G.later.push({t: SF.t0 + i * SF.gap, fn: () => { let lx, ly; const ms = dmg ? inside() : [];
-      if (ms.length) { const m = ms[rnd() * ms.length | 0]; lx = m.x + (rnd() - .5) * 16; ly = m.y + (rnd() - .5) * 8; }
-      else { const a = rnd() * 6.283, r = Math.sqrt(rnd()) * S.r * .92; lx = tx + Math.cos(a) * r; ly = ty + Math.sin(a) * r * .8; }
-      const sx = ox + (rnd() - .5) * 90, sy = oy + (rnd() - .5) * 30;
-      G.fx.push({k: 'comet', x: lx, y: ly, sx, sy, t: 0, life: SF.fall, sc: 1, land: () => starLand(lx, ly, tx, ty, S, dmg ? S.dmg : 0, false)}); }}); }
-  G.later.push({t: SF.t0 + SF.n * SF.gap + .1, fn: () => G.fx.push({k: 'comet', x: tx, y: ty, sx: ox, sy: oy - 40, t: 0, life: SF.fall * 1.5, sc: 2.2,
-    land: () => starLand(tx, ty, tx, ty, S, S.dmg * SF.fin, true)})});
+  for (let i = 0; i < 10; i++) G.later.push({t: .42 + i * .13, fn: () => { const ms = inside(), m = ms[rnd() * ms.length | 0];
+    const lx = m ? m.x : tx + (rnd() - .5) * S.r, ly = m ? m.y : ty + (rnd() - .5) * S.r * .7; starLand(lx, ly, tx, ty, S, S.dmg, false); }});
+  G.later.push({t: end - .2, fn: () => { if (P) pfx(K, tx + 35 * 1.35, ty, {f0: 36, sc: 1.35, life: (P.n - 36) / P.fps}); }});
+  G.later.push({t: end + .1, fn: () => starLand(tx, ty, tx, ty, S, S.dmg * SF.fin, true)});
 }
 function starLand(lx, ly, tx, ty, S, dmg, big) {
   const k = big ? 1.9 : 1;
@@ -2206,8 +2207,6 @@ function drawStarBang(f) {                              // the landing flash: a 
   const k = f.t / f.life, a = 1 - k, sc = f.sc || 1, R = (18 + 40 * (1 - (1 - k) * (1 - k))) * sc;
   if (!FXS.glowEm) FXS.glowEm = glowSprite(ACY.rgb); if (!FXS.glowW) FXS.glowW = glowSprite([255, 255, 240]);
   glowAt(f.x, f.y - 6, R * 1.3, R * .7, FXS.glowEm, .9 * a);
-  const ph = (70 + 40 * sc) * (k < .3 ? 1 : 1 - (k - .3) / .7), pw = Math.max(1, Math.round(7 * sc * a));
-  if (ph > 2) { pline(f.x, f.y, f.x, f.y - ph, pw + 4, ACK.neon, a); pline(f.x, f.y, f.x, f.y - ph * .95, pw, ACK.ink, a); }
   const c = R * .9; pline(f.x - c, f.y - 6, f.x + c, f.y - 6, 2, ACK.neon, a); pline(f.x, f.y - 6 - c * .55, f.x, f.y - 6 + c * .3, 2, ACK.neon, a);
 }
 function drawStarShock(f) {                            // the giant star's shockwave: a thick bright band racing out, light rays
@@ -2915,7 +2914,7 @@ function testSetup() {
   if (TEST === 'fxseq') { const p = G.p, q = new URLSearchParams(location.search), N = +q.get('n') || 120, tag2 = q.get('tag') || METEOR; G.next = 1e9; G.mobs = [];
     const tx = p.x + 150, ty = p.y + 20; G.meteors.push({x: tx, y: ty, t: 0, T: 1.25}); for (let i = 0; i < 60; i++) draw();   // let the camera settle
     (async () => { const W2 = 420, H2 = 340; for (let i = 0; i < N; i++) { G.freeze = 0; step(1 / 30); G.freeze = 1; G.shake = 0; G.kick = null; draw();
-      const k = cv.width / VW, sx = (tx - Math.round(cam.x)) * k, sy = (ty - 90 - Math.round(cam.y)) * k, c = document.createElement('canvas'); c.width = W2; c.height = H2;
+      const k = S, sx = (tx - Math.round(cam.x)) * k + OX, sy = (ty - 90 - Math.round(cam.y)) * k + OY, c = document.createElement('canvas'); c.width = W2; c.height = H2;
       c.getContext('2d').imageSmoothingEnabled = false; c.getContext('2d').drawImage(cv, Math.round(sx - W2 / 2 * k), Math.round(sy - H2 / 2 * k), W2 * k, H2 * k, 0, 0, W2, H2);
       const b = await new Promise(k => c.toBlob(k, 'image/png')); await fetch('/save/seq_' + tag2 + '/' + String(i).padStart(3, '0') + '.png', {method: 'POST', body: b}); }
       document.title = 'fxseq done'; })();
@@ -2939,7 +2938,7 @@ function testSetup() {
   if (TEST === 'run') { G.next = 1e9; keys.KeyD = keys.KeyS = true; for (let i = 0; i < 20; i++) step(1 / 60); return; }   // ?test=run: runs down-right
   if (TEST === 'aim') { const p = G.p; G.next = 1e9; cam.x = p.x - VW / 2; cam.y = p.y - 60 - VH / 2;   // ?test=aim: Q held, mouse on a slime
     G.mobs.push({kind: 'green', x: p.x + 260, y: p.y + 70, r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
-    mouse.used = true; mouse.x = (p.x + 260 - cam.x) * S / DPR; mouse.y = (p.y + 50 - cam.y) * S / DPR; AIM.src = 'key'; G.freeze = 1; return; }
+    mouse.used = true; mouse.x = ((p.x + 260 - cam.x) * S + OX) / Q; mouse.y = ((p.y + 50 - cam.y) * S + OY) / Q; AIM.src = 'key'; G.freeze = 1; return; }
   if (TEST === 'spin' || TEST === 'bomb' || TEST === 'bomb2' || TEST === 'flurry') { const p = G.p; G.next = 1e9;   // skill screenshots
     for (let i = 0; i < 4; i++) G.mobs.push({kind: i & 1 ? 'blue' : 'green', x: p.x + (TEST === 'spin' ? Math.cos(i * 1.6) * 70 : 200 + (i % 2) * 40), y: p.y + (TEST === 'spin' ? Math.sin(i * 1.6) * 50 : 60 + (i >> 1) * 40), r: 18, hp: 99, max: 99, st: 'idle', t: -99, vx: 0, vy: 0, kx: 0, ky: 0, hit: 0, spd: 0, tell: .5, fr: 0, born: 0});
     const k = TEST === 'spin' ? 2 : TEST === 'flurry' ? 4 : 3; startSk(p, k);
@@ -3224,7 +3223,7 @@ function draw() {
   let cx = Math.round(cam.x), cy = Math.round(cam.y);
   if (G.shake > 0) { cx += Math.round((rnd() - .5) * G.shake * 2); cy += Math.round((rnd() - .5) * G.shake * 2); }
   if (G.kick) { const k = G.kick.t / .12; cx += Math.round(G.kick.x * k); cy += Math.round(G.kick.y * k); }
-  ctx.setTransform(S, 0, 0, S, -cx * S, -cy * S);
+  ctx.setTransform(S, 0, 0, S, OX - cx * S, OY - cy * S);
   drawGroundChunks(cx, cy); drawGround(cx, cy);
   // shadows + warning rings
   ctx.globalAlpha = .22;
@@ -3337,8 +3336,12 @@ function draw() {
   for (const g of G.tags) { const k = g.t / .9; ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; ctx.font = '800 15px "Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif'; ctx.textAlign = 'center';
     ctx.lineWidth = 4; ctx.strokeStyle = '#1d1a22'; ctx.fillStyle = g.col; const y = Math.round(g.y - k * 22); ctx.strokeText(g.txt, Math.round(g.x), y); ctx.fillText(g.txt, Math.round(g.x), y); ctx.globalAlpha = 1; }
   for (const n of G.nums) { const k = n.t / .75; ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; drawDigits(n.v, n.x, n.y - k * 26 - (k < .15 ? (1 - k / .15) * -6 : 0), n.sz || (n.big ? U + 1 : U), n.col || (n.red ? '#ff6060' : n.big ? '#ffe066' : '#ffffff')); ctx.globalAlpha = 1; }
+  // the bars round the fixed view on screens of another shape
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0d0f0c'; const vr = OX + VW * S, vb = OY + VH * S;
+  if (OY > 0) { ctx.fillRect(0, 0, cv.width, OY); ctx.fillRect(0, vb, cv.width, cv.height - vb); }
+  if (OX > 0) { ctx.fillRect(0, 0, OX, cv.height); ctx.fillRect(vr, 0, cv.width - vr, cv.height); }
   // screen-space: hit flash, joystick, wave banner
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.setTransform(Q, 0, 0, Q, 0, 0);
   if (G.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (G.flash / .09 * .16).toFixed(3) + ')'; ctx.fillRect(0, 0, innerWidth, innerHeight); }
   if (stick.on) { ctx.globalAlpha = .35; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(stick.ox, stick.oy, 50, 0, 7); ctx.fill();
     const dx = stick.x - stick.ox, dy = stick.y - stick.oy, l = Math.hypot(dx, dy), k = l > 50 ? 50 / l : 1;

@@ -368,6 +368,17 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **One view for every screen** (owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู", replaces the phone zoom
+  below): every screen shows the same `FVW` x `FVH` = 1266 x 585 world px (the 2x phone view). `onResize`: `S` = whole canvas
+  px per world px (ceil of fit x DPR), `Q` = canvas px per CSS px (= DPR on a 3x phone, finer elsewhere, then the browser
+  scales the canvas down smoothly: `image-rendering` auto unless Q = DPR), `OX`/`OY` = where the view starts; other screen
+  shapes get dark bars (PC 16:9 thin top/bottom, 4:3 tablets big ones). Mouse → world = (mouse * Q - OX) / S + cam; the
+  screen-space overlay uses `setTransform(Q)`. A 2x phone now draws 2532 x 1170 (2.25x its own pixels) — watch speed there.
+- **Star rain v3** (owner "ทำไมเป็นแท่ง ในต้นแบบมันไม่ได้เป็นแบบนั้น"): the light pillars and code comets are gone; two copies of the
+  original Starfall Barrage sheet in black + neon (`pfx_starfall_c_k` from the haze-free copy: `archer_fx.py` options `w_min`
+  = near-white only, `thin` = strokes eroded so the glow is not a fat black stake, `hollow` = big shapes see-through inside a
+  black band) play over the circle from frame 28 (the second mirrored, .36 s later), 10 ticks while they land, a bigger copy
+  in the middle and the closing blast. The dark rune circle stays.
 - **Phone zoom** (owner 2026-11-09 "เอาซูม2เท่าเลย" after side-by-side shots of 1x and 2x on a 3x phone; asked first whether the
   heroes could go back to the 128 size or become painted: no, PixelLab frames cannot be turned into paintings, only redrawn):
   `onResize` picks, on touch screens smaller than 600 CSS px, the whole-number `S` that brings the view closest to 600 world px
