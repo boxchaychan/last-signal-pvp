@@ -299,6 +299,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Rogue R smoke = ParticleFX cartoon smoke poof** (owner 2026-11-09 "ควันใช้อันนี้"): `art/incoming/pfx/smoke-poof-sheet.png`
+  (870x864 = 6x6 cells of 145x144, 36 frames; 6x7 cut the clouds) → `fx/pfx_smoke.png` (200 px wide, 30 fps). Also from
+  ParticleFX, waiting for the owner: frost crescent slash (`fx/pfxfrost<deg>`), teal star missile (came out white / red,
+  a thin streak: maybe the archer's arrow), violet shadow step (came out teal; recoloured copies in
+  `art/incoming/pfx/*_violet`, `*_teal`).
 - **Archer** (2026-11-09): owner's GPT turnaround (`art/incoming/action/archer/turnaround_gpt.png`, front and side views
   touched: split by hand + `T128_GAP=2`), PixelLab character fcf9d983-0c95-4e43-8fb8-59053eb5fa7e "Forest Archer 128" (v3,
   2 generations, 8 views good). Owner "ท่ายิงสวยๆ ให้ขยับตัวยิง 1 หากคริให้เปลี่ยนท่ายิง": `hero_jobs.py archer` = 46 jobs
