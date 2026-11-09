@@ -64,12 +64,12 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 29 | boss_orochi | done | Japan boss | huge |
 | 30 | mummy | done | Egypt | medium |
 | 31 | scarab | done | Egypt | small |
-| 32 | jackal_warrior | todo | Egypt | medium |
-| 33 | sand_scorpion | todo | Egypt | large |
-| 34 | cobra_priest | todo | Egypt | medium |
-| 35 | sand_golem | todo | Egypt | large |
-| 36 | boss_sphinx | todo | Egypt boss | huge |
-| 37 | draugr | todo | Norse | medium |
+| 32 | jackal_warrior | done | Egypt | medium |
+| 33 | sand_scorpion | done | Egypt | large |
+| 34 | cobra_priest | done | Egypt | medium |
+| 35 | sand_golem | done | Egypt | large |
+| 36 | boss_sphinx | done | Egypt boss | huge |
+| 37 | draugr | done | Norse | medium |
 | 38 | frost_wolf | todo | Norse | medium |
 | 39 | troll | todo | Norse | large |
 | 40 | ice_wraith | todo | Norse | small |
