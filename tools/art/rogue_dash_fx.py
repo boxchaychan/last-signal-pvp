@@ -42,3 +42,5 @@ def remake(src, dst, fn, pad):
 
 remake('pfx_dashstrike', 'pfx_dashstrike_v', shadow_x, 14)   # owner "Dash Strike โทนเดียวกันได้ไหม": black + purple rim like the X (the glowing violet one was lambda c: glowy(tint(c)))
 remake('pfx_twinfang', 'pfx_twinfang_k', shadow_x, 10)
+# the rogue's E (owner "สกิล q e ทำให้เข้าโทนด้วย"): the whirlwind ring in the same black + purple rim
+remake('pfx_whirl', 'pfx_whirl_k', shadow_x, 10)

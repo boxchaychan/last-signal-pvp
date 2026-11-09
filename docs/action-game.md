@@ -299,6 +299,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Rogue Q and E in the black-purple tone** (owner "สกิล q e ทำให้เข้าโทนด้วย", "e ให้หมุน ละจังหวะสุดท้ายให้ลมสะบัดออก"):
+  Q's dagger trail is black-edged purple with a violet glow, its landing and each hit play Dash Strike's hit flash from
+  `pfx_dashstrike_v` (frames 13-24), puffs purple, the blink behind uses `pfx_step_v`. E's ring is `pfx_whirl_k` (the
+  whirlwind in the same tone, made by `rogue_dash_fx.py`), hits flash `pfx_dashstrike_v`, the spin frames lose their
+  pale air arcs (`noArcOf`) and the glow and after-images are violet (`vioOf`); when the spin ends `rogueGust`: everything
+  within 1.7 x its radius takes `SK2.fin` (24, scales with level) and is blown back, a big whirl, two rings, wind lines.
 - **Rogue skill 4, new look approved, NOT in the game yet** (owner "เออสวย" on the demo, earlier "อย่าเพิ่งลงเกม เดี๋ยวบอก"):
   six dashes along the same zigzag as now (`nextCut`), each one ParticleFX's Dash Strike black with a neon purple rim like the X
   (owner "Dash Strike โทนเดียวกันได้ไหม"; `fx/pfx_dashstrike_v.png`, the monster's hit flash violet: streak frames 0-11 along the dash, its own hit flash 13-28 on every monster), no
