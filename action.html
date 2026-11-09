@@ -2502,7 +2502,7 @@ function spawnCamps() {
   const spots = [];
   for (let tries = 0; tries < 5000 && spots.length < CAMP.n; tries++) {
     const x = MARGIN.l + 220 + rnd() * (WW - MARGIN.l - MARGIN.r - 440), y = MARGIN.t + 220 + rnd() * (WH - MARGIN.t - MARGIN.b - 440);
-    if (Math.hypot(x - G.p.x, y - G.p.y) < 900 || spots.some(([a, b]) => Math.hypot(a - x, b - y) < CAMP.gap) || waterAt(x, y) || cityD(x, y) < 1.08
+    if (Math.hypot(x - G.p.x, y - G.p.y) < 900 || spots.some(([a, b]) => Math.hypot(a - x, b - y) < CAMP.gap) || waterAt(x, y) || cityD(x, y) < 1.7
       || Math.abs(y - GROUND_PATH(x)) < 120 || PROPS.some(q => !q.soft && Math.hypot(q.x - x, (q.y - y) * 1.6) < (q.rad || (q.rect ? q.rect.w / 2 : 0)) + 110)) continue;
     spots.push([x, y]); }
   spots.forEach(([x, y], i) => { const c = {x, y, kinds: [kinds[i % kinds.length], kinds[(i * 3 + 1) % kinds.length]], n: 3 + i % 3, wait: 0}; G.camps.push(c); fillCamp(c); });
@@ -2709,6 +2709,8 @@ function stepMobs(dt) {
 const TEST = new URLSearchParams(location.search).get('test');   // ?test=atk: screenshot helper, freezes on the second hit
 function testSetup() {
   if (TEST === 'view') { const q = new URLSearchParams(location.search); G.next = 1e9; G.p.x = +q.get('x'); G.p.y = +q.get('y');   // ?test=view&x=&y=
+    if (q.get('camp')) { spawnCamps(); const c = G.camps.slice().sort((a, b) => Math.hypot(a.x - G.p.x, a.y - G.p.y) - Math.hypot(b.x - G.p.x, b.y - G.p.y))[0];   // &camp=1: next to the nearest camp, auto on, &n= steps of play
+      if (c) { G.p.x = c.x - 300; G.p.y = c.y + 40; } setAuto(true); for (let i = 0; i < (+q.get('n') || 0); i++) step(1 / 60); G.freeze = 1; }
     cam.x = G.p.x - VW / 2; cam.y = G.p.y - 60 - VH / 2; return; }
   if (TEST === 'mobs') { const p = G.p; G.next = 1e9; G.mobs = []; if (QS.get('x')) { p.x = +QS.get('x'); p.y = +QS.get('y'); } if (QS.get('clear')) PROPS = [];   // &x=&y=: a spot, &clear=1: no props in the way   // ?test=mobs[&map=thai]: every monster of the map in a row (walk / attack / death frames)
     const ks = [...ROSTER[MSET], BOSSK[MSET]].filter(k => MOBS[k]), ph = +(new URLSearchParams(location.search).get('ph') || 0);
@@ -3073,8 +3075,9 @@ function draw() {
   // big props join the back-to-front pass; one standing in front of the rogue fades so she stays visible
   const inView = q => q.x - q.ox < cx + VW && q.x - q.ox + q.w > cx && q.y - q.oy < cy + VH && q.y - q.oy + q.h > cy;
   const props = PROPS.filter(inView).map(q => ({y: q.y, d: () => {
-    const cover = p.y < q.y && p.y > q.y - q.oy + 30 && Math.abs(p.x - q.x) < q.w * .42 && p.y - 60 > q.y - q.oy;
-    if (cover) ctx.globalAlpha = .45; ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); ctx.globalAlpha = 1; }}));
+    const hid = o => o.y < q.y && o.y > q.y - q.oy + 30 && Math.abs(o.x - q.x) < q.w * .42 && o.y - 50 > q.y - q.oy;   // standing behind it, inside its picture
+    const cover = hid(p) || (q.oy > 90 && G.mobs.some(m => m.hp > 0 && (!m.camp || m.aggro) && Math.abs(m.x - p.x) < 520 && hid(m)));   // monsters in the fight too (owner: trees hid the fight)
+    if (cover) ctx.globalAlpha = hid(p) ? .4 : .55; ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); ctx.globalAlpha = 1; }}));
   const rings = G.fx.filter(f => f.k === 'pfx' && f.depth).map(f => ({y: p.y + (f.depth === 'b' ? -.5 : .5), d: () => drawPfx(f)}));
   const away = s => s.k === 'arrow' && s.vy < 0;   // arrows flying up the screen go behind whoever stands in front of them
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...rings, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props, ...G.pshots.filter(away).map(s => ({y: s.y, d: () => drawPShot(s)}))].sort((a, b) => a.y - b.y);
