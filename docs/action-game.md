@@ -368,6 +368,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Archer F bomb blast in neon green** (owner 2026-11-09 "สกิล4 นักธนู เปลี่ยนสีเขียวนีออน"): `fx_tint.py pfx_bombarrow pfx_bombarrow_g 021208,0a3a16,1fbf4a,46ff7d,d8ffe0` (the black + neon `archer_fx` copy turned the fireball into a flat blob), dark rim via `PRIM`, ring / hit colour / fuse spark `ACK.neon`.
 - **Swordsman red slashes** (owner's zip 2026-11-09 "Pixel Art Animations - Warrior FREE" by Frostwindz, itch.io; licence: use in
   games, modify, NO redistribution, so the zip / frames are not in this public repo, only the cut sheets): `tools/art/warrior_vfx.py
   <unzipped>` → `fx/wvfx1..5.png` (128 px, facing right). `wSlash(p, v, sc)` plays one in front of him, turned to his facing:
