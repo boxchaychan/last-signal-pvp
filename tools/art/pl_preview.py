@@ -14,7 +14,10 @@ if len(sys.argv) > 5:
         i, t = p.split(':'); lab[int(i)] = t
 fr = [Image.open(f).convert('RGBA') for f in sorted(glob.glob(os.path.join(src, 'frame_*.png')))]
 W, H = fr[0].size; BG = (126, 170, 92, 255)
-F = ImageFont.truetype(r'C:\Windows\Fonts\arialbd.ttf', 22)
+try: F = ImageFont.truetype(r'C:\Windows\Fonts\arialbd.ttf', 22)
+except OSError:   # cloud / Linux
+    try: F = ImageFont.truetype('DejaVuSans-Bold.ttf', 22)
+    except OSError: F = ImageFont.load_default()
 
 def tile(f, i, big=False):
     b = Image.alpha_composite(Image.new('RGBA', f.size, BG), f).resize((W * K, H * K), Image.NEAREST)
