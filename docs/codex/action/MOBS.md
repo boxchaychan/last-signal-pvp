@@ -55,27 +55,27 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 20 | fox_spirit | done | China | medium |
 | 21 | toad_demon | done | China | large |
 | 22 | boss_nian | done | China boss | huge |
-| 23 | kappa | todo | Japan | small |
-| 24 | kasa_obake | todo | Japan | small |
-| 25 | oni | todo | Japan | large |
-| 26 | tengu | todo | Japan | medium |
-| 27 | rokurokubi | todo | Japan | medium |
-| 28 | nekomata | todo | Japan | medium |
-| 29 | boss_orochi | todo | Japan boss | huge |
-| 30 | mummy | todo | Egypt | medium |
-| 31 | scarab | todo | Egypt | small |
-| 32 | jackal_warrior | todo | Egypt | medium |
-| 33 | sand_scorpion | todo | Egypt | large |
-| 34 | cobra_priest | todo | Egypt | medium |
-| 35 | sand_golem | todo | Egypt | large |
-| 36 | boss_sphinx | todo | Egypt boss | huge |
-| 37 | draugr | todo | Norse | medium |
-| 38 | frost_wolf | todo | Norse | medium |
-| 39 | troll | todo | Norse | large |
-| 40 | ice_wraith | todo | Norse | small |
-| 41 | dwarf_berserker | todo | Norse | small |
-| 42 | ice_golem | todo | Norse | large |
-| 43 | boss_jotun | todo | Norse boss | huge |
+| 23 | kappa | done | Japan | small |
+| 24 | kasa_obake | done | Japan | small |
+| 25 | oni | done | Japan | large |
+| 26 | tengu | done | Japan | medium |
+| 27 | rokurokubi | done | Japan | medium |
+| 28 | nekomata | done | Japan | medium |
+| 29 | boss_orochi | done | Japan boss | huge |
+| 30 | mummy | done | Egypt | medium |
+| 31 | scarab | done | Egypt | small |
+| 32 | jackal_warrior | done | Egypt | medium |
+| 33 | sand_scorpion | done | Egypt | large |
+| 34 | cobra_priest | done | Egypt | medium |
+| 35 | sand_golem | done | Egypt | large |
+| 36 | boss_sphinx | done | Egypt boss | huge |
+| 37 | draugr | done | Norse | medium |
+| 38 | frost_wolf | done | Norse | medium |
+| 39 | troll | done | Norse | large |
+| 40 | ice_wraith | done | Norse | small |
+| 41 | dwarf_berserker | done | Norse | small |
+| 42 | ice_golem | done | Norse | large |
+| 43 | boss_jotun | done | Norse boss | huge |
 | 44 | dokkaebi_fire | todo | Korea | small |
 | 45 | dokkaebi | todo | Korea | medium |
 | 46 | gwisin | todo | Korea | medium |
