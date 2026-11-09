@@ -368,6 +368,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Swordsman Q = Earthsplitter Cleave** (owner 2026-11-09 "Earthsplitter Cleave ให้ดาบแทนท่าเก่า", pasted sheet →
+  `fx/pfx_earthsplit.png`, 42 frames, anchor = the start of the ground crack 70,219, the crack runs ~155 px right): `groundSplit`
+  pushes an `esplit` fx (`drawEarthSplit`): anchored in front of him, turned to the aim (mirrored for the left), stretched to
+  the crack length (sx = L/155, sy 1.3), starting at frame 3 so the red arc lands at once; each monster on the line is hit
+  when the fire reaches it (.04 + 0.4 x its place along the line). The Codex crack + `gslam` stay as the fallback.
 - **Archer kit from the owner's pasted sheets + the rogue's look** (owner 2026-11-09, five pictures pasted in chat, pulled out of the
   session log as base64; raw copies in `art/incoming/pfx/`: `charge-shot-sheet.webp`, `bomb-arrow-sheet.webp`,
   `rapier-flurry-sheet.png`, `thorn-vine-sheet.webp`, `earthsplitter-cleave-sheet.webp`): `tools/art/pfx_paste.py` cuts such a
