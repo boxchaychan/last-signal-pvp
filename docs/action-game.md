@@ -368,6 +368,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Swordsman E = the owner's sword storm** (2026-11-09 "พายุดาบ เปลี่ยนโทนส้ม นีออนดำ แบบพวกมีด ธนู"; pasted 9x8 sheet 5436x5440 on
+  black, its glow flattened into solid red / yellow / orange / pink bands, raw `art/incoming/pfx/sword-storm-sheet.png`):
+  `tools/art/sword_storm_fx.py` drops the band colours (and 4 px round them), keeps the dark smoke + textured streaks, black
+  ink + neon orange rim + orange glow → `fx/pfx_swstorm_k.png` (72 frames 302x340). `whirlTick` plays it round him while held.
+  Found on the way: `swordSk` k 2 paid the cost and then `startWhirl` paid again, so E never spun; the first payment is gone.
 - **Dash + landing dust** (owner 2026-11-09 "เสริมพวก เดส กระโดด", two pasted sheets → `fx/pfx_dustdash.png` 24 frames, puff at
   50,64 with a ~380 px trail to the right; `fx/pfx_dustland.png` 19 frames, anchor on the ground 84,140): `dashDust` at the start of
   every roll and the archer's leap back (turned to the way she goes), `landDust` at the end of a roll, the archer's landing, the
