@@ -299,6 +299,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Thai forest map** (`?map=jungle`, owner "เมืองไทยก็ให้แผนที่ต่อไปเป็นป่าเมืองไทย มอนเมืองไทย ละค่อยๆ ไล่ไปจนถึงเมืองอื่น"):
+  `JG` (TH stays true, so the Thai ground and props are used), no city (`HAMLET` off the map), jungle groves
+  (`FORESTS` x7) round a winding road, a creek with the plank bridge, a lotus pond, prang ruins (`RUINS`), a hunters'
+  camp and a pavilion in two clearings (`MEADOWS`), Thai monsters (`ROSTER.jungle`, boss Chalawan); built by
+  `jungleProps`. Roads: `EXITS[MAP]` = west / east end → map (null = sign only): west ↔ thai ↔ jungle → China (sign
+  "เมืองจีน → (เร็วๆ นี้)" until the China city exists); `spawnAt` puts her at the end she came in by.
 - **World layout** (owner 2026-11-09 "อันนี้เมืองนะ ในเกมส์ให้มีเมืองแยกๆ ไป ละก็มีแมพต่อกันเป็นแผนที่ ไม่ต้องทำเมืองแบบนี้ตลอด"):
   cities are their own places (the Thai walled city is one); between them come field maps joined edge to edge into a
   world map. Not every map needs a walled city. Per country: one city (China's is big) + several linked field maps

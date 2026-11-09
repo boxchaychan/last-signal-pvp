@@ -92,7 +92,9 @@ const WW = 6000, WH = 4000, MARGIN = {l: 180, r: 180, t: 240, b: 260};   // owne
 const AR = WW * WH / (4200 * 2800);   // how many times the first map's area (prop counts follow it)
 // two maps (owner 2026-11-08 picked "a separate map" for the old Thai city): ?map=thai; walking off the road's east end
 // of the first map leads there, its west end leads back (a page reload with ?map=..&from=..)
-const QS = new URLSearchParams(location.search), MAP = QS.get('map') === 'thai' ? 'thai' : 'west', TH = MAP === 'thai', FROM = QS.get('from');
+// maps (owner 2026-11-09: cities are their own places, field maps join between them; after the Thai city comes the Thai
+// forest with Thai monsters, then on to the next country): west field -> Thai city -> Thai forest (JG) -> China later
+const QS = new URLSearchParams(location.search), MAP = ['thai', 'jungle'].includes(QS.get('map')) ? QS.get('map') : 'west', JG = MAP === 'jungle', TH = MAP === 'thai' || JG, FROM = QS.get('from');
 // three heroes (owner 2026-11-09: swordsman + mage made in GPT, moves from PixelLab): ?hero= or the last one picked
 const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'mage', 'archer'].includes(h) ? h : 'rogue'; })();
 const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', mage: 'เมจ', archer: 'นักธนู'};
@@ -126,24 +128,24 @@ function painter(w, h) {
 }
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + .5) / 16);
 // ---------- terrain layout: lake, stream, hamlet, meadows ----------
-const LAKE = TH ? {cx: WW * .2, cy: WH * .47, parts: [[0, 0, 200, 105], [130, 40, 120, 72], [-120, 30, 110, 66]]} : {cx: WW * .7, cy: WH * .66, parts: [[0, 0, 300, 170], [215, 70, 190, 115], [-200, 50, 170, 105], [40, -85, 170, 90]].map(q => q.map(v => v * 1.35))};
-LAKE.box = TH ? [LAKE.cx - 330, LAKE.cy - 170, LAKE.cx + 330, LAKE.cy + 170] : [LAKE.cx - 600, LAKE.cy - 300, LAKE.cx + 620, LAKE.cy + 310];
+const LAKE = JG ? {cx: WW * .52, cy: WH * .24, parts: [[0, 0, 230, 120], [150, 50, 130, 80], [-140, 40, 120, 70]]} : TH ? {cx: WW * .2, cy: WH * .47, parts: [[0, 0, 200, 105], [130, 40, 120, 72], [-120, 30, 110, 66]]} : {cx: WW * .7, cy: WH * .66, parts: [[0, 0, 300, 170], [215, 70, 190, 115], [-200, 50, 170, 105], [40, -85, 170, 90]].map(q => q.map(v => v * 1.35))};
+LAKE.box = JG ? [LAKE.cx - 360, LAKE.cy - 180, LAKE.cx + 360, LAKE.cy + 180] : TH ? [LAKE.cx - 330, LAKE.cy - 170, LAKE.cx + 330, LAKE.cy + 170] : [LAKE.cx - 600, LAKE.cy - 300, LAKE.cx + 620, LAKE.cy + 310];
 function lakeF(x, y) {           // > 0 inside the water, about 1 in the middle
   let v = -9; for (const [ox, oy, rx, ry] of LAKE.parts) { const dx = (x - LAKE.cx - ox) / rx, dy = (y - LAKE.cy - oy) / ry; v = Math.max(v, 1 - (dx * dx + dy * dy)); }
   return v + .06 * Math.sin(x / 31) * Math.sin(y / 23);
 }
 // stream: from the lake's north shore up to the top edge, crossing the path (bridge there)
 const STREAM = (() => {
-  const cy = LAKE.cy, K = TH ? [[WW * .63, -60], [WW * .67, WH * .18], [WW * .6, WH * .4], [WW * .65, WH * .6], [WW * .58, WH * .8], [WW * .62, WH + 60]] : [[LAKE.cx + 40, cy - 160], [LAKE.cx + 140, cy * .8], [LAKE.cx + 30, cy * .62], [LAKE.cx + 220, cy * .42], [LAKE.cx + 110, cy * .2], [LAKE.cx + 280, -40]];
+  const cy = LAKE.cy, K = JG ? [[WW * .34, -60], [WW * .31, WH * .22], [WW * .38, WH * .45], [WW * .33, WH * .7], [WW * .37, WH + 60]] : TH ? [[WW * .63, -60], [WW * .67, WH * .18], [WW * .6, WH * .4], [WW * .65, WH * .6], [WW * .58, WH * .8], [WW * .62, WH + 60]] : [[LAKE.cx + 40, cy - 160], [LAKE.cx + 140, cy * .8], [LAKE.cx + 30, cy * .62], [LAKE.cx + 220, cy * .42], [LAKE.cx + 110, cy * .2], [LAKE.cx + 280, -40]];
   const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
     for (let t = 0; t < 1; t += .1) { const t2 = t * t, t3 = t2 * t, f = (a, b, c, d) => .5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
       pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
   pts.push(K[K.length - 1]);
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const mg = TH ? 260 : 50;   // the Thai map's stream is a wide river
+  const mg = JG ? 110 : TH ? 260 : 50;   // the Thai map's stream is a wide river
   return {pts, box: [Math.min(...xs) - mg, Math.min(...ys) - mg, Math.max(...xs) + mg, Math.max(...ys) + mg]};
 })();
-const RIVM = TH ? 240 : 64, SEGB = STREAM.pts.slice(1).map((b, i) => { const a = STREAM.pts[i]; return [Math.min(a[0], b[0]) - RIVM, Math.min(a[1], b[1]) - RIVM, Math.max(a[0], b[0]) + RIVM, Math.max(a[1], b[1]) + RIVM]; });
+const RIVM = JG ? 100 : TH ? 240 : 64, SEGB = STREAM.pts.slice(1).map((b, i) => { const a = STREAM.pts[i]; return [Math.min(a[0], b[0]) - RIVM, Math.min(a[1], b[1]) - RIVM, Math.max(a[0], b[0]) + RIVM, Math.max(a[1], b[1]) + RIVM]; });
 function riverX(y) { const P = STREAM.pts; for (let i = 0; i < P.length - 1; i++) if (y >= P[i][1] && y <= P[i + 1][1]) return P[i][0] + (P[i + 1][0] - P[i][0]) * (y - P[i][1]) / ((P[i + 1][1] - P[i][1]) || 1); return P[0][0]; }
 function streamD(x, y) {          // distance to the stream's middle line (1e9 when more than ~64 px away: nothing uses it then)
   let best = 1e9; const P = STREAM.pts;
@@ -154,18 +156,20 @@ function streamD(x, y) {          // distance to the stream's middle line (1e9 w
 }
 const CITYP = 8;   // the Thai city's shape: |dx/rx|^8 + |dy/ry|^8 < 1 = a rounded rectangle (the other map keeps the ellipse)
 function cityD(x, y) { const dx = (x - HAMLET.x) / HAMLET.rx, dy = (y - HAMLET.y) / HAMLET.ry; return TH ? dx ** CITYP + dy ** CITYP : dx * dx + dy * dy; }
-const HAMLET = TH ? {x: WW * .26, y: WH * .52, rx: 1150, ry: 720} : {x: WW * .27 + 300, y: WH * .28 + 170, rx: 980, ry: 640};   // a town since the GPT buildings sheet (was 720 x 520)   // wider for the 1.5x cottages   // the cottages stand round its middle
-const MEADOWS = TH ? [[WW * .74, WH * .34], [WW * .5, WH * .26], [WW * .5, WH * .78], [WW * .76, WH * .5]] : [[WW * .5, WH * .78], [WW * .14, WH * .6], [WW * .64, WH * .36], [WW * .55, WH * .2], [WW * .34, WH * .9], [WW * .9, WH * .82], [WW * .1, WH * .2]];
+const HAMLET = JG ? {x: -1e5, y: -1e5, rx: 1, ry: 1} : TH ? {x: WW * .26, y: WH * .52, rx: 1150, ry: 720} : {x: WW * .27 + 300, y: WH * .28 + 170, rx: 980, ry: 640};   // a town since the GPT buildings sheet (was 720 x 520)   // wider for the 1.5x cottages   // the cottages stand round its middle
+const MEADOWS = JG ? [[WW * .2, WH * .32], [WW * .6, WH * .72], [WW * .86, WH * .5], [WW * .1, WH * .62]] : TH ? [[WW * .74, WH * .34], [WW * .5, WH * .26], [WW * .5, WH * .78], [WW * .76, WH * .5]] : [[WW * .5, WH * .78], [WW * .14, WH * .6], [WW * .64, WH * .36], [WW * .55, WH * .2], [WW * .34, WH * .9], [WW * .9, WH * .82], [WW * .1, WH * .2]];
 // zones (owner 2026-11-08 "ทำแมพต่อ"): two thick forests with darker ground (north-east round a ruined tower, south-west),
 // ruins round the south tower, side paths from the road to each tower
-const FORESTS = TH ? [{x: WW * .86, y: WH * .2, rx: 620, ry: 460}, {x: WW * .9, y: WH * .86, rx: 560, ry: 400}, {x: WW * .1, y: WH * .9, rx: 600, ry: 360}]
+const FORESTS = JG ? [{x: WW * .14, y: WH * .2, rx: 900, ry: 640}, {x: WW * .16, y: WH * .88, rx: 900, ry: 520}, {x: WW * .58, y: WH * .1, rx: 820, ry: 420},
+    {x: WW * .62, y: WH * .92, rx: 900, ry: 480}, {x: WW * .9, y: WH * .18, rx: 700, ry: 560}, {x: WW * .92, y: WH * .84, rx: 640, ry: 540}, {x: WW * .5, y: WH * .52, rx: 380, ry: 220}]
+  : TH ? [{x: WW * .86, y: WH * .2, rx: 620, ry: 460}, {x: WW * .9, y: WH * .86, rx: 560, ry: 400}, {x: WW * .1, y: WH * .9, rx: 600, ry: 360}]
   : [{x: WW * .86, y: WH * .25, rx: 820, ry: 640}, {x: WW * .13, y: WH * .8, rx: 760, ry: 580}];
 function forestF(x, y) {         // > 0 inside a forest, about 1 in the middle
   let v = -9; for (const f of FORESTS) { const dx = (x - f.x) / f.rx, dy = (y - f.y) / f.ry; v = Math.max(v, 1 - (dx * dx + dy * dy)); }
   return v < -.2 ? v : v + .07 * Math.sin(x / 53) * Math.sin(y / 41);   // the wobble only near / inside a forest
 }
-const RUINS = TH ? {x: WW * .84, y: WH * .24, rx: 440, ry: 270} : {x: WW * .44, y: WH * .84 + 40, rx: 480, ry: 300};
-const PADDY = TH ? {x0: WW * .67, y0: WH * .63, x1: WW * .84, y1: WH * .9} : null;   // rice fields east of the river
+const RUINS = JG ? {x: WW * .74, y: WH * .38, rx: 560, ry: 340} : TH ? {x: WW * .84, y: WH * .24, rx: 440, ry: 270} : {x: WW * .44, y: WH * .84 + 40, rx: 480, ry: 300};
+const PADDY = JG ? null : TH ? {x0: WW * .67, y0: WH * .63, x1: WW * .84, y1: WH * .9} : null;   // rice fields east of the river
 const TOWERS = TH ? [] : [[WW * .86, WH * .3], [WW * .44, WH * .84], [WW * .1, WH * .3]];
 function crv(K) {                // Catmull-Rom through the key points
   const pts = []; for (let i = 0; i < K.length - 1; i++) { const p0 = K[Math.max(0, i - 1)], p1 = K[i], p2 = K[i + 1], p3 = K[Math.min(K.length - 1, i + 2)];
@@ -173,8 +177,9 @@ function crv(K) {                // Catmull-Rom through the key points
       pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]); } }
   pts.push(K[K.length - 1]); return pts;
 }
-const pathY0 = TH ? x => WH * .58 + 230 * Math.sin(x / 760) + 50 * Math.sin(x / 240 + .7) : x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
-const SIDE = TH ? [crv([[WW * .79, pathY0(WW * .79)], [WW * .81, WH * .42], [WW * .84, WH * .24 + 70]]),   // to the prang ruins, to the paddies
+const pathY0 = JG ? x => WH * .56 + 260 * Math.sin(x / 820 + 1) + 60 * Math.sin(x / 260 + .3) : TH ? x => WH * .58 + 230 * Math.sin(x / 760) + 50 * Math.sin(x / 240 + .7) : x => WH * .5 + 320 * Math.sin(x / 560) + 80 * Math.sin(x / 210 + 1.3);
+const SIDE = JG ? [crv([[WW * .7, pathY0(WW * .7)], [WW * .72, WH * .46], [WW * .74, WH * .38 + 80]]),   // to the prang ruins, to the pond
+  crv([[WW * .5, pathY0(WW * .5)], [WW * .51, WH * .4], [WW * .52, WH * .24 + 130]])] : TH ? [crv([[WW * .79, pathY0(WW * .79)], [WW * .81, WH * .42], [WW * .84, WH * .24 + 70]]),   // to the prang ruins, to the paddies
   crv([[WW * .73, pathY0(WW * .73)], [WW * .75, WH * .72], [WW * .76, WH * .86]])] : [   // from the road to the north-east tower (through the forest), the south ruins, the west tower
   crv([[WW * .82, pathY0(WW * .82)], [WW * .84, WH * .38], [WW * .855, WH * .33], [WW * .86, WH * .3 + 40]]),
   crv([[WW * .43, pathY0(WW * .43)], [WW * .45, WH * .66], [WW * .425, WH * .75], [WW * .44, WH * .84 + 50]]),
@@ -207,8 +212,8 @@ for (let gy = 0; gy < ZH; gy++) for (let gx = 0; gx < ZW; gx++) { const x = gx *
 // kinds: 0 grass, 1 path, 2 yard, 3 shore, 4 water, 5 bridge deck, 6 bridge rail, 7 ruins floor
 const PYC = new Float32Array(WW + 8), PWC = new Float32Array(WW + 8), SWC = new Float32Array(WH + 8);   // per column / row
 for (let x = 0; x < WW + 8; x++) { PYC[x] = pathY(x); PWC[x] = 34 + 8 * Math.sin(x / 57); }
-for (let y = 0; y < WH + 8; y++) SWC[y] = TH ? 118 + 16 * Math.sin(y / 130) : 22 + 5 * Math.sin(y / 70);
-const SHORE = TH ? 30 : 8;
+for (let y = 0; y < WH + 8; y++) SWC[y] = JG ? 46 + 8 * Math.sin(y / 110) : TH ? 118 + 16 * Math.sin(y / 130) : 22 + 5 * Math.sin(y / 70);
+const SHORE = JG ? 16 : TH ? 30 : 8;
 function terr(x, y) {            // x, y whole numbers inside the world
   const lb = LAKE.box, sb = STREAM.box, hz = HAMLET;
   const dpath = Math.abs(y - PYC[x]), pw = PWC[x];
@@ -555,7 +560,7 @@ function makeProps() {
     }
     PROPS.push({img: s.c, x, y, ox: s.fx, oy: s.fy, rad: s.rad, rect: s.rect, w: s.c.width, h: s.c.height, soft: s.soft, shades});
   };
-  if (TH) { if (GPROP.t_palace) thaiProps({add, far, dry, pathOk, inYard}); PROPS.sort((a, b) => a.y - b.y); return; }
+  if (TH) { if (GPROP.t_palace) (JG ? jungleProps : thaiProps)({add, far, dry, pathOk, inYard}); PROPS.sort((a, b) => a.y - b.y); return; }
   // the first map's exit to the Thai map: a signpost where the road leaves at the east edge
   if (GPROP.signpost) { const x = WW - MARGIN.r - 90; add(gp('signpost'), x | 0, GROUND_PATH(x) - 80 | 0); }
   // GPT-drawn props (owner 2026-11-08: map art from GPT, the code-drawn ones looked poor); the code ones are only a
@@ -720,6 +725,41 @@ function thaiProps({add, far, dry, pathOk, inYard}) {
   for (let k = 0, tries = 0; k < 70 && tries < 3000; tries++) { const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
     if (!pathOk(x, y) || inYard(x, y) || forestF(x, y) > -.2 || (PADDY && x > PADDY.x0 - 60 && x < PADDY.x1 + 60 && y > PADDY.y0 - 60 && y < PADDY.y1 + 60) || !far(x, y, 380)) continue;
     add(rnd() < .7 ? J() : gp(rnd() < .5 ? 'bush' : 'rocks'), x | 0, y | 0); k++; }
+}
+// the Thai forest (owner 2026-11-09 "เมืองไทยก็ให้แผนที่ต่อไปเป็นป่าเมืองไทย มอนเมืองไทย"): no city, a jungle all round a
+// winding road, a creek with a plank bridge, a lotus pond, a prang temple ruin in the trees, a hunters' camp
+function jungleProps({add, far, dry, pathOk}) {
+  const J = () => gp(['coconut', 'sugarpalm', 'banana', 'v_raintree', 'v_raintree'][rnd() * 5 | 0]);
+  const roadOk = (x, y, w) => [x - w / 2, x, x + w / 2].every(xs => Math.abs(y - GROUND_PATH(xs)) > 95) && sideD(x, y) > 90 && dry(x, y, 60);
+  const put = (n, x, y, check = true) => { if (!GPROP[n]) return false; if (check && !roadOk(x, y, GPROP[n].a.width)) return false; add(gp(n), x | 0, y | 0); return true; };
+  // a wall of trees round the edges (the road stays open where it leaves)
+  for (let x = 40; x < WW; x += 220 + rnd() * 120) { add(J(), x | 0, 170 + rnd() * 30 | 0); add(J(), x + 60 | 0, WH - 30 - rnd() * 20 | 0); }
+  for (let y = 300; y < WH - 120; y += 230 + rnd() * 110) for (const x of [70 + rnd() * 50, WW - 70 - rnd() * 50]) if (Math.abs(y - GROUND_PATH(x)) > 150) add(J(), x | 0, y | 0);
+  { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0); }
+  { const x = WW - MARGIN.r - 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0); }
+  // the prang ruins: two prangs and a stupa, broken walls, rubble, mossy rocks and pillars round them
+  put('t_prang', RUINS.x, RUINS.y - 40, false); put('t_prang', RUINS.x - 360, RUINS.y + 80, false); put('t_stupa', RUINS.x + 330, RUINS.y + 50, false);
+  for (const [n, dx, dy] of [['wall', -250, 210], ['wall_corner', 260, 230], ['pillar', -120, 180], ['pillar_down', 120, 200], ['statue', 0, 150], ['arch', -470, -120]])
+    if (GPROP[n]) { const x = RUINS.x + dx, y = RUINS.y + dy; if (sideD(x, y) > 70 && far(x, y, 70)) add(gp(n), x | 0, y | 0); }
+  for (let i = 0; i < 30; i++) { const a = rnd() * 6.28, r = .45 + rnd() * .65, x = RUINS.x + Math.cos(a) * RUINS.rx * r, y = RUINS.y + Math.sin(a) * RUINS.ry * r;
+    if (pathOk(x, y) && far(x, y, 90)) add(gp(['rubble', 'mossy_rock', 'fern', 'pillar'][rnd() * 4 | 0]), x | 0, y | 0); }
+  // lotus on the pond, reeds round it
+  for (let i = 0; i < 14; i++) { const a = rnd() * 6.28, x = LAKE.cx + Math.cos(a) * 200 * rnd(), y = LAKE.cy + Math.sin(a) * 100 * rnd(); if (lakeF(x, y) > .15) add(gp('lotus'), x | 0, y | 0); }
+  // a hunters' camp in a clearing south-west of the road, a lookout tower by the creek
+  { const [cx, cy] = MEADOWS[0]; put('campfire', cx, cy); put('tent', cx - 170, cy - 40); put('v_hut', cx + 220, cy - 60); put('log', cx + 40, cy + 110); put('jar_dragon', cx - 60, cy + 90); }
+  { const y = WH * .3, x = riverX(y) + SWC[y | 0] + 140; put('v_watchtower', x, y); }
+  { const [cx, cy] = MEADOWS[1]; put('v_pavilion', cx, cy); put('v_well', cx + 200, cy + 40); put('pots', cx - 150, cy + 60); }
+  // the jungle: palms, bananas and rain trees close together, ferns, bushes and mushrooms under them, logs and stumps
+  for (const F of FORESTS) for (let tries = 0, k = 0; tries < 3000 && k < F.rx * F.ry / 11000; tries++) {
+    const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (x < 60 || x > WW - 60 || y < 200 || y > WH - 40 || forestF(x, y) < .04 || !pathOk(x, y) || !far(x, y, 130) || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.1 || MEADOWS.some(([mx, my]) => Math.hypot(x - mx, y - my) < 300)) continue;
+    add(J(), x | 0, y | 0); k++; }
+  for (const F of FORESTS) for (let i = 0; i < 60; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()), x = F.x + Math.cos(a) * F.rx * r, y = F.y + Math.sin(a) * F.ry * r;
+    if (forestF(x, y) > .02 && pathOk(x, y) && far(x, y, 50)) add(gp(['fern', 'fern', 'bush', 'mushrooms', 'log', 'stump', 'mossy_rock'][rnd() * 7 | 0]), x | 0, y | 0); }
+  // between the groves: more palms and bushes, rocks, the odd dead tree
+  for (let k = 0, tries = 0; k < 110 && tries < 4000; tries++) { const x = 300 + rnd() * (WW - 600), y = 360 + rnd() * (WH - 720);
+    if (!pathOk(x, y) || forestF(x, y) > -.05 || !far(x, y, 230) || ((x - RUINS.x) / RUINS.rx) ** 2 + ((y - RUINS.y) / RUINS.ry) ** 2 < 1.2 || MEADOWS.some(([mx, my]) => Math.hypot(x - mx, y - my) < 260)) continue;
+    add(rnd() < .65 ? J() : gp(['bush', 'rocks', 'fern', 'dead_tree', 'boulder'][rnd() * 5 | 0]), x | 0, y | 0); k++; }
 }
 // water blocks walking (the bridge deck is open): slide along the shore by undoing one axis, else stay
 function unwater(o, ox, oy) {
@@ -902,9 +942,12 @@ async function load() {
 
 // ---------- state ----------
 let G;
-function spawnAt() {              // where she appears: the road's west end on the Thai map, its east end coming back
-  if (TH) { const x = MARGIN.l + 70; return [x, GROUND_PATH(x)]; }
-  if (FROM === 'thai') { const x = WW - MARGIN.r - 70; return [x, GROUND_PATH(x)]; }
+// where each map's road leads: west end / east end (to: null = not built yet, a sign only)
+const EXITS = {west: {e: ['thai', 'เมืองไทย →']}, thai: {w: ['west', '← กลับทุ่งหญ้า'], e: ['jungle', 'ป่าเมืองไทย →']}, jungle: {w: ['thai', '← เมืองไทย'], e: [null, 'เมืองจีน → (เร็วๆ นี้)']}}[MAP];
+function spawnAt() {              // where she appears: at the end of the road she came in by (west end from the west map)
+  const E = EXITS, xw = MARGIN.l + 70, xe = WW - MARGIN.r - 70;
+  if (FROM && E.e && E.e[0] === FROM) return [xe, GROUND_PATH(xe)];
+  if (FROM && E.w && E.w[0] === FROM || (TH && !FROM)) return [xw, GROUND_PATH(xw)];
   return [WW / 2, WH / 2 + 60];
 }
 function travel(to) {             // off the end of the road: fade out, carry hp / stamina, load the other map
@@ -916,7 +959,7 @@ function travel(to) {             // off the end of the road: fade out, carry hp
 function newGame() {
   for (let k = 1; k <= 6; k++) applySkLv(k, 1);
   G = {t: 0, hs: 0, shake: 0, wave: 0, kills: 0, over: false, fx: [], nums: [], ghosts: [], mobs: [], knives: [], bombs: [], mshots: [], pshots: [], meteors: [], tags: [], later: [], next: 1.2,
-    p: {cd: {}, x: spawnAt()[0], y: spawnAt()[1], dir: TH ? 0 : FROM === 'thai' ? 4 : 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null, lv: 1, xp: 0, pts: 0, skl: {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1}, tele: HERO === 'mage' ? 1 : 0}};   // the mage teleports instead of rolling from level 1 (owner)
+    p: {cd: {}, x: spawnAt()[0], y: spawnAt()[1], dir: spawnAt()[0] > WW * .8 ? 4 : spawnAt()[0] < WW * .2 ? 0 : 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null, lv: 1, xp: 0, pts: 0, skl: {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1}, tele: HERO === 'mage' ? 1 : 0}};   // the mage teleports instead of rolling from level 1 (owner)
   cam.x = G.p.x - VW / 2; cam.y = G.p.y - VH / 2;
   if (FROM) try { const c = JSON.parse(sessionStorage.getItem('act.carry') || 'null'); if (c) { G.p.hp = c.hp || 100; G.p.st = c.st || 100; G.kills = c.kills || 0; G.wave = c.wave || 0; if (c.hero === HERO && c.lv) { G.p.lv = c.lv; G.p.xp = c.xp || 0; G.p.pts = c.pts || 0; G.p.skl = c.skl || G.p.skl; G.p.tele = +c.tele || (HERO === 'mage' ? 1 : 0); } } } catch (e) {}
 }
@@ -2171,8 +2214,9 @@ const MOBT = {
   boss_nian:     {hp: 1100, sp: 66,  r: 48, dmg: 28, reach: 140, tell: .8,  cd: 2.2, kb: .05, stout: 1, boss: 'เหนียนโซ่ว', fx: 'cwave', fxAt: .55, fxY: 6},
 };
 const ROSTER = {west: ['shroom', 'wolf', 'skeleton', 'goblin_archer', 'wisp', 'boar_guard', 'golem'], thai: ['khamot', 'monkey', 'krahang', 'phrai', 'croc_guard', 'pret'],
+  jungle: ['monkey', 'khamot', 'krahang', 'phrai', 'pret', 'croc_guard'],
   china: ['paper_doll', 'jiangshi', 'fox_spirit', 'terracotta_archer', 'toad_demon', 'terracotta_general']};
-const BOSSK = {west: 'boss_treant', thai: 'boss_chalawan', china: 'boss_nian'};
+const BOSSK = {west: 'boss_treant', thai: 'boss_chalawan', jungle: 'boss_chalawan', china: 'boss_nian'};
 const MSET = ROSTER[QS.get('set')] ? QS.get('set') : MAP;   // ?set=china: the China monsters on this map until the China map is built
 const MOBS = {};
 async function loadMobs() {
@@ -2336,7 +2380,7 @@ function stepPlayer(dt) {
     } else { p.state = 'idle'; p.bob = 0; }
   }
   blockProps(p, 14); unwater(p, ox, oy);
-  if (!TEST && !G.travel && Math.abs(p.y - GROUND_PATH(p.x)) < 70) { if (!TH && p.x >= WW - MARGIN.r - 2) travel('thai'); else if (TH && p.x <= MARGIN.l + 2) travel('west'); }
+  if (!TEST && !G.travel && Math.abs(p.y - GROUND_PATH(p.x)) < 70) { if (EXITS.e && EXITS.e[0] && p.x >= WW - MARGIN.r - 2) travel(EXITS.e[0]); else if (EXITS.w && EXITS.w[0] && p.x <= MARGIN.l + 2) travel(EXITS.w[0]); }
   p.x = clamp(p.x, MARGIN.l, WW - MARGIN.r); p.y = clamp(p.y, MARGIN.t, WH - MARGIN.b);
 }
 function stepMobs(dt) {
@@ -2716,9 +2760,10 @@ function draw() {
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...rings, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props].sort((a, b) => a.y - b.y);
   for (const o of list) o.d();
   drawFlies();
-  { const ex = TH ? MARGIN.l + 150 : WW - MARGIN.r - 160, ey = GROUND_PATH(ex) - 150;   // where the road leads on
-    if (Math.abs(ex - p.x) < VW) { ctx.font = '800 18px "Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = '#1d1a22'; ctx.fillStyle = '#ffe066';
-      const t = TH ? '← กลับทุ่งหญ้า' : 'เมืองไทย →'; ctx.strokeText(t, ex, ey); ctx.fillText(t, ex, ey); } }
+  for (const side of ['w', 'e']) { const X = EXITS[side]; if (!X) continue;   // where the road leads on
+    const ex = side === 'w' ? MARGIN.l + 150 : WW - MARGIN.r - 160, ey = GROUND_PATH(ex) - 150;
+    if (Math.abs(ex - p.x) < VW) { ctx.font = '800 18px "Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = '#1d1a22'; ctx.fillStyle = X[0] ? '#ffe066' : '#c9c2b0';
+      ctx.strokeText(X[1], ex, ey); ctx.fillText(X[1], ex, ey); } }
   for (const kn of G.knives) drawKnife(kn);
   for (const s of G.mshots) drawMShot(s);
   for (const s of G.pshots) drawPShot(s);
@@ -2811,7 +2856,7 @@ function hud() { if (!G) return; hudHotbar(); hpI.style.width = G.p.hp + '%'; st
 const ov = document.getElementById('ov');
 { const h1 = ov.querySelector('h1'); if (h1) h1.textContent = HNAME[HERO]; const go = document.getElementById('go'), pk = document.createElement('div'); pk.id = 'pick';
   for (const h of ['rogue', 'swordsman', 'mage', 'archer']) { const b = document.createElement('button'); b.textContent = HNAME[h]; if (h === HERO) b.className = 'on';
-    b.onclick = () => { if (h === HERO) return; try { localStorage.setItem('act.hero', h); } catch (e) {} location.href = 'action.html?hero=' + h + (TH ? '&map=thai' : ''); }; pk.appendChild(b); }
+    b.onclick = () => { if (h === HERO) return; try { localStorage.setItem('act.hero', h); } catch (e) {} location.href = 'action.html?hero=' + h + (MAP !== 'west' ? '&map=' + MAP : ''); }; pk.appendChild(b); }
   if (go) go.parentNode.insertBefore(pk, go); }
 function showOver() { ov.innerHTML = '<div><h1>แพ้แล้ว</h1><p>ถึงระลอก ' + G.wave + ' · ล้มมอน ' + G.kills + ' ตัว</p><button id="go">เล่นใหม่</button></div>'; ov.style.display = 'flex'; document.getElementById('go').onclick = start; }
 function start() {
