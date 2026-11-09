@@ -299,6 +299,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **More ParticleFX sheets** (owner 2026-11-09, sent without a skill named; placed by Claude): `whirlwind-sheet` (5x5) →
+  `fx/pfx_whirl` = the E whirlwind ring of the rogue and swordsman (and their icons); `blazing-combo-sheet` (6x5, three
+  fire arcs round a centre, anchor 'b' = box centre) → `fx/pfx_blaze` = the swordsman's swings while berserk (arc 1 frames
+  0-9 for the first hit, arc 3 with its impact frames 18-29 for the last, turned to the facing; `drawPfx` now takes `f0`,
+  `fn`, `rot`); `dash-strike-sheet` (6x5) → `fx/pfx_dashstrike` (frames 12-28, the violet cut) on every monster the rogue's
+  F zigzag hits, turned along the cut. Test `?test=hsk&hero=swordsman&k=0&rage=1`.
 - **Mage E chain lightning = ParticleFX** (owner 2026-11-09 "สกิล 2 เมจ", `art/incoming/pfx/chain-lightning-sheet.png`, 6x6
   frames of 684x488, 4 orbs joined by bolts): `tools/art/pfx_chain_parts.py` cuts one orb (`fx/pfx_orb`, put on every
   monster hit) and one bolt laid flat (`fx/pfx_bolt`, stretched and turned between each pair in `drawChain`), the faint

@@ -32,7 +32,8 @@ sheet = Image.new('RGBA', (w * C, h * R), (0, 0, 0, 0))
 for i, f in enumerate(small): sheet.paste(f, ((i % C) * w, (i // C) * h))
 S = np.stack([np.array(f)[..., 3] for f in small]).astype(float).sum(0); yy, xx = np.mgrid[0:h, 0:w]; tw = S.sum()
 ax = (S * xx).sum() / tw
-if anchor == 'c': ay = (S * yy).sum() / tw
+if anchor == 'b': ax, ay = w / 2, h / 2   # centre of the box (a ring of arcs turned round the hero)
+elif anchor == 'c': ay = (S * yy).sum() / tw
 else: r_ = S.sum(1); ay = int(np.nonzero(r_ > r_.max() * .05)[0].max())
 sheet.save(f'fx/{key}.png', optimize=True)
 man = json.load(open('fx/manifest.json'))
