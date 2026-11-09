@@ -299,6 +299,24 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Swordsman + mage playable** (2026-11-09; pick on the start screen, `?hero=` or the last pick in localStorage `act.hero`;
+  `HERO`, sheets `art/action/<hero>*.png` from `bash tools/art/hero_build.sh <hero>` (hit frames by hand there, leap landing
+  frame = the leap row's hit)). PixelLab: base moves 41 jobs each (idle / run / roll / hurt 8 dirs, attack 16 f E S N NE NW,
+  death E S W N) + skills (`hero_jobs.py <hero> skills`: swordsman spin S, leap 16 f / guard 4 f / charge 8 f in E S N NW;
+  mage cast_up / staff_slam 8 f in E S N NW) = ~100 generations for both; 1847.5 left on 2026-11-09. The queues stopped
+  when the PC slept; `pl_queue.py` now downloads a job the server already finished instead of stopping.
+  Code: skills play frame lists in an `act` state (`playAct` / `endAct`: frames, times, events per frame, tick, loop for
+  held skills; `HOLD` + `holding(k)` for E / R of the swordsman). Swordsman (`SWS`): normal attack sweep + slam with
+  crimson streak cuts and a white X flash (`cutFx`, owner's clip "ฟันสวยมาก เร็วด้วย"); Q `groundSplit` crack line + stun,
+  E whirlwind while held (stamina drain, rogue's spin ring), R charge 3 levels then the sweep (level 3 = gold crit), F leap
+  to the aimed spot (lands on the hit frame, ring + quake + stun), Z parry (`swCounter`: no damage, x3 counter), X berserk
+  (`p.rage`: 28% faster swings, lifesteal, -20% damage, red aura `au_red`); passive iron shield (`IRON`, bar under the
+  stamina). Mage (`MGS`): two homing bolts per attack (`mageBolt`, `G.pshots`), Q fireball (burn), E chain lightning,
+  R frost nova (`m.frz`), F blink (move direction), Z meteor (`G.meteors`, telegraph ring, 1 s), X mana shield (`p.msh`,
+  bursts into lightning when broken); passive elements (`applyEl` / `react`: steam, shatter, overload, floating Thai text
+  `G.tags`). Mob statuses: `m.stun`, `m.frz` (blue tint), `m.burn`. Test `?test=hsk&hero=..&k=0..6&n=steps[&rel=]`.
+  Codex works in the same folder and switches branches, so Claude now works in a separate worktree
+  (`C:\last-signal-pvp-claude`, branch `claude/work`, preview "game-claude" on port 8001) and pushes to main.
 - **Monsters in the game** (2026-11-09): slimes replaced by the sprite monsters (`MOBT` stats per kind, `ROSTER` per map:
   west = shroom wolf skeleton goblin_archer wisp boar_guard golem, thai = khamot monkey krahang phrai croc_guard pret;
   `BOSSK` treant / Chalawan every 5th wave with a boss bar at the top). `stepMob2`: walk to the player (shooters hold
