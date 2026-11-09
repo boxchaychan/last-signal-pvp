@@ -12,11 +12,12 @@ Owner 2026-11-09: monsters and maps go by country; keep generating until the cre
   to `main`, never merge. Before a new batch: `git -C ../last-signal-pvp-codex merge origin/main` to get new rows.
 
 ## Queue
-Row 1 is for later: the gap the owner saw was only the join between two screenshots, the game's wall is complete.
+Owner 2026-11-09: "เจนแบบมาพร้อมประกอบเลย gptเราโควต้าเยอะ หมดก็รอ": make 0a and 0b as pieces ready to put together, spend the quota; when it runs out, stop and wait.
 | # | key | status | style picture to attach | what |
 |---|-----|--------|-------------------------|------|
-| 0 | thai_gate_4view | todo (URGENT, do first) | art/action/props/t_gate.png + art/action/props/wall_front.png + art/action/props/wall_side.png | the Thai city gate from 4 views |
-| 1 | thai_wall_top | later (do it after 2-6) | art/action/props/wall_front.png + art/action/props/t_gate.png | Thai city wall pieces seen from above |
+| 0a | thai_gate_4view | todo (URGENT, do first) | art/action/props/t_gate.png + art/action/props/wall_front.png + art/action/props/wall_side.png | the Thai city gate from 4 views |
+| 0b | thai_wall_kit | todo (URGENT, right after 0a) | art/action/props/wall_front.png + art/action/props/t_gate.png + art/action/props/t_fort_w.png | wall pieces that fit together: straight runs, corners, ends, wall walk |
+| 1 | thai_wall_top | dropped (part of 0b) | art/action/props/wall_front.png + art/action/props/t_gate.png | Thai city wall pieces seen from above |
 | 2 | china_buildings | todo | art/incoming/action/map/gpt_thai_city.png | China city buildings |
 | 3 | china_village | todo | art/incoming/action/map/gpt_thai_city.png | China village buildings |
 | 4 | china_nature | todo | art/incoming/action/map/gpt_nature.png | China trees and rocks |
@@ -25,7 +26,7 @@ Row 1 is for later: the gap the owner saw was only the join between two screensh
 
 ## Prompts
 
-### 0 thai_gate_4view (owner 2026-11-09 "ประตูเจนมาเลย 4 มุม")
+### 0a thai_gate_4view (owner 2026-11-09 "ประตูเจนมาเลย 4 มุม")
 ```
 Use the attached pictures as the style guide: t_gate.png is THIS gate seen from the front, wall_front.png and
 wall_side.png are the city wall it stands in. Draw THE SAME Thai city gate (same white plaster and bricks, the same
@@ -42,7 +43,27 @@ All four the same height and scale as the attached gate, standing on the same gr
 grid lines, no shadows on the background, no glow, no people.
 ```
 
-### 1 thai_wall_top
+### 0b thai_wall_kit (pieces ready to put together)
+```
+Use the attached pictures as the style guide: wall_front.png is a piece of THIS wall seen from the front, t_gate.png
+and t_fort_w.png stand in it. Pixel-art KIT of matching CITY WALL PIECES for a top-down action game that the game
+puts together into a closed rectangular city wall (the camera looks from the south, a little from above). Same white
+plaster with the cross-shaped holes, the same pointed sema merlons, same pixel size, dark outline, shading, colours and
+height as the attached wall. Plain pure-white background, every piece separate with wide white space round it, laid
+out in 3 rows:
+Row 1 - walls running ACROSS (east-west), each piece exactly the same width and height so they join edge to edge
+seamlessly: 1. front face seen from outside (south wall), 2. back face seen from inside the city (north wall: the
+inner face with the wall walk and merlons on top), 3. an end cap where an across wall stops.
+Row 2 - walls running AWAY from the camera (north-south), seen from above at the same angle, each piece the same
+width and length so they stack top to bottom seamlessly: 4. the west wall (outer face on its left side, the wall walk
+between two rows of merlons on top), 5. the east wall (outer face on its right side), 6. an end cap of a north-south
+wall seen from the front.
+Row 3 - the four CORNERS where they meet, seen from the camera: 7. north-west, 8. north-east, 9. south-west,
+10. south-east; each corner's arms end exactly like the pieces in rows 1 and 2 so they join without a gap.
+No text, no letters, no grid lines, no shadows on the background, no glow, no plants, no people.
+```
+
+### 1 thai_wall_top (dropped, part of 0b)
 ```
 Use the two attached pictures as the style guide: the same white-plaster wall, pixel size, dark outline, shading and colours,
 same camera angle (seen from the front and a little from above). Pixel-art asset sheet of matching CITY WALL PIECES for a
