@@ -299,6 +299,15 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Archer fixes** (owner "ลูกธนูไม่ตรง สกิลไม่สวย", "6 ให้นักธนู"): PixelLab drew its own arrow flying off (often upward) in
+  the attack / crit frames while the game shot its cyan arrow at the target = two arrows that did not line up; those rows
+  are now built with `act_sheet.py --detach=attack,crit` (only the blob joined to the figure stays; `hero_build.sh`
+  passes it for the archer). The game arrow starts at the bow (h 46), its tail never reaches back past the bow, it has
+  a pointed head, and arrows flying up the screen are depth-sorted behind bodies (`away`). X is now ฝนดาว: aim a spot,
+  she shoots up, ParticleFX's starfall barrage (`fx/pfx_starfall_c.png`, recoloured to the archer cyan, haze and cell
+  edges faded) rains for ~1.4 s from 1.3 s in (10 ticks of 12 on everything in r 150) and she gets the old hawk eye for
+  8 s. Owner: don't touch the rogue's skill 4 yet (they are making GPT art for it). Test views: `?test=arr&hero=archer&a=<deg>`
+  one shot at a monster in that direction.
 - **Thai forest map** (`?map=jungle`, owner "เมืองไทยก็ให้แผนที่ต่อไปเป็นป่าเมืองไทย มอนเมืองไทย ละค่อยๆ ไล่ไปจนถึงเมืองอื่น"):
   `JG` (TH stays true, so the Thai ground and props are used), no city (`HAMLET` off the map), jungle groves
   (`FORESTS` x7) round a winding road, a creek with the plank bridge, a lotus pond, prang ruins (`RUINS`), a hunters'

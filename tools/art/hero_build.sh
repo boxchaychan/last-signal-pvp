@@ -24,4 +24,5 @@ case $K in
   mage) hits="east:4,12;south:5,7;north-west:4,12;north:5,10;north-east:4,11";;
   archer) hits="east:10;south:11;north-west:9;north:10;north-east:11;crit/east:10;crit/south:11;crit/north-west:12;crit/north:11;crit/north-east:10";;
 esac
-python tools/art/act_sheet.py $D art/action/$K "${args[@]}" "--alias=$alias" "--hits=$hits" --arc=air --scale=2/3 "$@"
+extra=(); [ "$K" = archer ] && extra=(--detach=attack,crit)   # her own arrow only (the drawn one flew off its own way)
+python tools/art/act_sheet.py $D art/action/$K "${args[@]}" "--alias=$alias" "--hits=$hits" --arc=air --scale=2/3 "${extra[@]}" "$@"
