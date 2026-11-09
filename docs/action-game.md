@@ -299,6 +299,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Frozen monsters in an ice block** (owner pasted pixelfx's `ice/freeze` code): exported with an empty actor so only the
+  block, floor frost and shatter show (`fx/pfx_freeze`, 121 frames 176x128, pivot 88,108); `statusTick` notes when a
+  freeze starts (`m.frzOn`, `m.frz0`), `drawMob2` plays the climb + seal (0.6 s), loops the held block, cracks in the last
+  0.3 s, then the burst plays as an effect; scaled to the monster's size. `drawPfx` takes `sc`.
 - **Monster hurt rows in** (Codex, `codex/mob-hurt`, 15 pictures, made in its own worktree as asked): `mob_frames.py`
   now builds 4 rows (walk / attack / death / hurt) and skips monsters without pictures (the China set); stout monsters
   (golem, bosses) flinch with the first hurt frames without stopping (`m.flT`). `?test=mobs&ph=3` shows them.
