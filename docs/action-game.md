@@ -368,6 +368,14 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Thai town hub** (owner 2026-11-09 "ฉากเมือง ทำแค่เมือง ไม่ต้องมีมอน เอาไว้รับเควส ละก็วาร์ป ... ใช้กำแพงเป็นแมพเลย ไม่ต้องกว้างมาก"): `?map=town`
+  (`TOWN`, TH ground + `thaiProps`, so the walled city of the Thai map is reused): she can only move inside the walls
+  (`cityD` > .86 pushes her back except on the road at the gates), the camera stays on the city, no camps / waves
+  (`ROSTER.town` = []), the wave counter is hidden (`.town`). Gates: west → `west`, east → `jungle` (`TOWNX`); the west field's
+  east exit and the jungle's west exit now lead to the town. Warp circle (`drawTown`, `townTick`/`townUI`: stand on it → a
+  list `WARPS` → `travel`) and a quest board (noticeboard prop + "ยังไม่มีเควส"; quests not built). The old `thai` map
+  (city + fields) is now named ทุ่งนาเมืองไทย and reached by the warp. Next: the owner's plan of 4 maps round each town
+  (north / south / east with the boss), GPT houses made to be placed per direction, the quest system.
 - **Frost wolf moves in** (owner made it with GPT from the pack `frost_wolf_pack.zip`, 2026-11-09): their zip had white and see-through 3x2 sheets; `white_cut` punched holes in its white fur, so the see-through sheets were put in `anim_cut/` directly (newer than the source, so `mob_frames.py` uses them as they are) → `art/action/mobs/frost_wolf.png`. For white monsters, ask for / use see-through sheets.
 - **Swordsman R release blast** (owner 2026-11-09 "ปรับสีให้เข้าโทน ละเอาไว้ท่าชาร์จ"; pasted 6x5 strike sheet, glow flattened into white / pink / red bands, raw `art/incoming/pfx/sword-charge-sheet.png`): only its grey smoke + rocks survive the cut (`tools/art/sword_charge_fx.py` → `fx/pfx_swcharge.png`, the band seams read as stripes); `chargeBlast(p, lv)` plays it from frame 6 on the ground 70 px in front, with a code red-orange flash (`sbang` with `red`), two rings, sparks, dirt and landing dust, bigger per level (replaces the Frostwindz sweep there).
 - **Swordsman normal combo = the owner's orange crescents** (2026-11-09 "ท่าฟันเอาให้เข้ากับฟันธรรมดา"; pasted 6x5 sheet with flattened glow bands, raw `art/incoming/pfx/sword-slash-sheet.png`): `tools/art/sword_slash_fx.py` keeps the thin bright crescent and the dark debris at full, the band seams faint → `fx/pfx_swslash.png`; `swSlash(p, i)` plays slash 1 / 2 / 3 (frames 0-9, 10-17, 18-29) on combo hits 1 / 2 / finisher, 22 px in front of him, following him. A clean GIF of it would look better. Owner "เอาเอฟเฟกต์ตีธรรมดาออก ไม่สวย" → off again (the call is commented out).

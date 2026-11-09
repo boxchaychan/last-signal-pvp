@@ -37,6 +37,9 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 #ov .over .st div{background:rgba(0,0,0,.3);border:2px solid #4a4258;padding:6px 14px;min-width:84px} #ov .over .st b{display:block;font-size:min(5vh,26px);color:#ffe066} #ov .over .st small{font-size:12px;opacity:.8}
 #ov .over .row{display:flex;gap:10px;justify-content:center} #ov .over #go{background:#7fdc6a;box-shadow:0 4px 0 #2f6a26}
 #help{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);font-size:12px;opacity:.8;text-shadow:0 1px 0 var(--ink);pointer-events:none;white-space:nowrap}
+.town #score{display:none}
+#townui{position:fixed;left:50%;bottom:18%;transform:translateX(-50%);z-index:30;background:#1d1a22e8;color:#f0ece0;border:3px solid #d8b048;padding:10px 16px;text-align:center;font:600 15px 'Leelawadee UI','Noto Sans Thai',Tahoma,sans-serif;min-width:200px}
+#townui p{margin:4px 0 8px;color:#c9c2b0;font-size:13px} #townui button{display:block;width:100%;margin:5px 0;font:inherit;padding:6px 10px;border:2px solid #1d1a22;background:#f0ece0;color:#1d1a22;cursor:pointer}
 #btns{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:16px;width:300px;height:240px;display:none;pointer-events:none}
 .touch #btns{display:block} .touch #help{display:none}
 #btns .bt{position:absolute;pointer-events:auto} #bAtk{right:0;bottom:0} #bRoll{right:100px;bottom:0}
@@ -132,7 +135,7 @@ const AR = WW * WH / (4200 * 2800);   // how many times the first map's area (pr
 // of the first map leads there, its west end leads back (a page reload with ?map=..&from=..)
 // maps (owner 2026-11-09: cities are their own places, field maps join between them; after the Thai city comes the Thai
 // forest with Thai monsters, then on to the next country): west field -> Thai city -> Thai forest (JG) -> China later
-const QS = new URLSearchParams(location.search), MAP = ['thai', 'jungle'].includes(QS.get('map')) ? QS.get('map') : 'west', JG = MAP === 'jungle', TH = MAP === 'thai' || JG, FROM = QS.get('from');
+const QS = new URLSearchParams(location.search), MAP = ['thai', 'jungle', 'town'].includes(QS.get('map')) ? QS.get('map') : 'west', JG = MAP === 'jungle', TOWN = MAP === 'town', TH = MAP === 'thai' || JG || TOWN, FROM = QS.get('from');
 // three heroes (owner 2026-11-09: swordsman + mage made in GPT, moves from PixelLab): ?hero= or the last one picked
 const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'mage', 'archer', 'priest'].includes(h) ? h : 'rogue'; })();
 const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', mage: 'เมจ', archer: 'นักธนู', priest: 'นักบวช'};
@@ -750,6 +753,7 @@ function thaiProps({add, far, dry, pathOk, inYard}) {
   for (let y = 320; y < WH - 140; y += 320 + rnd() * 140) { add(J(), 70 + rnd() * 50 | 0, y | 0); add(J(), WW - 70 - rnd() * 50 | 0, y | 0); }
   // the way back: a notice board where the road leaves at the west edge
   { const x = MARGIN.l + 90; add(gp('noticeboard'), x | 0, GROUND_PATH(x) - 90 | 0, {force: 1}); }
+  if (TOWN) { const T = townSpots(); add(gp('noticeboard'), T.board[0] | 0, T.board[1] | 0, {force: 1}); }   // the quest board
   // the royal city: walls of sema bricks round the yard, forts on the diagonals, a gate where the road goes in and out
   const C = HAMLET, edgeY = (x, s) => C.y + s * C.ry * Math.max(0, 1 - Math.abs((x - C.x) / C.rx) ** CITYP) ** (1 / CITYP),
     edgeX = (y, s) => C.x + s * C.rx * Math.max(0, 1 - Math.abs((y - C.y) / C.ry) ** CITYP) ** (1 / CITYP);
@@ -1030,12 +1034,42 @@ async function load() {
 // ---------- state ----------
 let G;
 // where each map's road leads: west end / east end (to: null = not built yet, a sign only)
-const EXITS = {west: {e: ['thai', 'เมืองไทย →']}, thai: {w: ['west', '← กลับทุ่งหญ้า'], e: ['jungle', 'ป่าเมืองไทย →']}, jungle: {w: ['thai', '← เมืองไทย'], e: [null, 'เมืองจีน → (เร็วๆ นี้)']}}[MAP];
+// the Thai town (owner 2026-11-09 "ฉากเมือง ทำแค่เมือง ไม่ต้องมีมอน เอาไว้รับเควส ละก็วาร์ป ... ใช้กำแพงเป็นแมพเลย ไม่ต้องกว้างมาก"):
+// the Thai city's yard only, its walls are the edge of the map, no monsters, a quest board and a warp circle; its gates lead out
+const TOWNX = {w: 'west', e: 'jungle'}, WARPS = [['west', 'ทุ่งหญ้า'], ['thai', 'ทุ่งนาเมืองไทย'], ['jungle', 'ป่าเมืองไทย']];
+const EXITS = {town: {}, west: {e: ['town', 'เมืองไทย →']}, thai: {w: ['west', '← กลับทุ่งหญ้า'], e: ['jungle', 'ป่าเมืองไทย →']}, jungle: {w: ['town', '← เมืองไทย'], e: [null, 'เมืองจีน → (เร็วๆ นี้)']}}[MAP];
 function spawnAt() {              // where she appears: at the end of the road she came in by (west end from the west map)
   const E = EXITS, xw = MARGIN.l + 70, xe = WW - MARGIN.r - 70;
+  if (TOWN) document.body.classList.add('town');
+  if (TOWN) { const C = HAMLET, s = FROM === TOWNX.e ? 1 : FROM === TOWNX.w ? -1 : 0, x = C.x + s * C.rx * .82; return [x, GROUND_PATH(x)]; }   // at the gate she came in by, else the middle
   if (FROM && E.e && E.e[0] === FROM) return [xe, GROUND_PATH(xe)];
   if (FROM && E.w && E.w[0] === FROM || (TH && !FROM)) return [xw, GROUND_PATH(xw)];
   return [WW / 2, WH / 2 + 60];
+}
+const TOWNP = {board: [HAMLET.x - 330, 0], warp: [HAMLET.x + 60, 0]};   // y filled from the road once GROUND_PATH exists
+// board + warp: both north of the road, in the open middle (clear of the touch buttons)
+function townSpots() { if (!TOWNP.board[1]) { TOWNP.board[1] = GROUND_PATH(TOWNP.board[0]) - 130; TOWNP.warp[1] = GROUND_PATH(TOWNP.warp[0]) - 170; } return TOWNP; }
+function townTick(p) {             // stand on the warp circle → the warp list; walk up to the board → the quest note
+  const T = townSpots(), dw = Math.hypot(p.x - T.warp[0], (p.y - T.warp[1]) * 1.6), db = Math.hypot(p.x - T.board[0], p.y - T.board[1] - 30);
+  townUI(dw < 60 ? 'warp' : db < 90 ? 'board' : null);
+}
+let TUI = null;
+function townUI(k) {
+  if (k === (TUI && TUI.k)) return; if (TUI) { TUI.el.remove(); TUI = null; } if (!k) return;
+  const el = document.createElement('div'); el.id = 'townui';
+  el.innerHTML = k === 'warp' ? '<b>วงวาร์ป</b><p>ไปที่ไหน</p>' + WARPS.map(([m, n]) => '<button data-m="' + m + '">' + n + '</button>').join('')
+    : '<b>ป้ายประกาศ</b><p>ยังไม่มีเควส · ระบบเควสกำลังทำ</p>';
+  el.onclick = e => { const b = e.target.closest('button'); if (b) travel(b.dataset.m); };
+  document.body.appendChild(el); TUI = {k, el};
+}
+function drawTown() {              // the warp circle on the ground (under the bodies): turning runes, a soft light
+  if (!TOWN) return; const T = townSpots(), [x, y] = T.warp, t = G.t;
+  if (!FXS.glowWarp) FXS.glowWarp = glowSprite([120, 170, 255]); glowAt(x, y, 80, 34, FXS.glowWarp, .55 + .15 * Math.sin(t * 3));
+  for (const [R, sp, n] of [[58, .6, 48], [40, -1, 30]]) for (let i = 0; i < n; i++) { if (i % 3 === 2) continue; const a = i / n * 6.283 + t * sp, px = Math.round(x + Math.cos(a) * R), py = Math.round(y + Math.sin(a) * R * .45);
+    ctx.fillStyle = '#1d1a3a'; ctx.fillRect(px - 2, py - 1, 5, 3); ctx.fillStyle = R > 50 ? '#cfe4ff' : '#7fb0ff'; ctx.fillRect(px - 1, py, 3, 1); }
+  if (((t * 20) | 0) % 3 === 0) parts(x + (rnd() - .5) * 90, y + (rnd() - .5) * 30, '#bcd8ff', 1, {k: 'em', sp: 20, lift: 50, life: .9});
+  ctx.font = '800 13px "Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#1d1a22';
+  for (const [tx, ty, txt, c] of [[x, y - 40, 'วาร์ป', '#cfe4ff'], [T.board[0], T.board[1] - 120, 'เควส', '#ffe066']]) { ctx.strokeText(txt, tx, ty); ctx.fillStyle = c; ctx.fillText(txt, tx, ty); }
 }
 function travel(to) {             // off the end of the road: fade out, carry hp / stamina, load the other map
   if (G.travel) return; G.travel = 1;
@@ -2709,12 +2743,12 @@ const MOBT = {
   boss_jotun:    {hp: 1250, sp: 58,  r: 50, dmg: 32, reach: 150, tell: .9,  cd: 2.4, kb: .05, stout: 1, boss: 'ยักษ์น้ำแข็ง', fx: 'cslam', fxAt: .55, fxY: 6},
   boss_nian:     {hp: 1100, sp: 66,  r: 48, dmg: 28, reach: 140, tell: .8,  cd: 2.2, kb: .05, stout: 1, boss: 'เหนียนโซ่ว', fx: 'cwave', fxAt: .55, fxY: 6},
 };
-const ROSTER = {west: ['shroom', 'wolf', 'skeleton', 'goblin_archer', 'wisp', 'boar_guard', 'golem'], thai: ['khamot', 'monkey', 'krahang', 'phrai', 'croc_guard', 'pret'],
+const ROSTER = {town: [], west: ['shroom', 'wolf', 'skeleton', 'goblin_archer', 'wisp', 'boar_guard', 'golem'], thai: ['khamot', 'monkey', 'krahang', 'phrai', 'croc_guard', 'pret'],
   jungle: ['monkey', 'khamot', 'krahang', 'phrai', 'pret', 'croc_guard'],
   china: ['paper_doll', 'jiangshi', 'fox_spirit', 'terracotta_archer', 'toad_demon', 'terracotta_general'],
   japan: ['kappa', 'kasa_obake', 'nekomata', 'tengu', 'rokurokubi', 'oni'], egypt: ['scarab', 'mummy', 'jackal_warrior', 'cobra_priest', 'sand_scorpion', 'sand_golem'],
   norse: ['ice_wraith', 'dwarf_berserker', 'frost_wolf', 'draugr', 'troll', 'ice_golem']};   // sheets come when Codex draws their moves
-const BOSSK = {west: 'boss_treant', thai: 'boss_chalawan', jungle: 'boss_chalawan', china: 'boss_nian', japan: 'boss_orochi', egypt: 'boss_sphinx', norse: 'boss_jotun'};
+const BOSSK = {town: null, west: 'boss_treant', thai: 'boss_chalawan', jungle: 'boss_chalawan', china: 'boss_nian', japan: 'boss_orochi', egypt: 'boss_sphinx', norse: 'boss_jotun'};
 const MSET = ROSTER[QS.get('set')] ? QS.get('set') : MAP;   // ?set=china: the China monsters on this map until the China map is built
 const MOBS = {};
 async function loadMobs() {
@@ -2914,7 +2948,9 @@ function stepPlayer(dt) {
     } else { p.state = 'idle'; p.bob = 0; }
   }
   blockProps(p, 14); unwater(p, ox, oy);
-  if (!TEST && !G.travel && Math.abs(p.y - GROUND_PATH(p.x)) < 70) { if (EXITS.e && EXITS.e[0] && p.x >= WW - MARGIN.r - 2) travel(EXITS.e[0]); else if (EXITS.w && EXITS.w[0] && p.x <= MARGIN.l + 2) travel(EXITS.w[0]); }
+  if (TOWN) { if (cityD(p.x, p.y) > .86) { const gate = Math.abs(p.y - GROUND_PATH(p.x)) < 70;   // the walls are the edge; the road gates lead out
+      if (gate && !TEST && !G.travel && cityD(p.x, p.y) > .97) travel(TOWNX[p.x < HAMLET.x ? 'w' : 'e']); else if (!gate) { p.x = ox; p.y = oy; } } townTick(p); }
+  else if (!TEST && !G.travel && Math.abs(p.y - GROUND_PATH(p.x)) < 70) { if (EXITS.e && EXITS.e[0] && p.x >= WW - MARGIN.r - 2) travel(EXITS.e[0]); else if (EXITS.w && EXITS.w[0] && p.x <= MARGIN.l + 2) travel(EXITS.w[0]); }
   p.x = clamp(p.x, MARGIN.l, WW - MARGIN.r); p.y = clamp(p.y, MARGIN.t, WH - MARGIN.b);
 }
 function stepMobs(dt) {
@@ -2956,7 +2992,7 @@ function stepMobs(dt) {
   for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) { const a = all[i], b = all[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy); const R2 = a.spr || b.spr ? (a.r + b.r) * .85 : 36; if (d > 0 && d < R2) { const k = (R2 - d) / 2 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; } }
   G.mobs = G.mobs.filter(m => m.hp > 0 || m.dieT < (m.spr ? 1.5 : .3));
   stepCamps();
-  if (!G.mobs.some(m => m.hp > 0 && (!m.camp || m.aggro))) { G.next -= dt; if (G.next <= 0) { G.next = 2; spawnWave(); } }
+  if (!TOWN && !G.mobs.some(m => m.hp > 0 && (!m.camp || m.aggro))) { G.next -= dt; if (G.next <= 0) { G.next = 2; spawnWave(); } }
 }
 const TEST = new URLSearchParams(location.search).get('test');   // ?test=atk: screenshot helper, freezes on the second hit
 function testSetup() {
@@ -3278,6 +3314,7 @@ function draw() {
   if (G.menu) { const [mx, my] = menuCam(); cam.x = mx; cam.y = my; }
   else { cam.x += (p.x - VW / 2 - cam.x) * .12; cam.y += (p.y - 60 - VH / 2 - cam.y) * .12; }
   cam.x = clamp(cam.x, 0, Math.max(0, WW - VW)); cam.y = clamp(cam.y, 0, Math.max(0, WH - VH));
+  if (TOWN && !G.menu) { const C = HAMLET; cam.x = clamp(cam.x, C.x - C.rx - 120, Math.max(C.x - C.rx - 120, C.x + C.rx + 120 - VW)); cam.y = clamp(cam.y, C.y - C.ry - 260, Math.max(C.y - C.ry - 260, C.y + C.ry + 140 - VH)); }
   let cx = Math.round(cam.x), cy = Math.round(cam.y);
   if (G.shake > 0) { cx += Math.round((rnd() - .5) * G.shake * 2); cy += Math.round((rnd() - .5) * G.shake * 2); }
   if (G.kick) { const k = G.kick.t / .12; cx += Math.round(G.kick.x * k); cy += Math.round(G.kick.y * k); }
@@ -3304,6 +3341,7 @@ function draw() {
     ctx.globalAlpha = .95; ctx.drawImage(FXS.tgt, Math.round(tx - FXS.tgt.width / 2), Math.round(ty - FXS.tgt.height / 2)); ctx.globalAlpha = 1; }
   for (const kn of G.knives) {   // ground shadow of a flying dagger
     if (kn.land < 0) { const k = Math.min(1, kn.t / kn.T), gx = kn.sx + (kn.tx - kn.sx) * k, gy = kn.sy + 34 + (kn.ty - kn.sy - 34) * k; ctx.globalAlpha = .3; ctx.drawImage(KSH, Math.round(gx - 7), Math.round(gy - 2)); ctx.globalAlpha = 1; } }
+  drawTown();
   for (const f of G.fx) { if (f.k === 'field') drawField(f); else if (f.k === 'sfz') drawStarZone(f); else if (f.k === 'scrat') drawStarCrater(f); }
   if (G.seeds && G.seeds.length) drawSeeds();
   if (HERO === 'priest') {                                 // the priestess's marks on the ground: patches of healing light, curse rings under monsters
@@ -3453,7 +3491,7 @@ const HDESC = {rogue: 'ตี 2 ฮิต ครั้งที่ 4 คริ �
   mage: 'ลูกไฟ · สายฟ้าโซ่ · วงน้ำแข็ง · วาร์ปแทนกลิ้ง · อุกกาบาต · โล่เวท',
   archer: 'ยิงไกลยิ่งแรง · ยิงรัว · ลูกพลังเขียว · ชาร์จง้าง · ถอยยิงธนูระเบิด · ธนูหนาม · ฝนดาว',
   priest: 'ยิงลูกแสง ตีโดนได้เลือดคืน · ฟื้นฟู · เสาแสง (มอนรับดาเมจเพิ่ม) · พรนักรบ · คำสาป · ปาฏิหาริย์ ตายแล้วฟื้น'};
-const MAPN = {west: 'ทุ่งหญ้า', thai: 'เมืองไทย', jungle: 'ป่าเมืองไทย'};
+const MAPN = {town: 'เมืองไทย', west: 'ทุ่งหญ้า', thai: 'ทุ่งนาเมืองไทย', jungle: 'ป่าเมืองไทย'};
 const MENU = {h: HERO, m: MAP, cards: {}, t: 0};
 { const pk = document.getElementById('pick'), ds = document.getElementById('hdesc'), mp = document.getElementById('mpick');
   const show = () => { ds.innerHTML = '<b>' + HNAME[MENU.h] + '</b> · ' + HROLE[MENU.h] + '<p>' + HDESC[MENU.h] + '</p>';
@@ -3465,7 +3503,7 @@ const MENU = {h: HERO, m: MAP, cards: {}, t: 0};
     b.onclick = () => { MENU.h = h; show(); }; b.ondblclick = () => { MENU.h = h; document.getElementById('go').click(); };
     MENU.cards[h] = {b, c, im}; pk.appendChild(b); }
   mp.insertAdjacentHTML('beforeend', '<span>เริ่มที่</span>');
-  for (const m of ['west', 'thai', 'jungle']) { const b = document.createElement('button'); b.dataset.m = m; b.textContent = MAPN[m]; b.onclick = () => { MENU.m = m; show(); }; mp.appendChild(b); }
+  for (const m of ['town', 'west', 'thai', 'jungle']) { const b = document.createElement('button'); b.dataset.m = m; b.textContent = MAPN[m]; b.onclick = () => { MENU.m = m; show(); }; mp.appendChild(b); }
   show(); if (!FROM && !TEST && !QS.get('auto')) document.body.classList.add('inmenu'); }
 function menuGo() {                     // the start button: another hero / map → reload into it, else start here
   if (MENU.h !== HERO || MENU.m !== MAP) { try { localStorage.setItem('act.hero', MENU.h); } catch (e) {}
@@ -3484,7 +3522,7 @@ function showOver() {
   ov.style.display = 'flex'; document.getElementById('go').onclick = start; document.getElementById('menu').onclick = () => { location.href = 'action.html?hero=' + HERO + (MAP !== 'west' ? '&map=' + MAP : ''); }; }
 function start() {
   document.body.classList.remove('inmenu'); ov.classList.remove('menu');
-  ov.style.display = 'none'; newGame(); if (!TEST) spawnCamps(); document.getElementById('bRoll').textContent = G.p.tele ? 'วาร์ป' : 'กลิ้ง'; for (let k = 1; k <= 6; k++) applySkLv(k, G.p.skl[k] || 1); buildHotbar();
+  ov.style.display = 'none'; newGame(); if (!TEST && !TOWN) spawnCamps(); document.getElementById('bRoll').textContent = G.p.tele ? 'วาร์ป' : 'กลิ้ง'; for (let k = 1; k <= 6; k++) applySkLv(k, G.p.skl[k] || 1); buildHotbar();
   if (TOUCH) { try { document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {}); } catch (e) {} }
 }
 let last = performance.now();
