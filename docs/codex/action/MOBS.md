@@ -59,11 +59,11 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 24 | kasa_obake | done | Japan | small |
 | 25 | oni | done | Japan | large |
 | 26 | tengu | done | Japan | medium |
-| 27 | rokurokubi | todo | Japan | medium |
-| 28 | nekomata | todo | Japan | medium |
-| 29 | boss_orochi | todo | Japan boss | huge |
-| 30 | mummy | todo | Egypt | medium |
-| 31 | scarab | todo | Egypt | small |
+| 27 | rokurokubi | done | Japan | medium |
+| 28 | nekomata | done | Japan | medium |
+| 29 | boss_orochi | done | Japan boss | huge |
+| 30 | mummy | done | Egypt | medium |
+| 31 | scarab | done | Egypt | small |
 | 32 | jackal_warrior | todo | Egypt | medium |
 | 33 | sand_scorpion | todo | Egypt | large |
 | 34 | cobra_priest | todo | Egypt | medium |
