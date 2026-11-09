@@ -911,9 +911,9 @@ function travel(to) {             // off the end of the road: fade out, carry hp
 function newGame() {
   for (let k = 1; k <= 6; k++) applySkLv(k, 1);
   G = {t: 0, hs: 0, shake: 0, wave: 0, kills: 0, over: false, fx: [], nums: [], ghosts: [], mobs: [], knives: [], bombs: [], mshots: [], pshots: [], meteors: [], tags: [], next: 1.2,
-    p: {cd: {}, x: spawnAt()[0], y: spawnAt()[1], dir: TH ? 0 : FROM === 'thai' ? 4 : 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null, lv: 1, xp: 0, pts: 0, skl: {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1}, tele: HERO === 'mage'}};   // the mage teleports instead of rolling from level 1 (owner)
+    p: {cd: {}, x: spawnAt()[0], y: spawnAt()[1], dir: TH ? 0 : FROM === 'thai' ? 4 : 2, hp: 100, st: 100, stT: 0, inv: 0, state: 'idle', a: null, roll: null, step: 0, bob: 0, buf: null, lv: 1, xp: 0, pts: 0, skl: {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1}, tele: HERO === 'mage' ? 1 : 0}};   // the mage teleports instead of rolling from level 1 (owner)
   cam.x = G.p.x - VW / 2; cam.y = G.p.y - VH / 2;
-  if (FROM) try { const c = JSON.parse(sessionStorage.getItem('act.carry') || 'null'); if (c) { G.p.hp = c.hp || 100; G.p.st = c.st || 100; G.kills = c.kills || 0; G.wave = c.wave || 0; if (c.hero === HERO && c.lv) { G.p.lv = c.lv; G.p.xp = c.xp || 0; G.p.pts = c.pts || 0; G.p.skl = c.skl || G.p.skl; G.p.tele = !!c.tele || HERO === 'mage'; } } } catch (e) {}
+  if (FROM) try { const c = JSON.parse(sessionStorage.getItem('act.carry') || 'null'); if (c) { G.p.hp = c.hp || 100; G.p.st = c.st || 100; G.kills = c.kills || 0; G.wave = c.wave || 0; if (c.hero === HERO && c.lv) { G.p.lv = c.lv; G.p.xp = c.xp || 0; G.p.pts = c.pts || 0; G.p.skl = c.skl || G.p.skl; G.p.tele = +c.tele || (HERO === 'mage' ? 1 : 0); } } } catch (e) {}
 }
 const cam = {x: 0, y: 0};
 // attack: every direction has its own frames; the swing frames (hits) come from the sheet json (widest frames)
@@ -1041,13 +1041,14 @@ function startAtk(p) {
   unstealth(p); p.st = Math.max(0, p.st - ATK.cost); p.stT = .6;
   p.dir = d; p.state = 'atk'; p.a = {i: 0, t: 0, done: {}, plan}; return true;
 }
-const TELE = {d: 210, inv: .35, cost: 22};
+const TELE = {d: 170, per: 40, max: 5, inv: .35, cost: 22};   // reach = d + per x level (210 at level 1, 370 at level 5)
+const teleDist = p => TELE.d + TELE.per * (p.tele || 1);
 function teleKey() { return HERO === 'rogue' ? 'pfx_step_v' : 'pfx_step_t'; }
 function startTele(p) {
   if (p.st < TELE.cost * .5) { noStamina(); return false; }
   p.st = Math.max(0, p.st - TELE.cost); p.stT = .6;
   const [mx, my] = moveInput(), d = (mx || my) ? dirOf(mx, my) : p.dir;
-  let k = 1, tx, ty; do { tx = clamp(p.x + DV[d][0] * TELE.d * k, MARGIN.l, WW - MARGIN.r); ty = clamp(p.y + DV[d][1] * TELE.d * k, MARGIN.t, WH - MARGIN.b); k -= .1; } while (k > .2 && waterAt(tx, ty));
+  let k = 1, tx, ty; do { tx = clamp(p.x + DV[d][0] * teleDist(p) * k, MARGIN.l, WW - MARGIN.r); ty = clamp(p.y + DV[d][1] * teleDist(p) * k, MARGIN.t, WH - MARGIN.b); k -= .1; } while (k > .2 && waterAt(tx, ty));
   if (p.state === 'act') endAct(p, true);
   pfx(teleKey(), p.x, p.y - 30); G.ghosts.push({x: p.x, y: p.y, dir: p.dir, t: 0, k: .5, life: .25});
   p.x = tx; p.y = ty; p.dir = d; p.state = 'idle'; p.a = null; p.roll = null; p.inv = Math.max(p.inv, TELE.inv); p.noFl = G.t + TELE.inv;
@@ -1464,14 +1465,16 @@ function renderBook() {
       + '<div class="pips">' + [...Array(SKMAX)].map((_, j) => '<i' + (j < lv ? ' class="f"' : '') + '></i>').join('') + '</div></div>'
       + '<button class="up" data-k="' + k + '"' + (p.pts > 0 && lv < SKMAX ? '' : ' disabled') + '>+</button></div>'; }
   h += '<div class="br"><canvas width="44" height="44" data-tele="1"></canvas><div class="bt2"><b>Space · ' + (p.tele ? 'เทเลพอร์ต' : 'กลิ้งหลบ') + '</b>'
-    + '<small>' + (p.tele ? 'หายตัวไปโผล่ข้างหน้าในทิศที่เดิน ไม่โดนดาเมจแป๊บหนึ่ง' : 'ใช้ 1 แต้ม เปลี่ยนกลิ้งหลบเป็นเทเลพอร์ต: หายตัวไปโผล่ข้างหน้า ไกลกว่ากลิ้ง') + '</small></div>'
-    + '<button class="up" id="teleUp"' + (!p.tele && p.pts > 0 ? '' : ' disabled') + '>' + (p.tele ? '✓' : '+') + '</button></div>';
+    + (p.tele ? ' <span>ระดับ ' + p.tele + '/' + TELE.max + '</span>' : '')
+    + '<small>' + (p.tele ? 'หายตัวไปโผล่ข้างหน้าในทิศที่เดิน ไม่โดนดาเมจแป๊บหนึ่ง · ระยะ ' + teleDist(p) + (p.tele < TELE.max ? ' → ระดับต่อไป ' + (teleDist(p) + TELE.per) : ' · เต็มแล้ว') : 'ใช้ 1 แต้ม เปลี่ยนกลิ้งหลบเป็นเทเลพอร์ต: หายตัวไปโผล่ข้างหน้า ไกลกว่ากลิ้ง (อัปได้ 5 ระดับ ยิ่งอัปยิ่งไกล)') + '</small>'
+    + (p.tele ? '<div class="pips">' + [...Array(TELE.max)].map((_, j) => '<i' + (j < p.tele ? ' class="f"' : '') + '></i>').join('') + '</div>' : '') + '</div>'
+    + '<button class="up" id="teleUp"' + ((p.tele || 0) < TELE.max && p.pts > 0 ? '' : ' disabled') + '>+</button></div>';
   h += '<div class="br"><div class="bt2"><small>' + PASDESC[HERO] + '</small><small>เลเวลถัดไป: ' + (p.lv >= LVMAX ? 'สูงสุดแล้ว' : p.xp + ' / ' + needXp(p.lv) + ' (ฆ่ามอนเพื่อเก็บค่าประสบการณ์)') + '</small></div></div></div>';
   b.innerHTML = h;
   b.querySelectorAll('canvas[data-k]').forEach(c => skIcon(c, +c.dataset.k));
   { const c = b.querySelector('canvas[data-tele]'), F = iconFrames(teleKey()); if (c && F && F.f.length) { const f = F.f[Math.min(F.f.length - 1, 6)], g = c.getContext('2d'), sc = Math.min(44 / f.width, 44 / f.height) * .92;
       g.imageSmoothingEnabled = false; g.drawImage(f, Math.round((44 - f.width * sc) / 2), Math.round((44 - f.height * sc) / 2), Math.round(f.width * sc), Math.round(f.height * sc)); } }
-  const tu = document.getElementById('teleUp'); if (tu) tu.onclick = () => { if (p.tele || p.pts <= 0) return; p.tele = true; p.pts--; document.getElementById('bRoll').textContent = 'วาร์ป'; renderBook(); };
+  const tu = document.getElementById('teleUp'); if (tu) tu.onclick = () => { if ((p.tele || 0) >= TELE.max || p.pts <= 0) return; p.tele = (p.tele || 0) + 1; p.pts--; document.getElementById('bRoll').textContent = 'วาร์ป'; renderBook(); };
   b.querySelectorAll('button.up[data-k]').forEach(btn => btn.onclick = () => { const k = +btn.dataset.k; if (p.pts <= 0 || (p.skl[k] || 1) >= SKMAX) return; p.skl[k] = (p.skl[k] || 1) + 1; p.pts--; applySkLv(k, p.skl[k]); renderBook(); });
   document.getElementById('bookX').onclick = () => openBook(false);
 }

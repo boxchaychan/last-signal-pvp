@@ -303,7 +303,8 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   (Space · กลิ้งหลบ, + = 1 point) sets `p.tele`; `startRoll` then calls `startTele` (`TELE`: 210 px in the move direction,
   avoids water, 0.35 s untouchable, 22 stamina) with ParticleFX's shadow step at both ends (`fx/pfx_step_v` violet for the
   rogue, `pfx_step_t` the original teal for the others; 48 frames, `pfx_sheet_import.py` now takes a frames folder).
-  Carried between maps; the phone button reads วาร์ป.
+  Carried between maps; the phone button reads วาร์ป. Then (owner) the mage teleports from level 1, and the teleport has
+  5 levels (`p.tele` = 0..5, 1 point each, reach `teleDist` = 170 + 40 x level: 210 → 370).
 - **Rogue R smoke = ParticleFX cartoon smoke poof** (owner 2026-11-09 "ควันใช้อันนี้"): `art/incoming/pfx/smoke-poof-sheet.png`
   (870x864 = 6x6 cells of 145x144, 36 frames; 6x7 cut the clouds) → `fx/pfx_smoke.png` (200 px wide, 30 fps). Also from
   ParticleFX, waiting for the owner: frost crescent slash (`fx/pfxfrost<deg>`), teal star missile (came out white / red,
