@@ -368,6 +368,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Swordsman red slashes** (owner's zip 2026-11-09 "Pixel Art Animations - Warrior FREE" by Frostwindz, itch.io; licence: use in
+  games, modify, NO redistribution, so the zip / frames are not in this public repo, only the cut sheets): `tools/art/warrior_vfx.py
+  <unzipped>` → `fx/wvfx1..5.png` (128 px, facing right). `wSlash(p, v, sc)` plays one in front of him, turned to his facing:
+  normal combo hit 1 = VFX1 double slash, hit 2 = VFX3 thrust, finisher = VFX2 big crescent; R release = VFX4 sweep (bigger
+  per level); Z counter = VFX5 rising burst. His blue `cutFx` streaks on hit are off (the pale cyan arcs drawn inside his
+  attack frames stay).
 - **Swordsman E = the owner's sword storm** (2026-11-09 "พายุดาบ เปลี่ยนโทนส้ม นีออนดำ แบบพวกมีด ธนู"; pasted 9x8 sheet 5436x5440 on
   black, its glow flattened into solid red / yellow / orange / pink bands, raw `art/incoming/pfx/sword-storm-sheet.png`):
   `tools/art/sword_storm_fx.py` drops the band colours (and 4 px round them), keeps the dark smoke + textured streaks, black
