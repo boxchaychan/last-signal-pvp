@@ -26,6 +26,8 @@ TONE = {
     'ice': 'pale cyan and white ice crystals with deep blue edges, cold white mist',
     'arcane': 'bright blue arcane light with white cores, small rune sparks',
     'holy': 'warm gold and white holy light, thin gold rune lines, a soft glow, a darker gold outline',
+    'berserker': 'pure black ink-like strokes with a thin glowing neon RED rim and a soft crimson glow, a few tiny red embers '
+                 '(dark, heavy and brutal; no orange, no yellow)',
     'curse': 'deep purple and black shadow with violet rune lines, dark smoke',
 }
 # hero, key, Thai name, what it does in the game (Thai), English effect, layout, tone, frames (cols x rows), loop
@@ -87,9 +89,34 @@ FX = [
     ('priest', 'pr_miracle', 'X ปาฏิหาริย์', '10 วิ ตายแล้วฟื้นทันที',
      'a miracle: a tall column of white-gold light round the character, feathers of light drifting down, a radiant burst at the end',
      'self', 'holy', (6, 4), False),
+    ('berserker', 'bz_chain', 'Q โซ่รวบวิญญาณ', 'เหวี่ยงโซ่กวาดเป็นพัดกว้าง ดึงมอนมากองหน้าตัว แล้วกดซ้ำฟันรอบตัว',
+     'frames 1-12: heavy black chains with glowing red links lash out in a WIDE fan in front (several chains spreading like a 160 degree '
+     'fan), then snap back toward the caster dragging red light streaks; frames 13-24: one huge horizontal cleave all the way round '
+     'the caster: a full black ring slash with a neon red edge, red sparks flung outward, then it breaks into smoke', 'front', 'berserker', (6, 4), False),
+    ('berserker', 'bz_triple', 'E ฟาดสามยมทูต', 'ฟัน 3 จังหวะกว้าง จังหวะสุดท้ายฟาดลงพื้นแตกพุ่งไปข้างหน้า',
+     'three heavy greatsword slashes: frames 1-8 a wide crescent slash right to left, frames 9-16 a wider crescent left to right, '
+     'frames 17-24 an overhead blow hitting the ground: red glowing cracks race forward in a long wedge, black rock shards and dust fly up; '
+     'each slash is a thick black blade trail with a neon red edge', 'front', 'berserker', (6, 4), False),
+    ('berserker', 'bz_slam', 'R ทุบพสุธาโลหิต', 'ชาร์จแล้วทุบพื้น คลื่นแผ่นดินแตกรอบตัว ลาวาดำแดงค้าง',
+     'a crushing ground slam: frames 1-6 dark red energy sucked down into one point, frames 7-24 the ground shatters: a huge flat ring '
+     'shockwave of black stone, glowing neon red cracks spreading out like a spider web, black rock slabs thrown up and falling back, '
+     'the cracks keep glowing like dark lava and slowly dim', 'ground', 'berserker', (6, 4), False),
+    ('berserker', 'bz_hook', 'F โซ่กระชาก', 'ปาโซ่ไปเกี่ยวแล้วกระชากตัวไปลงฟาด',
+     'frames 1-10: a black chain with a hooked claw and glowing red links shoots from the left edge to the right and bites into the '
+     'ground with a red flash; frames 11-24: a heavy landing blow on that spot: a black and red impact burst, a small flat shockwave '
+     'ring, dust and red sparks', 'shot', 'berserker', (6, 4), False),
+    ('berserker', 'bz_shackle', 'Z ตรวนนรก', 'โซ่พุ่งจากพื้นเป็นวงรัดมอนไว้',
+     'a ring of black chains bursting up from cracks in the ground, a glowing red rune circle on the ground (flat ellipse), the chains '
+     'whip up, cross over the middle and pull tight, then hold there with red light pulsing along the links', 'ground', 'berserker', (6, 4), False),
+    ('berserker', 'bz_rage', 'X ร่างคลั่งโลหิต', 'ไม้ตาย 12 วิ ไอแดงนีออนรอบตัว (ภาพวนซ้ำ)',
+     'a berserk aura: black smoke and neon red flame wisps rising round the character, glowing red cracks of light flickering in the air, '
+     'red embers drifting upward, an occasional crimson pulse', 'self', 'berserker', (4, 4), True),
+    ('berserker', 'bz_wave', 'X คลื่นฟัน (ตอนคลั่ง)', 'ระหว่างไม้ตาย ตีธรรมดาแต่ละครั้งปล่อยคลื่นฟันสั้น ๆ',
+     'a short crescent slash wave flying forward: a thick black crescent with a neon red rim and a red glow, leaving a red streak, '
+     'then breaking into red sparks', 'shot', 'berserker', (6, 3), False),
 ]
 DONE = set()
-HERO = {'swordsman': 'นักดาบ', 'rogue': 'นักมีด', 'mage': 'นักเวท', 'priest': 'นักบวช'}
+HERO = {'berserker': 'เบอร์เซิร์กเกอร์ (คลาส 2)', 'swordsman': 'นักดาบ', 'rogue': 'นักมีด', 'mage': 'นักเวท', 'priest': 'นักบวช'}
 
 def prompt(f):
     hero, key, th, does, en, lay, tone, (c, r), loop = f
