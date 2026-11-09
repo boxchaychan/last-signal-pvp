@@ -299,6 +299,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Mage E chain lightning = ParticleFX** (owner 2026-11-09 "สกิล 2 เมจ", `art/incoming/pfx/chain-lightning-sheet.png`, 6x6
+  frames of 684x488, 4 orbs joined by bolts): `tools/art/pfx_chain_parts.py` cuts one orb (`fx/pfx_orb`, put on every
+  monster hit) and one bolt laid flat (`fx/pfx_bolt`, stretched and turned between each pair in `drawChain`), the faint
+  full-frame haze removed; the code ground bolt stays. Icon = the orb.
 - **Dodge → teleport upgrade** (owner 2026-11-09 "เอาท่าเทเลพอร์ตไปใส่แทนกลิ้ง ให้อัพสกิลที่วิ 1 พอยท์"): a row in the skill book
   (Space · กลิ้งหลบ, + = 1 point) sets `p.tele`; `startRoll` then calls `startTele` (`TELE`: 210 px in the move direction,
   avoids water, 0.35 s untouchable, 22 stamina) with ParticleFX's shadow step at both ends (`fx/pfx_step_v` violet for the
