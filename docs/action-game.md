@@ -379,7 +379,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   for PixelLab (128-256 canvas). Both middle views are 3/4 views, not true profiles: a side-view redo (one picture) is needed
   before PixelLab.
   Guardian side redo in: `art/incoming/action/guardian/side_right.png` (true right profile; the sword is in the near = LEFT hand and
-  the shield on the far arm, the front view has them the other way round; fine for one diagonal + mirror). Berserker side: waiting.
+  the shield on the far arm, the front view has them the other way round; fine for one diagonal + mirror). Berserker side redo in: `art/incoming/action/berserker/side_right.png` (true right profile, blade over the shoulder pointing back, glowing eye). Both ready for PixelLab (waiting for the owner's go).
 - **Thai town hub** (owner 2026-11-09 "ฉากเมือง ทำแค่เมือง ไม่ต้องมีมอน เอาไว้รับเควส ละก็วาร์ป ... ใช้กำแพงเป็นแมพเลย ไม่ต้องกว้างมาก"): `?map=town`
   (`TOWN`, TH ground + `thaiProps`, so the walled city of the Thai map is reused): she can only move inside the walls
   (`cityD` > .86 pushes her back except on the road at the gates), the camera stays on the city, no camps / waves
