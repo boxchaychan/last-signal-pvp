@@ -307,7 +307,8 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   when the PC slept; `pl_queue.py` now downloads a job the server already finished instead of stopping.
   Code: skills play frame lists in an `act` state (`playAct` / `endAct`: frames, times, events per frame, tick, loop for
   held skills; `HOLD` + `holding(k)` for E / R of the swordsman). Swordsman (`SWS`): normal attack sweep + slam with
-  crimson streak cuts and a white X flash (`cutFx`, owner's clip "ฟันสวยมาก เร็วด้วย"); Q `groundSplit` crack line + stun,
+  streak cuts + a white X flash (`cutFx`) and a big ice crescent per swing (`swordArc` = the rogue's PixelLab `dslashl` crescents;
+  owner's clips 2026-11-09: clip 3 ice sword = normal, clip 2 crimson = while berserk, `CUTP` + a hue filter on the crescent); Q `groundSplit` crack line + stun,
   E whirlwind while held (stamina drain, rogue's spin ring), R charge 3 levels then the sweep (level 3 = gold crit), F leap
   to the aimed spot (lands on the hit frame, ring + quake + stun), Z parry (`swCounter`: no damage, x3 counter), X berserk
   (`p.rage`: 28% faster swings, lifesteal, -20% damage, red aura `au_red`); passive iron shield (`IRON`, bar under the

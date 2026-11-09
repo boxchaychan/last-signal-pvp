@@ -1435,7 +1435,7 @@ function chargeRelease(p, lv) {
   const rel = fr.indexOf(h0);
   playAct(p, ar, fr, fr.map((f, i) => i === rel ? 130 : 45), {[rel]: () => {
     if (lv >= 3) { p.forceCrit = G.t; G.flash = .08; G.kick = {x: DV[d][0] * 9, y: DV[d][1] * 9, t: .14}; }
-    doHit(p, {dmg: S.dmg[lv - 1], kb: 60 + lv * 60, hs: .05 + lv * .03, sh: 2 + lv * 3, reach: 175 + lv * 15, cone: 100, slash: lv >= 3 ? 3 : 2}); }});
+    swordArc(p, true); doHit(p, {dmg: S.dmg[lv - 1], kb: 60 + lv * 60, hs: .05 + lv * .03, sh: 2 + lv * 3, reach: 175 + lv * 15, cone: 100, slash: lv >= 3 ? 3 : 2}); }});
 }
 function leapLand(p) {
   const S = SWS[4];
@@ -1451,7 +1451,7 @@ function swCounter(p, fx, fy) {                          // a blow landed inside
   if (!ar) return; endAct(p, true);
   const h0 = (ar.hits && ar.hits[0]) || 3, fr = []; for (let f = Math.max(0, h0 - 1); f <= Math.min(ar.n - 1, h0 + 3); f++) fr.push(f);
   const rel = fr.indexOf(h0);
-  playAct(p, ar, fr, fr.map((f, i) => i === rel ? 120 : 40), {[rel]: () => { p.forceCrit = G.t; doHit(p, {dmg: 22 * SWS[5].mul, kb: 180, hs: .12, sh: 8, reach: 175, cone: 110, slash: 3}); }});
+  playAct(p, ar, fr, fr.map((f, i) => i === rel ? 120 : 40), {[rel]: () => { p.forceCrit = G.t; swordArc(p, true); doHit(p, {dmg: 22 * SWS[5].mul, kb: 180, hs: .12, sh: 8, reach: 175, cone: 110, slash: 3}); }});
 }
 
 // ===== mage =====
@@ -1570,16 +1570,24 @@ function pline(x1, y1, x2, y2, w, col, a = 1) {
 }
 // the swordsman's cuts (owner's clip 2026-11-09 "ท่า vfx ฟันสวยมาก เร็วด้วย"): long thin streaks across the target, white-hot
 // core, crimson body, dark edge; they snap in at once and thin out in 0.2 s, with a white X flash on the hit
+const CUTP = {red: ['#1a0610', '#e8183c', '#fff4f6', [255, 40, 70]], ice: ['#06223a', '#2a9dff', '#f4fdff', [80, 180, 255]]};
+function swordArc(p, fin) {                               // a big ice crescent along the swing (owner's clip 3); crimson in berserk
+  const key = slashFor(p.dir * 45, 'l'), Q = PFX[key]; if (!Q || !Q.m) return;
+  G.fx.push({k: 'pfx', key, follow: 1, ox: DV[p.dir][0] * (fin ? 34 : 26), oy: -30 + DV[p.dir][1] * 10, a: .92, ga: .6, depth: DV[p.dir][1] < -.3 ? 'b' : 'f', t: 0, life: Q.m.n / Q.m.fps,
+    filter: p.rage > G.t ? 'hue-rotate(165deg) saturate(2.2)' : ''});
+}
 function cutFx(x, y, dir, lvl) {
+  const pal = G.p.rage > G.t ? 'red' : 'ice';
+  if (pal === 'ice') { spark(x, y, 7, '#bff8ff'); spark(x, y, 4, '#ffffff'); G.fx.push({k: 'ring', x, y: y + 22, r0: 6, r1: 34 + lvl * 8, t: 0, life: .2, c: '#e8fbff'}); }
   const b = (rnd() < .5 ? -1 : 1) * (.22 + rnd() * .3), A = lvl >= 3 ? [b, b + 1.05, b - 1.05] : lvl === 2 ? [b, -b * 1.3 + (b > 0 ? -.4 : .4)] : [b];
-  A.forEach((a, i) => G.fx.push({k: 'cut', x: x + (rnd() - .5) * 8, y: y + (rnd() - .5) * 6, a, len: (lvl >= 3 ? 170 : 110 + lvl * 15) + rnd() * 30, t: -i * .03, life: .2, w: lvl >= 3 ? 7 : 5}));
+  A.forEach((a, i) => G.fx.push({k: 'cut', x: x + (rnd() - .5) * 8, y: y + (rnd() - .5) * 6, a, len: (lvl >= 3 ? 170 : 110 + lvl * 15) + rnd() * 30, t: -i * .03, life: .2, w: lvl >= 3 ? 7 : 5, pal}));
   G.fx.push({k: 'xf', x, y, t: 0, life: .12, s: lvl >= 3 ? 26 : 16});
 }
 function drawCut(f) {
   if (f.t < 0) return; const k = f.t / f.life, w = Math.max(1, Math.round(f.w * (1 - k))), L = f.len * (k < .12 ? .75 + k * 2 : 1), c = Math.cos(f.a), s = Math.sin(f.a) * .75;
-  if (!FXS.glowRed) FXS.glowRed = glowSprite([255, 40, 70]); glowAt(f.x, f.y, L * .5, 14, FXS.glowRed, (1 - k) * .55);
+  const P = CUTP[f.pal || 'red'], gk = 'glowCut' + (f.pal || 'red'); if (!FXS[gk]) FXS[gk] = glowSprite(P[3]); glowAt(f.x, f.y, L * .5, 14, FXS[gk], (1 - k) * .55);
   const seg = (q, ww, col, a) => pline(f.x - c * L * q / 2, f.y - s * L * q / 2, f.x + c * L * q / 2, f.y + s * L * q / 2, ww, col, a);
-  seg(1, w + 3, '#1a0610', (1 - k) * .75); seg(.96, w + 1, '#e8183c', 1 - k * .6); seg(.8, Math.max(1, w - 2), '#fff4f6', 1 - k);
+  seg(1, w + 3, P[0], (1 - k) * .75); seg(.96, w + 1, P[1], 1 - k * .6); seg(.8, Math.max(1, w - 2), P[2], 1 - k);
 }
 function drawXf(f) {
   const k = f.t / f.life, r = f.s * (1 + k * .4), w = k < .5 ? 3 : 1;
@@ -1816,7 +1824,7 @@ function stepPlayer(dt) {
       if (a.i >= P.ar.n) { p.state = 'idle'; p.a = null; break; }
       const hi = P.hits.indexOf(a.i), fin = a.i === P.last;
       if (hi >= 0 && !a.done[a.i]) { a.done[a.i] = 1; if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
-        else doHit(p, HERO === 'swordsman' ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: fin ? 150 : 170, cone: fin ? 60 : 95, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); }
+        else { if (HERO === 'swordsman') swordArc(p, fin); doHit(p, HERO === 'swordsman' ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: fin ? 150 : 170, cone: fin ? 60 : 95, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
       if (hi >= 0 || P.hits.includes(a.i + 1)) { p.x += DV[p.dir][0] * ATK.push; p.y += DV[p.dir][1] * ATK.push; }
     }
     if (p.a) {
@@ -2076,9 +2084,11 @@ function drawPfx(f) {
   const x = f.follow ? G.p.x + (f.ox || 0) : f.x, y = f.follow ? G.p.y + (f.oy || 0) : f.y, Gl = PFX[f.key + '_glow'];
   // owner "เอฟเฟกต์ทำใสหน่อย มีแสง": effects with a glow copy are drawn a little see-through, with the soft light added on top
   const PA = PFXA[f.key]; ctx.globalAlpha = f.a || (PA ? PA[0] : Gl && Gl.m ? .78 : 1);
+  if (f.filter) ctx.filter = f.filter;
   ctx.drawImage(P.img, (i % cols) * m.w, (i / cols | 0) * m.h, m.w, m.h, Math.round(x - m.ax), Math.round(y - m.ay), m.w, m.h);
   if (Gl && Gl.m) { const g = Gl.m, j = Math.min(g.n - 1, i); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = f.ga || (PA ? PA[1] : .75);
     ctx.drawImage(Gl.img, j * g.w, 0, g.w, g.h, Math.round(x - g.ax), Math.round(y - g.ay), g.w, g.h); ctx.globalCompositeOperation = 'source-over'; }
+  ctx.filter = 'none';
   ctx.globalAlpha = 1;
 }
 function fieldSprite(R) {         // ground field: dithered see-through cyan inside, a 3 px bright rim with a dark edge
