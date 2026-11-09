@@ -32,8 +32,8 @@ Owner 2026-11-09. Reply to the owner in Thai, short and plain.
 | 16 | shatter | done | น้ำแข็งแตก | mage reaction ice+lightning |
 | 17 | overload | done | ระเบิดสายฟ้า | mage reaction lightning+fire |
 | 18 | ink_flurry | done | พายุฟันหมึก | rogue big skill |
-| 19 | ink_crescent | todo | ดาบจันทร์เสี้ยวหมึก | swordsman big skill |
-| 20 | ink_comet | todo | ดาวหางหมึก | mage big skill |
+| 19 | ink_crescent | done | ดาบจันทร์เสี้ยวหมึก | swordsman big skill |
+| 20 | ink_comet | done | ดาวหางหมึก | mage big skill |
 
 ## Prompts
 ### fireball (ลูกไฟ, mage Q)
