@@ -15,6 +15,7 @@ Owner 2026-11-09: monsters and maps go by country; keep generating until the cre
 Row 1 is for later: the gap the owner saw was only the join between two screenshots, the game's wall is complete.
 | # | key | status | style picture to attach | what |
 |---|-----|--------|-------------------------|------|
+| 0 | thai_gate_4view | todo (URGENT, do first) | art/action/props/t_gate.png + art/action/props/wall_front.png + art/action/props/wall_side.png | the Thai city gate from 4 views |
 | 1 | thai_wall_top | later (do it after 2-6) | art/action/props/wall_front.png + art/action/props/t_gate.png | Thai city wall pieces seen from above |
 | 2 | china_buildings | todo | art/incoming/action/map/gpt_thai_city.png | China city buildings |
 | 3 | china_village | todo | art/incoming/action/map/gpt_thai_city.png | China village buildings |
@@ -23,6 +24,23 @@ Row 1 is for later: the gap the owner saw was only the join between two screensh
 | 6 | china_ground | todo | art/incoming/action/map/gpt_ground.png | China ground textures |
 
 ## Prompts
+
+### 0 thai_gate_4view (owner 2026-11-09 "ประตูเจนมาเลย 4 มุม")
+```
+Use the attached pictures as the style guide: t_gate.png is THIS gate seen from the front, wall_front.png and
+wall_side.png are the city wall it stands in. Draw THE SAME Thai city gate (same white plaster and bricks, the same
+tiered red-tiled roof with the spire, the same wooden double doors, sema merlons, same pixel size, dark outline,
+shading, colours and scale) from 4 views for a top-down action game, the camera a little from above like the attached
+gate, in one row on a plain pure-white background, every view separate with wide white space round it:
+1. FRONT: seen from outside the city, like the attached gate (redraw it cleanly, same size).
+2. BACK: seen from inside the city: the inner side of the same gate tower, the same doors, short stairs up to the wall
+walk on both sides.
+3. LEFT SIDE: the gate turned 90 degrees, seen from its side: the wall runs straight away from the camera (north to
+south), the gateway passage goes left-right through the tower, the doors face LEFT, the tiered roof seen from the side.
+4. RIGHT SIDE: the same as 3 but the doors face RIGHT.
+All four the same height and scale as the attached gate, standing on the same ground line. No text, no letters, no
+grid lines, no shadows on the background, no glow, no people.
+```
 
 ### 1 thai_wall_top
 ```
