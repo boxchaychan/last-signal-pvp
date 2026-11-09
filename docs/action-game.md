@@ -368,6 +368,21 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Archer kit from the owner's pasted sheets + the rogue's look** (owner 2026-11-09, five pictures pasted in chat, pulled out of the
+  session log as base64; raw copies in `art/incoming/pfx/`: `charge-shot-sheet.webp`, `bomb-arrow-sheet.webp`,
+  `rapier-flurry-sheet.png`, `thorn-vine-sheet.webp`, `earthsplitter-cleave-sheet.webp`): `tools/art/pfx_paste.py` cuts such a
+  sheet (cells that are not whole pixels) into `fx/<key>.png` + manifest. "สกิลโทนเขียว ... ให้คล้ายกับสกิลโทนสีของมีด": every
+  archer skill effect is now black strokes + a neon green rim + green glow like the rogue's purple (`tools/art/archer_fx.py`
+  → `fx/<key>_k.png`; `ACK` = ink/neon in code); black also reads on grass. Q ยิงรัว (Rapier Flurry, "แทนท่า 1", was the
+  split arrow): `rapier()` draws the sheet from the bow to the spot (anchor = target, turned, scaled to the distance), 8 thrust
+  hits + a big last one (`ARS[1]` n/dmg/fin). R: the charge sheet gathers at the bow while held (`drawCharge`, frames by level),
+  the release burst at its own size, the bolt (frames 21-38) stretched along the beam, reach follows the drawn head, bigger per
+  level. F: the parting shot is a bomb arrow (`bombArrow`/`bombStick`) flying straight from the bow ("ไม่ต้องโค้ง"; the sheet's
+  lob is not used), short fuse, the sheet's fire blast (kept orange) 30 in r 95. Z ธนูหนาม ("ยิงฝั่งดิน ละมีใครมาในระยะค่อยพุ่งใส่"):
+  the arrow plants a seed (`G.seeds`, dotted reach ring, a sprout per strike left); a monster within 150 gets the thorn vine
+  (`vineStrike`: sheet turned ±0.6 rad / mirrored, scaled to the distance) 24 + rooted 2 s, 3 strikes, 12 s. E javelin + arrow
+  hit flashes use the `_k` copies; the star rain is redrawn black + neon. Tests: `?test=hsk&hero=archer&k=1..6&n=` (`&rel=` lets
+  go of R).
 - **Archer X ฝนดาว redone** (owner 2026-11-09 "Starfall Barrage ของนักธนูดูใช้จริงไม่รุ่นแรงเลย"): the green copy of ParticleFX's
   sheet (`pfx_starfall_g`) was pale lime on green grass, two thin streaks, nothing hit for 1.3 s. Now all code (`starRain`,
   `SF`): the ground in the circle darkens (flat dark disc `FXS.darkEm`) with two turning rune rings (`drawStarZone`), a white
