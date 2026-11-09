@@ -368,6 +368,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Phone zoom** (owner 2026-11-09 "เอาซูม2เท่าเลย" after side-by-side shots of 1x and 2x on a 3x phone; asked first whether the
+  heroes could go back to the 128 size or become painted: no, PixelLab frames cannot be turned into paintings, only redrawn):
+  `onResize` picks, on touch screens smaller than 600 CSS px, the whole-number `S` that brings the view closest to 600 world px
+  tall (3x phone 1170 → 2x = 585; 2.75x → 2x = 523; 2x phone 780 stays 1x); the PC keeps `floor(dh / 950)`; `?zoom=N` forces
+  one. The touch skill buttons are a little see-through (opacity .84) since more of the fight sits under them.
 - **Swordsman Q = Earthsplitter Cleave** (owner 2026-11-09 "Earthsplitter Cleave ให้ดาบแทนท่าเก่า", pasted sheet →
   `fx/pfx_earthsplit.png`, 42 frames, anchor = the start of the ground crack 70,219, the crack runs ~155 px right): `groundSplit`
   pushes an `esplit` fx (`drawEarthSplit`): anchored in front of him, turned to the aim (mirrored for the left), stretched to
