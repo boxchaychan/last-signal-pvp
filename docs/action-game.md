@@ -301,7 +301,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   `art/incoming/mobs/`.
 - **Skill levels to 10, meteor shower** (owner 2026-11-09 "สกิลเมเทโอ ... เลเวล 10 5 ลูก ดาเมจคำนวณเอาไปก่อน"): `SKMAX` 10,
   `SKUPD` +10% damage and `SKUPC` -4% cooldown per level, heroes up to level 40. Mage Z drops `meteorN(lv)` meteors
-  (1, 2 at level 2, +1 every 2 levels, 5 from level 8), the first on the aimed spot, the rest around it 0.2 s apart, each
+  (owner's correction "8 ก็ 4 ลูกสิ": level / 2, at least 1: levels 1-3 one, 4-5 two, 6-7 three, 8-9 four, 10 five), the first on the aimed spot, the rest around it 0.2 s apart, each
   full damage (60 x level factor). Test `?test=hsk&hero=mage&k=5&lv=8&n=96`.
 - **Skill bar + skill book** (owner 2026-11-09 "ทำ ui ให้มีสกิลลงช่องล่าง และตารางอัพสกิล"): PC hotbar of 6 slots bottom centre
   (`#hotbar`, icons cropped from each skill's effect sheet `SKICON`, cooldown shade + seconds, level pips, hover tip); the old
