@@ -299,6 +299,14 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Ink effects, moving effects, monster flinch** (2026-11-09): Codex's 3 ink pictures on green (`fx_codex_import.py` mode
+  `green` = chroma key) → `cinkflurry` (rogue F finish, `starFinish`), `cinkcres` (swordsman charge level 3 = a flying
+  sword wave `G.pshots` k 'wave' that cuts every monster it passes once; the counter = a crescent sliding forward),
+  `cinkcomet` (the first meteor of the mage's shower). Owner "ทำ vfx ให้เคลื่อนไหวได้": `f.mv` (steady speed) and
+  `f.dox/doy` (a follow effect sliding away) in the fx step; the swing's ice crescent slides forward; hotbar icons loop
+  their effect's frames while the skill is ready (`iconFrames` / `skIconAnim`). Monsters flinch when hit (squash + lean
+  back from `m.hit`) until Codex draws a `hurt` row: MOB_ANIM.md now has a hurt row per monster (88 rows) and
+  `mob_frames.py` adds the row when `<key>_hurt.png` exists; `drawMob2` plays it during the stagger.
 - **Skill levels to 10, meteor shower** (owner 2026-11-09 "สกิลเมเทโอ ... เลเวล 10 5 ลูก ดาเมจคำนวณเอาไปก่อน"): `SKMAX` 10,
   `SKUPD` +10% damage and `SKUPC` -4% cooldown per level, heroes up to level 40. Mage Z drops `meteorN(lv)` meteors
   (owner's correction "8 ก็ 4 ลูกสิ": level / 2, at least 1: levels 1-3 one, 4-5 two, 6-7 three, 8-9 four, 10 five), the first on the aimed spot, the rest around it 0.2 s apart, each

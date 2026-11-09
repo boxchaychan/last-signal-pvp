@@ -43,8 +43,8 @@ def shrink(q, s):
     return rgb.astype(np.uint8), al[..., 0] > .5
 
 def build(key):
-    rows = []
-    for a in ACTS:
+    rows = []; acts = ACTS + [a for a in ['hurt'] if os.path.exists(f'{SRC}/{key}_{a}.png')]   # hurt: once Codex has drawn it
+    for a in acts:
         src = f'{SRC}/{key}_{a}.png'; cut = f'{CUT}/{key}_{a}.png'
         if not os.path.exists(cut) or os.path.getmtime(cut) < os.path.getmtime(src):
             subprocess.run([sys.executable, 'tools/art/white_cut.py', src, cut, '--no-ring'], check=True, capture_output=True)
@@ -68,7 +68,7 @@ def build(key):
             ys, xs = np.nonzero(m)
             if len(xs): L = min(L, xs.min() - ax); R = max(R, xs.max() + 1 - ax); T = min(T, ys.min() - ay); B = max(B, ys.max() + 1 - ay)
     fx, fy = int(np.ceil(-L)) + 2, int(np.ceil(-T)) + 2; CW, CH = fx + int(np.ceil(R)) + 2, fy + int(np.ceil(B)) + 2
-    sheet = np.zeros((CH * 3, CW * 6, 4), np.uint8)
+    sheet = np.zeros((CH * len(rows), CW * 6, 4), np.uint8)
     for r, row in enumerate(rows):
         for c, (rgb, m, ax, ay) in enumerate(row):
             q = np.array(Image.fromarray(rgb).quantize(palette=pal, dither=Image.Dither.NONE).convert('RGB'))
@@ -79,7 +79,7 @@ def build(key):
             mm = can[..., 3] > 0; ring = ndimage.binary_dilation(mm) & ~mm; can[ring] = (30, 20, 24, 255)
             sheet[r * CH:(r + 1) * CH, c * CW:(c + 1) * CW] = can
     Image.fromarray(sheet).save(f'{OUT}/{key}.png', optimize=True)
-    meta = {'w': CW, 'h': CH, 'fx': fx, 'fy': fy, 'n': 6, 'rows': {a: i for i, a in enumerate(ACTS)}, 'hit': 3, 'size': SIZE[key]}
+    meta = {'w': CW, 'h': CH, 'fx': fx, 'fy': fy, 'n': 6, 'rows': {a: i for i, a in enumerate(acts)}, 'hit': 3, 'size': SIZE[key]}
     json.dump(meta, open(f'{OUT}/{key}.json', 'w'))
     print(key, 'cell', CW, 'x', CH, 'anchor', fx, fy)
     return meta

@@ -17,12 +17,12 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mob_anim
 ma = open('docs/codex/action/MOB_ANIM.md', encoding='utf-8').read() if os.path.exists('docs/codex/action/MOB_ANIM.md') else ''
-adone = set(re.findall(r'\| (\w+) \| (walk|attack|death) \| done \|', ma))
-TH = {'walk': 'เดิน', 'attack': 'ตี', 'death': 'ตาย'}
+adone = set(re.findall(r'\| (\w+) \| (walk|attack|death|hurt) \| done \|', ma))
+TH = {'walk': 'เดิน', 'attack': 'ตี', 'death': 'ตาย', 'hurt': 'โดนตี'}
 anim = ['<h2>เฟรมขยับของมอน (ท่าละ 1 รูป)</h2><p>แนบรูปของมอนตัวนั้น (กดรูปเล็กเพื่อบันทึก) แล้วก๊อปพรอมต์ทีละท่า</p>']
 for k in mob_anim.MOB:
     anim.append(f'<h3><a href="../art/incoming/mobs/{k}.png" download><img class="th" src="../art/incoming/mobs/px128/{k}/preview.png" alt=""></a>{html.escape(mob_anim.MOB[k][0])} <code>{k}</code></h3>')
-    for a in ('walk', 'attack', 'death'):
+    for a in ('walk', 'attack', 'death', 'hurt'):
         d = (k, a) in adone; i = len(cards) + len(anim)
         anim.append(f'''<section class="card{' done' if d else ''}"><header><b>{TH[a]}</b><code>{k}_{a}.png</code>{'<i>เสร็จแล้ว</i>' if d else ''}
 <button data-i="{i}">ก๊อปปี้</button></header><pre id="p{i}">{html.escape(mob_anim.prompt(k, a))}</pre></section>''')

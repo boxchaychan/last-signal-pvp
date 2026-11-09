@@ -23,6 +23,9 @@ L = {   # key: (picture, mode, size, fps, rot, anchor, flat)
  'cspore': ('spore_cloud', 'solid', 90, 12, 0, 'c', 0), 'croots': ('root_spikes', 'solid', 120, 12, 0, 'g', 0),
  'cwave': ('water_wave', 'solid', 170, 12, 0, 'g', 0), 'csteam': ('steam', 'solid', 150, 14, 0, 'c', 0),
  'cshatter': ('shatter', 'add', 100, 16, 0, 'c', 0), 'coverload': ('overload', 'solid', 220, 15, 0, 'c', 0),
+ # the vivid ink style (owner's reference clips), on pure green
+ 'cinkflurry': ('ink_flurry', 'green', 230, 14, 0, 'c', 0), 'cinkcres': ('ink_crescent', 'green', 210, 16, 0, 'c', 0),
+ 'cinkcomet': ('ink_comet', 'green', 220, 13, 0, 'g', 0),
 }
 
 def cells(path):
@@ -31,6 +34,11 @@ def cells(path):
 
 def to_rgba(c, mode):
     v = c.max(2)
+    if mode == 'green':   # chroma key: how much greener than red / blue a pixel is; spill pulled back to grey
+        r, g, b = c[..., 0], c[..., 1], c[..., 2]; gx = g - np.maximum(r, b)
+        al = np.clip(1 - (gx - 30) / 120, 0, 1); al = np.where(gx < 30, 1.0, al)
+        c = c.copy(); c[..., 1] = np.where(gx > 0, np.maximum(r, b) + np.clip(gx, 0, None) * .15, g)
+        return np.dstack([np.clip(c, 0, 255), al * 255]).astype(np.uint8)
     if mode == 'add':
         al = np.clip((v - 6) / 200, 0, 1) ** .8
     else:

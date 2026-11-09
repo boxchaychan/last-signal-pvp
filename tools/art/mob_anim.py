@@ -98,6 +98,7 @@ ACT = {
  'walk': 'Action: {w}. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).',
  'attack': 'Action: {a}. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.',
  'death': 'Action: {d}.',
+ 'hurt': 'Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.',
 }
 def prompt(key, act):
     th, what, w, a, d = MOB[key]
@@ -111,10 +112,10 @@ def prompt(key, act):
             'cell. Every frame must be a clearly DIFFERENT pose.\n'
             'Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, '
             'no dust.\nPicture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.')
-JOBS = [(k, a) for k in MOB for a in ('walk', 'attack', 'death')]
+JOBS = [(k, a) for k in MOB for a in ('walk', 'attack', 'death', 'hurt')]
 if __name__ == '__main__':
     p = 'docs/codex/action/MOB_ANIM.md'
-    done = set(re.findall(r'\| (\w+) \| (walk|attack|death) \| done \|', open(p, encoding='utf-8').read())) if os.path.exists(p) else set()
+    done = set(re.findall(r'\| (\w+) \| (walk|attack|death|hurt) \| done \|', open(p, encoding='utf-8').read())) if os.path.exists(p) else set()
     rows = '\n'.join(f'| {i + 1} | {k} | {a} | {"done" if (k, a) in done else "todo"} | `art/incoming/mobs/anim/{k}_{a}.png` |' for i, (k, a) in enumerate(JOBS))
     body = '\n\n'.join(f'### {k} {a} ({MOB[k][0]})\nAttach `art/incoming/mobs/{k}.png`.\n```\n{prompt(k, a)}\n```' for k, a in JOBS)
     open(p, 'w', encoding='utf-8', newline='\n').write(f'''# Monster animation frames (action game) — queue for Codex
