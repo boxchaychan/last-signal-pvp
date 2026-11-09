@@ -368,6 +368,10 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Dash + landing dust** (owner 2026-11-09 "เสริมพวก เดส กระโดด", two pasted sheets → `fx/pfx_dustdash.png` 24 frames, puff at
+  50,64 with a ~380 px trail to the right; `fx/pfx_dustland.png` 19 frames, anchor on the ground 84,140): `dashDust` at the start of
+  every roll and the archer's leap back (turned to the way she goes), `landDust` at the end of a roll, the archer's landing, the
+  swordsman's leap slam and a thrown monster landing (sized by its radius).
 - **Skill effect prompts for the owner** (2026-11-09 "เอาพรอม gpt มา ... ฉันสั่งเอง", chose skill effects): `docs/fx-prompts.html`
   (built by `tools/art/fx_prompts.py`, one card + copy button per skill still on an old or borrowed effect: swordsman E R F Z X,
   rogue R Z X, mage all six, priest all six; the archer, swordsman Q and rogue F are left out). Every prompt: ONE effect, a
