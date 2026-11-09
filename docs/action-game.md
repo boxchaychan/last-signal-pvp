@@ -299,6 +299,14 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Living effects** (owner 2026-11-09, a clip of a side-view pixel action game: "การแพรี่ การฟัน สกิล มันเหมือนมีชีวิต",
+  "สกิลเหมือนมันแยกกัน", "เค้าไม่ได้เจนภาพมาเป็นก้อนไหม"; note: pixelfx's meteor is 46 frames, Codex's pictures 6): code
+  parts tie the effects to the body: `parts()` shards with gravity and bounce / embers / speed lines (`G.fx` k 'pt');
+  `weaponTip(p)` = staff crystal or blade; casts gather light there during the wind-up (`act` option `wind`, `drawWindUp`)
+  and burst out on release (`releaseAt`, the hero glows in the skill's colour `heroGlow`); chain lightning also runs along
+  the ground; slam / leap throw debris; the parry is a ring of light round the body that shatters into shards on a
+  counter; hits throw sparks off the blade; monsters flash in the colour that hit them (`m.hitC`, `tintSheet`), shocked
+  ones flicker violet, burning ones glow orange.
 - **Ink effects, moving effects, monster flinch** (2026-11-09): Codex's 3 ink pictures on green (`fx_codex_import.py` mode
   `green` = chroma key) → `cinkflurry` (rogue F finish, `starFinish`), `cinkcres` (swordsman charge level 3 = a flying
   sword wave `G.pshots` k 'wave' that cuts every monster it passes once; the counter = a crescent sliding forward),

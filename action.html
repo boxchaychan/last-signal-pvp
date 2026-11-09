@@ -1222,7 +1222,7 @@ function payFor(p, k) {
 function hitMob(m, dmg, fx, fy, kb, col = '#ffe066', big = false, noRing = false) {
   const dx = m.x - fx, dy = m.y - fy, d = Math.hypot(dx, dy) || 1;
   const [hd, hc] = rogueDmg(m, dmg); dmg = hd;
-  m.hp -= dmg; m.hit = .12; stagger(m); m.kx = dx / d * kb * 4; m.ky = dy / d * kb * 4;
+  m.hp -= dmg; m.hit = .12; m.hitC = col; stagger(m); m.kx = dx / d * kb * 4; m.ky = dy / d * kb * 4;
   spark(m.x, m.y - 16, 7, '#ffffff'); spark(m.x, m.y - 16, 4, col);
   if (!noRing) G.fx.push({k: 'burst', x: m.x - dx / d * 8, y: m.y - 18, t: 0, life: .2, big});
   G.nums.push({x: m.x + (rnd() - .5) * 12, y: m.y - 46, v: dmg, t: 0, big: dmg >= 15, ...hc});
@@ -1351,7 +1351,8 @@ function doHit(p, h) {
     const dx = m.x - p.x, dy = (m.y - 14) - (p.y - 30), d = Math.hypot(dx, dy);
     if (d > (h.reach || (h.kb > 60 ? 150 : 125)) * (META.k || 1) + m.r) continue;   // reach follows the arcs (no air blade any more)
     if (d > 22 && (dx * fx + dy * fy) / d < Math.cos((h.cone || 80) * Math.PI / 180)) continue;
-    const [hd, hc] = rogueDmg(m, h.dmg); any = true; m.hp -= hd; m.hit = .12; stagger(m);
+    const [hd, hc] = rogueDmg(m, h.dmg); any = true; m.hp -= hd; m.hit = .12; m.hitC = h.slash ? (p.rage > G.t ? '#ff3050' : '#9fe8ff') : '#ffffff'; stagger(m);
+    parts(m.x, m.y - 24, h.slash ? (p.rage > G.t ? 'red' : 'ice') : 'white', 4, {sp: 200, lift: 120, life: .45, floor: 24});
     const k = h.kb / Math.max(d, 1); m.kx = dx * k * 4; m.ky = dy * k * 4;
     spark(m.x, m.y - 16, 8, '#ffffff'); spark(m.x, m.y - 16, 4, h.slash ? '#ff3050' : '#ffe066'); if (h.slash) cutFx(m.x, m.y - 22, p.dir, h.slash);
     G.fx.push({k: 'burst', x: m.x - dx / Math.max(d, 1) * 10, y: m.y - 18, t: 0, life: .2, big: h.kb > 60});   // impact star
@@ -1457,6 +1458,66 @@ function renderBook() {
 const xpB = document.querySelector('#xpb>b'), xpI = document.querySelector('#xpb i'), bookBtn = document.getElementById('bookBtn'), bookPts = document.querySelector('#bookBtn em');
 bookBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); openBook(!G || !G.paused); });
 document.getElementById('book').addEventListener('pointerdown', e => { if (e.target.id === 'book') openBook(false); });
+
+// ---------- living effects (owner 2026-11-09, a clip of a pixel action game: "การแพรี่ การฟัน สกิล มันเหมือนมีชีวิต",
+// "สกิลเหมือนมันแยกกัน", "เค้าไม่ได้เจนภาพมาเป็นก้อนไหม"): the effect pictures stay as the core, and small parts made in code
+// tie them to the body: light gathers at the weapon before a release, the hero glows in the skill's colour with sparks
+// crawling on the body, shards / embers / speed lines fly out with gravity, monsters light up in the colour that hit them,
+// the parry is a ring round the body that shatters, chain lightning also runs along the ground
+const RGB = {fire: [255, 140, 40], ice: [120, 210, 255], shock: [200, 150, 255], gold: [255, 210, 80], teal: [90, 230, 255], white: [255, 255, 255], red: [255, 60, 80], violet: [190, 90, 255]};
+const HEX = {fire: '#ffb040', ice: '#bff0ff', shock: '#e0c8ff', gold: '#ffe066', teal: '#9ff4ff', white: '#ffffff', red: '#ff6070', violet: '#d8a8ff'};
+function glowOf(c) { const k = 'glowE' + c; if (!FXS[k]) FXS[k] = glowSprite(RGB[c]); return FXS[k]; }
+function weaponTip(p, up) {                              // where the energy gathers: the staff's crystal / the blade
+  const dx = DV[p.dir][0], dy = DV[p.dir][1];
+  if (HERO === 'mage') return [p.x + dx * 14, p.y + dy * 6 - (up ? 84 : 64)];
+  return [p.x + dx * 30, p.y + dy * 12 - (up ? 70 : 40)];
+}
+// small parts: k 'sh' shard (falls and bounces), 'em' ember (rises, wobbles), 'ln' speed line (stretches along its motion)
+function parts(x, y, c, n, o = {}) {
+  for (let i = 0; i < n; i++) { const a = o.dir !== undefined ? o.dir + (rnd() - .5) * (o.spread || 1.2) : rnd() * 6.283, sp = (o.sp || 160) * (.5 + rnd() * .8);
+    G.fx.push({k: 'pt', pk: o.k || 'sh', x: x + (rnd() - .5) * (o.r || 0), y: y + (rnd() - .5) * (o.r || 0) * .6, vx2: Math.cos(a) * sp, vy2: Math.sin(a) * sp * .7 - (o.lift || 0),
+      z0: y + (o.floor || 30), t: -(o.delay || 0) * rnd(), life: (o.life || .5) * (.7 + rnd() * .6), c: HEX[c] || c, w: o.w || (rnd() < .3 ? 2 : 1)}); }
+}
+function stepParts(f, dt) {
+  if (f.t < 0) return;
+  if (f.pk === 'em') { f.vy2 -= 60 * dt; f.vx2 *= .96; f.x += f.vx2 * dt + Math.sin(f.t * 14 + f.z0) * .3; f.y += f.vy2 * dt; return; }
+  if (f.pk === 'ln') { f.x += f.vx2 * dt; f.y += f.vy2 * dt; f.vx2 *= .9; f.vy2 *= .9; return; }
+  f.vy2 += 520 * dt; f.x += f.vx2 * dt; f.y += f.vy2 * dt;
+  if (f.y > f.z0) { f.y = f.z0; f.vy2 *= -.35; f.vx2 *= .6; }
+}
+function drawParts(f) {
+  if (f.t < 0) return; const k = f.t / f.life, a = k < .7 ? 1 : 1 - (k - .7) / .3; ctx.globalAlpha = a; ctx.fillStyle = f.c;
+  if (f.pk === 'ln') { const l = Math.hypot(f.vx2, f.vy2) * .05 + 2, ux = f.vx2 / (Math.hypot(f.vx2, f.vy2) || 1), uy = f.vy2 / (Math.hypot(f.vx2, f.vy2) || 1);
+    for (let i = 0; i < l; i++) ctx.fillRect(Math.round(f.x - ux * i), Math.round(f.y - uy * i), 1, 1); ctx.globalAlpha = 1; return; }
+  ctx.fillRect(Math.round(f.x), Math.round(f.y), f.w + (k < .3 ? 1 : 0), f.w + (k < .3 ? 1 : 0)); ctx.globalAlpha = 1;
+}
+// the hero glows in a skill's colour for a moment, sparks crawl over the body
+function heroGlow(p, c, dur) { p.gl = {c, t0: G.t, dur}; }
+function drawHeroGlow(p) {
+  const g = p.gl; if (!g || G.t > g.t0 + g.dur) return; const k = (G.t - g.t0) / g.dur, a = (1 - k) * .65;
+  glowAt(p.x, p.y - 34, 30 + 10 * (1 - k), 42, glowOf(g.c), a);
+  if (rnd() < .6) G.fx.push({k: 'pt', pk: 'em', x: p.x + (rnd() - .5) * 26, y: p.y - 8 - rnd() * 52, vx2: (rnd() - .5) * 20, vy2: -30 - rnd() * 40, z0: rnd() * 9, t: 0, life: .35, c: HEX[g.c], w: 1});
+}
+// light gathers at the weapon during a cast's wind-up (q.wind = {i: release frame, c}); the release bursts out of it
+function drawWindUp(p) {
+  const q = p.ac; if (p.state !== 'act' || !q || !q.wind || q.i > q.wind.i) return;
+  const pr = Math.min(1, (q.i + q.t / (q.ms[Math.min(q.i, q.ms.length - 1)] || 50)) / Math.max(1, q.wind.i)), [x, y] = weaponTip(p, q.wind.up), c = q.wind.c;
+  glowAt(x, y, 6 + 18 * pr, 6 + 18 * pr, glowOf(c), .35 + .5 * pr);
+  ctx.fillStyle = '#ffffff'; const r = 1 + pr * 2 | 0; ctx.fillRect(Math.round(x) - r, Math.round(y) - r, r * 2 + 1, r * 2 + 1);
+  if (rnd() < .7) { const a = rnd() * 6.283, d = 22 + rnd() * 18; G.fx.push({k: 'pt', pk: 'ln', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, vx2: -Math.cos(a) * d * 7, vy2: -Math.sin(a) * d * 7, z0: 0, t: 0, life: .12, c: HEX[c], w: 1}); }
+}
+function releaseAt(p, c, up, big) {
+  const [x, y] = weaponTip(p, up); heroGlow(p, c, big ? .5 : .3);
+  G.fx.push({k: 'burst', x, y, t: 0, life: .2, big: !!big}); parts(x, y, c, big ? 16 : 9, {k: 'ln', sp: 320, life: .22});
+  parts(x, y, c, big ? 8 : 4, {k: 'em', sp: 60, life: .5, lift: 40});
+}
+// monsters light up in the colour that hit them (instead of plain white); status tints: shock flickers violet, burning glows orange
+function tintSheet(T, c) {
+  T.tint = T.tint || {}; if (T.tint[c]) return T.tint[c];
+  const cv2 = document.createElement('canvas'); cv2.width = T.img.width; cv2.height = T.img.height; const g = cv2.getContext('2d');
+  g.drawImage(T.img, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = c; g.fillRect(0, 0, cv2.width, cv2.height);
+  return T.tint[c] = cv2;
+}
 function playAct(p, ar, fr, ms, ev = {}, opt = {}) {
   if (p.state === 'act' && p.ac) endAct(p);
   p.state = 'act'; p.a = null; p.ac = {ar, fr, ms: Array.isArray(ms) ? ms : fr.map(() => ms), ev, i: 0, t: 0, ...opt};
@@ -1497,7 +1558,7 @@ function swordSk(p, k) {
     p.dir = d; const h = ar.hits && ar.hits.length ? ar.hits : [3, 9], sl = h[h.length - 1], fr = [];
     for (let f = Math.max(0, sl - 3); f <= Math.min(ar.n - 1, sl + 3); f++) fr.push(f);
     const rel = fr.indexOf(sl);
-    return playAct(p, ar, fr, fr.map((f, i) => i < rel ? 50 : i === rel ? 120 : 60), {[rel]: () => groundSplit(p, tx, ty)});
+    return playAct(p, ar, fr, fr.map((f, i) => i < rel ? 50 : i === rel ? 120 : 60), {[rel]: () => { releaseAt(p, 'fire', false, true); groundSplit(p, tx, ty); }}, {wind: {i: rel, c: 'fire', up: true}});
   }
   if (k === 2) {                                         // E whirlwind while held
     const ar = animRow('spin', 2); if (!ar || !payFor(p, 2)) return false;
@@ -1541,6 +1602,7 @@ function groundSplit(p, tx, ty) {
     if (Math.hypot(m.x - cx, (m.y - cy) * 1.3) > S.w + m.r) continue;
     hitMob(m, S.dmg, p.x, p.y, 70, '#ffb040', true, true); m.stun = G.t + S.stun; }
   for (let i = 0; i < 10; i++) { const k = i / 9; puff(x1 + (x2 - x1) * k + (rnd() - .5) * 10, y1 + (y2 - y1) * k, i & 1 ? '#a08060' : '#ffb040'); }
+  for (let i = 0; i < 8; i++) { const k = i / 7; parts(x1 + (x2 - x1) * k, y1 + (y2 - y1) * k, i & 1 ? '#a08060' : '#6a5038', 3, {sp: 140, lift: 160, life: .6, delay: k * .12, floor: 2}); parts(x1 + (x2 - x1) * k, y1 + (y2 - y1) * k - 6, 'fire', 2, {k: 'em', sp: 30, life: .7, lift: 30, delay: k * .12}); }
   pfx('gslam', x1 + ux * 10, y1 + uy * 6); G.shake = Math.max(G.shake, 7); G.hs = Math.max(G.hs, .07); G.kick = {x: ux * 5, y: uy * 5, t: .12};
 }
 function whirlTick(p, dt, q) {
@@ -1571,12 +1633,15 @@ function leapLand(p) {
   for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 150, '#ffd080', true, true); m.stun = G.t + S.stun; }
   if (!pfx('cslam', p.x, p.y + 8)) { pfx('quake', p.x, p.y + 6); pfx('gslam', p.x, p.y); } G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 20, r1: S.r, t: 0, life: .35, c: '#ffe6b0'});
   for (let i = 0; i < 16; i++) { const a = i / 16 * 6.28; puff(p.x + Math.cos(a) * 40, p.y + Math.sin(a) * 15, '#cbbf9e'); }
+  parts(p.x, p.y - 6, '#8a7050', 22, {sp: 260, lift: 220, life: .8, floor: 6, r: 30}); parts(p.x, p.y - 20, 'gold', 14, {k: 'ln', sp: 420, life: .25}); heroGlow(p, 'gold', .4);
   G.shake = Math.max(G.shake, 10); G.hs = Math.max(G.hs, .1); G.kick = {x: 0, y: 8, t: .14};
 }
 function swCounter(p, fx, fy) {                          // a blow landed inside the parry stance
   const d = dirOf(fx - p.x, fy - p.y), ar = animRow('attack', d);
   p.guard = 0; p.inv = .5; p.dir = d; G.hs = Math.max(G.hs, .14); G.shake = Math.max(G.shake, 6); G.flash = .07;
   pfx('parry', p.x + DV[d][0] * 22, p.y - 36); tag(p.x, p.y - 96, 'สวนกลับ!', '#ffe066');
+  for (let i = 0; i < 18; i++) { const a = i / 18 * 6.283; G.fx.push({k: 'pt', pk: 'sh', x: p.x + Math.cos(a) * 27, y: p.y - 36 + Math.sin(a) * 40, vx2: Math.cos(a) * 220, vy2: Math.sin(a) * 160 - 60, z0: p.y + 4, t: 0, life: .6, c: i & 1 ? '#ffffff' : '#bff0ff', w: 2}); }
+  parts(fx, fy - 30, 'white', 10, {k: 'ln', sp: 380, life: .2}); heroGlow(p, 'white', .35);
   if (!ar) return; endAct(p, true);
   const h0 = (ar.hits && ar.hits[0]) || 3, fr = []; for (let f = Math.max(0, h0 - 1); f <= Math.min(ar.n - 1, h0 + 3); f++) fr.push(f);
   const rel = fr.indexOf(h0);
@@ -1584,30 +1649,32 @@ function swCounter(p, fx, fy) {                          // a blow landed inside
 }
 
 // ===== mage =====
-function castAnim(p, name, relK, fn, ms = 55) {          // play a cast move; fn on its release frame
+const CASTC = {1: 'fire', 2: 'shock', 3: 'ice', 5: 'violet', 6: 'teal'};
+function castAnim(p, name, relK, fn, ms = 55, k = 0) {          // play a cast move; fn on its release frame
   const own = name !== 'attack' && animRow(name, p.dir), ar = own || animRow('attack', p.dir);
   if (!ar) { fn(p); return true; }
   let fr, rel;
   if (own) { fr = [...Array(ar.n).keys()]; rel = Math.round((ar.n - 1) * relK); }
   else { const h0 = (ar.hits && ar.hits[0]) || 4; fr = []; for (let f = Math.max(0, h0 - 3); f <= Math.min(ar.n - 1, h0 + 2); f++) fr.push(f); rel = fr.indexOf(h0); }
-  return playAct(p, ar, fr, fr.map((f, i) => i === rel ? 110 : ms), {[rel]: fn});
+  const c = CASTC[k] || 'teal', up = name === 'cast_up';
+  return playAct(p, ar, fr, fr.map((f, i) => i === rel ? 110 : ms), {[rel]: p2 => { releaseAt(p2, c, up, k === 5 || k === 3); fn(p2); }}, {wind: {i: rel, c, up}});
 }
 function mageSk(p, k) {
   const S = MGS[k];
   if (k === 1) { const [tx, ty] = p.skT || skTarget(p, 1); p.skT = null; if (!payFor(p, 1)) return false; p.dir = dirOf(tx - p.x, ty - p.y);
-    return castAnim(p, 'attack', 0, () => { const sx = p.x + DV[p.dir][0] * 26, sy = p.y + DV[p.dir][1] * 8, d = Math.hypot(tx - sx, ty - sy) || 1;
-      G.pshots.push({k: 'fire', x: sx, y: sy, h: 42, vx: (tx - sx) / d * 640, vy: (ty - sy) / d * 640, t: 0, life: d / 640, tr: 0}); }); }
+    return castAnim(p, 'attack', 0, () => { const sx = p.x + DV[p.dir][0] * 26, sy = p.y + DV[p.dir][1] * 8, d = Math.hypot(tx - sx, ty - sy) || 1; void 0;
+      G.pshots.push({k: 'fire', x: sx, y: sy, h: 42, vx: (tx - sx) / d * 640, vy: (ty - sy) / d * 640, t: 0, life: d / 640, tr: 0}); }, 55, 1); }
   if (k === 2) { if (!payFor(p, 2)) return false; const t0 = nearestMob(p, S.range); if (t0) p.dir = dirOf(t0.x - p.x, t0.y - p.y);
-    return castAnim(p, 'attack', 0, () => chainLightning(p)); }
-  if (k === 3) { if (!payFor(p, 3)) return false; return castAnim(p, 'staff_slam', .5, () => frostNova(p)); }
+    return castAnim(p, 'attack', 0, () => chainLightning(p), 55, 2); }
+  if (k === 3) { if (!payFor(p, 3)) return false; return castAnim(p, 'staff_slam', .5, () => frostNova(p), 55, 3); }
   if (k === 4) { if (!payFor(p, 4)) return false; blink(p); return true; }
   if (k === 5) { const [tx, ty] = p.skT || skTarget(p, 5); p.skT = null; if (!payFor(p, 5)) return false; p.dir = dirOf(tx - p.x, ty - p.y);
     const n = meteorN(p.skl[5] || 1);
     for (let i = 0; i < n; i++) { const a = i * 2.4 + rnd() * .6, r = i ? 70 + rnd() * 50 : 0;   // the first on the spot, the rest around it, one after another
       G.meteors.push({x: tx + Math.cos(a) * r, y: ty + Math.sin(a) * r * .55, t: -i * .2, T: S.delay + .25, ink: i === 0 && !!PFX.cinkcomet}); }
-    return castAnim(p, 'cast_up', .45, () => { G.flash = .04; }); }
+    return castAnim(p, 'cast_up', .45, () => { G.flash = .04; }, 55, 5); }
   if (k === 6) { if (!payFor(p, 6)) return false;
-    return castAnim(p, 'cast_up', .45, () => { p.msh = S.hp; p.mshT = G.t + S.dur; pfx('mburst', p.x, p.y - 30); G.flash = .05; tag(p.x, p.y - 96, 'โล่เวท', '#9ff4ff'); }); }
+    return castAnim(p, 'cast_up', .45, () => { p.msh = S.hp; p.mshT = G.t + S.dur; pfx('mburst', p.x, p.y - 30); G.flash = .05; tag(p.x, p.y - 96, 'โล่เวท', '#9ff4ff'); }, 55, 6); }
   return false;
 }
 function mageBolt(p, dmg, fin) {
@@ -1629,7 +1696,8 @@ function chainLightning(p) {
   for (let i = 0; i < S.n && cur; i++) { done.push(cur); pts.push([cur.x, cur.y - 24]);
     hitMob(cur, S.dmg, pts[pts.length - 2][0], pts[pts.length - 2][1] + 24, 20, '#fff27a', false, true); applyEl(cur, 'shock'); pfx('zap', cur.x, cur.y - 24);
     let nx = null, nd = S.jump; for (const m of G.mobs) { if (m.hp <= 0 || done.includes(m)) continue; const d = Math.hypot(m.x - cur.x, m.y - cur.y); if (d < nd) { nd = d; nx = m; } } cur = nx; }
-  G.fx.push({k: 'chain', pts, t: 0, life: .3}); G.hs = Math.max(G.hs, .05); G.shake = Math.max(G.shake, 3);
+  G.fx.push({k: 'chain', pts, t: 0, life: .3}); G.fx.push({k: 'chain', ground: 1, pts: [[p.x, p.y], ...done.map(m => [m.x, m.y])], t: 0, life: .45});
+  for (const m of done) parts(m.x, m.y - 24, 'shock', 6, {k: 'ln', sp: 260, life: .2}); G.hs = Math.max(G.hs, .05); G.shake = Math.max(G.shake, 3);
 }
 function frostNova(p) {
   const S = MGS[3];
@@ -1749,7 +1817,7 @@ function drawChain(f) {
   for (let i = 0; i < f.pts.length - 1; i++) { const [x1, y1] = f.pts[i], [x2, y2] = f.pts[i + 1], L = Math.hypot(x2 - x1, y2 - y1), seg = Math.max(2, L / 16 | 0), nx = -(y2 - y1) / (L || 1), ny = (x2 - x1) / (L || 1), Q = [[x1, y1]];
     for (let j = 1; j < seg; j++) { const r = Math.sin((seed + i * 7) * 12.9898 + j * 78.233) * 43758.5453, o = (r - Math.floor(r) - .5) * 16; Q.push([x1 + (x2 - x1) * j / seg + nx * o, y1 + (y2 - y1) * j / seg + ny * o]); }
     Q.push([x2, y2]); glowAt((x1 + x2) / 2, (y1 + y2) / 2, L * .5, 14, FXS.glowY, .5 * a);
-    for (const [w, col] of [[4, '#7a3cff'], [2, '#fff27a'], [1, '#ffffff']]) for (let j = 0; j < Q.length - 1; j++) pline(Q[j][0], Q[j][1], Q[j + 1][0], Q[j + 1][1], w, col, a); }
+    for (const [w, col] of f.ground ? [[3, '#5a2ccf'], [1, '#e0c8ff']] : [[4, '#7a3cff'], [2, '#fff27a'], [1, '#ffffff']]) for (let j = 0; j < Q.length - 1; j++) pline(Q[j][0], Q[j][1], Q[j + 1][0], Q[j + 1][1], w, col, f.ground ? a * .9 : a); }
 }
 function drawRingFx(f) {
   const k = f.t / f.life, e = 1 - (1 - k) * (1 - k), r = f.r0 + (f.r1 - f.r0) * e, n = Math.max(24, r * .9 | 0);
@@ -1804,7 +1872,9 @@ function heroAura(p, front) {
     if (!FXS.glowTeal) FXS.glowTeal = glowSprite([90, 230, 255]); glowAt(p.x, p.y - 34, 38, 48, FXS.glowTeal, .3);
     const n = 64; for (let i = 0; i < n; i++) { const a = i / n * 6.283 + G.t * .8; ctx.globalAlpha = .55 + .35 * Math.sin(a * 3 + G.t * 4); ctx.fillStyle = i % 8 ? '#7af0ff' : '#ffffff';
       ctx.fillRect(Math.round(p.x + Math.cos(a) * 34) - 1, Math.round(p.y - 34 + Math.sin(a) * 46) - 1, 2, 2); } ctx.globalAlpha = 1; } }
-  if (p.guard > G.t) { if (!FXS.glowW) FXS.glowW = glowSprite([255, 255, 255]); glowAt(p.x + DV[p.dir][0] * 18, p.y - 36, 16, 26, FXS.glowW, .4 + .2 * Math.sin(G.t * 25)); }
+  if (p.guard > G.t) { if (!FXS.glowW) FXS.glowW = glowSprite([255, 255, 255]); glowAt(p.x + DV[p.dir][0] * 18, p.y - 36, 16, 26, FXS.glowW, .3 + .15 * Math.sin(G.t * 25));
+    const n = 56, sh = G.t * 3; for (let i = 0; i < n; i++) { const a = i / n * 6.283; ctx.globalAlpha = .45 + .45 * Math.max(0, Math.sin(a * 2 + sh)); ctx.fillStyle = i % 7 ? '#e8f6ff' : '#ffffff';
+      ctx.fillRect(Math.round(p.x + Math.cos(a) * 27), Math.round(p.y - 36 + Math.sin(a) * 40), 2, 2); } ctx.globalAlpha = 1; }
 }
 
 function hurtPlayer(dmg, fromX, fromY) {
@@ -1979,7 +2049,8 @@ function stepPlayer(dt) {
       a.t -= P.ms[a.i]; a.i++;
       if (a.i >= P.ar.n) { p.state = 'idle'; p.a = null; break; }
       const hi = P.hits.indexOf(a.i), fin = a.i === P.last;
-      if (hi >= 0 && !a.done[a.i]) { a.done[a.i] = 1; if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
+      if (hi >= 0 && !a.done[a.i]) { a.done[a.i] = 1; if (HERO !== 'mage') { const [tx2, ty2] = weaponTip(p); parts(tx2, ty2, p.rage > G.t ? 'red' : HERO === 'swordsman' ? 'ice' : 'white', fin ? 8 : 5, {k: 'ln', dir: Math.atan2(DV[p.dir][1], DV[p.dir][0]), spread: 1.4, sp: 360, life: .16}); }
+        if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
         else { if (HERO === 'swordsman') swordArc(p, fin); doHit(p, HERO === 'swordsman' ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: fin ? 150 : 170, cone: fin ? 60 : 95, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
       if (hi >= 0 || P.hits.includes(a.i + 1)) { p.x += DV[p.dir][0] * ATK.push; p.y += DV[p.dir][1] * ATK.push; }
     }
@@ -2106,7 +2177,7 @@ function step(dt) {
   for (const g of G.tags) g.t += dt; G.tags = G.tags.filter(g => g.t < .9);
   if (HERO === 'swordsman' && G.p.iron > 0 && G.t - (G.p.ironHit || 0) > IRON.keep) G.p.iron = Math.max(0, G.p.iron - IRON.drain * dt);
   if (G.p.mark && (G.t >= G.p.mark.until || G.p.mark.m.hp <= 0)) G.p.mark = null;
-  for (const f of G.fx) { f.t += dt; if (f.mv) { f.x += f.mv[0] * dt; f.y += f.mv[1] * dt; } if (f.dox) { f.ox += f.dox * dt; f.oy += (f.doy || 0) * dt; } if (f.vx !== undefined) { const dm = f.k === 'air' ? .965 : .9; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= dm; f.vy *= dm; } }
+  for (const f of G.fx) { f.t += dt; if (f.k === 'pt') { stepParts(f, dt); continue; } if (f.mv) { f.x += f.mv[0] * dt; f.y += f.mv[1] * dt; } if (f.dox) { f.ox += f.dox * dt; f.oy += (f.doy || 0) * dt; } if (f.vx !== undefined) { const dm = f.k === 'air' ? .965 : .9; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= dm; f.vy *= dm; } }
   G.fx = G.fx.filter(f => f.t < f.life);   // (an effect with t < 0 waits)
   for (const n of G.nums) n.t += dt; G.nums = G.nums.filter(n => n.t < .75);
   for (const g of G.ghosts) g.t += dt; G.ghosts = G.ghosts.filter(g => g.t < (g.life || .22));
@@ -2156,6 +2227,7 @@ function drawPlayer(p) {
   if (HERO !== 'rogue') heroAura(p, 0);
   drawPlayerBody(p); ctx.globalAlpha = 1; venomTint = false;
   if (HERO !== 'rogue') heroAura(p, 1);
+  drawHeroGlow(p); drawWindUp(p);
 }
 let venomTint = false;
 function drawPlayerBody(p) {
@@ -2209,7 +2281,9 @@ function drawMob2(m) {
   const one = img => { ctx.save(); ctx.translate(X - m.face * 5 * k, Y); ctx.scale((m.face < 0 ? -1 : 1) * (1 + .12 * k), 1 - .12 * k);
     ctx.drawImage(img, f * M.w, row * M.h, M.w, M.h, -M.fx, -M.fy, M.w, M.h); ctx.restore(); };
   one(T.img); ctx.filter = 'none';
-  if (m.hit > 0 && m.hp > 0) { ctx.globalAlpha *= .55; one(T.w); }
+  if (m.hit > 0 && m.hp > 0) { ctx.globalAlpha *= .6; one(m.hitC && m.hitC !== '#ffffff' ? tintSheet(T, m.hitC) : T.w); }
+  else if (m.hp > 0 && m.el && m.el.shock > G.t && ((G.t * 16) | 0) % 2) { ctx.globalAlpha *= .4; one(tintSheet(T, '#c8a0ff')); }
+  else if (m.hp > 0 && m.burn > G.t) { ctx.globalAlpha *= .18 + .12 * Math.sin(G.t * 12); one(tintSheet(T, '#ff8a2a')); }
   ctx.globalAlpha = 1;
   if (m.stun > G.t && m.hp > 0) for (let k = 0; k < 3; k++) { const a = G.t * 5 + k * 2.1; ctx.fillStyle = '#ffe066'; ctx.fillRect(Math.round(X + Math.cos(a) * 12), Math.round(Y - M.size - 6 + Math.sin(a) * 4), 3, 3); }
   if (m.hp > 0 && m.hp < m.max && !MOBT[m.kind].boss) { const w = Math.max(30, M.size * .5 | 0), x = Math.round(X - w / 2), y = Math.round(Y - M.size - 10);
@@ -2396,6 +2470,7 @@ function draw() {
       ctx.globalAlpha = a; ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); ctx.globalAlpha = 1; }
     if (f.k === 'wave') { const set = (f.big ? FXS.waveB : FXS.wave)[f.dir], im = set[Math.min(3, Math.floor(f.t / f.life * 4))];
       ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2)); }
+    if (f.k === 'pt') { drawParts(f); continue; }
     if (f.k === 'cut') drawCut(f); if (f.k === 'xf') drawXf(f); if (f.k === 'crack') drawCrack(f); if (f.k === 'chain') drawChain(f); if (f.k === 'ring') drawRingFx(f);
     if (f.k === 'burst') { const k = f.t / f.life, R = f.big ? 34 : 24; glowAt(f.x, f.y, R, R, FXS.glowHit, (1 - k) * .5); }
     if (f.k === 'pfx' && !f.depth) drawPfx(f);
