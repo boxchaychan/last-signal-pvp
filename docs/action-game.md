@@ -34,6 +34,10 @@ animation, skills fire instantly as big effects, telegraph rings, a dodge button
 
 Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The owner switches to another key next.
 
+| date | what | id | cost | result |
+|---|---|---|---|---|
+| 2026-11-09 | create_character v3 "Berserker 128" (cloud session, this same trial account; owner "เอาให้หมดก่อน" = use this account up first): reference = `berserker/px128/south.png`, direction_images east + north (ours), PixelLab drew the other 5 | 0e6da505-2c74-479e-bb52-1b6c01659dfe | 2 (+5 daily bonus) | ✅ 8 views good (`berserker/pl_dl/Idle/rotations/`, `pl_rot_preview.png`): south-east holds the sword upright behind the right shoulder (foreshortened) |
+
 ### Second PixelLab account (owner's other key, from 2026-11-08)
 The app kept the old key until restarted, so jobs go through `tools/pl_rpc.py` (HTTP JSON-RPC with the key from the
 user env var, never printed; `--upload` for images). Balance at start: 40 + 20 daily bonus (refills +5 a night, up to 20).
