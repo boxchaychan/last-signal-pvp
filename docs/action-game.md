@@ -368,6 +368,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Skill effect prompts for the owner** (2026-11-09 "เอาพรอม gpt มา ... ฉันสั่งเอง", chose skill effects): `docs/fx-prompts.html`
+  (built by `tools/art/fx_prompts.py`, one card + copy button per skill still on an old or borrowed effect: swordsman E R F Z X,
+  rogue R Z X, mage all six, priest all six; the archer, swordsman Q and rogue F are left out). Every prompt: ONE effect, a
+  6x4 grid (4x4 for loops) of equal square cells, the layout the game needs (`LAYOUT`: shot left → right, ground centred, sky,
+  round the hero, swing to the right), the hero tone (`TONE`), transparent background, no characters / text. Results come back
+  as files → `pfx_paste.py`; mark finished ones in `DONE`.
 - **Hit feel: knockback + impact** (owner 2026-11-09 "ทำเอฟเฟคโดนตีให้ดี กระเด็น กระแทก"): `shove(m, ux, uy, kb, big)` from `hitMob`
   and the melee `doHit`: speed 7 x kb (9 x when the hit kills), capped at 420 px/s (a blast right under one had thrown it 150 px);
   kb 40+ or a kill throws a light monster off its feet (`m.kz` height, `m.kvz`, gravity 1200, no walking while in the air, less
