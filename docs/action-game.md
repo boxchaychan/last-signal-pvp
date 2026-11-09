@@ -372,7 +372,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   games, modify, NO redistribution, so the zip / frames are not in this public repo, only the cut sheets): `tools/art/warrior_vfx.py
   <unzipped>` → `fx/wvfx1..5.png` (128 px, facing right). `wSlash(p, v, sc)` plays one in front of him, turned to his facing:
   normal combo hit 1 = VFX1 double slash, hit 2 = VFX3 thrust, finisher = VFX2 big crescent; R release = VFX4 sweep (bigger
-  per level); Z counter = VFX5 rising burst. His blue `cutFx` streaks on hit are off (the pale cyan arcs drawn inside his
+  per level); Z counter = VFX5 rising burst. Owner "ตีธรรมดาเอาออก มันไกลไป": off on normal hits again (his old cutFx back). His blue `cutFx` streaks on hit are off (the pale cyan arcs drawn inside his
   attack frames stay).
 - **Swordsman E = the owner's sword storm** (2026-11-09 "พายุดาบ เปลี่ยนโทนส้ม นีออนดำ แบบพวกมีด ธนู"; pasted 9x8 sheet 5436x5440 on
   black, its glow flattened into solid red / yellow / orange / pink bands, raw `art/incoming/pfx/sword-storm-sheet.png`):
