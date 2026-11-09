@@ -70,12 +70,12 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 35 | sand_golem | done | Egypt | large |
 | 36 | boss_sphinx | done | Egypt boss | huge |
 | 37 | draugr | done | Norse | medium |
-| 38 | frost_wolf | todo | Norse | medium |
-| 39 | troll | todo | Norse | large |
-| 40 | ice_wraith | todo | Norse | small |
-| 41 | dwarf_berserker | todo | Norse | small |
-| 42 | ice_golem | todo | Norse | large |
-| 43 | boss_jotun | todo | Norse boss | huge |
+| 38 | frost_wolf | done | Norse | medium |
+| 39 | troll | done | Norse | large |
+| 40 | ice_wraith | done | Norse | small |
+| 41 | dwarf_berserker | done | Norse | small |
+| 42 | ice_golem | done | Norse | large |
+| 43 | boss_jotun | done | Norse boss | huge |
 
 ## Monster lines (add after the shared prompt)
 
