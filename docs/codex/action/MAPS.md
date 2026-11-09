@@ -13,12 +13,16 @@ Owner 2026-11-09: monsters and maps go by country; keep generating until the cre
 
 ## Queue
 Owner 2026-11-09: "เจนแบบมาพร้อมประกอบเลย gptเราโควต้าเยอะ หมดก็รอ": make 0a and 0b as pieces ready to put together, spend the quota; when it runs out, stop and wait.
+Owner 2026-11-09: cities are separate places and field maps join between them into a world map, so not every map is a
+city; the village, nature, props and ground sheets are for those field maps.
+Owner 2026-11-09 "เมืองต่อเป็นเมืองใหญ่เลยนะ": the China map is a BIG walled city (much bigger than the Thai one), so it gets two building sheets (2 and 2b).
 | # | key | status | style picture to attach | what |
 |---|-----|--------|-------------------------|------|
 | 0a | thai_gate_4view | todo (URGENT, do first) | art/action/props/t_gate.png + art/action/props/wall_front.png + art/action/props/wall_side.png | the Thai city gate from 4 views |
 | 0b | thai_wall_kit | todo (URGENT, right after 0a) | art/action/props/wall_front.png + art/action/props/t_gate.png + art/action/props/t_fort_w.png | wall pieces that fit together: straight runs, corners, ends, wall walk |
 | 1 | thai_wall_top | dropped (part of 0b) | art/action/props/wall_front.png + art/action/props/t_gate.png | Thai city wall pieces seen from above |
 | 2 | china_buildings | todo | art/incoming/action/map/gpt_thai_city.png | China city buildings |
+| 2b | china_buildings2 | todo | art/incoming/action/map/gpt_thai_city.png | more China city buildings (the China map is a BIG city) |
 | 3 | china_village | todo | art/incoming/action/map/gpt_thai_city.png | China village buildings |
 | 4 | china_nature | todo | art/incoming/action/map/gpt_nature.png | China trees and rocks |
 | 5 | china_props | todo | art/incoming/action/map/gpt_thai_city_props.png | China props |
@@ -93,6 +97,21 @@ shelves of goods, 6. courtyard house with a grey tiled roof and a round moon gat
 13. inn with a balcony and a wine banner, 14. grey brick watchtower, 15. open hexagonal garden pavilion,
 16. stone arched bridge, 17. guardhouse at a gate, 18. rich family's house with red doors and door gods painted as
 simple patterns (no faces).
+No people, no statues of gods, no text, no letters, no grid lines, no shadows on the background, no glow.
+```
+
+### 2b china_buildings2 (the China map is a big city)
+```
+Use the attached picture as the style guide: same pixel size, same dark outline, same shading and colours, same camera angle
+(seen from the front-corner and a little from above). Pixel-art asset sheet of MORE buildings for a BIG ancient Chinese
+walled city, on a plain pure-white background. Every building separate, with white space around it, nothing touching. All at
+the same scale as the attached buildings. 18 buildings, 3 rows of 6:
+1. magistrate's office (yamen) with a red gate and two drums, 2. three-storey restaurant with lanterns, 3. silk shop with
+bolts of cloth, 4. pawn shop with a tall counter, 5. long two-storey shop row (4 shops joined), 6. grey courtyard house of a
+poor family, 7. large merchant mansion with a garden wall, 8. archery hall with targets, 9. martial arts school with a
+training yard, 10. teahouse on a lotus pond, 11. granary of the city with round silos, 12. stables with horses' stalls
+(no horses), 13. paper lantern workshop, 14. ceramics shop with big blue-and-white vases, 15. opera stage with red
+curtains, 16. city wall corner tower, 17. covered market hall, 18. small arched gate between two districts.
 No people, no statues of gods, no text, no letters, no grid lines, no shadows on the background, no glow.
 ```
 

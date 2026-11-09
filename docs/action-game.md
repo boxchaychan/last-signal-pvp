@@ -299,6 +299,18 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **World layout** (owner 2026-11-09 "อันนี้เมืองนะ ในเกมส์ให้มีเมืองแยกๆ ไป ละก็มีแมพต่อกันเป็นแผนที่ ไม่ต้องทำเมืองแบบนี้ตลอด"):
+  cities are their own places (the Thai walled city is one); between them come field maps joined edge to edge into a
+  world map. Not every map needs a walled city. Per country: one city (China's is big) + several linked field maps
+  (forest, village, river, ruins ...) with that country's monsters; the boss sits on a field map or at the city.
+- **China monsters in** (Codex `codex/mobs-china`, 2026-11-09): paper_doll, jiangshi (hops in, lunge), fox_spirit (blue
+  fox-fire shots), terracotta_archer (crossbow bolts), toad_demon (tongue, reach 130), terracotta_general (stout), boss
+  boss_nian (sheet once Codex finishes it); `ROSTER.china`, `BOSSK.china`; until the China map exists they can be tried
+  on any map with `?set=china` (`MSET`); `?test=mobs&set=china&x=3400&y=2700&clear=1` shows them in a row without props.
+  Owner: the China map is a BIG city ("เมืองต่อเป็นเมืองใหญ่เลยนะ") → MAPS.md 2 + 2b building sheets. Owner "ประตูเจนมาเลย
+  4 มุม" + "เจนแบบมาพร้อมประกอบ": MAPS 0a (Thai gate front / back / left / right) and 0b (wall kit: across runs front +
+  back, north-south runs west + east, end caps, 4 corners) go first; the grass gap the owner saw was only the join
+  between two of my screenshots (the game's fort tops are complete).
 - **Long Codex queue** (owner "สั่งเลย ไม่ต้องรอฉัน มอนเจนจนเครดิต Codex หมด"): 21 more monsters in MOBS.md rows 23-43
   (Japan: kappa, kasa_obake, oni, tengu, rokurokubi, nekomata, boss_orochi; Egypt: mummy, scarab, jackal_warrior,
   sand_scorpion, cobra_priest, sand_golem, boss_sphinx; Norse: draugr, frost_wolf, troll, ice_wraith, dwarf_berserker,
