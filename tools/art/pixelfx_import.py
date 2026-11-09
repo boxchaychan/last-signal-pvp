@@ -14,7 +14,7 @@ L={'slash2':('melee/double-slash','c',13,18),'flurry':('melee/dagger-flurry','c'
  'healaoe':('holy/heal-aoe','g',36,15),'feather':('holy/feather-burst','c',37,15),'hex':('shadow/hex-sigil','c',51,16),
  'mburst':('arcane/mana-burst','c',23,15),'quake':('nature/quake','g',30,15),'darkx':('shadow/dark-explosion','c',30,12),
  'pillar':('holy/holy-pillar','g',30,12),'firering':('fire/fire-ring','g',30,10),
- 'pmeteor':('fire/meteor','g',46,15)}   # owner 2026-11-09: the mage's meteor (falls in, explodes, smokes)
+ 'pmeteor':('fire/meteor','g',152,30)}   # owner 2026-11-09: the mage's meteor (falls in, explodes, smokes)
 ONLY=sys.argv[3:]   # optional keys: import just these
 man=json.load(open(os.path.join(DST,'manifest.json')))
 tot=0
@@ -39,7 +39,7 @@ for key,(fid,mode,maxn,pfps) in L.items():
   if mode=='c':cy=(W*yy).sum()/tw
   else:
     rows=W.sum(1);cum=np.cumsum(rows)/rows.sum();cy=y0+int(np.searchsorted(cum,.93))
-  w,h=x1-x0,y1-y0;C=min(8,n);R=(n+C-1)//C
+  w,h=x1-x0,y1-y0;C=min(8 if n<=64 else 12,n);R=(n+C-1)//C   # long effects: 12 columns, the sheet stays under 4096 px tall (phones)
   sheet=Image.new('RGBA',(w*C,h*R),(0,0,0,0))
   for i,f in enumerate(fr):sheet.paste(Image.fromarray(f[y0:y1,x0:x1]),((i%C)*w,(i//C)*h))
   q=sheet.quantize(colors=200,method=Image.Quantize.FASTOCTREE)
