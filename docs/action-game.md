@@ -34,6 +34,11 @@ animation, skills fire instantly as big effects, telegraph rings, a dodge button
 
 Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The owner switches to another key next.
 
+| date | what | id | cost | result |
+|---|---|---|---|---|
+| 2026-11-09 | create_character v3 "Berserker 128" (cloud session, this same trial account; owner "เอาให้หมดก่อน" = use this account up first): reference = `berserker/px128/south.png`, direction_images east + north (ours), PixelLab drew the other 5 | 0e6da505-2c74-479e-bb52-1b6c01659dfe | 2 (+5 daily bonus) | ✅ 8 views good (`berserker/pl_dl/Idle/rotations/`, `pl_rot_preview.png`): south-east holds the sword upright behind the right shoulder (foreshortened) |
+| 2026-11-09 | 3 attacks, PixMiniMax 8 frames, south-east only (`berserker/jobs_attack.json` via `pl_queue.py`): `bz_sweep` horizontal sweep · `bz_spin` 360 spin (Q's second press) · `bz_slam` overhead slam into the ground (R, E's third cut) | sweep dc5cf88c-993d-4ed7-a65c-cb2f0bee0b1a · spin cea10df2-939a-437d-985c-b016ba8cede3 · slam 020e63c9-d4c9-4312-938a-3ae82057d1c8 | 3 | ✅ all good (`attacks_se.gif`, canvas 172): sweep = wind-up 1, a big black-red arc PixelLab drew itself on 2, follow-through 3–6, back on the shoulder 7–8 (9 frames); spin = draw back 1, side 2, back view 3, other side 4, front 5, stance 6–7 with blade arcs on 2–3 (8 frames); slam = raise overhead 1–3, blade into the ground with cracks on 4–5, pull out 6–7, shoulder 8 (his helm reads rounder while he looks down, 4–7). Account empty after this (43.75 used = 40 + the 5 daily bonus) |
+
 ### Second PixelLab account (owner's other key, from 2026-11-08)
 The app kept the old key until restarted, so jobs go through `tools/pl_rpc.py` (HTTP JSON-RPC with the key from the
 user env var, never printed; `--upload` for images). Balance at start: 40 + 20 daily bonus (refills +5 a night, up to 20).
@@ -773,4 +778,10 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   greatsword makes him wide, so `turn128.py` now shrinks a figure to keep `T128_MARGIN`=6 px free at both sides). Body ≈105 px
   vs the swordsman's 120 → build his sheets with `--scale=3/4` (not 2/3) so he stands as tall as the swordsman in the game.
   Plan on the trial account: create_character v3 (south + east + north given, PixelLab draws the rest, 2) + 3 PixMiniMax
-  8-frame south-east jobs (horizontal sweep, 360 spin, overhead slam, 1 each) = 5 of the 6.25. Waiting for the owner's go.
+  8-frame south-east jobs (horizontal sweep, 360 spin, overhead slam, 1 each) = 5 of the 6.25. Owner: "มีเป็นพัน คนละรหัส เอาให้หมด
+  ก่อน" → done, the trial account is now empty (log table above). Next, on the PAID account (PC, `PL_KEY`): import him first
+  (`create_character` v3, reference = `berserker/pl_dl/Idle/rotations/south.png`, `direction_images` = the other 7 files there =
+  0.25, nothing redrawn, like the rogue), then `pl_queue.py art/incoming/action/berserker/jobs_base.json <new id> art/incoming/
+  action/berserker/pl_dl` (36 jobs: idle / run / roll / hurt 8 dirs, death E S W N, no attack) and `jobs_skills.json` (chain throw
+  with the LEFT arm, south-east 8 f = Q / F). The 3 attacks stay in this download (they live in the trial account's character
+  0e6da505; copy `bz_*` folders across if the new download overwrites `pl_dl/`). Not in the game yet.

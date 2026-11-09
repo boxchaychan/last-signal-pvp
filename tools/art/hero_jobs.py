@@ -46,6 +46,16 @@ H = {
    death='she is defeated: she staggers, drops to her knees, the bow falls beside her and she collapses to the ground, lying still in the last frames.',
    attack='a lively single bow shot with the whole body moving: she reaches back and pulls one arrow from the quiver, nocks it, raises the bow and leans into the shot as she draws the string back to her cheek, releases (the arrow flies away out of the frame, the string snaps forward and her body rocks back a little), follows through with the bow arm, then lowers the bow back to the standing pose. The arrow points the right way: arrowhead at the front, feathers at the back.',
    crit='a powerful critical shot in a different pose: she drops into a low kneeling stance on one knee, tilts the bow, draws the string to full extent with her whole body coiled, holds for a beat, releases a heavy shot with a strong recoil that rocks her body back, then rises back to the standing pose. The arrow points the right way: arrowhead at the front, feathers at the back.'),
+ 'berserker': dict(   # 2026-11-09: his attacks are south-east only (bz_sweep / bz_spin / bz_slam, made on the trial account), so the base plan has no attack
+   subj='a hulking berserker knight in black spiked plate armor with a horned helm, a torn red cape and a huge black greatsword',
+   pose='heavy standing pose, the huge greatsword resting upright on his right shoulder',
+   back='his back, his torn red cape and the back of his horned helm',
+   idle='a slow, heavy breathing idle: his broad armored shoulders rise and fall, the torn red cape sways a little, the huge greatsword stays resting upright on his right shoulder; a seamless loop, feet stay planted.',
+   run='a heavy, powerful running cycle in place (he does not travel across the frame): big stomping strides, the huge greatsword kept resting on his right shoulder, his left arm with the chains pumping, the torn red cape streaming behind him; a smooth loop where the last frame flows back into the first.',
+   roll='a heavy dodge, in place (he stays in the middle of the frame): he drops his shoulder and tumbles forward in one heavy roll holding the greatsword close, then pushes back up into the standing pose with the sword back on his shoulder.',
+   hurt='he gets hit: a short, heavy flinch, his head and shoulders jerk back a little, then he settles back into the standing pose.',
+   death='he is defeated: he staggers, drops to one knee, leans on the greatsword planted in the ground, then topples over onto his side and lies still in the last frames.',
+   attack='a slow, heavy horizontal sweep with the huge greatsword: a clear wind-up, then one wide flat arc across the front of his body with a heavy step forward, then the sword back on his right shoulder.'),
 }[K]
 FACE = {
  'east': 'Side view facing right, keep the same side-on angle in every frame.',
@@ -63,6 +73,8 @@ plan = [('idle', D8, 8, False), ('run', D8, 8, False), ('attack', ['east', 'sout
 'roll', D8, 8, True), ('hurt', D8, 4, True), ('death', ['east', 'south', 'west', 'north'], 8, True)]
 # skill moves (owner 2026-11-09 "เจนมา" after the skill plan): python tools/art/hero_jobs.py <key> skills
 SKM = {
+ 'berserker': dict(
+   chain='a heavy chain throw with his LEFT arm while the huge greatsword stays resting on his right shoulder: he winds his left arm back, whips it forward and flings the chain wrapped round his left forearm out in front of him, holds the arm out for a beat, then yanks it back hard toward his body, leaning back with the pull, and settles into the standing pose. Only a short length of chain hangs from his left hand.'),
  'swordsman': dict(
    spin='a whirlwind spin attack: he holds the greatsword straight out to the side with both hands and spins round on the spot in one full turn, the blade sweeping a full circle around him; a smooth loop where the last frame flows back into the first.',
    leap='a leaping slam: he crouches low, jumps high with the greatsword raised overhead in both hands, comes down and slams the blade into the ground in front of him, then rises back up with the sword on his shoulder. He jumps straight up and lands on the same spot (he stays in the middle of the frame).',
@@ -75,10 +87,12 @@ SKM = {
    cast_up='casting a big spell: he raises the staff high above his head with both hands, the crystal pointing at the sky, holds it up for a moment, then brings it back down to the standing pose. Only his body and the staff move: no magic, no glow.',
    staff_slam='a ground spell: he lifts the staff and strikes its bottom end down hard onto the ground in front of him, then returns to the standing pose with the staff upright. Only his body and the staff move: no magic, no glow.'),
 }
-SPLAN = {'swordsman': [('spin', ['south'], 8, False), ('leap', ['east', 'south', 'north', 'north-west'], 16, True),
+SPLAN = {'berserker': [('chain', ['south-east'], 8, True)],   # Q / F; the long chain itself is drawn by the game
+         'swordsman': [('spin', ['south'], 8, False), ('leap', ['east', 'south', 'north', 'north-west'], 16, True),
                        ('guard', ['east', 'south', 'north', 'north-west'], 4, True), ('charge', ['east', 'south', 'north', 'north-west'], 8, True)],
          'priest': [('pray', ['east', 'south', 'north', 'north-west'], 8, True), ('bless', ['east', 'south', 'north', 'north-west'], 8, True)],
          'mage': [('cast_up', ['east', 'south', 'north', 'north-west'], 8, True), ('staff_slam', ['east', 'south', 'north', 'north-west'], 8, True)]}
+if K == 'berserker': plan = [x for x in plan if x[0] != 'attack']
 if len(sys.argv) > 2 and sys.argv[2] == 'skills':
     H.update(SKM[K]); plan = SPLAN[K]
 jobs = [{'anim': a, 'dir': d, 'frames': n, 'keep': keep, 'subject': H['subj'], 'pose': H['pose'],
