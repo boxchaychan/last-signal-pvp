@@ -377,7 +377,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
 - **Swordsman E = the owner's sword storm** (2026-11-09 "พายุดาบ เปลี่ยนโทนส้ม นีออนดำ แบบพวกมีด ธนู"; pasted 9x8 sheet 5436x5440 on
   black, its glow flattened into solid red / yellow / orange / pink bands, raw `art/incoming/pfx/sword-storm-sheet.png`):
   `tools/art/sword_storm_fx.py` drops the band colours (and 4 px round them), keeps the dark smoke + textured streaks, black
-  ink + neon orange rim + orange glow → `fx/pfx_swstorm_k.png` (72 frames 302x340). `whirlTick` played it round him; owner "พายุไม่เวิร์ค เปลี่ยนกลับใช้ของเดิม" → back to the old whirl ring; then "ใส่พายุแดงที่ให้ไป" + the same sheet again → `tools/art/sword_storm_red.py` = the sheet in its own colours (black → see-through, the flat glow bands at alpha 150 so he shows inside) → `fx/pfx_swstorm_r.png`, now his E.
+  ink + neon orange rim + orange glow → `fx/pfx_swstorm_k.png` (72 frames 302x340). `whirlTick` played it round him; owner "พายุไม่เวิร์ค เปลี่ยนกลับใช้ของเดิม" → back to the old whirl ring; then "ใส่พายุแดงที่ให้ไป" + the same sheet again → `tools/art/sword_storm_red.py` = the sheet in its own colours (black → see-through, the flat glow bands at alpha 150 so he shows inside) → `fx/pfx_swstorm_r.png`; owner "เอาสีแดงออกไว้ก่อน" → off again (`sw = false`), old whirl ring.
   Found on the way: `swordSk` k 2 paid the cost and then `startWhirl` paid again, so E never spun; the first payment is gone.
 - **Dash + landing dust** (owner 2026-11-09 "เสริมพวก เดส กระโดด", two pasted sheets → `fx/pfx_dustdash.png` 24 frames, puff at
   50,64 with a ~380 px trail to the right; `fx/pfx_dustland.png` 19 frames, anchor on the ground 84,140): `dashDust` at the start of
