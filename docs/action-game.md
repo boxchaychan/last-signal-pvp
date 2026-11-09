@@ -299,6 +299,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Long Codex queue** (owner "สั่งเลย ไม่ต้องรอฉัน มอนเจนจนเครดิต Codex หมด"): 21 more monsters in MOBS.md rows 23-43
+  (Japan: kappa, kasa_obake, oni, tengu, rokurokubi, nekomata, boss_orochi; Egypt: mummy, scarab, jackal_warrior,
+  sand_scorpion, cobra_priest, sand_golem, boss_sphinx; Norse: draugr, frost_wolf, troll, ice_wraith, dwarf_berserker,
+  ice_golem, boss_jotun), their walk / attack / death / hurt in MOB_ANIM.md (`tools/art/mob_anim.py`, sizes in
+  `mob_frames.py`), and `docs/codex/action/MAPS.md` (Thai wall top pieces, China buildings / village / nature / props /
+  ground sheets). Owner sent a crop of a corner where the side walkway looked missing: "เจนบนกำแพงมาปิด" → MAPS row 1.
 - **Thai city walls rebuilt** (owner "แมพไทยไม่สวย กำแพง"): the city is a rounded rectangle (`cityD`, |dx/rx|^8 + |dy/ry|^8;
   ground, yard checks and walls follow it; the west map keeps its ellipse). `tools/art/thai_wall.py` makes a seamless
   54 px front tile from wall_sema (no bushes: they were painted on both ends and piled up), a raised side-wall walkway

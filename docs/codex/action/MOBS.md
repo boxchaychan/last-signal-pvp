@@ -55,6 +55,27 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 20 | fox_spirit | todo | China | medium |
 | 21 | toad_demon | todo | China | large |
 | 22 | boss_nian | todo | China boss | huge |
+| 23 | kappa | todo | Japan | small |
+| 24 | kasa_obake | todo | Japan | small |
+| 25 | oni | todo | Japan | large |
+| 26 | tengu | todo | Japan | medium |
+| 27 | rokurokubi | todo | Japan | medium |
+| 28 | nekomata | todo | Japan | medium |
+| 29 | boss_orochi | todo | Japan boss | huge |
+| 30 | mummy | todo | Egypt | medium |
+| 31 | scarab | todo | Egypt | small |
+| 32 | jackal_warrior | todo | Egypt | medium |
+| 33 | sand_scorpion | todo | Egypt | large |
+| 34 | cobra_priest | todo | Egypt | medium |
+| 35 | sand_golem | todo | Egypt | large |
+| 36 | boss_sphinx | todo | Egypt boss | huge |
+| 37 | draugr | todo | Norse | medium |
+| 38 | frost_wolf | todo | Norse | medium |
+| 39 | troll | todo | Norse | large |
+| 40 | ice_wraith | todo | Norse | small |
+| 41 | dwarf_berserker | todo | Norse | small |
+| 42 | ice_golem | todo | Norse | large |
+| 43 | boss_jotun | todo | Norse boss | huge |
 
 ## Monster lines (add after the shared prompt)
 
@@ -188,3 +209,95 @@ legs with a big round head, a single curved horn, a wide toothy mouth, bulging e
 scaly back with gold spikes, a fluffy tail, firecracker-red colours. Fierce but still chibi, like a festival beast.
 ```
 
+### Japan set (owner 2026-11-09: one set per country map; folklore only)
+
+**23 kappa** (กัปปะ)
+```
+Monster: a small river kappa: green scaly skin, a turtle shell on its back, a water-filled dish on top of its head with a ring of shaggy hair, a beak-like mouth, webbed hands and feet, a cheeky grin.
+```
+**24 kasa_obake** (ร่มผี)
+```
+Monster: a haunted paper umbrella yokai: a red and white oiled-paper umbrella with one big eye and a long lolling tongue, hopping on a single wooden leg with a sandal.
+```
+**25 oni** (ยักษ์โอนิ)
+```
+Monster: a big red oni ogre: red skin, two short horns, wild black hair, tusks, a tiger-skin loincloth, a heavy iron kanabo club studded with spikes held in both hands.
+```
+**26 tengu** (นกเทงงู)
+```
+Monster: a crow tengu: a black crow head with a sharp beak, black feathered wings folded on the back, a small black cap, mountain-monk robes, holding a feathered fan in the left hand and a short straight sword in the right.
+```
+**27 rokurokubi** (ผีคอยาว)
+```
+Monster: a long-necked rokurokubi ghost woman: a pale face with long black hair in an old-fashioned bun, a faded kimono, her neck stretched long and curling like a snake so the head floats above her body; eerie, not gory.
+```
+**28 nekomata** (แมวสองหาง)
+```
+Monster: a nekomata cat demon on its hind legs: a big black and white cat with two long tails, glowing yellow eyes, sharp claws, a red ribbon collar with a little bell, blue ghost flames floating by its tails.
+```
+**29 boss_orochi** (บอสยามาตะโนะโอโรจิ)
+```
+Monster: the boss: a giant eight-headed serpent from Japanese folklore, many long scaly necks rising from one huge coiled body, deep red and dark green scales, glowing red eyes, fangs, mossy rocks on its back; menacing but still chibi and readable.
+```
+
+### Egypt set (owner 2026-11-09: one set per country map; folklore only)
+
+**30 mummy** (มัมมี่)
+```
+Monster: a shambling mummy: grey-beige bandages wrapped all over, loose ends trailing, glowing green eyes in the dark gaps, arms stretched forward.
+```
+**31 scarab** (ด้วงสการับ)
+```
+Monster: a big glossy scarab beetle: shiny dark blue-green shell with a gold sheen, six legs, small mandibles, a little gold sun disc pattern on the shell.
+```
+**32 jackal_warrior** (นักรบหัวหมาจิ้งจอก)
+```
+Monster: a jackal-headed warrior (a soldier, not a god): a black jackal head with tall ears, a gold and blue striped headcloth, a bronze chest plate, a white kilt, a curved khopesh sword and a small round shield.
+```
+**33 sand_scorpion** (แมงป่องทะเลทราย)
+```
+Monster: a big desert scorpion: sandy yellow armoured body, two big pincers, a curled tail with a glowing purple stinger, small black eyes.
+```
+**34 cobra_priest** (นักบวชงูเห่า)
+```
+Monster: a cobra-hooded serpent priest: a snake body standing upright with a wide cobra hood, gold and turquoise collar, holding a crooked staff with a glowing green gem.
+```
+**35 sand_golem** (โกเลมทราย)
+```
+Monster: a big golem made of packed desert sand and sandstone blocks, carved hieroglyph patterns on its chest glowing amber, sand trickling from its joints.
+```
+**36 boss_sphinx** (บอสสฟิงซ์)
+```
+Monster: the boss: a great stone sphinx come alive, a lion body of sandstone with a striped blue and gold royal headdress, glowing amber eyes, cracked stone, sand pouring from the cracks; still chibi.
+```
+
+### Norse set (owner 2026-11-09: one set per country map; folklore only)
+
+**37 draugr** (ดรากร์)
+```
+Monster: a draugr: an undead Viking warrior with frost-blue skin, glowing ice-blue eyes, a rusty horned-free iron helmet, a torn fur cloak, a notched axe and a round wooden shield.
+```
+**38 frost_wolf** (หมาป่าหิมะ)
+```
+Monster: a frost wolf: thick white and pale blue fur, icicles along its back, glowing ice-blue eyes, frosty breath.
+```
+**39 troll** (โทรลล์)
+```
+Monster: a big mountain troll: grey-green warty skin, a huge nose, small eyes, moss and pebbles on its shoulders, a tree-trunk club, a ragged hide loincloth.
+```
+**40 ice_wraith** (วิญญาณน้ำแข็ง)
+```
+Monster: a floating ice wraith: a ragged pale blue hooded cloak with no legs, a dark hood with two white glowing eyes, long icy claws, snowflakes swirling round it.
+```
+**41 dwarf_berserker** (คนแคระคลั่ง)
+```
+Monster: a wild dwarf berserker: a big braided red beard, a bear-skin hood, bare arms with blue war paint, a double-bladed axe in each hand.
+```
+**42 ice_golem** (โกเลมน้ำแข็ง)
+```
+Monster: a big golem of blue glacier ice and black rock, frost mist rising from it, a glowing cold-blue core in its chest.
+```
+**43 boss_jotun** (บอสยักษ์น้ำแข็ง)
+```
+Monster: the boss: a frost giant from Norse legend (a giant, not a god): ice-blue skin, a long white beard with icicles, a crown of jagged ice, heavy furs and iron armour, a huge ice-crystal hammer.
+```
