@@ -1403,7 +1403,7 @@ function hitMob(m, dmg, fx, fy, kb, col = '#ffe066', big = false, noRing = false
   if (m.frail > G.t) dmg = Math.round(dmg * 1.25); if (G.p.bless > G.t) dmg = Math.round(dmg * (1 + PRS[3].dmg));   // the priestess: frail, blessing
   const dx = m.x - fx, dy = m.y - fy, d = Math.hypot(dx, dy) || 1;
   const [hd, hc] = rogueDmg(m, dmg); dmg = hd;
-  m.hp -= dmg; m.hit = .12; m.hitC = col; stagger(m); m.kx = dx / d * kb * 4; m.ky = dy / d * kb * 4;
+  m.hp -= dmg; m.hit = .12; m.hitC = col; stagger(m); shove(m, dx / d, dy / d, kb, big);
   spark(m.x, m.y - 16, 7, '#ffffff'); spark(m.x, m.y - 16, 4, col);
   if (!noRing) G.fx.push({k: 'burst', x: m.x - dx / d * 8, y: m.y - 18, t: 0, life: .2, big});
   G.nums.push({x: m.x + (rnd() - .5) * 12, y: m.y - 46, v: dmg, t: 0, big: dmg >= 15, ...hc});
@@ -1538,6 +1538,25 @@ function drawStarLines(f, fade) {  // the dashed lines stay on the ground as cra
   }
   ctx.globalAlpha = 1;
 }
+// owner 2026-11-09 "ทำเอฟเฟคโดนตีให้ดี กระเด็น กระแทก": a hit shoves the monster back further than before (7x kb as speed, 9x
+// when the hit kills it, so the body flies off), a strong hit (kb 40+) or a kill throws a light one off its feet (m.kz / m.kvz,
+// it lands with dust), bosses and stout ones only slide; every hit gets an impact star where it landed and a kick of dust
+function shove(m, ux, uy, kb, big) {
+  const T = m.spr ? MOBT[m.kind] : null, heavy = T && (T.boss || T.stout), kill = m.hp <= 0, v = Math.min(420, kb * (kill ? 9 : 7));   // capped: a blast right under one threw it 150 px
+  m.kx = ux * v; m.ky = uy * v;
+  if (m.spr && !heavy && (kb >= 40 || (kill && kb >= 12))) m.kvz = Math.max(m.kvz || 0, 120 + Math.min(kb, 90) * (kill ? 2.6 : 2));
+  const s = big || kb >= 40 || kill ? 1.35 : .8;
+  G.fx.push({k: 'hstar', x: m.x - ux * m.r * .5, y: m.y - 24, t: 0, life: s > 1 ? .17 : .11, s});
+  parts(m.x - ux * 6, m.y, '#cdbb98', s > 1 ? 6 : 3, {sp: 120, lift: 40, life: .35, floor: 3});
+  if (s > 1) { G.hs = Math.max(G.hs, kill ? .06 : .04); G.shake = Math.max(G.shake, kill ? 5 : 3); }
+}
+function drawHitStar(f) {                           // the impact: a white star, a soft light round it
+  const k = f.t / f.life, a = 1 - k, r = (7 + 13 * (1 - (1 - k) * (1 - k))) * f.s;
+  if (!FXS.glowW) FXS.glowW = glowSprite([255, 255, 240]); glowAt(f.x, f.y, r * 1.7, r * 1.3, FXS.glowW, .75 * a);
+  pline(f.x - r, f.y, f.x + r, f.y, 4, '#1d1a22', .5 * a); pline(f.x, f.y - r * .8, f.x, f.y + r * .8, 4, '#1d1a22', .5 * a);
+  pline(f.x - r, f.y, f.x + r, f.y, 2, '#ffffff', a); pline(f.x, f.y - r * .8, f.x, f.y + r * .8, 2, '#ffffff', a);
+  const q = r * .5; pline(f.x - q, f.y - q * .7, f.x + q, f.y + q * .7, 2, '#fff6d0', a * .8); pline(f.x - q, f.y + q * .7, f.x + q, f.y - q * .7, 2, '#fff6d0', a * .8);
+}
 function puff(x, y, c) { G.fx.push({k: 'puff', x, y, vx: (rnd() - .5) * 40, vy: -10 - rnd() * 20, t: 0, life: .35 + rnd() * .2, c}); }
 function spark(x, y, n, c) { for (let k = 0; k < n; k++) { const a = rnd() * Math.PI * 2, s = 80 + rnd() * 160; G.fx.push({k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, life: .18 + rnd() * .12, c}); } }
 function doHit(p, h) {
@@ -1549,7 +1568,7 @@ function doHit(p, h) {
     if (d > 22 && (dx * fx + dy * fy) / d < Math.cos((h.cone || 80) * Math.PI / 180)) continue;
     const [hd, hc] = rogueDmg(m, h.dmg); any = true; m.hp -= hd; m.hit = .12; m.hitC = h.slash ? (p.rage > G.t ? '#ff3050' : '#9fe8ff') : '#ffffff'; stagger(m);
     parts(m.x, m.y - 24, h.slash ? (p.rage > G.t ? 'red' : 'ice') : 'white', 4, {sp: 200, lift: 120, life: .45, floor: 24});
-    const k = h.kb / Math.max(d, 1); m.kx = dx * k * 4; m.ky = dy * k * 4;
+    shove(m, dx / Math.max(d, 1), dy / Math.max(d, 1), h.kb, h.kb > 60);
     spark(m.x, m.y - 16, 8, '#ffffff'); spark(m.x, m.y - 16, 4, h.slash ? '#ff3050' : '#ffe066'); if (h.slash) cutFx(m.x, m.y - 22, p.dir, h.slash);
     G.fx.push({k: 'burst', x: m.x - dx / Math.max(d, 1) * 10, y: m.y - 18, t: 0, life: .2, big: h.kb > 60});   // impact star
     G.nums.push({x: m.x + (rnd() - .5) * 10, y: m.y - 46, v: hd, t: 0, big: hd >= 20, ...hc});
@@ -2867,11 +2886,16 @@ function stepPlayer(dt) {
 function stepMobs(dt) {
   const p = G.p;
   for (const m of G.mobs) {
-    if (m.hp <= 0) { m.dieT += dt; continue; }
+    const kx0 = m.x, ky0 = m.y;
+    if (m.kx || m.ky) { const kf = m.spr ? (MOBT[m.kind].kb ?? 1) : 1, sp = Math.hypot(m.kx, m.ky) * kf; m.x += m.kx * dt * kf; m.y += m.ky * dt * kf;
+      const fr = m.kz > 0 ? .008 : .002; m.kx *= Math.pow(fr, dt); m.ky *= Math.pow(fr, dt); if (Math.abs(m.kx) + Math.abs(m.ky) < 4) m.kx = m.ky = 0;   // less friction in the air
+      if (sp > 170 && !(m.kz > 0) && rnd() < dt * 30) parts(m.x - m.kx / (sp || 1) * m.r * .6, m.y, '#cdbb98', 1, {sp: 40, lift: 30, life: .35, floor: 3}); }   // skid dust
+    if (m.kvz || m.kz) { m.kvz = (m.kvz || 0) - 1200 * dt; m.kz = Math.max(0, (m.kz || 0) + m.kvz * dt);
+      if (m.kz === 0 && m.kvz < 0) { if (m.kvz < -160) { parts(m.x, m.y, '#cdbb98', 7, {sp: 130, lift: 50, life: .4, floor: 3}); G.fx.push({k: 'ring', x: m.x, y: m.y, r0: 6, r1: m.r + 18, t: 0, life: .2, c: '#e8dcc0'}); } m.kvz = 0; } }   // lands with a puff of dust
+    if (m.hp <= 0) { if (m.kx || m.ky) { blockProps(m, m.spr ? Math.max(14, m.r * .7) : 14); if (!(m.spr && MOBT[m.kind].fly)) unwater(m, kx0, ky0); } m.dieT += dt; continue; }   // a body flung back still stops at walls and water
     m.born += dt; m.t += dt; m.hit = Math.max(0, m.hit - dt); m.ox = m.x; m.oy = m.y; poisonTick(m, dt); statusTick(m, dt); if (m.hp <= 0) continue;
-    if (m.kx || m.ky) { const kf = m.spr ? (MOBT[m.kind].kb ?? 1) : 1; m.x += m.kx * dt * kf; m.y += m.ky * dt * kf; m.kx *= Math.pow(.002, dt); m.ky *= Math.pow(.002, dt); if (Math.abs(m.kx) + Math.abs(m.ky) < 4) m.kx = m.ky = 0; }
     const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy) || 1;
-    if (m.spr) stepMob2(m, dt, dx, dy, d);
+    if (m.spr) { if (!(m.kz > 0)) stepMob2(m, dt, dx, dy, d); }
     else if (m.st === 'hurt') { m.fr = 1; if (m.t > .28) { m.st = 'idle'; m.t = 0; } }
     else if (m.st === 'idle') {                // sit, then hop toward the player
       m.fr = 0; if (m.t > .55 / m.spd) { const hid = p.stealth > G.t, bl = m.blind > G.t || hid, ra = rnd() * 6.28;
@@ -3079,7 +3103,7 @@ function drawMob2(m) {
   if (m.hp <= 0) { row = M.rows.death; f = Math.min(5, m.dieT / .11 | 0); }
   else if (m.st === 'atk') { row = M.rows.attack; f = m.af; }
   else if (m.moving) f = (m.wt * 9 | 0) % 6;
-  const fly = MOBT[m.kind].fly && m.hp > 0, X = Math.round(m.x), Y = Math.round(m.y - (fly ? 3 + Math.sin(G.t * 4 + m.wt) * 3 : 0));
+  const fly = MOBT[m.kind].fly && m.hp > 0, X = Math.round(m.x), Y = Math.round(m.y - (fly ? 3 + Math.sin(G.t * 4 + m.wt) * 3 : 0) - (m.kz || 0));
   if (m.hp <= 0 && m.dieT > .8) ctx.globalAlpha = Math.max(0, 1 - (m.dieT - .8) / .7);
   const frz = m.frz > G.t;
   if (frz) ctx.filter = 'grayscale(1) brightness(1.25) sepia(1) hue-rotate(165deg) saturate(3)';
@@ -3092,7 +3116,7 @@ function drawMob2(m) {
   if (m.frzOn && m.hp > 0 && PFX.pfx_freeze) { const P = PFX.pfx_freeze, q = P.m, e = G.t - m.frz0, left = m.frz - G.t,   // the ice block
       te = e < .62 ? e : left < .3 ? 2.2 + (.3 - left) : .62 + ((e - .62) % 1.4), i = Math.min(q.n - 1, te * q.fps | 0), sc = clamp(M.size / 52, .8, 2.6);
     ctx.globalAlpha = .9; ctx.drawImage(P.img, (i % q.cols) * q.w, (i / q.cols | 0) * q.h, q.w, q.h, Math.round(X - q.ax * sc), Math.round(Y + 2 - q.ay * sc), Math.round(q.w * sc), Math.round(q.h * sc)); ctx.globalAlpha = 1; }
-  if (m.hit > 0 && m.hp > 0) { ctx.globalAlpha *= .6; one(m.hitC && m.hitC !== '#ffffff' ? tintSheet(T, m.hitC) : T.w); }
+  if (m.hit > 0 && m.hp > 0) { ctx.globalAlpha *= m.hit > .07 ? .95 : .55; one(m.hitC && m.hitC !== '#ffffff' ? tintSheet(T, m.hitC) : T.w); }
   else if (m.hp > 0 && m.el && m.el.shock > G.t && ((G.t * 16) | 0) % 2) { ctx.globalAlpha *= .4; one(tintSheet(T, '#c8a0ff')); }
   else if (m.hp > 0 && m.burn > G.t) { ctx.globalAlpha *= .18 + .12 * Math.sin(G.t * 12); one(tintSheet(T, '#ff8a2a')); }
   ctx.globalAlpha = 1;
@@ -3321,7 +3345,7 @@ function draw() {
     if (f.k === 'cut') drawCut(f); if (f.k === 'xf') drawXf(f); if (f.k === 'crack') drawCrack(f); if (f.k === 'chain') drawChain(f); if (f.k === 'ring') drawRingFx(f);
     if (f.k === 'burst') { const k = f.t / f.life, R = f.big ? 34 : 24; glowAt(f.x, f.y, R, R, FXS.glowHit, (1 - k) * .5); }
     if (f.k === 'pfx' && !f.depth) drawPfx(f);
-    if (f.k === 'comet') drawComet(f); else if (f.k === 'sbang') drawStarBang(f); else if (f.k === 'sorb') drawStarOrb(f); else if (f.k === 'sshock') drawStarShock(f); else if (f.k === 'chg') drawCharge(f); else if (f.k === 'esplit') drawEarthSplit(f);
+    if (f.k === 'comet') drawComet(f); else if (f.k === 'sbang') drawStarBang(f); else if (f.k === 'sorb') drawStarOrb(f); else if (f.k === 'sshock') drawStarShock(f); else if (f.k === 'chg') drawCharge(f); else if (f.k === 'esplit') drawEarthSplit(f); else if (f.k === 'hstar') drawHitStar(f);
     if (f.k === 'smoke') { if (!FXS.smoke) FXS.smoke = smokeSprite(SK3.r); const k = f.t / f.life, im = FXS.smoke[(f.t * 6 | 0) % 2];
       ctx.globalAlpha = (k < .1 ? k / .1 : 1 - (k - .1) / .9) * .85; ctx.drawImage(im, Math.round(f.x - im.width / 2), Math.round(f.y - im.height / 2 - 10)); ctx.globalAlpha = 1; }
     if (f.k === 'streak') { const k = f.t / f.life, n = Math.hypot(f.x2 - f.x, f.y2 - f.y) | 0, a = 1 - k;

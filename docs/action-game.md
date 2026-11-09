@@ -368,6 +368,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Hit feel: knockback + impact** (owner 2026-11-09 "ทำเอฟเฟคโดนตีให้ดี กระเด็น กระแทก"): `shove(m, ux, uy, kb, big)` from `hitMob`
+  and the melee `doHit`: speed 7 x kb (9 x when the hit kills), capped at 420 px/s (a blast right under one had thrown it 150 px);
+  kb 40+ or a kill throws a light monster off its feet (`m.kz` height, `m.kvz`, gravity 1200, no walking while in the air, less
+  friction in the air, lands with dust + a ring), bosses and stout ones only slide; dying bodies keep sliding / flying and still
+  stop at walls and water; skid dust while sliding fast; every hit an impact star (`hstar`, `drawHitStar`) and a kick of dust,
+  big hits / kills add hit-stop + shake; the hit flash is solid white for its first 50 ms.
 - **One view for every screen** (owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู", replaces the phone zoom
   below): every screen shows the same `FVW` x `FVH` = 1266 x 585 world px (the 2x phone view). `onResize`: `S` = whole canvas
   px per world px (ceil of fit x DPR), `Q` = canvas px per CSS px (= DPR on a 3x phone, finer elsewhere, then the browser
