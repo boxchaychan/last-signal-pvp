@@ -139,14 +139,15 @@ const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', mag
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
 let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0;
 // owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู": every screen shows the same piece of the map, FVW x FVH
-// world px (the 2x phone view the owner saw). S = whole canvas px per world px (sharp); the canvas is Q px per CSS px, which is
-// the device's own pixels on a 3x phone (2x exactly) and finer elsewhere, then the browser scales it down smoothly; a screen of
-// another shape gets dark bars (OX / OY = where the view starts on the canvas).
+// world px (the 2x phone view the owner saw); "ไม่ได้บอกคมเท่ากัน หมายถึงระยะมองเห็นเท่ากัน": only the view is the same, each screen
+// draws at its own pixels (Q = DPR), so S = canvas px per world px is 2 on a 3x phone and in between elsewhere (1.33 on a 2x
+// phone, 1.52 on a 1080p PC); ?sharp=1 draws finer at a whole S and lets the browser scale down instead. A screen of another
+// shape gets dark bars (OX / OY = where the view starts on the canvas).
 const FVW = 1266, FVH = 585;
 function onResize() {
   DPR = window.devicePixelRatio || 1;
   const fit = Math.min(innerWidth / FVW, innerHeight / FVH);
-  S = Math.max(1, Math.ceil(fit * DPR - .02)); Q = S / fit;
+  if (new URLSearchParams(location.search).get('sharp')) { S = Math.max(1, Math.ceil(fit * DPR - .02)); Q = S / fit; } else { Q = DPR; S = Math.abs(fit * DPR - Math.round(fit * DPR)) < .02 ? Math.round(fit * DPR) : fit * DPR; }
   cv.width = Math.round(innerWidth * Q); cv.height = Math.round(innerHeight * Q);
   VW = FVW; VH = FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
   cv.style.imageRendering = Math.abs(Q - DPR) < .01 ? 'pixelated' : 'auto';
@@ -3247,7 +3248,7 @@ function draw() {
   let cx = Math.round(cam.x), cy = Math.round(cam.y);
   if (G.shake > 0) { cx += Math.round((rnd() - .5) * G.shake * 2); cy += Math.round((rnd() - .5) * G.shake * 2); }
   if (G.kick) { const k = G.kick.t / .12; cx += Math.round(G.kick.x * k); cy += Math.round(G.kick.y * k); }
-  ctx.setTransform(S, 0, 0, S, OX - cx * S, OY - cy * S);
+  ctx.setTransform(S, 0, 0, S, Math.round(OX - cx * S), Math.round(OY - cy * S));
   drawGroundChunks(cx, cy); drawGround(cx, cy);
   // shadows + warning rings
   ctx.globalAlpha = .22;
@@ -3361,7 +3362,7 @@ function draw() {
     ctx.lineWidth = 4; ctx.strokeStyle = '#1d1a22'; ctx.fillStyle = g.col; const y = Math.round(g.y - k * 22); ctx.strokeText(g.txt, Math.round(g.x), y); ctx.fillText(g.txt, Math.round(g.x), y); ctx.globalAlpha = 1; }
   for (const n of G.nums) { const k = n.t / .75; ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; drawDigits(n.v, n.x, n.y - k * 26 - (k < .15 ? (1 - k / .15) * -6 : 0), n.sz || (n.big ? U + 1 : U), n.col || (n.red ? '#ff6060' : n.big ? '#ffe066' : '#ffffff')); ctx.globalAlpha = 1; }
   // the bars round the fixed view on screens of another shape
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0d0f0c'; const vr = OX + VW * S, vb = OY + VH * S;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0d0f0c'; const vr = Math.round(OX + VW * S), vb = Math.round(OY + VH * S);
   if (OY > 0) { ctx.fillRect(0, 0, cv.width, OY); ctx.fillRect(0, vb, cv.width, cv.height - vb); }
   if (OX > 0) { ctx.fillRect(0, 0, OX, cv.height); ctx.fillRect(vr, 0, cv.width - vr, cv.height); }
   // screen-space: hit flash, joystick, wave banner
