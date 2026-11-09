@@ -42,6 +42,9 @@ for j in jobs:
     if a in groups: args['animation_group_id'] = groups[a]
     r = call('animate_character', args)
     m = re.search(r'group: ([0-9a-f-]{36})', r); c = re.search(r'cost: ([^\n]+)', r)
+    if not m and 'already queued or complete' in r:   # finished before the last run stopped (e.g. the PC slept): fetch it
+        while 'nothing else is running' not in (w := call('wait_for_jobs', {'timeout_seconds': 300})) and 'no active jobs' not in w: pass
+        log('already done on the server', a, d, '| download', 'ok' if download() else 'FAILED'); continue
     if not m: log('ERROR submitting', a, d, r[:400]); sys.exit(1)
     groups[a] = m.group(1); json.dump(groups, open(gfile, 'w'))
     log('queued', a, d, j['frames'], 'frames', '|', c.group(1) if c else '?', '| group', m.group(1))

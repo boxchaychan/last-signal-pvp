@@ -40,6 +40,22 @@ END = ' No effects, no smoke, no dust, no motion trails.'
 D8 = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east']
 plan = [('idle', D8, 8, False), ('run', D8, 8, False), ('attack', ['east', 'south', 'north', 'north-east', 'north-west'], 16, True),
         ('roll', D8, 8, True), ('hurt', D8, 4, True), ('death', ['east', 'south', 'west', 'north'], 8, True)]
+# skill moves (owner 2026-11-09 "เจนมา" after the skill plan): python tools/art/hero_jobs.py <key> skills
+SKM = {
+ 'swordsman': dict(
+   spin='a whirlwind spin attack: he holds the greatsword straight out to the side with both hands and spins round on the spot in one full turn, the blade sweeping a full circle around him; a smooth loop where the last frame flows back into the first.',
+   leap='a leaping slam: he crouches low, jumps high with the greatsword raised overhead in both hands, comes down and slams the blade into the ground in front of him, then rises back up with the sword on his shoulder. He jumps straight up and lands on the same spot (he stays in the middle of the frame).',
+   guard='a parry guard: he swings the greatsword off his shoulder and holds it upright in front of his body with both hands like a shield, braced in a wide stance, and holds that guard.',
+   charge='charging a heavy strike: he sinks into a wide low stance and pulls the greatsword back low behind him with both hands, gathering power, and holds that coiled pose with the sword trembling slightly.'),
+ 'mage': dict(
+   cast_up='casting a big spell: he raises the staff high above his head with both hands, the crystal pointing at the sky, holds it up for a moment, then brings it back down to the standing pose. Only his body and the staff move: no magic, no glow.',
+   staff_slam='a ground spell: he lifts the staff and strikes its bottom end down hard onto the ground in front of him, then returns to the standing pose with the staff upright. Only his body and the staff move: no magic, no glow.'),
+}
+SPLAN = {'swordsman': [('spin', ['south'], 8, False), ('leap', ['east', 'south', 'north', 'north-west'], 16, True),
+                       ('guard', ['east', 'south', 'north', 'north-west'], 4, True), ('charge', ['east', 'south', 'north', 'north-west'], 8, True)],
+         'mage': [('cast_up', ['east', 'south', 'north', 'north-west'], 8, True), ('staff_slam', ['east', 'south', 'north', 'north-west'], 8, True)]}
+if len(sys.argv) > 2 and sys.argv[2] == 'skills':
+    H.update(SKM[K]); plan = SPLAN[K]
 jobs = [{'anim': a, 'dir': d, 'frames': n, 'keep': keep, 'subject': H['subj'], 'pose': H['pose'],
          'action': H[a] + ' ' + FACE[d].format(b=H['back']) + END} for a, dirs, n, keep in plan for d in dirs]
 print(json.dumps(jobs, indent=1, ensure_ascii=False))
