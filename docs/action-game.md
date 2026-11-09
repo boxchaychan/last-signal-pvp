@@ -368,7 +368,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
   the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
   nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
-- **Archer F leap = one longer leap** (owner "สกิล4 ... ให้มันมารอบเดียวแต่ยาวขึ้น"): she slid at a constant speed through all 9 roll frames, standing frames included, so it read as a slide + a roll + a slide; now 50 ms frames and she moves only between 18% and 74% of the move (the rolling frames), after-images only then, distance `ARS[4].d` 230 → 330 (~285 travelled).
+- **Star rain = one pass, longer** (owner "สกิล4 คือฝนดาวตก ทิศสกิลมันแปลก ... ให้มันมารอบเดียวแต่ยาวขึ้น"; the owner counts the star rain as skill 4 — I first changed the leap back by mistake, undone): one copy of `pfx_starfall_c_k` (the mirrored second copy made the streaks fall two ways), played at `SF.fps` 18 instead of 30 (~3.5 s), the 10 ticks spread over the landing part, the closing blast at the end.
 - **Archer F bomb blast in neon green** (owner 2026-11-09 "สกิล4 นักธนู เปลี่ยนสีเขียวนีออน"): `fx_tint.py pfx_bombarrow pfx_bombarrow_g 021208,0a3a16,1fbf4a,46ff7d,d8ffe0` (the black + neon `archer_fx` copy turned the fireball into a flat blob), dark rim via `PRIM`, ring / hit colour / fuse spark `ACK.neon`.
 - **Swordsman red slashes** (owner's zip 2026-11-09 "Pixel Art Animations - Warrior FREE" by Frostwindz, itch.io; licence: use in
   games, modify, NO redistribution, so the zip / frames are not in this public repo, only the cut sheets): `tools/art/warrior_vfx.py
@@ -383,7 +383,7 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Found on the way: `swordSk` k 2 paid the cost and then `startWhirl` paid again, so E never spun; the first payment is gone.
 - **Dash + landing dust** (owner 2026-11-09 "เสริมพวก เดส กระโดด", two pasted sheets → `fx/pfx_dustdash.png` 24 frames, puff at
   50,64 with a ~380 px trail to the right; `fx/pfx_dustland.png` 19 frames, anchor on the ground 84,140): `dashDust` at the start of
-  every roll (not the archer's leap back any more: owner "สกิล4 นักธนูมี 2 รอบ ทิศทางแปลก") (turned to the way she goes), `landDust` at the end of a roll, the archer's landing, the
+  every roll and the archer's leap back (turned to the way she goes), `landDust` at the end of a roll, the archer's landing, the
   swordsman's leap slam and a thrown monster landing (sized by its radius).
 - **Skill effect prompts for the owner** (2026-11-09 "เอาพรอม gpt มา ... ฉันสั่งเอง", chose skill effects): `docs/fx-prompts.html`
   (built by `tools/art/fx_prompts.py`, one card + copy button per skill still on an old or borrowed effect: swordsman E R F Z X,
