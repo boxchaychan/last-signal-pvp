@@ -158,9 +158,9 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 142 | boss_sphinx | attack | done | `art/incoming/mobs/anim/boss_sphinx_attack.png` |
 | 143 | boss_sphinx | death | done | `art/incoming/mobs/anim/boss_sphinx_death.png` |
 | 144 | boss_sphinx | hurt | done | `art/incoming/mobs/anim/boss_sphinx_hurt.png` |
-| 145 | draugr | walk | todo | `art/incoming/mobs/anim/draugr_walk.png` |
-| 146 | draugr | attack | todo | `art/incoming/mobs/anim/draugr_attack.png` |
-| 147 | draugr | death | todo | `art/incoming/mobs/anim/draugr_death.png` |
+| 145 | draugr | walk | done | `art/incoming/mobs/anim/draugr_walk.png` |
+| 146 | draugr | attack | done | `art/incoming/mobs/anim/draugr_attack.png` |
+| 147 | draugr | death | done | `art/incoming/mobs/anim/draugr_death.png` |
 | 148 | draugr | hurt | todo | `art/incoming/mobs/anim/draugr_hurt.png` |
 | 149 | frost_wolf | walk | todo | `art/incoming/mobs/anim/frost_wolf_walk.png` |
 | 150 | frost_wolf | attack | todo | `art/incoming/mobs/anim/frost_wolf_attack.png` |
