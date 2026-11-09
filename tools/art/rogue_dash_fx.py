@@ -1,6 +1,6 @@
 # The rogue's new skill 4 look (owner 2026-11-09, approved "เออสวย" on the demo GIF): six Dash Strike dashes in a deep
-# glowing violet (colours sampled from the owner's neon samurai picture), each with Dash Strike's own hit flash, and the
-# closing X (twin fang) black from its first frame with a neon purple rim. Makes the two effect sheets:
+# black with a neon purple rim (colours from the owner's neon samurai picture), each with Dash Strike's own hit flash,
+# and the closing X (twin fang) the same: black from its first frame with the purple rim; the monster's hit flash violet. Makes the two effect sheets:
 #   python tools/art/rogue_dash_fx.py   -> fx/pfx_dashstrike_v.png, fx/pfx_twinfang_k.png + their fx/manifest.json entries
 # Timing from the demo: one dash 0.2 s (the game's SK4.cut was 0.12), Dash Strike played at 20 fps (made at 30), she holds
 # the dash row's frame 6 with a violet glow until the X ends. Not in the game yet: the owner will say when.
@@ -40,5 +40,5 @@ def remake(src, dst, fn, pad):
     man[dst] = dict(m, w=W, h=H, ax=m['ax'] + pad, ay=m['ay'] + pad, src=m['src'] + ' (rogue skill 4 look, tools/art/rogue_dash_fx.py)')
     json.dump(man, open('fx/manifest.json', 'w'), separators=(',', ':')); print(dst, out.size)
 
-remake('pfx_dashstrike', 'pfx_dashstrike_v', lambda c: glowy(tint(c)), 14)
+remake('pfx_dashstrike', 'pfx_dashstrike_v', shadow_x, 14)   # owner "Dash Strike โทนเดียวกันได้ไหม": black + purple rim like the X (the glowing violet one was lambda c: glowy(tint(c)))
 remake('pfx_twinfang', 'pfx_twinfang_k', shadow_x, 10)

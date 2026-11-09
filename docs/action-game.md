@@ -300,8 +300,8 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
 - **Rogue skill 4, new look approved, NOT in the game yet** (owner "เออสวย" on the demo, earlier "อย่าเพิ่งลงเกม เดี๋ยวบอก"):
-  six dashes along the same zigzag as now (`nextCut`), each one ParticleFX's Dash Strike in deep glowing violet
-  (`fx/pfx_dashstrike_v.png`: streak frames 0-11 along the dash, its own hit flash 13-28 on every monster), no
+  six dashes along the same zigzag as now (`nextCut`), each one ParticleFX's Dash Strike black with a neon purple rim like the X
+  (owner "Dash Strike โทนเดียวกันได้ไหม"; `fx/pfx_dashstrike_v.png`, the monster's hit flash violet: streak frames 0-11 along the dash, its own hit flash 13-28 on every monster), no
   thousand cuts, then the closing X = twin fang black from its first frame with a neon purple rim
   (`fx/pfx_twinfang_k.png`); colours sampled from the owner's neon samurai picture; one dash 0.2 s (SK4.cut is 0.12
   now), Dash Strike played at 20 fps; she holds the dash row's frame 6 with a violet glow until the X ends. Sheets made
