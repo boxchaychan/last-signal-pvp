@@ -299,6 +299,14 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Monster frames in** (Codex finished 45/45 by 07:55 on 2026-11-09, `codex/mob-anim` squashed into main): pixel sheets
+  `art/action/mobs/<key>.png` + `.json` + `index.json` from `tools/art/mob_frames.py` (white cut, 3x2 cells, each action
+  scaled so its frame 1 is `SIZE[key]` px tall: small ~46-58, medium ~60-80, large ~96-118, bosses ~160; feet of frame 1 =
+  anchor, other frames keep their place in the cell; 32 colours + 1 px outline; khamot is flipped, Codex drew it facing
+  left; its last death frame is empty on purpose). Rows walk / attack / death, 6 frames, hit = frame 4 (index 3).
+- **Effects brief for Codex**: `tools/art/fx_codex.py` → `docs/codex/action/FX.md` (17: mage fireball, meteor + hit,
+  frost nova, mana shield, blink; swordsman ground crack, whirlwind, berserk, leap slam; monsters spore cloud, ghost fire,
+  root spikes, water wave; mage reactions steam, shatter, overload). 3x2 on PURE BLACK → brightness becomes alpha on import.
 - **Monster frames by Codex** (owner 2026-11-09 "มอนไม่เจน PixelLab", "เฟรมเจนเอา ให้ codex ทำ"): `tools/art/mob_anim.py` →
   `docs/codex/action/MOB_ANIM.md` (45 jobs = 15 monsters × walk / attack / death; one picture each, 6 frames in a 3x2 grid
   of 512 px cells on white, side view facing right only, the game mirrors it; the monster's turnaround attached;
