@@ -299,6 +299,11 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Archer** (2026-11-09): owner's GPT turnaround (`art/incoming/action/archer/turnaround_gpt.png`, front and side views
+  touched: split by hand + `T128_GAP=2`), PixelLab character fcf9d983-0c95-4e43-8fb8-59053eb5fa7e "Forest Archer 128" (v3,
+  2 generations, 8 views good). Owner "ท่ายิงสวยๆ ให้ขยับตัวยิง 1 หากคริให้เปลี่ยนท่ายิง": `hero_jobs.py archer` = 46 jobs
+  (idle / run / roll / hurt 8 dirs, attack = one lively shot 16 f and crit = kneeling power shot 16 f in E S N NE NW,
+  death E S W N), queued 2026-11-09 ~09:55 (1845.5 generations left before).
 - **Meteor experiments** (2026-11-09): `?mfx=parts` (Codex pieces moved by code, owner: "ไม่ผ่าน"), `?mfx=codex`, `?mfx=star`
   (ParticleFX Studio's starfall barrage, `tools/art/pfx_sheet_import.py`, sheets the owner downloaded in
   `art/incoming/pfx/`); owner "ใช้ของเดิม": the default stays pixelfx (first meteor = Codex ink comet). ParticleFX Studio

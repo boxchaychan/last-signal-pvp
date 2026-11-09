@@ -25,6 +25,17 @@ H = {
    hurt='he gets hit: a sharp flinch, head and shoulders jerk back, then he recovers to the standing pose.',
    death='he is defeated: he staggers, drops to his knees, the staff falls beside him and he collapses to the ground, lying still in the last frames.',
    attack='a two-cast magic attack with the staff: he draws the staff back, then thrusts it forward pointing the crystal at the enemy in front of him (cast 1), pulls it back, swings it forward in a short arc and points it at the enemy again (cast 2), then returns to the standing pose with the staff upright. Only his body and the staff move: no magic, no projectiles, no glow.'),
+ 'archer': dict(
+   subj='a young woman archer with a long brown ponytail, a green hooded short cape, a wooden recurve bow in her LEFT hand and a quiver on her back',
+   pose='relaxed standing pose, the bow held low in her left hand',
+   back='her back, her ponytail, her green cape and the quiver',
+   idle='a calm breathing idle: shoulders rising and falling slightly, the ponytail and short cape swaying gently, the bow held low in her left hand; a seamless loop, feet stay planted.',
+   run='a light running cycle in place (she does not travel across the frame): the bow held in her left hand, her right arm pumping, knees lifting, the ponytail and cape bouncing; a smooth loop where the last frame flows back into the first.',
+   roll='a quick dodge roll forward, in place (she stays in the middle of the frame): she crouches, tucks into a ball holding the bow close and rolls over along the ground, then springs back up into the standing pose.',
+   hurt='she gets hit: a sharp flinch, head and shoulders jerk back, then she recovers to the standing pose.',
+   death='she is defeated: she staggers, drops to her knees, the bow falls beside her and she collapses to the ground, lying still in the last frames.',
+   attack='a lively single bow shot with the whole body moving: she reaches back and pulls one arrow from the quiver, nocks it, raises the bow and leans into the shot as she draws the string back to her cheek, releases (the arrow flies away out of the frame, the string snaps forward and her body rocks back a little), follows through with the bow arm, then lowers the bow back to the standing pose. The arrow points the right way: arrowhead at the front, feathers at the back.',
+   crit='a powerful critical shot in a different pose: she drops into a low kneeling stance on one knee, tilts the bow, draws the string to full extent with her whole body coiled, holds for a beat, releases a heavy shot with a strong recoil that rocks her body back, then rises back to the standing pose. The arrow points the right way: arrowhead at the front, feathers at the back.'),
 }[K]
 FACE = {
  'east': 'Side view facing right, keep the same side-on angle in every frame.',
@@ -38,8 +49,8 @@ FACE = {
 }
 END = ' No effects, no smoke, no dust, no motion trails.'
 D8 = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east']
-plan = [('idle', D8, 8, False), ('run', D8, 8, False), ('attack', ['east', 'south', 'north', 'north-east', 'north-west'], 16, True),
-        ('roll', D8, 8, True), ('hurt', D8, 4, True), ('death', ['east', 'south', 'west', 'north'], 8, True)]
+plan = [('idle', D8, 8, False), ('run', D8, 8, False), ('attack', ['east', 'south', 'north', 'north-east', 'north-west'], 16, True)] + ([('crit', ['east', 'south', 'north', 'north-east', 'north-west'], 16, True)] if K == 'archer' else []) + [(
+'roll', D8, 8, True), ('hurt', D8, 4, True), ('death', ['east', 'south', 'west', 'north'], 8, True)]
 # skill moves (owner 2026-11-09 "เจนมา" after the skill plan): python tools/art/hero_jobs.py <key> skills
 SKM = {
  'swordsman': dict(
