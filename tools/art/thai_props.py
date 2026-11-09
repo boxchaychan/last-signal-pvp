@@ -53,10 +53,43 @@ def dry_sheet(path, names):
         ys = np.nonzero((a[y0:y1, x0:x1, 3] > 0).any(1))[0]
         if len(ys): keep[y0 + ys[0] + int((ys[-1] - ys[0]) * .55): y0 + ys[-1] + 1, x0:x1] = True
     cut = water & keep & (a[..., 3] > 0); a[cut, 3] = 0
-    out = path.replace('.png', '_dry.png'); Image.fromarray(a.astype(np.uint8)).save(out); return out, int(cut.sum())
+    out = path.replace('_clean.png', '.png').replace('.png', '_dry.png'); Image.fromarray(a.astype(np.uint8)).save(out); return out, int(cut.sum())
+
+# owner 2026-11-09 "ดูด้วยตายังเห็นเลยตัดยังไง": white_cut --edge-only only took the white joined to the sheet's border, so the
+# background seen between stilts, posts and rails stayed, and the colour reduction turned it cream. Now every enclosed
+# near-white patch is cut in the full-size spaced sheet too (not in the items whose own walls are white), and the light
+# antialias line left round every cut edge goes (2 px; 1 px on the white-walled items).
+WHITE_OK = {'v_temple', 'v_stupa', 't_temple', 't_stupa', 't_gate', 't_belltower', 't_prang', 't_palace', 'jar_dragon', 'lantern_thai',
+            'wall_sema', 'lion', 'elephant_statue', 't_stall'}
+def clean_holes(path, names):
+    from scipy import ndimage
+    a = np.array(Image.open(path).convert('RGBA')).astype(int); al = a[..., 3] > 0; rgb = a[..., :3]; G, cw, ch = 70, 256, 1024 / 3
+    item = np.full(al.shape, -1)
+    for i in range(len(names)):
+        col, row = i % 6, i // 6; item[int(G * (row + 1) + row * ch): int(G * (row + 1) + (row + 1) * ch), int(G * (col + 1) + col * cw): int(G * (col + 1) + (col + 1) * cw)] = i
+    ok = np.isin(item, [i for i, n in enumerate(names) if n in WHITE_OK])
+    white = al & (rgb.min(-1) >= 240) & (rgb.max(-1) - rgb.min(-1) <= 10)
+    lab, k = ndimage.label(white); sz = ndimage.sum(white, lab, range(1, k + 1)) if k else []
+    big = np.isin(lab, [i + 1 for i, v in enumerate(sz) if v >= 20]) & ~ok
+    a[big, 3] = 0; n1 = int(big.sum()); n2 = 0
+    L = .3 * rgb[..., 0] + .59 * rgb[..., 1] + .11 * rgb[..., 2]
+    for it in range(2):
+        al = a[..., 3] > 0; edge = al & ndimage.binary_dilation(~al)
+        lite = edge & (rgb.min(-1) >= 200) & (rgb.max(-1) - rgb.min(-1) <= 30)
+        if it: lite &= ~ok
+        a[lite, 3] = 0; n2 += int(lite.sum())
+    # GPT's own dark outline has a 1-2 px antialias ring outside it (the colour blended with the white background: grey-olive
+    # round leaves, khaki round wood). An edge pixel clearly lighter than the darkest pixel just inside it is that ring.
+    for it in range(2):
+        al = a[..., 3] > 0; edge = al & ndimage.binary_dilation(~al)
+        Lin = np.where(al & ~edge, L, 999); dmin = ndimage.minimum_filter(Lin, size=5)
+        ring = edge & (L > dmin + 35) & (dmin < 120)
+        a[ring, 3] = 0; n2 += int(ring.sum())
+    out = path.replace('.png', '_clean.png'); Image.fromarray(a.astype(np.uint8)).save(out)
+    print(os.path.basename(path), 'enclosed white cut', n1, 'edge line cut', n2); return out
 
 for sheet, names in SHEETS.items():
-    path = M + sheet; hs = heights(path, len(names))
+    path = clean_holes(M + sheet, names); hs = heights(path, len(names))
     dry, ncut = dry_sheet(path, names) if any(n in WATERY for n in names) else (path, 0)
     if ncut: print(sheet, 'water cut in the full-size sheet:', ncut)
     for i, n in enumerate(names):

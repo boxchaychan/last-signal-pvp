@@ -362,6 +362,12 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   t_library t_palace t_smithy t_teahouse t_twin v_boatshed v_fishhut v_stilt cart oxcart (the western houses' cream
   plaster walls read as holes), `--noholes` (fringe only) on every other prop. Props no longer stand on the rice paddies
   (`groundOk` rejects TK 8).
+  Owner: "รอบนี้ก็ยังไม่หมด" → cleaning the reduced pictures could not tell the leftovers from real light paint, so every
+  prop is now rebuilt from its full-size sheet with the background cleaned BEFORE the colour reduction: Thai sets in
+  `thai_props.py` (`clean_holes`: enclosed near-white patches ≥ 20 px cut except in the white-walled items `WHITE_OK`, the
+  near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
+  the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
+  nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
 - **Rogue Q and E in the black-purple tone** (owner "สกิล q e ทำให้เข้าโทนด้วย", "e ให้หมุน ละจังหวะสุดท้ายให้ลมสะบัดออก"):
   Q's dagger trail is black-edged purple with a violet glow, its landing and each hit play Dash Strike's hit flash from
   `pfx_dashstrike_v` (frames 13-24), puffs purple, the blink behind uses `pfx_step_v`. E's ring is `pfx_whirl_k` (the
