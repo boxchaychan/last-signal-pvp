@@ -14,7 +14,8 @@ SIZE = {'shroom': 46, 'wolf': 60, 'goblin_archer': 58, 'boar_guard': 96, 'skelet
         'boss_treant': 168, 'krahang': 76, 'khamot': 46, 'phrai': 80, 'pret': 118, 'monkey': 56, 'croc_guard': 100,
         'boss_chalawan': 158, 'jiangshi': 74, 'paper_doll': 50, 'terracotta_archer': 74, 'terracotta_general': 100,
         'fox_spirit': 72, 'toad_demon': 92, 'boss_nian': 150,
-        'kappa': 54, 'kasa_obake': 52, 'oni': 102, 'tengu': 74, 'rokurokubi': 78, 'nekomata': 64, 'boss_orochi': 160, 'mummy': 74, 'scarab': 44, 'jackal_warrior': 82, 'sand_scorpion': 70, 'cobra_priest': 78, 'sand_golem': 98, 'boss_sphinx': 150, 'draugr': 76, 'frost_wolf': 62, 'troll': 108, 'ice_wraith': 58, 'dwarf_berserker': 56, 'ice_golem': 100, 'boss_jotun': 160}
+        'kappa': 54, 'kasa_obake': 52, 'oni': 102, 'tengu': 74, 'rokurokubi': 78, 'nekomata': 64, 'boss_orochi': 160, 'mummy': 74, 'scarab': 44, 'jackal_warrior': 82, 'sand_scorpion': 70, 'cobra_priest': 78, 'sand_golem': 98, 'boss_sphinx': 150, 'draugr': 76, 'frost_wolf': 62, 'troll': 108, 'ice_wraith': 58, 'dwarf_berserker': 56, 'ice_golem': 100, 'boss_jotun': 160,
+        'dokkaebi_fire': 48, 'dokkaebi': 72, 'gwisin': 74, 'haetae': 84, 'jangsan_tiger': 92, 'jeoseung_saja': 80, 'boss_bulgasari': 150, 'satyr': 68, 'harpy': 72, 'spartoi': 78, 'gorgon': 80, 'cyclops': 110, 'minotaur': 104, 'boss_chimera': 150, 'domovoi': 48, 'kikimora': 60, 'rusalka': 74, 'vukodlak': 82, 'vodyanoy': 88, 'leshy': 96, 'boss_izba': 150, 'knocker': 50, 'redcap': 54, 'pooka': 66, 'banshee': 72, 'kelpie': 88, 'spriggan': 98, 'boss_wyrm': 155, 'babi_ngepet': 54, 'orang_minyak': 74, 'pocong': 76, 'pontianak': 76, 'tikbalang': 94, 'kapre': 104, 'boss_bakunawa': 160}
 FLIP = {'khamot'}          # drawn facing left by Codex
 ACTS = ['walk', 'attack', 'death']
 SRC, CUT, OUT = 'art/incoming/mobs/anim', 'art/incoming/mobs/anim_cut', 'art/action/mobs'

@@ -186,6 +186,146 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 170 | boss_jotun | attack | todo | `art/incoming/mobs/anim/boss_jotun_attack.png` |
 | 171 | boss_jotun | death | todo | `art/incoming/mobs/anim/boss_jotun_death.png` |
 | 172 | boss_jotun | hurt | todo | `art/incoming/mobs/anim/boss_jotun_hurt.png` |
+| 173 | dokkaebi_fire | walk | todo | `art/incoming/mobs/anim/dokkaebi_fire_walk.png` |
+| 174 | dokkaebi_fire | attack | todo | `art/incoming/mobs/anim/dokkaebi_fire_attack.png` |
+| 175 | dokkaebi_fire | death | todo | `art/incoming/mobs/anim/dokkaebi_fire_death.png` |
+| 176 | dokkaebi_fire | hurt | todo | `art/incoming/mobs/anim/dokkaebi_fire_hurt.png` |
+| 177 | dokkaebi | walk | todo | `art/incoming/mobs/anim/dokkaebi_walk.png` |
+| 178 | dokkaebi | attack | todo | `art/incoming/mobs/anim/dokkaebi_attack.png` |
+| 179 | dokkaebi | death | todo | `art/incoming/mobs/anim/dokkaebi_death.png` |
+| 180 | dokkaebi | hurt | todo | `art/incoming/mobs/anim/dokkaebi_hurt.png` |
+| 181 | gwisin | walk | todo | `art/incoming/mobs/anim/gwisin_walk.png` |
+| 182 | gwisin | attack | todo | `art/incoming/mobs/anim/gwisin_attack.png` |
+| 183 | gwisin | death | todo | `art/incoming/mobs/anim/gwisin_death.png` |
+| 184 | gwisin | hurt | todo | `art/incoming/mobs/anim/gwisin_hurt.png` |
+| 185 | haetae | walk | todo | `art/incoming/mobs/anim/haetae_walk.png` |
+| 186 | haetae | attack | todo | `art/incoming/mobs/anim/haetae_attack.png` |
+| 187 | haetae | death | todo | `art/incoming/mobs/anim/haetae_death.png` |
+| 188 | haetae | hurt | todo | `art/incoming/mobs/anim/haetae_hurt.png` |
+| 189 | jangsan_tiger | walk | todo | `art/incoming/mobs/anim/jangsan_tiger_walk.png` |
+| 190 | jangsan_tiger | attack | todo | `art/incoming/mobs/anim/jangsan_tiger_attack.png` |
+| 191 | jangsan_tiger | death | todo | `art/incoming/mobs/anim/jangsan_tiger_death.png` |
+| 192 | jangsan_tiger | hurt | todo | `art/incoming/mobs/anim/jangsan_tiger_hurt.png` |
+| 193 | jeoseung_saja | walk | todo | `art/incoming/mobs/anim/jeoseung_saja_walk.png` |
+| 194 | jeoseung_saja | attack | todo | `art/incoming/mobs/anim/jeoseung_saja_attack.png` |
+| 195 | jeoseung_saja | death | todo | `art/incoming/mobs/anim/jeoseung_saja_death.png` |
+| 196 | jeoseung_saja | hurt | todo | `art/incoming/mobs/anim/jeoseung_saja_hurt.png` |
+| 197 | boss_bulgasari | walk | todo | `art/incoming/mobs/anim/boss_bulgasari_walk.png` |
+| 198 | boss_bulgasari | attack | todo | `art/incoming/mobs/anim/boss_bulgasari_attack.png` |
+| 199 | boss_bulgasari | death | todo | `art/incoming/mobs/anim/boss_bulgasari_death.png` |
+| 200 | boss_bulgasari | hurt | todo | `art/incoming/mobs/anim/boss_bulgasari_hurt.png` |
+| 201 | satyr | walk | todo | `art/incoming/mobs/anim/satyr_walk.png` |
+| 202 | satyr | attack | todo | `art/incoming/mobs/anim/satyr_attack.png` |
+| 203 | satyr | death | todo | `art/incoming/mobs/anim/satyr_death.png` |
+| 204 | satyr | hurt | todo | `art/incoming/mobs/anim/satyr_hurt.png` |
+| 205 | harpy | walk | todo | `art/incoming/mobs/anim/harpy_walk.png` |
+| 206 | harpy | attack | todo | `art/incoming/mobs/anim/harpy_attack.png` |
+| 207 | harpy | death | todo | `art/incoming/mobs/anim/harpy_death.png` |
+| 208 | harpy | hurt | todo | `art/incoming/mobs/anim/harpy_hurt.png` |
+| 209 | spartoi | walk | todo | `art/incoming/mobs/anim/spartoi_walk.png` |
+| 210 | spartoi | attack | todo | `art/incoming/mobs/anim/spartoi_attack.png` |
+| 211 | spartoi | death | todo | `art/incoming/mobs/anim/spartoi_death.png` |
+| 212 | spartoi | hurt | todo | `art/incoming/mobs/anim/spartoi_hurt.png` |
+| 213 | gorgon | walk | todo | `art/incoming/mobs/anim/gorgon_walk.png` |
+| 214 | gorgon | attack | todo | `art/incoming/mobs/anim/gorgon_attack.png` |
+| 215 | gorgon | death | todo | `art/incoming/mobs/anim/gorgon_death.png` |
+| 216 | gorgon | hurt | todo | `art/incoming/mobs/anim/gorgon_hurt.png` |
+| 217 | cyclops | walk | todo | `art/incoming/mobs/anim/cyclops_walk.png` |
+| 218 | cyclops | attack | todo | `art/incoming/mobs/anim/cyclops_attack.png` |
+| 219 | cyclops | death | todo | `art/incoming/mobs/anim/cyclops_death.png` |
+| 220 | cyclops | hurt | todo | `art/incoming/mobs/anim/cyclops_hurt.png` |
+| 221 | minotaur | walk | todo | `art/incoming/mobs/anim/minotaur_walk.png` |
+| 222 | minotaur | attack | todo | `art/incoming/mobs/anim/minotaur_attack.png` |
+| 223 | minotaur | death | todo | `art/incoming/mobs/anim/minotaur_death.png` |
+| 224 | minotaur | hurt | todo | `art/incoming/mobs/anim/minotaur_hurt.png` |
+| 225 | boss_chimera | walk | todo | `art/incoming/mobs/anim/boss_chimera_walk.png` |
+| 226 | boss_chimera | attack | todo | `art/incoming/mobs/anim/boss_chimera_attack.png` |
+| 227 | boss_chimera | death | todo | `art/incoming/mobs/anim/boss_chimera_death.png` |
+| 228 | boss_chimera | hurt | todo | `art/incoming/mobs/anim/boss_chimera_hurt.png` |
+| 229 | domovoi | walk | todo | `art/incoming/mobs/anim/domovoi_walk.png` |
+| 230 | domovoi | attack | todo | `art/incoming/mobs/anim/domovoi_attack.png` |
+| 231 | domovoi | death | todo | `art/incoming/mobs/anim/domovoi_death.png` |
+| 232 | domovoi | hurt | todo | `art/incoming/mobs/anim/domovoi_hurt.png` |
+| 233 | kikimora | walk | todo | `art/incoming/mobs/anim/kikimora_walk.png` |
+| 234 | kikimora | attack | todo | `art/incoming/mobs/anim/kikimora_attack.png` |
+| 235 | kikimora | death | todo | `art/incoming/mobs/anim/kikimora_death.png` |
+| 236 | kikimora | hurt | todo | `art/incoming/mobs/anim/kikimora_hurt.png` |
+| 237 | rusalka | walk | todo | `art/incoming/mobs/anim/rusalka_walk.png` |
+| 238 | rusalka | attack | todo | `art/incoming/mobs/anim/rusalka_attack.png` |
+| 239 | rusalka | death | todo | `art/incoming/mobs/anim/rusalka_death.png` |
+| 240 | rusalka | hurt | todo | `art/incoming/mobs/anim/rusalka_hurt.png` |
+| 241 | vukodlak | walk | todo | `art/incoming/mobs/anim/vukodlak_walk.png` |
+| 242 | vukodlak | attack | todo | `art/incoming/mobs/anim/vukodlak_attack.png` |
+| 243 | vukodlak | death | todo | `art/incoming/mobs/anim/vukodlak_death.png` |
+| 244 | vukodlak | hurt | todo | `art/incoming/mobs/anim/vukodlak_hurt.png` |
+| 245 | vodyanoy | walk | todo | `art/incoming/mobs/anim/vodyanoy_walk.png` |
+| 246 | vodyanoy | attack | todo | `art/incoming/mobs/anim/vodyanoy_attack.png` |
+| 247 | vodyanoy | death | todo | `art/incoming/mobs/anim/vodyanoy_death.png` |
+| 248 | vodyanoy | hurt | todo | `art/incoming/mobs/anim/vodyanoy_hurt.png` |
+| 249 | leshy | walk | todo | `art/incoming/mobs/anim/leshy_walk.png` |
+| 250 | leshy | attack | todo | `art/incoming/mobs/anim/leshy_attack.png` |
+| 251 | leshy | death | todo | `art/incoming/mobs/anim/leshy_death.png` |
+| 252 | leshy | hurt | todo | `art/incoming/mobs/anim/leshy_hurt.png` |
+| 253 | boss_izba | walk | todo | `art/incoming/mobs/anim/boss_izba_walk.png` |
+| 254 | boss_izba | attack | todo | `art/incoming/mobs/anim/boss_izba_attack.png` |
+| 255 | boss_izba | death | todo | `art/incoming/mobs/anim/boss_izba_death.png` |
+| 256 | boss_izba | hurt | todo | `art/incoming/mobs/anim/boss_izba_hurt.png` |
+| 257 | knocker | walk | todo | `art/incoming/mobs/anim/knocker_walk.png` |
+| 258 | knocker | attack | todo | `art/incoming/mobs/anim/knocker_attack.png` |
+| 259 | knocker | death | todo | `art/incoming/mobs/anim/knocker_death.png` |
+| 260 | knocker | hurt | todo | `art/incoming/mobs/anim/knocker_hurt.png` |
+| 261 | redcap | walk | todo | `art/incoming/mobs/anim/redcap_walk.png` |
+| 262 | redcap | attack | todo | `art/incoming/mobs/anim/redcap_attack.png` |
+| 263 | redcap | death | todo | `art/incoming/mobs/anim/redcap_death.png` |
+| 264 | redcap | hurt | todo | `art/incoming/mobs/anim/redcap_hurt.png` |
+| 265 | pooka | walk | todo | `art/incoming/mobs/anim/pooka_walk.png` |
+| 266 | pooka | attack | todo | `art/incoming/mobs/anim/pooka_attack.png` |
+| 267 | pooka | death | todo | `art/incoming/mobs/anim/pooka_death.png` |
+| 268 | pooka | hurt | todo | `art/incoming/mobs/anim/pooka_hurt.png` |
+| 269 | banshee | walk | todo | `art/incoming/mobs/anim/banshee_walk.png` |
+| 270 | banshee | attack | todo | `art/incoming/mobs/anim/banshee_attack.png` |
+| 271 | banshee | death | todo | `art/incoming/mobs/anim/banshee_death.png` |
+| 272 | banshee | hurt | todo | `art/incoming/mobs/anim/banshee_hurt.png` |
+| 273 | kelpie | walk | todo | `art/incoming/mobs/anim/kelpie_walk.png` |
+| 274 | kelpie | attack | todo | `art/incoming/mobs/anim/kelpie_attack.png` |
+| 275 | kelpie | death | todo | `art/incoming/mobs/anim/kelpie_death.png` |
+| 276 | kelpie | hurt | todo | `art/incoming/mobs/anim/kelpie_hurt.png` |
+| 277 | spriggan | walk | todo | `art/incoming/mobs/anim/spriggan_walk.png` |
+| 278 | spriggan | attack | todo | `art/incoming/mobs/anim/spriggan_attack.png` |
+| 279 | spriggan | death | todo | `art/incoming/mobs/anim/spriggan_death.png` |
+| 280 | spriggan | hurt | todo | `art/incoming/mobs/anim/spriggan_hurt.png` |
+| 281 | boss_wyrm | walk | todo | `art/incoming/mobs/anim/boss_wyrm_walk.png` |
+| 282 | boss_wyrm | attack | todo | `art/incoming/mobs/anim/boss_wyrm_attack.png` |
+| 283 | boss_wyrm | death | todo | `art/incoming/mobs/anim/boss_wyrm_death.png` |
+| 284 | boss_wyrm | hurt | todo | `art/incoming/mobs/anim/boss_wyrm_hurt.png` |
+| 285 | babi_ngepet | walk | todo | `art/incoming/mobs/anim/babi_ngepet_walk.png` |
+| 286 | babi_ngepet | attack | todo | `art/incoming/mobs/anim/babi_ngepet_attack.png` |
+| 287 | babi_ngepet | death | todo | `art/incoming/mobs/anim/babi_ngepet_death.png` |
+| 288 | babi_ngepet | hurt | todo | `art/incoming/mobs/anim/babi_ngepet_hurt.png` |
+| 289 | orang_minyak | walk | todo | `art/incoming/mobs/anim/orang_minyak_walk.png` |
+| 290 | orang_minyak | attack | todo | `art/incoming/mobs/anim/orang_minyak_attack.png` |
+| 291 | orang_minyak | death | todo | `art/incoming/mobs/anim/orang_minyak_death.png` |
+| 292 | orang_minyak | hurt | todo | `art/incoming/mobs/anim/orang_minyak_hurt.png` |
+| 293 | pocong | walk | todo | `art/incoming/mobs/anim/pocong_walk.png` |
+| 294 | pocong | attack | todo | `art/incoming/mobs/anim/pocong_attack.png` |
+| 295 | pocong | death | todo | `art/incoming/mobs/anim/pocong_death.png` |
+| 296 | pocong | hurt | todo | `art/incoming/mobs/anim/pocong_hurt.png` |
+| 297 | pontianak | walk | todo | `art/incoming/mobs/anim/pontianak_walk.png` |
+| 298 | pontianak | attack | todo | `art/incoming/mobs/anim/pontianak_attack.png` |
+| 299 | pontianak | death | todo | `art/incoming/mobs/anim/pontianak_death.png` |
+| 300 | pontianak | hurt | todo | `art/incoming/mobs/anim/pontianak_hurt.png` |
+| 301 | tikbalang | walk | todo | `art/incoming/mobs/anim/tikbalang_walk.png` |
+| 302 | tikbalang | attack | todo | `art/incoming/mobs/anim/tikbalang_attack.png` |
+| 303 | tikbalang | death | todo | `art/incoming/mobs/anim/tikbalang_death.png` |
+| 304 | tikbalang | hurt | todo | `art/incoming/mobs/anim/tikbalang_hurt.png` |
+| 305 | kapre | walk | todo | `art/incoming/mobs/anim/kapre_walk.png` |
+| 306 | kapre | attack | todo | `art/incoming/mobs/anim/kapre_attack.png` |
+| 307 | kapre | death | todo | `art/incoming/mobs/anim/kapre_death.png` |
+| 308 | kapre | hurt | todo | `art/incoming/mobs/anim/kapre_hurt.png` |
+| 309 | boss_bakunawa | walk | todo | `art/incoming/mobs/anim/boss_bakunawa_walk.png` |
+| 310 | boss_bakunawa | attack | todo | `art/incoming/mobs/anim/boss_bakunawa_attack.png` |
+| 311 | boss_bakunawa | death | todo | `art/incoming/mobs/anim/boss_bakunawa_death.png` |
+| 312 | boss_bakunawa | hurt | todo | `art/incoming/mobs/anim/boss_bakunawa_hurt.png` |
 
 ## Prompts
 ### shroom walk (เห็ดพิษ)
@@ -2242,6 +2382,1686 @@ Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONL
 
 ### boss_jotun hurt (บอสยักษ์น้ำแข็ง)
 Attach `art/incoming/mobs/boss_jotun.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi_fire walk (ไฟด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi_fire.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a dokkaebi fire wisp, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it floats forward bobbing, the flame flickering. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi_fire attack (ไฟด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi_fire.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a dokkaebi fire wisp, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it swells up and dashes forward bursting into a puff of blue flame (the furthest reach in frame 4), then pulls back together. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi_fire death (ไฟด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi_fire.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a dokkaebi fire wisp, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, sputters, shrinks and goes out in a wisp of smoke in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi_fire hurt (ไฟด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi_fire.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a dokkaebi fire wisp, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi walk (ด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a mischievous dokkaebi goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a bouncy cheeky walk, swinging the club. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi attack (ด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a mischievous dokkaebi goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it hops forward and bonks down with the club (the club hits in frame 4), then hops back laughing. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi death (ด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a mischievous dokkaebi goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, spins dizzily and falls flat on its back, lying still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### dokkaebi hurt (ด็อกแกบี)
+Attach `art/incoming/mobs/dokkaebi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a mischievous dokkaebi goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gwisin walk (ผีสาวเกาหลี)
+Attach `art/incoming/mobs/gwisin.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gwisin maiden ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she drifts forward silently, the long hair and white hanbok swaying. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gwisin attack (ผีสาวเกาหลี)
+Attach `art/incoming/mobs/gwisin.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gwisin maiden ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she lunges forward and her long hair whips out at the enemy (the hair furthest forward in frame 4), then she drifts back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gwisin death (ผีสาวเกาหลี)
+Attach `art/incoming/mobs/gwisin.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gwisin maiden ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she gets hit, flickers and fades into white mist in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gwisin hurt (ผีสาวเกาหลี)
+Attach `art/incoming/mobs/gwisin.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gwisin maiden ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### haetae walk (แฮแท)
+Attach `art/incoming/mobs/haetae.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a haetae guardian beast come alive, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a heavy proud trot on four legs, stone grinding. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### haetae attack (แฮแท)
+Attach `art/incoming/mobs/haetae.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a haetae guardian beast come alive, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it rears and headbutts forward with its horn (the head furthest forward in frame 4), then steps back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### haetae death (แฮแท)
+Attach `art/incoming/mobs/haetae.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a haetae guardian beast come alive, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, cracks and slumps down into a still stone heap in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### haetae hurt (แฮแท)
+Attach `art/incoming/mobs/haetae.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a haetae guardian beast come alive, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jangsan_tiger walk (เสือขาวจังซัน)
+Attach `art/incoming/mobs/jangsan_tiger.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the Jangsan tiger, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a silent prowling walk, shoulders rolling. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jangsan_tiger attack (เสือขาวจังซัน)
+Attach `art/incoming/mobs/jangsan_tiger.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the Jangsan tiger, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it pounces forward and swipes with a huge paw (the paw furthest forward in frame 4), then lands crouched. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jangsan_tiger death (เสือขาวจังซัน)
+Attach `art/incoming/mobs/jangsan_tiger.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the Jangsan tiger, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, roars, staggers and lies down still on its side in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jangsan_tiger hurt (เสือขาวจังซัน)
+Attach `art/incoming/mobs/jangsan_tiger.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the Jangsan tiger, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jeoseung_saja walk (ยมทูตเกาหลี)
+Attach `art/incoming/mobs/jeoseung_saja.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a jeoseung saja reaper, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a slow gliding walk, the black coat swaying. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jeoseung_saja attack (ยมทูตเกาหลี)
+Attach `art/incoming/mobs/jeoseung_saja.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a jeoseung saja reaper, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: he swings the chain forward in a long whip (the chain at full length in frame 4), then pulls it back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jeoseung_saja death (ยมทูตเกาหลี)
+Attach `art/incoming/mobs/jeoseung_saja.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a jeoseung saja reaper, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: he gets hit, the hat falls off and he dissolves into black smoke in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### jeoseung_saja hurt (ยมทูตเกาหลี)
+Attach `art/incoming/mobs/jeoseung_saja.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a jeoseung saja reaper, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bulgasari walk (บอสบุลกาซารี)
+Attach `art/incoming/mobs/boss_bulgasari.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a heavy clanking walk, iron plates rattling. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bulgasari attack (บอสบุลกาซารี)
+Attach `art/incoming/mobs/boss_bulgasari.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it rears up and slams down with both front paws (the paws hit the ground in frame 4), then steps back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bulgasari death (บอสบุลกาซารี)
+Attach `art/incoming/mobs/boss_bulgasari.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, its plates crack and fall off and it crashes onto its side in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bulgasari hurt (บอสบุลกาซารี)
+Attach `art/incoming/mobs/boss_bulgasari.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### satyr walk (ซาเทียร์)
+Attach `art/incoming/mobs/satyr.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a satyr, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a springy hooved walk. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### satyr attack (ซาเทียร์)
+Attach `art/incoming/mobs/satyr.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a satyr, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it hops forward and swings the club (the club furthest forward in frame 4), then hops back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### satyr death (ซาเทียร์)
+Attach `art/incoming/mobs/satyr.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a satyr, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, tumbles over and lies still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### satyr hurt (ซาเทียร์)
+Attach `art/incoming/mobs/satyr.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a satyr, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### harpy walk (ฮาร์ปี)
+Attach `art/incoming/mobs/harpy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a harpy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she flaps forward in the air, wings beating. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### harpy attack (ฮาร์ปี)
+Attach `art/incoming/mobs/harpy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a harpy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she dives forward slashing with her talons (the talons furthest forward in frame 4), then flaps back up. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### harpy death (ฮาร์ปี)
+Attach `art/incoming/mobs/harpy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a harpy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she gets hit, feathers burst off and she falls to the ground, lying still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### harpy hurt (ฮาร์ปี)
+Attach `art/incoming/mobs/harpy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a harpy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spartoi walk (ทหารฟันมังกร)
+Attach `art/incoming/mobs/spartoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spartoi skeleton hoplite, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a disciplined march, the shield in front. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spartoi attack (ทหารฟันมังกร)
+Attach `art/incoming/mobs/spartoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spartoi skeleton hoplite, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it steps in and thrusts the spear forward (the spear tip furthest forward in frame 4), then pulls it back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spartoi death (ทหารฟันมังกร)
+Attach `art/incoming/mobs/spartoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spartoi skeleton hoplite, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit and collapses into a pile of bones with the helmet on top in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spartoi hurt (ทหารฟันมังกร)
+Attach `art/incoming/mobs/spartoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spartoi skeleton hoplite, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gorgon walk (กอร์กอน)
+Attach `art/incoming/mobs/gorgon.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gorgon, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she slithers forward, the hair snakes hissing. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gorgon attack (กอร์กอน)
+Attach `art/incoming/mobs/gorgon.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gorgon, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: her hair snakes all strike forward at once (the snakes furthest forward in frame 4), then pull back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gorgon death (กอร์กอน)
+Attach `art/incoming/mobs/gorgon.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gorgon, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she gets hit, turns grey like stone and crumbles in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### gorgon hurt (กอร์กอน)
+Attach `art/incoming/mobs/gorgon.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a gorgon, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### cyclops walk (ไซคลอปส์)
+Attach `art/incoming/mobs/cyclops.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a cyclops, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a heavy lumbering walk, the club over its shoulder. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### cyclops attack (ไซคลอปส์)
+Attach `art/incoming/mobs/cyclops.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a cyclops, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it swings the club down in a big arc in front (the club hits the ground in frame 4), then lifts it again. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### cyclops death (ไซคลอปส์)
+Attach `art/incoming/mobs/cyclops.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a cyclops, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, staggers and falls flat on its back in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### cyclops hurt (ไซคลอปส์)
+Attach `art/incoming/mobs/cyclops.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a cyclops, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### minotaur walk (มิโนทอร์)
+Attach `art/incoming/mobs/minotaur.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a minotaur, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a stomping walk, snorting. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### minotaur attack (มิโนทอร์)
+Attach `art/incoming/mobs/minotaur.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a minotaur, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it lowers its head and charges forward horns first (the horns furthest forward in frame 4), then skids to a stop. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### minotaur death (มิโนทอร์)
+Attach `art/incoming/mobs/minotaur.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a minotaur, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, drops the axe and crashes forward, lying still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### minotaur hurt (มิโนทอร์)
+Attach `art/incoming/mobs/minotaur.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a minotaur, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_chimera walk (บอสคิเมรา)
+Attach `art/incoming/mobs/boss_chimera.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a prowling walk, the goat head and snake tail swaying. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_chimera attack (บอสคิเมรา)
+Attach `art/incoming/mobs/boss_chimera.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: the lion head roars forward breathing a burst of fire (the fire furthest forward in frame 4), then closes its mouth. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_chimera death (บอสคิเมรา)
+Attach `art/incoming/mobs/boss_chimera.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, all three heads droop and it collapses onto its side in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_chimera hurt (บอสคิเมรา)
+Attach `art/incoming/mobs/boss_chimera.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### domovoi walk (โดโมวอย)
+Attach `art/incoming/mobs/domovoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a domovoi house spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a quick shuffling walk, the beard bouncing. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### domovoi attack (โดโมวอย)
+Attach `art/incoming/mobs/domovoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a domovoi house spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it hops up and whacks forward with the ladle (the ladle furthest forward in frame 4), then lands. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### domovoi death (โดโมวอย)
+Attach `art/incoming/mobs/domovoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a domovoi house spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, tumbles over and lies still in a ball of fur in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### domovoi hurt (โดโมวอย)
+Attach `art/incoming/mobs/domovoi.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a domovoi house spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kikimora walk (คิคิโมรา)
+Attach `art/incoming/mobs/kikimora.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kikimora, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a crooked hurried walk. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kikimora attack (คิคิโมรา)
+Attach `art/incoming/mobs/kikimora.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kikimora, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she jabs the spindle forward (the spindle furthest forward in frame 4), then pulls back cackling. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kikimora death (คิคิโมรา)
+Attach `art/incoming/mobs/kikimora.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kikimora, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she gets hit, spins round and falls in a heap of rags in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kikimora hurt (คิคิโมรา)
+Attach `art/incoming/mobs/kikimora.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kikimora, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### rusalka walk (รูซัลกา)
+Attach `art/incoming/mobs/rusalka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a rusalka water maiden spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she drifts forward, water dripping from her hair. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### rusalka attack (รูซัลกา)
+Attach `art/incoming/mobs/rusalka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a rusalka water maiden spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she reaches forward and a splash of river water bursts from her hands (the splash furthest forward in frame 4), then she drifts back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### rusalka death (รูซัลกา)
+Attach `art/incoming/mobs/rusalka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a rusalka water maiden spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she gets hit, melts into a splash of water that soaks into the ground in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### rusalka hurt (รูซัลกา)
+Attach `art/incoming/mobs/rusalka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a rusalka water maiden spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vukodlak walk (มนุษย์หมาป่าสลาฟ)
+Attach `art/incoming/mobs/vukodlak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vukodlak werewolf, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a hunched loping walk on two legs. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vukodlak attack (มนุษย์หมาป่าสลาฟ)
+Attach `art/incoming/mobs/vukodlak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vukodlak werewolf, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it leaps forward and rakes with both claws (the claws furthest forward in frame 4), then lands. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vukodlak death (มนุษย์หมาป่าสลาฟ)
+Attach `art/incoming/mobs/vukodlak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vukodlak werewolf, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, howls and collapses onto its side in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vukodlak hurt (มนุษย์หมาป่าสลาฟ)
+Attach `art/incoming/mobs/vukodlak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vukodlak werewolf, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vodyanoy walk (โวดยานอย)
+Attach `art/incoming/mobs/vodyanoy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vodyanoy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a heavy wet waddle, water splashing. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vodyanoy attack (โวดยานอย)
+Attach `art/incoming/mobs/vodyanoy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vodyanoy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it slaps forward with a huge webbed hand sending water flying (the hand furthest forward in frame 4), then pulls back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vodyanoy death (โวดยานอย)
+Attach `art/incoming/mobs/vodyanoy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vodyanoy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, sinks down and flops onto the ground like a puddle in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### vodyanoy hurt (โวดยานอย)
+Attach `art/incoming/mobs/vodyanoy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a vodyanoy, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### leshy walk (เลชี)
+Attach `art/incoming/mobs/leshy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a leshy forest spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a slow creaking walk, leaves falling. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### leshy attack (เลชี)
+Attach `art/incoming/mobs/leshy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a leshy forest spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it sweeps a long twig arm forward (the arm furthest forward in frame 4), then pulls it back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### leshy death (เลชี)
+Attach `art/incoming/mobs/leshy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a leshy forest spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, splits apart into a pile of branches and leaves in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### leshy hurt (เลชี)
+Attach `art/incoming/mobs/leshy.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a leshy forest spirit, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_izba walk (บอสกระท่อมขาไก่)
+Attach `art/incoming/mobs/boss_izba.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it strides forward on the chicken legs, the hut swaying. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_izba attack (บอสกระท่อมขาไก่)
+Attach `art/incoming/mobs/boss_izba.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it kicks forward with a huge chicken foot (the foot furthest forward in frame 4), then stamps back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_izba death (บอสกระท่อมขาไก่)
+Attach `art/incoming/mobs/boss_izba.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, the legs buckle and the hut crashes down into a heap of logs in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_izba hurt (บอสกระท่อมขาไก่)
+Attach `art/incoming/mobs/boss_izba.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### knocker walk (น็อกเกอร์)
+Attach `art/incoming/mobs/knocker.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a knocker mine goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a quick bow-legged walk, the candle flickering. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### knocker attack (น็อกเกอร์)
+Attach `art/incoming/mobs/knocker.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a knocker mine goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it swings the pickaxe down forward (the pick hits in frame 4), then lifts it. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### knocker death (น็อกเกอร์)
+Attach `art/incoming/mobs/knocker.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a knocker mine goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, the candle goes out and it falls on its face in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### knocker hurt (น็อกเกอร์)
+Attach `art/incoming/mobs/knocker.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a knocker mine goblin, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### redcap walk (เรดแคป)
+Attach `art/incoming/mobs/redcap.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a redcap, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a stomping walk in the iron boots. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### redcap attack (เรดแคป)
+Attach `art/incoming/mobs/redcap.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a redcap, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it thrusts the pike forward (the pike furthest forward in frame 4), then pulls it back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### redcap death (เรดแคป)
+Attach `art/incoming/mobs/redcap.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a redcap, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, the red cap flies off and it falls over, lying still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### redcap hurt (เรดแคป)
+Attach `art/incoming/mobs/redcap.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a redcap, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pooka walk (ปูก้า)
+Attach `art/incoming/mobs/pooka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pooka, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a prancing walk on its hind legs. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pooka attack (ปูก้า)
+Attach `art/incoming/mobs/pooka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pooka, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it lowers its head and rams forward with its horns (the horns furthest forward in frame 4), then hops back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pooka death (ปูก้า)
+Attach `art/incoming/mobs/pooka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pooka, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, dissolves into black smoke in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pooka hurt (ปูก้า)
+Attach `art/incoming/mobs/pooka.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pooka, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### banshee walk (แบนชี)
+Attach `art/incoming/mobs/banshee.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a banshee, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she floats forward, her cloak and hair streaming. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### banshee attack (แบนชี)
+Attach `art/incoming/mobs/banshee.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a banshee, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she screams forward, a ring of sound bursting from her mouth (the burst furthest forward in frame 4), then closes her mouth. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### banshee death (แบนชี)
+Attach `art/incoming/mobs/banshee.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a banshee, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she gets hit, her wail fades and she vanishes in grey mist in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### banshee hurt (แบนชี)
+Attach `art/incoming/mobs/banshee.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a banshee, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kelpie walk (เคลปี)
+Attach `art/incoming/mobs/kelpie.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kelpie water horse, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a trotting walk, water dripping. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kelpie attack (เคลปี)
+Attach `art/incoming/mobs/kelpie.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kelpie water horse, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it rears up and strikes forward with its front hooves (the hooves furthest forward in frame 4), then lands. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kelpie death (เคลปี)
+Attach `art/incoming/mobs/kelpie.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kelpie water horse, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, collapses into a splash of water and seaweed in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kelpie hurt (เคลปี)
+Attach `art/incoming/mobs/kelpie.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kelpie water horse, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spriggan walk (สปริกแกน)
+Attach `art/incoming/mobs/spriggan.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spriggan, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a heavy slow walk, stones grinding. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spriggan attack (สปริกแกน)
+Attach `art/incoming/mobs/spriggan.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spriggan, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it swings a huge stone fist forward (the fist furthest forward in frame 4), then pulls back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spriggan death (สปริกแกน)
+Attach `art/incoming/mobs/spriggan.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spriggan, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, cracks and crumbles into stones and roots in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### spriggan hurt (สปริกแกน)
+Attach `art/incoming/mobs/spriggan.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a spriggan, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_wyrm walk (บอสหนอนมังกร)
+Attach `art/incoming/mobs/boss_wyrm.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: its long body slithers forward in waves. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_wyrm attack (บอสหนอนมังกร)
+Attach `art/incoming/mobs/boss_wyrm.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it rears back and strikes forward biting (the head furthest forward in frame 4), then pulls back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_wyrm death (บอสหนอนมังกร)
+Attach `art/incoming/mobs/boss_wyrm.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, its body goes slack and it coils down still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_wyrm hurt (บอสหนอนมังกร)
+Attach `art/incoming/mobs/boss_wyrm.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### babi_ngepet walk (หมูผีชวา)
+Attach `art/incoming/mobs/babi_ngepet.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a babi ngepet, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a quick trotting walk, snout sniffing. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### babi_ngepet attack (หมูผีชวา)
+Attach `art/incoming/mobs/babi_ngepet.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a babi ngepet, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it charges forward headfirst with its tusks (the tusks furthest forward in frame 4), then skids back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### babi_ngepet death (หมูผีชวา)
+Attach `art/incoming/mobs/babi_ngepet.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a babi ngepet, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, squeals, rolls over and lies still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### babi_ngepet hurt (หมูผีชวา)
+Attach `art/incoming/mobs/babi_ngepet.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a babi ngepet, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### orang_minyak walk (คนน้ำมัน)
+Attach `art/incoming/mobs/orang_minyak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the an orang minyak, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a slippery sliding walk, oil dripping. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### orang_minyak attack (คนน้ำมัน)
+Attach `art/incoming/mobs/orang_minyak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the an orang minyak, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it slides forward and grabs with both oily hands (the hands furthest forward in frame 4), then slips back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### orang_minyak death (คนน้ำมัน)
+Attach `art/incoming/mobs/orang_minyak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the an orang minyak, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, melts into a puddle of black oil in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### orang_minyak hurt (คนน้ำมัน)
+Attach `art/incoming/mobs/orang_minyak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the an orang minyak, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pocong walk (โปจง)
+Attach `art/incoming/mobs/pocong.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pocong ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it hops forward with both feet together, the shroud swaying. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pocong attack (โปจง)
+Attach `art/incoming/mobs/pocong.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pocong ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it makes a big hop forward and slams into the enemy (the furthest reach in frame 4), then hops back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pocong death (โปจง)
+Attach `art/incoming/mobs/pocong.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pocong ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, falls over stiff and the empty shroud flattens in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pocong hurt (โปจง)
+Attach `art/incoming/mobs/pocong.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pocong ghost, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pontianak walk (ผีปอนเตียนัก)
+Attach `art/incoming/mobs/pontianak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pontianak ghost woman, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she floats forward, her hair drifting. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pontianak attack (ผีปอนเตียนัก)
+Attach `art/incoming/mobs/pontianak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pontianak ghost woman, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she swoops forward slashing with her long nails (the nails furthest forward in frame 4), then floats back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pontianak death (ผีปอนเตียนัก)
+Attach `art/incoming/mobs/pontianak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pontianak ghost woman, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: she gets hit, screams and fades into white mist in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### pontianak hurt (ผีปอนเตียนัก)
+Attach `art/incoming/mobs/pontianak.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a pontianak ghost woman, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### tikbalang walk (ทิกบาลัง)
+Attach `art/incoming/mobs/tikbalang.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a tikbalang, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a long-legged striding walk. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### tikbalang attack (ทิกบาลัง)
+Attach `art/incoming/mobs/tikbalang.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a tikbalang, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it kicks forward with a long hoofed leg (the hoof furthest forward in frame 4), then steps back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### tikbalang death (ทิกบาลัง)
+Attach `art/incoming/mobs/tikbalang.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a tikbalang, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, its long legs fold and it falls in a heap in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### tikbalang hurt (ทิกบาลัง)
+Attach `art/incoming/mobs/tikbalang.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a tikbalang, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kapre walk (คาเปร์)
+Attach `art/incoming/mobs/kapre.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kapre, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: a slow heavy walk, pipe smoke trailing. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kapre attack (คาเปร์)
+Attach `art/incoming/mobs/kapre.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kapre, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it swings a huge hand forward in a slap (the hand furthest forward in frame 4), then pulls back. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kapre death (คาเปร์)
+Attach `art/incoming/mobs/kapre.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kapre, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, drops the pipe and falls backward, lying still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### kapre hurt (คาเปร์)
+Attach `art/incoming/mobs/kapre.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the a kapre, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit (owner 2026-11-09 "โดนโจมตีแล้วสะดุ้ง"): frame 1 the ready pose, frame 2 a sharp flinch backward with its eyes squeezed shut, frame 3 knocked further back and leaning away, frame 4 staggering, frame 5 regaining its balance, frame 6 back to the ready pose. Short and snappy.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bakunawa walk (บอสบากูนาวา)
+Attach `art/incoming/mobs/boss_bakunawa.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: its long body swims forward through the air in waves. A smooth loop: frame 6 flows back into frame 1. It walks in place (it does not travel across the cells).
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bakunawa attack (บอสบากูนาวา)
+Attach `art/incoming/mobs/boss_bakunawa.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it opens its huge mouth and lunges forward to swallow (the mouth furthest forward in frame 4), then snaps shut. Frames 1 and 6 show the ready pose; frames 2-3 are the wind-up, frame 4 is the hit, frame 5 the follow-through.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bakunawa death (บอสบากูนาวา)
+Attach `art/incoming/mobs/boss_bakunawa.png`.
+```
+Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
+Side view facing RIGHT in every frame, like the middle view of the attached picture.
+Action: it gets hit, its body twists and crashes down still in the last frame.
+LAYOUT: 6 frames in a 3 x 2 grid, read left to right, top row first. Each frame sits in its own square cell of equal size with empty white space around the figure; nothing crosses into the next cell; the whole body stays inside its cell.
+Same scale in every frame (the same size as in frame 1); the feet (or the lowest point) on the same ground line in every cell. Every frame must be a clearly DIFFERENT pose.
+Plain pure white background, no grid lines, no numbers, no text, no shadow, no ground, no effects, no motion lines, no dust.
+Picture size 1536x1024 (each cell 512x512). Keep the full generated size. Do ONLY this one picture now.
+```
+
+### boss_bakunawa hurt (บอสบากูนาวา)
+Attach `art/incoming/mobs/boss_bakunawa.png`.
 ```
 Animation frames for a 2D action game, ONE picture. The monster is the the boss, exactly as in the attached picture: same face, colours, outfit and proportions, same art style (clean chibi cel-shaded illustration, thick dark outlines, flat colours).
 Side view facing RIGHT in every frame, like the middle view of the attached picture.

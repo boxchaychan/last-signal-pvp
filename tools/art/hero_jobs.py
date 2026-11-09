@@ -25,6 +25,16 @@ H = {
    hurt='he gets hit: a sharp flinch, head and shoulders jerk back, then he recovers to the standing pose.',
    death='he is defeated: he staggers, drops to his knees, the staff falls beside him and he collapses to the ground, lying still in the last frames.',
    attack='a two-cast magic attack with the staff: he draws the staff back, then thrusts it forward pointing the crystal at the enemy in front of him (cast 1), pulls it back, swings it forward in a short arc and points it at the enemy again (cast 2), then returns to the standing pose with the staff upright. Only his body and the staff move: no magic, no projectiles, no glow.'),
+ 'priest': dict(
+   subj='a young woman priestess with long wavy light-brown hair under a white hood, a white and gold robe with blue trim and a gold sun emblem, holding a long staff topped with a gold sun ring and a small bell',
+   pose='relaxed standing pose, the staff held upright in her right hand',
+   back='her back, her white hood, her long hair and the back of the robe',
+   idle='a calm breathing idle: shoulders rising and falling slightly, the robe, hood and long hair swaying gently, the staff held upright in her right hand; a seamless loop, feet stay planted.',
+   run='a light running cycle in place (she does not travel across the frame): the staff held in her right hand and angled forward, her left arm pumping, knees lifting under the robe, the robe hem and hair bouncing; a smooth loop where the last frame flows back into the first.',
+   roll='a quick dodge roll forward, in place (she stays in the middle of the frame): she crouches, tucks into a ball holding the staff close to her body and rolls over along the ground, then springs back up into the standing pose with the staff upright.',
+   hurt='she gets hit: a sharp flinch, head and shoulders jerk back, then she recovers to the standing pose.',
+   death='she is defeated: she staggers, drops to her knees, the staff falls beside her and she collapses to the ground, lying still in the last frames.',
+   attack='a two-cast holy attack with the staff: she draws the staff back, then thrusts it forward pointing the sun ring at the enemy in front of her (cast 1), pulls it back, swings it forward in a short arc and points it at the enemy again (cast 2), then returns to the standing pose. Only her body and the staff move: no magic, no glow.'),
  'archer': dict(
    subj='a young woman archer with a long brown ponytail, a green hooded short cape, a wooden recurve bow in her LEFT hand and a quiver on her back',
    pose='relaxed standing pose, the bow held low in her left hand',
@@ -58,12 +68,16 @@ SKM = {
    leap='a leaping slam: he crouches low, jumps high with the greatsword raised overhead in both hands, comes down and slams the blade into the ground in front of him, then rises back up with the sword on his shoulder. He jumps straight up and lands on the same spot (he stays in the middle of the frame).',
    guard='a parry guard: he swings the greatsword off his shoulder and holds it upright in front of his body with both hands like a shield, braced in a wide stance, and holds that guard.',
    charge='charging a heavy strike: he sinks into a wide low stance and pulls the greatsword back low behind him with both hands, gathering power, and holds that coiled pose with the sword trembling slightly.'),
+ 'priest': dict(
+   pray='a holy prayer: she lifts the staff high above her head with both hands, the sun ring pointing at the sky, tilts her face up and holds it for a moment, then brings it back down to the standing pose. Only her body and the staff move: no magic, no glow.',
+   bless='a blessing: she holds the staff upright in front of her and rings the little bell with a gentle shake, her free hand raised with the palm open, then returns to the standing pose. Only her body and the staff move: no magic, no glow.'),
  'mage': dict(
    cast_up='casting a big spell: he raises the staff high above his head with both hands, the crystal pointing at the sky, holds it up for a moment, then brings it back down to the standing pose. Only his body and the staff move: no magic, no glow.',
    staff_slam='a ground spell: he lifts the staff and strikes its bottom end down hard onto the ground in front of him, then returns to the standing pose with the staff upright. Only his body and the staff move: no magic, no glow.'),
 }
 SPLAN = {'swordsman': [('spin', ['south'], 8, False), ('leap', ['east', 'south', 'north', 'north-west'], 16, True),
                        ('guard', ['east', 'south', 'north', 'north-west'], 4, True), ('charge', ['east', 'south', 'north', 'north-west'], 8, True)],
+         'priest': [('pray', ['east', 'south', 'north', 'north-west'], 8, True), ('bless', ['east', 'south', 'north', 'north-west'], 8, True)],
          'mage': [('cast_up', ['east', 'south', 'north', 'north-west'], 8, True), ('staff_slam', ['east', 'south', 'north', 'north-west'], 8, True)]}
 if len(sys.argv) > 2 and sys.argv[2] == 'skills':
     H.update(SKM[K]); plan = SPLAN[K]
