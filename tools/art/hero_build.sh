@@ -29,4 +29,6 @@ case $K in
   archer) hits="east:10;south-east:10;crit/south-east:10;south:11;north-west:9;north:10;north-east:11;crit/east:10;crit/south:11;crit/north-west:12;crit/north:11;crit/north-east:10";;
 esac
 extra=(); [ "$K" = archer ] && extra=(--detach=attack,crit)   # her own arrow only (the drawn one flew off its own way)
-python tools/art/act_sheet.py $D art/action/$K "${args[@]}" "--alias=$alias" "--hits=$hits" --arc=air --scale=2/3 "${extra[@]}" "$@"
+# N128=1: full PixelLab size (no 2/3 shrink) into art/action/n128/, drawn at whole screen pixels by action.html?n128=1
+OUT=art/action/$K; SC=--scale=2/3; [ -n "$N128" ] && { mkdir -p art/action/n128; OUT=art/action/n128/$K; SC=; }
+python3 tools/art/act_sheet.py $D $OUT "${args[@]}" "--alias=$alias" "--hits=$hits" --arc=air $SC "${extra[@]}" "$@"
