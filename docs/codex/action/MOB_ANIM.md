@@ -173,10 +173,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 157 | ice_wraith | walk | done | `art/incoming/mobs/anim/ice_wraith_walk.png` |
 | 158 | ice_wraith | attack | done | `art/incoming/mobs/anim/ice_wraith_attack.png` |
 | 159 | ice_wraith | death | done | `art/incoming/mobs/anim/ice_wraith_death.png` |
-| 160 | ice_wraith | hurt | todo | `art/incoming/mobs/anim/ice_wraith_hurt.png` |
-| 161 | dwarf_berserker | walk | todo | `art/incoming/mobs/anim/dwarf_berserker_walk.png` |
-| 162 | dwarf_berserker | attack | todo | `art/incoming/mobs/anim/dwarf_berserker_attack.png` |
-| 163 | dwarf_berserker | death | todo | `art/incoming/mobs/anim/dwarf_berserker_death.png` |
+| 160 | ice_wraith | hurt | done | `art/incoming/mobs/anim/ice_wraith_hurt.png` |
+| 161 | dwarf_berserker | walk | done | `art/incoming/mobs/anim/dwarf_berserker_walk.png` |
+| 162 | dwarf_berserker | attack | done | `art/incoming/mobs/anim/dwarf_berserker_attack.png` |
+| 163 | dwarf_berserker | death | done | `art/incoming/mobs/anim/dwarf_berserker_death.png` |
 | 164 | dwarf_berserker | hurt | todo | `art/incoming/mobs/anim/dwarf_berserker_hurt.png` |
 | 165 | ice_golem | walk | todo | `art/incoming/mobs/anim/ice_golem_walk.png` |
 | 166 | ice_golem | attack | todo | `art/incoming/mobs/anim/ice_golem_attack.png` |
