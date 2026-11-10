@@ -64,7 +64,7 @@ document.body.appendChild(renderer.domElement);
 const FOGC = 0x9aa889;
 const scene = new THREE.Scene(); scene.fog = new THREE.Fog(FOGC, 80, 150); scene.background = new THREE.Color(FOGC);
 const cam = new THREE.PerspectiveCamera(+HQ.get('fov') || 18, innerWidth / innerHeight, 1, 400);
-const DISTS = S128 ? [36, 48, 28] : [85, 64, 48]; let DI = 0, ZOOM = +HQ.get('dist') || DISTS[0];
+const DISTS = S128 ? [74, 36] : [85, 64, 48]; let DI = 0, ZOOM = +HQ.get("dist") || DISTS[0];   // owner "ให้ดูตัวเล็ก แล้วซูมออกไปอีก": far by default
 const PITCH = (+HQ.get('pitch') || 52) * Math.PI / 180;
 const sun = new THREE.DirectionalLight(0xffdcae, 1.25); sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -45, right: 45, top: 40, bottom: -40, near: 1, far: 120}); sun.shadow.bias = -0.0006;
@@ -186,11 +186,14 @@ function stepWolves(dt) { for (const w of wolves) { const M = w.M, img = w.t.ima
 // ---------- the hero: half-size sheets (art/action/h64), drawn flat on top at whole screen pixels; the 3D card casts the shadow ----------
 const HK = HQ.get('hero') || 'berserker', HDIR = S128 ? 'art/action/n128/' : 'art/action/h64/';
 const hero = {x: (RX + .5) * L, z: (RY + 3) * L, dir: 'south', moving: false, t: 0};
-let HM = null, HIMG = {}, CS = 86;
+let HM = null, HIMG = {}, CS = 86, HSET = 0;
+// two sheets: the full 128 one when the camera is close, the half-size one (55 px figure) when it is far, so the hero is always
+// drawn at whole screen px per art px (sharp) and his size still matches the world
+const SETS = [{dir: 'art/action/n128/', fig: 113}, {dir: 'art/action/h64/', fig: 55}];
 const hc = document.createElement('canvas'); hc.width = hc.height = CS; const hg = hc.getContext('2d');
 const htex = new THREE.CanvasTexture(hc); htex.magFilter = THREE.NearestFilter; htex.minFilter = THREE.NearestFilter; htex.encoding = THREE.sRGBEncoding;
-fetch(HDIR + HK + '.json').then(r => r.json()).then(m => { HM = m; CS = m.cell; hc.width = hc.height = CS; hg.imageSmoothingEnabled = false; htex.dispose();
-  for (const a in m.anims) HIMG[a] = tex(HDIR + m.anims[a].img); });
+SETS.forEach((S, i) => fetch(S.dir + HK + '.json').then(r => r.json()).then(m => { S.m = m; S.img = {}; for (const a in m.anims) S.img[a] = tex(S.dir + m.anims[a].img); if (i === (S128 ? 0 : 1)) useSet(i); }));
+function useSet(i) { const S = SETS[i]; if (!S.m) return; HSET = i; HM = S.m; HIMG = S.img; CS = HM.cell; hc.width = hc.height = CS; hg.imageSmoothingEnabled = false; htex.dispose(); }
 const DIR8 = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
 const hmesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({colorWrite: false, depthWrite: false}));
 hmesh.castShadow = true; hmesh.customDepthMaterial = new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: htex, alphaTest: .5}); scene.add(hmesh);
@@ -323,7 +326,8 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (HM) { const pr = renderer.getPixelRatio(), DW = innerWidth * pr, DH = innerHeight * pr;
     const v = new THREE.Vector3(hero.x, gy, hero.z).project(cam), fx = (v.x + 1) / 2 * DW, fy = (v.y + 1) / 2 * DH;
     const dist = cam.position.distanceTo(new THREE.Vector3(hero.x, gy, hero.z)), ppu = DH / 2 / Math.tan(cam.fov * Math.PI / 360) / dist;
-    const figH = 2.0, k = Math.max(1, Math.round(ppu * figH / FIG));   // the figure is ~55 art px; whole screen px per art px, nearest to the true size
+    const want = ppu * 2.0, si = S128 && want >= 84 ? 0 : 1; if (si !== HSET && SETS[si].m) { useSet(si); drawHero(0); }   // close: 128 sheet, far: half sheet
+    const k = Math.max(1, Math.round(want / SETS[HSET].fig));   // the figure is ~55 art px; whole screen px per art px, nearest to the true size
     hmesh.scale.set(CS * k / ppu, CS * k / ppu, 1);
     ocam.right = DW; ocam.top = DH; ocam.updateProjectionMatrix(); omesh.scale.set(CS * k, CS * k, 1);
     omesh.position.set(Math.round(fx - HM.fx * k), Math.round(fy - (CS - HM.fy) * k), 0);
