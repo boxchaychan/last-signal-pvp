@@ -110,7 +110,7 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 75 | pontianak | done | Southeast Asia | medium |
 | 76 | tikbalang | done | Southeast Asia | large |
 | 77 | kapre | done | Southeast Asia | large |
-| 78 | boss_bakunawa | todo | Southeast Asia boss | huge |
+| 78 | boss_bakunawa | done | Southeast Asia boss | huge |
 
 ## Monster lines (add after the shared prompt)
 
