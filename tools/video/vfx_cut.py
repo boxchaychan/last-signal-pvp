@@ -9,6 +9,7 @@
 #           art/incoming/action/berserker/fx_size/size_guide.png: leap 260, whirl 270, Q ring 300)
 #   --radial: an effect that repeats round its centre (a star of chains) is completed where it ran off the frame (copies turned by
 #             whole repeat steps fill the cut parts)
+#   --sym=N: a round effect that is fuller on some sides is completed with N turned copies of itself
 #   --anchor: the ground point in VIDEO px (default: middle, near the bottom of everything drawn; --center or a key ending in
 #             _ring / _all / _shackle / burst: the frame centre = the start spark, and --size = the whole width)
 import sys, os, json, subprocess
@@ -40,6 +41,19 @@ def keyer(fr, kc, edge):
     H, W = a.shape; yy, xx = np.mgrid[0:H, 0:W]; e = np.minimum.reduce([xx, yy, W - 1 - xx, H - 1 - yy]).astype(float)
     a = a * np.clip(e / max(edge, 1), 0, 1)
     return np.dstack([r, g, b, (a * 255).astype(np.int16)]).clip(0, 255).astype(np.uint8)
+
+def sym_fill(K, n):
+    # owner 2026-11-10 "สวยแต่ไม่เต็ม เอาอันที่เต็มมาเติมอันที่ไม่เต็ม": a round effect (a ring with smoke on some sides only) is
+    # completed with copies of itself turned by 360/n degrees round the frame centre; wherever a copy is more solid it wins
+    from scipy import ndimage
+    out = []
+    for k in K:
+        res = k.copy()
+        for m in range(1, n):
+            rot = ndimage.rotate(k, 360 / n * m, axes=(1, 0), reshape=False, order=1)
+            take = rot[..., 3] > res[..., 3]; res[take] = rot[take]
+        out.append(res)
+    print('sym fill:', n, 'copies'); return out
 
 def radial_fill(K):
     # owner 2026-11-10 "ควันบางข้างไม่เต็ม แก้ให้เต็มทุกข้าง": an effect that repeats round its centre (chains in a star) gets cut where
@@ -82,6 +96,8 @@ if __name__ == '__main__':
     RADIAL = '--radial' in sys.argv
     K = [keyer(V[i], kc, 0 if RADIAL else edge) for i in idx]
     if RADIAL: K = radial_fill(K)
+    SYM = int(opt('sym', 0))
+    if SYM: K = sym_fill(K, SYM)
     # owner's clips often stop with the effect still showing: fade the last part out (--fade=0 keeps it, loops should use 0)
     fade = float(opt('fade', .2)); nf = int(round(n * fade))
     for j in range(nf): K[n - nf + j][..., 3] = (K[n - nf + j][..., 3] * (1 - (j + 1) / nf)).astype(np.uint8)
