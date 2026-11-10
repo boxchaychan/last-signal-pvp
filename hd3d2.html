@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>HD-2D map test</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1a1d14; overflow: hidden; touch-action: none; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 10px; top: 8px; color: #f4ecd8; font: 600 13px/1.4 system-ui, sans-serif; text-shadow: 0 1px 2px #000; pointer-events: none; }
+  #fx { position: fixed; right: 10px; top: 8px; display: flex; gap: 6px; }
+  #fx button { font: 600 13px system-ui, sans-serif; padding: 6px 10px; border: 2px solid #1d1a22; background: #f4ecd8; border-radius: 6px; }
+  #stick { position: fixed; left: 24px; bottom: 24px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.25); }
+  #knob { position: absolute; left: 40px; top: 40px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.5); }
+</style>
+</head>
+<body>
+<div id="hud">แมพแบบภาพตัวอย่าง · WASD / จอยซ้าย เดิน</div>
+<div id="fx"><button id="bTilt">เบลอขอบ: เปิด</button><button id="bZoom">ซูม</button></div>
+<div id="stick"><div id="knob"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script>
+// HD-2D map in the look of the owner's reference screenshots (2026-11-10 "ลองทำให้ได้ตามแบบแมพเค้า"): camera ~52 degrees, far
+// away with a narrow lens (little perspective, lots of map on screen), small pixel characters (the half-size sheets in
+// art/action/h64/, drawn at whole screen pixels), a bigger map (crossroads, a river with a bridge, a pond with an island,
+// stepping stones and a watermill, a camp), soft natural greens with thick grass tufts, a warm low sun with long shadows and a
+// strong tilt-shift blur. The ground is merged into one mesh per material (a few draw calls), grass tufts are instanced.
+const HQ = new URLSearchParams(location.search);
+const W = 72, H = 52;                               // tiles; the hero is ~2 tiles tall
+const map = [];                                     // 0 grass, 1 road, 2 water, 3 bridge, 4 flower grass
+let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+const RX = 34, RY = 30;                             // the crossroads
+for (let y = 0; y < H; y++) { map.push([]); for (let x = 0; x < W; x++) {
+  let t = 0;
+  const wob = Math.sin(y * .23) * 1.2 + Math.sin(y * .07 + 1) * 2;
+  if (Math.abs(x - RX - wob * .3) <= 1.4) t = 1;                                     // north-south road
+  if (Math.abs(y - RY - Math.sin(x * .15) * .8) <= 1.3 && x > 8) t = 1;               // east-west road
+  const rv = 56 + Math.sin(y * .18) * 2.5 + Math.sin(y * .05) * 3;                      // the river on the right
+  if (Math.abs(x - rv) <= 2.2) t = 2;
+  const px = (x - 18) / 9, py = (y - 15) / 6.5;                                         // the pond with an island
+  if (px * px + py * py < 1 && !((x - 15) ** 2 + (y - 13) ** 2 < 5)) t = 2;
+  if (t === 0 && rnd() < .06) t = 4;
+  map[y].push(t); } }
+for (let x = 0; x < W; x++) for (let y = RY - 1; y <= RY + 1; y++) if (map[y][x] === 2 && x > 45) map[y][x] = 3;   // bridge where the road meets the river
+for (let x = 6; x < W; x++) for (let y = 0; y < H; y++) if (map[y][x] === 4 && (map[y][x - 1] === 1)) map[y][x] = 0;
+const HGT = [0.16, 0, -0.3, 0, 0.16];
+const hAt = (x, z) => HGT[(map[z | 0] || [])[x | 0]] || 0;
+
+const renderer = new THREE.WebGLRenderer({antialias: false});
+renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+const FOGC = 0x9aa889;
+const scene = new THREE.Scene(); scene.fog = new THREE.Fog(FOGC, 80, 150); scene.background = new THREE.Color(FOGC);
+const cam = new THREE.PerspectiveCamera(+HQ.get('fov') || 18, innerWidth / innerHeight, 1, 400);
+const DISTS = [85, 64, 48]; let DI = 0, ZOOM = +HQ.get('dist') || DISTS[0];
+const PITCH = (+HQ.get('pitch') || 52) * Math.PI / 180;
+const sun = new THREE.DirectionalLight(0xffdcae, 1.25); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -45, right: 45, top: 40, bottom: -40, near: 1, far: 120}); sun.shadow.bias = -0.0006;
+scene.add(sun, sun.target, new THREE.HemisphereLight(0xdfeaff, 0x6f7a4c, 0.72));
+
+const LD = new THREE.TextureLoader();
+function tex(src, rep) { const t = LD.load(src); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestMipmapNearestFilter; t.encoding = THREE.sRGBEncoding;
+  if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
+const GR = 'art/action/ground_hr/', P = 'art/action/props_hr/';
+const tGrass = tex(GR + 'grass.png', 1), tFlow = tex(GR + 'flowergrass.png', 1), tDirt = tex(GR + 'dirt.png', 1), tWater = tex(GR + 'water.png', 1), tPlank = tex(GR + 'planks.png', 1), tMud = tex(GR + 'rv_mud.png', 1);
+// the reference's road is a pale beige-brown: our orange dirt picture, half desaturated and lifted, in a canvas texture
+function soften(t, sat, lift) { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const g = c.getContext('2d'); g.drawImage(im, 0, 0); const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+    for (let i = 0; i < a.length; i += 4) { const l = .3 * a[i] + .59 * a[i + 1] + .11 * a[i + 2]; for (let k = 0; k < 3; k++) a[i + k] = Math.min(255, (l + (a[i + k] - l) * sat) * lift); }
+    g.putImageData(d, 0, 0); t.image = c; t.needsUpdate = true; }; im.src = t.userData.src; }
+tDirt.userData.src = GR + 'dirt.png'; soften(tDirt, .45, 1.0);
+// natural, a little less saturated than the 2D game (the reference's soft greens)
+const mats = {
+  0: new THREE.MeshLambertMaterial({map: tGrass, color: 0xb4c696}), 4: new THREE.MeshLambertMaterial({map: tFlow, color: 0xb4c696}),
+  side: new THREE.MeshLambertMaterial({map: tMud, color: 0x9c8466}),
+  1: new THREE.MeshLambertMaterial({map: tDirt, color: 0xeadcc8}),
+  2: new THREE.MeshLambertMaterial({map: tWater, color: 0x8ab4c4, transparent: true, opacity: .9}),
+  3: new THREE.MeshLambertMaterial({map: tPlank, color: 0xd8b890})};
+// one merged mesh per material: every tile is a box from its height down to -1, world-space UVs (no seams)
+const BUF = {};
+function push(key, geo) { (BUF[key] = BUF[key] || []).push(geo); }
+function boxUV(x, y, w, h, d, top) { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, top);
+  const p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv;
+  for (let i = 0; i < p.count; i++) { const X = p.getX(i), Y = p.getY(i), Z = p.getZ(i);
+    if (Math.abs(n.getY(i)) > .5) uv.setXY(i, X / 5, Z / 5); else uv.setXY(i, (Math.abs(n.getX(i)) > .5 ? Z : X) / 5, Y / 5); }
+  return g; }
+for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+  const t = map[y][x], h = HGT[t] + 1, g = boxUV(x + .5, h / 2 - 1, 1, h, 1, y + .5);
+  // split the box: its top goes to the tile's material, the sides to the bank material (grass blocks show a mud edge)
+  const top = g.clone(), side = g; const keep = (geo, wantTop) => { const n = geo.attributes.normal, idx = []; const ix = geo.index.array;
+    for (let i = 0; i < ix.length; i += 3) { const up = n.getY(ix[i]) > .5; if (up === wantTop) idx.push(ix[i], ix[i + 1], ix[i + 2]); } geo.setIndex(idx); return geo; };
+  push(t, keep(top, true));
+  if (t === 0 || t === 4) { const n = side.attributes.normal, ix = side.index.array, idx = [];
+    for (let i = 0; i < ix.length; i += 3) { const nx = Math.round(n.getX(ix[i])), nz = Math.round(n.getZ(ix[i])); if (nx === 0 && nz === 0) continue;
+      const nb = (map[y + nz] || [])[x + nx]; if (nb === undefined || HGT[nb] < HGT[t] - .01) idx.push(ix[i], ix[i + 1], ix[i + 2]); }
+    if (idx.length) { side.setIndex(idx); push('side', side); } }
+  if (t === 3) push(3, boxUV(x + .5, .2, 1, .12, 3.4, y + .5));
+}
+function merge(list) { let n = 0; for (const g of list) n += g.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2), idx = []; let o = 0;
+  for (const g of list) { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); uv.set(g.attributes.uv.array, o * 2);
+    for (const i of g.index.array) idx.push(i + o); o += g.attributes.position.count; }
+  const m = new THREE.BufferGeometry(); m.setAttribute('position', new THREE.BufferAttribute(pos, 3)); m.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  m.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); m.setIndex(idx); return m; }
+for (const k in BUF) { const m = new THREE.Mesh(merge(BUF[k]), mats[k]); m.receiveShadow = true; m.castShadow = k === 'side' || k === '0' || k === '4' || k === '3'; scene.add(m); }
+
+// ---------- upright cards; the camera never turns, so every card simply faces +z ----------
+function cardMat(t) { return new THREE.MeshLambertMaterial({map: t, alphaTest: .5, side: THREE.DoubleSide}); }
+function depthMat(t) { return new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: .5}); }
+const solo = [];
+function card(src, x, z, hW, opt = {}) {
+  const t = tex(src), m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), cardMat(t)); m.castShadow = true;
+  m.customDepthMaterial = depthMat(t); m.position.set(x, hAt(x, z), z); scene.add(m);
+  const fit = () => { const im = t.image; if (im && im.width) m.scale.set(hW * im.width / im.height, hW, 1); }; t.image ? fit() : null; solo.push(fit); return m; }
+LD.manager.onLoad = () => solo.forEach(f => f());
+// instanced small things (grass tufts, ferns, flowers): one draw call each kind
+function scatter(src, n, test, hMin, hMax) {
+  const t = tex(src), geo = new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), im = new THREE.InstancedMesh(geo, cardMat(t), n);
+  im.customDepthMaterial = depthMat(t); im.castShadow = true; const M = new THREE.Matrix4(), list = [];
+  let i = 0, tries = 0; while (i < n && tries++ < n * 30) { const x = rnd() * W, z = rnd() * H; if (!test(x, z)) continue; list.push([x, z, hMin + rnd() * (hMax - hMin)]); i++; }
+  im.count = list.length; const fit = () => { const a = t.image ? t.image.width / t.image.height : 1;
+    list.forEach(([x, z, h], j) => { M.makeScale(h * a, h, 1); M.setPosition(x, hAt(x, z), z); im.setMatrixAt(j, M); }); im.instanceMatrix.needsUpdate = true; };
+  fit(); solo.push(fit); scene.add(im); }
+const isG = (x, z) => { const t = (map[z | 0] || [])[x | 0]; return t === 0 || t === 4; };
+const nearRoad = (x, z) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if ((map[(z | 0) + dy] || [])[(x | 0) + dx] === 1) return true; return false; };
+const nearWater = (x, z) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if ((map[(z | 0) + dy] || [])[(x | 0) + dx] === 2) return true; return false; };
+const camp = (x, z) => Math.hypot(x - (RX + 9), z - (RY - 7)) < 6 || Math.hypot(x - (RX - 10), z - (RY + 8)) < 4.5;
+scatter(P + 'grass.png', 2600, (x, z) => isG(x, z) && !camp(x, z) && !(nearRoad(x, z) && rnd() < .7), .55, 1.1);    // thick grass like the reference
+scatter(P + 'fern.png', 260, (x, z) => isG(x, z) && !nearRoad(x, z) && !camp(x, z), .7, 1.2);
+scatter(P + 'flowers.png', 220, (x, z) => isG(x, z) && !camp(x, z), .45, .7);
+scatter(P + 'bush.png', 90, (x, z) => isG(x, z) && !nearRoad(x, z) && !camp(x, z), 1.0, 1.6);
+// trees: thick at the map edges, a few inside, never on the roads
+const treeOK = (x, z) => isG(x, z) && !nearRoad(x, z) && !nearWater(x, z) && !camp(x, z);
+for (let i = 0; i < 420; i++) { const x = rnd() * W, z = rnd() * H, e = Math.min(x, z, W - x, H - z);
+  if (e > 9 && rnd() < .45) continue; if (treeOK(x, z)) card(P + (rnd() < .55 ? 'oak.png' : 'pine.png'), x, z, 5.2 + rnd() * 2.2); }   // trees 2.5-3.5x the hero, like the reference
+// the pond: island with a chest, rocks as stepping stones, a watermill on its edge, reeds along the banks
+card(P + 'crate.png', 15, 13.3, .9); card(P + 'stump.png', 14.2, 12.6, .7); card(P + 'watermill.png', 22.5, 9.4, 4.4);
+for (const [x, z] of [[18, 17.5], [20.5, 18.8], [23, 18], [24.6, 16.4], [12.5, 18.6]]) card(P + 'mossy_rock.png', x, z, .9);
+scatter(P + 'fern.png', 60, (x, z) => isG(x, z) && nearWater(x, z), .8, 1.2);
+// the camp north-east of the crossroads: tent, fire, crates, a fence, a banner
+const CX = RX + 9, CZ = RY - 7;
+card(P + 'tent.png', CX, CZ - 1, 3.0); card(P + 'campfire.png', CX - 1.6, CZ + 1.4, 1.0); card(P + 'crate.png', CX - 3.4, CZ - .5, .9); card(P + 'barrel.png', CX - 3.1, CZ + .8, 1.0);
+for (let i = 0; i < 5; i++) card(P + 'fence.png', CX + 2.4 + i * 1.3, CZ + 2.6, 1.0);
+card(P + 'flagpole.png', CX + 3.8, CZ - 2.2, 3.0); card(P + 'log.png', CX - .2, CZ + 2.6, .7);
+// a stone circle south-west of the crossroads, a signpost at the crossing, a few logs and stumps
+const SX = RX - 10, SZ = RY + 8; for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; card(P + 'pillar.png', SX + Math.cos(a) * 3, SZ + Math.sin(a) * 2.2, 1.4); }
+card(P + 'statue.png', SX, SZ, 1.8); card(P + 'signpost.png', RX - 2.6, RY - 2.4, 1.4);
+for (let i = 0; i < 10; i++) { const x = rnd() * W, z = rnd() * H; if (treeOK(x, z)) card(P + (i & 1 ? 'log.png' : 'stump.png'), x, z, .7); }
+
+// ---------- monsters: wolves walking about (their walk row, a card each) ----------
+const wolves = [];
+fetch('art/action/mobs_hr/wolf.json').then(r => r.json()).then(M => LD.load('art/action/mobs_hr/wolf.png', t0 => { t0.magFilter = THREE.NearestFilter; t0.minFilter = THREE.NearestFilter; t0.encoding = THREE.sRGBEncoding;
+  for (const [x, z] of [[RX + 2, RY - 5], [RX - 7, RY - 3], [RX + 14, RY + 6], [RX - 4, RY + 12]]) {
+    const t = t0.clone(); t.needsUpdate = true; const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), cardMat(t)); m.castShadow = true; m.customDepthMaterial = depthMat(t);
+    const hW = 1.3; m.scale.set(hW * M.w / M.h, hW, 1); m.position.set(x, hAt(x, z), z); scene.add(m);
+    wolves.push({m, t, M, x, z, hx: x, hz: z, vx: 0, vz: 0, f: rnd() * 6, wait: rnd() * 2}); } }));
+function stepWolves(dt) { for (const w of wolves) { const M = w.M, img = w.t.image; if (!img || !img.width) continue;
+  w.wait -= dt; if (w.wait < 0) { const a = rnd() * 6.28; w.vx = Math.cos(a) * 1.6; w.vz = Math.sin(a) * 1.6; w.wait = 1.5 + rnd() * 2.5; if (rnd() < .4) w.vx = w.vz = 0; }
+  if (Math.hypot(w.x + w.vx * dt - w.hx, w.z + w.vz * dt - w.hz) > 5) { w.vx *= -1; w.vz *= -1; }
+  w.x += w.vx * dt; w.z += w.vz * dt; const mv = Math.hypot(w.vx, w.vz) > .1; w.f += dt * (mv ? 10 : 0);
+  const fr = mv ? (w.f | 0) % M.n : 0; w.t.repeat.set(M.w / img.width, M.h / img.height); w.t.offset.set(fr * M.w / img.width, 1 - (M.rows.walk + 1) * M.h / img.height);
+  w.m.position.set(w.x, hAt(w.x, w.z), w.z); if (Math.abs(w.vx) > .1) w.m.scale.x = Math.abs(w.m.scale.x) * (w.vx > 0 ? 1 : -1); } }
+
+// ---------- the hero: half-size sheets (art/action/h64), drawn flat on top at whole screen pixels; the 3D card casts the shadow ----------
+const HK = HQ.get('hero') || 'berserker', HDIR = HQ.get('full') ? 'art/action/n128/' : 'art/action/h64/';
+const hero = {x: RX + .5, z: RY + 3, dir: 'south', moving: false, t: 0};
+let HM = null, HIMG = {}, CS = 86;
+const hc = document.createElement('canvas'); hc.width = hc.height = CS; const hg = hc.getContext('2d');
+const htex = new THREE.CanvasTexture(hc); htex.magFilter = THREE.NearestFilter; htex.minFilter = THREE.NearestFilter; htex.encoding = THREE.sRGBEncoding;
+fetch(HDIR + HK + '.json').then(r => r.json()).then(m => { HM = m; CS = m.cell; hc.width = hc.height = CS; hg.imageSmoothingEnabled = false; htex.dispose();
+  for (const a of ['idle', 'run']) HIMG[a] = tex(HDIR + m.anims[a].img); });
+const DIR8 = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
+const hmesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({colorWrite: false, depthWrite: false}));
+hmesh.castShadow = true; hmesh.customDepthMaterial = new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: htex, alphaTest: .5}); scene.add(hmesh);
+let shK = ''; function shadowGeo() { const k = HM ? HM.fx + ',' + HM.fy + ',' + CS : ''; if (k !== shK && HM) { shK = k; hmesh.geometry = new THREE.PlaneGeometry(1, 1).translate(.5 - HM.fx / CS, HM.fy / CS - .5, 0); } }
+const ocam = new THREE.OrthographicCamera(0, 1, 1, 0, -1, 1), oscene = new THREE.Scene();
+const omesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(.5, .5, 0), new THREE.MeshBasicMaterial({map: htex, transparent: true, alphaTest: .5})); oscene.add(omesh);
+function drawHero(dt) {
+  if (!HM) return; hero.t += dt; const a = hero.moving ? 'run' : 'idle', A = HM.anims[a], T2 = HIMG[a]; if (!T2 || !T2.image || !T2.image.width) return;
+  const D = A[hero.dir] || A.east, C = HM.cell, f = Math.floor(hero.t * (hero.moving ? 12 : 8)) % D.n;
+  hg.clearRect(0, 0, CS, CS); hg.save(); if (D.flip) { hg.translate(CS, 0); hg.scale(-1, 1); } hg.drawImage(T2.image, f * C, D.r * C, C, C, 0, 0, C, C); hg.restore();
+  const id = hg.getImageData(0, 0, CS, CS), d = id.data, a2 = new Uint8Array(CS * CS); for (let i = 0; i < a2.length; i++) a2[i] = d[i * 4 + 3] > 100;   // 1 px light rim
+  for (let y = 1; y < CS - 1; y++) for (let x = 1; x < CS - 1; x++) { const i = y * CS + x; if (a2[i]) continue; if (a2[i - 1] || a2[i + 1] || a2[i - CS] || a2[i + CS]) { d[i * 4] = 255; d[i * 4 + 1] = 240; d[i * 4 + 2] = 200; d[i * 4 + 3] = 200; } }
+  hg.putImageData(id, 0, 0); htex.needsUpdate = true; }
+// ---------- input ----------
+const K = {}; addEventListener('keydown', e => K[e.key.toLowerCase()] = 1); addEventListener('keyup', e => K[e.key.toLowerCase()] = 0);
+const stick = {x: 0, y: 0, id: null}, st = document.getElementById('stick'), kn = document.getElementById('knob');
+st.addEventListener('pointerdown', e => { stick.id = e.pointerId; st.setPointerCapture(e.pointerId); mv(e); });
+st.addEventListener('pointermove', e => { if (e.pointerId === stick.id) mv(e); });
+st.addEventListener('pointerup', () => { stick.id = null; stick.x = stick.y = 0; kn.style.left = kn.style.top = '40px'; });
+function mv(e) { const r = st.getBoundingClientRect(); let dx = e.clientX - r.left - 60, dy = e.clientY - r.top - 60; const l = Math.hypot(dx, dy); if (l > 44) { dx *= 44 / l; dy *= 44 / l; }
+  stick.x = dx / 44; stick.y = dy / 44; kn.style.left = 40 + dx + 'px'; kn.style.top = 40 + dy + 'px'; }
+// ---------- post: strong tilt-shift (only a band round the hero stays sharp), soft bloom-ish lift, warm grade, vignette ----------
+let TILT = true;
+const rt = new THREE.WebGLRenderTarget(1, 1); rt.texture.encoding = THREE.sRGBEncoding;
+const post = new THREE.ShaderMaterial({uniforms: {tex: {value: rt.texture}, px: {value: new THREE.Vector2()}, on: {value: 1}},
+  vertexShader: 'varying vec2 v; void main(){ v = uv; gl_Position = vec4(position.xy, 0., 1.); }',
+  fragmentShader: `uniform sampler2D tex; uniform vec2 px; uniform float on; varying vec2 v;
+    void main(){ float b = on * smoothstep(.2, .5, abs(v.y - .5)) * 3.5;
+      vec4 c = vec4(0.); float w = 0.;
+      for (int i = -3; i <= 3; i++) for (int j = -3; j <= 3; j++) { float k = exp(-float(i*i + j*j) / 6.); c += texture2D(tex, v + vec2(float(i), float(j)) * px * b) * k; w += k; }
+      vec3 col = c.rgb / w;
+      float l = dot(col, vec3(.3, .59, .11)); col = mix(vec3(l), col, .84);             // a touch less saturated
+      col = col * vec3(1.06, 1.0, .9) + vec3(.03, .02, 0.) * smoothstep(.5, 1., l);    // warm, light lifts
+      float vg = smoothstep(1.0, .35, length((v - .5) * vec2(1.2, 1.)));
+      gl_FragColor = vec4(col * mix(.7, 1., vg), 1.); }`});
+const pscene = new THREE.Scene(), pcam = new THREE.Camera(); pscene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
+document.getElementById('bTilt').onclick = e => { TILT = !TILT; post.uniforms.on.value = TILT ? 1 : 0; e.target.textContent = 'เบลอขอบ: ' + (TILT ? 'เปิด' : 'ปิด'); };
+document.getElementById('bZoom').onclick = () => { DI = (DI + 1) % DISTS.length; ZOOM = DISTS[DI]; };
+function size() { renderer.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix();
+  const pr = renderer.getPixelRatio(); rt.setSize(innerWidth * pr, innerHeight * pr); post.uniforms.px.value.set(1 / (innerWidth * pr), 1 / (innerHeight * pr)); }
+addEventListener('resize', size); size();
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
+  let mx = (K.d || K.arrowright ? 1 : 0) - (K.a || K.arrowleft ? 1 : 0) + stick.x, mz = (K.s || K.arrowdown ? 1 : 0) - (K.w || K.arrowup ? 1 : 0) + stick.y;
+  const l = Math.hypot(mx, mz); hero.moving = l > .15;
+  if (hero.moving) { mx /= Math.max(1, l); mz /= Math.max(1, l); const nx = hero.x + mx * 5 * dt, nz = hero.z + mz * 5 * dt, t = (map[nz | 0] || [])[nx | 0];
+    if (t !== undefined && t !== 2) { hero.x = nx; hero.z = nz; } hero.dir = DIR8[(Math.round(Math.atan2(mz, mx) / (Math.PI / 4)) + 8) % 8]; }
+  const gy = hAt(hero.x, hero.z); hmesh.position.set(hero.x, gy, hero.z); drawHero(dt); stepWolves(dt); shadowGeo();
+  cam.position.set(hero.x, gy + Math.sin(PITCH) * ZOOM, hero.z + Math.cos(PITCH) * ZOOM); cam.lookAt(hero.x, gy + .8, hero.z);
+  sun.position.set(hero.x - 26, 30, hero.z - 6); sun.target.position.set(hero.x, 0, hero.z);   // low sun from the upper left: long shadows toward the lower right
+  tWater.offset.x = (now / 14000) % 1;
+  renderer.setRenderTarget(rt); renderer.render(scene, cam); renderer.setRenderTarget(null); renderer.render(pscene, pcam);
+  if (HM) { const pr = renderer.getPixelRatio(), DW = innerWidth * pr, DH = innerHeight * pr;
+    const v = new THREE.Vector3(hero.x, gy, hero.z).project(cam), fx = (v.x + 1) / 2 * DW, fy = (v.y + 1) / 2 * DH;
+    const dist = cam.position.distanceTo(new THREE.Vector3(hero.x, gy, hero.z)), ppu = DH / 2 / Math.tan(cam.fov * Math.PI / 360) / dist;
+    const figH = 2.0, k = Math.max(1, Math.round(ppu * figH / 55));   // the figure is ~55 art px; whole screen px per art px, nearest to the true size
+    hmesh.scale.set(CS * k / ppu, CS * k / ppu, 1);
+    ocam.right = DW; ocam.top = DH; ocam.updateProjectionMatrix(); omesh.scale.set(CS * k, CS * k, 1);
+    omesh.position.set(Math.round(fx - HM.fx * k), Math.round(fy - (CS - HM.fy) * k), 0);
+    renderer.autoClear = false; renderer.render(oscene, ocam); renderer.autoClear = true; }
+  requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -29,3 +29,10 @@ slam 190 (blast) + slam_ring 260, crack_line 300, shackle 200, rage 70, wave 120
 - B upright effects: billboards facing the camera. D ground effects: laid flat on the ground (decal), turned to the aim.
   S side effects: turned / mirrored toward the target.
 - 2D action.html first (pfx), then the 3D map once the camera is chosen.
+
+## First try of the reference look: `hd3d2.html` (2026-11-10)
+Owner "ลองทำให้ได้ตามแบบแมพเค้า": camera 52 degrees, fov 18, distance 85 (zoom button 85 / 64 / 48); the hero from the half-size
+sheets `art/action/h64/` (figure 55 px, built like berserker_build.sh with `--scale=1/2`), whole screen px per art px; map 72 x 52
+tiles (crossroads, river + bridge, pond with island / stepping stones / watermill, camp, stone circle), ground merged per material
+(side faces only where the neighbour is lower), grass / ferns / flowers / bushes instanced, trees 5-7 tiles tall, desaturated beige road,
+low warm sun from the upper left, softer tilt-shift, wolves wandering. Screenshot `art/incoming/action/hd3d2_test.png`.

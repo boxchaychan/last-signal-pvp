@@ -50,6 +50,9 @@ if __name__ == '__main__':
     border = np.concatenate([V[0, 0], V[0, -1], V[0, :, 0], V[0, :, -1]]); kc = np.median(border, 0)
     n = max(2, round(dur * ofps)); idx = np.linspace(t0 * vfps, min(n_in - 1, t1 * vfps - 1), n).round().astype(int)
     K = [keyer(V[i], kc, edge) for i in idx]
+    # owner's clips often stop with the effect still showing: fade the last part out (--fade=0 keeps it, loops should use 0)
+    fade = float(opt('fade', .2)); nf = int(round(n * fade))
+    for j in range(nf): K[n - nf + j][..., 3] = (K[n - nf + j][..., 3] * (1 - (j + 1) / nf)).astype(np.uint8)
     al = np.stack([k[..., 3] > 40 for k in K]).any(0); ys, xs = np.nonzero(al)
     x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
     # the effect's ground width = the widest row band in the lower third of the union box
