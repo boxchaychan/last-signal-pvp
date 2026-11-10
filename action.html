@@ -621,9 +621,18 @@ async function loadProps() {
     let x0 = im.width, y0 = im.height, x1 = 0, y1 = 0;                 // the opaque box (every 2nd pixel is enough)
     for (let yy = 0; yy < im.height; yy += 2) for (let xx = 0; xx < im.width; xx += 2) if (ad[(yy * im.width + xx) * 4 + 3] > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
     if (x1 < x0) { x0 = y0 = 0; x1 = im.width; y1 = im.height; }
+    if (ARX > 1) { const hi = new Image(); hi.onload = () => { im.hr = hi; const hb = document.createElement('canvas'); hb.width = hi.width; hb.height = hi.height;
+      const hx = hb.getContext('2d'); hx.translate(hi.width, 0); hx.scale(-1, 1); hx.drawImage(hi, 0, 0); b.hr = hb; }; hi.src = 'art/action/props_hr/' + n + '.png?v=' + (META.v || 1); }
     GPROP[n] = {a: im, b, foot: n === 'wall_side' ? im.height - 1 : foot, bbB: [x0, y0, x1 + 2, y1 + 2], bbA: [im.width - x1 - 2, y0, im.width - x0, y1 + 2]}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
 }
 let PROPS = [];
+// a prop's 1.5x picture (art/action/props_hr/, `PROP_K=1.5` in rebuild_props.py / thai_props.py) drawn 1 art px per screen px:
+// the low-res picture still gives the size, feet and boxes; the hr one is pinned at its feet (bottom centre)
+function drawProp(q) {
+  const h = q.img.hr; if (!h || ARX === 1) { ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); return; }
+  const w = h.width / ARX, hh = h.height / ARX, x = Math.round((q.x - q.ox + q.img.width / 2 - w / 2) * S) / S, y = Math.round((q.y - q.oy + q.img.height - hh) * S) / S;
+  ctx.drawImage(h, x, y, w, hh);
+}
 function makeProps() {
   PROPS = [];
   const far = (x, y, d) => PROPS.every(p => Math.hypot(p.x - x, p.y - y) > d);
@@ -2767,11 +2776,13 @@ const MOBS = {};
 async function loadMobs() {
   try { const txt = await fetch('art/action/mobs/index.json', {cache: 'no-cache'}).then(r => r.text()), idx = JSON.parse(txt);
     let v = 0; for (let i = 0; i < txt.length; i++) v = (v * 31 + txt.charCodeAt(i)) >>> 0;
+    // the 1.5x sheets (art/action/mobs_hr/, `MOB_K=1.5 mob_frames.py`) are drawn 1 art px per screen px; idx[k] stays the size
+    let hx = {}; if (ARX > 1) try { const t2 = await fetch('art/action/mobs_hr/index.json', {cache: 'no-cache'}).then(r => r.text()); hx = JSON.parse(t2); for (let i = 0; i < t2.length; i++) v = (v * 31 + t2.charCodeAt(i)) >>> 0; } catch (e) {}
     await Promise.all([...ROSTER[MSET], BOSSK[MSET]].filter(k => idx[k]).map(k => new Promise(ok => { const im = new Image();
       im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d');
         g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);   // white copy for the hit flash
-        MOBS[k] = {img: im, w: c, m: idx[k]}; ok(); };
-      im.onerror = ok; im.src = 'art/action/mobs/' + k + '.png?v=' + v; }))); } catch (e) {}
+        MOBS[k] = {img: im, w: c, m: idx[k], d: hx[k] || null}; ok(); };
+      im.onerror = ok; im.src = (hx[k] ? 'art/action/mobs_hr/' : 'art/action/mobs/') + k + '.png?v=' + v; }))); } catch (e) {}
 }
 function spawnWave() {
   const kinds = ROSTER[MSET].filter(k => MOBS[k]); if (!kinds.length) return spawnSlimes();
@@ -3189,7 +3200,8 @@ function drawMob2(m) {
   if (m.hp <= 0) { row = M.rows.death; f = Math.min(5, m.dieT / .11 | 0); }
   else if (m.st === 'atk') { row = M.rows.attack; f = m.af; }
   else if (m.moving) f = (m.wt * 9 | 0) % 6;
-  const fly = MOBT[m.kind].fly && m.hp > 0, X = Math.round(m.x), Y = Math.round(m.y - (fly ? 3 + Math.sin(G.t * 4 + m.wt) * 3 : 0) - (m.kz || 0));
+  const D = T.d || M, dk = T.d ? ARX : 1, SN = v => T.d ? Math.round(v * S) / S : Math.round(v);   // D = the drawn sheet (1.5x when there is one)
+  const fly = MOBT[m.kind].fly && m.hp > 0, X = SN(m.x), Y = SN(m.y - (fly ? 3 + Math.sin(G.t * 4 + m.wt) * 3 : 0) - (m.kz || 0));
   if (m.hp <= 0 && m.dieT > .8) ctx.globalAlpha = Math.max(0, 1 - (m.dieT - .8) / .7);
   const frz = m.frz > G.t;
   if (frz) ctx.filter = 'grayscale(1) brightness(1.25) sepia(1) hue-rotate(165deg) saturate(3)';
@@ -3197,7 +3209,7 @@ function drawMob2(m) {
   if (hr) { row = M.rows.hurt; f = Math.min(5, m.t / .045 | 0); }
   else if (M.rows.hurt !== undefined && m.hp > 0 && m.st !== 'atk' && G.t - (m.flT || -9) < .18) { row = M.rows.hurt; f = Math.min(2, (G.t - m.flT) / .06 | 0); }   // stout ones flinch without stopping
   const one = img => { ctx.save(); ctx.translate(X - m.face * 5 * k, Y); ctx.scale((m.face < 0 ? -1 : 1) * (1 + .12 * k), 1 - .12 * k);
-    ctx.drawImage(img, f * M.w, row * M.h, M.w, M.h, -M.fx, -M.fy, M.w, M.h); ctx.restore(); };
+    ctx.drawImage(img, f * D.w, row * D.h, D.w, D.h, -D.fx / dk, -D.fy / dk, D.w / dk, D.h / dk); ctx.restore(); };
   one(T.img); ctx.filter = 'none';
   if (m.frzOn && m.hp > 0 && PFX.pfx_freeze) { const P = PFX.pfx_freeze, q = P.m, e = G.t - m.frz0, left = m.frz - G.t,   // the ice block
       te = e < .62 ? e : left < .3 ? 2.2 + (.3 - left) : .62 + ((e - .62) % 1.4), i = Math.min(q.n - 1, te * q.fps | 0), sc = clamp(M.size / 52, .8, 2.6);
@@ -3317,7 +3329,7 @@ function drawDigits(n, x, y, sc, col) {
 function drawMap() {             // ?test=map overview
   const k = Math.min(cv.width / WW, cv.height / WH); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.imageSmoothingEnabled = true;
   for (let j = 0; j < NCJ; j++) for (let i = 0; i < NCI; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0, ch.W, ch.H); }
-  for (const q of PROPS) ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy));
+  for (const q of PROPS) drawProp(q);
   ctx.fillStyle = '#ff3b3b'; ctx.fillRect(G.p.x - 40, G.p.y - 40, 80, 80);
 }
 function menuCam() { const t = G.menu.t; return [WW * .5 + WW * .3 * Math.sin(t * .021) - VW / 2, WH * .52 + WH * .24 * Math.sin(t * .029 + 1) - VH / 2]; }   // a slow tour of the map
@@ -3385,7 +3397,7 @@ function draw() {
   const props = PROPS.filter(inView).map(q => ({y: q.y, d: () => {
     const hid = o => o.y < q.y && o.y > q.y - q.oy + 30 && Math.abs(o.x - q.x) < q.w * .42 && o.y - 50 > q.y - q.oy;   // standing behind it, inside its picture
     const cover = hid(p) || (q.oy > 90 && G.mobs.some(m => m.hp > 0 && (!m.camp || m.aggro) && Math.abs(m.x - p.x) < 520 && hid(m)));   // monsters in the fight too (owner: trees hid the fight)
-    if (cover) ctx.globalAlpha = hid(p) ? .4 : .55; ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); ctx.globalAlpha = 1; }}));
+    if (cover) ctx.globalAlpha = hid(p) ? .4 : .55; drawProp(q); ctx.globalAlpha = 1; }}));
   const rings = G.fx.filter(f => f.k === 'pfx' && f.depth).map(f => ({y: p.y + (f.depth === 'b' ? -.5 : .5), d: () => drawPfx(f)}));
   const away = s => s.k === 'arrow' && s.vy < 0;   // arrows flying up the screen go behind whoever stands in front of them
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...rings, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props, ...G.pshots.filter(away).map(s => ({y: s.y, d: () => drawPShot(s)}))].sort((a, b) => a.y - b.y);
