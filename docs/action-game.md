@@ -904,3 +904,9 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   rules: `vfxcut.html` (pick a clip, set range / length / width / edge fade, preview next to the Berserker, download PNG + JSON).
   First: `vfx_bzslam` from the owner's cartoon explosion clip (`art/incoming/fx_video/bz_slam_v1.mp4`, 0.7–7 s → 2 s, 260 wide),
   not used by the game yet. Ready prompts with game sizes: `art/incoming/action/berserker/video_start/VFX_VIDEO_READY.txt`.
+
+### Tree of Savior proportions (2026-11-10)
+Owner "ลองสัดส่วนเท่า Tree of Savior ดู กลับไปแมพ 2D": trees were 5.7x the hero, houses ~3x. `PROP_S=tos` in
+`tools/art/rebuild_props.py` rebuilds named props from their full-size sheets at height x factor (trees oak/pine/blossom/dead_tree .62 ->
+~3.5x the hero, houses .82 -> ~2.5x, big buildings .75, statue/arch .85), props_hr pass first (`PROP_S=tos PROP_K=1.5`), then 1x.
+Thai props unchanged. hd3d2 map scale back to 1 (the props themselves are smaller now). Screenshot `art/incoming/action/tos_scale_2d.png`.

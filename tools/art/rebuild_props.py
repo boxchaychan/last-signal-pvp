@@ -12,6 +12,12 @@ from scipy import ndimage
 M, OUT = 'art/incoming/action/map/', 'art/action/props/'
 # PROP_K=1.5: the same props at 1.5x the pixels into art/action/props_hr/ (action.html draws them 1 art px per screen px)
 K = float(os.environ.get('PROP_K', '1')); OUT2 = 'art/action/props_hr/' if K != 1 else OUT; os.makedirs(OUT2, exist_ok=True)
+# PROP_S=tos (owner 2026-11-10 "ลองสัดส่วนเท่า Tree of Savior ดู กลับไปแมพ 2D"): trees ~3.5x the hero, houses ~2.5x, instead of 5.7x / 3x;
+# each named prop is rebuilt from its full-size sheet at its current height times this factor (sharp, no runtime scaling).
+# Run the PROP_K=1.5 pass FIRST (it reads the 1x heights in props/), then the 1x pass.
+TOS = {**dict.fromkeys('oak pine blossom dead_tree'.split(), .62), **dict.fromkeys('house_red house_blue cottage_red cottage_blue cottage_thatch guild shop healer smithy alchemist library armory chapel'.split(), .82),
+       **dict.fromkeys('tower barn windmill townhall observatory greenhouse magetower watermill'.split(), .75), **dict.fromkeys('statue arch'.split(), .85)}
+SC = TOS if os.environ.get('PROP_S') == 'tos' else {}
 SHEETS = {   # sheet: (file, names in props_px's blob order, cut enclosed white?)
     'nature': ('gpt_nature_cut.png', 'oak pine blossom bush boulder rocks grass flowers'.split(), True),
     'village': ('gpt_village_cut.png', 'house_red house_blue tower well fence barrel crate lantern'.split(), False),
@@ -43,7 +49,8 @@ for key in sys.argv[1:] or SHEETS:
     for i, n in enumerate(names):
         if not os.path.exists(OUT + n + '.png'): continue
         h = Image.open(OUT + n + '.png').height
-        tmp = tempfile.mkdtemp(); subprocess.run([sys.executable, 'tools/art/props_px.py', src, tmp, f'{i}={round(h * K)}', '20'], check=True, capture_output=True)
+        if SC and n not in SC: continue
+        tmp = tempfile.mkdtemp(); subprocess.run([sys.executable, 'tools/art/props_px.py', src, tmp, f'{i}={round(h * K * SC.get(n, 1))}', '20'], check=True, capture_output=True)
         with Image.open(os.path.join(tmp, f'prop{i}.png')) as im: size = im.size
         shutil.copy(os.path.join(tmp, f'prop{i}.png'), OUT2 + n + '.png'); shutil.rmtree(tmp, ignore_errors=True)
         print(' ', n, size)
