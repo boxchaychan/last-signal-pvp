@@ -7,6 +7,8 @@
 #        [--anchor=x,y] [--edge=60] [--cols=8]
 #   --size: how wide the effect is in the game, in world px (the hero is ~76 tall; skill areas in
 #           art/incoming/action/berserker/fx_size/size_guide.png: leap 260, whirl 270, Q ring 300)
+#   --radial: an effect that repeats round its centre (a star of chains) is completed where it ran off the frame (copies turned by
+#             whole repeat steps fill the cut parts)
 #   --anchor: the ground point in VIDEO px (default: middle, near the bottom of everything drawn; --center or a key ending in
 #             _ring / _all / _shackle / burst: the frame centre = the start spark, and --size = the whole width)
 import sys, os, json, subprocess
@@ -39,6 +41,34 @@ def keyer(fr, kc, edge):
     a = a * np.clip(e / max(edge, 1), 0, 1)
     return np.dstack([r, g, b, (a * 255).astype(np.int16)]).clip(0, 255).astype(np.uint8)
 
+def radial_fill(K):
+    # owner 2026-11-10 "ควันบางข้างไม่เต็ม แก้ให้เต็มทุกข้าง": an effect that repeats round its centre (chains in a star) gets cut where
+    # it runs off the frame edges, while along the diagonals it is still whole. Find how many times it repeats (angular
+    # autocorrelation of the alpha in a ring), pad the frame and fill everything outside the old frame from copies turned by
+    # whole steps of that repeat, so every side is complete.
+    from scipy import ndimage
+    H, W = K[0].shape[:2]; cy, cx = H / 2, W / 2; R0 = min(H, W) / 2
+    acc = np.zeros(360)
+    yy, xx = np.mgrid[0:H, 0:W]; rr = np.hypot(yy - cy, xx - cx); ang = (np.degrees(np.arctan2(yy - cy, xx - cx)) % 360).astype(int)
+    ring = (rr > R0 * .35) & (rr < R0 * .9)
+    for k in K: acc += np.bincount(ang[ring], weights=(k[..., 3][ring] > 60).astype(float), minlength=360)[:360]
+    acc -= acc.mean(); best, nsym = -1e9, 0
+    for n in range(5, 17):
+        sh = round(360 / n); c = (acc * np.roll(acc, sh)).sum()
+        if c > best: best, nsym = c, n
+    step = 360 / nsym; P = int(max(H, W) * 1.5) // 2 * 2; oy, ox = (P - H) // 2, (P - W) // 2
+    inside = np.zeros((P, P), bool); inside[oy:oy + H, ox:ox + W] = True
+    out = []
+    for k in K:
+        pad = np.zeros((P, P, 4), np.uint8); pad[oy:oy + H, ox:ox + W] = k; res = pad.copy()
+        for m in (1, -1, 2, -2, 3, -3):
+            rot = ndimage.rotate(pad, step * m, axes=(1, 0), reshape=False, order=1)
+            hole = (~inside) & (res[..., 3] < rot[..., 3])
+            res[hole] = rot[hole]
+        out.append(res)
+    print('radial fill:', nsym, 'repeats, step %.1f deg' % step)
+    return out
+
 if __name__ == '__main__':
     vid, key = sys.argv[1], sys.argv[2]
     t0, t1 = float(opt('from', 0)), opt('to', None); dur, ofps = float(opt('dur', 2)), int(opt('fps', 24))
@@ -49,7 +79,9 @@ if __name__ == '__main__':
     V, vfps = frames_of(vid); n_in = len(V); t1 = float(t1) if t1 else n_in / vfps
     border = np.concatenate([V[0, 0], V[0, -1], V[0, :, 0], V[0, :, -1]]); kc = np.median(border, 0)
     n = max(2, round(dur * ofps)); idx = np.linspace(t0 * vfps, min(n_in - 1, t1 * vfps - 1), n).round().astype(int)
-    K = [keyer(V[i], kc, edge) for i in idx]
+    RADIAL = '--radial' in sys.argv
+    K = [keyer(V[i], kc, 0 if RADIAL else edge) for i in idx]
+    if RADIAL: K = radial_fill(K)
     # owner's clips often stop with the effect still showing: fade the last part out (--fade=0 keeps it, loops should use 0)
     fade = float(opt('fade', .2)); nf = int(round(n * fade))
     for j in range(nf): K[n - nf + j][..., 3] = (K[n - nf + j][..., 3] * (1 - (j + 1) / nf)).astype(np.uint8)
@@ -63,7 +95,7 @@ if __name__ == '__main__':
         gw = (live.max() - live.min() + 1) if len(live) else (x1 - x0)
     sc = size / gw
     an = opt('anchor', None)
-    ax, ay = (float(v) for v in an.split(',')) if an else (V.shape[2] / 2, V.shape[1] / 2) if CENTER else ((cx.min() + cx.max()) / 2 if len(cx) else (x0 + x1) / 2, y1 - (y1 - y0) * .1)
+    ax, ay = (float(v) for v in an.split(',')) if an else (K[0].shape[1] / 2, K[0].shape[0] / 2) if CENTER else ((cx.min() + cx.max()) / 2 if len(cx) else (x0 + x1) / 2, y1 - (y1 - y0) * .1)
     w, h = max(1, round((x1 - x0) * sc)), max(1, round((y1 - y0) * sc))
     rows = -(-n // cols); sheet = Image.new('RGBA', (w * cols, h * rows)); fr = []
     for i, k in enumerate(K):
