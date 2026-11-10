@@ -1006,12 +1006,15 @@ const DIG = ['111101101101111', '010110010010111', '111001111100111', '111001111
 
 // ---------- assets ----------
 const IMGS = {}; let META = null, BG = null;   // one sheet per move (art/action/rogue_<move>.png) + the stills
+const N128 = !!QS.get('n128'), HDIR = N128 ? 'art/action/n128/' : 'art/action/';
 const SL = {}, SHP = ellipseSprite(46, 12, '#000000'), SHS = ellipseSprite(40, 10, '#000000'), RING = ellipseSprite(70, 24, '#ff3b3b', 1);
 const MRING = ellipseSprite(60, 22, '#c9a8ff', 1), KSH = ellipseSprite(14, 5, '#000000');
 async function load() {
-  META = await fetch('art/action/' + HERO + '.json', {cache: 'no-cache'}).then(r => r.json());
+  // ?n128=1 (owner 2026-11-10 "ทำ 128 มาสิ แบบไม่ย่อ"): the hero's sheets at PixelLab's own size (art/action/n128/, no 2/3
+  // shrink), drawn at a whole number of screen pixels per art pixel (drawCell), as tall as the shrunk ones
+  META = await fetch(HDIR + HERO + '.json', {cache: 'no-cache'}).then(r => r.json()); if (N128) META.k = 2 / 3;
   const files = [META.still, ...Object.values(META.anims).flatMap(a => a.glow ? [a.img, a.glow] : [a.img])];
-  await Promise.all(files.map(f => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = no; im.src = 'art/action/' + f + '?v=' + (META.v || 1); IMGS[f] = im; })));
+  await Promise.all(files.map(f => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = no; im.src = HDIR + f + '?v=' + (META.v || 1); IMGS[f] = im; })));
   await loadProps(); await loadMobs();
   // pixelfx effects already in the repo (MIT, vendor/pixelfx; owner 2026-11-08 "อันนี้เราเคยใช้นิ"): darkx = the smoke
   // bomb's blast, poof = vanishing / warping, nslash = the flurry's cross cuts
@@ -3087,10 +3090,13 @@ function step(dt) {
 
 // ---------- drawing ----------
 function drawCell(img, r, c, x, y, flip, alpha) {
-  const C = META.cell; x = Math.round(x); y = Math.round(y);
+  const C = META.cell;
+  // N128: n screen px per art px (n = the whole number nearest to the 2/3 size, at least 1), placed on whole screen pixels
+  const d = N128 ? Math.max(1, Math.round(S * 2 / 3)) / S : 1, D = C * d, fx = META.fx * d, fy = META.fy * d;
+  if (N128) { x = Math.round(x * S) / S; y = Math.round(y * S) / S; } else { x = Math.round(x); y = Math.round(y); }
   if (alpha !== undefined) ctx.globalAlpha = alpha;
-  if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(img, c * C, r * C, C, C, -META.fx, y - META.fy, C, C); ctx.restore(); }
-  else ctx.drawImage(img, c * C, r * C, C, C, x - META.fx, y - META.fy, C, C);
+  if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(img, c * C, r * C, C, C, -fx, y - fy, D, D); ctx.restore(); }
+  else ctx.drawImage(img, c * C, r * C, C, C, x - fx, y - fy, D, D);
   ctx.globalAlpha = 1;
 }
 const drawStill = (dir, x, y, alpha) => drawCell(IMGS[META.still], 0, dir, x, y, false, alpha);
