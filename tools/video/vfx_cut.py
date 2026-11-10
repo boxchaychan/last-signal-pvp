@@ -10,6 +10,7 @@
 #   --radial: an effect that repeats round its centre (a star of chains) is completed where it ran off the frame (copies turned by
 #             whole repeat steps fill the cut parts)
 #   --sym=N: a round effect that is fuller on some sides is completed with N turned copies of itself
+#   --mirror: a slam whose crack ran off one side is completed with its mirror image about the impact point
 #   --anchor: the ground point in VIDEO px (default: middle, near the bottom of everything drawn; --center or a key ending in
 #             _ring / _all / _shackle / burst: the frame centre = the start spark, and --size = the whole width)
 import sys, os, json, subprocess
@@ -32,8 +33,9 @@ def keyer(fr, kc, edge):
     f = fr.astype(np.int16); r, g, b = f[..., 0], f[..., 1], f[..., 2]
     if kc[1] >= max(kc[0], kc[2]):                              # green screen
         mx = np.maximum(r, b); d = g - mx; dk = kc[1] - max(kc[0], kc[2])
-        a = np.clip((dk * .8 - d) / (dk * .5), 0, 1); sp = d > 0
-        g = np.where(sp, np.minimum(g, (r + b) // 2 + 10), g)
+        a = np.clip(1.15 - d / dk * 1.15, 0, 1); a[a < .08] = 0            # owner: smoke came out green; a = how much of the key is NOT there
+        aa = np.maximum(a, .05)[..., None]; un = (np.dstack([r, g, b]) - (1 - aa) * np.array(kc)) / aa   # take the key colour out of half see-through pixels
+        r, g, b = [np.clip(un[..., c], 0, 255).astype(np.int16) for c in range(3)]; g = np.minimum(g, np.maximum(r, b) + 12)
     else:                                                        # magenta screen
         mn = np.minimum(r, b); d = mn - g; dk = min(kc[0], kc[2]) - kc[1]
         a = np.clip((dk * .8 - d) / (dk * .5), 0, 1); sp = d > 0
@@ -41,6 +43,26 @@ def keyer(fr, kc, edge):
     H, W = a.shape; yy, xx = np.mgrid[0:H, 0:W]; e = np.minimum.reduce([xx, yy, W - 1 - xx, H - 1 - yy]).astype(float)
     a = a * np.clip(e / max(edge, 1), 0, 1)
     return np.dstack([r, g, b, (a * 255).astype(np.int16)]).clip(0, 255).astype(np.uint8)
+
+def mirror_fill(K):
+    # owner 2026-11-10 "มีขาดไปบ้าง ต่อให้หน่อย": the ground crack of a slam ran off one side of the frame; pad the frame left and right
+    # and fill what lies outside the old frame with the effect mirrored about its impact point (the column where the lower band
+    # of the late frames is heaviest), so the crack reaches the same length on both sides
+    H, W = K[0].shape[:2]; P = W // 3
+    band = sum(k[int(H * .7):, :, 3].astype(float).sum(0) for k in K[len(K) // 2:])
+    ci = int(np.argmax(np.convolve(band, np.ones(41) / 41, 'same'))); print('mirror fill about x =', ci)
+    out = []
+    for k in K:
+        pad = np.zeros((H, W + 2 * P, 4), np.uint8); pad[:, P:P + W] = k
+        xs = np.arange(W + 2 * P); src = 2 * (ci + P) - xs                       # mirrored column in padded coordinates
+        ok = (src >= P) & (src < P + W); outside = (xs < P) | (xs >= P + W)
+        y0 = int(H * .72)                                                         # only the ground band (the crack), not the slashes above
+        for x in np.nonzero(outside & ok)[0]: pad[y0:, x] = pad[y0:, src[x]]
+        # a soft join: just inside the old edge, blend the mirrored copy where the original is thinner
+        for x in list(range(P, P + 24)) + list(range(P + W - 24, P + W)):
+            if 0 <= src[x] < W + 2 * P: col, scol = pad[y0:, x], pad[y0:, src[x]]; m = scol[:, 3] > col[:, 3]; col[m] = scol[m]
+        out.append(pad)
+    return out
 
 def sym_fill(K, n):
     # owner 2026-11-10 "สวยแต่ไม่เต็ม เอาอันที่เต็มมาเติมอันที่ไม่เต็ม": a round effect (a ring with smoke on some sides only) is
@@ -98,6 +120,7 @@ if __name__ == '__main__':
     if RADIAL: K = radial_fill(K)
     SYM = int(opt('sym', 0))
     if SYM: K = sym_fill(K, SYM)
+    if '--mirror' in sys.argv: K = mirror_fill(K)
     # owner's clips often stop with the effect still showing: fade the last part out (--fade=0 keeps it, loops should use 0)
     fade = float(opt('fade', .2)); nf = int(round(n * fade))
     for j in range(nf): K[n - nf + j][..., 3] = (K[n - nf + j][..., 3] * (1 - (j + 1) / nf)).astype(np.uint8)
