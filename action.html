@@ -1013,7 +1013,7 @@ function slashFor(deg, t = '') { let b = 0, bd = 999; for (let k = 0; k < 8; k++
 // owner 2026-11-10 "ทำ vfx ไว้ โทนแดงนีออน ดำ ไฟ": the Berserker draws the swordsman's effects recoloured black + neon red + fire
 // (tools/art/bz_fx.py -> fx/<key>_bz.png); they replace the normal sheets once loaded
 const BZTRY = QS.get('bz') === '1';   // owner had not okayed these on the live game yet (2026-11-10): only with ?bz=1
-const BZV = ['vfx_bzswing', 'vfx_bzchainall', 'vfx_bzchainring', 'vfx_bztriple', 'vfx_bzslam', 'vfx_bzslamring', 'vfx_bzcrack', 'vfx_bzhook', 'vfx_bzshackle', 'vfx_bzrage', 'vfx_bzwave'];   // the owner's Meta AI clips, cut with tools/video/vfx_cut.py (2026-11-10 "ลองประกอบมาก่อน")
+const BZV = ['vfx_bzswing', 'vfx_bzchain1', 'vfx_bzchainall', 'vfx_bzchainring', 'vfx_bztriple', 'vfx_bzslam', 'vfx_bzslamring', 'vfx_bzcrack', 'vfx_bzhook', 'vfx_bzshackle', 'vfx_bzrage', 'vfx_bzwave'];   // the owner's Meta AI clips, cut with tools/video/vfx_cut.py (2026-11-10 "ลองประกอบมาก่อน")
 const bzv = k => HERO === 'berserker' && BZTRY && PFX[k] && PFX[k].m;
 const BZFX = ['pfx_fireline', 'pfx_earthsplit', 'pfx_whirl', 'pfx_whirl_k', 'pfx_dashstrike_v', 'pfx_swcharge', 'pfx_swslash', 'cslam', 'gslam', 'quake', 'parry', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5'];
 const PFXA = {critg: [.9, .2], critx_ice: [.85, .18], zspark: [1, .3], zstar: [1, .45]};   // [picture alpha, glow alpha] per effect
@@ -2006,7 +2006,26 @@ function bzChain(p, S) {
   p.dir = d; const rel = (ar.hits && ar.hits[0]) || Math.round(ar.n * .4), fr = [...Array(ar.n).keys()];
   return playAct(p, ar, fr, fr.map((f, i) => i === rel ? 110 : 55), {[rel]: () => bzChainCast(p, S, tx, ty)}, {});
 }
+// owner 2026-11-10 "โซ่ทำให้ดึงตามเป้าไม่ได้หรือ": one chain (one arm cut out of the star clip, tools/video/vfx_one_arm.py) flies to
+// every monster round him (the 8 nearest within reach), bites, and drags it in as the chain winds back; then the ring cleave
+function bzChainTarget(p, S) {
+  const C = PFX.vfx_bzchain1.m, FPS = 36, bite = 18 / FPS, R = S.range;
+  const near = G.mobs.filter(m => m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.2) < R + m.r).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y)).slice(0, 8);
+  const aims = near.length ? near.map(m => [m.x, m.y - 14, m]) : [-.45, 0, .45].map(a => { const b = Math.atan2(DV[p.dir][1], DV[p.dir][0]) + a; return [p.x + Math.cos(b) * R * .7, p.y - 20 + Math.sin(b) * R * .7, null]; });
+  for (const [ax, ay, m] of aims) { const dx = ax - p.x, dy = ay - (p.y - 20), d = Math.hypot(dx, dy) || 1, a = Math.atan2(dy, dx);
+    G.fx.push({k: 'pfx', key: 'vfx_bzchain1', x: p.x, y: p.y - 20, rot: a || 1e-4, sc: clamp(d / C.len, .45, 1.7), fps: FPS, t: 0, life: C.n / FPS});
+    if (!m) continue;
+    G.later.push({t: bite, fn: () => { if (m.hp > 0) { hitMob(m, Math.round(S.dmg * .45), p.x, p.y, 0, '#ff3050', false, true); m.stun = Math.max(m.stun || 0, G.t + 1.2); } }});
+    const gx = p.x + Math.cos(a) * 58, gy = p.y + Math.sin(a) * 32;   // dragged in to just round him, from the side it was on
+    for (let j = 1; j <= 8; j++) G.later.push({t: bite + .06 + j / 40, fn: () => { if (m.hp > 0) { m.x += (gx - m.x) * .32; m.y += (gy - m.y) * .32; } }});
+  }
+  G.shake = Math.max(G.shake, 4);
+  G.later.push({t: bite + .42, fn: () => { const q = G.p;
+    if (!(bzv('vfx_bzchainring') && pfx('vfx_bzchainring', q.x, q.y, {sy: .6}))) pfx('pfx_bzring', q.x, q.y + 4, {sc: 1.15}); G.shake = Math.max(G.shake, 8); G.hs = Math.max(G.hs, .08); G.flash = .05;
+    for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - q.x, (m.y - q.y) * 1.25) < 150 + m.r) hitMob(m, Math.round(S.dmg * 1.5), q.x, q.y, 14, '#ff3050', true, true); }});   // a small push only: the pull must not be undone
+}
 function bzChainCast(p, S, tx, ty) {
+  if (bzv('vfx_bzchain1')) return bzChainTarget(p, S);
   const dx = tx - p.x, dy = ty - p.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, R = S.range, M = (PFX.pfx_bzchain || PFX.vfx_bzchainall).m;
   if (bzv('vfx_bzchainall')) pfx('vfx_bzchainall', p.x, p.y, {sc: 1.4, sy: .6});   // the video chains shoot out all round
   else G.fx.push({k: 'pfx', key: 'pfx_bzchain', x: p.x, y: p.y - 26, rot: Math.atan2(uy, Math.abs(ux)) || 1e-4, flip: ux < 0, sc: R / 280, t: 0, life: M.n / M.fps});
