@@ -86,8 +86,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 51 | satyr | done | Greece | medium |
 | 52 | harpy | done | Greece | medium |
 | 53 | spartoi | done | Greece | medium |
-| 54 | gorgon | todo | Greece | medium |
-| 55 | cyclops | todo | Greece | large |
+| 54 | gorgon | done | Greece | medium |
+| 55 | cyclops | done | Greece | large |
 | 56 | minotaur | todo | Greece | large |
 | 57 | boss_chimera | todo | Greece boss | huge |
 | 58 | domovoi | todo | Slavic | small |
