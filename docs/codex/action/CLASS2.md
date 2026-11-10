@@ -36,13 +36,14 @@ no frame, no glow or particles outside the body. Original design: do not copy an
 
 ## Row lines
 
-**1 gunner** (มือปืนคู่)
+**1 gunner** (มือปืนคู่ สมัยใหม่ — owner 2026-11-10 "ชุดหมวกเท่ๆ ปืนพกคู่ ให้ดูสมัยใหม่ไปเลย")
 ```
-Class: dual-pistol gunslinger. A fitted dark teal long coat that opens at the front and flares behind her knees, brass
-buttons and trim, a brown leather corset belt with small ammo pouches, a short green capelet over the shoulders kept from
-her archer outfit, fingerless leather gloves, tall brown boots. Two ornate fantasy flintlock pistols (wood grips, brass and
-dark steel, no modern guns), one in each hand held low at her sides, barrels pointing at the ground; empty leather holsters
-on both thighs. Brass goggles pushed up on her forehead. Colours: teal, forest green, brown leather, brass gold.
+Class: modern dual-pistol gunslinger, stylish and cool. A cropped black tactical jacket with teal accents and a high collar,
+a fitted dark top, a utility belt with magazine pouches, fingerless tactical gloves, slim cargo trousers, sturdy combat
+boots, a thigh holster on each leg. A cool black cap worn slightly tilted (a baseball-style cap with a small teal emblem)
+with her wavy brown ponytail coming out of the back, small round tinted sunglasses pushed up on the cap. Two sleek MODERN
+semi-automatic handguns (matte black with teal details), one in each hand, held low at her sides, barrels pointing at the
+ground. Keep her leaf hair clip as a small badge on the jacket. Colours: black, charcoal, teal, a little gold, brown hair.
 ```
 
 **2 greatbow** (ธนูใหญ่)
