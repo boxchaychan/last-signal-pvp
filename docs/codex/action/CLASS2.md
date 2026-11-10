@@ -17,7 +17,7 @@ Guardian. Reply to the owner in Thai, short and plain.
 | # | key | status | what |
 |---|-----|--------|------|
 | 1 | gunner | todo | dual-pistol gunslinger (ปืนคู่) |
-| 2 | greatbow | todo | great-bow archer (ธนูใหญ่) |
+| 2 | greatbow | todo | laser-bow archer (ธนูเลเซอร์) |
 
 ## Shared prompt (put this first, then the row's own lines)
 ```
@@ -46,10 +46,12 @@ semi-automatic handguns (matte black with teal details), one in each hand, held 
 ground. Keep her leaf hair clip as a small badge on the jacket. Colours: black, charcoal, teal, a little gold, brown hair.
 ```
 
-**2 greatbow** (ธนูใหญ่)
+**2 greatbow** (ธนูเลเซอร์ — owner 2026-11-10 "ธนูเลเซอร์เลยก็ได้", modern like the gunner)
 ```
-Class: great-bow archer. A huge carved wooden war bow almost as tall as she is, with green-and-gold rune carvings and a
-silver tip at each end, held upright in her LEFT hand; a big quiver of long fletched arrows on her back. A hooded forest
-green mantle with a few feathers at the collar and a wind-swept cape, one leather shoulder guard on the bow arm, leather
-bracers, a belt with a hunting knife, tall brown boots. Colours: forest green, brown leather, cream, gold rune lines.
+Class: high-tech laser archer, stylish and cool. A big modern compound-style bow almost as tall as she is, made of matte
+black and white armour plates with glowing teal light lines, and a bowstring of bright teal LIGHT (a glowing energy string),
+held upright in her LEFT hand; no quiver, no wooden arrows (the bow fires light arrows). A sleek white-and-charcoal tech
+jacket with a short hood down on her back, glowing teal seams, a fitted bodysuit, one armoured shoulder guard on the bow arm,
+tech gauntlets, slim trousers, sturdy boots. A slim visor / headset over one ear with a small glowing teal lens, her wavy
+brown ponytail kept. Keep her leaf hair clip as a small badge. Colours: white, charcoal, black, glowing teal, brown hair.
 ```
