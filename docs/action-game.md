@@ -919,3 +919,12 @@ name=<dir>:<first,last> ...) -> `art/action/assassin/`. Removed from the game 20
 (`ASN`, `drawAssassin`): the two attack clips take turns, run while moving, hurt, death; the rogue's kit is unchanged.
 Meta redraws her a little differently in every clip (owner: "ไม่เหมือนต้นฉบับ"); PixelLab moves from the pixel still would keep
 her exact look (about 1 gen a move).
+
+### Body standard for every new character (owner 2026-11-11)
+"ต้นแบบต่อไป ผู้หญิงให้ใช้โจร ผู้ชายให้ใช้ดาบ ตัวจะหนากว่าผู้หญิง": female characters copy the ROGUE's proportions, male
+characters the SWORDSMAN's (thicker: wider head and shoulders, thicker coat, legs and boots). Height 120 px feet to head top
+(weapons, horns and spiky hair not counted), the same head size; female torso ~38 / legs ~32 px wide, male torso ~54 / legs ~39
+(front view). Rulers to attach to every GPT prompt: `docs/codex/action/refs/REF_FEMALE_rogue.png`,
+`docs/codex/action/refs/REF_MALE_swordsman.png` (front, 3/4, side, back with head / chin / chest / waist / knee / feet lines).
+Before any PixelLab credits: line the new still up next to the rogue and the swordsman and show the owner. A weapon that does not
+fit the 128 canvas gets a bigger canvas, never a smaller body.
