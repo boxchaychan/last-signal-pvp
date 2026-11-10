@@ -94,8 +94,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 59 | kikimora | done | Slavic | small |
 | 60 | rusalka | done | Slavic | medium |
 | 61 | vukodlak | done | Slavic | medium |
-| 62 | vodyanoy | todo | Slavic | medium |
-| 63 | leshy | todo | Slavic | large |
+| 62 | vodyanoy | done | Slavic | medium |
+| 63 | leshy | done | Slavic | large |
 | 64 | boss_izba | todo | Slavic boss | huge |
 | 65 | knocker | todo | Celtic | small |
 | 66 | redcap | todo | Celtic | small |
