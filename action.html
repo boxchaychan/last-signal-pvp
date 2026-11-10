@@ -151,8 +151,10 @@ function onResize() {
   DPR = window.devicePixelRatio || 1;
   const fit = Math.min(innerWidth / FVW, innerHeight / FVH);
   if (new URLSearchParams(location.search).get('sharp')) { S = Math.max(1, Math.ceil(fit * DPR - .02)); Q = S / fit; } else { Q = DPR; S = Math.abs(fit * DPR - Math.round(fit * DPR)) < .02 ? Math.round(fit * DPR) : fit * DPR; }
+  // ?zoom=N (owner 2026-11-10 "เอา 1 ดู"): a whole N canvas px per world px, the view follows the screen size (not FVW x FVH)
+  const ZM = +new URLSearchParams(location.search).get('zoom') || 0; if (ZM) { Q = DPR; S = ZM; }
   cv.width = Math.round(innerWidth * Q); cv.height = Math.round(innerHeight * Q);
-  VW = FVW; VH = FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
+  VW = ZM ? Math.ceil(cv.width / S) : FVW; VH = ZM ? Math.ceil(cv.height / S) : FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
   cv.style.imageRendering = Math.abs(Q - DPR) < .01 ? 'pixelated' : 'auto';
   U = Math.max(2, Math.round(Q * 2 / S));        // size of numbers / sparks so they stay readable on phones
 }
