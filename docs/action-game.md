@@ -791,3 +791,15 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   frame / mirror; hit frames marked: sweep 2, spin 2-3, slam 4-5). Paid key on the cloud: re-saved through the secure form, but the
   proxy still reached the trial account for 12+ minutes (see CLAUDE.md); check `get_balance` first. Effect pictures for `bz_*`: the owner
   makes them in ChatGPT from `docs/fx-prompts.html`.
+- **Sharp pixels everywhere** (owner 2026-11-10 "ภาพมันไม่ชัด" → "เอาไม่ย่อ" → "เอาฉากให้คม"): the blur came from scaling pixel art by
+  fractions (heroes shrunk 2/3 at build time, then the whole world drawn ×1.52 on a 1080p PC). Now: heroes use PixelLab's own
+  size (`art/action/n128/`, `N128=1 bash tools/art/hero_build.sh <hero>` / `rogue_build.sh`), drawn at a whole number of screen
+  px per art px (`drawCell`); the world is drawn at S = a multiple of 1.5 (`ARX` 1.5 art px per world px, `onResize`; the view
+  follows the screen, ≈1280×640 on a PC, 1.5 on most phones), and everything in it has 1.5× pictures drawn 1 art px per screen
+  px: ground chunks painted at 1.5× (`chunkStep`, textures `art/action/ground_hr/` from `ground_px.py ... 0.66`, laterite from
+  the cobble brightness), props `art/action/props_hr/` (`PROP_K=1.5` in `rebuild_props.py` / `thai_props.py` +
+  `tools/art/props_hr_extra.py` for the wall / fort pieces; gates = props_px on the cut `thai_gate_4view.png` at 0=570;
+  `drawProp` pins the hr picture at the low-res one's bottom centre), monsters `art/action/mobs_hr/` (`MOB_K=1.5 mob_frames.py`,
+  `MOBS[k].d`; frost_wolf has no hr sheet, its see-through source frames are not in the repo). Effects are still scaled.
+  `?ar=0` = the old soft fit, `?n128=0` = the old shrunk heroes, `?zoom=N` / `?hz=N` = zoom tests.
+

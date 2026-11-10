@@ -34,5 +34,11 @@ base = ld(P + 't_fort_w.png')[..., 3] > 0
 for n in ('t_fort_wl', 't_fort_wr'):
     cut = base & ~(ld(P + n + '.png')[..., 3] > 0)
     big = np.array(Image.fromarray(cut.astype(np.uint8) * 255).resize((fw.shape[1], fw.shape[0]), Image.NEAREST)) > 0
-    o = fw.copy(); o[big, 3] = 0; Image.fromarray(o).save(H + n + '.png'); print(n, int(cut.sum()), 'px cut')
+    from scipy import ndimage
+    big = ndimage.binary_dilation(big, iterations=2)          # the scaled cut edge is ragged: take 2 px more
+    o = fw.copy(); o[big, 3] = 0
+    lab, k = ndimage.label(o[..., 3] > 0); sz = ndimage.sum(o[..., 3] > 0, lab, range(1, k + 1))
+    keep = 1 + int(np.argmax(sz)); o[(lab != keep) & (lab > 0), 3] = 0   # only the fort itself, no stray outline dots
+    al = o[..., 3] > 0; ring = ndimage.binary_dilation(al) & ~al & big; o[ring] = (29, 26, 34, 255)   # outline the new cut edge
+    Image.fromarray(o).save(H + n + '.png'); print(n, int(cut.sum()), 'px cut')
 print('done')
