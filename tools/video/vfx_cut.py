@@ -10,7 +10,7 @@
 #   --radial: an effect that repeats round its centre (a star of chains) is completed where it ran off the frame (copies turned by
 #             whole repeat steps fill the cut parts)
 #   --sym=N: a round effect that is fuller on some sides is completed with N turned copies of itself
-#   --mirror: a slam whose crack ran off one side is completed with its mirror image about the impact point
+#   --mirror (=full for a whole symmetric blast): a slam whose crack ran off one side is completed with its mirror image about the impact point
 #   --anchor: the ground point in VIDEO px (default: middle, near the bottom of everything drawn; --center or a key ending in
 #             _ring / _all / _shackle / burst: the frame centre = the start spark, and --size = the whole width)
 import sys, os, json, subprocess
@@ -42,24 +42,27 @@ def keyer(fr, kc, edge):
         r = np.where(sp, np.minimum(r, g + 10), r); b = np.where(sp, np.minimum(b, g + 10), b)
     H, W = a.shape; yy, xx = np.mgrid[0:H, 0:W]; e = np.minimum.reduce([xx, yy, W - 1 - xx, H - 1 - yy]).astype(float)
     a = a * np.clip(e / max(edge, 1), 0, 1)
+    a[e < 8] = 0                                                  # Meta AI clips carry a faint dark line round the frame edge
     return np.dstack([r, g, b, (a * 255).astype(np.int16)]).clip(0, 255).astype(np.uint8)
 
-def mirror_fill(K):
+def mirror_fill(K, full=False):
     # owner 2026-11-10 "มีขาดไปบ้าง ต่อให้หน่อย": the ground crack of a slam ran off one side of the frame; pad the frame left and right
     # and fill what lies outside the old frame with the effect mirrored about its impact point (the column where the lower band
     # of the late frames is heaviest), so the crack reaches the same length on both sides
     H, W = K[0].shape[:2]; P = W // 3
     band = sum(k[int(H * .7):, :, 3].astype(float).sum(0) for k in K[len(K) // 2:])
-    ci = int(np.argmax(np.convolve(band, np.ones(41) / 41, 'same'))); print('mirror fill about x =', ci)
+
+    ci = int(np.average(np.arange(W), weights=band + 1e-6)) if full else int(np.argmax(np.convolve(band, np.ones(41) / 41, 'same')))   # a blast: its middle
+    print('mirror fill about x =', ci)
     out = []
     for k in K:
         pad = np.zeros((H, W + 2 * P, 4), np.uint8); pad[:, P:P + W] = k
         xs = np.arange(W + 2 * P); src = 2 * (ci + P) - xs                       # mirrored column in padded coordinates
         ok = (src >= P) & (src < P + W); outside = (xs < P) | (xs >= P + W)
-        y0 = int(H * .72)                                                         # only the ground band (the crack), not the slashes above
+        y0 = 0 if full else int(H * .72)                                         # --mirror=full: a symmetric blast, every row; else only the ground band
         for x in np.nonzero(outside & ok)[0]: pad[y0:, x] = pad[y0:, src[x]]
         # a soft join: just inside the old edge, blend the mirrored copy where the original is thinner
-        for x in list(range(P, P + 24)) + list(range(P + W - 24, P + W)):
+        for x in list(range(P, P + (90 if full else 24))) + list(range(P + W - (90 if full else 24), P + W)):
             if 0 <= src[x] < W + 2 * P: col, scol = pad[y0:, x], pad[y0:, src[x]]; m = scol[:, 3] > col[:, 3]; col[m] = scol[m]
         out.append(pad)
     return out
@@ -120,7 +123,7 @@ if __name__ == '__main__':
     if RADIAL: K = radial_fill(K)
     SYM = int(opt('sym', 0))
     if SYM: K = sym_fill(K, SYM)
-    if '--mirror' in sys.argv: K = mirror_fill(K)
+    if '--mirror' in sys.argv or opt('mirror', None): K = mirror_fill(K, opt('mirror', 'ground') == 'full')
     # owner's clips often stop with the effect still showing: fade the last part out (--fade=0 keeps it, loops should use 0)
     fade = float(opt('fade', .2)); nf = int(round(n * fade))
     for j in range(nf): K[n - nf + j][..., 3] = (K[n - nf + j][..., 3] * (1 - (j + 1) / nf)).astype(np.uint8)
