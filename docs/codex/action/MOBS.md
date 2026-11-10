@@ -90,8 +90,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 55 | cyclops | done | Greece | large |
 | 56 | minotaur | done | Greece | large |
 | 57 | boss_chimera | done | Greece boss | huge |
-| 58 | domovoi | todo | Slavic | small |
-| 59 | kikimora | todo | Slavic | small |
+| 58 | domovoi | done | Slavic | small |
+| 59 | kikimora | done | Slavic | small |
 | 60 | rusalka | todo | Slavic | medium |
 | 61 | vukodlak | todo | Slavic | medium |
 | 62 | vodyanoy | todo | Slavic | medium |
