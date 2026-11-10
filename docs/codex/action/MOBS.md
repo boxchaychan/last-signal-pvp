@@ -76,41 +76,41 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 41 | dwarf_berserker | done | Norse | small |
 | 42 | ice_golem | done | Norse | large |
 | 43 | boss_jotun | done | Norse boss | huge |
-| 44 | dokkaebi_fire | todo | Korea | small |
-| 45 | dokkaebi | todo | Korea | medium |
-| 46 | gwisin | todo | Korea | medium |
-| 47 | haetae | todo | Korea | medium |
-| 48 | jangsan_tiger | todo | Korea | large |
-| 49 | jeoseung_saja | todo | Korea | medium |
-| 50 | boss_bulgasari | todo | Korea boss | huge |
-| 51 | satyr | todo | Greece | medium |
-| 52 | harpy | todo | Greece | medium |
-| 53 | spartoi | todo | Greece | medium |
-| 54 | gorgon | todo | Greece | medium |
-| 55 | cyclops | todo | Greece | large |
-| 56 | minotaur | todo | Greece | large |
-| 57 | boss_chimera | todo | Greece boss | huge |
-| 58 | domovoi | todo | Slavic | small |
-| 59 | kikimora | todo | Slavic | small |
-| 60 | rusalka | todo | Slavic | medium |
-| 61 | vukodlak | todo | Slavic | medium |
-| 62 | vodyanoy | todo | Slavic | medium |
-| 63 | leshy | todo | Slavic | large |
-| 64 | boss_izba | todo | Slavic boss | huge |
-| 65 | knocker | todo | Celtic | small |
-| 66 | redcap | todo | Celtic | small |
-| 67 | pooka | todo | Celtic | medium |
-| 68 | banshee | todo | Celtic | medium |
-| 69 | kelpie | todo | Celtic | medium |
-| 70 | spriggan | todo | Celtic | large |
-| 71 | boss_wyrm | todo | Celtic boss | huge |
-| 72 | babi_ngepet | todo | Southeast Asia | small |
-| 73 | orang_minyak | todo | Southeast Asia | medium |
-| 74 | pocong | todo | Southeast Asia | medium |
-| 75 | pontianak | todo | Southeast Asia | medium |
-| 76 | tikbalang | todo | Southeast Asia | large |
-| 77 | kapre | todo | Southeast Asia | large |
-| 78 | boss_bakunawa | todo | Southeast Asia boss | huge |
+| 44 | dokkaebi_fire | done | Korea | small |
+| 45 | dokkaebi | done | Korea | medium |
+| 46 | gwisin | done | Korea | medium |
+| 47 | haetae | done | Korea | medium |
+| 48 | jangsan_tiger | done | Korea | large |
+| 49 | jeoseung_saja | done | Korea | medium |
+| 50 | boss_bulgasari | done | Korea boss | huge |
+| 51 | satyr | done | Greece | medium |
+| 52 | harpy | done | Greece | medium |
+| 53 | spartoi | done | Greece | medium |
+| 54 | gorgon | done | Greece | medium |
+| 55 | cyclops | done | Greece | large |
+| 56 | minotaur | done | Greece | large |
+| 57 | boss_chimera | done | Greece boss | huge |
+| 58 | domovoi | done | Slavic | small |
+| 59 | kikimora | done | Slavic | small |
+| 60 | rusalka | done | Slavic | medium |
+| 61 | vukodlak | done | Slavic | medium |
+| 62 | vodyanoy | done | Slavic | medium |
+| 63 | leshy | done | Slavic | large |
+| 64 | boss_izba | done | Slavic boss | huge |
+| 65 | knocker | done | Celtic | small |
+| 66 | redcap | done | Celtic | small |
+| 67 | pooka | done | Celtic | medium |
+| 68 | banshee | done | Celtic | medium |
+| 69 | kelpie | done | Celtic | medium |
+| 70 | spriggan | done | Celtic | large |
+| 71 | boss_wyrm | done | Celtic boss | huge |
+| 72 | babi_ngepet | done | Southeast Asia | small |
+| 73 | orang_minyak | done | Southeast Asia | medium |
+| 74 | pocong | done | Southeast Asia | medium |
+| 75 | pontianak | done | Southeast Asia | medium |
+| 76 | tikbalang | done | Southeast Asia | large |
+| 77 | kapre | done | Southeast Asia | large |
+| 78 | boss_bakunawa | done | Southeast Asia boss | huge |
 
 ## Monster lines (add after the shared prompt)
 
