@@ -222,10 +222,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 206 | harpy | attack | done | `art/incoming/mobs/anim/harpy_attack.png` |
 | 207 | harpy | death | done | `art/incoming/mobs/anim/harpy_death.png` |
 | 208 | harpy | hurt | done | `art/incoming/mobs/anim/harpy_hurt.png` |
-| 209 | spartoi | walk | todo | `art/incoming/mobs/anim/spartoi_walk.png` |
-| 210 | spartoi | attack | todo | `art/incoming/mobs/anim/spartoi_attack.png` |
-| 211 | spartoi | death | todo | `art/incoming/mobs/anim/spartoi_death.png` |
-| 212 | spartoi | hurt | todo | `art/incoming/mobs/anim/spartoi_hurt.png` |
+| 209 | spartoi | walk | done | `art/incoming/mobs/anim/spartoi_walk.png` |
+| 210 | spartoi | attack | done | `art/incoming/mobs/anim/spartoi_attack.png` |
+| 211 | spartoi | death | done | `art/incoming/mobs/anim/spartoi_death.png` |
+| 212 | spartoi | hurt | done | `art/incoming/mobs/anim/spartoi_hurt.png` |
 | 213 | gorgon | walk | todo | `art/incoming/mobs/anim/gorgon_walk.png` |
 | 214 | gorgon | attack | todo | `art/incoming/mobs/anim/gorgon_attack.png` |
 | 215 | gorgon | death | todo | `art/incoming/mobs/anim/gorgon_death.png` |
