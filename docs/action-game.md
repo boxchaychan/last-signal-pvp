@@ -895,3 +895,12 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
 - Meta AI videos: `tools/video/vid2px.py` (green key, one shared scale for a locked camera, palette from a still, outline added later).
   The Berserker slash video (`meta_attack/`) is cut but not in the game yet; prompts in `berserker/video_start/`, video prompts on every
   card of `docs/fx-prompts.html`. Claude cannot make the videos (needs the owner's Meta AI login).
+- Not on the live game yet (owner "หยุดประกอบ", "มันไม่สวย" about the recolours): the red effects, red crescents / rings and the
+  chain Q only switch on with `?bz=1` (`BZTRY`).
+- Effect videos → game sheets (owner "ทำทูลตัดเอฟเฟกต์จากวิดีโอไว้ใช้เลย"): `tools/video/vfx_cut.py <mp4> <key> --from --to --dur --size`
+  (key colour read from the border, green or magenta; whatever reaches the frame edge fades out over `--edge` px; `--size` = the
+  ground width in world px, from the widest band in the lower third; anchor = middle of that band, 10% above the bottom; 256-colour
+  sheet → fx/<key>.png + manifest; preview GIF next to the Berserker in `art/incoming/fx_video/<key>/`). Phone page with the same
+  rules: `vfxcut.html` (pick a clip, set range / length / width / edge fade, preview next to the Berserker, download PNG + JSON).
+  First: `vfx_bzslam` from the owner's cartoon explosion clip (`art/incoming/fx_video/bz_slam_v1.mp4`, 0.7–7 s → 2 s, 260 wide),
+  not used by the game yet. Ready prompts with game sizes: `art/incoming/action/berserker/video_start/VFX_VIDEO_READY.txt`.
