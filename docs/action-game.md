@@ -837,4 +837,15 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   heroes turn through the in-between directions (`p.vd`, a step every 45 ms; a half-turn passes the front view), idle / run
   start from their first frame when the state changes (`p.stT0`), idle 7 → 9 fps. For future PixelLab idles / runs: ask for
   hair and cape swaying and lagging behind, more frames (12-16) where it matters.
+- **Guardian moves copied from a knight pack** (owner 2026-11-10, "FREE Knight 2D Pixel Art v1.2": games OK incl. commercial, no
+  redistribution as an asset, so its sheets are NOT in this repo; frames 112x96): `pose_copy.py` ATTACK 1 (8) / 2 (9) / 3 (11) /
+  BLOCK (6) onto the Guardian's east rotation (paid character 4577584b…), 3 gen each = 12 → `art/incoming/action/guardian/
+  pose_copy_knight/<move>/r*.png` + `preview.gif`: overhead cut into a lunge, a thrust, a low lunge cut, shield raised.
+- **Guardian playable** (owner 2026-11-10 "ทำอัศวินโล่ให้เสร็จ ... แค่กลับด้าน", no new PixelLab jobs): `tools/art/guardian_build.sh`
+  puts the paid download's idle / run / roll / hurt / death (8 dirs, death 4) together with the attacks we have: attack = knight
+  copy 1 + 2 (east, hits 3 / 12) and gd_slash + gd_bash (south-east, hits 4 / 13); leap and charge = knight copy 3 (east) /
+  gd_overhead (south-east); guard = knight block (east); every other direction plays one of those, mirrored for the left →
+  `art/action/n128/guardian.*` + `art/action/guardian.*` (2/3, menu card). In action.html `?hero=guardian` (menu card อัศวินโล่):
+  `SWL` = swordsman or guardian runs the swordsman's kit (SWS, `swordSk`, iron passive, parry on Z), the Guardian takes 25% less
+  damage (`hurtPlayer`); skill names / icons / help copied from the swordsman (Z = ยกโล่สวน).
 
