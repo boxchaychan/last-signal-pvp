@@ -210,10 +210,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 194 | jeoseung_saja | attack | done | `art/incoming/mobs/anim/jeoseung_saja_attack.png` |
 | 195 | jeoseung_saja | death | done | `art/incoming/mobs/anim/jeoseung_saja_death.png` |
 | 196 | jeoseung_saja | hurt | done | `art/incoming/mobs/anim/jeoseung_saja_hurt.png` |
-| 197 | boss_bulgasari | walk | todo | `art/incoming/mobs/anim/boss_bulgasari_walk.png` |
-| 198 | boss_bulgasari | attack | todo | `art/incoming/mobs/anim/boss_bulgasari_attack.png` |
-| 199 | boss_bulgasari | death | todo | `art/incoming/mobs/anim/boss_bulgasari_death.png` |
-| 200 | boss_bulgasari | hurt | todo | `art/incoming/mobs/anim/boss_bulgasari_hurt.png` |
+| 197 | boss_bulgasari | walk | done | `art/incoming/mobs/anim/boss_bulgasari_walk.png` |
+| 198 | boss_bulgasari | attack | done | `art/incoming/mobs/anim/boss_bulgasari_attack.png` |
+| 199 | boss_bulgasari | death | done | `art/incoming/mobs/anim/boss_bulgasari_death.png` |
+| 200 | boss_bulgasari | hurt | done | `art/incoming/mobs/anim/boss_bulgasari_hurt.png` |
 | 201 | satyr | walk | todo | `art/incoming/mobs/anim/satyr_walk.png` |
 | 202 | satyr | attack | todo | `art/incoming/mobs/anim/satyr_attack.png` |
 | 203 | satyr | death | todo | `art/incoming/mobs/anim/satyr_death.png` |
