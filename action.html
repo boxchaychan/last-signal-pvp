@@ -147,14 +147,20 @@ let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0;
 // phone, 1.52 on a 1080p PC); ?sharp=1 draws finer at a whole S and lets the browser scale down instead. A screen of another
 // shape gets dark bars (OX / OY = where the view starts on the canvas).
 const FVW = 1266, FVH = 585;
+const ARX = new URLSearchParams(location.search).get('ar') === '0' ? 1 : 1.5;   // art px per world px (map, props, monsters)
 function onResize() {
   DPR = window.devicePixelRatio || 1;
   const fit = Math.min(innerWidth / FVW, innerHeight / FVH);
   if (new URLSearchParams(location.search).get('sharp')) { S = Math.max(1, Math.ceil(fit * DPR - .02)); Q = S / fit; } else { Q = DPR; S = Math.abs(fit * DPR - Math.round(fit * DPR)) < .02 ? Math.round(fit * DPR) : fit * DPR; }
   // ?zoom=N (owner 2026-11-10 "เอา 1 ดู"): a whole N canvas px per world px, the view follows the screen size (not FVW x FVH)
   const ZM = +new URLSearchParams(location.search).get('zoom') || 0; if (ZM) { Q = DPR; S = ZM; }
+  // owner 2026-11-10 "เอาฉากให้คม": the map, props and monsters are drawn at ARX (1.5) art px per world px, so a whole S / ARX
+  // makes every art pixel a whole number of screen pixels: S = the multiple of 1.5 nearest to the old fit (1.5 on a PC, 1.5 or 3
+  // on phones); the view then follows the screen (about the old 1266 x 585 on a PC). ?ar=0 = the old soft fit.
+  else if (ARX > 1 && !new URLSearchParams(location.search).get('sharp')) { Q = DPR; S = ARX * Math.max(1, Math.round(fit * DPR / ARX)); }
+  const FIT = ZM || (ARX > 1 && !new URLSearchParams(location.search).get('sharp'));
   cv.width = Math.round(innerWidth * Q); cv.height = Math.round(innerHeight * Q);
-  VW = ZM ? Math.ceil(cv.width / S) : FVW; VH = ZM ? Math.ceil(cv.height / S) : FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
+  VW = FIT ? Math.ceil(cv.width / S) : FVW; VH = FIT ? Math.ceil(cv.height / S) : FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
   cv.style.imageRendering = Math.abs(Q - DPR) < .01 ? 'pixelated' : 'auto';
   U = Math.max(2, Math.round(Q * 2 / S));        // size of numbers / sparks so they stay readable on phones
 }
@@ -308,26 +314,26 @@ const TFB = {grass: [104, 170, 72], flowergrass: [110, 172, 76], dirt: [168, 128
 // sits in the grass. Returns true when it painted the pixel (water and rice), false on a dike (painted as grass).
 const hash2 = (a, b) => { let h = Math.imul(a, 374761393) + Math.imul(b, 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 const PDY = {cw: 170, chh: 120, dk: 12, w: [[64, 128, 132], [92, 160, 156], [140, 196, 186]], r: [[38, 92, 26], [70, 140, 36], [118, 190, 58], [178, 222, 92]]};
-function paddyPx(x, y, D, o) {
-  const P = PADDY, cx = (x - P.x0) % PDY.cw, cy = (y - P.y0) % PDY.chh, ex = P.x1 - x, ey = P.y1 - y, dk = PDY.dk;
+function paddyPx(x, y, D, o, gx, gy) {   // gx, gy = art pixel (ARX per world px): the rows and dikes are laid out in art px
+  const P = PADDY, cx = (gx - P.x0 * ARX) % (PDY.cw * ARX), cy = (gy - P.y0 * ARX) % (PDY.chh * ARX), ex = P.x1 * ARX - gx, ey = P.y1 * ARX - gy, dk = PDY.dk * ARX;
   if (cx < dk || cy < dk || ex < dk || ey < dk) return false;
-  const n = GND.noise(x, y), b = BAYER[(y & 3) * 4 + (x & 3)];
+  const n = GND.noise(x, y), b = BAYER[(gy & 3) * 4 + (gx & 3)];
   const ci = ((x - P.x0) / PDY.cw | 0) * 7 + ((y - P.y0) / PDY.chh | 0) * 13, grow = (ci * 37 % 11) / 11;   // each cell a little different
   const ry = (cy - dk) % 9, px = (cx - dk + ((cy - dk) / 9 & 1) * 2) % 5;   // rows of rice 7 px deep, 2 px of water between them
   let c;
-  if (ry >= 7) c = PDY.w[(Math.sin(x / 23 + y / 61) + Math.sin(y / 9 - x / 40) * .6 > 1.3 + (b - .5) * .3) ? 2 : (n + b * .2 > .75 ? 1 : 0)];   // the water between the rows, sky glints
+  if (ry >= 7) c = PDY.w[(Math.sin(gx / ARX / 23 + gy / ARX / 61) + Math.sin(gy / ARX / 9 - gx / ARX / 40) * .6 > 1.3 + (b - .5) * .3) ? 2 : (n + b * .2 > .75 ? 1 : 0)];   // the water between the rows, sky glints
   else { let t = (ry < 2 ? 3 : ry < 4 ? 2 : ry < 6 ? 1 : 0) - (px === 0 && ry > 2 ? 1 : 0) + (grow > .7 && b > .6 ? 0 : grow < .25 && b < .4 ? -1 : 0);   // leaf tips light, a dark gap between tufts
     c = PDY.r[Math.max(0, Math.min(3, t))]; }
   let k = 1; if (cy < dk + 2) k = .62; else if (cx < dk + 2) k = .74;                    // the drop below the dike
   D[o] = c[0] * k; D[o + 1] = c[1] * k; D[o + 2] = c[2] * k; D[o + 3] = 255; return true;
 }
-function groundPx(x, y, D, o) {
+function groundPx(x, y, D, o, gx, gy) {   // x, y = world px (the terrain), gx, gy = art px (textures, dither, patterns)
   terr(x, y);
-  const b = BAYER[(y & 3) * 4 + (x & 3)];
+  const b = BAYER[(gy & 3) * 4 + (gx & 3)];
   let T = 'grass', k = 0;                                       // k 0 = the grass light patches
-  if (TK === 6 || (TK === 5 && !TEX.planks)) { const c = TK === 6 ? WD[TA ? 0 : 1] : x % 9 === 0 ? WD[0] : x % 9 < 4 ? WD[2] : WD[3]; D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = 255; return; }
+  if (TK === 6 || (TK === 5 && !TEX.planks)) { const c = TK === 6 ? WD[TA ? 0 : 1] : gx % 13 === 0 ? WD[0] : gx % 13 < 6 ? WD[2] : WD[3]; D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = 255; return; }
   if (TK === 5) { T = 'planks'; k = 1; }
-  else if (TK === 8) { if (paddyPx(x, y, D, o)) return; k = .95 + GND.noise(x, y) * .07; }   // a dike: grass
+  else if (TK === 8) { if (paddyPx(x, y, D, o, gx, gy)) return; k = .95 + GND.noise(x, y) * .07; }   // a dike: grass
   else if (TK === 4) { T = 'water'; k = TA < .07 && b < .7 ? 1.18 : 1.04 - Math.min(1, TA) * .3; }
   else if (TK === 3) { if (!(TA > .6 && b < (TA - .6) / .4)) { T = 'sand'; k = 1; } }
   else if (TK === 2) { if (!(TA > .82 && b < (TA - .82) / .18)) { T = 'cobble'; k = 1; } }
@@ -341,34 +347,36 @@ function groundPx(x, y, D, o) {
     if (m2 < 67600) { const md = Math.sqrt(m2); if (md < 200 || b < (260 - md) / 60) T = 'flowergrass'; } }
   if (!k) k = .9 + GND.noise(x, y) * .2;
   const t = TEX[T];
-  if (t) { const i = T === 'planks' ? ((x % t.h) * t.w + (y % t.w)) * 4 : ((y % t.h) * t.w + (x % t.w)) * 4; /* planks turned across the road */ D[o] = t.d[i] * k; D[o + 1] = t.d[i + 1] * k; D[o + 2] = t.d[i + 2] * k; }
+  if (t) { const i = T === 'planks' ? ((gx % t.h) * t.w + (gy % t.w)) * 4 : ((gy % t.h) * t.w + (gx % t.w)) * 4; /* planks turned across the road */ D[o] = t.d[i] * k; D[o + 1] = t.d[i + 1] * k; D[o + 2] = t.d[i + 2] * k; }
   else { const c = TFB[T]; D[o] = c[0] * k; D[o + 1] = c[1] * k; D[o + 2] = c[2] * k; }
   D[o + 3] = 255;
 }
 // a chunk is painted in bands of rows (BAND per call) so walking into a new area does not stall a frame
 const BAND = 16;
 function chunkStep(ch, rows) {
-  const {P, X0, Y0, W, H} = ch, D = P.d, y1 = Math.min(H, ch.y + rows);
-  for (let y = ch.y; y < y1; y++) for (let x = 0, o = y * W * 4; x < W; x++, o += 4) groundPx(X0 + x, Y0 + y, D, o);
-  ch.y = y1; if (ch.y < H) return;
+  // the chunk canvas is ARX art px per world px (owner 2026-11-10 "เอาฉากให้คม"); ch.y counts art rows
+  const {P, X0, Y0} = ch, D = P.d, WA = P.w, HA = P.h, y1 = Math.min(HA, ch.y + Math.round(rows * ARX)), GX = X0 * ARX, GY = Y0 * ARX;
+  for (let y = ch.y; y < y1; y++) { const wy = Y0 + (y / ARX | 0); for (let x = 0, o = y * WA * 4; x < WA; x++, o += 4) groundPx(X0 + (x / ARX | 0), wy, D, o, GX + x, GY + y); }
+  ch.y = y1; if (ch.y < HA) return;
+  const W = ch.W, H = ch.H;
   for (const d of GND.deco) {                                   // lily pads (pink flowers on some), reeds along the shore
     if (d.x < X0 - 12 || d.x > X0 + W + 12 || d.y < Y0 - 4 || d.y > Y0 + H + 16) continue;
-    const x = d.x - X0, y = d.y - Y0;
-    if (d.k === 0) { P.disc(x, y, d.r + 1, d.r * .6 + 1 | 0, LP[0]); P.disc(x, y, d.r, d.r * .6 | 0, LP[1]); P.set(x - 1, y - 1, LP[2]);
-      for (let q = 0; q < d.r; q++) P.set(x + q, y, LP[3]);
+    const x = Math.round((d.x - X0) * ARX), y = Math.round((d.y - Y0) * ARX), r = Math.round(d.r * ARX), h = Math.round(d.h * ARX);
+    if (d.k === 0) { P.disc(x, y, r + 1, r * .6 + 1 | 0, LP[0]); P.disc(x, y, r, r * .6 | 0, LP[1]); P.set(x - 1, y - 1, LP[2]);
+      for (let q = 0; q < r; q++) P.set(x + q, y, LP[3]);
       if (d.fl) { P.set(x, y - 2, LP[4]); P.set(x + 1, y - 2, LP[4]); P.set(x, y - 3, LP[5]); } }
-    else for (let q = 0; q < d.h; q++) P.set(x, y - q, RD[q > d.h - 3 && d.s < .5 ? 2 : q & 1]);
+    else for (let q = 0; q < h; q++) P.set(x, y - q, RD[q > h - 3 && d.s < .5 ? 2 : (q * 2 / 3 | 0) & 1]);
   }
   const c = P.done(), g = c.getContext('2d');
   for (const p of PROPS) for (const s of p.shades || []) {      // the props' ground shadows
     if (s.x + s.img.width < X0 || s.x > X0 + W || s.y + s.img.height < Y0 || s.y > Y0 + H) continue;
-    g.globalAlpha = s.a; g.drawImage(s.img, s.x - X0, s.y - Y0); }
+    g.globalAlpha = s.a; g.drawImage(s.img, Math.round((s.x - X0) * ARX), Math.round((s.y - Y0) * ARX), Math.round(s.img.width * ARX), Math.round(s.img.height * ARX)); }
   g.globalAlpha = 1; ch.c = c; delete ch.P;
 }
 function chunk(i, j) {
   const k = i + ',' + j; let ch = CHUNKS.get(k);
   if (!ch) { const X0 = i * CH, Y0 = j * CH, W = Math.min(CH, WW - X0), H = Math.min(CH, WH - Y0);
-    ch = {X0, Y0, W, H, y: 0, P: painter(W, H), c: null}; CHUNKS.set(k, ch); }
+    ch = {X0, Y0, W, H, y: 0, P: painter(Math.round(W * ARX), Math.round(H * ARX)), c: null}; CHUNKS.set(k, ch); }
   return ch;
 }
 const NCI = Math.ceil(WW / CH), NCJ = Math.ceil(WH / CH);
@@ -379,7 +387,7 @@ function prebuild(cx, cy) {                                       // at load: wh
 }
 function drawGroundChunks(cx, cy) {
   const [i0, j0, i1, j1] = viewChunks(cx, cy);
-  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0); }
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0, ch.W, ch.H); }
   // the nearest unpainted chunks just outside the view, a few rows at a time for ~4 ms a frame (a whole chunk is
   // ~50 ms on a PC, more on a phone); far chunks are dropped
   const t0 = performance.now();
@@ -604,7 +612,7 @@ async function loadProps() {
     : {grass: 'grass', dirt: 'dirt', sand: 'sand', water: 'water', cobble: 'cobble', flowergrass: 'flowergrass'};   // Thai map: the owner's riverside ground sheet
   await Promise.all(Object.keys(TEXF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
-    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/ground/' + TEXF[n] + '.png?v=' + (META.v || 1); })));
+    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = (ARX > 1 ? 'art/action/ground_hr/' : 'art/action/ground/') + TEXF[n] + '.png?v=' + (META.v || 1); })));
   if (Object.keys(TEX).length < Object.keys(TEXF).length) for (const k of Object.keys(TEX)) delete TEX[k];   // all or nothing (code ground otherwise)
   await Promise.all(Object.keys(GPDEF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
@@ -3308,7 +3316,7 @@ function drawDigits(n, x, y, sc, col) {
 }
 function drawMap() {             // ?test=map overview
   const k = Math.min(cv.width / WW, cv.height / WH); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.imageSmoothingEnabled = true;
-  for (let j = 0; j < NCJ; j++) for (let i = 0; i < NCI; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0); }
+  for (let j = 0; j < NCJ; j++) for (let i = 0; i < NCI; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0, ch.W, ch.H); }
   for (const q of PROPS) ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy));
   ctx.fillStyle = '#ff3b3b'; ctx.fillRect(G.p.x - 40, G.p.y - 40, 80, 80);
 }
