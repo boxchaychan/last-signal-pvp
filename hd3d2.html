@@ -66,9 +66,13 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 document.body.appendChild(renderer.domElement);
 const FOGC = 0x9aa889;
 const scene = new THREE.Scene(); scene.fog = new THREE.Fog(FOGC, 80, 150); scene.background = new THREE.Color(FOGC);
-const cam = new THREE.PerspectiveCamera(+HQ.get('fov') || 18, innerWidth / innerHeight, 1, 400);
-const DISTS = S128 ? [9, 18, 36, 74] : [85, 64, 48];   /* owner "ซูมไปอีกเท่าตัว": 4 screen px per art px by default */   /* owner "ซูมตัวละครเพิ่ม 1 เท่า": camera twice as close, the 128 hero at 2 screen px per art px */   /* owner "ตัวละครเราเล็กไป": close with the 128 hero by default, far on the zoom button */ let DI = 0, ZOOM = +HQ.get("dist") || DISTS[0];   // owner "ให้ดูตัวเล็ก แล้วซูมออกไปอีก": far by default
-const PITCH = (+HQ.get('pitch') || 52) * Math.PI / 180;
+// owner 2026-11-10 (a Tree of Savior screenshot, "มุมกล้องแบบนี้"): about 48 degrees down, a normal lens (visible perspective,
+// the far side of the screen gets smaller), the hero small (~1/11 of the screen height) and a wide view round him. ?cam=old = the
+// earlier narrow-lens view
+const TOS = HQ.get('cam') !== 'old';
+const cam = new THREE.PerspectiveCamera(+HQ.get('fov') || (TOS ? 32 : 18), innerWidth / innerHeight, 1, 400);
+const DISTS = TOS ? [40, 24, 62] : S128 ? [9, 18, 36, 74] : [85, 64, 48]; let DI = 0, ZOOM = +HQ.get('dist') || DISTS[0];
+const PITCH = (+HQ.get('pitch') || (TOS ? 48 : 52)) * Math.PI / 180;
 const sun = new THREE.DirectionalLight(0xffdcae, 1.25); sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -45, right: 45, top: 40, bottom: -40, near: 1, far: 120}); sun.shadow.bias = -0.0006;
 scene.add(sun, sun.target, new THREE.HemisphereLight(0xdfeaff, 0x6f7a4c, 0.72));
@@ -306,7 +310,7 @@ const post = new THREE.ShaderMaterial({uniforms: {tex: {value: rt.texture}, px: 
       vec4 c = vec4(0.); float w = 0.;
       for (int i = -3; i <= 3; i++) for (int j = -3; j <= 3; j++) { float k = exp(-float(i*i + j*j) / 6.); c += texture2D(tex, v + vec2(float(i), float(j)) * px * b) * k; w += k; }
       vec3 col = c.rgb / w;
-      float l = dot(col, vec3(.3, .59, .11)); col = mix(vec3(l), col, .84);             // a touch less saturated
+      float l = dot(col, vec3(.3, .59, .11)); col = mix(vec3(l), col, .7); col = col * .9 + .07;   // softer, paler colours (the Tree of Savior look the owner sent)
       col = col * vec3(1.06, 1.0, .9) + vec3(.03, .02, 0.) * smoothstep(.5, 1., l);    // warm, light lifts
       float vg = smoothstep(1.0, .35, length((v - .5) * vec2(1.2, 1.)));
       gl_FragColor = vec4(col * mix(.7, 1., vg), 1.); }`});
