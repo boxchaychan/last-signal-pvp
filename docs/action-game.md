@@ -40,6 +40,8 @@ Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The o
 | 2026-11-09 | 3 attacks, PixMiniMax 8 frames, south-east only (`berserker/jobs_attack.json` via `pl_queue.py`): `bz_sweep` horizontal sweep · `bz_spin` 360 spin (Q's second press) · `bz_slam` overhead slam into the ground (R, E's third cut) | sweep dc5cf88c-993d-4ed7-a65c-cb2f0bee0b1a · spin cea10df2-939a-437d-985c-b016ba8cede3 · slam 020e63c9-d4c9-4312-938a-3ae82057d1c8 | 3 | ✅ all good (`attacks_se.gif`, canvas 172): sweep = wind-up 1, a big black-red arc PixelLab drew itself on 2, follow-through 3–6, back on the shoulder 7–8 (9 frames); spin = draw back 1, side 2, back view 3, other side 4, front 5, stance 6–7 with blade arcs on 2–3 (8 frames); slam = raise overhead 1–3, blade into the ground with cracks on 4–5, pull out 6–7, shoulder 8 (his helm reads rounder while he looks down, 4–7). Account empty after this (43.75 used = 40 + the 5 daily bonus) |
 | 2026-11-10 | create_character v3 "Guardian 128" (cloud, trial account, owner "ทำพวก pixlab ... ก่อน"): reference = `guardian/px128/south.png` (turnaround front), direction_images east = `side_right.png` + north = turnaround back (`white_cut --no-ring` → `join_views.py` → `turn128.py 128 32`) | a468e926-b5aa-4692-aa27-15b00a3c67c2 | 2 | queued (~20 min wait on the trial account) |
 | 2026-11-10 | 3 attacks, PixMiniMax 8 frames, south-east (`guardian/jobs_attack.json` via `pl_queue.py`, run after the character): `gd_slash` forward slash · `gd_bash` shield bash · `gd_overhead` overhead chop | (see `guardian/pl_dl/queue.log`) | 3 | running |
+| 2026-11-10 | PAID account (Apprentice, cloud key fixed): imports `Guardian 128 paid` 4577584b… + `Berserker 128 paid` eac57807… (0.25 each, our 8 rotations) and their base moves (`jobs_base.json` 36 each + Berserker `jobs_skills.json` chain) → `<hero>/pl_dl_paid/` | see queue.log | ~73 | running |
+| 2026-11-10 | VFX: free `vfx_workbench` spin_slash round the swordsman (`fx_raw/sword_spin_e`, My effects 7c6eb20c…) and the PAID VFX Creator over REST `POST /v2/vfx` (lite, sprite = swordsman south still): "sword whirlwind" loop 12 f 160 px (`fx_raw/sword_whirlwind_e`, effect 22e7ce2c…) | | 0 + 3 | owner "ไม่สวย เก็บเครดิตไว้ ทำท่าตัวละครดีกว่า": no more paid VFX, credits go to character moves |
 
 ### Second PixelLab account (owner's other key, from 2026-11-08)
 The app kept the old key until restarted, so jobs go through `tools/pl_rpc.py` (HTTP JSON-RPC with the key from the
@@ -802,4 +804,10 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   `drawProp` pins the hr picture at the low-res one's bottom centre), monsters `art/action/mobs_hr/` (`MOB_K=1.5 mob_frames.py`,
   `MOBS[k].d`; frost_wolf has no hr sheet, its see-through source frames are not in the repo). Effects are still scaled.
   `?ar=0` = the old soft fit, `?n128=0` = the old shrunk heroes, `?zoom=N` / `?hz=N` = zoom tests.
+- **Swordsman Q = the owner's ParticleFX fire line** (2026-11-10, pasted 9x8 sheet on see-through, 66 frames, raw
+  `art/incoming/pfx/fire-line-sheet.webp`; "ไปใช้คู่กับท่า 1 ดาบ ละทำช่องสกิลเป็นแนวยาว"): cut on a 222x79 grid → `fx/pfx_fireline.png`
+  (manifest `len` 133 = the line x 35..168 at y 50, anchor at its near end). `groundSplit` lays it along the crack (k 'esplit' with
+  `key`, from frame 0, scaled to the crack's length, height ×.85 of that), hits land as the fire runs out (t × .55 s); the
+  Earthsplitter sheet stays as the fallback. Skills with `line: 1` (SWS[1]) draw a straight band as their aim marker (the
+  crack's reach and width) instead of the range ring + target circle. Its skill icon uses the fire line too.
 
