@@ -198,10 +198,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 182 | gwisin | attack | done | `art/incoming/mobs/anim/gwisin_attack.png` |
 | 183 | gwisin | death | done | `art/incoming/mobs/anim/gwisin_death.png` |
 | 184 | gwisin | hurt | done | `art/incoming/mobs/anim/gwisin_hurt.png` |
-| 185 | haetae | walk | todo | `art/incoming/mobs/anim/haetae_walk.png` |
-| 186 | haetae | attack | todo | `art/incoming/mobs/anim/haetae_attack.png` |
-| 187 | haetae | death | todo | `art/incoming/mobs/anim/haetae_death.png` |
-| 188 | haetae | hurt | todo | `art/incoming/mobs/anim/haetae_hurt.png` |
+| 185 | haetae | walk | done | `art/incoming/mobs/anim/haetae_walk.png` |
+| 186 | haetae | attack | done | `art/incoming/mobs/anim/haetae_attack.png` |
+| 187 | haetae | death | done | `art/incoming/mobs/anim/haetae_death.png` |
+| 188 | haetae | hurt | done | `art/incoming/mobs/anim/haetae_hurt.png` |
 | 189 | jangsan_tiger | walk | todo | `art/incoming/mobs/anim/jangsan_tiger_walk.png` |
 | 190 | jangsan_tiger | attack | todo | `art/incoming/mobs/anim/jangsan_tiger_attack.png` |
 | 191 | jangsan_tiger | death | todo | `art/incoming/mobs/anim/jangsan_tiger_death.png` |
