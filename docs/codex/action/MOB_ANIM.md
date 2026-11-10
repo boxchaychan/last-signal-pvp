@@ -177,10 +177,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 161 | dwarf_berserker | walk | done | `art/incoming/mobs/anim/dwarf_berserker_walk.png` |
 | 162 | dwarf_berserker | attack | done | `art/incoming/mobs/anim/dwarf_berserker_attack.png` |
 | 163 | dwarf_berserker | death | done | `art/incoming/mobs/anim/dwarf_berserker_death.png` |
-| 164 | dwarf_berserker | hurt | todo | `art/incoming/mobs/anim/dwarf_berserker_hurt.png` |
-| 165 | ice_golem | walk | todo | `art/incoming/mobs/anim/ice_golem_walk.png` |
-| 166 | ice_golem | attack | todo | `art/incoming/mobs/anim/ice_golem_attack.png` |
-| 167 | ice_golem | death | todo | `art/incoming/mobs/anim/ice_golem_death.png` |
+| 164 | dwarf_berserker | hurt | done | `art/incoming/mobs/anim/dwarf_berserker_hurt.png` |
+| 165 | ice_golem | walk | done | `art/incoming/mobs/anim/ice_golem_walk.png` |
+| 166 | ice_golem | attack | done | `art/incoming/mobs/anim/ice_golem_attack.png` |
+| 167 | ice_golem | death | done | `art/incoming/mobs/anim/ice_golem_death.png` |
 | 168 | ice_golem | hurt | todo | `art/incoming/mobs/anim/ice_golem_hurt.png` |
 | 169 | boss_jotun | walk | todo | `art/incoming/mobs/anim/boss_jotun_walk.png` |
 | 170 | boss_jotun | attack | todo | `art/incoming/mobs/anim/boss_jotun_attack.png` |
