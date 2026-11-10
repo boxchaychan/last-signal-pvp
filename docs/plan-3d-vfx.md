@@ -36,3 +36,10 @@ sheets `art/action/h64/` (figure 55 px, built like berserker_build.sh with `--sc
 tiles (crossroads, river + bridge, pond with island / stepping stones / watermill, camp, stone circle), ground merged per material
 (side faces only where the neighbour is lower), grass / ferns / flowers / bushes instanced, trees 5-7 tiles tall, desaturated beige road,
 low warm sun from the upper left, softer tilt-shift, wolves wandering. Screenshot `art/incoming/action/hd3d2_test.png`.
+
+## Effects as parts (owner 2026-11-10 "ทำแค่อันเดียวแล้วให้ทำตามทิศทาง ไม่เอาสกิลเป็นก้อน")
+Like game VFX artists: small single pieces made once, assembled by code per skill (turned to the aim, stretched to the distance,
+repeated per target, moved, timed) = a particle system, so every skill follows its direction and targets. First: Q chains (one arm
+cut from the star clip, `tools/video/vfx_one_arm.py`, one chain per monster). Parts to make (`docs/vfx-pack.html`, set
+"เบอร์เซิร์กเกอร์ · ชิ้นส่วน", `art/incoming/action/berserker/video_start/VFX_BERSERKER_PARTS.txt`): slash, hit, boom, smoke,
+sparks, flame (loop), crack. Already as parts: chain (vfx_bzchain1), ring cleave, ground ring, rune circle.

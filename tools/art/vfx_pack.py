@@ -46,6 +46,17 @@ CLASSES = [
   ('bz_wave', 'X คลื่นฟัน (ตอนคลั่ง)', 'S', 1.5, 'once', 'the crescent one fifth of the picture tall', 'a slash wave flying from left to right: a thick black crescent with a glowing neon red rim and red-orange fire, speed lines behind, then it breaks into red sparks and black smoke', G),
   ('bz_hook', 'F โซ่กระชาก', 'S', 1.5, 'once', 'a line across two thirds of the picture', 'a black chain with a hooked claw and glowing neon red links shooting from the left to the right and biting into the ground with a red flash and a small black-red burst', G),
  ]),
+ ('berserker_parts', 'เบอร์เซิร์กเกอร์ · ชิ้นส่วน (ประกอบเป็นสกิลด้วยโค้ด)', 'Colours ONLY black, glowing NEON RED and red-orange fire: black ink shapes and black smoke, neon red glowing rims and light, small red-orange fire cores; no yellow, no blue, no green, no purple.', [
+  # owner 2026-11-10 "ทำแค่อันเดียวแล้วให้ทำตามทิศทาง ไม่เอาสกิลเป็นก้อน": like game VFX artists, small single pieces; the game turns,
+  # stretches, repeats and moves them toward each target (a particle system), so every skill follows its direction
+  ('bzp_slash', 'ชิ้น: รอยฟัน 1 เส้น', 'S', 0.8, 'once', 'one third of the picture wide', 'ONE single curved greatsword slash crescent swinging from left to right, a thick black trail with a neon red edge, then it thins and vanishes; nothing else', G),
+  ('bzp_hit', 'ชิ้น: ประกายโดนตี', 'B', 0.6, 'once', 'small: one sixth of the picture wide', 'ONE small hit flash: a jagged black-red star burst with a hot core and a few sharp spikes, then it vanishes; nothing else', G),
+  ('bzp_boom', 'ชิ้น: ระเบิดลูกเดียว', 'B', 1.2, 'once', 'one quarter of the picture wide', 'ONE round explosion puff: a red flash, a ball of red-orange fire wrapped in black smoke, then it breaks up and fades; nothing else', G),
+  ('bzp_smoke', 'ชิ้น: ควันก้อนเดียว', 'B', 1.5, 'once', 'one sixth of the picture wide', 'ONE single puffy black cartoon smoke cloud with a thin red rim, rising a little, swelling, then thinning away; nothing else', G),
+  ('bzp_sparks', 'ชิ้น: ประกายไฟกระเด็น', 'B', 1, 'once', 'one quarter of the picture wide', 'a small spray of red-hot sparks and embers flying out from one point and falling, then gone; nothing else', G),
+  ('bzp_flame', 'ชิ้น: เปลวไฟ 1 ดวง (วนซ้ำ)', 'B', 1.5, 'loop', 'small: one sixth of the picture wide', 'ONE single neon red flame with a black outline and an orange core, flickering on the spot; nothing else', G),
+  ('bzp_crack', 'ชิ้น: รอยแตกพื้นเส้นเดียว', 'D', 1.5, 'once', 'one straight crack across half of the picture', 'seen from above: ONE straight crack in the ground opening from the LEFT end to the RIGHT end, glowing neon red inside, then it cools to black and fades; nothing else', G),
+ ]),
  ('swordsman', 'นักดาบ', 'Colours: deep crimson red and orange fire with white-hot cores, dark red-black outlines, a few gold sparks.', [
   ('sw_hit', 'โดนฟัน', 'B', 1, 'once', 'small: one fifth of the picture wide', 'a sword hit impact: an orange-red starburst with a white-hot core, sharp sparks and a few gold sparks', G),
   ('sw_swing', 'รอยดาบ', 'S', 1, 'once', 'half of the picture wide', 'a fast sword swing from left to right: a crimson crescent trail with a white-hot edge, small flames along it, sparks off the tip', G),
