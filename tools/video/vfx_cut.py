@@ -113,7 +113,7 @@ if __name__ == '__main__':
     t0, t1 = float(opt('from', 0)), opt('to', None); dur, ofps = float(opt('dur', 2)), int(opt('fps', 24))
     # game width per effect (world px; the hero is 76 tall), so no --size is needed for the planned ones
     SIZE = {'bz_hit': 60, 'bz_swing': 200, 'bz_chain_all': 300, 'bz_chain_ring': 300, 'bz_triple': 260, 'bz_slam': 190,
-            'bz_slam_ring': 260, 'bz_crack_line': 300, 'bz_shackle': 200, 'bz_rage': 70, 'bz_wave': 120, 'bz_hook': 300}
+            'bz_slam_ring': 260, 'bz_crack_line': 300, 'bz_shackle': 200, 'bz_rage': 105, 'bz_wave': 120, 'bz_hook': 300}
     size, edge, cols = float(opt('size', SIZE.get(key, 260))), int(opt('edge', 60)), int(opt('cols', 8))
     V, vfps = frames_of(vid); n_in = len(V); t1 = float(t1) if t1 else n_in / vfps
     border = np.concatenate([V[0, 0], V[0, -1], V[0, :, 0], V[0, :, -1]]); kc = np.median(border, 0)
