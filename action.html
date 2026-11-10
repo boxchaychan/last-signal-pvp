@@ -137,8 +137,10 @@ const AR = WW * WH / (4200 * 2800);   // how many times the first map's area (pr
 // forest with Thai monsters, then on to the next country): west field -> Thai city -> Thai forest (JG) -> China later
 const QS = new URLSearchParams(location.search), MAP = ['thai', 'jungle', 'town'].includes(QS.get('map')) ? QS.get('map') : 'west', JG = MAP === 'jungle', TOWN = MAP === 'town', TH = MAP === 'thai' || JG || TOWN, FROM = QS.get('from');
 // three heroes (owner 2026-11-09: swordsman + mage made in GPT, moves from PixelLab): ?hero= or the last one picked
-const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'mage', 'archer', 'priest'].includes(h) ? h : 'rogue'; })();
-const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', mage: 'เมจ', archer: 'นักธนู', priest: 'นักบวช'};
+const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'guardian', 'mage', 'archer', 'priest'].includes(h) ? h : 'rogue'; })();
+// the Guardian (shield knight, class 2 of the swordsman, 2026-11-10) plays the swordsman's kit with his own pictures
+const SWL = HERO === 'swordsman' || HERO === 'guardian';
+const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', guardian: 'อัศวินโล่', mage: 'เมจ', archer: 'นักธนู', priest: 'นักบวช'};
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
 let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0;
 // owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู": every screen shows the same piece of the map, FVW x FVH
@@ -1110,13 +1112,13 @@ function newGame() {
 const cam = {x: 0, y: 0};
 // attack: every direction has its own frames; the swing frames (hits) come from the sheet json (widest frames)
 const ATK = {base: 42, hitMs: 85, preMs: 34, cost: 15, push: 8};
-if (HERO === 'swordsman') Object.assign(ATK, {base: 46, hitMs: 100, preMs: 44, cost: 18, push: 10});   // heavier swings
+if (SWL) Object.assign(ATK, {base: 46, hitMs: 100, preMs: 44, cost: 18, push: 10});   // heavier swings
 if (HERO === 'mage' || HERO === 'priest') Object.assign(ATK, {base: 40, hitMs: 80, preMs: 36, cost: 8, push: 0});
 if (HERO === 'archer') Object.assign(ATK, {base: 34, hitMs: 80, preMs: 120, cost: 6, push: 0});   // preMs = the held breath at full draw (pixelfx arrow-shot)   // one shot, the whole body moves           // two staff casts
 function atkPlan(dir, name = 'attack') {
   const ar = animRow(name, dir) || animRow('attack', dir); if (!ar) return null;
   const hits = ar.hits && ar.hits.length ? ar.hits : [4, 9], n = hits.length;
-  const dmg = HERO === 'archer' ? hits.map(() => 16) : HERO === 'swordsman' ? hits.map((_, i) => i === n - 1 ? 34 : 20) : HERO === 'mage' ? hits.map(() => 12) : HERO === 'priest' ? hits.map(() => 11) : n === 1 ? [26] : n === 2 ? [12, 20] : hits.map((_, i) => i === n - 1 ? 15 : 10);
+  const dmg = HERO === 'archer' ? hits.map(() => 16) : SWL ? hits.map((_, i) => i === n - 1 ? 34 : 20) : HERO === 'mage' ? hits.map(() => 12) : HERO === 'priest' ? hits.map(() => 11) : n === 1 ? [26] : n === 2 ? [12, 20] : hits.map((_, i) => i === n - 1 ? 15 : 10);
   const sp = G && (G.p.rage > G.t || G.p.hawk > G.t) ? .72 : 1, ms = [];
   // owner 2026-11-10 "คอมโบ 3" (Ozzbit's combo, our own drawing): the rogue's normal attack is three cuts: the sheet's two
   // swings, then its first swing again as a heavier finisher; fr = the sheet frame shown at each step
@@ -1403,9 +1405,9 @@ const PRY = {mid: '#ffd860', core: '#fff6d0', edge: '#c08a1a', dark: '#5a3a08', 
 const FAITH = {per: 1, max: 4};   // hp back per hit, at most per second
 const ARC = {far: 420, crit: .12, hawk: .4};   // the passive: beyond 420 every arrow crits; base crit chance; hawk eye adds
 function archerCrit(p) { const m = nearestMob(p, 900); return (m && Math.hypot(m.x - p.x, m.y - p.y) > ARC.far) || rnd() < ARC.crit + (p.hawk > G.t ? ARC.hawk : 0); }
-const SKS = HERO === 'priest' ? PRS : HERO === 'archer' ? ARS : HERO === 'swordsman' ? SWS : HERO === 'mage' ? MGS : {1: SK1, 2: SK2, 3: SK3, 4: SK4, 5: SK5, 6: SK6};
-const INST = HERO === 'priest' ? [1, 3, 6] : HERO === 'archer' ? [3, 4] : HERO === 'swordsman' ? [2, 3, 5, 6] : HERO === 'mage' ? [2, 3, 4, 6] : [2, 5, 6];   // go off at once (no aiming)
-const HOLDK = HERO === 'archer' ? [3] : HERO === 'swordsman' ? [2, 3] : HERO === 'rogue' ? [2] : [];                                                  // held down
+const SKS = HERO === 'priest' ? PRS : HERO === 'archer' ? ARS : SWL ? SWS : HERO === 'mage' ? MGS : {1: SK1, 2: SK2, 3: SK3, 4: SK4, 5: SK5, 6: SK6};
+const INST = HERO === 'priest' ? [1, 3, 6] : HERO === 'archer' ? [3, 4] : SWL ? [2, 3, 5, 6] : HERO === 'mage' ? [2, 3, 4, 6] : [2, 5, 6];   // go off at once (no aiming)
+const HOLDK = HERO === 'archer' ? [3] : SWL ? [2, 3] : HERO === 'rogue' ? [2] : [];                                                  // held down
 const ANYS = HERO === 'mage' || HERO === 'archer' || HERO === 'priest' ? ['sk4', 'sk6'] : ['sk5', 'sk6'];                                      // usable from any state
 const HOLD = {k: 0, on: false};
 const holding = k => HOLD.on && HOLD.k === k;
@@ -1457,7 +1459,7 @@ function poisonTick(m, dt) {
   if (rnd() < .6) puff(m.x + (rnd() - .5) * 16, m.y - 20, '#3ec244');
   if (m.hp <= 0) mobDie(m);
 }
-function startSk(p, k) { if (HERO === 'priest') return priestSk(p, k); if (HERO === 'archer') return archerSk(p, k); if (HERO === 'swordsman') return swordSk(p, k); if (HERO === 'mage') return mageSk(p, k);
+function startSk(p, k) { if (HERO === 'priest') return priestSk(p, k); if (HERO === 'archer') return archerSk(p, k); if (SWL) return swordSk(p, k); if (HERO === 'mage') return mageSk(p, k);
   if (k === 5) return startVanish(p); if (k === 6) return startVenom(p); unstealth(p);
   return k === 1 ? startSk1(p) : k === 2 ? startSpin(p) : k === 3 ? startBomb(p) : startFlurry(p); }
 function payFor(p, k) {
@@ -1688,6 +1690,8 @@ const SKICON = {priest: [['pfx_heal_y', .4], ['pfx_skyarrow_y', .35], ['critg', 
   swordsman: [['pfx_fireline', .35], ['pfx_whirl', .3], ['pfx_swcharge', .4], ['cslam', .2], ['parry', .3], ['crage', .3]],
   archer: [['pfx_rapier_k', .62], ['pfx_gbolt_k', .3], ['pfx_chargeshot_k', .42], ['pfx_bombarrow_g', .5], ['pfx_vine_k', .3], ['pfx_starfall_c_k', .55]],
   mage: [['cfire0', .3], ['pfx_orb', .3], ['cnova', .5], ['cblink', .4], ['cmeteor', .3], ['cshield', .3]]};
+for (const T of [SKNAME, SKDESC, SKICON, PASDESC]) if (T.swordsman !== undefined) T.guardian = T.swordsman;
+SKNAME.guardian = ['ฟาดแยกพื้น', 'พายุดาบ', 'ชาร์จฟัน', 'กระโดดทุบ', 'ยกโล่สวน', 'คลั่ง'];
 // level cap 50: the 2nd class comes at level 50 (owner 2026-11-09, not built yet)
 const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 50, SKUPD = .1, SKUPC = .04;
 const SKBASE = {}; for (let k = 1; k <= 6; k++) SKBASE[k] = JSON.parse(JSON.stringify(SKS[k]));
@@ -1778,7 +1782,7 @@ const AUTO = {on: false}; try { AUTO.on = localStorage.getItem('act.auto') === '
 const autoBtn = document.getElementById('autoBtn');
 function setAuto(v) { AUTO.on = v; autoBtn.classList.toggle('on', v); autoBtn.textContent = v ? 'ออโต้ ✓' : 'ออโต้'; try { localStorage.setItem('act.auto', v ? '1' : '0'); } catch (e) {} }
 setAuto(AUTO.on); autoBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setAuto(!AUTO.on); });
-const AUTOR = {archer: 470, mage: 440, priest: 380, swordsman: 110, rogue: 95};   // how close a monster must be
+const AUTOR = {archer: 470, mage: 440, priest: 380, swordsman: 110, guardian: 110, rogue: 95};   // how close a monster must be
 function autoTarget(p) { const R = AUTOR[HERO] || 110; for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.2) < R + (m.r || 0)) return m; return null; }
 document.getElementById('book').addEventListener('pointerdown', e => { if (e.target.id === 'book') openBook(false); });
 
@@ -1915,7 +1919,7 @@ function zapDmg(m, d, col) { if (m.hp <= 0) return; m.hp -= d; m.hit = .12; G.nu
 function heroDmg(m, dmg) {
   const p = G.p; let sty = {};
   if (p.forceCrit === G.t) { sty = {col: '#ffd23c', sz: U + 2, big: true}; pfx('critg', m.x, m.y - 26); }
-  if (HERO === 'swordsman') {
+  if (SWL) {
     if (p.ironT !== G.t) { p.ironT = G.t; p.iron = Math.min(IRON.max, (p.iron || 0) + IRON.per); }
     p.ironHit = G.t;
     if (p.rage > G.t) { dmg = Math.round(dmg * (1 + SWS[6].atk * (p.skl[6] || 1))); if (!sty.col) sty = {col: '#ff7070'}; }
@@ -2007,7 +2011,7 @@ function whirlTick(p, dt, q) {
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.3) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 26, q.draw ? '#b98aff' : '#eafcff', false, true); any = true;
       if (rnd() < .5) { if (!(q.draw && pfx('pfx_dashstrike_v', m.x, m.y - 26, {f0: 13, fn: 22, rot: rnd() * 6.283, life: 9 / 30}))) cutFx(m.x, m.y - 22, 0, 1); } }
     if (any) { G.hs = Math.max(G.hs, .02); G.shake = Math.max(G.shake, 2); } }
-  q.rk -= dt; if (q.rk <= 0) { const sw = false && HERO === 'swordsman' && PFX.pfx_swstorm_r && PFX.pfx_swstorm_r.m,   /* owner "ใส่พายุแดงที่ให้ไป": the pasted storm in its own colours */ wk = sw ? 'pfx_swstorm_r' : q.draw && PFX.pfx_whirl_k ? 'pfx_whirl_k' : PFX.pfx_whirl ? 'pfx_whirl' : 'cwhirl', W = PFX[wk]; if (W && W.m) { q.rk = W.m.n / W.m.fps; G.fx.push({k: 'pfx', key: wk, follow: 1, ox: 0, oy: sw ? 10 : -14, a: sw ? .9 : .95, sc: sw ? .95 : undefined, depth: sw ? undefined : 'b', t: 0, life: q.rk}); } else { q.rk = .32; spinRing(); } }
+  q.rk -= dt; if (q.rk <= 0) { const sw = false && SWL && PFX.pfx_swstorm_r && PFX.pfx_swstorm_r.m,   /* owner "ใส่พายุแดงที่ให้ไป": the pasted storm in its own colours */ wk = sw ? 'pfx_swstorm_r' : q.draw && PFX.pfx_whirl_k ? 'pfx_whirl_k' : PFX.pfx_whirl ? 'pfx_whirl' : 'cwhirl', W = PFX[wk]; if (W && W.m) { q.rk = W.m.n / W.m.fps; G.fx.push({k: 'pfx', key: wk, follow: 1, ox: 0, oy: sw ? 10 : -14, a: sw ? .9 : .95, sc: sw ? .95 : undefined, depth: sw ? undefined : 'b', t: 0, life: q.rk}); } else { q.rk = .32; spinRing(); } }
   if ((!holding(q.k) && G.t - q.t0 > .5) || p.st <= 0 || G.t - q.t0 > S.max) endAct(p);
 }
 function chargeTick(p, dt, q) {
@@ -2731,7 +2735,8 @@ function heroAura(p, front) {
 function hurtPlayer(dmg, fromX, fromY) {
   const p = G.p; if (p.inv > 0 || G.over) return;
   if (p.evade > G.t && rnd() < EVADE.chance) { p.inv = .25; tag(p.x, p.y - 96, 'หลบ!', '#c8f4ff'); for (let i = 0; i < 6; i++) puff(p.x + (rnd() - .5) * 40, p.y - 20 - rnd() * 40, '#e8fbff'); return; }
-  if (HERO === 'swordsman' && p.guard > G.t) { swCounter(p, fromX, fromY); return; }       // parry: no damage, a strike back
+  if (SWL && p.guard > G.t) { swCounter(p, fromX, fromY); return; }       // parry: no damage, a strike back
+  if (HERO === 'guardian') dmg = Math.round(dmg * .75);   // the shield knight takes a quarter less
   if (p.iron > 0) { dmg = Math.round(dmg * .85); const a = Math.min(p.iron, dmg); p.iron -= a; dmg -= a; spark(p.x, p.y - 40, 6, '#c8b090'); }   // rock shield buff: -15% too
   if (p.msh > 0 && p.mshT > G.t) { const a = Math.min(p.msh, dmg); p.msh -= a; dmg -= a; spark(p.x, p.y - 40, 6, '#7af0ff'); if (p.msh <= 0) shieldPop(p); }
   if (dmg <= 0) { p.inv = .35; return; }
@@ -2971,13 +2976,13 @@ function stepPlayer(dt) {
       a.t -= P.ms[a.i]; a.i++;
       if (a.i >= (P.n || P.ar.n)) { p.state = 'idle'; p.a = null; break; }
       const hi = P.hits.indexOf(a.i), fin = a.i === P.last;
-      if (hi >= 0 && !a.done[a.i]) { a.done[a.i] = 1; if (HERO !== 'mage' && HERO !== 'archer') { const [tx2, ty2] = weaponTip(p); parts(tx2, ty2, p.rage > G.t ? 'red' : HERO === 'swordsman' ? 'ice' : 'white', fin ? 8 : 5, {k: 'ln', dir: Math.atan2(DV[p.dir][1], DV[p.dir][0]), spread: 1.4, sp: 360, life: .16}); }
+      if (hi >= 0 && !a.done[a.i]) { a.done[a.i] = 1; if (HERO !== 'mage' && HERO !== 'archer') { const [tx2, ty2] = weaponTip(p); parts(tx2, ty2, p.rage > G.t ? 'red' : SWL ? 'ice' : 'white', fin ? 8 : 5, {k: 'ln', dir: Math.atan2(DV[p.dir][1], DV[p.dir][0]), spread: 1.4, sp: 360, life: .16}); }
         // swordsman normal hits: no extra slash effect (owner "เอาเอฟเฟกต์ตีธรรมดาออก ไม่สวย"); swSlash kept for later
         if (HERO === 'archer') archerShot(p, P.dmg[hi], P.crit);
         else if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
         else if (HERO === 'priest') holyBolt(p, P.dmg[hi], fin);
         else { if (HERO === 'rogue') rogueCres(p, hi, fin);
-          doHit(p, HERO === 'swordsman' ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: fin ? 150 : 170, cone: fin ? 60 : 95, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
+          doHit(p, SWL ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: fin ? 150 : 170, cone: fin ? 60 : 95, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
       if (hi >= 0 || P.hits.includes(a.i + 1)) { p.x += DV[p.dir][0] * ATK.push; p.y += DV[p.dir][1] * ATK.push; }
     }
     if (p.a) {
@@ -3131,7 +3136,7 @@ function step(dt) {
   G.bombs = G.bombs.filter(b => !b.done); stepMShots(dt); stepPShots(dt); stepSeeds(dt);
   for (const l of G.later) { l.t -= dt; if (l.t <= 0 && !l.done) { l.done = 1; l.fn(); } } G.later = G.later.filter(l => !l.done);
   for (const g of G.tags) g.t += dt; G.tags = G.tags.filter(g => g.t < .9);
-  if (HERO === 'swordsman' && G.p.iron > 0 && G.t - (G.p.ironHit || 0) > IRON.keep) G.p.iron = Math.max(0, G.p.iron - IRON.drain * dt);
+  if (SWL && G.p.iron > 0 && G.t - (G.p.ironHit || 0) > IRON.keep) G.p.iron = Math.max(0, G.p.iron - IRON.drain * dt);
   if (G.p.mark && (G.t >= G.p.mark.until || G.p.mark.m.hp <= 0)) G.p.mark = null;
   for (const f of G.fx) { f.t += dt; if (f.k === 'comet' && f.t >= f.life && f.land) { const L = f.land; f.land = null; L(); } if (f.k === 'pt') { stepParts(f, dt); continue; } if (f.mv) { f.x += f.mv[0] * dt; f.y += f.mv[1] * dt; } if (f.dox) { f.ox += f.dox * dt; f.oy += (f.doy || 0) * dt; } if (f.vx !== undefined) { const dm = f.k === 'air' ? .965 : .9; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= dm; f.vy *= dm; } }
   G.fx = G.fx.filter(f => f.t < f.life);   // (an effect with t < 0 waits)
@@ -3527,7 +3532,7 @@ function draw() {
     ctx.strokeText(G.banner.txt, innerWidth / 2, innerHeight * .3); ctx.fillText(G.banner.txt, innerWidth / 2, innerHeight * .3); ctx.globalAlpha = 1; }
 }
 const pasEl = document.getElementById('pas');
-if (HERO === 'swordsman') pasEl.innerHTML = '<b class="ib"><i></i></b><span>เกราะหิน: ตีโดนได้โล่ รับดาเมจน้อยลง</span>';
+if (SWL) pasEl.innerHTML = '<b class="ib"><i></i></b><span>เกราะหิน: ตีโดนได้โล่ รับดาเมจน้อยลง</span>';
 if (HERO === 'archer') pasEl.innerHTML = '<span>ล่าเหยื่อ: ยิงไกลแรงขึ้น ไกลมากคริ</span>';
 if (HERO === 'priest') pasEl.innerHTML = '<span>ศรัทธา: ตีโดนได้เลือดคืน ฮีลแรงขึ้น 20%</span>';
 if (HERO === 'mage') pasEl.innerHTML = '<i class="ef"></i><i class="ei"></i><i class="es"></i><span>ธาตุประสาน</span>';
@@ -3548,7 +3553,7 @@ function hud() { if (!G) return; hudHotbar(); const hp = Math.max(0, G.p.hp), no
   if (hp < HUDL.hp) HUDL.hold = .45; HUDL.hp = hp; if (hp > HUDL.lag) HUDL.lag = hp; else if ((HUDL.hold -= dt) <= 0) HUDL.lag = Math.max(hp, HUDL.lag - 60 * dt);
   hpI.style.width = hp + '%'; hpS.style.width = HUDL.lag + '%'; hpN.textContent = Math.ceil(hp) + ' / 100'; stI.style.width = G.p.st + '%';
   const pc = G.p.pc || 0; PASI.forEach((e, i) => e.classList.toggle('f', i < pc)); if (HERO === 'rogue') pasEl.classList.toggle('rdy', pc === PAS.n - 1); stbEl.classList.toggle('gain', G.t - (G.p.stGain || -9) < .35);
-  if (HERO === 'swordsman') ironI.style.width = ((G.p.iron || 0) / IRON.max * 100).toFixed(1) + '%';
+  if (SWL) ironI.style.width = ((G.p.iron || 0) / IRON.max * 100).toFixed(1) + '%';
   for (let k = 1; k <= 6; k++) { const mk = k === 1 && !!G.p.mark, cd = mk ? 0 : Math.max(0, (G.p.cd[k] || 0) - G.t) / SKS[k].cd;
     for (const b of SKB[k - 1]) { b.lastChild.style.height = (cd * 100).toFixed(1) + '%'; b.classList.toggle('blink', mk);
       b.classList.toggle('on5', k === 5 && (G.p.stealth > G.t || G.p.guard > G.t)); b.classList.toggle('on6', k === 6 && (G.p.venom > G.t || G.p.rage > G.t || (G.p.msh > 0 && G.p.mshT > G.t)));
@@ -3565,13 +3570,14 @@ const HDESC = {rogue: 'ตี 2 ฮิต ครั้งที่ 4 คริ �
   mage: 'ลูกไฟ · สายฟ้าโซ่ · วงน้ำแข็ง · วาร์ปแทนกลิ้ง · อุกกาบาต · โล่เวท',
   archer: 'ยิงไกลยิ่งแรง · ยิงรัว · ลูกพลังเขียว · ชาร์จง้าง · ถอยยิงธนูระเบิด · ธนูหนาม · ฝนดาว',
   priest: 'ยิงลูกแสง ตีโดนได้เลือดคืน · ฟื้นฟู · เสาแสง (มอนรับดาเมจเพิ่ม) · พรนักรบ · คำสาป · ปาฏิหาริย์ ตายแล้วฟื้น'};
+HROLE.guardian = 'ประชิด · ทนทานที่สุด · โล่'; HDESC.guardian = 'อัศวินโล่ คลาส 2 ของนักดาบ: รับดาเมจน้อยลง 25% · ฟัน 2 ฮิต · ใช้สกิลชุดเดียวกับนักดาบ (ยกโล่สวน = กันแล้วฟันคืน)'; if (HELP.swordsman) HELP.guardian = HELP.swordsman;
 const MAPN = {town: 'เมืองไทย', west: 'ทุ่งหญ้า', thai: 'ทุ่งนาเมืองไทย', jungle: 'ป่าเมืองไทย'};
 const MENU = {h: HERO, m: MAP, cards: {}, t: 0};
 { const pk = document.getElementById('pick'), ds = document.getElementById('hdesc'), mp = document.getElementById('mpick');
   const show = () => { ds.innerHTML = '<b>' + HNAME[MENU.h] + '</b> · ' + HROLE[MENU.h] + '<p>' + HDESC[MENU.h] + '</p>';
     for (const [h, c] of Object.entries(MENU.cards)) c.b.classList.toggle('on', h === MENU.h);
     for (const b of mp.querySelectorAll('button')) b.classList.toggle('on', b.dataset.m === MENU.m); };
-  for (const h of ['rogue', 'swordsman', 'mage', 'archer', 'priest']) { const b = document.createElement('button'); b.className = 'hc';
+  for (const h of ['rogue', 'swordsman', 'guardian', 'mage', 'archer', 'priest']) { const b = document.createElement('button'); b.className = 'hc';
     const c = document.createElement('canvas'); c.width = 80; c.height = 100; b.appendChild(c); b.insertAdjacentHTML('beforeend', '<b>' + HNAME[h] + '</b><i>' + HROLE[h].split(' · ')[0] + '</i>');
     const im = new Image(); im.onload = () => { const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(im, 116 + 18, 6, 80, 100, 0, 0, 80, 100); }; im.src = 'art/action/' + h + '_still.png';
     b.onclick = () => { MENU.h = h; show(); }; b.ondblclick = () => { MENU.h = h; document.getElementById('go').click(); };
