@@ -37,6 +37,7 @@ const S128 = HQ.get('s') !== '64', FIG = S128 ? 113 : 55, DENS = FIG / 2;   // t
 // so he looks smaller in a bigger world; the hero and the wolves keep their size. ?ms=1 = the same pixel size as the hero
 // only the big things (trees, houses, tents, mills, statues) get bigger; small props, grass and flowers stay at the hero's pixel size
 const BIGP = /oak|pine|house|cottage|tent|watermill|flagpole|statue|pillar|tower|mill/;
+const HS = +HQ.get('hs') || 1;   // owner "อยากเห็นตัวละครใหญ่กว่านี้": ?hs=1.5 / 2 draws the hero bigger than the world scale
 const MS = S128 ? (+HQ.get("ms") || 1.5) : 1, MDENS = DENS / MS;
 const L = S128 ? Math.round(2 * MS) : 1;                             // layout scale: at true 128 scale the trees are 5-6x the hero, so the whole map is twice as big
 const W = 72 * L, H = 52 * L;                       // tiles; the hero is ~2 tiles tall
@@ -332,7 +333,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
     const v = new THREE.Vector3(hero.x, gy, hero.z).project(cam), fx = (v.x + 1) / 2 * DW, fy = (v.y + 1) / 2 * DH;
     const dist = cam.position.distanceTo(new THREE.Vector3(hero.x, gy, hero.z)), ppu = DH / 2 / Math.tan(cam.fov * Math.PI / 360) / dist;
     const want = ppu * 2.0, si = S128 && want >= 84 ? 0 : 1; if (si !== HSET && SETS[si].m) { useSet(si); drawHero(0); }   // close: 128 sheet, far: half sheet
-    const k = Math.max(1, Math.round(want / SETS[HSET].fig));   // the figure is ~55 art px; whole screen px per art px, nearest to the true size
+    const k = Math.max(1, Math.round(want * HS / SETS[HSET].fig));   // HS: the hero drawn bigger than his world size (chunky hero)   // the figure is ~55 art px; whole screen px per art px, nearest to the true size
     hmesh.scale.set(CS * k / ppu, CS * k / ppu, 1);
     ocam.right = DW; ocam.top = DH; ocam.updateProjectionMatrix(); omesh.scale.set(CS * k, CS * k, 1);
     omesh.position.set(Math.round(fx - HM.fx * k), Math.round(fy - (CS - HM.fy) * k), 0);
