@@ -10,9 +10,12 @@ A=$D/animations
 args=(attack=attack run=run idle=idle roll=roll hurt=hurt death=death)
 # the archer: a crit shot row, and the hurt / death moves came in two groups (her queue was restarted)
 [ "$K" = archer ] && args=(attack=attack crit=crit run=run idle=idle roll=roll hurt=hurt,hurt-ba62d0b0 death=death,death-e16f77cc)
+# keep only the moves that have arrived (a hero whose queue is still running can be tried early)
+keep=(); for x in "${args[@]}"; do f=${x#*=}; [ -d "$A/${f%%,*}" ] && keep+=("$x"); done
 alias="south-east:east,south-west:east~,west:east~"
-[ "$K" = archer ] && alias="$alias,crit/south-east:east,crit/south-west:east~,crit/west:east~"
-for m in leap guard charge cast_up staff_slam; do
+[ "$K" = archer ] && alias="south-west:south-east~,west:east~,crit/south-west:south-east~,crit/west:east~"   # her own south-east shots (2026-11-09)
+args=(); for x in "${keep[@]}"; do args+=("$x"); done
+for m in leap guard charge cast_up staff_slam pray bless; do
   [ -d $A/$m ] || continue
   args+=($m=$m); alias="$alias,$m/south-east:east,$m/south-west:east~,$m/west:east~"
 done
@@ -22,7 +25,10 @@ done
 case $K in
   swordsman) hits="east:3,9;south:4,10;north-west:4,9;north:4,9;north-east:2,7;leap/east:7;leap/south:4;leap/north-west:7;leap/north:6";;
   mage) hits="east:4,12;south:5,7;north-west:4,12;north:5,10;north-east:4,11";;
-  archer) hits="east:10;south:11;north-west:9;north:10;north-east:11;crit/east:10;crit/south:11;crit/north-west:12;crit/north:11;crit/north-east:10";;
+  priest) hits="";;
+  archer) hits="east:10;south-east:10;crit/south-east:10;south:11;north-west:9;north:10;north-east:11;crit/east:10;crit/south:11;crit/north-west:12;crit/north:11;crit/north-east:10";;
 esac
 extra=(); [ "$K" = archer ] && extra=(--detach=attack,crit)   # her own arrow only (the drawn one flew off its own way)
-python tools/art/act_sheet.py $D art/action/$K "${args[@]}" "--alias=$alias" "--hits=$hits" --arc=air --scale=2/3 "${extra[@]}" "$@"
+# N128=1: full PixelLab size (no 2/3 shrink) into art/action/n128/, drawn at whole screen pixels by action.html?n128=1
+OUT=art/action/$K; SC=--scale=2/3; [ -n "$N128" ] && { mkdir -p art/action/n128; OUT=art/action/n128/$K; SC=; }
+python3 tools/art/act_sheet.py $D $OUT "${args[@]}" "--alias=$alias" "--hits=$hits" --arc=air $SC "${extra[@]}" "$@"

@@ -34,6 +34,15 @@ animation, skills fire instantly as big effects, telegraph rings, a dodge button
 
 Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The owner switches to another key next.
 
+| date | what | id | cost | result |
+|---|---|---|---|---|
+| 2026-11-09 | create_character v3 "Berserker 128" (cloud session, this same trial account; owner "เอาให้หมดก่อน" = use this account up first): reference = `berserker/px128/south.png`, direction_images east + north (ours), PixelLab drew the other 5 | 0e6da505-2c74-479e-bb52-1b6c01659dfe | 2 (+5 daily bonus) | ✅ 8 views good (`berserker/pl_dl/Idle/rotations/`, `pl_rot_preview.png`): south-east holds the sword upright behind the right shoulder (foreshortened) |
+| 2026-11-09 | 3 attacks, PixMiniMax 8 frames, south-east only (`berserker/jobs_attack.json` via `pl_queue.py`): `bz_sweep` horizontal sweep · `bz_spin` 360 spin (Q's second press) · `bz_slam` overhead slam into the ground (R, E's third cut) | sweep dc5cf88c-993d-4ed7-a65c-cb2f0bee0b1a · spin cea10df2-939a-437d-985c-b016ba8cede3 · slam 020e63c9-d4c9-4312-938a-3ae82057d1c8 | 3 | ✅ all good (`attacks_se.gif`, canvas 172): sweep = wind-up 1, a big black-red arc PixelLab drew itself on 2, follow-through 3–6, back on the shoulder 7–8 (9 frames); spin = draw back 1, side 2, back view 3, other side 4, front 5, stance 6–7 with blade arcs on 2–3 (8 frames); slam = raise overhead 1–3, blade into the ground with cracks on 4–5, pull out 6–7, shoulder 8 (his helm reads rounder while he looks down, 4–7). Account empty after this (43.75 used = 40 + the 5 daily bonus) |
+| 2026-11-10 | create_character v3 "Guardian 128" (cloud, trial account, owner "ทำพวก pixlab ... ก่อน"): reference = `guardian/px128/south.png` (turnaround front), direction_images east = `side_right.png` + north = turnaround back (`white_cut --no-ring` → `join_views.py` → `turn128.py 128 32`) | a468e926-b5aa-4692-aa27-15b00a3c67c2 | 2 | queued (~20 min wait on the trial account) |
+| 2026-11-10 | 3 attacks, PixMiniMax 8 frames, south-east (`guardian/jobs_attack.json` via `pl_queue.py`, run after the character): `gd_slash` forward slash · `gd_bash` shield bash · `gd_overhead` overhead chop | (see `guardian/pl_dl/queue.log`) | 3 | running |
+| 2026-11-10 | PAID account (Apprentice, cloud key fixed): imports `Guardian 128 paid` 4577584b… + `Berserker 128 paid` eac57807… (0.25 each, our 8 rotations) and their base moves (`jobs_base.json` 36 each + Berserker `jobs_skills.json` chain) → `<hero>/pl_dl_paid/` | see queue.log | ~73 | running |
+| 2026-11-10 | VFX: free `vfx_workbench` spin_slash round the swordsman (`fx_raw/sword_spin_e`, My effects 7c6eb20c…) and the PAID VFX Creator over REST `POST /v2/vfx` (lite, sprite = swordsman south still): "sword whirlwind" loop 12 f 160 px (`fx_raw/sword_whirlwind_e`, effect 22e7ce2c…) | | 0 + 3 | owner "ไม่สวย เก็บเครดิตไว้ ทำท่าตัวละครดีกว่า": no more paid VFX, credits go to character moves |
+
 ### Second PixelLab account (owner's other key, from 2026-11-08)
 The app kept the old key until restarted, so jobs go through `tools/pl_rpc.py` (HTTP JSON-RPC with the key from the
 user env var, never printed; `--upload` for images). Balance at start: 40 + 20 daily bonus (refills +5 a night, up to 20).
@@ -299,6 +308,196 @@ phone) + attack + roll; about 8 skills per class to unlock up to level 50, the p
   Monsters: `docs/codex/action/MOBS.md` (15: forest/ruins 7 + treant boss, Thai map 6 folklore + Chalawan boss; one
   picture each, 1536x1024, style = the swordsman sheet `refs/00_STYLE_hero.png`), Codex delivers on `codex/mobs` into
   `art/incoming/mobs/`.
+- **Priestess (5th hero, `?hero=priest`)** (owner: "นักบวช มีหน้าที่บัพ ดีบัพ เกมส์เรายาแพง หายาก ต้องการให้ทุกคลาสมีที่ยืน"; GPT
+  turnaround from the archer style picture → `art/incoming/action/priest/`, `turn128.py` after cutting 9 white pockets
+  between the staff and her body; PixelLab character f1767069-1186-47bb-8d7f-af569369a329 "Sun Priestess 128" (v3 import,
+  ~2 gen); 49 move jobs (`jobs_all.json`: idle/run/roll/hurt 8 dirs, attack 5, death 4, pray + bless 4 dirs) run by
+  pl_queue in the background with `tools/keep_awake.py` holding the PC awake; `hero_build.sh priest` builds whatever has
+  arrived). Role: survives without potions. Basic attack = gold holy bolt (`holyBolt`, homing, medium range), passive
+  ศรัทธา = every hit heals 1 (max 4/s), her heals +20% (`healP`). `PRS`: Q ฟื้นฟู heal 25 + 15 over 4 s (pray move), E
+  ทัณฑ์สวรรค์ gold sky pillar (`pfx_skyarrow_y`), 26 dmg and frail 5 s (+25% damage taken, `m.frail`), R พรนักรบ +30%
+  damage 8 s (bless move, `p.bless`), F ก้าวแสง short blink leaving a healing patch (`G.zones`), Z คำสาป slow 40% + hits
+  30% weaker 6 s (`m.curse`, purple rune ring), X ปาฏิหาริย์ 10 s: a killing blow leaves her at 40, else heal 30 at the
+  end (`p.mir`). Gold / green effect copies: `pfx_skyarrow_y`, `pfx_dashstrike_y`, `pfx_heal_y` (fx_tint.py).
+- **Map pass** (owner asleep, 30/100: "แมพให้มันไม่รก ดูสภาพแมพก่อนใส่ของ ใส่กองทับกันมั่ว ... น้ำให้กว้างๆ ... บ้านติดกันเกิน ... ตัดไม่หมด
+  ... วางตำแหน่งคลายกัน ทำแบบแผน ... มอนให้เยอะกว่านี้"): every prop picture knows its opaque box (`GPROP[n].bbA/bbB`,
+  `gp().bb`); `add(s, x, y, o)` refuses a spot whose box overlaps anything already placed by more than 5% (10% with soft
+  props, 30% between soft ones) or whose base stands on a road, the bridge or water (`o.water` for stilt houses, `o.force`
+  for walls, gates, forts, signs), and returns whether it placed. Planned buildings use `put` with a spiral of nearby
+  spots (`NUDGE`), so the plan holds without piles. Fewer filler props on every map (decoration counts about halved),
+  the Thai village is a plan (a slot every 460 px on each bank: a stilt house half on the bank in every other slot, a
+  land house behind, one pot / basket / banana), the ruins' planned pieces go down before the rocks. Rivers wider
+  (Thai SWC 190, forest 92). Thai city: side walls get Codex's side-view gates (`t_gate_l` / `_r`, from
+  `art/incoming/maps/thai_gate_4view.png` via props_px at 380 px), corner forts lost their outer wing
+  (`t_fort_wl` / `_wr`, the wing stuck out past the side wall). Plants cleaned with `tools/art/prop_clean.py --veg`
+  (white pockets between branches cut, the dull olive band inside the outline darkened). Monster camps:
+  `spawnCamps` puts 12 groups of 3-5 (two kinds each) round the map, they mill about until she comes within 330 or
+  hits one, refill 70 s after being cleared when she is far; waves are bigger (5 + 3 per wave, up to 24) and start when
+  no monster is chasing her.
+- **Archer pass 2** (owner asleep: "สกิลนักธนูไม่สวย ปรับโดนให้สีเขียว ให้มีระบบออโต้ ตีธรรมดาให้ลูกตรง"): her tone is green now
+  (`ACY`, `HEX.leaf`/`RGB.leaf`); green copies of the effect sheets by `tools/art/fx_tint.py <src> <dst> <ramp> [pad glow gamma]`
+  (`pfx_skyarrow_g`, `pfx_starfall_g` from the haze-free `_c`, `pfx_dashstrike_g`); every arrow hit plays Dash Strike's hit
+  frames in green along the arrow, arrows bigger with a ring at the bow; split arrow = 5 arrows plunging straight out of the
+  sky onto the monsters; the charged beam flashes on each monster. Straight shots: `faceDir(name, dx, dy)` picks the
+  direction whose pose (`rowFacing`, follows aliases and mirrors) points closest to the target, so a down-right target no
+  longer shows the side pose; her real south-east attack + crit (4 gen) are queued after the priestess
+  (`art/incoming/action/archer/jobs_se.json`, log `queue_se.log`; rebuild her sheets with hero_build.sh and drop the
+  south-east / south-west aliases for attack + crit when they land). Auto attack for every hero: button ออโต้ (T),
+  saved in `act.auto`; while standing still it attacks whenever a monster is within `AUTOR[HERO]`.
+- **Afternoon pass 2026-11-09** (owner woke up: "ทำไมหยุด"; the overnight queues had finished at 14:16 and pushed the
+  priestess's full sheets + the archer's own south-east shot; Codex had stopped to report, told to go on): Japan + mummy +
+  scarab move frames in (`mob_frames.py`). Thai map: rice paddies painted in code (`paddyPx`: flooded cells, rows of green
+  rice 7 px deep with 2 px of sky-tinted water, a dark drop under each grassy dike, a dike all round; was the brown
+  `reeds` swamp square), ruin floor moss = small round patches per 44×36 cell (`hash2`; was long diagonal streaks).
+  Archer effects on green grass: `PRIM` = a dark rim (the sheet grown 2 px, `rimOf`) drawn under `pfx_dashstrike_g`,
+  `pfx_skyarrow_g`, `pfx_starfall_g` (.22, its soft glow made a dark haze at more) and `croots_g`; arrows get a dark
+  underline; root shot = green vines `fx/croots_g.png` (fx_tint of croots). **Start menu** (the first thing seen was a dark
+  box on black): the real map pans behind it (`G.menu`, `menuCam`, only `stepAmbient` runs, the hero is not drawn),
+  logo LAST SIGNAL / สัญญาณสุดท้าย, five hero cards (south-east still, the chosen one plays its idle in `menuTick`), role
+  + kit line (`HROLE`, `HDESC`), start map (`MAPN`), เริ่มเล่น; another hero / map reloads with `&auto=1`, which starts at
+  once. **HUD**: framed panel with the hero's face (front view's head, `#hpor`), level badge, HP number + a pale trail that
+  holds .45 s after a hit then drains (`HUDL`), banded bars; score in the same panel style; boss bar clear of the panel;
+  defeat screen with wave / kills / level, เล่นใหม่ / เลือกตัวละคร. Trees fade when a fighting monster stands behind them
+  too. Camps keep `cityD` ≥ 1.7 (were right against the wall). Tests: `?test=view&camp=1&n=<steps>` (next to the nearest
+  camp, auto on). The Codex wall kit (`thai_wall_kit.png`, big boxy pieces) was looked at and not used: the code walls
+  read better at game scale.
+- **Prop background leftovers** (owner 2026-11-09, a crop of the stilt house: "ดูด้วยตายังเห็นเลยตัดยังไง"): the cut kept the
+  GPT background as one flat cream colour (a different shade per picture, e.g. v_stilt 254,250,213) between stilts / rails /
+  under floors, and a 1-2 px cream line between props_px's added outline (29,26,34) and the picture's own edge (the pale
+  dots). `tools/art/prop_bgclean.py`: A. holes = a flat pale colour patch ≥ 16 px, still ≥ 4 px after 3 erosions (roof
+  ridges and beams are thinner), ≥ 40% of its 2 px ring dark outline, and only the picture's main hole colour (the
+  grindstone in t_smithy is the same cream but ringed less) → see-through; B. fringe = light pixels next to the added
+  outline in a mostly non-light neighbourhood → removed (twice) and the 1 px outline put back. Holes only on t_granary
+  t_library t_palace t_smithy t_teahouse t_twin v_boatshed v_fishhut v_stilt cart oxcart (the western houses' cream
+  plaster walls read as holes), `--noholes` (fringe only) on every other prop. Props no longer stand on the rice paddies
+  (`groundOk` rejects TK 8).
+  Owner: "รอบนี้ก็ยังไม่หมด" → cleaning the reduced pictures could not tell the leftovers from real light paint, so every
+  prop is now rebuilt from its full-size sheet with the background cleaned BEFORE the colour reduction: Thai sets in
+  `thai_props.py` (`clean_holes`: enclosed near-white patches ≥ 20 px cut except in the white-walled items `WHITE_OK`, the
+  near-white line on every cut edge, and GPT's antialias ring outside its own dark outline = an edge pixel 35+ lighter than
+  the darkest pixel just inside it), the other sets in `tools/art/rebuild_props.py` (same clean, enclosed white only on
+  nature + ruins; each item rebuilt at its current height). `prop_bgclean.py` is no longer needed.
+- **Berserker (class 2 of the swordsman) design kept** (owner 2026-11-09 "เอาแบบนี้เก็บไว้ก่อน"): GPT turnaround from my prompt
+  (black full plate, spiked pauldrons, horned helm with red eyes, torn red cape + tabard, chains, huge chipped greatsword with
+  red cracks on the right shoulder) → `art/incoming/action/berserker/turnaround_gpt.png` (1536x1024). The first prompt's
+  wolf-skull helm read like Guts (Berserk); this run has a horned helm instead. Before PixelLab: the middle view is a 3/4
+  view, not a true right profile, so the east view needs a redo or a fix; the owner has not given the PixelLab go.
+- **Guardian (shield knight, class 2 of the swordsman, the Berserker's opposite) design kept** (owner 2026-11-09, "เอาเท่ๆ" prompt):
+  `art/incoming/action/guardian/turnaround_gpt.png` (1536x1024, figures ~710 px; Berserker ~645 px): dark steel + gold angular plate,
+  winged helm with a glowing V visor, navy tabard + torn cape, rune longsword, kite shield with a gold lion. Both are big enough
+  for PixelLab (128-256 canvas). Both middle views are 3/4 views, not true profiles: a side-view redo (one picture) is needed
+  before PixelLab.
+  Guardian side redo in: `art/incoming/action/guardian/side_right.png` (true right profile; the sword is in the near = LEFT hand and
+  the shield on the far arm, the front view has them the other way round; fine for one diagonal + mirror). Berserker side redo in: `art/incoming/action/berserker/side_right.png` (true right profile, blade over the shoulder pointing back, glowing eye). Both ready for PixelLab (waiting for the owner's go).
+  Berserker v2 (owner: the sword was too small, then GPT kept drawing it bent; fixed by a new chat, the sword drawn alone first, then one view at a time with it attached): `front_v2.png` (straight sword as long as he is tall, one red rune line). `side_v2.png` (true right profile; owner "ดาบสั้น": the blade stretched by 130 px in code (a plain stretch between the rune stars repeated, the tip moved out) so it matches the front view; GPT original kept as `side_v2_gpt.png`). `back_v2.png` (from behind, the sword level across the shoulders in the right hand). Berserker v2 complete: front_v2 / side_v2 / back_v2 are the ones to use for PixelLab (the first turnaround is superseded).
+- **Thai town hub** (owner 2026-11-09 "ฉากเมือง ทำแค่เมือง ไม่ต้องมีมอน เอาไว้รับเควส ละก็วาร์ป ... ใช้กำแพงเป็นแมพเลย ไม่ต้องกว้างมาก"): `?map=town`
+  (`TOWN`, TH ground + `thaiProps`, so the walled city of the Thai map is reused): she can only move inside the walls
+  (`cityD` > .86 pushes her back except on the road at the gates), the camera stays on the city, no camps / waves
+  (`ROSTER.town` = []), the wave counter is hidden (`.town`). Gates: west → `west`, east → `jungle` (`TOWNX`); the west field's
+  east exit and the jungle's west exit now lead to the town. Warp circle (`drawTown`, `townTick`/`townUI`: stand on it → a
+  list `WARPS` → `travel`) and a quest board (noticeboard prop + "ยังไม่มีเควส"; quests not built). The old `thai` map
+  (city + fields) is now named ทุ่งนาเมืองไทย and reached by the warp. Next: the owner's plan of 4 maps round each town
+  (north / south / east with the boss), GPT houses made to be placed per direction, the quest system.
+- **Frost wolf moves in** (owner made it with GPT from the pack `frost_wolf_pack.zip`, 2026-11-09): their zip had white and see-through 3x2 sheets; `white_cut` punched holes in its white fur, so the see-through sheets were put in `anim_cut/` directly (newer than the source, so `mob_frames.py` uses them as they are) → `art/action/mobs/frost_wolf.png`. For white monsters, ask for / use see-through sheets.
+- **Swordsman R release blast** (owner 2026-11-09 "ปรับสีให้เข้าโทน ละเอาไว้ท่าชาร์จ"; pasted 6x5 strike sheet, glow flattened into white / pink / red bands, raw `art/incoming/pfx/sword-charge-sheet.png`): only its grey smoke + rocks survive the cut (`tools/art/sword_charge_fx.py` → `fx/pfx_swcharge.png`, the band seams read as stripes); `chargeBlast(p, lv)` plays it from frame 6 on the ground 70 px in front, with a code red-orange flash (`sbang` with `red`), two rings, sparks, dirt and landing dust, bigger per level (replaces the Frostwindz sweep there).
+- **Swordsman normal combo = the owner's orange crescents** (2026-11-09 "ท่าฟันเอาให้เข้ากับฟันธรรมดา"; pasted 6x5 sheet with flattened glow bands, raw `art/incoming/pfx/sword-slash-sheet.png`): `tools/art/sword_slash_fx.py` keeps the thin bright crescent and the dark debris at full, the band seams faint → `fx/pfx_swslash.png`; `swSlash(p, i)` plays slash 1 / 2 / 3 (frames 0-9, 10-17, 18-29) on combo hits 1 / 2 / finisher, 22 px in front of him, following him. A clean GIF of it would look better. Owner "เอาเอฟเฟกต์ตีธรรมดาออก ไม่สวย" → off again (the call is commented out).
+- **Archer E = the owner's green bolt** (2026-11-09 "สกิลนี้แทน สายฟ้า เปลี่ยนโทนสีด้วย"; pasted 6x6 sheet 3408x2016, glow flattened into cyan / green / white bands, raw `art/incoming/pfx/green-bolt-sheet.png`): `tools/art/green_bolt_fx.py` keeps the white-hot cores (orb, bolt, impact flash, not the big white patches at the cell edges) and the dark smoke, archer look (pale core + neon rim, ink smoke) → `fx/pfx_gbolt_k.png`; then the owner sent the same effect as a clean GIF (`art/incoming/pfx/green-bolt.gif`, see-through, real glow) → `tools/art/green_bolt_gif.py` (half size, soft dark rim) replaces it. `javelin()` plays it turned from her bow to the spot (scale = distance / 148, .7–1.7), damage at .12 s. Renamed ลูกพลังเขียว.
+- **Star rain = one pass, longer** (owner "สกิล4 คือฝนดาวตก ทิศสกิลมันแปลก ... ให้มันมารอบเดียวแต่ยาวขึ้น"; the owner counts the star rain as skill 4 — I first changed the leap back by mistake, undone): one copy of `pfx_starfall_c_k` (the mirrored second copy made the streaks fall two ways), played at `SF.fps` 18 instead of 30 (~3.5 s), the 10 ticks spread over the landing part, the closing blast at the end.
+- **Archer F bomb blast in neon green** (owner 2026-11-09 "สกิล4 นักธนู เปลี่ยนสีเขียวนีออน"): `fx_tint.py pfx_bombarrow pfx_bombarrow_g 021208,0a3a16,1fbf4a,46ff7d,d8ffe0` (the black + neon `archer_fx` copy turned the fireball into a flat blob), dark rim via `PRIM`, ring / hit colour / fuse spark `ACK.neon`.
+- **Swordsman red slashes** (owner's zip 2026-11-09 "Pixel Art Animations - Warrior FREE" by Frostwindz, itch.io; licence: use in
+  games, modify, NO redistribution, so the zip / frames are not in this public repo, only the cut sheets): `tools/art/warrior_vfx.py
+  <unzipped>` → `fx/wvfx1..5.png` (128 px, facing right). `wSlash(p, v, sc)` plays one in front of him, turned to his facing:
+  normal combo hit 1 = VFX1 double slash, hit 2 = VFX3 thrust, finisher = VFX2 big crescent; R release = VFX4 sweep (bigger
+  per level); Z counter = VFX5 rising burst. Owner "ตีธรรมดาเอาออก มันไกลไป": off on normal hits again (his old cutFx back); then "ฟันธรรมดามีคลื่นออกมา ยังไม่เอาออก" = the flying ice crescent `swordArc` (moves 260 px out): no longer on normal swings (R / Z keep it). His blue `cutFx` streaks on hit are off (the pale cyan arcs drawn inside his
+  attack frames stay).
+- **Swordsman E = the owner's sword storm** (2026-11-09 "พายุดาบ เปลี่ยนโทนส้ม นีออนดำ แบบพวกมีด ธนู"; pasted 9x8 sheet 5436x5440 on
+  black, its glow flattened into solid red / yellow / orange / pink bands, raw `art/incoming/pfx/sword-storm-sheet.png`):
+  `tools/art/sword_storm_fx.py` drops the band colours (and 4 px round them), keeps the dark smoke + textured streaks, black
+  ink + neon orange rim + orange glow → `fx/pfx_swstorm_k.png` (72 frames 302x340). `whirlTick` played it round him; owner "พายุไม่เวิร์ค เปลี่ยนกลับใช้ของเดิม" → back to the old whirl ring; then "ใส่พายุแดงที่ให้ไป" + the same sheet again → `tools/art/sword_storm_red.py` = the sheet in its own colours (black → see-through, the flat glow bands at alpha 150 so he shows inside) → `fx/pfx_swstorm_r.png`; owner "เอาสีแดงออกไว้ก่อน" → off again (`sw = false`), old whirl ring.
+  Found on the way: `swordSk` k 2 paid the cost and then `startWhirl` paid again, so E never spun; the first payment is gone.
+- **Dash + landing dust** (owner 2026-11-09 "เสริมพวก เดส กระโดด", two pasted sheets → `fx/pfx_dustdash.png` 24 frames, puff at
+  50,64 with a ~380 px trail to the right; `fx/pfx_dustland.png` 19 frames, anchor on the ground 84,140): `dashDust` at the start of
+  every roll and the archer's leap back (turned to the way she goes), `landDust` at the end of a roll, the archer's landing, the
+  swordsman's leap slam and a thrown monster landing (sized by its radius).
+- **Skill effect prompts for the owner** (2026-11-09 "เอาพรอม gpt มา ... ฉันสั่งเอง", chose skill effects): `docs/fx-prompts.html`
+  (built by `tools/art/fx_prompts.py`, one card + copy button per skill still on an old or borrowed effect: swordsman E R F Z X,
+  rogue R Z X, mage all six, priest all six; the archer, swordsman Q and rogue F are left out). Every prompt: ONE effect, a
+  6x4 grid (4x4 for loops) of equal square cells, the layout the game needs (`LAYOUT`: shot left → right, ground centred, sky,
+  round the hero, swing to the right), the hero tone (`TONE`), transparent background, no characters / text. Results come back
+  as files → `pfx_paste.py`; mark finished ones in `DONE`.
+- **Hit feel: knockback + impact** (owner 2026-11-09 "ทำเอฟเฟคโดนตีให้ดี กระเด็น กระแทก"): `shove(m, ux, uy, kb, big)` from `hitMob`
+  and the melee `doHit`: speed 7 x kb (9 x when the hit kills), capped at 420 px/s (a blast right under one had thrown it 150 px);
+  kb 40+ or a kill throws a light monster off its feet (`m.kz` height, `m.kvz`, gravity 1200, no walking while in the air, less
+  friction in the air, lands with dust + a ring), bosses and stout ones only slide; dying bodies keep sliding / flying and still
+  stop at walls and water; skid dust while sliding fast; every hit an impact star (`hstar`, `drawHitStar`) and a kick of dust,
+  big hits / kills add hit-stop + shake; the hit flash is solid white for its first 50 ms.
+- **One view for every screen** (owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู", replaces the phone zoom
+  below): every screen shows the same `FVW` x `FVH` = 1266 x 585 world px (the 2x phone view). `onResize`: `S` = whole canvas
+  px per world px (ceil of fit x DPR), `Q` = canvas px per CSS px (= DPR on a 3x phone, finer elsewhere, then the browser
+  scales the canvas down smoothly: `image-rendering` auto unless Q = DPR), `OX`/`OY` = where the view starts; other screen
+  shapes get dark bars (PC 16:9 thin top/bottom, 4:3 tablets big ones). Mouse → world = (mouse * Q - OX) / S + cam; the
+  screen-space overlay uses `setTransform(Q)`. Owner then: "ไม่ได้บอกคมเท่ากัน หมายถึงระยะมองเห็นเท่ากัน" → every screen draws at its
+  own pixels (`Q` = DPR, `S` = fit x DPR, a whole number on a 3x phone, 1.33 on a 2x phone, 1.52 on a 1080p PC; the world
+  offset is rounded to whole pixels); `?sharp=1` brings back the finer whole-S drawing scaled down by the browser.
+- **Star rain v3** (owner "ทำไมเป็นแท่ง ในต้นแบบมันไม่ได้เป็นแบบนั้น"): the light pillars and code comets are gone; two copies of the
+  original Starfall Barrage sheet in black + neon (`pfx_starfall_c_k` from the haze-free copy: `archer_fx.py` options `w_min`
+  = near-white only, `thin` = strokes eroded so the glow is not a fat black stake, `hollow` = big shapes see-through inside a
+  black band) play over the circle from frame 28 (the second mirrored, .36 s later), 10 ticks while they land, a bigger copy
+  in the middle and the closing blast. The dark rune circle stays.
+- **Phone zoom** (owner 2026-11-09 "เอาซูม2เท่าเลย" after side-by-side shots of 1x and 2x on a 3x phone; asked first whether the
+  heroes could go back to the 128 size or become painted: no, PixelLab frames cannot be turned into paintings, only redrawn):
+  `onResize` picks, on touch screens smaller than 600 CSS px, the whole-number `S` that brings the view closest to 600 world px
+  tall (3x phone 1170 → 2x = 585; 2.75x → 2x = 523; 2x phone 780 stays 1x); the PC keeps `floor(dh / 950)`; `?zoom=N` forces
+  one. The touch skill buttons are a little see-through (opacity .84) since more of the fight sits under them.
+- **Swordsman Q = Earthsplitter Cleave** (owner 2026-11-09 "Earthsplitter Cleave ให้ดาบแทนท่าเก่า", pasted sheet →
+  `fx/pfx_earthsplit.png`, 42 frames, anchor = the start of the ground crack 70,219, the crack runs ~155 px right): `groundSplit`
+  pushes an `esplit` fx (`drawEarthSplit`): anchored in front of him, turned to the aim (mirrored for the left), stretched to
+  the crack length (sx = L/155, sy 1.3), starting at frame 3 so the red arc lands at once; each monster on the line is hit
+  when the fire reaches it (.04 + 0.4 x its place along the line). The Codex crack + `gslam` stay as the fallback.
+- **Archer kit from the owner's pasted sheets + the rogue's look** (owner 2026-11-09, five pictures pasted in chat, pulled out of the
+  session log as base64; raw copies in `art/incoming/pfx/`: `charge-shot-sheet.webp`, `bomb-arrow-sheet.webp`,
+  `rapier-flurry-sheet.png`, `thorn-vine-sheet.webp`, `earthsplitter-cleave-sheet.webp`): `tools/art/pfx_paste.py` cuts such a
+  sheet (cells that are not whole pixels) into `fx/<key>.png` + manifest. "สกิลโทนเขียว ... ให้คล้ายกับสกิลโทนสีของมีด": every
+  archer skill effect is now black strokes + a neon green rim + green glow like the rogue's purple (`tools/art/archer_fx.py`
+  → `fx/<key>_k.png`; `ACK` = ink/neon in code); black also reads on grass. Q ยิงรัว (Rapier Flurry, "แทนท่า 1", was the
+  split arrow): `rapier()` draws the sheet from the bow to the spot (anchor = target, turned, scaled to the distance), 8 thrust
+  hits + a big last one (`ARS[1]` n/dmg/fin). R: the charge sheet gathers at the bow while held (`drawCharge`, frames by level),
+  the release burst at its own size, the bolt (frames 21-38) stretched along the beam, reach follows the drawn head, bigger per
+  level. F: the parting shot is a bomb arrow (`bombArrow`/`bombStick`) flying straight from the bow ("ไม่ต้องโค้ง"; the sheet's
+  lob is not used), short fuse, the sheet's fire blast (kept orange) 30 in r 95. Z ธนูหนาม ("ยิงฝั่งดิน ละมีใครมาในระยะค่อยพุ่งใส่"):
+  the arrow plants a seed (`G.seeds`, dotted reach ring, a sprout per strike left); a monster within 150 gets the thorn vine
+  (`vineStrike`: sheet turned ±0.6 rad / mirrored, scaled to the distance) 24 + rooted 2 s, 3 strikes, 12 s. E javelin + arrow
+  hit flashes use the `_k` copies; the star rain is redrawn black + neon. Tests: `?test=hsk&hero=archer&k=1..6&n=` (`&rel=` lets
+  go of R).
+- **Archer X ฝนดาว redone** (owner 2026-11-09 "Starfall Barrage ของนักธนูดูใช้จริงไม่รุ่นแรงเลย"): the green copy of ParticleFX's
+  sheet (`pfx_starfall_g`) was pale lime on green grass, two thin streaks, nothing hit for 1.3 s. Now all code (`starRain`,
+  `SF`): the ground in the circle darkens (flat dark disc `FXS.darkEm`) with two turning rune rings (`drawStarZone`), a white
+  diamond star opens in the sky over it (`drawStarOrb`) and pours 20 comets (`drawComet`: white head, green body, dark edge,
+  trail glow) from 0.28 s, one every 0.075 s; every 2nd is a damage tick (S.dmg on everything in the circle, 10 ticks as
+  before) and lands on a monster in it; each landing (`starLand`): light pillar + white cross (`drawStarBang`), two rings, a
+  burnt crater with a cooling rim (`drawStarCrater`), green/white sparks, dirt, embers, shake + hit-stop. Then a giant star:
+  2 x S.dmg in 1.15 x the circle, kb 30, two shockwaves with light rays (`drawStarShock`), flash, kick, shake 13. First
+  damage now at ~0.6 s (was 1.4). The sheet is kept for the skill icon. Check: `?test=hsk&hero=archer&k=6&n=<steps>`.
+- **Norse: draugr moves in** (cloud session 2026-11-09): Codex's `codex/mobs-china` had draugr walk / attack / death
+  (rows 145-147, hurt not drawn yet); copied into `art/incoming/mobs/anim/` with its REPORT_TH lines, `mob_frames.py draugr`
+  → `art/action/mobs/draugr.png` (cell 90×84, anchor 50,81). The game picks it up from `index.json`; on `?set=norse` it is
+  the only Norse monster with a sheet until the others arrive. Check: `?test=mobs&set=norse&clear=1&ph=0|1|2`.
+- **Rogue Q and E in the black-purple tone** (owner "สกิล q e ทำให้เข้าโทนด้วย", "e ให้หมุน ละจังหวะสุดท้ายให้ลมสะบัดออก"):
+  Q's dagger trail is black-edged purple with a violet glow, its landing and each hit play Dash Strike's hit flash from
+  `pfx_dashstrike_v` (frames 13-24), puffs purple, the blink behind uses `pfx_step_v`. E's ring is `pfx_whirl_k` (the
+  whirlwind in the same tone, made by `rogue_dash_fx.py`), hits flash `pfx_dashstrike_v`, the spin frames lose their
+  pale air arcs (`noArcOf`) and the glow and after-images are violet (`vioOf`); when the spin ends `rogueGust`: everything
+  within 1.7 x its radius takes `SK2.fin` (24, scales with level) and is blown back, a big whirl, two rings, wind lines.
+- **Rogue skill 4, new look, IN THE GAME** (owner "เออสวย" on the demo, then "ใส่เลย"):
+  six dashes along the same zigzag as now (`nextCut`), each one ParticleFX's Dash Strike black with a neon purple rim like the X
+  (owner "Dash Strike โทนเดียวกันได้ไหม"; `fx/pfx_dashstrike_v.png`, the monster's hit flash violet: streak frames 0-11 along the dash, its own hit flash 13-28 on every monster), no
+  thousand cuts, then the closing X = twin fang black from its first frame with a neon purple rim
+  (`fx/pfx_twinfang_k.png`); colours sampled from the owner's neon samurai picture; one dash 0.2 s (SK4.cut is 0.12
+  now), Dash Strike played at 20 fps; she holds the dash row's frame 6 with a violet glow until the X ends. Sheets made
+  by `tools/art/rogue_dash_fx.py`. In the game: `nextCut` lays the streak along each dash (frames 0-11, rotated, scaled to the
+  dash length, `fps: 20`), every hit plays frames 13-28 on each monster in the circle, `starFinish` plays
+  `pfx_twinfang_k` x1.3 at the circle's middle, she glows violet; SK4 cut .2, end .85; `drawPfx` now takes `f.fps` and
+  scales turned effects (`rot` + `sc`).
 - **Archer fixes** (owner "ลูกธนูไม่ตรง สกิลไม่สวย", "6 ให้นักธนู"): PixelLab drew its own arrow flying off (often upward) in
   the attack / crit frames while the game shot its cyan arrow at the target = two arrows that did not line up; those rows
   are now built with `act_sheet.py --detach=attack,crit` (only the blob joined to the figure stays; `hero_build.sh`
@@ -566,3 +765,59 @@ roll 26, regen after 0.6 s). Mouse aims on PC; on phones a left-side stick, butt
 slime. Slimes (code-drawn pixel sprites, green / blue from wave 3) hop, then warn (flash + red ring) and lunge.
 `?test=atk&dir=N` freezes on the last hit for screenshots (headless Edge: `msedge --headless=new --screenshot=...`).
 Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner asked about a leveling map).
+- **Berserker skill kit planned** (owner 2026-11-09 "สกิลจุดเด่นแรง ท่าค่อนข้างกว้าง แต่ช้า แต่หนักหน่วง ให้มีท่ารวบโดยใช้โซ่ โทนดำแดงนีออน"):
+  `docs/berserker.md` (passive + Q chain gather → 360 cleave, E triple cleave, R charged ground slam, F chain hook dash, Z chain
+  shackle ring, X berserk ult; wide, slow wind-ups with super armor, heavy stagger; the PixelLab moves list). Side view fixed in code
+  (`tools/art/berserker_side_fix.py`: red X moved off the sword hand, shorter grip) → `side_v4_fix.png`. Effect prompts `bz_*` in
+  `docs/fx-prompts.html` (tone black + neon red); `archer_fx.py --tone=red <key>` makes `fx/<key>_r.png` in that tone. Not in the game yet.
+- **Swordsman X rage changed** (owner 2026-11-09 "เอาลดดาเมจออก เปลี่ยนโจมตีแรง 20 ... ของเดิมไม่มีดูดเลือด ต้องเป็นเบอร์เซิร์กก่อน"): no lifesteal, no
+  damage reduction; faster swings + damage +2% per skill level (+20% at 10) (`SWS[6].atk`, in `heroDmg`); then 10 s, cooldown 60 s (Berserker awakened: 15 s, 60 s). Lifesteal etc. come with the
+  Berserker's awakened rage (`docs/berserker.md`).
+- **Berserker PixelLab prep** (2026-11-09 evening, cloud session in "boxchaychan games"): `get_balance` there = the FIRST trial
+  account (1.25 of 40 + 5 daily bonus = 6.25 usable; its characters are the old rogue / Wukongs). The paid Apprentice account
+  (~1,800 left) is only on the owner's PC (`PL_KEY`); the cloud secret was never switched to it. 128 px views made (free):
+  `white_cut.py --no-ring` on front_v2 / side_v4_fix / back_v2 → `tools/art/join_views.py` (the three separate GPT pictures came at
+  different sizes: each scaled to the same body height, feet to head top over the feet, so the sword over the head does not
+  count) → `turn128.py ... 128 32` → `art/incoming/action/berserker/px128/` (south 113×111, east 113×107, north 116×105; the
+  greatsword makes him wide, so `turn128.py` now shrinks a figure to keep `T128_MARGIN`=6 px free at both sides). Body ≈105 px
+  vs the swordsman's 120 → build his sheets with `--scale=3/4` (not 2/3) so he stands as tall as the swordsman in the game.
+  Plan on the trial account: create_character v3 (south + east + north given, PixelLab draws the rest, 2) + 3 PixMiniMax
+  8-frame south-east jobs (horizontal sweep, 360 spin, overhead slam, 1 each) = 5 of the 6.25. Owner: "มีเป็นพัน คนละรหัส เอาให้หมด
+  ก่อน" → done, the trial account is now empty (log table above). Next, on the PAID account (PC, `PL_KEY`): import him first
+  (`create_character` v3, reference = `berserker/pl_dl/Idle/rotations/south.png`, `direction_images` = the other 7 files there =
+  0.25, nothing redrawn, like the rogue), then `pl_queue.py art/incoming/action/berserker/jobs_base.json <new id> art/incoming/
+  action/berserker/pl_dl` (36 jobs: idle / run / roll / hurt 8 dirs, death E S W N, no attack) and `jobs_skills.json` (chain throw
+  with the LEFT arm, south-east 8 f = Q / F). The 3 attacks stay in this download (they live in the trial account's character
+  0e6da505; copy `bz_*` folders across if the new download overwrites `pl_dl/`). Not in the game yet.
+- **Berserker handoff 2026-11-10**: attacks viewer `docs/berserker-attacks.html` (frames embedded; normal 12 fps / slow 4 fps / frame by
+  frame / mirror; hit frames marked: sweep 2, spin 2-3, slam 4-5). Paid key on the cloud: re-saved through the secure form, but the
+  proxy still reached the trial account for 12+ minutes (see CLAUDE.md); check `get_balance` first. Effect pictures for `bz_*`: the owner
+  makes them in ChatGPT from `docs/fx-prompts.html`.
+- **Sharp pixels everywhere** (owner 2026-11-10 "ภาพมันไม่ชัด" → "เอาไม่ย่อ" → "เอาฉากให้คม"): the blur came from scaling pixel art by
+  fractions (heroes shrunk 2/3 at build time, then the whole world drawn ×1.52 on a 1080p PC). Now: heroes use PixelLab's own
+  size (`art/action/n128/`, `N128=1 bash tools/art/hero_build.sh <hero>` / `rogue_build.sh`), drawn at a whole number of screen
+  px per art px (`drawCell`); the world is drawn at S = a multiple of 1.5 (`ARX` 1.5 art px per world px, `onResize`; the view
+  follows the screen, ≈1280×640 on a PC, 1.5 on most phones), and everything in it has 1.5× pictures drawn 1 art px per screen
+  px: ground chunks painted at 1.5× (`chunkStep`, textures `art/action/ground_hr/` from `ground_px.py ... 0.66`, laterite from
+  the cobble brightness), props `art/action/props_hr/` (`PROP_K=1.5` in `rebuild_props.py` / `thai_props.py` +
+  `tools/art/props_hr_extra.py` for the wall / fort pieces; gates = props_px on the cut `thai_gate_4view.png` at 0=570;
+  `drawProp` pins the hr picture at the low-res one's bottom centre), monsters `art/action/mobs_hr/` (`MOB_K=1.5 mob_frames.py`,
+  `MOBS[k].d`; frost_wolf has no hr sheet, its see-through source frames are not in the repo). Effects are still scaled.
+  `?ar=0` = the old soft fit, `?n128=0` = the old shrunk heroes, `?zoom=N` / `?hz=N` = zoom tests.
+- **Swordsman Q = the owner's ParticleFX fire line** (2026-11-10, pasted 9x8 sheet on see-through, 66 frames, raw
+  `art/incoming/pfx/fire-line-sheet.webp`; "ไปใช้คู่กับท่า 1 ดาบ ละทำช่องสกิลเป็นแนวยาว"): cut on a 222x79 grid → `fx/pfx_fireline.png`
+  (manifest `len` 133 = the line x 35..168 at y 50, anchor at its near end). `groundSplit` lays it along the crack (k 'esplit' with
+  `key`, from frame 0, scaled to the crack's length, height ×.85 of that), hits land as the fire runs out (t × .55 s); the
+  Earthsplitter sheet stays as the fallback. Skills with `line: 1` (SWS[1]) draw a straight band as their aim marker (the
+  crack's reach and width) instead of the range ring + target circle. Its skill icon uses the fire line too.
+- **Norse monsters in** (Codex, branch `codex/mobs-china`, 2026-11-10): draugr hurt + troll, ice_wraith, dwarf_berserker, ice_golem,
+  boss_jotun (walk / attack / death / hurt) → `mob_frames.py` + `MOB_K=1.5` (both sheets); `?test=mobs&set=norse` shows all seven
+  with the boss. Queue `docs/codex/action/MOB_ANIM.md` copied from Codex's branch (172 rows done). frost_wolf keeps its low-res
+  sheet (its see-through source frames are not in the repo).
+- **Rogue 3-hit combo** (owner 2026-11-10 with Ozzbit Games' free hero template zip, "คอมโบเค้าสวยมาก ใช้กับมีดเราได้ไหม" → "คอมโบ 3";
+  that pack is personal / non-commercial only, so nothing of it is used, only the idea): `atkPlan` gives the rogue's normal
+  attack a frame list `fr` = the sheet's two swings, then its first swing again as a finisher (hits 10 / 11 / 17); each hit
+  calls `rogueCres` = a crescent drawn in code (`drawCres`: fat white middle, neon rim, dark edge, squashed to the ground
+  angle, the tail eaten toward the tip after 25%, sparkles off the tip), alternating forehand / backhand, the finisher
+  bigger; red during rage.
+
