@@ -96,7 +96,7 @@ def radial_fill(K):
         sh = round(360 / n); c = (acc * np.roll(acc, sh)).sum()
         if c > best: best, nsym = c, n
     step = 360 / nsym; P = int(max(H, W) * 1.5) // 2 * 2; oy, ox = (P - H) // 2, (P - W) // 2
-    inside = np.zeros((P, P), bool); inside[oy:oy + H, ox:ox + W] = True
+    inside = np.zeros((P, P), bool); inside[oy + 60:oy + H - 60, ox + 60:ox + W - 60] = True   # the 60 px band inside the old edge is blended too (no square seam)
     out = []
     for k in K:
         pad = np.zeros((P, P, 4), np.uint8); pad[oy:oy + H, ox:ox + W] = k; res = pad.copy()
