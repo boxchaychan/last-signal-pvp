@@ -43,3 +43,6 @@ repeated per target, moved, timed) = a particle system, so every skill follows i
 cut from the star clip, `tools/video/vfx_one_arm.py`, one chain per monster). Parts to make (`docs/vfx-pack.html`, set
 "เบอร์เซิร์กเกอร์ · ชิ้นส่วน", `art/incoming/action/berserker/video_start/VFX_BERSERKER_PARTS.txt`): slash, hit, boom, smoke,
 sparks, flame (loop), crack. Already as parts: chain (vfx_bzchain1), ring cleave, ground ring, rune circle.
+- 2026-11-10 "ทำสเกลให้เข้ากับตัว 128": hd3d2 now uses the full 128 px hero by default and draws EVERY picture at his pixel density
+  (world size = picture px / (113 / 2), like the 2D game where props / mobs / ground all share 1.5 art px per game px), the layout is
+  doubled (144 x 104 tiles ≈ the 2D world) so trees 5-6x the hero still leave room, camera 36 / 48 / 28. `?s=64` = the earlier small look.
