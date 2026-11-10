@@ -11,13 +11,17 @@
   #fx { position: fixed; right: 10px; top: 8px; display: flex; gap: 6px; }
   #fx button { font: 600 13px system-ui, sans-serif; padding: 6px 10px; border: 2px solid #1d1a22; background: #f4ecd8; border-radius: 6px; }
   #stick { position: fixed; left: 24px; bottom: 24px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.25); }
+  #sk { position: fixed; right: 14px; bottom: 16px; display: grid; grid-template-columns: repeat(4, 54px); gap: 8px; }
+  #sk button { width: 54px; height: 54px; border-radius: 50%; border: 2px solid #1d1a22; background: rgba(40,10,14,.78); color: #ffd6d6; font: 700 15px system-ui, sans-serif; touch-action: none; }
+  #sk button.big { background: rgba(120,16,28,.85); color: #fff; }
   #knob { position: absolute; left: 40px; top: 40px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.5); }
 </style>
 </head>
 <body>
-<div id="hud">แมพแบบภาพตัวอย่าง · WASD / จอยซ้าย เดิน</div>
+<div id="hud">แมพแบบภาพตัวอย่าง · WASD เดิน · J ตี · Q E R F Z X สกิล</div>
 <div id="fx"><button id="bTilt">เบลอขอบ: เปิด</button><button id="bZoom">ซูม</button></div>
 <div id="stick"><div id="knob"></div></div>
+<div id="sk"><button data-k="q">Q</button><button data-k="e">E</button><button data-k="r">R</button><button data-k="atk" class="big">⚔</button><button data-k="f">F</button><button data-k="z">Z</button><button data-k="x">X</button></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script>
 // HD-2D map in the look of the owner's reference screenshots (2026-11-10 "ลองทำให้ได้ตามแบบแมพเค้า"): camera ~52 degrees, far
@@ -152,12 +156,22 @@ for (let i = 0; i < 10; i++) { const x = rnd() * W, z = rnd() * H; if (treeOK(x,
 const wolves = [];
 fetch('art/action/mobs_hr/wolf.json').then(r => r.json()).then(M => LD.load('art/action/mobs_hr/wolf.png', t0 => { t0.magFilter = THREE.NearestFilter; t0.minFilter = THREE.NearestFilter; t0.encoding = THREE.sRGBEncoding;
   for (const [x, z] of [[RX + 2, RY - 5], [RX - 7, RY - 3], [RX + 14, RY + 6], [RX - 4, RY + 12]]) {
-    const t = t0.clone(); t.needsUpdate = true; const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), cardMat(t)); m.castShadow = true; m.customDepthMaterial = depthMat(t);
+    const t = t0.clone(); t.needsUpdate = true; const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), new THREE.MeshBasicMaterial({map: t, alphaTest: .5, side: THREE.DoubleSide})); m.castShadow = true; m.customDepthMaterial = depthMat(t);   // unlit: the sun is behind the cards, lit wolves came out black
     const hW = 1.3; m.scale.set(hW * M.w / M.h, hW, 1); m.position.set(x, hAt(x, z), z); scene.add(m);
-    wolves.push({m, t, M, x, z, hx: x, hz: z, vx: 0, vz: 0, f: rnd() * 6, wait: rnd() * 2}); } }));
+    wolves.push({m, t, M, x, z, hx: x, hz: z, vx: 0, vz: 0, f: rnd() * 6, wait: rnd() * 2, hp: 160, stun: 0, flash: 0, kx: 0, kz: 0, dead: 0}); }
+  for (const [x, z] of [[RX + 6, RY + 4], [RX - 3, RY - 7], [RX + 9, RY - 2], [RX - 8, RY + 5]]) {   // a few more near the start to try the skills on
+    const t = t0.clone(); t.needsUpdate = true; const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), new THREE.MeshBasicMaterial({map: t, alphaTest: .5, side: THREE.DoubleSide})); m.castShadow = true; m.customDepthMaterial = depthMat(t);   // unlit: the sun is behind the cards, lit wolves came out black
+    m.scale.set(1.3 * M.w / M.h, 1.3, 1); scene.add(m); wolves.push({m, t, M, x, z, hx: x, hz: z, vx: 0, vz: 0, f: rnd() * 6, wait: rnd() * 2, hp: 160, stun: 0, flash: 0, kx: 0, kz: 0, dead: 0}); } }));
 function stepWolves(dt) { for (const w of wolves) { const M = w.M, img = w.t.image; if (!img || !img.width) continue;
+  w.flash -= dt; w.m.material.color.setRGB(1, w.flash > 0 ? .45 : 1, w.flash > 0 ? .45 : 1);
+  if (w.dead) { w.dead += dt; const fr = Math.min(M.n - 1, (w.dead * 9) | 0); w.t.repeat.set(M.w / img.width, M.h / img.height); w.t.offset.set(fr * M.w / img.width, 1 - (M.rows.death + 1) * M.h / img.height);
+    w.m.material.opacity = 1; w.m.visible = w.dead < 2.2; if (w.dead > 5) { w.dead = 0; w.hp = 160; w.x = w.hx; w.z = w.hz; w.m.visible = true; } w.m.position.set(w.x, hAt(w.x, w.z), w.z); continue; }
+  w.x += w.kx * dt; w.z += w.kz * dt; w.kx *= .85; w.kz *= .85;
+  if (w.stun > 0) { w.stun -= dt; w.m.position.set(w.x, hAt(w.x, w.z), w.z); continue; }
+  const hd = Math.hypot(hero.x - w.x, hero.z - w.z);
+  if (hd < 7 && hd > 1.4) { w.vx = (hero.x - w.x) / hd * 2.4; w.vz = (hero.z - w.z) / hd * 2.4; w.wait = .3; } else if (hd <= 1.4) { w.vx = w.vz = 0; }
   w.wait -= dt; if (w.wait < 0) { const a = rnd() * 6.28; w.vx = Math.cos(a) * 1.6; w.vz = Math.sin(a) * 1.6; w.wait = 1.5 + rnd() * 2.5; if (rnd() < .4) w.vx = w.vz = 0; }
-  if (Math.hypot(w.x + w.vx * dt - w.hx, w.z + w.vz * dt - w.hz) > 5) { w.vx *= -1; w.vz *= -1; }
+  if (hd >= 7 && Math.hypot(w.x + w.vx * dt - w.hx, w.z + w.vz * dt - w.hz) > 5) { w.vx *= -1; w.vz *= -1; }
   w.x += w.vx * dt; w.z += w.vz * dt; const mv = Math.hypot(w.vx, w.vz) > .1; w.f += dt * (mv ? 10 : 0);
   const fr = mv ? (w.f | 0) % M.n : 0; w.t.repeat.set(M.w / img.width, M.h / img.height); w.t.offset.set(fr * M.w / img.width, 1 - (M.rows.walk + 1) * M.h / img.height);
   w.m.position.set(w.x, hAt(w.x, w.z), w.z); if (Math.abs(w.vx) > .1) w.m.scale.x = Math.abs(w.m.scale.x) * (w.vx > 0 ? 1 : -1); } }
@@ -169,7 +183,7 @@ let HM = null, HIMG = {}, CS = 86;
 const hc = document.createElement('canvas'); hc.width = hc.height = CS; const hg = hc.getContext('2d');
 const htex = new THREE.CanvasTexture(hc); htex.magFilter = THREE.NearestFilter; htex.minFilter = THREE.NearestFilter; htex.encoding = THREE.sRGBEncoding;
 fetch(HDIR + HK + '.json').then(r => r.json()).then(m => { HM = m; CS = m.cell; hc.width = hc.height = CS; hg.imageSmoothingEnabled = false; htex.dispose();
-  for (const a of ['idle', 'run']) HIMG[a] = tex(HDIR + m.anims[a].img); });
+  for (const a in m.anims) HIMG[a] = tex(HDIR + m.anims[a].img); });
 const DIR8 = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
 const hmesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({colorWrite: false, depthWrite: false}));
 hmesh.castShadow = true; hmesh.customDepthMaterial = new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: htex, alphaTest: .5}); scene.add(hmesh);
@@ -177,12 +191,87 @@ let shK = ''; function shadowGeo() { const k = HM ? HM.fx + ',' + HM.fy + ',' + 
 const ocam = new THREE.OrthographicCamera(0, 1, 1, 0, -1, 1), oscene = new THREE.Scene();
 const omesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(.5, .5, 0), new THREE.MeshBasicMaterial({map: htex, transparent: true, alphaTest: .5})); oscene.add(omesh);
 function drawHero(dt) {
-  if (!HM) return; hero.t += dt; const a = hero.moving ? 'run' : 'idle', A = HM.anims[a], T2 = HIMG[a]; if (!T2 || !T2.image || !T2.image.width) return;
-  const D = A[hero.dir] || A.east, C = HM.cell, f = Math.floor(hero.t * (hero.moving ? 12 : 8)) % D.n;
+  if (!HM) return; hero.t += dt; let a = hero.moving ? 'run' : 'idle', fa;
+  const ac = hero.act; if (ac) { a = ac.an; ac.t += dt; const fi = Math.floor(ac.t * 1000 / ac.ms);
+    for (let i = 0; i <= Math.min(fi, ac.n - 1); i++) if (ac.ev[i] && !ac.done[i]) { ac.done[i] = 1; ac.ev[i](); }
+    if (ac.tick) ac.tick(Math.min(1, ac.t * 1000 / ac.ms / ac.n)); if (fi >= ac.n) { hero.act = null; a = 'idle'; } else fa = fi; }
+  const A = HM.anims[a], T2 = HIMG[a]; if (!T2 || !T2.image || !T2.image.width) return;
+  const D = A[hero.dir] || A.east, C = HM.cell, f = fa !== undefined ? Math.min(fa, D.n - 1) : Math.floor(hero.t * (hero.moving ? 12 : 8)) % D.n;
   hg.clearRect(0, 0, CS, CS); hg.save(); if (D.flip) { hg.translate(CS, 0); hg.scale(-1, 1); } hg.drawImage(T2.image, f * C, D.r * C, C, C, 0, 0, C, C); hg.restore();
   const id = hg.getImageData(0, 0, CS, CS), d = id.data, a2 = new Uint8Array(CS * CS); for (let i = 0; i < a2.length; i++) a2[i] = d[i * 4 + 3] > 100;   // 1 px light rim
   for (let y = 1; y < CS - 1; y++) for (let x = 1; x < CS - 1; x++) { const i = y * CS + x; if (a2[i]) continue; if (a2[i - 1] || a2[i + 1] || a2[i - CS] || a2[i + CS]) { d[i * 4] = 255; d[i * 4 + 1] = 240; d[i * 4 + 2] = 200; d[i * 4 + 3] = 200; } }
   hg.putImageData(id, 0, 0); htex.needsUpdate = true; }
+// ---------- fighting (owner 2026-11-10 "ทำตัวละครให้ดี ประกอบแมพ 3D"): the Berserker's PixelLab moves + the owner's video effects,
+// placed as parts in the 3D world: upright ones stand facing the camera (turned to the swing), ground ones lie flat on the ground
+// turned to the aim, chains fly to each wolf; wolves chase, get hit, stunned, pulled and die (and come back)
+const PXU = 2.0 / 76;                                   // world units per 2D-game px (the hero: 76 px there, ~2 units here)
+let FXM = null; fetch('fx/manifest.json').then(r => r.json()).then(m => FXM = m);
+const FXT = {};
+function fxTex(k) { return FXT[k] || (FXT[k] = new Promise(ok => LD.load('fx/' + k + '.png', t => { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearFilter; t.encoding = THREE.sRGBEncoding; ok(t); }, undefined, () => ok(null)))); }
+['vfx_bzswing', 'vfx_bzchain1', 'vfx_bzchainring', 'vfx_bztriple', 'vfx_bzslam', 'vfx_bzslamring', 'vfx_bzcrack', 'vfx_bzshackle', 'vfx_bzrage', 'vfx_bzwave'].forEach(fxTex);
+const FXL = [], LATER = []; let NOW = 0, SHAKE = 0, RAGE = 0;
+const later = (t, fn) => LATER.push({t: NOW + t, fn});
+function fx(k, o = {}) { if (!FXM || !FXM[k]) return; fxTex(k).then(t0 => { if (!t0) return; const m = FXM[k], W = t0.image.width, H = t0.image.height, s = (o.sc || 1) * PXU;
+  const t = t0.clone(); t.needsUpdate = true; t.repeat.set(m.w / W, m.h / H);
+  const w = m.w * s, h = m.h * s, g = new THREE.PlaneGeometry(w, h); g.translate(w / 2 - m.ax * s, m.ay * s - h / 2, 0);   // the sheet's anchor at the origin
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({map: t, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false}));
+  const grp = new THREE.Group(); grp.add(mesh); mesh.renderOrder = o.ground ? 1 : 2;
+  if (o.ground) { mesh.rotation.x = -Math.PI / 2; grp.rotation.y = -(o.ang || 0); if (o.flatSq) mesh.scale.y = o.flatSq; }
+  else { const tilt = -PITCH * .55;   // upright, leaning back toward the camera a little
+    if (o.ang !== undefined) { const dx = Math.cos(o.ang), dz = Math.sin(o.ang) * .6, fl = dx < 0; mesh.scale.x = fl ? -1 : 1; mesh.rotation.z = fl ? Math.atan2(dz, -dx) : Math.atan2(-dz, dx); }
+    mesh.rotation.x = tilt; }
+  const x = o.x !== undefined ? o.x : hero.x, z = o.z !== undefined ? o.z : hero.z;
+  grp.position.set(x, hAt(x, z) + (o.y || 0) + (o.ground ? .05 : 0), z); scene.add(grp);
+  FXL.push({grp, mesh, t, m, W, H, age: -(o.delay || 0), fps: o.fps || m.fps, n: m.n, loop: o.loop, life: o.life, follow: o.follow, mv: o.mv}); }); }
+function stepFx(dt) { for (let i = FXL.length - 1; i >= 0; i--) { const f = FXL[i]; f.age += dt; f.grp.visible = f.age >= 0; if (f.age < 0) continue;
+    let k = Math.floor(f.age * f.fps); if (f.loop) k = f.life && f.age > f.life ? f.n : k % f.n;
+    if (k >= f.n) { scene.remove(f.grp); f.mesh.geometry.dispose(); f.mesh.material.dispose(); f.t.dispose(); FXL.splice(i, 1); continue; }
+    const cols = f.m.cols || f.n; f.t.offset.set((k % cols) * f.m.w / f.W, 1 - ((k / cols | 0) + 1) * f.m.h / f.H);
+    if (f.follow) f.grp.position.set(hero.x + f.follow[0], hAt(hero.x, hero.z) + f.follow[1], hero.z + f.follow[2]);
+    if (f.mv) { f.grp.position.x += f.mv[0] * dt; f.grp.position.z += f.mv[1] * dt; } }
+  for (let i = LATER.length - 1; i >= 0; i--) if (LATER[i].t <= NOW) { const L = LATER[i]; LATER.splice(i, 1); L.fn(); } }
+const fv = () => { const a = DIR8.indexOf(hero.dir) * Math.PI / 4; return [Math.cos(a), Math.sin(a), a]; };
+const live = () => wolves.filter(w => !w.dead);
+function face(x, z) { hero.dir = DIR8[(Math.round(Math.atan2(z - hero.z, x - hero.x) / (Math.PI / 4)) + 8) % 8]; }
+function aim() { let b = null, bd = 9; for (const w of live()) { const d = Math.hypot(w.x - hero.x, w.z - hero.z); if (d < bd) { bd = d; b = w; } } if (b) face(b.x, b.z); return b; }
+function hitW(w, dmg, kb = 0, stun = 0) { if (w.dead) return; const dx = w.x - hero.x, dz = w.z - hero.z, d = Math.hypot(dx, dz) || 1;
+  w.hp -= dmg * (RAGE > NOW ? 1.35 : 1); w.flash = .14; w.kx += dx / d * kb; w.kz += dz / d * kb; if (stun) w.stun = Math.max(w.stun, stun); if (w.hp <= 0) w.dead = .001; }
+function hitCone(r, deg, dmg, kb = 2, stun = 0) { const [ux, uz] = fv(); for (const w of live()) { const dx = w.x - hero.x, dz = w.z - hero.z, d = Math.hypot(dx, dz);
+  if (d < r && (d < .8 || (dx * ux + dz * uz) / d > Math.cos(deg * Math.PI / 180))) hitW(w, dmg, kb, stun); } }
+function hitRound(cx, cz, r, dmg, kb = 0, stun = 0) { for (const w of live()) if (Math.hypot(w.x - cx, w.z - cz) < r) hitW(w, dmg, kb, stun); }
+function act(an, ms, ev = {}, tick) { if (!HM || !HM.anims[an]) return false; const D = HM.anims[an][hero.dir] || HM.anims[an].east; hero.act = {an, n: D.n, ms, t: 0, ev, done: {}, tick}; return true; }
+const CD = {}; const ready = (k, cd) => { if ((CD[k] || 0) > NOW) return false; CD[k] = NOW + cd; return true; };
+function swing(sc) { const [ux, uz, a] = fv(); fx('vfx_bzswing', {x: hero.x + ux * .5, z: hero.z + uz * .5, y: .9, ang: a, sc}); hitCone(3.2, 70, 20 * sc, 3);
+  if (RAGE > NOW) { fx('vfx_bzwave', {x: hero.x + ux * .8, z: hero.z + uz * .8, y: .9, ang: a, mv: [ux * 9, uz * 9]}); const hitd = new Set();
+    for (let i = 1; i <= 5; i++) later(i * .08, () => { const px = hero.x + ux * (.8 + i * .75), pz = hero.z + uz * (.8 + i * .75); for (const w of live()) if (!hitd.has(w) && Math.hypot(w.x - px, w.z - pz) < 1.2) { hitd.add(w); hitW(w, 14, 2); } }); } }
+const SK = {
+  atk() { if (hero.act) return; aim(); act('attack', RAGE > NOW ? 40 : 52, {2: () => swing(1), 13: () => { swing(1.25); SHAKE = .12; }}); },
+  q() { if (hero.act || !ready('q', 5)) return; act('chain', 70, {3: () => {                     // Q: a chain to every wolf round him, bite, drag in, ring cleave
+    const C = FXM && FXM.vfx_bzchain1, bite = 18 / 36, ws = live().filter(w => Math.hypot(w.x - hero.x, w.z - hero.z) < 8.5).slice(0, 8);
+    const aims = ws.length ? ws : [-.45, 0, .45].map(da => { const [, , a] = fv(); return {x: hero.x + Math.cos(a + da) * 5, z: hero.z + Math.sin(a + da) * 5, fake: 1}; });
+    for (const w of aims) { const dx = w.x - hero.x, dz = w.z - hero.z, d = Math.hypot(dx, dz) || 1, a = Math.atan2(dz, dx);
+      fx('vfx_bzchain1', {x: hero.x, z: hero.z, y: .55, ground: true, ang: a, sc: Math.min(1.9, Math.max(.45, d / ((C ? C.len : 159) * PXU))), fps: 36});
+      if (w.fake) continue; later(bite, () => hitW(w, 12, 0, 1.3));
+      const gx = hero.x + dx / d * 1.3, gz = hero.z + dz / d * 1.3; for (let j = 1; j <= 8; j++) later(bite + .05 + j / 40, () => { if (!w.dead) { w.x += (gx - w.x) * .32; w.z += (gz - w.z) * .32; } }); }
+    later(bite + .42, () => { fx('vfx_bzchainring', {ground: true}); hitRound(hero.x, hero.z, 3.3, 40, .5); SHAKE = .25; }); }}); },
+  e() { if (hero.act || !ready('e', 5)) return; aim(); const [ux, uz, a] = fv();                // E: three heavy slashes
+    fx('vfx_bztriple', {x: hero.x + ux * .9, z: hero.z + uz * .9, ang: a, sc: 1.15});
+    act('attack', 64, {3: () => hitCone(3.8, 65, 22, 2), 8: () => hitCone(3.8, 65, 22, 2), 14: () => { hitCone(4.2, 45, 40, 5, .8); SHAKE = .3; }}); },
+  r() { if (hero.act || !ready('r', 6)) return; aim(); const [ux, uz, a] = fv();                  // R: the slam that splits the ground forward
+    act('charge', 75, {4: () => { const L = 300 * PXU; if (Math.abs(uz) > .75) fx('vfx_bzcrack', {x: hero.x + ux * L * .5, z: hero.z + uz * L * .5, ground: true, ang: a, flatSq: 1});
+      else fx('vfx_bzcrack', {x: hero.x + ux * L * .5, z: hero.z + uz * L * .5, ang: ux < 0 ? Math.PI : 0});
+      SHAKE = .3; for (let i = 1; i <= 6; i++) later(i * .07, () => hitRound(hero.x + ux * L * i / 6, hero.z + uz * L * i / 6, 1.3, 9, 1, .4)); }}); },
+  f() { if (hero.act || !ready('f', 7)) return; const w = aim(), [ux, uz] = fv();                 // F: leap onto the nearest wolf (or ahead) and slam
+    const tx = w ? w.x - ux * .6 : hero.x + ux * 5, tz = w ? w.z - uz * .6 : hero.z + uz * 5, sx = hero.x, sz = hero.z;
+    act('leap', 60, {4: () => { fx('vfx_bzslamring', {ground: true}); fx('vfx_bzslam', {sc: .95}); hitRound(hero.x, hero.z, 3.4, 34, 4, 1.2); SHAKE = .4; }},
+      u => { const k = Math.min(1, u / .45); hero.x = sx + (tx - sx) * k; hero.z = sz + (tz - sz) * k; }); },
+  z() { if (hero.act || !ready('z', 9)) return; aim(); const [ux, uz] = fv(), px = hero.x + ux * 3.4, pz = hero.z + uz * 3.4;   // Z: hell shackle in front
+    fx('vfx_bzshackle', {x: px, z: pz, ground: true}); act('chain', 60); later(.45, () => hitRound(px, pz, 2.8, 12, 0, 2.2)); },
+  x() { if (hero.act || !ready('x', 14)) return; RAGE = NOW + 8;                                   // X: rage aura for 8 s, faster harder swings that throw waves
+    fx('vfx_bzrage', {follow: [0, 0, -.05], loop: true, life: 8, sc: 1.15}); act('charge', 80); SHAKE = .2; },
+};
+addEventListener('keydown', e => { const k = e.key.toLowerCase(); if (e.repeat) return; if (k === 'j' || k === ' ') SK.atk(); else if (SK[k] && k.length === 1) SK[k](); });
+document.querySelectorAll('#sk button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); SK[b.dataset.k](); }));
 // ---------- input ----------
 const K = {}; addEventListener('keydown', e => K[e.key.toLowerCase()] = 1); addEventListener('keyup', e => K[e.key.toLowerCase()] = 0);
 const stick = {x: 0, y: 0, id: null}, st = document.getElementById('stick'), kn = document.getElementById('knob');
@@ -215,11 +304,12 @@ addEventListener('resize', size); size();
 let last = performance.now();
 function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
   let mx = (K.d || K.arrowright ? 1 : 0) - (K.a || K.arrowleft ? 1 : 0) + stick.x, mz = (K.s || K.arrowdown ? 1 : 0) - (K.w || K.arrowup ? 1 : 0) + stick.y;
-  const l = Math.hypot(mx, mz); hero.moving = l > .15;
+  NOW = now / 1000; const l = Math.hypot(mx, mz); hero.moving = l > .15 && !hero.act;
   if (hero.moving) { mx /= Math.max(1, l); mz /= Math.max(1, l); const nx = hero.x + mx * 5 * dt, nz = hero.z + mz * 5 * dt, t = (map[nz | 0] || [])[nx | 0];
     if (t !== undefined && t !== 2) { hero.x = nx; hero.z = nz; } hero.dir = DIR8[(Math.round(Math.atan2(mz, mx) / (Math.PI / 4)) + 8) % 8]; }
-  const gy = hAt(hero.x, hero.z); hmesh.position.set(hero.x, gy, hero.z); drawHero(dt); stepWolves(dt); shadowGeo();
-  cam.position.set(hero.x, gy + Math.sin(PITCH) * ZOOM, hero.z + Math.cos(PITCH) * ZOOM); cam.lookAt(hero.x, gy + .8, hero.z);
+  const gy = hAt(hero.x, hero.z); hmesh.position.set(hero.x, gy, hero.z); drawHero(dt); stepWolves(dt); stepFx(dt); shadowGeo();
+  SHAKE = Math.max(0, SHAKE - dt); const sk = SHAKE * 1.2, jx = (Math.random() - .5) * sk, jz = (Math.random() - .5) * sk;
+  cam.position.set(hero.x + jx, gy + Math.sin(PITCH) * ZOOM, hero.z + Math.cos(PITCH) * ZOOM + jz); cam.lookAt(hero.x + jx, gy + .8, hero.z + jz);
   sun.position.set(hero.x - 26, 30, hero.z - 6); sun.target.position.set(hero.x, 0, hero.z);   // low sun from the upper left: long shadows toward the lower right
   tWater.offset.x = (now / 14000) % 1;
   renderer.setRenderTarget(rt); renderer.render(scene, cam); renderer.setRenderTarget(null); renderer.render(pscene, pcam);
