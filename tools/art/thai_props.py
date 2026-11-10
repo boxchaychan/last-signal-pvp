@@ -10,6 +10,9 @@ from PIL import Image
 
 M = 'art/incoming/action/map/'
 OUT = 'art/action/props/'
+# PROP_K=1.5: the same props at 1.5x the pixels into art/action/props_hr/ (action.html draws them 1 art px per screen px)
+K = float(os.environ.get('PROP_K', '1'))
+if K != 1: OUT = 'art/action/props_hr/'; os.makedirs(OUT, exist_ok=True)
 SHEETS = {
     'gpt_thai_village_spaced.png': ('v_stilt v_row v_hut v_kitchen v_granary v_veranda v_waterhouse v_fishhut v_boatshed v_stall v_pen '
                                     'v_watchtower v_temple v_stupa v_pavilion v_well v_bridge v_raintree').split(),
@@ -93,7 +96,7 @@ for sheet, names in SHEETS.items():
     dry, ncut = dry_sheet(path, names) if any(n in WATERY for n in names) else (path, 0)
     if ncut: print(sheet, 'water cut in the full-size sheet:', ncut)
     for i, n in enumerate(names):
-        t = H.get(n, round(hs[i] * 1.19))
+        t = round(H.get(n, round(hs[i] * 1.19)) * K)
         tmp = tempfile.mkdtemp(); subprocess.run([sys.executable, 'tools/art/props_px.py', dry if n in WATERY else path, tmp, f'{i}={t}', '20'], check=True, capture_output=True)
         shutil.copy(os.path.join(tmp, f'prop{i}.png'), OUT + n + '.png'); shutil.rmtree(tmp)
         cut = 0

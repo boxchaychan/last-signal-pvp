@@ -19,6 +19,9 @@ SIZE = {'shroom': 46, 'wolf': 60, 'goblin_archer': 58, 'boar_guard': 96, 'skelet
 FLIP = {'khamot'}          # drawn facing left by Codex
 ACTS = ['walk', 'attack', 'death']
 SRC, CUT, OUT = 'art/incoming/mobs/anim', 'art/incoming/mobs/anim_cut', 'art/action/mobs'
+# MOB_K=1.5: the same sheets at 1.5x the pixels into art/action/mobs_hr/ (action.html draws them 1 art px per screen px)
+K = float(os.environ.get('MOB_K', '1'))
+if K != 1: OUT = 'art/action/mobs_hr'
 os.makedirs(CUT, exist_ok=True); os.makedirs(OUT, exist_ok=True)
 
 def cells(path):
@@ -52,7 +55,7 @@ def build(key):
             subprocess.run([sys.executable, 'tools/art/white_cut.py', src, cut, '--no-ring'], check=True, capture_output=True)
         fr = cells(cut)
         if key in FLIP: fr = [q[:, ::-1].copy() for q in fr]
-        b0 = bbox(fr[0]); s = SIZE[key] / (b0[3] - b0[1])
+        b0 = bbox(fr[0]); s = SIZE[key] * K / (b0[3] - b0[1])
         y0 = b0[3]                                                        # ground = frame 1's lowest row
         m0 = fr[0][..., 3] > 128; foot = m0[max(b0[1], y0 - max(3, (b0[3] - b0[1]) // 6)):y0]
         x0 = np.nonzero(foot.any(0))[0].mean()                            # feet centre of frame 1
@@ -81,12 +84,13 @@ def build(key):
             mm = can[..., 3] > 0; ring = ndimage.binary_dilation(mm) & ~mm; can[ring] = (30, 20, 24, 255)
             sheet[r * CH:(r + 1) * CH, c * CW:(c + 1) * CW] = can
     Image.fromarray(sheet).save(f'{OUT}/{key}.png', optimize=True)
-    meta = {'w': CW, 'h': CH, 'fx': fx, 'fy': fy, 'n': 6, 'rows': {a: i for i, a in enumerate(acts)}, 'hit': 3, 'size': SIZE[key]}
+    meta = {'w': CW, 'h': CH, 'fx': fx, 'fy': fy, 'n': 6, 'rows': {a: i for i, a in enumerate(acts)}, 'hit': 3, 'size': SIZE[key], 'k': K}
     json.dump(meta, open(f'{OUT}/{key}.json', 'w'))
     print(key, 'cell', CW, 'x', CH, 'anchor', fx, fy)
     return meta
 
 if __name__ == '__main__':
+    os.makedirs(OUT, exist_ok=True)
     keys = sys.argv[1:] or [k for k in SIZE if all(os.path.exists(f'{SRC}/{k}_{a}.png') for a in ACTS)]   # skip monsters Codex has not drawn yet
     idx = {}
     if os.path.exists(f'{OUT}/index.json'): idx = json.load(open(f'{OUT}/index.json'))

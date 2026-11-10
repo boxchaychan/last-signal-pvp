@@ -38,6 +38,8 @@ Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The o
 |---|---|---|---|---|
 | 2026-11-09 | create_character v3 "Berserker 128" (cloud session, this same trial account; owner "เอาให้หมดก่อน" = use this account up first): reference = `berserker/px128/south.png`, direction_images east + north (ours), PixelLab drew the other 5 | 0e6da505-2c74-479e-bb52-1b6c01659dfe | 2 (+5 daily bonus) | ✅ 8 views good (`berserker/pl_dl/Idle/rotations/`, `pl_rot_preview.png`): south-east holds the sword upright behind the right shoulder (foreshortened) |
 | 2026-11-09 | 3 attacks, PixMiniMax 8 frames, south-east only (`berserker/jobs_attack.json` via `pl_queue.py`): `bz_sweep` horizontal sweep · `bz_spin` 360 spin (Q's second press) · `bz_slam` overhead slam into the ground (R, E's third cut) | sweep dc5cf88c-993d-4ed7-a65c-cb2f0bee0b1a · spin cea10df2-939a-437d-985c-b016ba8cede3 · slam 020e63c9-d4c9-4312-938a-3ae82057d1c8 | 3 | ✅ all good (`attacks_se.gif`, canvas 172): sweep = wind-up 1, a big black-red arc PixelLab drew itself on 2, follow-through 3–6, back on the shoulder 7–8 (9 frames); spin = draw back 1, side 2, back view 3, other side 4, front 5, stance 6–7 with blade arcs on 2–3 (8 frames); slam = raise overhead 1–3, blade into the ground with cracks on 4–5, pull out 6–7, shoulder 8 (his helm reads rounder while he looks down, 4–7). Account empty after this (43.75 used = 40 + the 5 daily bonus) |
+| 2026-11-10 | create_character v3 "Guardian 128" (cloud, trial account, owner "ทำพวก pixlab ... ก่อน"): reference = `guardian/px128/south.png` (turnaround front), direction_images east = `side_right.png` + north = turnaround back (`white_cut --no-ring` → `join_views.py` → `turn128.py 128 32`) | a468e926-b5aa-4692-aa27-15b00a3c67c2 | 2 | queued (~20 min wait on the trial account) |
+| 2026-11-10 | 3 attacks, PixMiniMax 8 frames, south-east (`guardian/jobs_attack.json` via `pl_queue.py`, run after the character): `gd_slash` forward slash · `gd_bash` shield bash · `gd_overhead` overhead chop | (see `guardian/pl_dl/queue.log`) | 3 | running |
 
 ### Second PixelLab account (owner's other key, from 2026-11-08)
 The app kept the old key until restarted, so jobs go through `tools/pl_rpc.py` (HTTP JSON-RPC with the key from the
@@ -789,3 +791,15 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   frame / mirror; hit frames marked: sweep 2, spin 2-3, slam 4-5). Paid key on the cloud: re-saved through the secure form, but the
   proxy still reached the trial account for 12+ minutes (see CLAUDE.md); check `get_balance` first. Effect pictures for `bz_*`: the owner
   makes them in ChatGPT from `docs/fx-prompts.html`.
+- **Sharp pixels everywhere** (owner 2026-11-10 "ภาพมันไม่ชัด" → "เอาไม่ย่อ" → "เอาฉากให้คม"): the blur came from scaling pixel art by
+  fractions (heroes shrunk 2/3 at build time, then the whole world drawn ×1.52 on a 1080p PC). Now: heroes use PixelLab's own
+  size (`art/action/n128/`, `N128=1 bash tools/art/hero_build.sh <hero>` / `rogue_build.sh`), drawn at a whole number of screen
+  px per art px (`drawCell`); the world is drawn at S = a multiple of 1.5 (`ARX` 1.5 art px per world px, `onResize`; the view
+  follows the screen, ≈1280×640 on a PC, 1.5 on most phones), and everything in it has 1.5× pictures drawn 1 art px per screen
+  px: ground chunks painted at 1.5× (`chunkStep`, textures `art/action/ground_hr/` from `ground_px.py ... 0.66`, laterite from
+  the cobble brightness), props `art/action/props_hr/` (`PROP_K=1.5` in `rebuild_props.py` / `thai_props.py` +
+  `tools/art/props_hr_extra.py` for the wall / fort pieces; gates = props_px on the cut `thai_gate_4view.png` at 0=570;
+  `drawProp` pins the hr picture at the low-res one's bottom centre), monsters `art/action/mobs_hr/` (`MOB_K=1.5 mob_frames.py`,
+  `MOBS[k].d`; frost_wolf has no hr sheet, its see-through source frames are not in the repo). Effects are still scaled.
+  `?ar=0` = the old soft fit, `?n128=0` = the old shrunk heroes, `?zoom=N` / `?hz=N` = zoom tests.
+

@@ -147,14 +147,20 @@ let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0;
 // phone, 1.52 on a 1080p PC); ?sharp=1 draws finer at a whole S and lets the browser scale down instead. A screen of another
 // shape gets dark bars (OX / OY = where the view starts on the canvas).
 const FVW = 1266, FVH = 585;
+const ARX = new URLSearchParams(location.search).get('ar') === '0' ? 1 : 1.5;   // art px per world px (map, props, monsters)
 function onResize() {
   DPR = window.devicePixelRatio || 1;
   const fit = Math.min(innerWidth / FVW, innerHeight / FVH);
   if (new URLSearchParams(location.search).get('sharp')) { S = Math.max(1, Math.ceil(fit * DPR - .02)); Q = S / fit; } else { Q = DPR; S = Math.abs(fit * DPR - Math.round(fit * DPR)) < .02 ? Math.round(fit * DPR) : fit * DPR; }
   // ?zoom=N (owner 2026-11-10 "เอา 1 ดู"): a whole N canvas px per world px, the view follows the screen size (not FVW x FVH)
   const ZM = +new URLSearchParams(location.search).get('zoom') || 0; if (ZM) { Q = DPR; S = ZM; }
+  // owner 2026-11-10 "เอาฉากให้คม": the map, props and monsters are drawn at ARX (1.5) art px per world px, so a whole S / ARX
+  // makes every art pixel a whole number of screen pixels: S = the multiple of 1.5 nearest to the old fit (1.5 on a PC, 1.5 or 3
+  // on phones); the view then follows the screen (about the old 1266 x 585 on a PC). ?ar=0 = the old soft fit.
+  else if (ARX > 1 && !new URLSearchParams(location.search).get('sharp')) { Q = DPR; S = ARX * Math.max(1, Math.round(fit * DPR / ARX)); }
+  const FIT = ZM || (ARX > 1 && !new URLSearchParams(location.search).get('sharp'));
   cv.width = Math.round(innerWidth * Q); cv.height = Math.round(innerHeight * Q);
-  VW = ZM ? Math.ceil(cv.width / S) : FVW; VH = ZM ? Math.ceil(cv.height / S) : FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
+  VW = FIT ? Math.ceil(cv.width / S) : FVW; VH = FIT ? Math.ceil(cv.height / S) : FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
   cv.style.imageRendering = Math.abs(Q - DPR) < .01 ? 'pixelated' : 'auto';
   U = Math.max(2, Math.round(Q * 2 / S));        // size of numbers / sparks so they stay readable on phones
 }
@@ -308,26 +314,26 @@ const TFB = {grass: [104, 170, 72], flowergrass: [110, 172, 76], dirt: [168, 128
 // sits in the grass. Returns true when it painted the pixel (water and rice), false on a dike (painted as grass).
 const hash2 = (a, b) => { let h = Math.imul(a, 374761393) + Math.imul(b, 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 const PDY = {cw: 170, chh: 120, dk: 12, w: [[64, 128, 132], [92, 160, 156], [140, 196, 186]], r: [[38, 92, 26], [70, 140, 36], [118, 190, 58], [178, 222, 92]]};
-function paddyPx(x, y, D, o) {
-  const P = PADDY, cx = (x - P.x0) % PDY.cw, cy = (y - P.y0) % PDY.chh, ex = P.x1 - x, ey = P.y1 - y, dk = PDY.dk;
+function paddyPx(x, y, D, o, gx, gy) {   // gx, gy = art pixel (ARX per world px): the rows and dikes are laid out in art px
+  const P = PADDY, cx = (gx - P.x0 * ARX) % (PDY.cw * ARX), cy = (gy - P.y0 * ARX) % (PDY.chh * ARX), ex = P.x1 * ARX - gx, ey = P.y1 * ARX - gy, dk = PDY.dk * ARX;
   if (cx < dk || cy < dk || ex < dk || ey < dk) return false;
-  const n = GND.noise(x, y), b = BAYER[(y & 3) * 4 + (x & 3)];
+  const n = GND.noise(x, y), b = BAYER[(gy & 3) * 4 + (gx & 3)];
   const ci = ((x - P.x0) / PDY.cw | 0) * 7 + ((y - P.y0) / PDY.chh | 0) * 13, grow = (ci * 37 % 11) / 11;   // each cell a little different
   const ry = (cy - dk) % 9, px = (cx - dk + ((cy - dk) / 9 & 1) * 2) % 5;   // rows of rice 7 px deep, 2 px of water between them
   let c;
-  if (ry >= 7) c = PDY.w[(Math.sin(x / 23 + y / 61) + Math.sin(y / 9 - x / 40) * .6 > 1.3 + (b - .5) * .3) ? 2 : (n + b * .2 > .75 ? 1 : 0)];   // the water between the rows, sky glints
+  if (ry >= 7) c = PDY.w[(Math.sin(gx / ARX / 23 + gy / ARX / 61) + Math.sin(gy / ARX / 9 - gx / ARX / 40) * .6 > 1.3 + (b - .5) * .3) ? 2 : (n + b * .2 > .75 ? 1 : 0)];   // the water between the rows, sky glints
   else { let t = (ry < 2 ? 3 : ry < 4 ? 2 : ry < 6 ? 1 : 0) - (px === 0 && ry > 2 ? 1 : 0) + (grow > .7 && b > .6 ? 0 : grow < .25 && b < .4 ? -1 : 0);   // leaf tips light, a dark gap between tufts
     c = PDY.r[Math.max(0, Math.min(3, t))]; }
   let k = 1; if (cy < dk + 2) k = .62; else if (cx < dk + 2) k = .74;                    // the drop below the dike
   D[o] = c[0] * k; D[o + 1] = c[1] * k; D[o + 2] = c[2] * k; D[o + 3] = 255; return true;
 }
-function groundPx(x, y, D, o) {
+function groundPx(x, y, D, o, gx, gy) {   // x, y = world px (the terrain), gx, gy = art px (textures, dither, patterns)
   terr(x, y);
-  const b = BAYER[(y & 3) * 4 + (x & 3)];
+  const b = BAYER[(gy & 3) * 4 + (gx & 3)];
   let T = 'grass', k = 0;                                       // k 0 = the grass light patches
-  if (TK === 6 || (TK === 5 && !TEX.planks)) { const c = TK === 6 ? WD[TA ? 0 : 1] : x % 9 === 0 ? WD[0] : x % 9 < 4 ? WD[2] : WD[3]; D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = 255; return; }
+  if (TK === 6 || (TK === 5 && !TEX.planks)) { const c = TK === 6 ? WD[TA ? 0 : 1] : gx % 13 === 0 ? WD[0] : gx % 13 < 6 ? WD[2] : WD[3]; D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = 255; return; }
   if (TK === 5) { T = 'planks'; k = 1; }
-  else if (TK === 8) { if (paddyPx(x, y, D, o)) return; k = .95 + GND.noise(x, y) * .07; }   // a dike: grass
+  else if (TK === 8) { if (paddyPx(x, y, D, o, gx, gy)) return; k = .95 + GND.noise(x, y) * .07; }   // a dike: grass
   else if (TK === 4) { T = 'water'; k = TA < .07 && b < .7 ? 1.18 : 1.04 - Math.min(1, TA) * .3; }
   else if (TK === 3) { if (!(TA > .6 && b < (TA - .6) / .4)) { T = 'sand'; k = 1; } }
   else if (TK === 2) { if (!(TA > .82 && b < (TA - .82) / .18)) { T = 'cobble'; k = 1; } }
@@ -341,34 +347,36 @@ function groundPx(x, y, D, o) {
     if (m2 < 67600) { const md = Math.sqrt(m2); if (md < 200 || b < (260 - md) / 60) T = 'flowergrass'; } }
   if (!k) k = .9 + GND.noise(x, y) * .2;
   const t = TEX[T];
-  if (t) { const i = T === 'planks' ? ((x % t.h) * t.w + (y % t.w)) * 4 : ((y % t.h) * t.w + (x % t.w)) * 4; /* planks turned across the road */ D[o] = t.d[i] * k; D[o + 1] = t.d[i + 1] * k; D[o + 2] = t.d[i + 2] * k; }
+  if (t) { const i = T === 'planks' ? ((gx % t.h) * t.w + (gy % t.w)) * 4 : ((gy % t.h) * t.w + (gx % t.w)) * 4; /* planks turned across the road */ D[o] = t.d[i] * k; D[o + 1] = t.d[i + 1] * k; D[o + 2] = t.d[i + 2] * k; }
   else { const c = TFB[T]; D[o] = c[0] * k; D[o + 1] = c[1] * k; D[o + 2] = c[2] * k; }
   D[o + 3] = 255;
 }
 // a chunk is painted in bands of rows (BAND per call) so walking into a new area does not stall a frame
 const BAND = 16;
 function chunkStep(ch, rows) {
-  const {P, X0, Y0, W, H} = ch, D = P.d, y1 = Math.min(H, ch.y + rows);
-  for (let y = ch.y; y < y1; y++) for (let x = 0, o = y * W * 4; x < W; x++, o += 4) groundPx(X0 + x, Y0 + y, D, o);
-  ch.y = y1; if (ch.y < H) return;
+  // the chunk canvas is ARX art px per world px (owner 2026-11-10 "เอาฉากให้คม"); ch.y counts art rows
+  const {P, X0, Y0} = ch, D = P.d, WA = P.w, HA = P.h, y1 = Math.min(HA, ch.y + Math.round(rows * ARX)), GX = X0 * ARX, GY = Y0 * ARX;
+  for (let y = ch.y; y < y1; y++) { const wy = Y0 + (y / ARX | 0); for (let x = 0, o = y * WA * 4; x < WA; x++, o += 4) groundPx(X0 + (x / ARX | 0), wy, D, o, GX + x, GY + y); }
+  ch.y = y1; if (ch.y < HA) return;
+  const W = ch.W, H = ch.H;
   for (const d of GND.deco) {                                   // lily pads (pink flowers on some), reeds along the shore
     if (d.x < X0 - 12 || d.x > X0 + W + 12 || d.y < Y0 - 4 || d.y > Y0 + H + 16) continue;
-    const x = d.x - X0, y = d.y - Y0;
-    if (d.k === 0) { P.disc(x, y, d.r + 1, d.r * .6 + 1 | 0, LP[0]); P.disc(x, y, d.r, d.r * .6 | 0, LP[1]); P.set(x - 1, y - 1, LP[2]);
-      for (let q = 0; q < d.r; q++) P.set(x + q, y, LP[3]);
+    const x = Math.round((d.x - X0) * ARX), y = Math.round((d.y - Y0) * ARX), r = Math.round(d.r * ARX), h = Math.round(d.h * ARX);
+    if (d.k === 0) { P.disc(x, y, r + 1, r * .6 + 1 | 0, LP[0]); P.disc(x, y, r, r * .6 | 0, LP[1]); P.set(x - 1, y - 1, LP[2]);
+      for (let q = 0; q < r; q++) P.set(x + q, y, LP[3]);
       if (d.fl) { P.set(x, y - 2, LP[4]); P.set(x + 1, y - 2, LP[4]); P.set(x, y - 3, LP[5]); } }
-    else for (let q = 0; q < d.h; q++) P.set(x, y - q, RD[q > d.h - 3 && d.s < .5 ? 2 : q & 1]);
+    else for (let q = 0; q < h; q++) P.set(x, y - q, RD[q > h - 3 && d.s < .5 ? 2 : (q * 2 / 3 | 0) & 1]);
   }
   const c = P.done(), g = c.getContext('2d');
   for (const p of PROPS) for (const s of p.shades || []) {      // the props' ground shadows
     if (s.x + s.img.width < X0 || s.x > X0 + W || s.y + s.img.height < Y0 || s.y > Y0 + H) continue;
-    g.globalAlpha = s.a; g.drawImage(s.img, s.x - X0, s.y - Y0); }
+    g.globalAlpha = s.a; g.drawImage(s.img, Math.round((s.x - X0) * ARX), Math.round((s.y - Y0) * ARX), Math.round(s.img.width * ARX), Math.round(s.img.height * ARX)); }
   g.globalAlpha = 1; ch.c = c; delete ch.P;
 }
 function chunk(i, j) {
   const k = i + ',' + j; let ch = CHUNKS.get(k);
   if (!ch) { const X0 = i * CH, Y0 = j * CH, W = Math.min(CH, WW - X0), H = Math.min(CH, WH - Y0);
-    ch = {X0, Y0, W, H, y: 0, P: painter(W, H), c: null}; CHUNKS.set(k, ch); }
+    ch = {X0, Y0, W, H, y: 0, P: painter(Math.round(W * ARX), Math.round(H * ARX)), c: null}; CHUNKS.set(k, ch); }
   return ch;
 }
 const NCI = Math.ceil(WW / CH), NCJ = Math.ceil(WH / CH);
@@ -379,7 +387,7 @@ function prebuild(cx, cy) {                                       // at load: wh
 }
 function drawGroundChunks(cx, cy) {
   const [i0, j0, i1, j1] = viewChunks(cx, cy);
-  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0); }
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0, ch.W, ch.H); }
   // the nearest unpainted chunks just outside the view, a few rows at a time for ~4 ms a frame (a whole chunk is
   // ~50 ms on a PC, more on a phone); far chunks are dropped
   const t0 = performance.now();
@@ -604,7 +612,7 @@ async function loadProps() {
     : {grass: 'grass', dirt: 'dirt', sand: 'sand', water: 'water', cobble: 'cobble', flowergrass: 'flowergrass'};   // Thai map: the owner's riverside ground sheet
   await Promise.all(Object.keys(TEXF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
-    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/ground/' + TEXF[n] + '.png?v=' + (META.v || 1); })));
+    TEX[n] = {w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data}; ok(); }; im.onerror = () => ok(); im.src = (ARX > 1 ? 'art/action/ground_hr/' : 'art/action/ground/') + TEXF[n] + '.png?v=' + (META.v || 1); })));
   if (Object.keys(TEX).length < Object.keys(TEXF).length) for (const k of Object.keys(TEX)) delete TEX[k];   // all or nothing (code ground otherwise)
   await Promise.all(Object.keys(GPDEF).map(n => new Promise(ok => { const im = new Image(); im.onload = () => {
     const b = document.createElement('canvas'); b.width = im.width; b.height = im.height; const x = b.getContext('2d'); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0);
@@ -613,9 +621,18 @@ async function loadProps() {
     let x0 = im.width, y0 = im.height, x1 = 0, y1 = 0;                 // the opaque box (every 2nd pixel is enough)
     for (let yy = 0; yy < im.height; yy += 2) for (let xx = 0; xx < im.width; xx += 2) if (ad[(yy * im.width + xx) * 4 + 3] > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
     if (x1 < x0) { x0 = y0 = 0; x1 = im.width; y1 = im.height; }
+    if (ARX > 1) { const hi = new Image(); hi.onload = () => { im.hr = hi; const hb = document.createElement('canvas'); hb.width = hi.width; hb.height = hi.height;
+      const hx = hb.getContext('2d'); hx.translate(hi.width, 0); hx.scale(-1, 1); hx.drawImage(hi, 0, 0); b.hr = hb; }; hi.src = 'art/action/props_hr/' + n + '.png?v=' + (META.v || 1); }
     GPROP[n] = {a: im, b, foot: n === 'wall_side' ? im.height - 1 : foot, bbB: [x0, y0, x1 + 2, y1 + 2], bbA: [im.width - x1 - 2, y0, im.width - x0, y1 + 2]}; ok(); }; im.onerror = () => ok(); im.src = 'art/action/props/' + n + '.png?v=' + (META.v || 1); })));
 }
 let PROPS = [];
+// a prop's 1.5x picture (art/action/props_hr/, `PROP_K=1.5` in rebuild_props.py / thai_props.py) drawn 1 art px per screen px:
+// the low-res picture still gives the size, feet and boxes; the hr one is pinned at its feet (bottom centre)
+function drawProp(q) {
+  const h = q.img.hr; if (!h || ARX === 1) { ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); return; }
+  const w = h.width / ARX, hh = h.height / ARX, x = Math.round((q.x - q.ox + q.img.width / 2 - w / 2) * S) / S, y = Math.round((q.y - q.oy + q.img.height - hh) * S) / S;
+  ctx.drawImage(h, x, y, w, hh);
+}
 function makeProps() {
   PROPS = [];
   const far = (x, y, d) => PROPS.every(p => Math.hypot(p.x - x, p.y - y) > d);
@@ -2759,11 +2776,13 @@ const MOBS = {};
 async function loadMobs() {
   try { const txt = await fetch('art/action/mobs/index.json', {cache: 'no-cache'}).then(r => r.text()), idx = JSON.parse(txt);
     let v = 0; for (let i = 0; i < txt.length; i++) v = (v * 31 + txt.charCodeAt(i)) >>> 0;
+    // the 1.5x sheets (art/action/mobs_hr/, `MOB_K=1.5 mob_frames.py`) are drawn 1 art px per screen px; idx[k] stays the size
+    let hx = {}; if (ARX > 1) try { const t2 = await fetch('art/action/mobs_hr/index.json', {cache: 'no-cache'}).then(r => r.text()); hx = JSON.parse(t2); for (let i = 0; i < t2.length; i++) v = (v * 31 + t2.charCodeAt(i)) >>> 0; } catch (e) {}
     await Promise.all([...ROSTER[MSET], BOSSK[MSET]].filter(k => idx[k]).map(k => new Promise(ok => { const im = new Image();
       im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d');
         g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);   // white copy for the hit flash
-        MOBS[k] = {img: im, w: c, m: idx[k]}; ok(); };
-      im.onerror = ok; im.src = 'art/action/mobs/' + k + '.png?v=' + v; }))); } catch (e) {}
+        MOBS[k] = {img: im, w: c, m: idx[k], d: hx[k] || null}; ok(); };
+      im.onerror = ok; im.src = (hx[k] ? 'art/action/mobs_hr/' : 'art/action/mobs/') + k + '.png?v=' + v; }))); } catch (e) {}
 }
 function spawnWave() {
   const kinds = ROSTER[MSET].filter(k => MOBS[k]); if (!kinds.length) return spawnSlimes();
@@ -3181,7 +3200,8 @@ function drawMob2(m) {
   if (m.hp <= 0) { row = M.rows.death; f = Math.min(5, m.dieT / .11 | 0); }
   else if (m.st === 'atk') { row = M.rows.attack; f = m.af; }
   else if (m.moving) f = (m.wt * 9 | 0) % 6;
-  const fly = MOBT[m.kind].fly && m.hp > 0, X = Math.round(m.x), Y = Math.round(m.y - (fly ? 3 + Math.sin(G.t * 4 + m.wt) * 3 : 0) - (m.kz || 0));
+  const D = T.d || M, dk = T.d ? ARX : 1, SN = v => T.d ? Math.round(v * S) / S : Math.round(v);   // D = the drawn sheet (1.5x when there is one)
+  const fly = MOBT[m.kind].fly && m.hp > 0, X = SN(m.x), Y = SN(m.y - (fly ? 3 + Math.sin(G.t * 4 + m.wt) * 3 : 0) - (m.kz || 0));
   if (m.hp <= 0 && m.dieT > .8) ctx.globalAlpha = Math.max(0, 1 - (m.dieT - .8) / .7);
   const frz = m.frz > G.t;
   if (frz) ctx.filter = 'grayscale(1) brightness(1.25) sepia(1) hue-rotate(165deg) saturate(3)';
@@ -3189,7 +3209,7 @@ function drawMob2(m) {
   if (hr) { row = M.rows.hurt; f = Math.min(5, m.t / .045 | 0); }
   else if (M.rows.hurt !== undefined && m.hp > 0 && m.st !== 'atk' && G.t - (m.flT || -9) < .18) { row = M.rows.hurt; f = Math.min(2, (G.t - m.flT) / .06 | 0); }   // stout ones flinch without stopping
   const one = img => { ctx.save(); ctx.translate(X - m.face * 5 * k, Y); ctx.scale((m.face < 0 ? -1 : 1) * (1 + .12 * k), 1 - .12 * k);
-    ctx.drawImage(img, f * M.w, row * M.h, M.w, M.h, -M.fx, -M.fy, M.w, M.h); ctx.restore(); };
+    ctx.drawImage(img, f * D.w, row * D.h, D.w, D.h, -D.fx / dk, -D.fy / dk, D.w / dk, D.h / dk); ctx.restore(); };
   one(T.img); ctx.filter = 'none';
   if (m.frzOn && m.hp > 0 && PFX.pfx_freeze) { const P = PFX.pfx_freeze, q = P.m, e = G.t - m.frz0, left = m.frz - G.t,   // the ice block
       te = e < .62 ? e : left < .3 ? 2.2 + (.3 - left) : .62 + ((e - .62) % 1.4), i = Math.min(q.n - 1, te * q.fps | 0), sc = clamp(M.size / 52, .8, 2.6);
@@ -3308,8 +3328,8 @@ function drawDigits(n, x, y, sc, col) {
 }
 function drawMap() {             // ?test=map overview
   const k = Math.min(cv.width / WW, cv.height / WH); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.imageSmoothingEnabled = true;
-  for (let j = 0; j < NCJ; j++) for (let i = 0; i < NCI; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0); }
-  for (const q of PROPS) ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy));
+  for (let j = 0; j < NCJ; j++) for (let i = 0; i < NCI; i++) { const ch = chunk(i, j); if (!ch.c) chunkStep(ch, CH); ctx.drawImage(ch.c, ch.X0, ch.Y0, ch.W, ch.H); }
+  for (const q of PROPS) drawProp(q);
   ctx.fillStyle = '#ff3b3b'; ctx.fillRect(G.p.x - 40, G.p.y - 40, 80, 80);
 }
 function menuCam() { const t = G.menu.t; return [WW * .5 + WW * .3 * Math.sin(t * .021) - VW / 2, WH * .52 + WH * .24 * Math.sin(t * .029 + 1) - VH / 2]; }   // a slow tour of the map
@@ -3377,7 +3397,7 @@ function draw() {
   const props = PROPS.filter(inView).map(q => ({y: q.y, d: () => {
     const hid = o => o.y < q.y && o.y > q.y - q.oy + 30 && Math.abs(o.x - q.x) < q.w * .42 && o.y - 50 > q.y - q.oy;   // standing behind it, inside its picture
     const cover = hid(p) || (q.oy > 90 && G.mobs.some(m => m.hp > 0 && (!m.camp || m.aggro) && Math.abs(m.x - p.x) < 520 && hid(m)));   // monsters in the fight too (owner: trees hid the fight)
-    if (cover) ctx.globalAlpha = hid(p) ? .4 : .55; ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); ctx.globalAlpha = 1; }}));
+    if (cover) ctx.globalAlpha = hid(p) ? .4 : .55; drawProp(q); ctx.globalAlpha = 1; }}));
   const rings = G.fx.filter(f => f.k === 'pfx' && f.depth).map(f => ({y: p.y + (f.depth === 'b' ? -.5 : .5), d: () => drawPfx(f)}));
   const away = s => s.k === 'arrow' && s.vy < 0;   // arrows flying up the screen go behind whoever stands in front of them
   const list = [{y: p.y, d: () => drawPlayer(p)}, ...rings, ...G.mobs.map(m => ({y: m.y, d: () => drawMob(m)})), ...props, ...G.pshots.filter(away).map(s => ({y: s.y, d: () => drawPShot(s)}))].sort((a, b) => a.y - b.y);
