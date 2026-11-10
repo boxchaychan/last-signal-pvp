@@ -206,10 +206,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 190 | jangsan_tiger | attack | done | `art/incoming/mobs/anim/jangsan_tiger_attack.png` |
 | 191 | jangsan_tiger | death | done | `art/incoming/mobs/anim/jangsan_tiger_death.png` |
 | 192 | jangsan_tiger | hurt | done | `art/incoming/mobs/anim/jangsan_tiger_hurt.png` |
-| 193 | jeoseung_saja | walk | todo | `art/incoming/mobs/anim/jeoseung_saja_walk.png` |
-| 194 | jeoseung_saja | attack | todo | `art/incoming/mobs/anim/jeoseung_saja_attack.png` |
-| 195 | jeoseung_saja | death | todo | `art/incoming/mobs/anim/jeoseung_saja_death.png` |
-| 196 | jeoseung_saja | hurt | todo | `art/incoming/mobs/anim/jeoseung_saja_hurt.png` |
+| 193 | jeoseung_saja | walk | done | `art/incoming/mobs/anim/jeoseung_saja_walk.png` |
+| 194 | jeoseung_saja | attack | done | `art/incoming/mobs/anim/jeoseung_saja_attack.png` |
+| 195 | jeoseung_saja | death | done | `art/incoming/mobs/anim/jeoseung_saja_death.png` |
+| 196 | jeoseung_saja | hurt | done | `art/incoming/mobs/anim/jeoseung_saja_hurt.png` |
 | 197 | boss_bulgasari | walk | todo | `art/incoming/mobs/anim/boss_bulgasari_walk.png` |
 | 198 | boss_bulgasari | attack | todo | `art/incoming/mobs/anim/boss_bulgasari_attack.png` |
 | 199 | boss_bulgasari | death | todo | `art/incoming/mobs/anim/boss_bulgasari_death.png` |
