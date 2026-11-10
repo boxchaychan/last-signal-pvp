@@ -104,8 +104,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 69 | kelpie | done | Celtic | medium |
 | 70 | spriggan | done | Celtic | large |
 | 71 | boss_wyrm | done | Celtic boss | huge |
-| 72 | babi_ngepet | todo | Southeast Asia | small |
-| 73 | orang_minyak | todo | Southeast Asia | medium |
+| 72 | babi_ngepet | done | Southeast Asia | small |
+| 73 | orang_minyak | done | Southeast Asia | medium |
 | 74 | pocong | todo | Southeast Asia | medium |
 | 75 | pontianak | todo | Southeast Asia | medium |
 | 76 | tikbalang | todo | Southeast Asia | large |
