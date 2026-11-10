@@ -19,7 +19,7 @@
 </head>
 <body>
 <div id="hud">แมพแบบภาพตัวอย่าง · WASD เดิน · J ตี · Q E R F Z X สกิล</div>
-<div id="fx"><button id="bTilt">เบลอขอบ: เปิด</button><button id="bZoom">ซูม</button></div>
+<div id="fx"><button id="bTilt">เบลอขอบ: ปิด</button><button id="bZoom">ซูม</button></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="sk"><button data-k="q">Q</button><button data-k="e">E</button><button data-k="r">R</button><button data-k="atk" class="big">⚔</button><button data-k="f">F</button><button data-k="z">Z</button><button data-k="x">X</button></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
@@ -37,7 +37,7 @@ const S128 = HQ.get('s') !== '64', FIG = S128 ? 113 : 55, DENS = FIG / 2;   // t
 // so he looks smaller in a bigger world; the hero and the wolves keep their size. ?ms=1 = the same pixel size as the hero
 // only the big things (trees, houses, tents, mills, statues) get bigger; small props, grass and flowers stay at the hero's pixel size
 const BIGP = /oak|pine|house|cottage|tent|watermill|flagpole|statue|pillar|tower|mill/;
-const MS = S128 ? (+HQ.get('ms') || 1.5) : 1, MDENS = DENS / MS;
+const MS = S128 ? (+HQ.get("ms") || 1.5) : 1, MDENS = DENS / MS;
 const L = S128 ? Math.round(2 * MS) : 1;                             // layout scale: at true 128 scale the trees are 5-6x the hero, so the whole map is twice as big
 const W = 72 * L, H = 52 * L;                       // tiles; the hero is ~2 tiles tall
 const map = [];                                     // 0 grass, 1 road, 2 water, 3 bridge, 4 flower grass
@@ -60,13 +60,13 @@ const HGT = [0.16, 0, -0.3, 0, 0.16];
 const hAt = (x, z) => HGT[(map[z | 0] || [])[x | 0]] || 0;
 
 const renderer = new THREE.WebGLRenderer({antialias: false});
-renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);   // owner "เอาให้ไม่เบลอ": full phone resolution (2 made 3x phones upscale = soft) renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 const FOGC = 0x9aa889;
 const scene = new THREE.Scene(); scene.fog = new THREE.Fog(FOGC, 80, 150); scene.background = new THREE.Color(FOGC);
 const cam = new THREE.PerspectiveCamera(+HQ.get('fov') || 18, innerWidth / innerHeight, 1, 400);
-const DISTS = S128 ? [36, 74] : [85, 64, 48];   /* owner "ตัวละครเราเล็กไป": close with the 128 hero by default, far on the zoom button */ let DI = 0, ZOOM = +HQ.get("dist") || DISTS[0];   // owner "ให้ดูตัวเล็ก แล้วซูมออกไปอีก": far by default
+const DISTS = S128 ? [18, 36, 74] : [85, 64, 48];   /* owner "ซูมตัวละครเพิ่ม 1 เท่า": camera twice as close, the 128 hero at 2 screen px per art px */   /* owner "ตัวละครเราเล็กไป": close with the 128 hero by default, far on the zoom button */ let DI = 0, ZOOM = +HQ.get("dist") || DISTS[0];   // owner "ให้ดูตัวเล็ก แล้วซูมออกไปอีก": far by default
 const PITCH = (+HQ.get('pitch') || 52) * Math.PI / 180;
 const sun = new THREE.DirectionalLight(0xffdcae, 1.25); sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -45, right: 45, top: 40, bottom: -40, near: 1, far: 120}); sun.shadow.bias = -0.0006;
@@ -121,10 +121,13 @@ for (const k in BUF) { const m = new THREE.Mesh(merge(BUF[k]), mats[k]); m.recei
 // ---------- upright cards; the camera never turns, so every card simply faces +z ----------
 function cardMat(t) { return new THREE.MeshLambertMaterial({map: t, alphaTest: .5, side: THREE.DoubleSide}); }
 function depthMat(t) { return new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: .5}); }
-const solo = [];
+const solo = [], BIGC = [];
+// a big tree / house standing between the camera and the hero turns see-through, so he is never hidden
+function seeThrough() { for (const m of BIGC) { const dz = m.position.z - hero.z, w = Math.abs(m.scale.x) / 2, front = dz > 0 && dz < m.scale.y * .9 && Math.abs(m.position.x - hero.x) < w * .8;
+  const o = front ? .3 : 1; m.material.opacity += (o - m.material.opacity) * .2; m.material.depthWrite = m.material.opacity > .95; } }
 function card(src, x, z, hW, opt = {}) {
   const t = tex(src), m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), cardMat(t)); m.castShadow = true;
-  m.customDepthMaterial = depthMat(t); x *= L; z *= L; m.position.set(x, hAt(x, z), z); scene.add(m);
+  m.customDepthMaterial = depthMat(t); x *= L; z *= L; m.position.set(x, hAt(x, z), z); scene.add(m); if (BIGP.test(src)) { m.material.transparent = true; BIGC.push(m); }
   const fit = () => { const im = t.image; if (im && im.width) { const h = S128 ? im.height / (BIGP.test(src) ? MDENS : DENS) * (opt.k || 1) : hW; m.scale.set(h * im.width / im.height, h, 1); } }; t.image ? fit() : null; solo.push(fit); return m; }
 LD.manager.onLoad = () => solo.forEach(f => f());
 // instanced small things (grass tufts, ferns, flowers): one draw call each kind
@@ -293,9 +296,9 @@ st.addEventListener('pointerup', () => { stick.id = null; stick.x = stick.y = 0;
 function mv(e) { const r = st.getBoundingClientRect(); let dx = e.clientX - r.left - 60, dy = e.clientY - r.top - 60; const l = Math.hypot(dx, dy); if (l > 44) { dx *= 44 / l; dy *= 44 / l; }
   stick.x = dx / 44; stick.y = dy / 44; kn.style.left = 40 + dx + 'px'; kn.style.top = 40 + dy + 'px'; }
 // ---------- post: strong tilt-shift (only a band round the hero stays sharp), soft bloom-ish lift, warm grade, vignette ----------
-let TILT = true;
+let TILT = false;   // owner "เอาให้ไม่เบลอ": tilt-shift off by default (the button turns it on)
 const rt = new THREE.WebGLRenderTarget(1, 1); rt.texture.encoding = THREE.sRGBEncoding;
-const post = new THREE.ShaderMaterial({uniforms: {tex: {value: rt.texture}, px: {value: new THREE.Vector2()}, on: {value: 1}},
+const post = new THREE.ShaderMaterial({uniforms: {tex: {value: rt.texture}, px: {value: new THREE.Vector2()}, on: {value: 0}},
   vertexShader: 'varying vec2 v; void main(){ v = uv; gl_Position = vec4(position.xy, 0., 1.); }',
   fragmentShader: `uniform sampler2D tex; uniform vec2 px; uniform float on; varying vec2 v;
     void main(){ float b = on * smoothstep(.2, .5, abs(v.y - .5)) * 3.5;
@@ -319,7 +322,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
   NOW = now / 1000; const l = Math.hypot(mx, mz); hero.moving = l > .15 && !hero.act;
   if (hero.moving) { mx /= Math.max(1, l); mz /= Math.max(1, l); const nx = hero.x + mx * 5 * dt, nz = hero.z + mz * 5 * dt, t = (map[nz | 0] || [])[nx | 0];
     if (t !== undefined && t !== 2) { hero.x = nx; hero.z = nz; } hero.dir = DIR8[(Math.round(Math.atan2(mz, mx) / (Math.PI / 4)) + 8) % 8]; }
-  const gy = hAt(hero.x, hero.z); hmesh.position.set(hero.x, gy, hero.z); drawHero(dt); stepWolves(dt); stepFx(dt); shadowGeo();
+  const gy = hAt(hero.x, hero.z); hmesh.position.set(hero.x, gy, hero.z); drawHero(dt); stepWolves(dt); stepFx(dt); shadowGeo(); seeThrough();
   SHAKE = Math.max(0, SHAKE - dt); const sk = SHAKE * 1.2, jx = (Math.random() - .5) * sk, jz = (Math.random() - .5) * sk;
   cam.position.set(hero.x + jx, gy + Math.sin(PITCH) * ZOOM, hero.z + Math.cos(PITCH) * ZOOM + jz); cam.lookAt(hero.x + jx, gy + .8, hero.z + jz);
   sun.position.set(hero.x - 26, 30, hero.z - 6); sun.target.position.set(hero.x, 0, hero.z);   // low sun from the upper left: long shadows toward the lower right
