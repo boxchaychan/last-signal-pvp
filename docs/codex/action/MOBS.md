@@ -96,8 +96,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 61 | vukodlak | done | Slavic | medium |
 | 62 | vodyanoy | done | Slavic | medium |
 | 63 | leshy | done | Slavic | large |
-| 64 | boss_izba | todo | Slavic boss | huge |
-| 65 | knocker | todo | Celtic | small |
+| 64 | boss_izba | done | Slavic boss | huge |
+| 65 | knocker | done | Celtic | small |
 | 66 | redcap | todo | Celtic | small |
 | 67 | pooka | todo | Celtic | medium |
 | 68 | banshee | todo | Celtic | medium |
