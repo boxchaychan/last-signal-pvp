@@ -102,8 +102,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 67 | pooka | done | Celtic | medium |
 | 68 | banshee | done | Celtic | medium |
 | 69 | kelpie | done | Celtic | medium |
-| 70 | spriggan | todo | Celtic | large |
-| 71 | boss_wyrm | todo | Celtic boss | huge |
+| 70 | spriggan | done | Celtic | large |
+| 71 | boss_wyrm | done | Celtic boss | huge |
 | 72 | babi_ngepet | todo | Southeast Asia | small |
 | 73 | orang_minyak | todo | Southeast Asia | medium |
 | 74 | pocong | todo | Southeast Asia | medium |
