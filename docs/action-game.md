@@ -804,4 +804,10 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   `drawProp` pins the hr picture at the low-res one's bottom centre), monsters `art/action/mobs_hr/` (`MOB_K=1.5 mob_frames.py`,
   `MOBS[k].d`; frost_wolf has no hr sheet, its see-through source frames are not in the repo). Effects are still scaled.
   `?ar=0` = the old soft fit, `?n128=0` = the old shrunk heroes, `?zoom=N` / `?hz=N` = zoom tests.
+- **Swordsman Q = the owner's ParticleFX fire line** (2026-11-10, pasted 9x8 sheet on see-through, 66 frames, raw
+  `art/incoming/pfx/fire-line-sheet.webp`; "ไปใช้คู่กับท่า 1 ดาบ ละทำช่องสกิลเป็นแนวยาว"): cut on a 222x79 grid → `fx/pfx_fireline.png`
+  (manifest `len` 133 = the line x 35..168 at y 50, anchor at its near end). `groundSplit` lays it along the crack (k 'esplit' with
+  `key`, from frame 0, scaled to the crack's length, height ×.85 of that), hits land as the fire runs out (t × .55 s); the
+  Earthsplitter sheet stays as the fallback. Skills with `line: 1` (SWS[1]) draw a straight band as their aim marker (the
+  crack's reach and width) instead of the range ring + target circle. Its skill icon uses the fire line too.
 
