@@ -814,4 +814,10 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   boss_jotun (walk / attack / death / hurt) → `mob_frames.py` + `MOB_K=1.5` (both sheets); `?test=mobs&set=norse` shows all seven
   with the boss. Queue `docs/codex/action/MOB_ANIM.md` copied from Codex's branch (172 rows done). frost_wolf keeps its low-res
   sheet (its see-through source frames are not in the repo).
+- **Rogue 3-hit combo** (owner 2026-11-10 with Ozzbit Games' free hero template zip, "คอมโบเค้าสวยมาก ใช้กับมีดเราได้ไหม" → "คอมโบ 3";
+  that pack is personal / non-commercial only, so nothing of it is used, only the idea): `atkPlan` gives the rogue's normal
+  attack a frame list `fr` = the sheet's two swings, then its first swing again as a finisher (hits 10 / 11 / 17); each hit
+  calls `rogueCres` = a crescent drawn in code (`drawCres`: fat white middle, neon rim, dark edge, squashed to the ground
+  angle, the tail eaten toward the tip after 25%, sparkles off the tip), alternating forehand / backhand, the finisher
+  bigger; red during rage.
 
