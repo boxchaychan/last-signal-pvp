@@ -23,8 +23,22 @@ GREEN, MAGENTA = 'flat pure green (#00FF00)', 'flat pure magenta (#FF00FF)'
 END = {'once': 'Quick build-up, a strong burst, then it fades out completely and the video ends on the empty background.',
        'loop': 'It LOOPS seamlessly: no fade-out, the last frame matches the first.'}
 
+BZTONE = ('Colours ONLY black, glowing NEON RED and red-orange fire: black ink shapes and black smoke, neon red glowing rims and '
+          'light, small red-orange fire cores; no yellow, no blue, no green, no purple.')
 # key, Thai name, kind, seconds, once/loop, size line, effect, background
 FX = [
+ ('Berserker (black + neon red)', 'เบอร์เซิร์กเกอร์ (ดำ แดงนีออน)', [
+  ('bz_hit', 'โดนฟัน (ตีธรรมดา)', 'B', 1, 'once', 'small: one fifth of the picture wide', 'a heavy greatsword hit impact: a black jagged starburst with a neon red rim and a hot red-orange core, sharp black-red spikes and red sparks flying out', GREEN),
+  ('bz_swing', 'รอยดาบใหญ่ (ตีธรรมดา)', 'S', 1, 'once', 'half of the picture wide', 'one huge heavy greatsword swing from left to right: a THICK black crescent trail with a glowing neon red edge, red-orange fire flickering along it, red sparks flung off the tip', GREEN),
+  ('bz_triple', 'E ฟาดสามยมทูต', 'S', 2, 'once', 'half of the picture wide', 'three heavy greatsword slashes one after another: a wide black crescent with a neon red edge from right to left, a wider one from left to right, then a downward blow on the right that splits the ground with neon red cracks and fire; each trail breaks into black smoke and red embers', GREEN),
+  ('bz_slam', 'R / F ทุบพื้น (ระเบิด)', 'B', 2.5, 'once', 'the blast about one third of the picture wide and as tall', 'a brutal ground-slam blast: a red flash, a puffy explosion of black smoke clouds with neon red glowing rims and a red-orange fire core, black rock chunks thrown up, red embers, then the smoke thins away', GREEN),
+  ('bz_slam_ring', 'R / F ทุบพื้น (คลื่นบนพื้น)', 'D', 2, 'once', 'a ring growing to half of the picture wide', 'seen from above: a thick black shockwave ring with a neon red edge racing outward on the ground, jagged neon red cracks spreading from the centre like a spider web, black rock pieces, then the cracks glow like lava and fade', GREEN),
+  ('bz_crack_line', 'R ชาร์จฟัน (รอยแยกพุ่ง)', 'D', 2, 'once', 'a line across half of the picture', 'seen from above: a crack in the ground tearing from LEFT to RIGHT, neon red light and red-orange fire bursting up along it, black rock shards popping, then it cools to black', GREEN),
+  ('bz_shackle', 'Z ตรวนนรก', 'D', 2.5, 'once', 'a circle one third of the picture wide', 'seen from above: a glowing neon red rune circle on the ground, black chains with red-hot glowing links bursting out of it, crossing over the middle and pulling tight, red light pulsing along the links, then they crumble into black smoke', GREEN),
+  ('bz_rage', 'X ร่างคลั่งโลหิต (ออร่า)', 'B', 3, 'loop', 'a column one fifth wide, half tall', 'a berserk rage aura round an empty spot where a fighter stands: black smoke and neon red flames rising like a burning column, glowing red cracks of light flickering, red embers drifting up, a crimson pulse every second', GREEN),
+  ('bz_wave', 'X คลื่นฟัน (ตอนคลั่ง)', 'S', 1.5, 'once', 'the crescent one fifth of the picture tall', 'a slash wave flying from left to right: a thick black crescent with a glowing neon red rim and red-orange fire, speed lines behind, then it breaks into red sparks and black smoke', GREEN),
+  ('bz_hook', 'F โซ่กระชาก', 'S', 1.5, 'once', 'a line across two thirds of the picture', 'a black chain with a hooked claw and glowing neon red links shooting from the left to the right and biting into the ground with a red flash and a small black-red burst', GREEN),
+ ]),
  ('Hits & slashes', 'โดนตี / ฟัน', [
   ('hit_spark', 'ประกายโดนตี', 'B', 1, 'once', 'small: one fifth of the picture wide', 'a punchy hit impact: a white-yellow star flash with sharp spiky sparks bursting out and a tiny puff of smoke', GREEN),
   ('hit_crit', 'คริติคอล', 'B', 1.5, 'once', 'one third of the picture wide', 'a big critical hit: a jagged red-orange starburst with a white core, thick spikes shooting outward, small stars and sparks flying', GREEN),
@@ -91,8 +105,9 @@ FX = [
 
 def prompt(e):
     key, th, kind, sec, end, size, what, bg = e
+    tone = (' ' + BZTONE) if key.startswith('bz_') else ''
     return (f'Create a {sec:g}-second VIDEO, LANDSCAPE 16:9, of ONE game visual effect, no character, no people, no weapon. {STYLE} '
-            f'Effect: {what}. {KIND[kind][0]} Size: {size}, in the middle of the picture with wide empty margins on all four sides; '
+            f'Effect: {what}.{tone} {KIND[kind][0]} Size: {size}, in the middle of the picture with wide empty margins on all four sides; '
             f'nothing ever touches or leaves the edges. {END[end]} Background: {bg} the whole time, nothing else on it: no ground '
             f'texture, no floor, no landscape, no text. Locked camera: no zoom, no pan, no tilt, no shake, no cuts.')
 
