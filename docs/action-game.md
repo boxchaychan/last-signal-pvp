@@ -820,4 +820,46 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   calls `rogueCres` = a crescent drawn in code (`drawCres`: fat white middle, neon rim, dark edge, squashed to the ground
   angle, the tail eaten toward the tip after 25%, sparkles off the tip), alternating forehand / backhand, the finisher
   bigger; red during rage.
+- **Move-copy tool** (owner 2026-11-10 "ทำทูลขึ้นมาสำหรับการลอกท่า ... ให้ใช้ในโทรศัพท์ได้"): copies an example animation's POSES onto
+  our own character (no pixels of theirs). Steps: PixelLab `estimate_skeleton` on every example frame (small figures are cropped
+  and enlarged first, the 256 px limit) and on our still (0.1 each) → retarget: each of our bones takes the example bone's
+  angle and keeps our length, built out from our hips; our own face rides on the neck → `animate_with_skeleton_v3`
+  (`first_frame_url` = our still, `first_frame_keypoints`, view low top-down; 3 frames 2 gen, 4-14 = 3, 15 = 4), results from
+  `GET /mcp/images/<job>/download?index=N`. Command line: `tools/art/pose_copy.py <frames dir | sheet.png[:cols]> <still.png>
+  <out> "<looks>" [action] [direction] [--dry]`. Phone page: `posecopy.html` (GitHub Pages; the owner's PixelLab key is typed
+  in and kept in that browser's localStorage only; PixelLab's API allows calls from boxchaychan.github.io): example file(s) →
+  hero + direction from `art/action/n128/<hero>_still.png` (or an own picture) → อ่านท่า (preview of both skeletons) →
+  สร้างท่า (plays the result, saves a one-row PNG). First test: Ozzbit's combo_1 + end (7 frames) on the rogue, east, 3 gen
+  → `art/incoming/action/rogue/pose_copy_ozzbit/` (low lunge with the dagger forward, back to standing; she keeps her look).
+- **Lessons from the owner's sample idle / walk** (2026-11-10 `sampleidlewalk.zip`, hand-made 64 px Aseprite files, not kept in
+  the repo): idle 10 frames at 60 ms (the body barely moves, the hair and cloak sway and lag = secondary motion), walk 26 frames
+  at 50 ms with a turn-around inside it, a 2-frame "from idle" link into the walk, 26-27 colours. Taken into the game (free):
+  heroes turn through the in-between directions (`p.vd`, a step every 45 ms; a half-turn passes the front view), idle / run
+  start from their first frame when the state changes (`p.stT0`), idle 7 → 9 fps. For future PixelLab idles / runs: ask for
+  hair and cape swaying and lagging behind, more frames (12-16) where it matters.
+- **Guardian moves copied from a knight pack** (owner 2026-11-10, "FREE Knight 2D Pixel Art v1.2": games OK incl. commercial, no
+  redistribution as an asset, so its sheets are NOT in this repo; frames 112x96): `pose_copy.py` ATTACK 1 (8) / 2 (9) / 3 (11) /
+  BLOCK (6) onto the Guardian's east rotation (paid character 4577584b…), 3 gen each = 12 → `art/incoming/action/guardian/
+  pose_copy_knight/<move>/r*.png` + `preview.gif`: overhead cut into a lunge, a thrust, a low lunge cut, shield raised.
+- **Guardian playable** (owner 2026-11-10 "ทำอัศวินโล่ให้เสร็จ ... แค่กลับด้าน", no new PixelLab jobs): `tools/art/guardian_build.sh`
+  puts the paid download's idle / run / roll / hurt / death (8 dirs, death 4) together with the attacks we have: attack = knight
+  copy 1 + 2 (east, hits 3 / 12) and gd_slash + gd_bash (south-east, hits 4 / 13); leap and charge = knight copy 3 (east) /
+  gd_overhead (south-east); guard = knight block (east); every other direction plays one of those, mirrored for the left →
+  `art/action/n128/guardian.*` + `art/action/guardian.*` (2/3, menu card). In action.html `?hero=guardian` (menu card อัศวินโล่):
+  `SWL` = swordsman or guardian runs the swordsman's kit (SWS, `swordSk`, iron passive, parry on Z), the Guardian takes 25% less
+  damage (`hurtPlayer`); skill names / icons / help copied from the swordsman (Z = ยกโล่สวน).
+- **Guardian attack fixed** (owner "ท่าฟันโคตรไม่สวย", "ดาบก็สั้น ขยายระยะฟัน", "เสียเครดิตเจนไปตั้งเยอะ"): the knight-pose copies looked
+  bad as attacks (the sword vanishes, the cape smears; ~16 credits that did not pay off, only the block is used), so the PixelLab
+  south-east slash + bash (and the overhead chop for leap / charge) now play in every direction, mirrored for the left. Reach
+  ×1.35, cone wider, and each hit draws a long gold-white crescent off his blade (`rogueCres(..., big)`).
+- **Outfit system tried and dropped** (owner 2026-11-10 "ระบบประกอบชุด" → test → "เละตามเคย" → "ไปทำแบบเดิม"): a helmet drawn in code
+  on the swordsman's head (head found per frame, hair cut above / beside it, back + front layers like the owner's clip) works
+  technically but looks pasted on: our heroes are one flat picture, a real outfit system needs characters drawn in layers from
+  the start. Classes stay separate characters (like the Guardian). The test stays behind `?helm=1/2/3` (off by default). A plain
+  base body was made in PixelLab before testing (Base Body 128, 670a351b…, 3 gen; not used).
+- **Berserker playable** (owner 2026-11-10 "เบอร์เซิร์กเกอร์ทำยัง", no new PixelLab jobs): `tools/art/berserker_build.sh` = paid base moves +
+  chain + the trial's south-east attacks (attack = bz_sweep + bz_slam, hits 2 / 13; leap / charge = bz_slam; spin (E) = bz_spin),
+  every other direction plays south-east, mirrored for the left → `art/action/n128/berserker.*` + `art/action/berserker.*`.
+  `?hero=berserker` (menu card เบอร์เซิร์กเกอร์): the swordsman's kit via `SWL`, slower heavier swings (ATK base 54 / hit 115),
+  damage ×1.3, reach ×1.35, red crescent cuts. His own kit from `docs/berserker.md` (chain Q, awakened rage X) is not built yet.
 
