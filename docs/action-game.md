@@ -915,7 +915,7 @@ Thai props unchanged. hd3d2 map scale back to 1 (the props themselves are smalle
 ### Assassin (rogue class 2) test skin (2026-11-11)
 Owner's GPT chibi assassin -> PixelLab `image_to_pixelart` 128 (1 gen) for the still; Meta AI clips (attack, attack2, run, hurt +
 death) cut with `tools/video/vid2px.py` on the PixelLab still's palette, feet locked, one cell (`tools/art/assassin_video_build.py`
-name=<dir>:<first,last> ...) -> `art/action/assassin/`. In the game only with `action.html?hero=rogue&skin=assassin`
+name=<dir>:<first,last> ...) -> `art/action/assassin/`. Removed from the game 2026-11-11 (owner "เอาแอสซาซินออก"; the raw clips and the build tool stay); it was `action.html?hero=rogue&skin=assassin`
 (`ASN`, `drawAssassin`): the two attack clips take turns, run while moving, hurt, death; the rogue's kit is unchanged.
 Meta redraws her a little differently in every clip (owner: "ไม่เหมือนต้นฉบับ"); PixelLab moves from the pixel still would keep
 her exact look (about 1 gen a move).
