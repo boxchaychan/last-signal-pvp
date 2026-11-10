@@ -1633,10 +1633,10 @@ function puff(x, y, c) { G.fx.push({k: 'puff', x, y, vx: (rnd() - .5) * 40, vy: 
 function spark(x, y, n, c) { for (let k = 0; k < n; k++) { const a = rnd() * Math.PI * 2, s = 80 + rnd() * 160; G.fx.push({k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, life: .18 + rnd() * .12, c}); } }
 // the combo's crescent cuts (owner 2026-11-10, after Ozzbit's free combo; drawn here, nothing copied): a fat white crescent
 // with a neon rim snaps out in front of her, the tail eats in toward the tip, the tip breaks into a few sparkles
-function rogueCres(p, i, fin) {
-  const a = Math.atan2(DV[p.dir][1], DV[p.dir][0]), rage = p.rage > G.t;
-  G.fx.push({k: 'cres', x: p.x + DV[p.dir][0] * 22, y: p.y - 30 + DV[p.dir][1] * 12, a, s: i === 1 ? -1 : 1, R: fin ? 52 : 40, t: 0, life: fin ? .3 : .22,
-    c: rage ? '#ff3050' : '#9fe8ff', d: rage ? '#5a0a1a' : '#2a3a7a'});
+function rogueCres(p, i, fin, big) {
+  const a = Math.atan2(DV[p.dir][1], DV[p.dir][0]), rage = p.rage > G.t, k = big ? 1.5 : 1;   // big: the Guardian's long cut
+  G.fx.push({k: 'cres', x: p.x + DV[p.dir][0] * (big ? 6 : 22), y: p.y - 30 + DV[p.dir][1] * (big ? 4 : 12), a, s: i === 1 ? -1 : 1, R: (fin ? 52 : 40) * k, t: 0, life: (fin ? .3 : .22) * (big ? 1.2 : 1),
+    c: rage ? '#ff3050' : big ? '#ffe9a8' : '#9fe8ff', d: rage ? '#5a0a1a' : big ? '#5a4a20' : '#2a3a7a'});
 }
 function drawCres(f) {
   const k = f.t / f.life, R = f.R * (k < .15 ? .8 + k / .15 * .2 : 1), sw = 2.3, eat = k < .25 ? 0 : (k - .25) / .75;   // the arc spans 2.3 rad; after 25% its tail is eaten
@@ -2982,7 +2982,8 @@ function stepPlayer(dt) {
         else if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
         else if (HERO === 'priest') holyBolt(p, P.dmg[hi], fin);
         else { if (HERO === 'rogue') rogueCres(p, hi, fin);
-          doHit(p, SWL ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: fin ? 150 : 170, cone: fin ? 60 : 95, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
+          if (HERO === 'guardian') rogueCres(p, hi, fin, 1);   // owner "ดาบก็สั้น ขยายระยะฟัน": a long steel crescent shows his reach
+          doHit(p, SWL ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: (fin ? 150 : 170) * (HERO === 'guardian' ? 1.35 : 1), cone: fin ? 70 : 105, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
       if (hi >= 0 || P.hits.includes(a.i + 1)) { p.x += DV[p.dir][0] * ATK.push; p.y += DV[p.dir][1] * ATK.push; }
     }
     if (p.a) {

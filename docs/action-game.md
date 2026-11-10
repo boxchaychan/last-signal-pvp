@@ -848,4 +848,8 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   `art/action/n128/guardian.*` + `art/action/guardian.*` (2/3, menu card). In action.html `?hero=guardian` (menu card อัศวินโล่):
   `SWL` = swordsman or guardian runs the swordsman's kit (SWS, `swordSk`, iron passive, parry on Z), the Guardian takes 25% less
   damage (`hurtPlayer`); skill names / icons / help copied from the swordsman (Z = ยกโล่สวน).
+- **Guardian attack fixed** (owner "ท่าฟันโคตรไม่สวย", "ดาบก็สั้น ขยายระยะฟัน", "เสียเครดิตเจนไปตั้งเยอะ"): the knight-pose copies looked
+  bad as attacks (the sword vanishes, the cape smears; ~16 credits that did not pay off, only the block is used), so the PixelLab
+  south-east slash + bash (and the overhead chop for leap / charge) now play in every direction, mirrored for the left. Reach
+  ×1.35, cone wider, and each hit draws a long gold-white crescent off his blade (`rogueCres(..., big)`).
 
