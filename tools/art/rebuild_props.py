@@ -10,6 +10,8 @@ from PIL import Image
 from scipy import ndimage
 
 M, OUT = 'art/incoming/action/map/', 'art/action/props/'
+# PROP_K=1.5: the same props at 1.5x the pixels into art/action/props_hr/ (action.html draws them 1 art px per screen px)
+K = float(os.environ.get('PROP_K', '1')); OUT2 = 'art/action/props_hr/' if K != 1 else OUT; os.makedirs(OUT2, exist_ok=True)
 SHEETS = {   # sheet: (file, names in props_px's blob order, cut enclosed white?)
     'nature': ('gpt_nature_cut.png', 'oak pine blossom bush boulder rocks grass flowers'.split(), True),
     'village': ('gpt_village_cut.png', 'house_red house_blue tower well fence barrel crate lantern'.split(), False),
@@ -41,7 +43,7 @@ for key in sys.argv[1:] or SHEETS:
     for i, n in enumerate(names):
         if not os.path.exists(OUT + n + '.png'): continue
         h = Image.open(OUT + n + '.png').height
-        tmp = tempfile.mkdtemp(); subprocess.run([sys.executable, 'tools/art/props_px.py', src, tmp, f'{i}={h}', '20'], check=True, capture_output=True)
+        tmp = tempfile.mkdtemp(); subprocess.run([sys.executable, 'tools/art/props_px.py', src, tmp, f'{i}={round(h * K)}', '20'], check=True, capture_output=True)
         with Image.open(os.path.join(tmp, f'prop{i}.png')) as im: size = im.size
-        shutil.copy(os.path.join(tmp, f'prop{i}.png'), OUT + n + '.png'); shutil.rmtree(tmp, ignore_errors=True)
+        shutil.copy(os.path.join(tmp, f'prop{i}.png'), OUT2 + n + '.png'); shutil.rmtree(tmp, ignore_errors=True)
         print(' ', n, size)
