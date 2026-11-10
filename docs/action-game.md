@@ -852,4 +852,9 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   bad as attacks (the sword vanishes, the cape smears; ~16 credits that did not pay off, only the block is used), so the PixelLab
   south-east slash + bash (and the overhead chop for leap / charge) now play in every direction, mirrored for the left. Reach
   ×1.35, cone wider, and each hit draws a long gold-white crescent off his blade (`rogueCres(..., big)`).
+- **Outfit system tried and dropped** (owner 2026-11-10 "ระบบประกอบชุด" → test → "เละตามเคย" → "ไปทำแบบเดิม"): a helmet drawn in code
+  on the swordsman's head (head found per frame, hair cut above / beside it, back + front layers like the owner's clip) works
+  technically but looks pasted on: our heroes are one flat picture, a real outfit system needs characters drawn in layers from
+  the start. Classes stay separate characters (like the Guardian). The test stays behind `?helm=1/2/3` (off by default). A plain
+  base body was made in PixelLab before testing (Base Body 128, 670a351b…, 3 gen; not used).
 
