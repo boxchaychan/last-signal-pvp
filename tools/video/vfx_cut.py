@@ -7,7 +7,8 @@
 #        [--anchor=x,y] [--edge=60] [--cols=8]
 #   --size: how wide the effect is in the game, in world px (the hero is ~76 tall; skill areas in
 #           art/incoming/action/berserker/fx_size/size_guide.png: leap 260, whirl 270, Q ring 300)
-#   --anchor: the ground point in VIDEO px (default: middle, near the bottom of everything drawn)
+#   --anchor: the ground point in VIDEO px (default: middle, near the bottom of everything drawn; --center or a key ending in
+#             _ring / _all / _shackle / burst: the frame centre = the start spark, and --size = the whole width)
 import sys, os, json, subprocess
 import numpy as np
 from PIL import Image
@@ -53,9 +54,13 @@ if __name__ == '__main__':
     x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
     # the effect's ground width = the widest row band in the lower third of the union box
     lower = al[y0 + (y1 - y0) * 2 // 3:y1]; cx = np.nonzero(lower.any(0))[0]; gw = (cx.max() - cx.min() + 1) if len(cx) else (x1 - x0)
+    CENTER = '--center' in sys.argv or key.endswith(('_ring', '_all', '_shackle', '_burst', 'burst'))   # effects that grow from the spark in the middle
+    if CENTER:   # the main body: columns that are covered in a fair share of the frames (stray sparks do not count)
+        cov = np.stack([k[..., 3] > 40 for k in K]).sum(0).sum(0).astype(float); live = np.nonzero(cov > cov.max() * .08)[0]
+        gw = (live.max() - live.min() + 1) if len(live) else (x1 - x0)
     sc = size / gw
     an = opt('anchor', None)
-    ax, ay = (float(v) for v in an.split(',')) if an else ((cx.min() + cx.max()) / 2 if len(cx) else (x0 + x1) / 2, y1 - (y1 - y0) * .1)
+    ax, ay = (float(v) for v in an.split(',')) if an else (V.shape[2] / 2, V.shape[1] / 2) if CENTER else ((cx.min() + cx.max()) / 2 if len(cx) else (x0 + x1) / 2, y1 - (y1 - y0) * .1)
     w, h = max(1, round((x1 - x0) * sc)), max(1, round((y1 - y0) * sc))
     rows = -(-n // cols); sheet = Image.new('RGBA', (w * cols, h * rows)); fr = []
     for i, k in enumerate(K):

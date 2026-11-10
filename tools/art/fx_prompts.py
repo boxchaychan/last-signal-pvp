@@ -157,9 +157,7 @@ def card(f):
     return (f'<div class="card"><div class="bh"><h2>{html.escape(th)} <small>{HERO[hero]}</small></h2>{st}</div>'
             f'<p class="note">{html.escape(does)} · {c * r} เฟรม ({c}×{r}) · {LAYOUT[lay][1]}{" · วนซ้ำ" if loop else ""}</p>'
             f'<div class="blk"><div class="bh"><span>พรอมต์</span><button class="cp">คัดลอก</button></div>'
-            f'<textarea rows="9" readonly>{html.escape(prompt(f))}</textarea></div>'
-            f'<div class="blk"><div class="bh"><span>พรอมต์วิดีโอ (Meta AI · พื้นเขียว)</span><button class="cp">คัดลอก</button></div>'
-            f'<textarea rows="7" readonly>{html.escape(vprompt(f))}</textarea></div></div>')
+            f'<textarea rows="9" readonly>{html.escape(prompt(f))}</textarea></div></div>')   # video prompts live in docs/vfx-pack.html only
 
 secs = ''.join(f'<h2 class="sec">{HERO[h]}</h2>' + ''.join(card(f) for f in FX if f[0] == h) for h in HERO)
 page = '''<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -179,7 +177,7 @@ h1+p{color:var(--dim);margin:0 0 12px}.sec{margin:22px 0 10px;font-size:19px}
 </style></head><body><main>
 <h1>พรอมต์เอฟเฟกต์สกิล</h1><p>สกิลที่ยังใช้เอฟเฟกต์เก่าหรือยืมของตัวอื่นอยู่ ทำทีละภาพ กดคัดลอกแล้ววางได้เลย นักธนูครบแล้ว นักดาบ Q กับนักมีด F ก็มีแล้ว เลยไม่มีในหน้านี้</p>
 <ol class="steps">
-<li><b>ทำเป็นวิดีโอก็ได้:</b> ใช้กล่อง "พรอมต์วิดีโอ" กับ Meta AI ไม่ต้องแนบรูป ได้คลิปแล้วกด Download ลงเครื่องก่อน แล้วแนบไฟล์ mp4 มา บอกชื่อสกิลด้วย เช่น "เบอร์เซิร์ก Q"</li>
+<li><b>อยากได้เป็นวิดีโอ:</b> ใช้หน้า <a href="vfx-pack.html">vfx-pack.html</a> ชุดเดียว</li>
 <li><b>หนึ่งภาพต่อหนึ่งเอฟเฟกต์:</b> ใช้ ChatGPT หรือเว็บที่ทำ Rapier Flurry / Bomb Arrow ก็ได้ วางพรอมต์ของการ์ดเดียว รอเสร็จแล้วค่อยทำการ์ดถัดไป</li>
 <li><b>พื้นหลังต้องโปร่ง:</b> ถ้าได้พื้นขาวหรือดำมา ส่งมาได้เหมือนกัน ผมตัดเอง</li>
 <li><b>ส่งเป็นไฟล์:</b> ภาพที่วางในแชทจะถูกย่อลง ถ้าส่งเป็นไฟล์ (หรือ zip หลายภาพ) จะคมกว่า บอกชื่อสกิลมาด้วย เช่น "นักดาบ F"</li>
