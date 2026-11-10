@@ -35,6 +35,8 @@ const HQ = new URLSearchParams(location.search);
 const S128 = HQ.get('s') !== '64', FIG = S128 ? 113 : 55, DENS = FIG / 2;   // the figure is 2 units tall
 // owner 2026-11-10 "สเกลให้แมพใหญ่กว่านี้หน่อย": the map (ground, trees, houses, grass) drawn MS times bigger than the hero's pixel size,
 // so he looks smaller in a bigger world; the hero and the wolves keep their size. ?ms=1 = the same pixel size as the hero
+// only the big things (trees, houses, tents, mills, statues) get bigger; small props, grass and flowers stay at the hero's pixel size
+const BIGP = /oak|pine|house|cottage|tent|watermill|flagpole|statue|pillar|tower|mill/;
 const MS = S128 ? (+HQ.get('ms') || 1.5) : 1, MDENS = DENS / MS;
 const L = S128 ? Math.round(2 * MS) : 1;                             // layout scale: at true 128 scale the trees are 5-6x the hero, so the whole map is twice as big
 const W = 72 * L, H = 52 * L;                       // tiles; the hero is ~2 tiles tall
@@ -64,7 +66,7 @@ document.body.appendChild(renderer.domElement);
 const FOGC = 0x9aa889;
 const scene = new THREE.Scene(); scene.fog = new THREE.Fog(FOGC, 80, 150); scene.background = new THREE.Color(FOGC);
 const cam = new THREE.PerspectiveCamera(+HQ.get('fov') || 18, innerWidth / innerHeight, 1, 400);
-const DISTS = S128 ? [74, 36] : [85, 64, 48]; let DI = 0, ZOOM = +HQ.get("dist") || DISTS[0];   // owner "ให้ดูตัวเล็ก แล้วซูมออกไปอีก": far by default
+const DISTS = S128 ? [36, 74] : [85, 64, 48];   /* owner "ตัวละครเราเล็กไป": close with the 128 hero by default, far on the zoom button */ let DI = 0, ZOOM = +HQ.get("dist") || DISTS[0];   // owner "ให้ดูตัวเล็ก แล้วซูมออกไปอีก": far by default
 const PITCH = (+HQ.get('pitch') || 52) * Math.PI / 180;
 const sun = new THREE.DirectionalLight(0xffdcae, 1.25); sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -45, right: 45, top: 40, bottom: -40, near: 1, far: 120}); sun.shadow.bias = -0.0006;
@@ -123,14 +125,14 @@ const solo = [];
 function card(src, x, z, hW, opt = {}) {
   const t = tex(src), m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), cardMat(t)); m.castShadow = true;
   m.customDepthMaterial = depthMat(t); x *= L; z *= L; m.position.set(x, hAt(x, z), z); scene.add(m);
-  const fit = () => { const im = t.image; if (im && im.width) { const h = S128 ? im.height / MDENS * (opt.k || 1) : hW; m.scale.set(h * im.width / im.height, h, 1); } }; t.image ? fit() : null; solo.push(fit); return m; }
+  const fit = () => { const im = t.image; if (im && im.width) { const h = S128 ? im.height / (BIGP.test(src) ? MDENS : DENS) * (opt.k || 1) : hW; m.scale.set(h * im.width / im.height, h, 1); } }; t.image ? fit() : null; solo.push(fit); return m; }
 LD.manager.onLoad = () => solo.forEach(f => f());
 // instanced small things (grass tufts, ferns, flowers): one draw call each kind
 function scatter(src, n, test, hMin, hMax) {
   const t = tex(src), geo = new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), im = new THREE.InstancedMesh(geo, cardMat(t), n);
   im.customDepthMaterial = depthMat(t); im.castShadow = true; const M = new THREE.Matrix4(), list = [];
   let i = 0, tries = 0; while (i < n && tries++ < n * 30) { const x = rnd() * W, z = rnd() * H; if (!test(x, z)) continue; list.push([x, z, hMin + rnd() * (hMax - hMin)]); i++; }
-  im.count = list.length; const hm = (hMin + hMax) / 2; const fit = () => { const a = t.image ? t.image.width / t.image.height : 1, H0 = S128 && t.image ? t.image.height / MDENS : 0;
+  im.count = list.length; const hm = (hMin + hMax) / 2; const fit = () => { const a = t.image ? t.image.width / t.image.height : 1, H0 = S128 && t.image ? t.image.height / DENS : 0;
     list.forEach(([x, z, h], j) => { if (H0) h = H0 * h / hm; M.makeScale(h * a, h, 1); M.setPosition(x, hAt(x, z), z); im.setMatrixAt(j, M); }); im.instanceMatrix.needsUpdate = true; };
   fit(); solo.push(fit); scene.add(im); }
 const isG = (x, z) => { const t = (map[z | 0] || [])[x | 0]; return t === 0 || t === 4; };
