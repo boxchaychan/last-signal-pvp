@@ -202,10 +202,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 186 | haetae | attack | done | `art/incoming/mobs/anim/haetae_attack.png` |
 | 187 | haetae | death | done | `art/incoming/mobs/anim/haetae_death.png` |
 | 188 | haetae | hurt | done | `art/incoming/mobs/anim/haetae_hurt.png` |
-| 189 | jangsan_tiger | walk | todo | `art/incoming/mobs/anim/jangsan_tiger_walk.png` |
-| 190 | jangsan_tiger | attack | todo | `art/incoming/mobs/anim/jangsan_tiger_attack.png` |
-| 191 | jangsan_tiger | death | todo | `art/incoming/mobs/anim/jangsan_tiger_death.png` |
-| 192 | jangsan_tiger | hurt | todo | `art/incoming/mobs/anim/jangsan_tiger_hurt.png` |
+| 189 | jangsan_tiger | walk | done | `art/incoming/mobs/anim/jangsan_tiger_walk.png` |
+| 190 | jangsan_tiger | attack | done | `art/incoming/mobs/anim/jangsan_tiger_attack.png` |
+| 191 | jangsan_tiger | death | done | `art/incoming/mobs/anim/jangsan_tiger_death.png` |
+| 192 | jangsan_tiger | hurt | done | `art/incoming/mobs/anim/jangsan_tiger_hurt.png` |
 | 193 | jeoseung_saja | walk | todo | `art/incoming/mobs/anim/jeoseung_saja_walk.png` |
 | 194 | jeoseung_saja | attack | todo | `art/incoming/mobs/anim/jeoseung_saja_attack.png` |
 | 195 | jeoseung_saja | death | todo | `art/incoming/mobs/anim/jeoseung_saja_death.png` |
