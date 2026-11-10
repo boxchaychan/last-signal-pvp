@@ -3157,7 +3157,52 @@ function drawCell(img, r, c, x, y, flip, alpha) {
   if (alpha !== undefined) ctx.globalAlpha = alpha;
   if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(img, c * C, r * C, C, C, -fx, y - fy, D, D); ctx.restore(); }
   else ctx.drawImage(img, c * C, r * C, C, C, x - fx, y - fy, D, D);
+  if (GEAR.helm && GEAR.dir >= 0) drawHelm(img, r, c, x, y, flip, d);
   ctx.globalAlpha = 1;
+}
+// ---------- gear test (owner 2026-11-10 "ระบบประกอบชุด" → "เอาหมวกมาใส่เลยก็ได้"): a helmet drawn in code, put on the head
+// of whatever frame is drawn. The head is found in the frame itself: the first row (from the top) with an opaque run 10+ px
+// wide (a raised blade is thinner), its centre = the head; cached per sheet cell. ?helm=1 (or 2, 3: other helmets)
+const GEAR = {helm: +(QS.get('helm') || 0), dir: -1}, HEADC = new Map(), HELMS = {};
+function headOf(img, r, c) {
+  const C = META.cell, key = img.src + '|' + r + '|' + c; if (HEADC.has(key)) return HEADC.get(key);
+  let D = img._px; if (!D) { const k = document.createElement('canvas'); k.width = img.width; k.height = img.height; const g = k.getContext('2d'); g.drawImage(img, 0, 0); D = img._px = g.getImageData(0, 0, k.width, k.height); }
+  let res = null;
+  for (let y = 0; y < C && !res; y++) { let run = 0, best = 0, bx = 0;
+    for (let x = 0; x <= C; x++) { const a = x < C ? D.data[((r * C + y) * D.width + c * C + x) * 4 + 3] : 0;
+      if (a > 40) run++; else { if (run > best) { best = run; bx = x - run / 2; } run = 0; } }
+    if (best >= 10) res = {x: bx, y, w: best}; }
+  HEADC.set(key, res); return res;
+}
+function helmSprite(kind, view) {      // 0 front · 1 side (facing right) · 2 back; tiny pixel art drawn from rows of letters
+  const key = kind + '_' + view; if (HELMS[key]) return HELMS[key];
+  const P = {o: '#1d1a22', s: '#8a93a6', l: '#c9d0dc', d: '#5a6172', g: '#e8b84a', G: '#a87a24', h: '#efe6d0', r: '#c43a3a', R: '#7a1a1a'};
+  const T = {
+    1: [[ // steel helm with a gold band and horns
+      'o..............o', 'ho............oh', 'hho..oooooo..ohh', '.hhooslllllsoohh.', '..oslllllllllso..', '..osllllllllllso.', '.osllllllllllllso', '.osssssssssssssso', '.oggggggggggggggo', '.oGGGGGGGGGGGGGGo', '..o.oo......oo.o.'],
+     ['....oooooo......', 'h.oslllllso.....', 'hhoslllllllso...', '.oslllllllllso..', 'oslllllllllllso.', 'osssssssssssssso', 'oggggggggggggggo', 'oGGGGGGGGGGGGGo.', '.oo.......oooo..'],
+     ['o..............o', 'ho............oh', 'hho..oooooo..ohh', '.hhoossssssoohh.', '..osssssssssso..', '..ossssssssssso.', '.osssssssssssss o', '.oddddddddddddddo', '.oggggggggggggggo', '.oGGGGGGGGGGGGGGo', '..oooooooooooooo.']],
+    2: [[ // gold crown with a red gem
+      '..g...g...g...g.', '.ogo.ogo.ogo.ogo', '.oggggggggggggggo', '.oggggrRggggggggo', '.oGGGGGGGGGGGGGGo', '..oooooooooooooo.'],
+     ['..g....g....g...', '.ogo..ogo..ogo..', '.ogggggggggggggo', '.oGGGGGGGGGGGGGo', '..ooooooooooooo.'],
+     ['..g...g...g...g.', '.ogo.ogo.ogo.ogo', '.oggggggggggggggo', '.oggggggggggggggo', '.oGGGGGGGGGGGGGGo', '..oooooooooooooo.']],
+    3: [[ // red hood
+      '.....oooooo.....', '...oorrrrrroo....', '..orrrrrrrrrro...', '.orrrrrrrrrrrrro.', '.orRrrrrrrrrrRro.', 'orRR..........RRo', 'orR............Ro'],
+     ['....oooooo......', '..oorrrrrroo....', '.orrrrrrrrrro....', 'orrrrrrrrrrrro...', 'oRRrrrrrrr.......', 'oRR.............'],
+     ['.....oooooo.....', '...oorrrrrroo....', '..orrrrrrrrrro...', '.orrrrrrrrrrrrro.', '.orrrrrrrrrrrrro.', 'oRRRRRRRRRRRRRRRo', 'oRRRRRRRRRRRRRRRo']]};
+  const rows = (T[kind] || T[1])[view], W = Math.max(...rows.map(q => q.length)), H = rows.length, k = document.createElement('canvas');
+  k.width = W * 2; k.height = H * 2; const g = k.getContext('2d');   // 2 art px per letter: the size of a 128 px hero's head
+  rows.forEach((q, y) => [...q].forEach((ch, x) => { if (P[ch]) { g.fillStyle = P[ch]; g.fillRect(x * 2, y * 2, 2, 2); } }));
+  return HELMS[key] = k;
+}
+function drawHelm(img, r, c, x, y, flip, d) {
+  const h = headOf(img, r, c); if (!h) return;
+  const dir = GEAR.dir, view = dir === 0 || dir === 4 ? 1 : dir >= 5 && dir <= 7 && dir !== 0 ? 2 : 0, hs = helmSprite(GEAR.helm, view);
+  const side = dir >= 3 && dir <= 5, fl = flip !== side && view === 1;   // a left-facing side view mirrors the helmet
+  const sc = Math.max(.8, Math.min(1.4, h.w / 30)), W = hs.width * sc, H = hs.height * sc;
+  const hx = (h.x - META.fx) * d, top = (h.y - META.fy) * d, X = flip ? x - hx : x + hx, Y = y + top - H * .45 * d;
+  ctx.save(); ctx.translate(Math.round(X * S) / S, Math.round(Y * S) / S); if (fl) ctx.scale(-1, 1);
+  ctx.drawImage(hs, -W * d / 2, 0, W * d, H * d); ctx.restore();
 }
 const drawStill = (dir, x, y, alpha) => drawCell(IMGS[META.still], 0, dir, x, y, false, alpha);
 // play a move's row: by time t at fps (loop) or by progress k 0..1 (once); false when that move is not in yet
@@ -3197,6 +3242,9 @@ function drawPlayer(p) {
 }
 let venomTint = false;
 function drawPlayerBody(p) {
+  GEAR.dir = p.vd !== undefined && (p.state === 'idle' || p.state === 'move') ? p.vd : p.dir; try { drawPlayerBody2(p); } finally { GEAR.dir = -1; }
+}
+function drawPlayerBody2(p) {
   if (p.state === 'act' && p.ac && p.ac.draw) { p.ac.draw(p, p.ac); return; }
   if (p.state === 'act' && p.ac) { const q = p.ac, f = q.fr[Math.min(q.i, q.fr.length - 1)];
     drawCell(q.ar.img, q.ar.r, f, p.x, p.y, q.ar.flip);
