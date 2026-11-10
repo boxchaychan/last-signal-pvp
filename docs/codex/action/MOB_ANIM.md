@@ -230,10 +230,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 214 | gorgon | attack | done | `art/incoming/mobs/anim/gorgon_attack.png` |
 | 215 | gorgon | death | done | `art/incoming/mobs/anim/gorgon_death.png` |
 | 216 | gorgon | hurt | done | `art/incoming/mobs/anim/gorgon_hurt.png` |
-| 217 | cyclops | walk | todo | `art/incoming/mobs/anim/cyclops_walk.png` |
-| 218 | cyclops | attack | todo | `art/incoming/mobs/anim/cyclops_attack.png` |
-| 219 | cyclops | death | todo | `art/incoming/mobs/anim/cyclops_death.png` |
-| 220 | cyclops | hurt | todo | `art/incoming/mobs/anim/cyclops_hurt.png` |
+| 217 | cyclops | walk | done | `art/incoming/mobs/anim/cyclops_walk.png` |
+| 218 | cyclops | attack | done | `art/incoming/mobs/anim/cyclops_attack.png` |
+| 219 | cyclops | death | done | `art/incoming/mobs/anim/cyclops_death.png` |
+| 220 | cyclops | hurt | done | `art/incoming/mobs/anim/cyclops_hurt.png` |
 | 221 | minotaur | walk | todo | `art/incoming/mobs/anim/minotaur_walk.png` |
 | 222 | minotaur | attack | todo | `art/incoming/mobs/anim/minotaur_attack.png` |
 | 223 | minotaur | death | todo | `art/incoming/mobs/anim/minotaur_death.png` |
