@@ -76,8 +76,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 41 | dwarf_berserker | done | Norse | small |
 | 42 | ice_golem | done | Norse | large |
 | 43 | boss_jotun | done | Norse boss | huge |
-| 44 | dokkaebi_fire | todo | Korea | small |
-| 45 | dokkaebi | todo | Korea | medium |
+| 44 | dokkaebi_fire | done | Korea | small |
+| 45 | dokkaebi | done | Korea | medium |
 | 46 | gwisin | todo | Korea | medium |
 | 47 | haetae | todo | Korea | medium |
 | 48 | jangsan_tiger | todo | Korea | large |
