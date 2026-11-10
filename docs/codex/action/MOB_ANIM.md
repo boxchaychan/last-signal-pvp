@@ -194,10 +194,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 178 | dokkaebi | attack | done | `art/incoming/mobs/anim/dokkaebi_attack.png` |
 | 179 | dokkaebi | death | done | `art/incoming/mobs/anim/dokkaebi_death.png` |
 | 180 | dokkaebi | hurt | done | `art/incoming/mobs/anim/dokkaebi_hurt.png` |
-| 181 | gwisin | walk | todo | `art/incoming/mobs/anim/gwisin_walk.png` |
-| 182 | gwisin | attack | todo | `art/incoming/mobs/anim/gwisin_attack.png` |
-| 183 | gwisin | death | todo | `art/incoming/mobs/anim/gwisin_death.png` |
-| 184 | gwisin | hurt | todo | `art/incoming/mobs/anim/gwisin_hurt.png` |
+| 181 | gwisin | walk | done | `art/incoming/mobs/anim/gwisin_walk.png` |
+| 182 | gwisin | attack | done | `art/incoming/mobs/anim/gwisin_attack.png` |
+| 183 | gwisin | death | done | `art/incoming/mobs/anim/gwisin_death.png` |
+| 184 | gwisin | hurt | done | `art/incoming/mobs/anim/gwisin_hurt.png` |
 | 185 | haetae | walk | todo | `art/incoming/mobs/anim/haetae_walk.png` |
 | 186 | haetae | attack | todo | `art/incoming/mobs/anim/haetae_attack.png` |
 | 187 | haetae | death | todo | `art/incoming/mobs/anim/haetae_death.png` |
