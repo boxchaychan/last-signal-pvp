@@ -33,7 +33,10 @@ const HQ = new URLSearchParams(location.search);
 // owner 2026-11-10 "ทำสเกลให้เข้ากับตัว 128": by default the full 128 px hero and EVERYTHING at his pixel density, like the 2D game
 // (props, mobs and ground pictures are all drawn at 1.5 art px per game px there): world size = picture px / DENS; ?s=64 = the small look
 const S128 = HQ.get('s') !== '64', FIG = S128 ? 113 : 55, DENS = FIG / 2;   // the figure is 2 units tall
-const L = S128 ? 2 : 1;                             // layout scale: at true 128 scale the trees are 5-6x the hero, so the whole map is twice as big
+// owner 2026-11-10 "สเกลให้แมพใหญ่กว่านี้หน่อย": the map (ground, trees, houses, grass) drawn MS times bigger than the hero's pixel size,
+// so he looks smaller in a bigger world; the hero and the wolves keep their size. ?ms=1 = the same pixel size as the hero
+const MS = S128 ? (+HQ.get('ms') || 1.5) : 1, MDENS = DENS / MS;
+const L = S128 ? Math.round(2 * MS) : 1;                             // layout scale: at true 128 scale the trees are 5-6x the hero, so the whole map is twice as big
 const W = 72 * L, H = 52 * L;                       // tiles; the hero is ~2 tiles tall
 const map = [];                                     // 0 grass, 1 road, 2 water, 3 bridge, 4 flower grass
 let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
@@ -91,7 +94,7 @@ function push(key, geo) { (BUF[key] = BUF[key] || []).push(geo); }
 function boxUV(x, y, w, h, d, top) { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, top);
   const p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv;
   for (let i = 0; i < p.count; i++) { const X = p.getX(i), Y = p.getY(i), Z = p.getZ(i);
-    const U = S128 ? 319 / DENS : 5; if (Math.abs(n.getY(i)) > .5) uv.setXY(i, X / U, Z / U); else uv.setXY(i, (Math.abs(n.getX(i)) > .5 ? Z : X) / U, Y / U); }
+    const U = S128 ? 319 / MDENS : 5; if (Math.abs(n.getY(i)) > .5) uv.setXY(i, X / U, Z / U); else uv.setXY(i, (Math.abs(n.getX(i)) > .5 ? Z : X) / U, Y / U); }
   return g; }
 for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
   const t = map[y][x], h = HGT[t] + 1, g = boxUV(x + .5, h / 2 - 1, 1, h, 1, y + .5);
@@ -120,14 +123,14 @@ const solo = [];
 function card(src, x, z, hW, opt = {}) {
   const t = tex(src), m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), cardMat(t)); m.castShadow = true;
   m.customDepthMaterial = depthMat(t); x *= L; z *= L; m.position.set(x, hAt(x, z), z); scene.add(m);
-  const fit = () => { const im = t.image; if (im && im.width) { const h = S128 ? im.height / DENS * (opt.k || 1) : hW; m.scale.set(h * im.width / im.height, h, 1); } }; t.image ? fit() : null; solo.push(fit); return m; }
+  const fit = () => { const im = t.image; if (im && im.width) { const h = S128 ? im.height / MDENS * (opt.k || 1) : hW; m.scale.set(h * im.width / im.height, h, 1); } }; t.image ? fit() : null; solo.push(fit); return m; }
 LD.manager.onLoad = () => solo.forEach(f => f());
 // instanced small things (grass tufts, ferns, flowers): one draw call each kind
 function scatter(src, n, test, hMin, hMax) {
   const t = tex(src), geo = new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), im = new THREE.InstancedMesh(geo, cardMat(t), n);
   im.customDepthMaterial = depthMat(t); im.castShadow = true; const M = new THREE.Matrix4(), list = [];
   let i = 0, tries = 0; while (i < n && tries++ < n * 30) { const x = rnd() * W, z = rnd() * H; if (!test(x, z)) continue; list.push([x, z, hMin + rnd() * (hMax - hMin)]); i++; }
-  im.count = list.length; const hm = (hMin + hMax) / 2; const fit = () => { const a = t.image ? t.image.width / t.image.height : 1, H0 = S128 && t.image ? t.image.height / DENS : 0;
+  im.count = list.length; const hm = (hMin + hMax) / 2; const fit = () => { const a = t.image ? t.image.width / t.image.height : 1, H0 = S128 && t.image ? t.image.height / MDENS : 0;
     list.forEach(([x, z, h], j) => { if (H0) h = H0 * h / hm; M.makeScale(h * a, h, 1); M.setPosition(x, hAt(x, z), z); im.setMatrixAt(j, M); }); im.instanceMatrix.needsUpdate = true; };
   fit(); solo.push(fit); scene.add(im); }
 const isG = (x, z) => { const t = (map[z | 0] || [])[x | 0]; return t === 0 || t === 4; };
