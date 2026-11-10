@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ลอกท่า</title>
+<style>
+:root { --bg: #17141e; --card: #221e2c; --line: #3a3448; --ink: #f2ecff; --dim: #a59cb8; --acc: #ffd23c; --ok: #6be08a; --bad: #ff6b6b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, sans-serif; }
+main { max-width: 720px; margin: 0 auto; padding: 14px 16px 60px; }
+h1 { font-size: 22px; margin: 6px 0 2px; }
+.sub { color: var(--dim); font-size: 14px; margin: 0 0 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 12px 0; }
+.card h2 { font-size: 17px; margin: 0 0 8px; }
+label { display: block; font-size: 14px; color: var(--dim); margin: 8px 0 4px; }
+input[type=text], input[type=password], input[type=number], select, textarea { width: 100%; background: #12101a; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: inherit; }
+textarea { min-height: 60px; }
+.row { display: flex; gap: 8px; } .row > * { flex: 1; }
+button { width: 100%; padding: 13px; margin-top: 10px; border: 0; border-radius: 9px; background: var(--acc); color: #201a08; font: 600 16px system-ui, sans-serif; }
+button.alt { background: #3a3448; color: var(--ink); }
+button:disabled { opacity: .45; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.thumbs canvas { background: #4f7a3c; border-radius: 6px; image-rendering: pixelated; width: 76px; height: 76px; border: 2px solid transparent; }
+.thumbs canvas.off { opacity: .25; border-color: var(--bad); }
+.view canvas { width: 100%; image-rendering: pixelated; background: #4f7a3c; border-radius: 8px; }
+.msg { font-size: 14px; color: var(--dim); white-space: pre-wrap; margin-top: 8px; }
+.msg.err { color: var(--bad); } .msg.ok { color: var(--ok); }
+.small { font-size: 13px; color: var(--dim); }
+a { color: var(--acc); }
+</style>
+</head>
+<body>
+<main>
+<h1>ลอกท่า</h1>
+<p class="sub">ใส่ภาพท่าต้นแบบ → เลือกตัวละครของเรา → PixelLab วาดตัวเราในท่าเดียวกัน (ลอกแค่ท่าทาง ไม่ใช้ภาพของเขา)</p>
+
+<div class="card">
+  <h2>รหัส PixelLab</h2>
+  <input id="key" type="password" placeholder="วางรหัส API ของ PixelLab (เก็บไว้ในเครื่องนี้เท่านั้น)">
+  <div class="msg" id="bal"></div>
+</div>
+
+<div class="card">
+  <h2>1. ท่าต้นแบบ</h2>
+  <input id="ex" type="file" accept="image/png,image/webp,image/jpeg" multiple>
+  <div class="row">
+    <div><label>ภาพเดียวหลายช่อง: กี่คอลัมน์</label><input id="cols" type="number" min="1" value="0" placeholder="0 = เดาเอง"></div>
+    <div><label>กี่แถว</label><input id="rows" type="number" min="1" value="1"></div>
+  </div>
+  <div class="small">เลือกได้ทั้งภาพเฟรมหลายไฟล์ หรือภาพเดียวที่มีหลายช่อง (แตะภาพเล็กเพื่อตัดเฟรมนั้นทิ้ง) · 3–15 เฟรม · ตัวต้นแบบควรหันขวา</div>
+  <div class="thumbs" id="exThumbs"></div>
+</div>
+
+<div class="card">
+  <h2>2. ตัวละครของเรา</h2>
+  <div class="row">
+    <div><label>ตัวละคร</label><select id="hero"></select></div>
+    <div><label>ทิศ</label><select id="dir"></select></div>
+  </div>
+  <label>หรือใช้ภาพของเราเอง (ภาพเดียว ไม่เกิน 256 px)</label>
+  <input id="own" type="file" accept="image/png">
+  <label>หน้าตาตัวละคร (ภาษาอังกฤษ)</label>
+  <textarea id="desc"></textarea>
+  <div class="thumbs" id="meThumb"></div>
+</div>
+
+<div class="card">
+  <h2>3. อ่านท่า (ประมาณ 0.1 เครดิตต่อภาพ)</h2>
+  <button id="read">อ่านท่า</button>
+  <div class="msg" id="readMsg"></div>
+  <div class="view"><canvas id="pv" width="10" height="10"></canvas></div>
+  <div class="small">แถวบน = ต้นแบบ + โครงที่อ่านได้ · แถวล่าง = ตัวเรากับโครงท่าที่จะใช้</div>
+</div>
+
+<div class="card">
+  <h2>4. สร้างท่า (3 เครดิต)</h2>
+  <button id="make" disabled>สร้างท่า</button>
+  <div class="msg" id="makeMsg"></div>
+  <div class="view"><canvas id="anim" width="10" height="10"></canvas></div>
+  <div class="row"><button class="alt" id="dl" disabled>บันทึกภาพ (แถวเดียว)</button><button class="alt" id="slow" disabled>ช้า / เร็ว</button></div>
+</div>
+<p class="small">ใช้ PixelLab: estimate_skeleton อ่านโครงจากภาพ · animate_with_skeleton_v3 วาดตัวเราตามโครง</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const API = 'https://api.pixellab.ai/mcp';
+const J = ['NOSE', 'NECK', 'RIGHT SHOULDER', 'RIGHT ELBOW', 'RIGHT ARM', 'LEFT SHOULDER', 'LEFT ELBOW', 'LEFT ARM', 'RIGHT HIP', 'RIGHT KNEE', 'RIGHT LEG', 'LEFT HIP', 'LEFT KNEE', 'LEFT LEG', 'RIGHT EYE', 'LEFT EYE', 'RIGHT EAR', 'LEFT EAR'];
+const BONES = [['ROOT', 'RIGHT HIP'], ['ROOT', 'LEFT HIP'], ['ROOT', 'NECK'], ['RIGHT HIP', 'RIGHT KNEE'], ['RIGHT KNEE', 'RIGHT LEG'], ['LEFT HIP', 'LEFT KNEE'], ['LEFT KNEE', 'LEFT LEG'],
+  ['NECK', 'RIGHT SHOULDER'], ['RIGHT SHOULDER', 'RIGHT ELBOW'], ['RIGHT ELBOW', 'RIGHT ARM'], ['NECK', 'LEFT SHOULDER'], ['LEFT SHOULDER', 'LEFT ELBOW'], ['LEFT ELBOW', 'LEFT ARM']];
+const HEAD = ['NOSE', 'RIGHT EYE', 'LEFT EYE', 'RIGHT EAR', 'LEFT EAR'];
+const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
+const DTH = {east: 'ขวา', 'south-east': 'เฉียงล่างขวา', south: 'หน้า', 'south-west': 'เฉียงล่างซ้าย', west: 'ซ้าย', 'north-west': 'เฉียงบนซ้าย', north: 'หลัง', 'north-east': 'เฉียงบนขวา'};
+const HEROES = {
+  rogue: ['นักมีด', 'a young woman rogue with brown hair, a red headband, a teal tunic and a short curved dagger in her right hand'],
+  swordsman: ['นักดาบ', 'a young swordsman with messy brown hair, a red scarf, a blue coat with leather armour and a broad sword'],
+  mage: ['เมจ', 'a young mage with blond hair in a dark purple hooded robe with gold trim, holding a wooden staff with a blue crystal'],
+  archer: ['นักธนู', 'a young woman archer with a brown ponytail, a green hooded cape, leather armour and a wooden bow'],
+  priest: ['นักบวช', 'a young priestess in white and gold robes holding a holy staff']};
+let EX = [], OFF = new Set(), ME = null, SK = null, OURS = null, TG = null, OUT = [], speed = 90;
+
+// ---------- key + balance ----------
+try { $('key').value = localStorage.getItem('pl.key') || ''; } catch (e) {}
+$('key').addEventListener('change', () => { try { localStorage.setItem('pl.key', $('key').value.trim()); } catch (e) {} balance(); });
+const KEY = () => $('key').value.trim();
+async function mcp(tool, args) {
+  const r = await fetch(API, {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', Authorization: 'Bearer ' + KEY()},
+    body: JSON.stringify({jsonrpc: '2.0', id: Date.now(), method: 'tools/call', params: {name: tool, arguments: args}})});
+  if (r.status === 401) throw new Error('รหัส PixelLab ไม่ถูกต้อง');
+  const txt = await r.text(); let out = '';
+  for (const line of txt.split('\n')) if (line.startsWith('data:')) { const d = JSON.parse(line.slice(5)); if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
+    for (const c of (d.result && d.result.content) || []) if (c.type === 'text') out += c.text + '\n'; }
+  return out;
+}
+async function balance() { if (!KEY()) { $('bal').textContent = 'ยังไม่ได้ใส่รหัส'; return; }
+  try { const t = await mcp('get_balance', {}); const m = t.match(/generations_remaining:\s*([\d.]+)/); $('bal').textContent = m ? 'เครดิตเหลือ ' + Math.floor(+m[1]) : t.slice(0, 120); $('bal').className = 'msg ok'; }
+  catch (e) { $('bal').textContent = e.message; $('bal').className = 'msg err'; } }
+balance();
+
+// ---------- images ----------
+const loadImg = src => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; });
+const fileImg = f => new Promise(ok => { const r = new FileReader(); r.onload = () => loadImg(r.result).then(ok); r.readAsDataURL(f); });
+function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; return c; }
+function bbox(c) { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3] > 20) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  return x1 < 0 ? null : [x0, y0, x1 + 1, y1 + 1]; }
+async function readExample() {
+  const files = [...$('ex').files]; EX = []; OFF = new Set(); if (!files.length) return;
+  const ims = await Promise.all(files.map(fileImg));
+  if (ims.length === 1) { const im = ims[0]; let cols = +$('cols').value || 0, rows = +$('rows').value || 1;
+    if (!cols) cols = Math.max(1, Math.round(im.width / (im.height / rows)));
+    const w = im.width / cols, h = im.height / rows;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = cv(Math.round(w), Math.round(h)); k.getContext('2d').drawImage(im, Math.round(c * w), Math.round(r * h), Math.round(w), Math.round(h), 0, 0, Math.round(w), Math.round(h)); if (bbox(k)) EX.push(k); } }
+  else for (const im of ims) { const k = cv(im.width, im.height); k.getContext('2d').drawImage(im, 0, 0); if (bbox(k)) EX.push(k); }
+  showThumbs();
+}
+function showThumbs() { const t = $('exThumbs'); t.innerHTML = '';
+  EX.forEach((c, i) => { const k = cv(c.width, c.height); k.getContext('2d').drawImage(c, 0, 0); if (OFF.has(i)) k.className = 'off';
+    k.onclick = () => { OFF.has(i) ? OFF.delete(i) : OFF.add(i); showThumbs(); }; t.appendChild(k); });
+  const n = EX.length - OFF.size; $('readMsg').textContent = n ? n + ' เฟรม' + (n < 3 || n > 15 ? ' (ต้อง 3–15)' : '') : ''; }
+$('ex').onchange = readExample; $('cols').onchange = readExample; $('rows').onchange = readExample;
+
+for (const [k, [th]] of Object.entries(HEROES)) $('hero').add(new Option(th, k));
+for (const d of DIRS) $('dir').add(new Option(DTH[d], d));
+async function readMe() {
+  const own = $('own').files[0];
+  if (own) { const im = await fileImg(own); ME = cv(im.width, im.height); ME.getContext('2d').drawImage(im, 0, 0); }
+  else { const h = $('hero').value, im = await loadImg('art/action/n128/' + h + '_still.png'), C = im.height, i = DIRS.indexOf($('dir').value);
+    ME = cv(C, C); ME.getContext('2d').drawImage(im, i * C, 0, C, C, 0, 0, C, C); $('desc').value = HEROES[h][1]; }
+  const t = $('meThumb'); t.innerHTML = ''; const k = cv(ME.width, ME.height); k.getContext('2d').drawImage(ME, 0, 0); t.appendChild(k);
+}
+$('hero').onchange = () => { $('own').value = ''; readMe(); }; $('dir').onchange = readMe; $('own').onchange = readMe; readMe();
+
+// ---------- skeletons ----------
+const dataURL = c => c.toDataURL('image/png');
+function parseKP(t) { const i = t.indexOf('keypoints:'); if (i < 0) return null; let s = t.indexOf('[', i), d = 0, e = s;
+  for (; e < t.length; e++) { if (t[e] === '[') d++; else if (t[e] === ']') { d--; if (!d) break; } }
+  const arr = JSON.parse(t.slice(s, e + 1)); const o = {}; for (const q of arr) o[q.label] = [q.x, q.y]; return o; }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function skelRaw(c) {
+  let t = await mcp('estimate_skeleton', {image: dataURL(c)}); let kp = parseKP(t); if (kp) return kp;
+  const id = (t.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/) || [])[0]; if (!id) throw new Error(t.slice(0, 200));
+  for (let i = 0; i < 60; i++) { await sleep(3000); t = await mcp('estimate_skeleton', {job_id: id}); kp = parseKP(t); if (kp) return kp; }
+  throw new Error('อ่านโครงไม่สำเร็จ');
+}
+async function skeleton(c) {   // small figures: crop round them and enlarge (nearest) first, then map the joints back
+  const b = bbox(c), h = Math.max(b[2] - b[0], b[3] - b[1]) + 16, k = Math.max(1, Math.min(6, Math.floor(250 / h)));
+  const x0 = Math.max(0, b[0] - 8), y0 = Math.max(0, b[1] - 8), x1 = Math.min(c.width, b[2] + 8), y1 = Math.min(c.height, b[3] + 8);
+  if (k === 1 && c.width <= 256 && c.height <= 256) { const s = await skelRaw(c), o = {}; for (const j in s) o[j] = [s[j][0] * c.width, s[j][1] * c.height]; return o; }
+  const big = cv((x1 - x0) * k, (y1 - y0) * k); big.getContext('2d').imageSmoothingEnabled = false; big.getContext('2d').drawImage(c, x0, y0, x1 - x0, y1 - y0, 0, 0, big.width, big.height);
+  const s = await skelRaw(big), o = {}; for (const j in s) o[j] = [x0 + s[j][0] * big.width / k, y0 + s[j][1] * big.height / k]; return o;
+}
+const root = s => [(s['RIGHT HIP'][0] + s['LEFT HIP'][0]) / 2, (s['RIGHT HIP'][1] + s['LEFT HIP'][1]) / 2];
+function retarget(ref, ours, ref0) {   // every bone takes the example's angle and keeps OUR length; our own face rides on the neck
+  const R = {...ref, ROOT: root(ref)}, O = {...ours, ROOT: root(ours)}, r0 = root(ref0);
+  const hr = Math.abs(r0[1] - ref0.NECK[1]) || 1, ho = Math.abs(O.ROOT[1] - O.NECK[1]) || 1, out = {};
+  out.ROOT = [O.ROOT[0] + (R.ROOT[0] - r0[0]) * ho / hr, O.ROOT[1] + (R.ROOT[1] - r0[1]) * ho / hr];
+  for (const [p, c] of BONES) { const a = Math.atan2(R[c][1] - R[p][1], R[c][0] - R[p][0]), L = Math.hypot(O[c][0] - O[p][0], O[c][1] - O[p][1]); out[c] = [out[p][0] + Math.cos(a) * L, out[p][1] + Math.sin(a) * L]; }
+  let t = Math.atan2(R.NOSE[1] - R.NECK[1], R.NOSE[0] - R.NECK[0]) - Math.atan2(ref0.NOSE[1] - ref0.NECK[1], ref0.NOSE[0] - ref0.NECK[0]); t = Math.max(-.5, Math.min(.5, t));
+  for (const h of HEAD) { const dx = O[h][0] - O.NECK[0], dy = O[h][1] - O.NECK[1]; out[h] = [out.NECK[0] + dx * Math.cos(t) - dy * Math.sin(t), out.NECK[1] + dx * Math.sin(t) + dy * Math.cos(t)]; }
+  delete out.ROOT; return out;
+}
+function drawSk(g, s, col, ox, oy, sc) { g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2;
+  const P = j => j === 'ROOT' ? root(s) : s[j];
+  for (const [p, c] of [...BONES, ['NECK', 'NOSE']]) { const a = P(p), b = P(c); g.beginPath(); g.moveTo(ox + a[0] * sc, oy + a[1] * sc); g.lineTo(ox + b[0] * sc, oy + b[1] * sc); g.stroke(); }
+  for (const j of J) g.fillRect(ox + s[j][0] * sc - 2, oy + s[j][1] * sc - 2, 4, 4); }
+$('read').onclick = async () => {
+  const fr = EX.filter((_, i) => !OFF.has(i)); const m = $('readMsg'); m.className = 'msg';
+  if (!KEY()) { m.textContent = 'ใส่รหัส PixelLab ก่อน'; m.className = 'msg err'; return; }
+  if (fr.length < 3 || fr.length > 15) { m.textContent = 'ต้องมี 3–15 เฟรม'; m.className = 'msg err'; return; }
+  if (!ME) await readMe();
+  $('read').disabled = true; $('make').disabled = true;
+  try { SK = []; for (let i = 0; i < fr.length; i++) { m.textContent = 'อ่านโครงเฟรม ' + (i + 1) + '/' + fr.length + ' …'; SK.push(await skeleton(fr[i])); }
+    m.textContent = 'อ่านโครงตัวเรา …'; OURS = await skeleton(ME); TG = SK.map(s => retarget(s, OURS, SK[0]));
+    const W = Math.max(ME.width, ...fr.map(f => f.width)), H = Math.max(...fr.map(f => f.height)) + ME.height, pv = $('pv'); pv.width = W * fr.length; pv.height = H;
+    const g = pv.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = '#4f7a3c'; g.fillRect(0, 0, pv.width, pv.height);
+    fr.forEach((f, i) => { g.drawImage(f, i * W, 0); drawSk(g, SK[i], '#ff5050', i * W, 0, 1); g.globalAlpha = .35; g.drawImage(ME, i * W, H - ME.height); g.globalAlpha = 1; drawSk(g, TG[i], '#4fe0ff', i * W, H - ME.height, 1); });
+    m.textContent = 'อ่านท่าเสร็จ ' + fr.length + ' เฟรม ถ้าโครงล่างดูเป็นท่าที่ต้องการ กด "สร้างท่า"'; m.className = 'msg ok'; $('make').disabled = false; balance();
+  } catch (e) { m.textContent = e.message; m.className = 'msg err'; }
+  $('read').disabled = false;
+};
+
+// ---------- generate ----------
+let playT = null;
+function play() { const c = $('anim'); if (!OUT.length) return; c.width = OUT[0].width; c.height = OUT[0].height; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; let i = 0;
+  clearInterval(playT); playT = setInterval(() => { g.fillStyle = '#4f7a3c'; g.fillRect(0, 0, c.width, c.height); g.drawImage(OUT[i], 0, 0); i = (i + 1) % OUT.length; }, speed); }
+$('slow').onclick = () => { speed = speed === 90 ? 260 : 90; play(); };
+$('make').onclick = async () => {
+  const m = $('makeMsg'); m.className = 'msg'; $('make').disabled = true;
+  try {
+    const kp = TG.map(t => J.map(j => ({label: j, x: +(t[j][0] / ME.width).toFixed(4), y: +(t[j][1] / ME.height).toFixed(4)})));
+    const fk = J.map(j => ({label: j, x: +(OURS[j][0] / ME.width).toFixed(4), y: +(OURS[j][1] / ME.height).toFixed(4)}));
+    m.textContent = 'ส่งงานให้ PixelLab …';
+    const t = await mcp('animate_with_skeleton_v3', {description: $('desc').value || 'a pixel art character', action: 'attack', direction: $('dir').value, keypoints: kp, first_frame_url: dataURL(ME), first_frame_keypoints: fk, view: 'low top-down'});
+    const jm = t.match(/job_id="([0-9a-f-]{36})"/), id = jm ? jm[1] : (t.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/) || [])[0];
+    if (!id) throw new Error(t.slice(0, 300));
+    OUT = []; const t0 = Date.now();
+    for (let i = 0; i < kp.length; i++) {
+      for (;;) { const r = await fetch('https://api.pixellab.ai/mcp/images/' + id + '/download?index=' + i, {headers: {Authorization: 'Bearer ' + KEY()}});
+        if (r.status === 200) { const b = await r.blob(); const im = await loadImg(URL.createObjectURL(b)); const c = cv(im.width, im.height); c.getContext('2d').drawImage(im, 0, 0); OUT.push(c); break; }
+        if (r.status !== 423 && r.status !== 202) throw new Error('ดาวน์โหลดไม่ได้ (' + r.status + ')');
+        m.textContent = 'PixelLab กำลังวาด … ' + Math.round((Date.now() - t0) / 1000) + ' วินาที (ปกติ 3–6 นาที)'; await sleep(8000); }
+    }
+    m.textContent = 'เสร็จแล้ว ' + OUT.length + ' เฟรม'; m.className = 'msg ok'; play(); $('dl').disabled = false; $('slow').disabled = false; balance();
+  } catch (e) { m.textContent = e.message; m.className = 'msg err'; }
+  $('make').disabled = false;
+};
+$('dl').onclick = () => { const w = OUT[0].width, h = OUT[0].height, c = cv(w * OUT.length, h); OUT.forEach((f, i) => c.getContext('2d').drawImage(f, i * w, 0));
+  const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'posecopy_' + ($('hero').value || 'char') + '_' + Date.now() + '.png'; a.click(); };
+</script>
+</body>
+</html>
