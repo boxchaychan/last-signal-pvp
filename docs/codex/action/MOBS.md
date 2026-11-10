@@ -84,8 +84,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 49 | jeoseung_saja | done | Korea | medium |
 | 50 | boss_bulgasari | done | Korea boss | huge |
 | 51 | satyr | done | Greece | medium |
-| 52 | harpy | todo | Greece | medium |
-| 53 | spartoi | todo | Greece | medium |
+| 52 | harpy | done | Greece | medium |
+| 53 | spartoi | done | Greece | medium |
 | 54 | gorgon | todo | Greece | medium |
 | 55 | cyclops | todo | Greece | large |
 | 56 | minotaur | todo | Greece | large |
