@@ -88,8 +88,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 53 | spartoi | done | Greece | medium |
 | 54 | gorgon | done | Greece | medium |
 | 55 | cyclops | done | Greece | large |
-| 56 | minotaur | todo | Greece | large |
-| 57 | boss_chimera | todo | Greece boss | huge |
+| 56 | minotaur | done | Greece | large |
+| 57 | boss_chimera | done | Greece boss | huge |
 | 58 | domovoi | todo | Slavic | small |
 | 59 | kikimora | todo | Slavic | small |
 | 60 | rusalka | todo | Slavic | medium |
