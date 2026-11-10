@@ -785,3 +785,7 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   action/berserker/pl_dl` (36 jobs: idle / run / roll / hurt 8 dirs, death E S W N, no attack) and `jobs_skills.json` (chain throw
   with the LEFT arm, south-east 8 f = Q / F). The 3 attacks stay in this download (they live in the trial account's character
   0e6da505; copy `bz_*` folders across if the new download overwrites `pl_dl/`). Not in the game yet.
+- **Berserker handoff 2026-11-10**: attacks viewer `docs/berserker-attacks.html` (frames embedded; normal 12 fps / slow 4 fps / frame by
+  frame / mirror; hit frames marked: sweep 2, spin 2-3, slam 4-5). Paid key on the cloud: re-saved through the secure form, but the
+  proxy still reached the trial account for 12+ minutes (see CLAUDE.md); check `get_balance` first. Effect pictures for `bz_*`: the owner
+  makes them in ChatGPT from `docs/fx-prompts.html`.
