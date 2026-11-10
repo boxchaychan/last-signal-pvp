@@ -185,7 +185,7 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 169 | boss_jotun | walk | done | `art/incoming/mobs/anim/boss_jotun_walk.png` |
 | 170 | boss_jotun | attack | done | `art/incoming/mobs/anim/boss_jotun_attack.png` |
 | 171 | boss_jotun | death | done | `art/incoming/mobs/anim/boss_jotun_death.png` |
-| 172 | boss_jotun | hurt | todo | `art/incoming/mobs/anim/boss_jotun_hurt.png` |
+| 172 | boss_jotun | hurt | done | `art/incoming/mobs/anim/boss_jotun_hurt.png` |
 
 ## Prompts
 ### shroom walk (เห็ดพิษ)
