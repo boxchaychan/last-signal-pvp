@@ -810,4 +810,8 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   `key`, from frame 0, scaled to the crack's length, height ×.85 of that), hits land as the fire runs out (t × .55 s); the
   Earthsplitter sheet stays as the fallback. Skills with `line: 1` (SWS[1]) draw a straight band as their aim marker (the
   crack's reach and width) instead of the range ring + target circle. Its skill icon uses the fire line too.
+- **Norse monsters in** (Codex, branch `codex/mobs-china`, 2026-11-10): draugr hurt + troll, ice_wraith, dwarf_berserker, ice_golem,
+  boss_jotun (walk / attack / death / hurt) → `mob_frames.py` + `MOB_K=1.5` (both sheets); `?test=mobs&set=norse` shows all seven
+  with the boss. Queue `docs/codex/action/MOB_ANIM.md` copied from Codex's branch (172 rows done). frost_wolf keeps its low-res
+  sheet (its see-through source frames are not in the repo).
 
