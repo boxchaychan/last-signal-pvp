@@ -132,13 +132,34 @@ def prompt(f):
             + 'Background: fully transparent (PNG with alpha). No characters, no people, no weapons held by anyone, no text, '
               'no numbers, no grid lines, no borders, no frame labels. Do ONLY this one picture.')
 
+# Video version (owner 2026-11-10 "เอาเอฟเฟกต์เบอร์เซิร์กมาลงเจน", now making clips with Meta AI): text only, the effect alone on
+# flat green, locked camera; Claude keys the green out and cuts the frames (tools/video/vid2px.py).
+import re
+VLAY = {'shot': 'It travels from the left side of the picture to a point on the right side and hits there.',
+        'ground': 'It sits on the ground in the middle of the picture; the camera looks down at an angle, so rings and cracks on the '
+                  'ground are flat ellipses about twice as wide as tall.',
+        'sky': 'It comes down from the top onto a ground point in the middle; rings on the ground are flat ellipses.',
+        'self': 'It surrounds an EMPTY spot in the middle of the picture where a character would stand (leave that spot empty).',
+        'front': 'It starts round an empty spot on the left third of the picture (where a character would stand) and swings out to the right.'}
+def vprompt(f, T=4):
+    hero, key, th, does, en, lay, tone, (c, r), loop = f
+    n = c * r
+    en = re.sub(r'frames (\d+)-(\d+)', lambda m: f'from {(int(m.group(1)) - 1) / n * T:.1f} s to {int(m.group(2)) / n * T:.1f} s', en)
+    return (f'Short 2D game skill effect animation, about {T} seconds, for a top-down pixel-art action RPG (camera looking down at an '
+            f'angle). ONE effect only: {en}. {VLAY[lay]} Colours: {TONE[tone]}; crisp pixel-art look. '
+            + ('It loops seamlessly. ' if loop else 'Quick build-up, a strong burst, then it fades out completely and the video ends on the empty background. ')
+            + 'Locked camera: no zoom, no pan, no shake, no cuts. Plain flat pure green background (#00FF00) the whole time. '
+              'No characters, no people, no weapons held by anyone, no ground texture, no text.')
+
 def card(f):
     hero, key, th, does, en, lay, tone, (c, r), loop = f
     st = '<span class="chip ok">อยู่ในเกมแล้ว</span>' if key in DONE else '<span class="chip todo">ยังไม่ได้ทำ</span>'
     return (f'<div class="card"><div class="bh"><h2>{html.escape(th)} <small>{HERO[hero]}</small></h2>{st}</div>'
             f'<p class="note">{html.escape(does)} · {c * r} เฟรม ({c}×{r}) · {LAYOUT[lay][1]}{" · วนซ้ำ" if loop else ""}</p>'
             f'<div class="blk"><div class="bh"><span>พรอมต์</span><button class="cp">คัดลอก</button></div>'
-            f'<textarea rows="9" readonly>{html.escape(prompt(f))}</textarea></div></div>')
+            f'<textarea rows="9" readonly>{html.escape(prompt(f))}</textarea></div>'
+            f'<div class="blk"><div class="bh"><span>พรอมต์วิดีโอ (Meta AI · พื้นเขียว)</span><button class="cp">คัดลอก</button></div>'
+            f'<textarea rows="7" readonly>{html.escape(vprompt(f))}</textarea></div></div>')
 
 secs = ''.join(f'<h2 class="sec">{HERO[h]}</h2>' + ''.join(card(f) for f in FX if f[0] == h) for h in HERO)
 page = '''<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -158,6 +179,7 @@ h1+p{color:var(--dim);margin:0 0 12px}.sec{margin:22px 0 10px;font-size:19px}
 </style></head><body><main>
 <h1>พรอมต์เอฟเฟกต์สกิล</h1><p>สกิลที่ยังใช้เอฟเฟกต์เก่าหรือยืมของตัวอื่นอยู่ ทำทีละภาพ กดคัดลอกแล้ววางได้เลย นักธนูครบแล้ว นักดาบ Q กับนักมีด F ก็มีแล้ว เลยไม่มีในหน้านี้</p>
 <ol class="steps">
+<li><b>ทำเป็นวิดีโอก็ได้:</b> ใช้กล่อง "พรอมต์วิดีโอ" กับ Meta AI ไม่ต้องแนบรูป ได้คลิปแล้วกด Download ลงเครื่องก่อน แล้วแนบไฟล์ mp4 มา บอกชื่อสกิลด้วย เช่น "เบอร์เซิร์ก Q"</li>
 <li><b>หนึ่งภาพต่อหนึ่งเอฟเฟกต์:</b> ใช้ ChatGPT หรือเว็บที่ทำ Rapier Flurry / Bomb Arrow ก็ได้ วางพรอมต์ของการ์ดเดียว รอเสร็จแล้วค่อยทำการ์ดถัดไป</li>
 <li><b>พื้นหลังต้องโปร่ง:</b> ถ้าได้พื้นขาวหรือดำมา ส่งมาได้เหมือนกัน ผมตัดเอง</li>
 <li><b>ส่งเป็นไฟล์:</b> ภาพที่วางในแชทจะถูกย่อลง ถ้าส่งเป็นไฟล์ (หรือ zip หลายภาพ) จะคมกว่า บอกชื่อสกิลมาด้วย เช่น "นักดาบ F"</li>
