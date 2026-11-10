@@ -78,8 +78,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 43 | boss_jotun | done | Norse boss | huge |
 | 44 | dokkaebi_fire | done | Korea | small |
 | 45 | dokkaebi | done | Korea | medium |
-| 46 | gwisin | todo | Korea | medium |
-| 47 | haetae | todo | Korea | medium |
+| 46 | gwisin | done | Korea | medium |
+| 47 | haetae | done | Korea | medium |
 | 48 | jangsan_tiger | todo | Korea | large |
 | 49 | jeoseung_saja | todo | Korea | medium |
 | 50 | boss_bulgasari | todo | Korea boss | huge |
