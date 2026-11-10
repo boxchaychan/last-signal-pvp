@@ -238,10 +238,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 222 | minotaur | attack | done | `art/incoming/mobs/anim/minotaur_attack.png` |
 | 223 | minotaur | death | done | `art/incoming/mobs/anim/minotaur_death.png` |
 | 224 | minotaur | hurt | done | `art/incoming/mobs/anim/minotaur_hurt.png` |
-| 225 | boss_chimera | walk | todo | `art/incoming/mobs/anim/boss_chimera_walk.png` |
-| 226 | boss_chimera | attack | todo | `art/incoming/mobs/anim/boss_chimera_attack.png` |
-| 227 | boss_chimera | death | todo | `art/incoming/mobs/anim/boss_chimera_death.png` |
-| 228 | boss_chimera | hurt | todo | `art/incoming/mobs/anim/boss_chimera_hurt.png` |
+| 225 | boss_chimera | walk | done | `art/incoming/mobs/anim/boss_chimera_walk.png` |
+| 226 | boss_chimera | attack | done | `art/incoming/mobs/anim/boss_chimera_attack.png` |
+| 227 | boss_chimera | death | done | `art/incoming/mobs/anim/boss_chimera_death.png` |
+| 228 | boss_chimera | hurt | done | `art/incoming/mobs/anim/boss_chimera_hurt.png` |
 | 229 | domovoi | walk | todo | `art/incoming/mobs/anim/domovoi_walk.png` |
 | 230 | domovoi | attack | todo | `art/incoming/mobs/anim/domovoi_attack.png` |
 | 231 | domovoi | death | todo | `art/incoming/mobs/anim/domovoi_death.png` |
