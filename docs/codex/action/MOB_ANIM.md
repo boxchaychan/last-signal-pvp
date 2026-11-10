@@ -186,10 +186,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 170 | boss_jotun | attack | done | `art/incoming/mobs/anim/boss_jotun_attack.png` |
 | 171 | boss_jotun | death | done | `art/incoming/mobs/anim/boss_jotun_death.png` |
 | 172 | boss_jotun | hurt | done | `art/incoming/mobs/anim/boss_jotun_hurt.png` |
-| 173 | dokkaebi_fire | walk | todo | `art/incoming/mobs/anim/dokkaebi_fire_walk.png` |
-| 174 | dokkaebi_fire | attack | todo | `art/incoming/mobs/anim/dokkaebi_fire_attack.png` |
-| 175 | dokkaebi_fire | death | todo | `art/incoming/mobs/anim/dokkaebi_fire_death.png` |
-| 176 | dokkaebi_fire | hurt | todo | `art/incoming/mobs/anim/dokkaebi_fire_hurt.png` |
+| 173 | dokkaebi_fire | walk | done | `art/incoming/mobs/anim/dokkaebi_fire_walk.png` |
+| 174 | dokkaebi_fire | attack | done | `art/incoming/mobs/anim/dokkaebi_fire_attack.png` |
+| 175 | dokkaebi_fire | death | done | `art/incoming/mobs/anim/dokkaebi_fire_death.png` |
+| 176 | dokkaebi_fire | hurt | done | `art/incoming/mobs/anim/dokkaebi_fire_hurt.png` |
 | 177 | dokkaebi | walk | todo | `art/incoming/mobs/anim/dokkaebi_walk.png` |
 | 178 | dokkaebi | attack | todo | `art/incoming/mobs/anim/dokkaebi_attack.png` |
 | 179 | dokkaebi | death | todo | `art/incoming/mobs/anim/dokkaebi_death.png` |
