@@ -57,3 +57,15 @@ jacket with a short hood down on her back, glowing orange-yellow neon seams, a f
 tech gauntlets, slim trousers, sturdy boots. A slim visor / headset over one ear with a small glowing orange-yellow neon lens, her wavy
 brown ponytail kept. Keep her leaf hair clip as a small badge. Colours: black, charcoal, white, glowing ORANGE-YELLOW neon (owner 2026-11-10 "เอาโทนสีนี้ ส้มเหลืองนีออน", same as the finished gunner `art/incoming/action/gunner/turnaround_gpt.png`), brown hair.
 ```
+
+## Simplified redo (owner 2026-11-10 "ลดรายละเอียดให้มีโทน 2 สีพอ")
+The first GPT turnarounds (`gunner/`, `laserbow/turnaround_gpt.png`) had too many small parts: shrunk to a ~120 px game
+sprite they read as a mess. Redo each with the attached first picture + these lines after the shared prompt:
+```
+SIMPLIFY for a small game sprite (it must read clearly at 120 px tall): only TWO main outfit colours plus skin and hair,
+big simple shapes, at most 3-4 bold glowing stripes on the whole outfit, no small buckles, pouches, straps, rivets or
+panel lines, face and both eyes clearly visible (nothing covering the eyes), thick dark outline, flat colours with one
+shade step. Keep the same girl, the same weapon idea and the same overall silhouette as the attached picture.
+```
+- gunner: the two colours = black + orange-yellow neon.
+- laserbow: the two colours = white + green neon.
