@@ -41,8 +41,9 @@ renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWid
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene(); scene.fog = new THREE.Fog(0xc8d6b8, 24, 46); scene.background = new THREE.Color(0xc8d6b8);
-const cam = new THREE.PerspectiveCamera(28, innerWidth / innerHeight, 0.5, 200);
-let ZOOM = 13;
+const HQ = new URLSearchParams(location.search);   // ?pitch=deg ?fov=deg ?dist= (owner 2026-11-10 "มุมกล้องเอามาให้เลือก")
+const cam = new THREE.PerspectiveCamera(+HQ.get('fov') || 28, innerWidth / innerHeight, 0.5, 200);
+let ZOOM = +HQ.get('dist') || 13;
 const sun = new THREE.DirectionalLight(0xfff0d8, 1.1); sun.position.set(-10, 18, 8); sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, {left: -20, right: 20, top: 20, bottom: -20, near: 1, far: 60}); sun.shadow.bias = -0.0008;
 scene.add(sun, sun.target, new THREE.HemisphereLight(0xeef6ff, 0x9aa47a, 0.8));
@@ -160,7 +161,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (hero.moving) { mx /= Math.max(1, l); mz /= Math.max(1, l); const nx = hero.x + mx * 4 * dt, nz = hero.z + mz * 4 * dt, t = map[nz | 0] && map[nz | 0][nx | 0];
     if (t !== undefined && t !== 2) { hero.x = nx; hero.z = nz; } hero.dir = DIR8[(Math.round(Math.atan2(mz, mx) / (Math.PI / 4)) + 8) % 8]; }
   const gy = HGT[map[hero.z | 0][hero.x | 0]] || 0; hmesh.position.set(hero.x, gy, hero.z); drawHero(dt);
-  const a = .95;   // camera pitch (radians from the horizon)
+  const a = HQ.get('pitch') ? +HQ.get('pitch') * Math.PI / 180 : .95;   // camera pitch (radians from the horizon; .95 = 54 degrees)
   cam.position.set(hero.x, gy + Math.sin(a) * ZOOM, hero.z + Math.cos(a) * ZOOM); cam.lookAt(hero.x, gy + .6, hero.z);
   sun.position.set(hero.x - 10, 18, hero.z + 8); sun.target.position.set(hero.x, 0, hero.z);
   const ang = Math.atan2(cam.position.x - hero.x, cam.position.z - hero.z);

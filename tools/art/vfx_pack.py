@@ -19,6 +19,12 @@ KIND = {
   'S': ('Camera: pure side view; the effect moves or swings from LEFT to RIGHT, so a game can turn it toward any target.',
         'วิ่ง/ฟันจากซ้ายไปขวา เกมหมุนหรือกลับด้านให้ชี้ไปหาเป้าเอง'),
 }
+# owner 2026-11-10 "ทำไมล้นกรอบ": Meta AI ignores sizes written as fractions and zooms in to fill the frame; a start picture
+# with a small spark in the middle (art/incoming/action/berserker/video_start/start_fx_spark.png) plus these words keep it small.
+# The size IN THE GAME is set by tools/video/vfx_cut.py (SIZE), not by the video.
+WIDE = ('EXTREME WIDE SHOT, zoomed far out: the camera is very far away, the effect is tiny in the centre of the frame and starts '
+        'from the small spark in the attached picture. At its biggest moment the whole effect still fits inside the middle third of '
+        'the frame, with a lot of empty green space all round it.')
 GREEN, MAGENTA = 'flat pure green (#00FF00)', 'flat pure magenta (#FF00FF)'
 END = {'once': 'Quick build-up, a strong burst, then it fades out completely and the video ends on the empty background.',
        'loop': 'It LOOPS seamlessly: no fade-out, the last frame matches the first.'}
@@ -176,7 +182,7 @@ def prompt(e, tone=''):
     tone = (' ' + tone) if tone else ''
     return (f'Create a {sec:g}-second VIDEO, LANDSCAPE 16:9, of ONE game visual effect, no character, no people, no weapon. {STYLE} '
             f'Effect: {what}.{tone} {KIND[kind][0]} Size: {size}, in the middle of the picture with wide empty margins on all four sides; '
-            f'nothing ever touches or leaves the edges. {END[end]} Background: {bg} the whole time, nothing else on it: no ground '
+            f'nothing ever touches or leaves the edges. {WIDE} {END[end]} Background: {bg} the whole time, nothing else on it: no ground '
             f'texture, no floor, no landscape, no text. Locked camera: no zoom, no pan, no tilt, no shake, no cuts.')
 
 def card(e, tone=''):
