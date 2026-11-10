@@ -1010,6 +1010,9 @@ const FXS = {}, PFX = {};
 // 8 crescent slashes from the VFX workbench (owner: "ไม่เอาเส้นตรง ให้เป็นรอยฟันสวยๆ"), which way each one bulges (screen degrees)
 const SLB = [41, 99, 150, -175, -138, -84, -33, 3];
 function slashFor(deg, t = '') { let b = 0, bd = 999; for (let k = 0; k < 8; k++) { const d = Math.abs(((SLB[k] - deg) % 360 + 540) % 360 - 180); if (d < bd) { bd = d; b = k; } } return 'dslash' + t + b; }
+// owner 2026-11-10 "ทำ vfx ไว้ โทนแดงนีออน ดำ ไฟ": the Berserker draws the swordsman's effects recoloured black + neon red + fire
+// (tools/art/bz_fx.py -> fx/<key>_bz.png); they replace the normal sheets once loaded
+const BZFX = ['pfx_fireline', 'pfx_earthsplit', 'pfx_whirl', 'pfx_whirl_k', 'pfx_dashstrike_v', 'pfx_swcharge', 'pfx_swslash', 'cslam', 'gslam', 'quake', 'parry', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5'];
 const PFXA = {critg: [.9, .2], critx_ice: [.85, .18], zspark: [1, .3], zstar: [1, .45]};   // [picture alpha, glow alpha] per effect
 function pfx(k, x, y, o) { const P = PFX[k]; if (!P || !P.m) return false; G.fx.push({k: 'pfx', key: k, x, y, t: 0, life: P.m.n / P.m.fps, ...(o || {})}); return true; }
 const h15 = (dx, dy) => ((Math.round(Math.atan2(dy, dx) * 180 / Math.PI / 15) * 15) % 360 + 360) % 360;   // heading of a turned copy
@@ -1047,7 +1050,8 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_skyarrow_y', 'pfx_dashstrike_y', 'pfx_heal_y', 'pfx_skyarrow_g', 'pfx_starfall_g', 'pfx_dashstrike_g', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k', 'croots_g', 'pfx_rapier_k', 'pfx_chargeshot_k', 'pfx_skyarrow_k', 'pfx_dashstrike_k', 'pfx_bombarrow', 'pfx_bombarrow_g', 'pfx_vine_k', 'pfx_gbolt_k', 'pfx_earthsplit', 'pfx_fireline', 'pfx_starfall_c_k', 'pfx_dustland', 'pfx_dustdash', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5', 'pfx_swslash', 'pfx_swcharge'].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; }))); } catch (e) {}
+    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_skyarrow_y', 'pfx_dashstrike_y', 'pfx_heal_y', 'pfx_skyarrow_g', 'pfx_starfall_g', 'pfx_dashstrike_g', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k', 'croots_g', 'pfx_rapier_k', 'pfx_chargeshot_k', 'pfx_skyarrow_k', 'pfx_dashstrike_k', 'pfx_bombarrow', 'pfx_bombarrow_g', 'pfx_vine_k', 'pfx_gbolt_k', 'pfx_earthsplit', 'pfx_fireline', 'pfx_starfall_c_k', 'pfx_dustland', 'pfx_dustdash', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5', 'pfx_swslash', 'pfx_swcharge', ...(HERO === 'berserker' ? [...BZFX.map(k => k + '_bz'), 'pfx_bzchain', 'pfx_bzring'] : [])].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; })));
+    for (const k of BZFX) if (HERO === 'berserker' && PFX[k + '_bz'] && PFX[k + '_bz'].m) PFX[k] = PFX[k + '_bz']; } catch (e) {}
   setupGround(); if (!/noprops/.test(location.search)) makeProps(); makeAmbient(); BG = 1;   // ?noprops: bare ground (art tests)
   prebuild(WW / 2 - VW / 2, WH / 2 - VH / 2);
   SL.green = makeSlime(['#2f6f2a', '#56b045', '#8fe070', '#e8ffd8']);
@@ -1699,6 +1703,10 @@ const SKICON = {priest: [['pfx_heal_y', .4], ['pfx_skyarrow_y', .35], ['critg', 
   mage: [['cfire0', .3], ['pfx_orb', .3], ['cnova', .5], ['cblink', .4], ['cmeteor', .3], ['cshield', .3]]};
 for (const T of [SKNAME, SKDESC, SKICON, PASDESC]) if (T.swordsman !== undefined) T.guardian = T.berserker = T.swordsman;
 SKNAME.guardian = ['ฟาดแยกพื้น', 'พายุดาบ', 'ชาร์จฟัน', 'กระโดดทุบ', 'ยกโล่สวน', 'คลั่ง'];
+// the Berserker's own Q (owner's chain sheet 2026-11-10): chains fan out, drag the monsters in front of him, a ring cleave round him
+SKNAME.berserker = ['โซ่รวบวิญญาณ', ...SKNAME.swordsman.slice(1)];
+SKDESC.berserker = ['เหวี่ยงโซ่เป็นพัดกว้างไปทางที่เล็ง ดึงมอนที่โดนมากองหน้าตัวและมึน แล้วฟันวงรอบตัวแรงๆ', ...SKDESC.swordsman.slice(1)];
+SKICON.berserker = [['pfx_bzchain', .3], ...SKICON.swordsman.slice(1)];
 // level cap 50: the 2nd class comes at level 50 (owner 2026-11-09, not built yet)
 const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 50, SKUPD = .1, SKUPC = .04;
 const SKBASE = {}; for (let k = 1; k <= 6; k++) SKBASE[k] = JSON.parse(JSON.stringify(SKS[k]));
@@ -1945,6 +1953,7 @@ function statusTick(m, dt) {
 // ===== swordsman =====
 function swordSk(p, k) {
   const S = SWS[k];
+  if (k === 1 && HERO === 'berserker' && PFX.pfx_bzchain && PFX.pfx_bzring) return bzChain(p, S);
   if (k === 1) {                                         // Q ground split: the slam swing, a glowing crack runs to the aimed spot
     const [tx, ty] = p.skT || skTarget(p, 1); p.skT = null;
     const d = dirOf(tx - p.x, ty - p.y), ar = animRow('attack', d); if (!ar || !payFor(p, 1)) return false;
@@ -1982,6 +1991,30 @@ function swordSk(p, k) {
     return true;
   }
   return false;
+}
+// Berserker Q "โซ่รวบวิญญาณ" (owner's sheet, tools/art/bz_chain_import.py): the chain throw row, chains fan out toward the aim
+// (160 degrees), every monster caught is hurt a little, stunned and dragged in front of him; half a second later a black ring
+// cleave round him hits everything close, hard
+function bzChain(p, S) {
+  const [tx, ty] = p.skT || skTarget(p, 1); p.skT = null;
+  const d = dirOf(tx - p.x, ty - p.y), ar = animRow('chain', d) || animRow('attack', d); if (!ar || !payFor(p, 1)) return false;
+  p.dir = d; const rel = (ar.hits && ar.hits[0]) || Math.round(ar.n * .4), fr = [...Array(ar.n).keys()];
+  return playAct(p, ar, fr, fr.map((f, i) => i === rel ? 110 : 55), {[rel]: () => bzChainCast(p, S, tx, ty)}, {});
+}
+function bzChainCast(p, S, tx, ty) {
+  const dx = tx - p.x, dy = ty - p.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, R = S.range, M = PFX.pfx_bzchain.m;
+  G.fx.push({k: 'pfx', key: 'pfx_bzchain', x: p.x, y: p.y - 26, rot: Math.atan2(uy, Math.abs(ux)) || 1e-4, flip: ux < 0, sc: R / 280, t: 0, life: M.n / M.fps});
+  G.shake = Math.max(G.shake, 4);
+  const caught = G.mobs.filter(m => { if (m.hp <= 0) return false; const mx = m.x - p.x, my = m.y - p.y, md = Math.hypot(mx, my) || 1;
+    return Math.hypot(mx, my * 1.2) < R + m.r && (mx * ux + my * uy) / md > .17; });   // within 80 degrees of the aim
+  caught.forEach((m, i) => {
+    hitMob(m, Math.round(S.dmg * .45), p.x, p.y, 0, '#ff3050', false, true); m.stun = Math.max(m.stun || 0, G.t + 1.1);
+    const a = (i - (caught.length - 1) / 2) * .5, gx = p.x + (ux * Math.cos(a) - uy * Math.sin(a)) * 62, gy = p.y + (uy * Math.cos(a) + ux * Math.sin(a)) * 34;
+    for (let j = 1; j <= 7; j++) G.later.push({t: .12 + j / 30, fn: () => { if (m.hp > 0) { m.x += (gx - m.x) * .38; m.y += (gy - m.y) * .38; } }});
+  });
+  G.later.push({t: .5, fn: () => { const q = G.p;
+    pfx('pfx_bzring', q.x, q.y + 4, {sc: 1.15}); G.shake = Math.max(G.shake, 8); G.hs = Math.max(G.hs, .08); G.flash = .05;
+    for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - q.x, (m.y - q.y) * 1.25) < 150 + m.r) hitMob(m, Math.round(S.dmg * 1.5), q.x, q.y, 70, '#ff3050', true, true); }});
 }
 function groundSplit(p, tx, ty) {
   const S = SWS[1], dx = tx - p.x, dy = ty - p.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
@@ -2048,9 +2081,9 @@ function swSlash(p, i) {
 function chargeBlast(p, lv) {
   const dx = DV[p.dir][0], dy = DV[p.dir][1], x = p.x + dx * 70, y = p.y + dy * 34 + 4, k = .75 + lv * .2;
   pfx('pfx_swcharge', x, y, {f0: 6, sc: k});
-  if (!FXS.glowRed) FXS.glowRed = glowSprite([255, 90, 30]);
+  if (!FXS.glowOr) FXS.glowOr = glowSprite([255, 90, 30]);   // its own key: it used to fill glowRed with orange before the berserk aura made it
   G.fx.push({k: 'sbang', x, y, t: 0, life: .3, sc: k * .9, red: 1});
-  G.fx.push({k: 'ring', x, y, r0: 8, r1: 60 * k, t: 0, life: .28, c: '#ff8a3a'}); G.fx.push({k: 'ring', x, y, r0: 12, r1: 90 * k, t: 0, life: .4, c: '#ffd070'});
+  G.fx.push({k: 'ring', x, y, r0: 8, r1: 60 * k, t: 0, life: .28, c: HERO === 'berserker' ? '#ff2848' : '#ff8a3a'}); G.fx.push({k: 'ring', x, y, r0: 12, r1: 90 * k, t: 0, life: .4, c: HERO === 'berserker' ? '#ff6a50' : '#ffd070'});
   parts(x, y - 6, '#ff7a30', 10 + lv * 6, {sp: 300, lift: 160, life: .45, floor: 6}); parts(x, y - 2, '#4a3518', 8, {sp: 200, lift: 140, life: .5, floor: 8, w: 2});
   landDust(x, y, k);
 }
@@ -2065,7 +2098,7 @@ function chargeRelease(p, lv) {
 function leapLand(p) {
   const S = SWS[4];
   for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 150, '#ffd080', true, true); m.stun = G.t + S.stun; }
-  landDust(p.x, p.y, 1.5); if (!pfx('cslam', p.x, p.y + 8)) { pfx('quake', p.x, p.y + 6); pfx('gslam', p.x, p.y); } G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 20, r1: S.r, t: 0, life: .35, c: '#ffe6b0'});
+  landDust(p.x, p.y, 1.5); if (!pfx('cslam', p.x, p.y + 8)) { pfx('quake', p.x, p.y + 6); pfx('gslam', p.x, p.y); } G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 20, r1: S.r, t: 0, life: .35, c: HERO === 'berserker' ? '#ff3050' : '#ffe6b0'});
   for (let i = 0; i < 16; i++) { const a = i / 16 * 6.28; puff(p.x + Math.cos(a) * 40, p.y + Math.sin(a) * 15, '#cbbf9e'); }
   parts(p.x, p.y - 6, '#8a7050', 22, {sp: 260, lift: 220, life: .8, floor: 6, r: 30}); parts(p.x, p.y - 20, 'gold', 14, {k: 'ln', sp: 420, life: .25}); heroGlow(p, 'gold', .4);
   G.shake = Math.max(G.shake, 10); G.hs = Math.max(G.hs, .1); G.kick = {x: 0, y: 8, t: .14};
@@ -2622,10 +2655,10 @@ function swordArc(p, fin) {                               // a big ice crescent 
     G.fx.push({k: 'pfx', key: 'pfx_blaze', follow: 1, ox: 0, oy: -30, a: 1, depth: 'f', t: 0, f0: fin ? 18 : 0, fn: fin ? 12 : 10, rot: fin ? th : th + Math.PI / 2, life: (fin ? 12 : 10) / 30}); return; }
   const key = slashFor(p.dir * 45, 'l'), Q = PFX[key]; if (!Q || !Q.m) return;
   G.fx.push({k: 'pfx', key, follow: 1, ox: DV[p.dir][0] * (fin ? 34 : 26), oy: -30 + DV[p.dir][1] * 10, dox: DV[p.dir][0] * 260, doy: DV[p.dir][1] * 130, a: .92, ga: .6, depth: DV[p.dir][1] < -.3 ? 'b' : 'f', t: 0, life: Q.m.n / Q.m.fps,
-    filter: p.rage > G.t ? 'hue-rotate(165deg) saturate(2.2)' : ''});
+    filter: p.rage > G.t || HERO === 'berserker' ? 'hue-rotate(165deg) saturate(2.2)' : ''});   // the Berserker's crescents are always crimson
 }
 function cutFx(x, y, dir, lvl) {
-  const pal = G.p.rage > G.t ? 'red' : 'ice';
+  const pal = G.p.rage > G.t || HERO === 'berserker' ? 'red' : 'ice';
   if (pal === 'ice') { spark(x, y, 7, '#bff8ff'); spark(x, y, 4, '#ffffff'); G.fx.push({k: 'ring', x, y: y + 22, r0: 6, r1: 34 + lvl * 8, t: 0, life: .2, c: '#e8fbff'}); }
   const b = (rnd() < .5 ? -1 : 1) * (.22 + rnd() * .3), A = lvl >= 3 ? [b, b + 1.05, b - 1.05] : lvl === 2 ? [b, -b * 1.3 + (b > 0 ? -.4 : .4)] : [b];
   A.forEach((a, i) => G.fx.push({k: 'cut', x: x + (rnd() - .5) * 8, y: y + (rnd() - .5) * 6, a, len: (lvl >= 3 ? 170 : 110 + lvl * 15) + rnd() * 30, t: -i * .03, life: .2, w: lvl >= 3 ? 7 : 5, pal}));

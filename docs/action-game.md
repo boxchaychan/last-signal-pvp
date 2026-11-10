@@ -881,3 +881,17 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   sun with soft shadows, fog, and one full-screen pass with a tilt-shift blur at the top / bottom, warm grade and vignette.
   WASD / left stick to walk, buttons for the blur and the zoom. Not connected to action.html; no monsters or combat.
 
+
+### Berserker effects + chain Q (2026-11-10 evening)
+- Owner "ทำ vfx ไว้ โทนแดงนีออน ดำ ไฟ": `tools/art/bz_fx.py` recolours every effect of the swordsman's kit by brightness onto one ramp
+  (black smoke → crimson → neon red → red-orange fire core) → `fx/<key>_bz.png` (+ manifest); `BZFX` in action.html loads them for the
+  Berserker only and swaps them in. The rage flames (`crage`) were already red and stay. His crescents (`swordArc`, `cutFx`) are always
+  crimson, the charge / leap rings red; `chargeBlast` now keeps its orange glow under its own key (`glowOr`, it used to tint the berserk glow).
+- Owner's own Q sheet (6×4 cells of 320 px on flat green, `art/incoming/pfx/bz_chain_sheet.png`) → `tools/art/bz_chain_import.py` →
+  `pfx_bzchain` (chains, anchor = the caster's ring, turned to the aim) + `pfx_bzring` (ring cleave squashed .55 to the ground).
+  Berserker Q is now "โซ่รวบวิญญาณ" (`bzChain` / `bzChainCast`): chain throw row, chains within 80° of the aim catch monsters (45% dmg,
+  1.1 s stun, dragged in front of him), then at .5 s the ring cleave hits everything within 150 for 150%. In-game clip:
+  `art/incoming/action/berserker/q_chain_ingame.gif`.
+- Meta AI videos: `tools/video/vid2px.py` (green key, one shared scale for a locked camera, palette from a still, outline added later).
+  The Berserker slash video (`meta_attack/`) is cut but not in the game yet; prompts in `berserker/video_start/`, video prompts on every
+  card of `docs/fx-prompts.html`. Claude cannot make the videos (needs the owner's Meta AI login).
