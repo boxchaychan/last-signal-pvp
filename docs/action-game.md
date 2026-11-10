@@ -837,4 +837,8 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   heroes turn through the in-between directions (`p.vd`, a step every 45 ms; a half-turn passes the front view), idle / run
   start from their first frame when the state changes (`p.stT0`), idle 7 → 9 fps. For future PixelLab idles / runs: ask for
   hair and cape swaying and lagging behind, more frames (12-16) where it matters.
+- **Guardian moves copied from a knight pack** (owner 2026-11-10, "FREE Knight 2D Pixel Art v1.2": games OK incl. commercial, no
+  redistribution as an asset, so its sheets are NOT in this repo; frames 112x96): `pose_copy.py` ATTACK 1 (8) / 2 (9) / 3 (11) /
+  BLOCK (6) onto the Guardian's east rotation (paid character 4577584b…), 3 gen each = 12 → `art/incoming/action/guardian/
+  pose_copy_knight/<move>/r*.png` + `preview.gif`: overhead cut into a lunge, a thrust, a low lunge cut, shield raised.
 
