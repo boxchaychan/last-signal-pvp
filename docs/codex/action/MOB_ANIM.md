@@ -214,10 +214,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 198 | boss_bulgasari | attack | done | `art/incoming/mobs/anim/boss_bulgasari_attack.png` |
 | 199 | boss_bulgasari | death | done | `art/incoming/mobs/anim/boss_bulgasari_death.png` |
 | 200 | boss_bulgasari | hurt | done | `art/incoming/mobs/anim/boss_bulgasari_hurt.png` |
-| 201 | satyr | walk | todo | `art/incoming/mobs/anim/satyr_walk.png` |
-| 202 | satyr | attack | todo | `art/incoming/mobs/anim/satyr_attack.png` |
-| 203 | satyr | death | todo | `art/incoming/mobs/anim/satyr_death.png` |
-| 204 | satyr | hurt | todo | `art/incoming/mobs/anim/satyr_hurt.png` |
+| 201 | satyr | walk | done | `art/incoming/mobs/anim/satyr_walk.png` |
+| 202 | satyr | attack | done | `art/incoming/mobs/anim/satyr_attack.png` |
+| 203 | satyr | death | done | `art/incoming/mobs/anim/satyr_death.png` |
+| 204 | satyr | hurt | done | `art/incoming/mobs/anim/satyr_hurt.png` |
 | 205 | harpy | walk | todo | `art/incoming/mobs/anim/harpy_walk.png` |
 | 206 | harpy | attack | todo | `art/incoming/mobs/anim/harpy_attack.png` |
 | 207 | harpy | death | todo | `art/incoming/mobs/anim/harpy_death.png` |
