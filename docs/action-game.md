@@ -820,4 +820,15 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   calls `rogueCres` = a crescent drawn in code (`drawCres`: fat white middle, neon rim, dark edge, squashed to the ground
   angle, the tail eaten toward the tip after 25%, sparkles off the tip), alternating forehand / backhand, the finisher
   bigger; red during rage.
+- **Move-copy tool** (owner 2026-11-10 "ทำทูลขึ้นมาสำหรับการลอกท่า ... ให้ใช้ในโทรศัพท์ได้"): copies an example animation's POSES onto
+  our own character (no pixels of theirs). Steps: PixelLab `estimate_skeleton` on every example frame (small figures are cropped
+  and enlarged first, the 256 px limit) and on our still (0.1 each) → retarget: each of our bones takes the example bone's
+  angle and keeps our length, built out from our hips; our own face rides on the neck → `animate_with_skeleton_v3`
+  (`first_frame_url` = our still, `first_frame_keypoints`, view low top-down; 3 frames 2 gen, 4-14 = 3, 15 = 4), results from
+  `GET /mcp/images/<job>/download?index=N`. Command line: `tools/art/pose_copy.py <frames dir | sheet.png[:cols]> <still.png>
+  <out> "<looks>" [action] [direction] [--dry]`. Phone page: `posecopy.html` (GitHub Pages; the owner's PixelLab key is typed
+  in and kept in that browser's localStorage only; PixelLab's API allows calls from boxchaychan.github.io): example file(s) →
+  hero + direction from `art/action/n128/<hero>_still.png` (or an own picture) → อ่านท่า (preview of both skeletons) →
+  สร้างท่า (plays the result, saves a one-row PNG). First test: Ozzbit's combo_1 + end (7 frames) on the rogue, east, 3 gen
+  → `art/incoming/action/rogue/pose_copy_ozzbit/` (low lunge with the dagger forward, back to standing; she keeps her look).
 
