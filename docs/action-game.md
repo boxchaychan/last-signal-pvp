@@ -831,4 +831,10 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   hero + direction from `art/action/n128/<hero>_still.png` (or an own picture) → อ่านท่า (preview of both skeletons) →
   สร้างท่า (plays the result, saves a one-row PNG). First test: Ozzbit's combo_1 + end (7 frames) on the rogue, east, 3 gen
   → `art/incoming/action/rogue/pose_copy_ozzbit/` (low lunge with the dagger forward, back to standing; she keeps her look).
+- **Lessons from the owner's sample idle / walk** (2026-11-10 `sampleidlewalk.zip`, hand-made 64 px Aseprite files, not kept in
+  the repo): idle 10 frames at 60 ms (the body barely moves, the hair and cloak sway and lag = secondary motion), walk 26 frames
+  at 50 ms with a turn-around inside it, a 2-frame "from idle" link into the walk, 26-27 colours. Taken into the game (free):
+  heroes turn through the in-between directions (`p.vd`, a step every 45 ms; a half-turn passes the front view), idle / run
+  start from their first frame when the state changes (`p.stT0`), idle 7 → 9 fps. For future PixelLab idles / runs: ask for
+  hair and cape swaying and lagging behind, more frames (12-16) where it matters.
 

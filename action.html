@@ -3220,8 +3220,13 @@ function drawPlayerBody(p) {
   if (p.state === 'dead' && drawMove('death', p.dir, p.x, p.y, 0, 0, Math.min(1, p.deadT / DEATH_T))) return;
   if (p.state === 'hurt' && drawMove('hurt', p.dir, p.x, p.y, 0, 0, 1 - p.hurtT / HURT_T)) return;
   if (p.state === 'roll' && p.roll && drawMove('roll', p.dir, p.x, p.y, 0, 0, p.roll.t / ROLL.t)) return;
-  if (p.state === 'move' && drawMove('run', p.dir, p.x, p.y, G.t, 13)) return;
-  if (p.state === 'idle' && drawMove('idle', p.dir, p.x, p.y, G.t, 7)) return;
+  // owner's sample idle / walk (2026-11-10 "เอาไปศึกษา"): turning goes through the in-between directions (45 ms a step,
+  // the half-turn passes the front view), and a run / idle starts from its own first frame instead of mid-cycle
+  if (p.vd === undefined || (p.state !== 'idle' && p.state !== 'move')) { p.vd = p.dir; p.vdT = G.t; }
+  else if (p.vd !== p.dir && G.t - p.vdT > .045) { const df = ((p.dir - p.vd + 12) % 8) - 4, st = df === -4 ? (p.vd >= 6 || p.vd <= 1 ? 1 : -1) : df > 0 ? 1 : -1; p.vd = (p.vd + st + 8) % 8; p.vdT = G.t; }
+  if (p.state !== p.lastSt) { p.stT0 = G.t; p.lastSt = p.state; }
+  if (p.state === 'move' && drawMove('run', p.vd, p.x, p.y, G.t - p.stT0, 13)) return;
+  if (p.state === 'idle' && drawMove('idle', p.vd, p.x, p.y, G.t - p.stT0, 9)) return;
   let y = p.y; if (p.state === 'move' && p.bob) y -= 2;
   if (p.state === 'roll' && p.roll) y -= Math.round(Math.sin(p.roll.t / ROLL.t * Math.PI) * 10);
   drawStill(p.dir, p.x, y);
