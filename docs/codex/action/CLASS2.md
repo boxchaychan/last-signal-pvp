@@ -16,8 +16,8 @@ Guardian. Reply to the owner in Thai, short and plain.
 ## Queue
 | # | key | status | what |
 |---|-----|--------|------|
-| 1 | gunner | todo | dual-pistol gunslinger (ปืนคู่) |
-| 2 | greatbow | todo | great-bow archer (ธนูใหญ่) |
+| 1 | gunner | done | dual-pistol gunslinger (ปืนคู่) |
+| 2 | greatbow | done | great-bow archer (ธนูใหญ่) |
 
 ## Shared prompt (put this first, then the row's own lines)
 ```
