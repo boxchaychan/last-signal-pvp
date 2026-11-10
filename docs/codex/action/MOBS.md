@@ -100,8 +100,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 65 | knocker | done | Celtic | small |
 | 66 | redcap | done | Celtic | small |
 | 67 | pooka | done | Celtic | medium |
-| 68 | banshee | todo | Celtic | medium |
-| 69 | kelpie | todo | Celtic | medium |
+| 68 | banshee | done | Celtic | medium |
+| 69 | kelpie | done | Celtic | medium |
 | 70 | spriggan | todo | Celtic | large |
 | 71 | boss_wyrm | todo | Celtic boss | huge |
 | 72 | babi_ngepet | todo | Southeast Asia | small |
