@@ -94,23 +94,23 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 59 | kikimora | todo | Slavic | small |
 | 60 | rusalka | todo | Slavic | medium |
 | 61 | vukodlak | todo | Slavic | medium |
-| 62 | vodyanoy | todo | Slavic | large |
+| 62 | vodyanoy | todo | Slavic | medium |
 | 63 | leshy | todo | Slavic | large |
 | 64 | boss_izba | todo | Slavic boss | huge |
 | 65 | knocker | todo | Celtic | small |
 | 66 | redcap | todo | Celtic | small |
 | 67 | pooka | todo | Celtic | medium |
 | 68 | banshee | todo | Celtic | medium |
-| 69 | kelpie | todo | Celtic | large |
+| 69 | kelpie | todo | Celtic | medium |
 | 70 | spriggan | todo | Celtic | large |
 | 71 | boss_wyrm | todo | Celtic boss | huge |
-| 72 | babi_ngepet | todo | SEAsia | small |
-| 73 | orang_minyak | todo | SEAsia | medium |
-| 74 | pocong | todo | SEAsia | medium |
-| 75 | pontianak | todo | SEAsia | medium |
-| 76 | tikbalang | todo | SEAsia | large |
-| 77 | kapre | todo | SEAsia | large |
-| 78 | boss_bakunawa | todo | SEAsia boss | huge |
+| 72 | babi_ngepet | todo | Southeast Asia | small |
+| 73 | orang_minyak | todo | Southeast Asia | medium |
+| 74 | pocong | todo | Southeast Asia | medium |
+| 75 | pontianak | todo | Southeast Asia | medium |
+| 76 | tikbalang | todo | Southeast Asia | large |
+| 77 | kapre | todo | Southeast Asia | large |
+| 78 | boss_bakunawa | todo | Southeast Asia boss | huge |
 
 ## Monster lines (add after the shared prompt)
 
@@ -337,157 +337,157 @@ Monster: a big golem of blue glacier ice and black rock, frost mist rising from 
 Monster: the boss: a frost giant from Norse legend (a giant, not a god): ice-blue skin, a long white beard with icicles, a crown of jagged ice, heavy furs and iron armour, a huge ice-crystal hammer.
 ```
 
-### Korea set (owner 2026-11-09 "ตุนไว้ให้มันทำไปเรื่อยๆ": one set per country map; folklore only)
+### Korea set (owner 2026-11-10 "อย่าให้ codex ว่าง": next country sets; Korean folklore only)
 
-**44 dokkaebi_fire** (ไฟด็อกแกบี)
+**44 dokkaebi_fire** (ไฟผีโดกเกบี)
 ```
-Monster: a dokkaebi fire wisp: a floating ball of blue-green spirit flame with a cheeky little face and two tiny horns of flame.
+Monster: a small floating will-o-wisp of blue-green goblin fire with a cheeky grinning face in the flame and two tiny flame horns.
 ```
-**45 dokkaebi** (ด็อกแกบี)
+**45 dokkaebi** (โดกเกบี)
 ```
-Monster: a mischievous dokkaebi goblin: blue skin, one short horn, wild spiky hair, a big toothy grin, a tiger-striped loincloth, a knobbly wooden club with metal studs.
+Monster: a stocky Korean goblin: red skin, one short horn, wild black hair, a grin with tusks, a tiger-pelt loincloth, a big spiked wooden club.
 ```
 **46 gwisin** (ผีสาวเกาหลี)
 ```
-Monster: a gwisin maiden ghost: a pale girl in a white hanbok, very long straight black hair covering most of her face, floating a little above the ground with no feet showing; eerie, not gory.
+Monster: a pale ghost woman in a long white hanbok, very long straight black hair hiding most of her face, floating a little above the ground, bare pale hands.
 ```
 **47 haetae** (แฮแท)
 ```
-Monster: a haetae guardian beast come alive: a stone lion-dog with a curly mane, a single small horn, a bell collar, moss on its grey stone back, glowing amber eyes.
+Monster: a stone guardian lion-dog statue come alive: grey stone body with a curly stone mane, one small horn, glowing amber eyes, cracks with moss.
 ```
-**48 jangsan_tiger** (เสือขาวจังซัน)
+**48 jangsan_tiger** (เสือภูเขาขาว)
 ```
-Monster: the Jangsan tiger: a big white mountain tiger with long shaggy white fur, faint grey stripes, glowing blue eyes, mist around its paws.
+Monster: a big white mountain tiger with black stripes, glowing pale eyes, mist curling off its fur.
 ```
 **49 jeoseung_saja** (ยมทูตเกาหลี)
 ```
-Monster: a jeoseung saja reaper: a tall pale man in a long black hanbok coat and a wide black horsehair gat hat, a cold expressionless face, holding a long black chain with an iron ring.
+Monster: a grim reaper messenger: a tall black gat hat, a long black robe, a pale face, holding a scroll of names and a black iron chain.
 ```
 **50 boss_bulgasari** (บอสบุลกาซารี)
 ```
-Monster: the boss: Bulgasari, the iron-eating beast from Korean folklore: a bear-like body covered in iron scales and rivets, an elephant-like trunk, small fierce eyes, tiger legs, a cow tail, sparks between its plates; still chibi.
+Monster: the boss: a huge iron-eating beast: a bear-like body covered in overlapping iron and bronze plates, a bull head with iron horns, molten glowing seams, iron spikes along its back.
 ```
 
-### Greece set (owner 2026-11-09 "ตุนไว้ให้มันทำไปเรื่อยๆ": one set per country map; folklore only)
+### Greece set (Greek myth creatures only (no gods))
 
 **51 satyr** (ซาเทียร์)
 ```
-Monster: a satyr: a goat-legged young man with small curled horns, curly hair, a cheeky grin, a vine wreath, holding a knobbly wooden club.
+Monster: a goat-legged satyr: goat horns, curly hair, a pointed beard, hairy goat legs with hooves, a reed pan-flute and a short wooden club.
 ```
-**52 harpy** (ฮาร์ปี)
+**52 harpy** (ฮาร์ปี้)
 ```
-Monster: a harpy: a wild bird-woman with brown and grey feathered wings for arms, bird legs with talons, messy feathered hair, a fierce face.
+Monster: a harpy: a wild-haired woman upper body with big grey-brown wings for arms, bird legs with sharp talons, a screeching face.
 ```
-**53 spartoi** (ทหารฟันมังกร)
+**53 spartoi** (ทหารกระดูกกรีก)
 ```
-Monster: a spartoi skeleton hoplite: a skeleton warrior in a bronze Greek helmet with a red crest, a round bronze shield and a long spear.
+Monster: a skeleton hoplite: a bronze Corinthian helmet with a red crest, a round bronze shield, a spear, a torn red cloak over bones.
 ```
 **54 gorgon** (กอร์กอน)
 ```
-Monster: a gorgon: a woman with green scaly skin, a crown of live green snakes for hair, glowing yellow eyes, a bronze breastplate and a snake tail instead of legs (an original design, not any film or comic version).
+Monster: a gorgon: a woman with a green scaly snake tail instead of legs, hair of hissing green snakes, glowing yellow eyes, a bronze bow.
 ```
 **55 cyclops** (ไซคลอปส์)
 ```
-Monster: a cyclops: a big one-eyed giant with a single large eye, a bald head, a scruffy beard, a hide tunic, a huge wooden club.
+Monster: a big one-eyed giant: one huge eye, a bald head, a leather loincloth, a big stone club, bulky arms.
 ```
 **56 minotaur** (มิโนทอร์)
 ```
-Monster: a minotaur: a muscular bull-headed warrior with big curved horns, a bronze nose ring, a leather kilt, holding a big double-bladed axe.
+Monster: a bull-headed minotaur: brown fur, big curved horns, a nose ring, a bronze armour skirt, a huge double-bladed bronze axe.
 ```
-**57 boss_chimera** (บอสคิเมรา)
+**57 boss_chimera** (บอสคิเมร่า)
 ```
-Monster: the boss: a chimera: a big lion body with a golden mane, a goat head growing from its back, a live snake for a tail, fire glowing in the lion mouth; menacing but still chibi.
+Monster: the boss: a chimera: a lion body and mane, a goat head growing from its back, a snake for a tail, fire glowing in the lion mouth.
 ```
 
-### Slavic set (owner 2026-11-09 "ตุนไว้ให้มันทำไปเรื่อยๆ": one set per country map; folklore only)
+### Slavic set (Slavic folklore only)
 
 **58 domovoi** (โดโมวอย)
 ```
-Monster: a domovoi house spirit: a tiny hairy old man covered in grey-brown fur, a big bushy beard, a red belt and bast shoes, holding a wooden ladle.
+Monster: a tiny shaggy house spirit: a little old man covered in grey-brown hair, a long beard to his feet, glowing eyes, a wooden spoon as a weapon.
 ```
 **59 kikimora** (คิคิโมรา)
 ```
-Monster: a kikimora: a thin crooked little swamp hag with a long bird-like nose, messy grey hair, a patched dark dress, holding a sharp wooden spindle.
+Monster: a skinny swamp hag spirit: long thin limbs, a bird-like beak nose, messy hair with reeds, a ragged dark dress, long spindly fingers.
 ```
-**60 rusalka** (รูซัลกา)
+**60 rusalka** (รูซาลก้า)
 ```
-Monster: a rusalka water maiden spirit: a pale girl with very long pale-green hair full of river weeds, a simple wet white shift, floating with her feet hidden in mist; eerie, not gory.
+Monster: a drowned water maiden: pale blue-green skin, very long wet green hair with water lilies, a torn white dress dripping water, floating.
 ```
-**61 vukodlak** (มนุษย์หมาป่าสลาฟ)
+**61 vukodlak** (วูคอดลัก)
 ```
-Monster: a vukodlak werewolf: a hunched grey wolf-man with shaggy fur, glowing yellow eyes, long claws, torn peasant trousers.
+Monster: a Slavic werewolf: a hunched wolf-man with dark grey fur, red eyes, a torn peasant shirt and belt, long claws.
 ```
-**62 vodyanoy** (โวดยานอย)
+**62 vodyanoy** (โวเดียนอย)
 ```
-Monster: a vodyanoy: a big frog-faced old water man with green slimy skin, a long beard of green weeds, webbed hands, a crown of reeds, standing on thick legs.
+Monster: a big frog-faced water spirit: green slimy skin, a long green beard of weed, webbed hands, fish scales, a crown of reeds.
 ```
 **63 leshy** (เลชี)
 ```
-Monster: a leshy forest spirit: a tall gaunt figure made of bark and moss, antler-like branches on the head, glowing green eyes, long twig fingers, mushrooms on the shoulders.
+Monster: a forest guardian: a tall figure of bark and moss, antler-like branches on its head, glowing green eyes, leaves for hair.
 ```
-**64 boss_izba** (บอสกระท่อมขาไก่)
+**64 boss_izba** (บอสบ้านขาไก่)
 ```
-Monster: the boss: a haunted wooden hut standing on two giant chicken legs, a thatched roof, glowing yellow windows like eyes, a door like a mouth, a smoking chimney; menacing but still chibi and funny.
+Monster: the boss: a living wooden hut walking on two giant chicken legs: log walls, a thatched roof, glowing windows like eyes, a door like a mouth, smoke from its chimney.
 ```
 
-### Celtic set (owner 2026-11-09 "ตุนไว้ให้มันทำไปเรื่อยๆ": one set per country map; folklore only)
+### Celtic set (Celtic / British Isles folklore only)
 
-**65 knocker** (น็อกเกอร์)
+**65 knocker** (น็อคเกอร์)
 ```
-Monster: a knocker mine goblin: a small grey-skinned goblin with big ears, a leather miner cap with a candle, a dirty apron, holding a pickaxe.
+Monster: a small mine goblin: a miner's helmet with a candle, a big nose, a soot-black face, a pickaxe, a lantern.
 ```
 **66 redcap** (เรดแคป)
 ```
-Monster: a redcap: a wiry old goblin with long teeth, a bright red cap, heavy iron boots, holding a long pike.
+Monster: a vicious little goblin: a pointed red cap, iron boots, long sharp teeth, a rusty scythe-like pike.
 ```
-**67 pooka** (ปูก้า)
+**67 pooka** (พูก้า)
 ```
-Monster: a pooka: a black shapeshifter goat with curling horns, glowing yellow eyes, long shaggy black fur, standing on its hind legs with a sly grin.
+Monster: a shape-shifting black goat-hare spirit: black shaggy fur, long rabbit ears, small goat horns, glowing gold eyes, standing on hind legs.
 ```
 **68 banshee** (แบนชี)
 ```
-Monster: a banshee: a wailing spirit woman with long silver hair, a grey hooded cloak, red-rimmed eyes, floating with no feet.
+Monster: a wailing ghost woman: a grey hooded cloak, long white hair streaming upward, a pale open-mouthed face, floating, ghostly mist.
 ```
 **69 kelpie** (เคลปี)
 ```
-Monster: a kelpie water horse: a dark blue-green horse with a mane and tail of dripping seaweed, glowing green eyes, water running off its body.
+Monster: a water horse: a black horse made of dark lake water and weed, a dripping mane of green seaweed, glowing teal eyes.
 ```
 **70 spriggan** (สปริกแกน)
 ```
-Monster: a spriggan: a big guardian of mossy stone and old wood, knotted roots for legs, a carved stone face with glowing green eyes, Celtic knot patterns on its chest.
+Monster: a big stone-and-root guardian: a body of mossy rocks bound with roots, a small head with glowing eyes, huge stone fists.
 ```
-**71 boss_wyrm** (บอสหนอนมังกร)
+**71 boss_wyrm** (บอสไวร์ม)
 ```
-Monster: the boss: a great Celtic wyrm: a huge wingless serpent dragon with emerald scales, gold Celtic knotwork patterns along its back, a horned head, glowing eyes; still chibi.
+Monster: the boss: a huge wingless wyrm dragon: a long green-scaled serpent body, a horned head, small clawed front legs, a mossy back with stones.
 ```
 
-### SEAsia set (owner 2026-11-09 "ตุนไว้ให้มันทำไปเรื่อยๆ": one set per country map; folklore only)
+### Southeast Asia set (Indonesian / Malay / Filipino folklore only)
 
-**72 babi_ngepet** (หมูผีชวา)
+**72 babi_ngepet** (หมูผีบาบีเงเปต)
 ```
-Monster: a babi ngepet: a black demon boar with red glowing eyes, small curved tusks, bristly fur, a little coin pouch tied on its back.
+Monster: a black demon boar: black bristly fur, red glowing eyes, a little bag of stolen coins tied to its neck.
 ```
-**73 orang_minyak** (คนน้ำมัน)
+**73 orang_minyak** (ผีน้ำมัน)
 ```
-Monster: an orang minyak: a sneaky shiny black oily figure, slick and glossy like oil, glowing white eyes, dripping oil drops; creepy but not gory.
+Monster: a "oily man" ghost: a shiny pitch-black slick body dripping black oil, white glowing eyes, long fingers.
 ```
 **74 pocong** (โปจง)
 ```
-Monster: a pocong ghost: a figure wrapped in a white burial shroud tied at the head and feet, a pale face showing, hopping with both feet together; eerie, not gory.
+Monster: a shroud ghost: a body wrapped tight in a white burial shroud tied at the head and feet, a pale grey face, hopping.
 ```
-**75 pontianak** (ผีปอนเตียนัก)
+**75 pontianak** (ปอนเตียนัค)
 ```
-Monster: a pontianak ghost woman: very long black hair, a long white dress, pale skin, long sharp fingernails, floating with her feet hidden; eerie, not gory.
+Monster: a pale vampire ghost woman: a long white dress, very long black hair, long red nails, red eyes, floating.
 ```
-**76 tikbalang** (ทิกบาลัง)
+**76 tikbalang** (ติกบาลัง)
 ```
-Monster: a tikbalang: a very tall thin horse-headed creature with long legs and arms, a wild black mane, glowing eyes, hooves for feet, wearing ragged shorts.
+Monster: a tall horse-headed trickster: a black horse head with a wild mane, very long thin human limbs, a ragged loincloth.
 ```
-**77 kapre** (คาเปร์)
+**77 kapre** (คาเปร)
 ```
-Monster: a kapre: a big hairy dark-skinned tree giant with a scruffy beard, a loincloth, leaves stuck in its hair, holding a big wooden pipe with a glowing red ember.
+Monster: a huge dark tree giant: very tall and hairy, a big beard, smoking a huge cigar, sitting-style hunch, a loincloth of leaves.
 ```
 **78 boss_bakunawa** (บอสบากูนาวา)
 ```
-Monster: the boss: Bakunawa, the giant sea serpent dragon from Philippine folklore that wants to swallow the moon: a huge mouth, blue-silver scales, red gills, small wing-like fins, a pale moon-shaped glow on its forehead; still chibi.
+Monster: the boss: a giant sea serpent-dragon: a long blue-silver scaled body, a huge mouth that could swallow the moon, fins like wings, glowing pale eyes.
 ```
