@@ -874,4 +874,10 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   (96c2d44c…, downloaded to `guardian2/dl/`) on the same 132 canvas (no base moves made yet, so no roll / hurt / death frames:
   the code still falls back to the still); `fy` = the still's lowest row. `startAtk`: the Guardian steps through the three
   (`p.gc`), back to the first after 1.1 s without attacking. His code crescent is off (the moves carry drawn swooshes).
+- **HD-2D test** (owner 2026-11-10, screenshots of a pixel game in a 3D world: "ลองดู"): `hd3d.html` (three.js r147 from jsdelivr) =
+  a 30×22-tile test map of blocks (grass raised 0.32 above the road, water sunk, our `ground_hr` textures in world-space UVs, one
+  picture per 4 tiles, nearest filter), trees / houses / tent / grass tufts and the Guardian (his n128 idle / run frames drawn
+  into a canvas texture) as upright cards turned to the camera that cast real shadows (alpha-tested depth material), a warm low
+  sun with soft shadows, fog, and one full-screen pass with a tilt-shift blur at the top / bottom, warm grade and vignette.
+  WASD / left stick to walk, buttons for the blur and the zoom. Not connected to action.html; no monsters or combat.
 
