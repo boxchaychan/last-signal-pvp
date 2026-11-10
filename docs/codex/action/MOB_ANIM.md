@@ -190,10 +190,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 174 | dokkaebi_fire | attack | done | `art/incoming/mobs/anim/dokkaebi_fire_attack.png` |
 | 175 | dokkaebi_fire | death | done | `art/incoming/mobs/anim/dokkaebi_fire_death.png` |
 | 176 | dokkaebi_fire | hurt | done | `art/incoming/mobs/anim/dokkaebi_fire_hurt.png` |
-| 177 | dokkaebi | walk | todo | `art/incoming/mobs/anim/dokkaebi_walk.png` |
-| 178 | dokkaebi | attack | todo | `art/incoming/mobs/anim/dokkaebi_attack.png` |
-| 179 | dokkaebi | death | todo | `art/incoming/mobs/anim/dokkaebi_death.png` |
-| 180 | dokkaebi | hurt | todo | `art/incoming/mobs/anim/dokkaebi_hurt.png` |
+| 177 | dokkaebi | walk | done | `art/incoming/mobs/anim/dokkaebi_walk.png` |
+| 178 | dokkaebi | attack | done | `art/incoming/mobs/anim/dokkaebi_attack.png` |
+| 179 | dokkaebi | death | done | `art/incoming/mobs/anim/dokkaebi_death.png` |
+| 180 | dokkaebi | hurt | done | `art/incoming/mobs/anim/dokkaebi_hurt.png` |
 | 181 | gwisin | walk | todo | `art/incoming/mobs/anim/gwisin_walk.png` |
 | 182 | gwisin | attack | todo | `art/incoming/mobs/anim/gwisin_attack.png` |
 | 183 | gwisin | death | todo | `art/incoming/mobs/anim/gwisin_death.png` |
