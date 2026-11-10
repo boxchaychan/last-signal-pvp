@@ -33,7 +33,7 @@ def keyer(fr, kc, edge):
     f = fr.astype(np.int16); r, g, b = f[..., 0], f[..., 1], f[..., 2]
     if kc[1] >= max(kc[0], kc[2]):                              # green screen
         mx = np.maximum(r, b); d = g - mx; dk = kc[1] - max(kc[0], kc[2])
-        a = np.clip(1.15 - d / dk * 1.15, 0, 1); a[a < .08] = 0            # owner: smoke came out green; a = how much of the key is NOT there
+        a = np.clip((1.15 - d / dk * 1.15 - .16) / .84, 0, 1)   # below ~16% = background noise (it left a faint box round some effects)            # owner: smoke came out green; a = how much of the key is NOT there
         aa = np.maximum(a, .05)[..., None]; un = (np.dstack([r, g, b]) - (1 - aa) * np.array(kc)) / aa   # take the key colour out of half see-through pixels
         r, g, b = [np.clip(un[..., c], 0, 255).astype(np.int16) for c in range(3)]; g = np.minimum(g, np.maximum(r, b) + 12)
     else:                                                        # magenta screen
