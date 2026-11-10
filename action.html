@@ -137,10 +137,10 @@ const AR = WW * WH / (4200 * 2800);   // how many times the first map's area (pr
 // forest with Thai monsters, then on to the next country): west field -> Thai city -> Thai forest (JG) -> China later
 const QS = new URLSearchParams(location.search), MAP = ['thai', 'jungle', 'town'].includes(QS.get('map')) ? QS.get('map') : 'west', JG = MAP === 'jungle', TOWN = MAP === 'town', TH = MAP === 'thai' || JG || TOWN, FROM = QS.get('from');
 // three heroes (owner 2026-11-09: swordsman + mage made in GPT, moves from PixelLab): ?hero= or the last one picked
-const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'guardian', 'mage', 'archer', 'priest'].includes(h) ? h : 'rogue'; })();
+const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'guardian', 'berserker', 'mage', 'archer', 'priest'].includes(h) ? h : 'rogue'; })();
 // the Guardian (shield knight, class 2 of the swordsman, 2026-11-10) plays the swordsman's kit with his own pictures
-const SWL = HERO === 'swordsman' || HERO === 'guardian';
-const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', guardian: 'อัศวินโล่', mage: 'เมจ', archer: 'นักธนู', priest: 'นักบวช'};
+const SWL = HERO === 'swordsman' || HERO === 'guardian' || HERO === 'berserker';   // the Berserker too (2026-11-10)
+const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', guardian: 'อัศวินโล่', berserker: 'เบอร์เซิร์กเกอร์', mage: 'เมจ', archer: 'นักธนู', priest: 'นักบวช'};
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
 let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0;
 // owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู": every screen shows the same piece of the map, FVW x FVH
@@ -1113,12 +1113,13 @@ const cam = {x: 0, y: 0};
 // attack: every direction has its own frames; the swing frames (hits) come from the sheet json (widest frames)
 const ATK = {base: 42, hitMs: 85, preMs: 34, cost: 15, push: 8};
 if (SWL) Object.assign(ATK, {base: 46, hitMs: 100, preMs: 44, cost: 18, push: 10});   // heavier swings
+if (HERO === 'berserker') Object.assign(ATK, {base: 54, hitMs: 115, preMs: 56, cost: 20, push: 14});   // the greatsword: slower, heavier
 if (HERO === 'mage' || HERO === 'priest') Object.assign(ATK, {base: 40, hitMs: 80, preMs: 36, cost: 8, push: 0});
 if (HERO === 'archer') Object.assign(ATK, {base: 34, hitMs: 80, preMs: 120, cost: 6, push: 0});   // preMs = the held breath at full draw (pixelfx arrow-shot)   // one shot, the whole body moves           // two staff casts
 function atkPlan(dir, name = 'attack') {
   const ar = animRow(name, dir) || animRow('attack', dir); if (!ar) return null;
   const hits = ar.hits && ar.hits.length ? ar.hits : [4, 9], n = hits.length;
-  const dmg = HERO === 'archer' ? hits.map(() => 16) : SWL ? hits.map((_, i) => i === n - 1 ? 34 : 20) : HERO === 'mage' ? hits.map(() => 12) : HERO === 'priest' ? hits.map(() => 11) : n === 1 ? [26] : n === 2 ? [12, 20] : hits.map((_, i) => i === n - 1 ? 15 : 10);
+  const dmg = HERO === 'archer' ? hits.map(() => 16) : SWL ? hits.map((_, i) => Math.round((i === n - 1 ? 34 : 20) * (HERO === 'berserker' ? 1.3 : 1))) : HERO === 'mage' ? hits.map(() => 12) : HERO === 'priest' ? hits.map(() => 11) : n === 1 ? [26] : n === 2 ? [12, 20] : hits.map((_, i) => i === n - 1 ? 15 : 10);
   const sp = G && (G.p.rage > G.t || G.p.hawk > G.t) ? .72 : 1, ms = [];
   // owner 2026-11-10 "คอมโบ 3" (Ozzbit's combo, our own drawing): the rogue's normal attack is three cuts: the sheet's two
   // swings, then its first swing again as a heavier finisher; fr = the sheet frame shown at each step
@@ -1636,7 +1637,7 @@ function spark(x, y, n, c) { for (let k = 0; k < n; k++) { const a = rnd() * Mat
 function rogueCres(p, i, fin, big) {
   const a = Math.atan2(DV[p.dir][1], DV[p.dir][0]), rage = p.rage > G.t, k = big ? 1.5 : 1;   // big: the Guardian's long cut
   G.fx.push({k: 'cres', x: p.x + DV[p.dir][0] * (big ? 6 : 22), y: p.y - 30 + DV[p.dir][1] * (big ? 4 : 12), a, s: i === 1 ? -1 : 1, R: (fin ? 52 : 40) * k, t: 0, life: (fin ? .3 : .22) * (big ? 1.2 : 1),
-    c: rage ? '#ff3050' : big ? '#ffe9a8' : '#9fe8ff', d: rage ? '#5a0a1a' : big ? '#5a4a20' : '#2a3a7a'});
+    c: rage || HERO === 'berserker' ? '#ff3050' : big ? '#ffe9a8' : '#9fe8ff', d: rage || HERO === 'berserker' ? '#3a0510' : big ? '#5a4a20' : '#2a3a7a'});   // the Berserker cuts red
 }
 function drawCres(f) {
   const k = f.t / f.life, R = f.R * (k < .15 ? .8 + k / .15 * .2 : 1), sw = 2.3, eat = k < .25 ? 0 : (k - .25) / .75;   // the arc spans 2.3 rad; after 25% its tail is eaten
@@ -1690,7 +1691,7 @@ const SKICON = {priest: [['pfx_heal_y', .4], ['pfx_skyarrow_y', .35], ['critg', 
   swordsman: [['pfx_fireline', .35], ['pfx_whirl', .3], ['pfx_swcharge', .4], ['cslam', .2], ['parry', .3], ['crage', .3]],
   archer: [['pfx_rapier_k', .62], ['pfx_gbolt_k', .3], ['pfx_chargeshot_k', .42], ['pfx_bombarrow_g', .5], ['pfx_vine_k', .3], ['pfx_starfall_c_k', .55]],
   mage: [['cfire0', .3], ['pfx_orb', .3], ['cnova', .5], ['cblink', .4], ['cmeteor', .3], ['cshield', .3]]};
-for (const T of [SKNAME, SKDESC, SKICON, PASDESC]) if (T.swordsman !== undefined) T.guardian = T.swordsman;
+for (const T of [SKNAME, SKDESC, SKICON, PASDESC]) if (T.swordsman !== undefined) T.guardian = T.berserker = T.swordsman;
 SKNAME.guardian = ['ฟาดแยกพื้น', 'พายุดาบ', 'ชาร์จฟัน', 'กระโดดทุบ', 'ยกโล่สวน', 'คลั่ง'];
 // level cap 50: the 2nd class comes at level 50 (owner 2026-11-09, not built yet)
 const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 50, SKUPD = .1, SKUPC = .04;
@@ -1782,7 +1783,7 @@ const AUTO = {on: false}; try { AUTO.on = localStorage.getItem('act.auto') === '
 const autoBtn = document.getElementById('autoBtn');
 function setAuto(v) { AUTO.on = v; autoBtn.classList.toggle('on', v); autoBtn.textContent = v ? 'ออโต้ ✓' : 'ออโต้'; try { localStorage.setItem('act.auto', v ? '1' : '0'); } catch (e) {} }
 setAuto(AUTO.on); autoBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setAuto(!AUTO.on); });
-const AUTOR = {archer: 470, mage: 440, priest: 380, swordsman: 110, guardian: 110, rogue: 95};   // how close a monster must be
+const AUTOR = {archer: 470, mage: 440, priest: 380, swordsman: 110, guardian: 110, berserker: 120, rogue: 95};   // how close a monster must be
 function autoTarget(p) { const R = AUTOR[HERO] || 110; for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.2) < R + (m.r || 0)) return m; return null; }
 document.getElementById('book').addEventListener('pointerdown', e => { if (e.target.id === 'book') openBook(false); });
 
@@ -2982,8 +2983,8 @@ function stepPlayer(dt) {
         else if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
         else if (HERO === 'priest') holyBolt(p, P.dmg[hi], fin);
         else { if (HERO === 'rogue') rogueCres(p, hi, fin);
-          if (HERO === 'guardian') rogueCres(p, hi, fin, 1);   // owner "ดาบก็สั้น ขยายระยะฟัน": a long steel crescent shows his reach
-          doHit(p, SWL ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: (fin ? 150 : 170) * (HERO === 'guardian' ? 1.35 : 1), cone: fin ? 70 : 105, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
+          if (HERO === 'guardian' || HERO === 'berserker') rogueCres(p, hi, fin, 1);   // owner "ดาบก็สั้น ขยายระยะฟัน": a long steel crescent shows his reach
+          doHit(p, SWL ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: (fin ? 150 : 170) * (HERO === 'guardian' || HERO === 'berserker' ? 1.35 : 1), cone: fin ? 70 : 105, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
       if (hi >= 0 || P.hits.includes(a.i + 1)) { p.x += DV[p.dir][0] * ATK.push; p.y += DV[p.dir][1] * ATK.push; }
     }
     if (p.a) {
@@ -3637,14 +3638,15 @@ const HDESC = {rogue: 'ตี 2 ฮิต ครั้งที่ 4 คริ �
   mage: 'ลูกไฟ · สายฟ้าโซ่ · วงน้ำแข็ง · วาร์ปแทนกลิ้ง · อุกกาบาต · โล่เวท',
   archer: 'ยิงไกลยิ่งแรง · ยิงรัว · ลูกพลังเขียว · ชาร์จง้าง · ถอยยิงธนูระเบิด · ธนูหนาม · ฝนดาว',
   priest: 'ยิงลูกแสง ตีโดนได้เลือดคืน · ฟื้นฟู · เสาแสง (มอนรับดาเมจเพิ่ม) · พรนักรบ · คำสาป · ปาฏิหาริย์ ตายแล้วฟื้น'};
-HROLE.guardian = 'ประชิด · ทนทานที่สุด · โล่'; HDESC.guardian = 'อัศวินโล่ คลาส 2 ของนักดาบ: รับดาเมจน้อยลง 25% · ฟัน 2 ฮิต · ใช้สกิลชุดเดียวกับนักดาบ (ยกโล่สวน = กันแล้วฟันคืน)'; if (HELP.swordsman) HELP.guardian = HELP.swordsman;
+HROLE.guardian = 'ประชิด · ทนทานที่สุด · โล่'; HDESC.guardian = 'อัศวินโล่ คลาส 2 ของนักดาบ: รับดาเมจน้อยลง 25% · ฟัน 2 ฮิต · ใช้สกิลชุดเดียวกับนักดาบ (ยกโล่สวน = กันแล้วฟันคืน)'; if (HELP.swordsman) HELP.guardian = HELP.berserker = HELP.swordsman;
+HROLE.berserker = 'ประชิด · ฟันหนัก · กว้าง'; HDESC.berserker = 'เบอร์เซิร์กเกอร์ คลาส 2 ของนักดาบ: ดาบใหญ่ ฟันช้าแต่แรงขึ้น 30% ระยะไกลขึ้น · กวาดแล้วทุบพื้น · หมุน 360 · ใช้สกิลชุดเดียวกับนักดาบ';
 const MAPN = {town: 'เมืองไทย', west: 'ทุ่งหญ้า', thai: 'ทุ่งนาเมืองไทย', jungle: 'ป่าเมืองไทย'};
 const MENU = {h: HERO, m: MAP, cards: {}, t: 0};
 { const pk = document.getElementById('pick'), ds = document.getElementById('hdesc'), mp = document.getElementById('mpick');
   const show = () => { ds.innerHTML = '<b>' + HNAME[MENU.h] + '</b> · ' + HROLE[MENU.h] + '<p>' + HDESC[MENU.h] + '</p>';
     for (const [h, c] of Object.entries(MENU.cards)) c.b.classList.toggle('on', h === MENU.h);
     for (const b of mp.querySelectorAll('button')) b.classList.toggle('on', b.dataset.m === MENU.m); };
-  for (const h of ['rogue', 'swordsman', 'guardian', 'mage', 'archer', 'priest']) { const b = document.createElement('button'); b.className = 'hc';
+  for (const h of ['rogue', 'swordsman', 'guardian', 'berserker', 'mage', 'archer', 'priest']) { const b = document.createElement('button'); b.className = 'hc';
     const c = document.createElement('canvas'); c.width = 80; c.height = 100; b.appendChild(c); b.insertAdjacentHTML('beforeend', '<b>' + HNAME[h] + '</b><i>' + HROLE[h].split(' · ')[0] + '</i>');
     const im = new Image(); im.onload = () => { const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(im, 116 + 18, 6, 80, 100, 0, 0, 80, 100); }; im.src = 'art/action/' + h + '_still.png';
     b.onclick = () => { MENU.h = h; show(); }; b.ondblclick = () => { MENU.h = h; document.getElementById('go').click(); };

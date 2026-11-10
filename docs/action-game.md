@@ -857,4 +857,9 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   technically but looks pasted on: our heroes are one flat picture, a real outfit system needs characters drawn in layers from
   the start. Classes stay separate characters (like the Guardian). The test stays behind `?helm=1/2/3` (off by default). A plain
   base body was made in PixelLab before testing (Base Body 128, 670a351b…, 3 gen; not used).
+- **Berserker playable** (owner 2026-11-10 "เบอร์เซิร์กเกอร์ทำยัง", no new PixelLab jobs): `tools/art/berserker_build.sh` = paid base moves +
+  chain + the trial's south-east attacks (attack = bz_sweep + bz_slam, hits 2 / 13; leap / charge = bz_slam; spin (E) = bz_spin),
+  every other direction plays south-east, mirrored for the left → `art/action/n128/berserker.*` + `art/action/berserker.*`.
+  `?hero=berserker` (menu card เบอร์เซิร์กเกอร์): the swordsman's kit via `SWL`, slower heavier swings (ATK base 54 / hit 115),
+  damage ×1.3, reach ×1.35, red crescent cuts. His own kit from `docs/berserker.md` (chain Q, awakened rage X) is not built yet.
 
