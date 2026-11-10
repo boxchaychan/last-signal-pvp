@@ -246,10 +246,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 230 | domovoi | attack | done | `art/incoming/mobs/anim/domovoi_attack.png` |
 | 231 | domovoi | death | done | `art/incoming/mobs/anim/domovoi_death.png` |
 | 232 | domovoi | hurt | done | `art/incoming/mobs/anim/domovoi_hurt.png` |
-| 233 | kikimora | walk | todo | `art/incoming/mobs/anim/kikimora_walk.png` |
-| 234 | kikimora | attack | todo | `art/incoming/mobs/anim/kikimora_attack.png` |
-| 235 | kikimora | death | todo | `art/incoming/mobs/anim/kikimora_death.png` |
-| 236 | kikimora | hurt | todo | `art/incoming/mobs/anim/kikimora_hurt.png` |
+| 233 | kikimora | walk | done | `art/incoming/mobs/anim/kikimora_walk.png` |
+| 234 | kikimora | attack | done | `art/incoming/mobs/anim/kikimora_attack.png` |
+| 235 | kikimora | death | done | `art/incoming/mobs/anim/kikimora_death.png` |
+| 236 | kikimora | hurt | done | `art/incoming/mobs/anim/kikimora_hurt.png` |
 | 237 | rusalka | walk | todo | `art/incoming/mobs/anim/rusalka_walk.png` |
 | 238 | rusalka | attack | todo | `art/incoming/mobs/anim/rusalka_attack.png` |
 | 239 | rusalka | death | todo | `art/incoming/mobs/anim/rusalka_death.png` |
