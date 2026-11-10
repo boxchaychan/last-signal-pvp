@@ -102,6 +102,13 @@ const hmat = new THREE.MeshBasicMaterial({map: htex, alphaTest: .5, side: THREE.
 const hgeo = new THREE.PlaneGeometry(1, 1); hgeo.translate(0, .5, 0);
 const hmesh = new THREE.Mesh(hgeo, hmat); hmesh.castShadow = true; hmesh.customDepthMaterial = new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: htex, alphaTest: .5});
 hmesh.scale.set(2.5, 2.5, 1); scene.add(hmesh);
+// owner "เบลอเพราะย่อ? แก้เลย": in the 3D view the 132 px card was shrunk to ~90 screen px and lost pixels. The 3D card now only
+// casts the shadow (it draws nothing); the hero is drawn on top, flat, at a whole number of screen pixels per art pixel,
+// snapped to the pixel grid at the spot where his feet are in the 3D scene, so he is as crisp as in the 2D game
+hmesh.material = new THREE.MeshBasicMaterial({colorWrite: false, depthWrite: false});
+const ocam = new THREE.OrthographicCamera(0, 1, 1, 0, -1, 1), oscene = new THREE.Scene();
+const ogeo = new THREE.PlaneGeometry(1, 1); ogeo.translate(.5, .5, 0);
+const omesh = new THREE.Mesh(ogeo, new THREE.MeshBasicMaterial({map: htex, transparent: true, alphaTest: .5})); oscene.add(omesh);
 function drawHero(dt) {
   if (!HM) return; hero.t += dt; const a = hero.moving ? 'run' : 'idle', A = HM.anims[a], T2 = HIMG[a]; if (!T2.image || !T2.image.width) return;
   const C = HM.cell, f = Math.floor(hero.t * (hero.moving ? 14 : 9)) % A.east.n;
@@ -155,6 +162,14 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
   for (const c of cards) c.m.rotation.y = ang; hmesh.rotation.y = ang;
   tWater.offset.x = (now / 9000) % 1;
   renderer.setRenderTarget(rt); renderer.render(scene, cam); renderer.setRenderTarget(null); renderer.render(pscene, pcam);
+  { const pr = renderer.getPixelRatio(), DW = innerWidth * pr, DH = innerHeight * pr;   // device pixels
+    const v = new THREE.Vector3(hero.x, gy, hero.z).project(cam), fx = (v.x + 1) / 2 * DW, fy = (v.y + 1) / 2 * DH;
+    const dist = cam.position.distanceTo(new THREE.Vector3(hero.x, gy, hero.z)), ppu = DH / 2 / Math.tan(cam.fov * Math.PI / 360) / dist;   // device px per world unit there
+    const k = Math.max(1, Math.floor(ppu * 2.4 / 132 + .15));   // whole screen px per art px, at most about 2.4 world units tall
+    hmesh.scale.set(132 * k / ppu, 132 * k / ppu, 1);   // the shadow card matches the drawn size
+    ocam.right = DW; ocam.top = DH; ocam.updateProjectionMatrix(); omesh.scale.set(132 * k, 132 * k, 1);
+    omesh.position.set(Math.round(fx - 66 * k), Math.round(fy - (132 - 128) * k), 0);
+    renderer.autoClear = false; renderer.render(oscene, ocam); renderer.autoClear = true; }
   requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
 </script>
