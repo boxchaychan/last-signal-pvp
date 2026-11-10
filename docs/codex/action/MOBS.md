@@ -108,8 +108,8 @@ Original design: do not copy any existing game, anime, film or comic monster.
 | 73 | orang_minyak | done | Southeast Asia | medium |
 | 74 | pocong | done | Southeast Asia | medium |
 | 75 | pontianak | done | Southeast Asia | medium |
-| 76 | tikbalang | todo | Southeast Asia | large |
-| 77 | kapre | todo | Southeast Asia | large |
+| 76 | tikbalang | done | Southeast Asia | large |
+| 77 | kapre | done | Southeast Asia | large |
 | 78 | boss_bakunawa | todo | Southeast Asia boss | huge |
 
 ## Monster lines (add after the shared prompt)
