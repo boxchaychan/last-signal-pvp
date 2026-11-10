@@ -226,10 +226,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 210 | spartoi | attack | done | `art/incoming/mobs/anim/spartoi_attack.png` |
 | 211 | spartoi | death | done | `art/incoming/mobs/anim/spartoi_death.png` |
 | 212 | spartoi | hurt | done | `art/incoming/mobs/anim/spartoi_hurt.png` |
-| 213 | gorgon | walk | todo | `art/incoming/mobs/anim/gorgon_walk.png` |
-| 214 | gorgon | attack | todo | `art/incoming/mobs/anim/gorgon_attack.png` |
-| 215 | gorgon | death | todo | `art/incoming/mobs/anim/gorgon_death.png` |
-| 216 | gorgon | hurt | todo | `art/incoming/mobs/anim/gorgon_hurt.png` |
+| 213 | gorgon | walk | done | `art/incoming/mobs/anim/gorgon_walk.png` |
+| 214 | gorgon | attack | done | `art/incoming/mobs/anim/gorgon_attack.png` |
+| 215 | gorgon | death | done | `art/incoming/mobs/anim/gorgon_death.png` |
+| 216 | gorgon | hurt | done | `art/incoming/mobs/anim/gorgon_hurt.png` |
 | 217 | cyclops | walk | todo | `art/incoming/mobs/anim/cyclops_walk.png` |
 | 218 | cyclops | attack | todo | `art/incoming/mobs/anim/cyclops_attack.png` |
 | 219 | cyclops | death | todo | `art/incoming/mobs/anim/cyclops_death.png` |
