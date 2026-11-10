@@ -242,10 +242,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 226 | boss_chimera | attack | done | `art/incoming/mobs/anim/boss_chimera_attack.png` |
 | 227 | boss_chimera | death | done | `art/incoming/mobs/anim/boss_chimera_death.png` |
 | 228 | boss_chimera | hurt | done | `art/incoming/mobs/anim/boss_chimera_hurt.png` |
-| 229 | domovoi | walk | todo | `art/incoming/mobs/anim/domovoi_walk.png` |
-| 230 | domovoi | attack | todo | `art/incoming/mobs/anim/domovoi_attack.png` |
-| 231 | domovoi | death | todo | `art/incoming/mobs/anim/domovoi_death.png` |
-| 232 | domovoi | hurt | todo | `art/incoming/mobs/anim/domovoi_hurt.png` |
+| 229 | domovoi | walk | done | `art/incoming/mobs/anim/domovoi_walk.png` |
+| 230 | domovoi | attack | done | `art/incoming/mobs/anim/domovoi_attack.png` |
+| 231 | domovoi | death | done | `art/incoming/mobs/anim/domovoi_death.png` |
+| 232 | domovoi | hurt | done | `art/incoming/mobs/anim/domovoi_hurt.png` |
 | 233 | kikimora | walk | todo | `art/incoming/mobs/anim/kikimora_walk.png` |
 | 234 | kikimora | attack | todo | `art/incoming/mobs/anim/kikimora_attack.png` |
 | 235 | kikimora | death | todo | `art/incoming/mobs/anim/kikimora_death.png` |
