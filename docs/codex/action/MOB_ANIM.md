@@ -234,10 +234,10 @@ Owner 2026-11-09: the monsters' frames are made by Codex (not PixelLab). Reply t
 | 218 | cyclops | attack | done | `art/incoming/mobs/anim/cyclops_attack.png` |
 | 219 | cyclops | death | done | `art/incoming/mobs/anim/cyclops_death.png` |
 | 220 | cyclops | hurt | done | `art/incoming/mobs/anim/cyclops_hurt.png` |
-| 221 | minotaur | walk | todo | `art/incoming/mobs/anim/minotaur_walk.png` |
-| 222 | minotaur | attack | todo | `art/incoming/mobs/anim/minotaur_attack.png` |
-| 223 | minotaur | death | todo | `art/incoming/mobs/anim/minotaur_death.png` |
-| 224 | minotaur | hurt | todo | `art/incoming/mobs/anim/minotaur_hurt.png` |
+| 221 | minotaur | walk | done | `art/incoming/mobs/anim/minotaur_walk.png` |
+| 222 | minotaur | attack | done | `art/incoming/mobs/anim/minotaur_attack.png` |
+| 223 | minotaur | death | done | `art/incoming/mobs/anim/minotaur_death.png` |
+| 224 | minotaur | hurt | done | `art/incoming/mobs/anim/minotaur_hurt.png` |
 | 225 | boss_chimera | walk | todo | `art/incoming/mobs/anim/boss_chimera_walk.png` |
 | 226 | boss_chimera | attack | todo | `art/incoming/mobs/anim/boss_chimera_attack.png` |
 | 227 | boss_chimera | death | todo | `art/incoming/mobs/anim/boss_chimera_death.png` |
