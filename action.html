@@ -1244,7 +1244,10 @@ function wantSk1() { wantSk(1); }
 // ---------- rules ----------
 function startAtk(p) {
   if (p.st < 1) { noStamina(); return false; }
-  const cr = HERO === 'archer' && archerCrit(p), d = HERO === 'archer' ? faceDir(cr ? 'crit' : 'attack', ...aimVec()) : aimDir(), plan = atkPlan(d, cr ? 'crit' : 'attack'); if (!plan) return false;
+  // the Guardian's long-sword combo (owner 2026-11-10): attack → attack2 (spin) → attack3 (lunge thrust), back to the start
+  // when he pauses for more than a second
+  let an = 'attack'; if (HERO === 'guardian' && animRow('attack2', 0)) { p.gc = G.t - (p.gcT || -9) < 1.1 ? ((p.gc || 0) + 1) % 3 : 0; p.gcT = G.t; an = ['attack', 'attack2', 'attack3'][p.gc]; }
+  const cr = HERO === 'archer' && archerCrit(p), d = HERO === 'archer' ? faceDir(cr ? 'crit' : 'attack', ...aimVec()) : aimDir(), plan = atkPlan(d, cr ? 'crit' : an); if (!plan) return false;
   unstealth(p); p.st = Math.max(0, p.st - ATK.cost); p.stT = .6;
   p.dir = d; p.state = 'atk'; p.a = {i: 0, t: 0, done: {}, plan}; return true;
 }
@@ -2983,7 +2986,7 @@ function stepPlayer(dt) {
         else if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
         else if (HERO === 'priest') holyBolt(p, P.dmg[hi], fin);
         else { if (HERO === 'rogue') rogueCres(p, hi, fin);
-          if (HERO === 'guardian' || HERO === 'berserker') rogueCres(p, hi, fin, 1);   // owner "ดาบก็สั้น ขยายระยะฟัน": a long steel crescent shows his reach
+          if (HERO === 'berserker') rogueCres(p, hi, fin, 1);   // the Guardian's new moves carry their own swooshes   // owner "ดาบก็สั้น ขยายระยะฟัน": a long steel crescent shows his reach
           doHit(p, SWL ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: (fin ? 150 : 170) * (HERO === 'guardian' || HERO === 'berserker' ? 1.35 : 1), cone: fin ? 70 : 105, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
       if (hi >= 0 || P.hits.includes(a.i + 1)) { p.x += DV[p.dir][0] * ATK.push; p.y += DV[p.dir][1] * ATK.push; }
     }

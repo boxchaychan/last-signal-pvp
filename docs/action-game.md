@@ -867,4 +867,10 @@ Next: run animation, roll animation, redo N/NE attacks, then levels / map (owner
   every other direction plays south-east, mirrored for the left → `art/action/n128/berserker.*` + `art/action/berserker.*`.
   `?hero=berserker` (menu card เบอร์เซิร์กเกอร์): the swordsman's kit via `SWL`, slower heavier swings (ATK base 54 / hit 115),
   damage ×1.3, reach ×1.35, red crescent cuts. His own kit from `docs/berserker.md` (chain Q, awakened rage X) is not built yet.
+- **Guardian v2 in the game** (owner 2026-11-10 "ทำมาดิ อย่าโม้"): `tools/art/guardian2_build.sh` replaces the Guardian's sheets with the
+  long-sword one: `attack` / `attack2` / `attack3` = combo1 (rise + downward cut, hits 4 / 7) / combo2 (spin, 3 / 8) / combo3
+  (lunge thrust, 7), side view, every direction plays them (mirrored for the left); idle / run = the new character's 8 stills
+  (96c2d44c…, downloaded to `guardian2/dl/`) on the same 132 canvas (no base moves made yet, so no roll / hurt / death frames:
+  the code still falls back to the still); `fy` = the still's lowest row. `startAtk`: the Guardian steps through the three
+  (`p.gc`), back to the first after 1.1 s without attacking. His code crescent is off (the moves carry drawn swooshes).
 
