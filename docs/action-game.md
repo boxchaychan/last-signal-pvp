@@ -978,3 +978,9 @@ A ⛶ button (`#fsBtn`, under the score) toggles fullscreen on every map (start(
 td1 vs map.html (owner 2026-11-11 "ทำไมคนละระดับ" + two screenshots): the Berserker's v4 side-view sheets (bz4, figure 135 art px)
 were drawn at a whole screen px per art px = ~90 CSS px tall, almost twice the walk test; td1 now draws him at .54 world px per art
 px (~73 world px like the other heroes), monsters scaled by `TDMS` to the walk test's sizes, and the walk test's dark edges are drawn.
+Owner 2026-11-11 "แมพเก่าเอาออกเลย เริ่มแมพพิกเซลใหม่": td1 is the default and only map in the menu (map row hidden, warp entry
+gone); the old maps are kept in the code and still open with ?map=west|thai|jungle|town.
+Moves per hero at that point (own directions, the rest mirrored/borrowed): run 8 dirs for all but the Guardian (side view only) and
+the Berserker's v4 look (side view, left/right); attacks: swordsman / mage / priest 5, archer 6, rogue 4 (south-east borrows east),
+Guardian 1 (side), Berserker v4 side view (sweep, vertical, spin, chain, leap). Missing: Guardian and Berserker run/attack facing
+up and down.
