@@ -1056,3 +1056,6 @@ when `TDS`), the Berserker v4 on td maps, and the monsters (`drawMob2` when `TDS
 Class-2 sprites cleaned (owner 2026-11-12 "พวกคลาส 1 ดูคมหมด" = the class-2 heroes looked broken): the Assassin and Berserker v4 clips
 had a speckled pale rim from the white background and no outline. `tools/art/px_outline.py` (used by as2_build.py and bz4_build.py)
 drops pale edge pixels and specks and draws a 1 px dark outline like the class-1 sheets; the Assassin's is pure black (owner "แอสลองใส่เส้นดำสิ", `black=`).
+Assassin redraw recoloured for free (owner 2026-11-12 "แก้อะไร สีหรือ"): `pl_redraw200_purple.png` = the redraw with its grey steel
+(blades, armour edges) tinted neon violet and the purple cloth a bit more vivid (preview `pl_redraw200_purple_x4.png`). Not in the game
+yet: the run and attack clips were made from the faithful picture and would have to be made again from this one (1 gen each).
