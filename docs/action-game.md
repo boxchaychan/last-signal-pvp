@@ -995,3 +995,9 @@ Effects from the clip ("เอาเป็นพร้อมวิดีโอ�
 (`DIMRAETH` + `CSTYLE` in `tools/art/vfx_pack.py`: glowing light instead of thick ink): fire spin, triple gold slash, big fire
 crescent, crit hit ring, spider-web ground crack, wind streaks, electric shards. The clip's white ghost clone and red body flash are
 code jobs (after-images / tint), not videos.
+Owner's 8 Meta AI clips for that set came 2026-11-12 (no names; one was sent twice), matched by look and cut with `vfx_cut.py --center`
+(clips are not kept in git, *.mp4 is ignored; previews in `art/incoming/fx_video/dm_<key>/`): dm_crack 300, dm_goldslash 200,
+dm_slashfan 190 (the layered-crescent clip, sent for the wind card), dm_firespin 270, dm_flamecres 220, dm_zap 120, dm_crithit 110
+(world px). In action.html (`DMFX`, `dmv`, `dmFx`, `critFx`): swordsman + Guardian (`DMW`) E whirl = dm_firespin round him (sy .6),
+R charge release = dm_flamecres along the aim, F leap landing = dm_crack on the ground + a big crit flash, the parry counter =
+dm_goldslash; every hero's critical-hit flash = dm_crithit; the mage's chain lightning = dm_zap on each target. dm_slashfan not used yet.

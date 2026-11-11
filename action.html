@@ -1039,6 +1039,13 @@ const BZTRY = HERO === 'berserker' && QS.get('bz') !== '0';   // owner 2026-11-1
 //   // owner had not okayed these on the live game yet (2026-11-10): only with ?bz=1
 const BZV = ['vfx_bzswing', 'vfx_bzchain1', 'vfx_bzchainall', 'vfx_bzchainring', 'vfx_bztriple', 'vfx_bzslam', 'vfx_bzslamring', 'vfx_bzcrack', 'vfx_bzhook', 'vfx_bzshackle', 'vfx_bzrage', 'vfx_bzwave'];   // the owner's Meta AI clips, cut with tools/video/vfx_cut.py (2026-11-10 "ลองประกอบมาก่อน")
 const bzv = k => HERO === 'berserker' && BZTRY && PFX[k] && PFX[k].m;
+// the owner's Meta AI clips in the look of the Dimraeth clip (2026-11-12): gold / orange glowing light, cut with tools/video/vfx_cut.py;
+// the swordsman and the Guardian use them (DMW), the critical-hit flash and the mage's zap are for every hero
+const DMFX = ['dm_crack', 'dm_goldslash', 'dm_slashfan', 'dm_firespin', 'dm_flamecres', 'dm_zap', 'dm_crithit'], DMW = HERO === 'swordsman' || HERO === 'guardian';
+const dmv = k => PFX[k] && PFX[k].m;
+function dmFx(k, p, fwd, oy, o = {}) { if (!dmv(k)) return false; const fx = DV[p.dir][0], fy = DV[p.dir][1], M = PFX[k].m;
+  G.fx.push({k: 'pfx', key: k, x: p.x + fx * fwd, y: p.y + oy + fy * fwd * .5, rot: Math.atan2(fy * .5, Math.abs(fx) || .001) || 1e-4, flip: fx < 0, t: 0, life: M.n / M.fps, ...o}); return true; }
+const critFx = (x, y) => pfx(dmv('dm_crithit') ? 'dm_crithit' : 'critg', x, y);
 const BZFX = ['pfx_fireline', 'pfx_earthsplit', 'pfx_whirl', 'pfx_whirl_k', 'pfx_dashstrike_v', 'pfx_swcharge', 'pfx_swslash', 'cslam', 'gslam', 'quake', 'parry', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5'];
 const PFXA = {critg: [.9, .2], critx_ice: [.85, .18], zspark: [1, .3], zstar: [1, .45]};   // [picture alpha, glow alpha] per effect
 function pfx(k, x, y, o) { const P = PFX[k]; if (!P || !P.m) return false; G.fx.push({k: 'pfx', key: k, x, y, t: 0, life: P.m.n / P.m.fps, ...(o || {})}); return true; }
@@ -1077,7 +1084,7 @@ async function load() {
   // player's browser at once (owner 2026-11-08: "สกิลยังเหมือนเดิม" = old effect pictures stuck in the browser cache)
   try { const mtxt = await fetch('fx/manifest.json', {cache: 'no-cache'}).then(r => r.text()), man = JSON.parse(mtxt);
     let fxv = 0; for (let i = 0; i < mtxt.length; i++) fxv = (fxv * 31 + mtxt.charCodeAt(i)) >>> 0;
-    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_skyarrow_y', 'pfx_dashstrike_y', 'pfx_heal_y', 'pfx_skyarrow_g', 'pfx_starfall_g', 'pfx_dashstrike_g', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k', 'croots_g', 'pfx_rapier_k', 'pfx_chargeshot_k', 'pfx_skyarrow_k', 'pfx_dashstrike_k', 'pfx_bombarrow', 'pfx_bombarrow_g', 'pfx_vine_k', 'pfx_gbolt_k', 'pfx_earthsplit', 'pfx_fireline', 'pfx_starfall_c_k', 'pfx_dustland', 'pfx_dustdash', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5', 'pfx_swslash', 'pfx_swcharge', ...(HERO === 'berserker' && BZTRY ? [...BZV, 'pfx_bzchain', 'pfx_bzring'] : [])].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; })));
+    await Promise.all(['pmeteor', ...(METEOR === 'star' ? ['pfx_starfall'] : []), 'cinkflurry', 'cinkcres', 'cinkcomet', ...DMFX, ...['cmeteor', 'cmeteorhit', 'cfirehit', 'cnova', 'cshield', 'cblink', 'cwhirl', 'crage', 'cslam', 'cspore', 'croots', 'cwave', 'csteam', 'cshatter', 'coverload'], ...[...Array(24)].flatMap((_, i) => ['cfire' + i * 15, 'cghost' + i * 15, 'ccrack' + i * 15]), 'blast', 'boom', 'quake', 'gslam', 'zap', 'zapice', 'ibloom', 'mburst', 'parry', 'au_red', 'smash', 'hit', 'critg', 'critg_glow', 'vanish', 'ambush', 'ambush_glow', 'pbub', 'venomup', 'pburst', 'pburst_glow', 'critx_ice', 'critx_ice_glow', 'zstar', 'zstar_glow', 'zspark', 'zspark_glow', ...[...Array(24)].flatMap((_, i) => ['zstreak' + i * 15, 'zstreak' + i * 15 + '_glow']), ...[...Array(24)].flatMap((_, i) => ['ldash' + i * 15, 'ldash' + i * 15 + '_glow']), ...[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].flatMap(a => ['bigcut' + a, 'bigcut' + a + '_glow']), 'starrune', 'starshock', 'starbolt', ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap(k => ['', 's', 'l'].flatMap(t => ['dslash' + t + k, 'dslash' + t + k + '_glow'])), 'xcut', 'xcut_glow', 'swordcut', 'swordcut_glow', 'swordcut_m', 'swordcut_m_glow', 'woundcut', 'woundcut_glow', 'woundcut_m', 'woundcut_m_glow', ...['dashbolt', 'dashbolt_l', 'woundcut', 'woundcut_m', 'dashhit', 'dashcharge'].flatMap(k => [k + '_b', k + '_b_glow']),  'dashbolt', 'dashbolt_glow', 'dashbolt_l', 'dashbolt_l_glow', 'dashhit', 'dashcharge', 'darkx', 'poof', 'nslash', 'blindstars', 'spinring_b', 'spinring_f', 'spinring_b_glow', 'spinring_f_glow', 'nslash_glow', 'smokebomb', 'pfx_smoke', 'pfx_step_v', 'pfx_step_t', 'pfx_orb', 'pfx_bolt', 'pfx_whirl', 'pfx_blaze', 'pfx_dashstrike', 'pfx_rockshield', 'pfx_wind', 'pfx_freeze', 'pfx_skyarrow', 'pfx_starfall_c', 'pfx_skyarrow_y', 'pfx_dashstrike_y', 'pfx_heal_y', 'pfx_skyarrow_g', 'pfx_starfall_g', 'pfx_dashstrike_g', 'pfx_dashstrike_v', 'pfx_twinfang_k', 'pfx_whirl_k', 'croots_g', 'pfx_rapier_k', 'pfx_chargeshot_k', 'pfx_skyarrow_k', 'pfx_dashstrike_k', 'pfx_bombarrow', 'pfx_bombarrow_g', 'pfx_vine_k', 'pfx_gbolt_k', 'pfx_earthsplit', 'pfx_fireline', 'pfx_starfall_c_k', 'pfx_dustland', 'pfx_dustdash', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5', 'pfx_swslash', 'pfx_swcharge', ...(HERO === 'berserker' && BZTRY ? [...BZV, 'pfx_bzchain', 'pfx_bzring'] : [])].map(k => new Promise(ok => { const im = new Image(); im.onload = () => { PFX[k] = {img: im, m: man[k]}; ok(); }; im.onerror = ok; im.src = 'fx/' + k + '.png?v=' + fxv; })));
     for (const k of BZFX) if (HERO === 'berserker' && QS.get('bz') === 'old' && PFX[k + '_bz'] && PFX[k + '_bz'].m) PFX[k] = PFX[k + '_bz']; } catch (e) {}
   if (TDM) { const A = 'art/td/map1/', im = f => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = A + f; });
     TD.m = await fetch(A + 'map.json', {cache: 'no-cache'}).then(r => r.json()); [TD.g, TD.p] = await Promise.all([im('ground.png'), im('props.png')]);
@@ -1480,7 +1487,7 @@ function rogueDmg(m, dmg) {        // every hit of hers goes through here: the p
   if (HERO !== 'rogue') return heroDmg(m, dmg);
   const p = G.p; let sty = {};
   if (p.pcT !== G.t) { p.pcT = G.t; p.pc = (p.pc || 0) + 1; if (p.pc >= PAS.n) { p.pc = 0; p.pcHit = G.t; } }   // one count per moment
-  if (p.pcHit === G.t) { dmg *= PAS.mul; sty = {col: '#ffd23c', sz: U + 2, big: true}; pfx('critg', m.x, m.y - 26); G.hs = Math.max(G.hs, .06); G.shake = Math.max(G.shake, 4); spark(m.x, m.y - 20, 6, '#ffe066'); }
+  if (p.pcHit === G.t) { dmg *= PAS.mul; sty = {col: '#ffd23c', sz: U + 2, big: true}; critFx(m.x, m.y - 26); G.hs = Math.max(G.hs, .06); G.shake = Math.max(G.shake, 4); spark(m.x, m.y - 20, 6, '#ffe066'); }
   if (G.t < (p.amb || 0)) { dmg *= SK5.mul; sty = {col: '#d8b4ff', sz: U + 2, big: true}; pfx('ambush', m.x, m.y - 24); G.hs = Math.max(G.hs, .06); G.shake = Math.max(G.shake, 5); }
   if (G.t < (p.venom || 0)) poisonAdd(m, 1);
   return [dmg, sty];
@@ -1982,7 +1989,7 @@ function bzRageEnd(p) { p.bzr = 0; p.tired = G.t + BZR.tired; G.shake = Math.max
   tag(p.x, p.y - 96, 'เหนื่อย', '#ffb0a0'); }
 function heroDmg(m, dmg) {
   const p = G.p; let sty = {};
-  if (p.forceCrit === G.t) { sty = {col: '#ffd23c', sz: U + 2, big: true}; pfx('critg', m.x, m.y - 26); }
+  if (p.forceCrit === G.t) { sty = {col: '#ffd23c', sz: U + 2, big: true}; critFx(m.x, m.y - 26); }
   if (SWL) {
     if (p.ironT !== G.t) { p.ironT = G.t; p.iron = Math.min(IRON.max, (p.iron || 0) + IRON.per); }
     p.ironHit = G.t;
@@ -2143,7 +2150,7 @@ function whirlTick(p, dt, q) {
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.3) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 26, q.draw ? '#b98aff' : '#eafcff', false, true); any = true;
       if (rnd() < .5) { if (!(q.draw && pfx('pfx_dashstrike_v', m.x, m.y - 26, {f0: 13, fn: 22, rot: rnd() * 6.283, life: 9 / 30}))) cutFx(m.x, m.y - 22, 0, 1); } }
     if (any) { G.hs = Math.max(G.hs, .02); G.shake = Math.max(G.shake, 2); } }
-  q.rk -= dt; if (q.rk <= 0) { const sw = false && SWL && PFX.pfx_swstorm_r && PFX.pfx_swstorm_r.m,   /* owner "ใส่พายุแดงที่ให้ไป": the pasted storm in its own colours */ wk = sw ? 'pfx_swstorm_r' : q.draw && PFX.pfx_whirl_k ? 'pfx_whirl_k' : PFX.pfx_whirl ? 'pfx_whirl' : 'cwhirl', W = PFX[wk]; if (W && W.m) { q.rk = W.m.n / W.m.fps; G.fx.push({k: 'pfx', key: wk, follow: 1, ox: 0, oy: sw ? 10 : -14, a: sw ? .9 : .95, sc: sw ? .95 : undefined, depth: sw ? undefined : 'b', t: 0, life: q.rk}); } else { q.rk = .32; spinRing(); } }
+  q.rk -= dt; if (q.rk <= 0) { const sw = false && SWL && PFX.pfx_swstorm_r && PFX.pfx_swstorm_r.m,   /* owner "ใส่พายุแดงที่ให้ไป": the pasted storm in its own colours */ dm = DMW && !q.draw && dmv('dm_firespin'), wk = dm ? 'dm_firespin' : sw ? 'pfx_swstorm_r' : q.draw && PFX.pfx_whirl_k ? 'pfx_whirl_k' : PFX.pfx_whirl ? 'pfx_whirl' : 'cwhirl', W = PFX[wk]; if (W && W.m) { q.rk = W.m.n / W.m.fps * (dm ? .8 : 1); G.fx.push({k: 'pfx', key: wk, follow: 1, ox: 0, oy: dm ? -18 : sw ? 10 : -14, a: sw ? .9 : .95, sc: sw ? .95 : undefined, sy: dm ? .6 : undefined, depth: sw || dm ? undefined : 'b', t: 0, life: W.m.n / W.m.fps}); } else { q.rk = .32; spinRing(); } }
   if ((!holding(q.k) && G.t - q.t0 > .5) || p.st <= 0 || G.t - q.t0 > S.max) endAct(p);
 }
 function chargeTick(p, dt, q) {
@@ -2172,7 +2179,7 @@ function swSlash(p, i) {
 // front of him, with the game's own red-orange flash, ring and sparks (the sheet's flash came as flat colour bands); bigger per level
 function chargeBlast(p, lv) {
   const dx = DV[p.dir][0], dy = DV[p.dir][1], x = p.x + dx * 70, y = p.y + dy * 34 + 4, k = .75 + lv * .2;
-  if (!(HERO === 'berserker' && bzFx('vfx_bzcrack', p, 110 + lv * 20, 4, {sc: k}))) pfx('pfx_swcharge', x, y, {f0: 6, sc: k});
+  if (!(HERO === 'berserker' && bzFx('vfx_bzcrack', p, 110 + lv * 20, 4, {sc: k})) && !(DMW && dmFx('dm_flamecres', p, 60 + lv * 10, -30, {sc: k * .9}))) pfx('pfx_swcharge', x, y, {f0: 6, sc: k});
   if (!FXS.glowOr) FXS.glowOr = glowSprite([255, 90, 30]);   // its own key: it used to fill glowRed with orange before the berserk aura made it
   G.fx.push({k: 'sbang', x, y, t: 0, life: .3, sc: k * .9, red: 1});
   G.fx.push({k: 'ring', x, y, r0: 8, r1: 60 * k, t: 0, life: .28, c: (HERO === 'berserker' && BZTRY) ? '#ff2848' : '#ff8a3a'}); G.fx.push({k: 'ring', x, y, r0: 12, r1: 90 * k, t: 0, life: .4, c: (HERO === 'berserker' && BZTRY) ? '#ff6a50' : '#ffd070'});
@@ -2190,7 +2197,7 @@ function chargeRelease(p, lv) {
 function leapLand(p) {
   const S = SWS[4];
   for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.25) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 150, '#ffd080', true, true); m.stun = G.t + S.stun; }
-  landDust(p.x, p.y, 1.5); if (bzv('vfx_bzslamring')) { pfx('vfx_bzslamring', p.x, p.y + 4, {sy: .6}); pfx('vfx_bzslam', p.x, p.y + 6); } else if (!pfx('cslam', p.x, p.y + 8)) { pfx('quake', p.x, p.y + 6); pfx('gslam', p.x, p.y); } G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 20, r1: S.r, t: 0, life: .35, c: (HERO === 'berserker' && BZTRY) ? '#ff3050' : '#ffe6b0'});
+  landDust(p.x, p.y, 1.5); if (bzv('vfx_bzslamring')) { pfx('vfx_bzslamring', p.x, p.y + 4, {sy: .6}); pfx('vfx_bzslam', p.x, p.y + 6); } else if (DMW && pfx('dm_crack', p.x, p.y + 4, {sy: .62, depth: 'b'})) { pfx('dm_crithit', p.x, p.y - 10, {sc: 1.6}); } else if (!pfx('cslam', p.x, p.y + 8)) { pfx('quake', p.x, p.y + 6); pfx('gslam', p.x, p.y); } G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 20, r1: S.r, t: 0, life: .35, c: (HERO === 'berserker' && BZTRY) ? '#ff3050' : '#ffe6b0'});
   for (let i = 0; i < 16; i++) { const a = i / 16 * 6.28; puff(p.x + Math.cos(a) * 40, p.y + Math.sin(a) * 15, '#cbbf9e'); }
   parts(p.x, p.y - 6, '#8a7050', 22, {sp: 260, lift: 220, life: .8, floor: 6, r: 30}); parts(p.x, p.y - 20, 'gold', 14, {k: 'ln', sp: 420, life: .25}); heroGlow(p, 'gold', .4);
   G.shake = Math.max(G.shake, 10); G.hs = Math.max(G.hs, .1); G.kick = {x: 0, y: 8, t: .14};
@@ -2198,7 +2205,7 @@ function leapLand(p) {
 function swCounter(p, fx, fy) {                          // a blow landed inside the parry stance
   const d = dirOf(fx - p.x, fy - p.y), ar = animRow('attack', d);
   p.guard = 0; p.inv = .5; p.dir = d; G.hs = Math.max(G.hs, .14); G.shake = Math.max(G.shake, 6); G.flash = .07;
-  pfx('parry', p.x + DV[d][0] * 22, p.y - 36); tag(p.x, p.y - 96, 'สวนกลับ!', '#ffe066'); wSlash(p, 5, 1.4);
+  pfx('parry', p.x + DV[d][0] * 22, p.y - 36); tag(p.x, p.y - 96, 'สวนกลับ!', '#ffe066'); if (!(DMW && dmFx('dm_goldslash', p, 50, -32, {sc: 1.1}))) wSlash(p, 5, 1.4);
   for (let i = 0; i < 18; i++) { const a = i / 18 * 6.283; G.fx.push({k: 'pt', pk: 'sh', x: p.x + Math.cos(a) * 27, y: p.y - 36 + Math.sin(a) * 40, vx2: Math.cos(a) * 220, vy2: Math.sin(a) * 160 - 60, z0: p.y + 4, t: 0, life: .6, c: i & 1 ? '#ffffff' : '#bff0ff', w: 2}); }
   parts(fx, fy - 30, 'white', 10, {k: 'ln', sp: 380, life: .2}); heroGlow(p, 'white', .35);
   if (!ar) return; endAct(p, true);
@@ -2253,7 +2260,7 @@ function chainLightning(p) {
   const S = MGS[2], pts = [[p.x + DV[p.dir][0] * 24, p.y - 46]], done = []; let cur = nearestMob(p, S.range);
   if (!cur) { pts.push([p.x + DV[p.dir][0] * 140, p.y + DV[p.dir][1] * 70 - 30]); G.fx.push({k: 'chain', pts, t: 0, life: .22}); return; }
   for (let i = 0; i < S.n && cur; i++) { done.push(cur); pts.push([cur.x, cur.y - 24]);
-    hitMob(cur, S.dmg, pts[pts.length - 2][0], pts[pts.length - 2][1] + 24, 20, '#fff27a', false, true); applyEl(cur, 'shock'); pfx('zap', cur.x, cur.y - 24);
+    hitMob(cur, S.dmg, pts[pts.length - 2][0], pts[pts.length - 2][1] + 24, 20, '#fff27a', false, true); applyEl(cur, 'shock'); pfx(dmv('dm_zap') ? 'dm_zap' : 'zap', cur.x, cur.y - 24);
     let nx = null, nd = S.jump; for (const m of G.mobs) { if (m.hp <= 0 || done.includes(m)) continue; const d = Math.hypot(m.x - cur.x, m.y - cur.y); if (d < nd) { nd = d; nx = m; } } cur = nx; }
   G.fx.push({k: 'chain', pts, t: 0, life: PFX.pfx_bolt ? .6 : .3}); G.fx.push({k: 'chain', ground: 1, pts: [[p.x, p.y], ...done.map(m => [m.x, m.y])], t: 0, life: .45});
   for (const m of done) parts(m.x, m.y - 24, 'shock', 6, {k: 'ln', sp: 260, life: .2}); G.hs = Math.max(G.hs, .05); G.shake = Math.max(G.shake, 3);
