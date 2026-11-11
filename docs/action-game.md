@@ -1001,3 +1001,6 @@ dm_slashfan 190 (the layered-crescent clip, sent for the wind card), dm_firespin
 (world px). In action.html (`DMFX`, `dmv`, `dmFx`, `critFx`): swordsman + Guardian (`DMW`) E whirl = dm_firespin round him (sy .6),
 R charge release = dm_flamecres along the aim, F leap landing = dm_crack on the ground + a big crit flash, the parry counter =
 dm_goldslash; every hero's critical-hit flash = dm_crithit; the mage's chain lightning = dm_zap on each target. dm_slashfan not used yet.
+Owner's next Meta clip (2026-11-12): a black crescent with a neon-red edge and red fire / black smoke (the Berserker colours) →
+`dm_bzcres` (230 wide, 0.75 s; the smoke's green spill neutralised and the last 6 frames faded out in the sheet because the clip ended
+with the crescent still up). Drawn on the Berserker's R charge release, along the aim, next to his crack line.
