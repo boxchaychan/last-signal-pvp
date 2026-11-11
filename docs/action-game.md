@@ -967,3 +967,8 @@ about 400 map px tall on screen, blown up by a whole number). Built for free by 
 monster sheets shrunk to map size, map.json) + `art/td/map1_preview.png`. Two plateaus (top band + an island) with stairs, a pond,
 the 4 PixelLab rocks (moss added), forest edges, olive grade. Controls: WASD / arrows, touch = hold and drag; `?dbg` or B shows the
 blocked area. Monsters only wander for now. No fighting yet.
+In the game (owner 2026-11-11 "โอเคเดิยระบบตีเลย"): `action.html?map=td1` (first button in the start menu, also on the town's warp
+list) plays this map with the full fight system. `TDM` / `TDK` (= 4/3 world px per map px, so 2 art px: whole screen pixels at every
+S): WW × WH 2400 × 1467, the walk grid `WATER` (4 px cells) comes from block.png, `drawGroundChunks` draws ground.png, props come from
+the atlas (`q.td`, all `soft`: the block picture already holds their footprints), tree crowns `TD.over` are drawn over the bodies,
+camps = the map's `spawn` groups, roster `ROSTER.td1`. Tested: stairs up, cliffs and the pond block, auto fight, 60 fps.
