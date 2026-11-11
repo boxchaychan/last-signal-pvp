@@ -277,6 +277,100 @@ WATERP = pondI if not T2 else ndimage.binary_erosion(river, iterations=10) & ~di
 spot2(4 if not T2 else 3, 70, lambda x, y: P('water', random.choice(['water_0', 'water_1']), random.randint(40, 52), x, y), WATERP, 40)
 spot2(5, 70, lambda x, y: P('water', random.choice(['water_2', 'water_3', 'water_4', 'water_5']), random.randint(52, 64), x, y), edge(pond) & ~dil(deck if T2 else np.zeros_like(pond), 30), 40)
 if T2: spot2(1, 200, lambda x, y: P('water', 'water_8', 64, x, y), WATERP, 40)        # a rowing boat on the river
+SPAWN2 = [('skeleton', 980, 470), ('skeleton', 1030, 500), ('skeleton', 950, 520), ('wolf', 560, 980), ('wolf', 600, 1000), ('wolf', 520, 1010),
+          ('boar_guard', 1500, 880), ('boar_guard', 1550, 900), ('golem', 1320, 330), ('goblin_archer', 1400, 160), ('goblin_archer', 1470, 180),
+          ('wisp', 640, 860), ('wisp', 690, 900), ('wisp', 600, 920), ('shroom', 480, 470), ('shroom', 520, 500)]
+SPAWN = [('wolf', 980, 650), ('wolf', 1030, 690), ('wolf', 950, 700), ('shroom', 640, 820), ('shroom', 700, 850), ('shroom', 590, 860),
+         ('skeleton', 1320, 760), ('skeleton', 1370, 800), ('boar_guard', 1470, 520), ('goblin_archer', 900, 200), ('goblin_archer', 960, 230),
+         ('wolf', 1600, 960), ('shroom', 300, 560)]
+# ---- hand-placed layout (owner 2026-11-12 "ของจริงใส่มั่วไปหมด"): only the edge forest stays from the code above; everything inside
+# the map is placed by hand in themed groups (a camp, a village corner at the crossroads, a fishing pond, ruins on the high
+# ground, a grove of logs and mushrooms). A piece that lands on the road, water, a cliff or a monster camp is nudged a little,
+# or dropped (printed).
+PROPS[:] = [p for p in PROPS if p['kind'] == 'tree' and (p['y'] < 200 or p['x'] < 70 or p['x'] > W - 70)]
+SPW = SPAWN2 if T2 else SPAWN
+BAD = dil(road, 18) | dil(bank, 8) | dil(FACE | RAMP, 10) | (yy < 150) | (yy > H - 40)
+if T2: BAD |= dil(deck, 6)
+for k_, x_, y_ in SPW: BAD |= ((xx - x_) / 46) ** 2 + ((yy - y_) / 32) ** 2 < 1
+WATERS = (pond if not T2 else river & ~deck)
+NUD = [(0, 0)] + [(round(math.cos(a) * r), round(math.sin(a) * r * .7)) for r in (14, 28, 42, 56) for a in np.linspace(0, 6.28, 12, endpoint=False)]
+def H_(kind, name, h, x, y, flip=None, wet=False):
+    f = name if name.startswith('art/') else P2 + name + '.png'
+    for dx, dy in NUD:
+        X, Y = x + dx, y + dy
+        if not (0 < X < W and 0 < Y < H): continue
+        ok = WATERS[Y, X] if wet else not BAD[Y, X] and not WATERS[Y, X]
+        if ok:
+            put(kind, f, h, X, Y, (random.random() < .5) if flip is None else flip)
+            if not wet: BAD[max(0, Y - 10):Y + 6, max(0, X - 14):X + 14] = True
+            return
+    print('  dropped', name, x, y)
+TR = 'art/side/map30/tree.png'; ST = 'art/side/forest/small_tree.png'; RK = 'art/td/props/'
+if not T2:
+    # trees that frame the clearings
+    for n, h, x, y in (('trees_green_0', 240, 300, 470), ('trees_green_1', 225, 840, 520), ('trees_green_2', 215, 1250, 430), ('trees_green_0', 235, 1690, 660),
+                       ('trees_green_3', 215, 1300, 925), ('trees_green_1', 220, 120, 1000), ('trees_green_3', 205, 470, 905), ('trees_green_2', 205, 1560, 1010)):
+        H_('tree2', n, h, x, y)
+    for x, y in ((700, 400), (1120, 470), (1610, 700), (560, 1000)): H_('stree', ST, 105, x, y)
+    # the camp south-west of the road
+    for k, n, h, x, y in (('solid', 'camp_0', 96, 255, 830), ('small', 'camp_1', 50, 335, 862), ('small', 'camp_2', 44, 182, 846), ('small', 'camp_3', 46, 176, 896),
+                          ('small', 'camp_5', 48, 222, 918), ('small', 'camp_8', 40, 270, 935), ('small', 'logs2_0', 44, 350, 915), ('small', 'camp_6', 56, 400, 845),
+                          ('fence', 'village_1', 40, 120, 800), ('small', 'logs2_2', 46, 110, 900)):
+        H_(k, n, h, x, y)
+    # the crossroads: lamps, a signpost, a well, hay, a bench
+    for k, n, h, x, y in (('small', 'village_4', 88, 470, 668), ('small', 'village_4', 88, 628, 560), ('small', 'village_2', 56, 515, 652), ('solid', 'village_5', 92, 735, 560),
+                          ('small', 'village_7', 44, 790, 585), ('small', 'village_8', 40, 575, 662), ('bush', 'bushes_1', 46, 690, 590), ('bush', 'bushes_9', 34, 412, 610)):
+        H_(k, n, h, x, y)
+    # the fishing pond
+    for n, x, y in (('water_0', 1040, 960), ('water_1', 1130, 940), ('water_0', 1170, 995), ('water_1', 990, 990)): H_('water', n, 44, x, y, wet=True)
+    for n, x, y in (('water_2', 905, 935), ('water_4', 1255, 985), ('water_3', 1210, 890), ('water_5', 960, 900)): H_('water', n, 58, x, y, wet=True)
+    for k, n, h, x, y in (('small', 'village_8', 40, 990, 850), ('small', 'village_4', 88, 1170, 860), ('bush', 'bushes_6', 46, 870, 880), ('bush', 'bushes_3', 44, 1270, 1040)):
+        H_(k, n, h, x, y)
+    # ruins on the island plateau and along the north ridge
+    for k, n, h, x, y in (('solid', 'ruins_8', 104, 1450, 452), ('solid', 'ruins_0', 92, 1360, 492), ('solid', 'ruins_5', 70, 1555, 500),
+                          ('solid', 'ruins_2', 92, 420, 232), ('solid', 'ruins_0', 90, 1240, 205), ('solid', 'ruins_6', 96, 1600, 220)):
+        H_(k, n, h, x, y)
+    # big rocks
+    for f, h, x, y, fl in (('rock0', 210, 1000, 470, False), ('rock1', 170, 1430, 790, True), ('rock2', 140, 520, 980, False), ('rock3', 110, 1760, 520, True)):
+        H_('rock', RK + f + '.png', h, x, y, fl)
+    # the grove of logs and mushrooms in the south-east
+    for k, n, h, x, y in (('small', 'logs2_1', 56, 1690, 880), ('small', 'logs2_3', 46, 1740, 930), ('small', 'logs2_4', 40, 1650, 940), ('small', 'logs2_5', 52, 1720, 1000),
+                          ('bush', 'bushes_7', 40, 1630, 880), ('small', 'stones_2', 30, 1690, 960)):
+        H_(k, n, h, x, y)
+    # small bits along the road and in the meadow
+    for k, n, h, x, y in (('bush', 'bushes_0', 46, 210, 655), ('flowers', 'art/side/forest/flowers.png', 20, 245, 640), ('bush', 'bushes_2', 44, 880, 700),
+                          ('small', 'stones_0', 32, 930, 760), ('bush', 'bushes_5', 46, 1220, 760), ('small', 'stones_8', 28, 1350, 700), ('bush', 'bushes_10', 40, 760, 790),
+                          ('small', 'stones_12', 34, 640, 960), ('bush', 'bushes_4', 46, 1500, 640), ('flowers', 'art/side/forest/flowers.png', 20, 1150, 760)):
+        H_(k, n, h, x, y)
+else:
+    for n, h, x, y in (('trees_autumn_0', 240, 470, 330), ('trees_autumn_1', 230, 160, 990), ('trees_autumn_2', 220, 1650, 620), ('trees_autumn_0', 230, 1250, 1020),
+                       ('trees_autumn_1', 225, 620, 470), ('trees_autumn_2', 215, 1090, 300), ('trees_autumn_3', 190, 1180, 420), ('trees_autumn_3', 180, 380, 1030),
+                       ('trees_autumn_0', 225, 1700, 1010), ('trees_autumn_1', 220, 980, 1040)):
+        H_('tree2', n, h, x, y)
+    # camp in the north-west clearing
+    for k, n, h, x, y in (('solid', 'camp_0', 96, 290, 480), ('small', 'camp_1', 50, 370, 512), ('small', 'camp_2', 44, 215, 500), ('small', 'camp_7', 50, 232, 546),
+                          ('small', 'camp_8', 40, 300, 560), ('small', 'logs2_0', 44, 380, 566), ('small', 'village_3', 58, 150, 712)):
+        H_(k, n, h, x, y)
+    # the bridge: lamps at both ends, reeds and lily pads along the river, a rowing boat
+    for k, n, h, x, y in (('small', 'village_4', 88, 722, 598), ('small', 'village_4', 88, 925, 582)): H_(k, n, h, x, y)
+    for n, h, x, y in (('water_2', 58, 790, 420), ('water_4', 58, 860, 300), ('water_3', 58, 780, 960), ('water_5', 58, 840, 700), ('water_0', 44, 850, 180),
+                       ('water_1', 44, 800, 1040), ('water_8', 64, 812, 820), ('water_0', 44, 830, 520)):
+        H_('water', n, h, x, y, wet=True)
+    # the old temple ruins round the south road
+    for k, n, h, x, y in (('solid', 'ruins_1', 140, 1010, 800), ('solid', 'ruins_7', 72, 1090, 900), ('solid', 'ruins_5', 72, 1190, 870), ('solid', 'ruins_6', 100, 1300, 960),
+                          ('solid', 'ruins_0', 92, 950, 930), ('small', 'stones_4', 32, 1150, 960)):
+        H_(k, n, h, x, y)
+    # ruins on the plateau
+    for k, n, h, x, y in (('solid', 'ruins_8', 104, 1330, 190), ('solid', 'ruins_0', 92, 1600, 175)): H_(k, n, h, x, y)
+    # dead wood east of the river
+    for k, n, h, x, y in (('small', 'logs2_1', 56, 1000, 380), ('small', 'logs2_5', 52, 1080, 420), ('small', 'logs2_3', 44, 950, 340), ('small', 'logs2_2', 46, 640, 330)):
+        H_(k, n, h, x, y)
+    for f, h, x, y, fl in (('rock0', 200, 520, 820, False), ('rock2', 150, 1500, 690, False), ('rock1', 160, 140, 380, True), ('rock3', 115, 1750, 380, True)):
+        H_('rock', RK + f + '.png', h, x, y, fl)
+    for k, n, h, x, y in (('bush', 'bushes_2', 44, 560, 620), ('bush', 'bushes_9', 34, 470, 700), ('bush', 'bushes_1', 46, 1250, 650), ('small', 'stones_0', 32, 1370, 600),
+                          ('bush', 'bushes_6', 46, 260, 820), ('bush', 'bushes_0', 46, 1560, 900), ('small', 'stones_8', 28, 700, 760), ('bush', 'bushes_10', 40, 1020, 560),
+                          ('small', 'stones_12', 34, 1620, 780), ('bush', 'bushes_5', 46, 430, 900)):
+        H_(k, n, h, x, y)
 # dark tree crowns hanging over the bottom edge (drawn over everything)
 cr = fit(TREE, 300).crop((0, 0, 420, 140)); cr = autumn(cr, 99) if T2 else cr; ca = np.asarray(cr).copy(); ca[..., :3] = (ca[..., :3] * .5).astype(np.uint8); SPR[('crown', 0, 0)] = Image.fromarray(ca)
 SPR[('crown', 0, 1)] = SPR[('crown', 0, 0)].transpose(Image.FLIP_LEFT_RIGHT)
@@ -378,12 +472,6 @@ for kk, s in MOBS.items():
         cl = sh2.crop((i * mm['w'], 0, (i + 1) * mm['w'], mm['h'])).resize((cw, chh), Image.LANCZOS); a = np.asarray(cl).copy(); a[..., 3] = (a[..., 3] > 110) * 255
         out.paste(Image.fromarray(a), (i * cw, 0))
     out.save(OUT + 'mob_%s.png' % kk, optimize=True); mobs[kk] = {'w': cw, 'h': chh, 'fx': round(mm['fx'] * k), 'fy': round(mm['fy'] * k), 'n': mm['n']}
-SPAWN2 = [('skeleton', 980, 470), ('skeleton', 1030, 500), ('skeleton', 950, 520), ('wolf', 560, 980), ('wolf', 600, 1000), ('wolf', 520, 1010),
-          ('boar_guard', 1500, 880), ('boar_guard', 1550, 900), ('golem', 1320, 330), ('goblin_archer', 1400, 160), ('goblin_archer', 1470, 180),
-          ('wisp', 640, 860), ('wisp', 690, 900), ('wisp', 600, 920), ('shroom', 480, 470), ('shroom', 520, 500)]
-SPAWN = [('wolf', 980, 650), ('wolf', 1030, 690), ('wolf', 950, 700), ('shroom', 640, 820), ('shroom', 700, 850), ('shroom', 590, 860),
-         ('skeleton', 1320, 760), ('skeleton', 1370, 800), ('boar_guard', 1470, 520), ('goblin_archer', 900, 200), ('goblin_archer', 960, 230),
-         ('wolf', 1600, 960), ('shroom', 300, 560)]
 json.dump({'w': W, 'h': H, 'start': [120, 770] if T2 else [200, 705], 'props': props, 'hero': hero, 'mobs': mobs, 'spawn': SPAWN2 if T2 else SPAWN, 'bk': 2,
            'exits': EXITS, 'entries': ENTRIES}, open(OUT + 'map.json', 'w'))
 # preview of the whole map
