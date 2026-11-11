@@ -7,6 +7,13 @@ Claude cuts them and puts them in the game. Reply to the owner in Thai, short an
 - `art/incoming/side/berserker/refs/1_SIDE_main.png` — THE design: side view facing right, greatsword resting on the right shoulder.
 - `art/incoming/side/berserker/refs/2_TURNAROUND.png` — front / side / back, for the parts the side view hides.
 
+## Pose guides (owner 2026-11-11 "ไม่รู้ว่าจะทำท่าทางแบบไหน")
+For most rows there is a pose guide `art/incoming/side/berserker/poses/<action>_POSES.png`: numbered grey silhouettes of the
+same kind of greatsword berserker doing the move, frame by frame (the red number = the hit frame). Attach it as a THIRD
+picture and copy its POSES and its timing frame by frame; draw the character only from `1_SIDE_main.png` (the silhouettes
+are an older design: copy the body positions, not the shapes of the armour). Guides: idle, run, attack1 (horizontal slash),
+attack3 (overhead slash), spin, chain, slam, roll, hurt, death. Rows without a guide follow the text.
+
 ## Character checklist (check every frame against it)
 1. Closed black demon helmet with a crown of tall jagged spikes and a red crest, narrow visor with glowing RED eyes, no face.
 2. Black jagged plate armour with small glowing red "demon eye" gems on the shoulder, chest, belt and knee plates.
