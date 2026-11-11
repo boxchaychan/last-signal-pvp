@@ -1045,3 +1045,6 @@ front / back). action.html `AS2` / `drawAs2`: the rogue (`?hero=rogue`, default 
 side run (mirrored left), front / back still with a bob when running straight down / up, the attack row for normal attacks, skills
 and the knife throw, a bright flash when hurt, fade on death. Drawn at 2/3 world px per art px (as tall as the old rogue). Her kit is
 still the rogue's. Missing moves: idle, front / back runs, hurt, death, a right-hand thrust.
+Fix (owner 2026-11-12 "ทำไมแอสตัวแปลกๆ"): the swoosh cleaner in as2_build.py also cut her light skin round the eyes (her face
+showed see-through holes in the attack frames); it now removes only big light patches (≥60 px). Her normal hits drew the old rogue's
+white ice crescents in front of her; she now gets a few short white stab lines at the blade instead.
