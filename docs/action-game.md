@@ -940,3 +940,13 @@ swoosh frame skipped -> `art/action/bz4/`. In action.html `BZ4` (default for `?h
 `bz4Plan` = normal attack sweep, a second press within 1.2 s = vertical slash (hits from bz4.json); `drawBz4` draws facing right,
 mirrored when he faces left (straight up / down keeps the last side); E whirl plays spin frames 2-4 then loops 5-10; idle / move /
 roll / hurt = the still with a bob; other skills and death still the old art. The menu card shows the new still.
+
+### Berserker's own kit is the default (2026-11-11, owner "เอาสกิลใหม่มาใส่")
+`BZTRY` is now on for `?hero=berserker` (`?bz=0` = the swordsman's kit): Q chain gather, E triple cut, Z shackle with the Meta AI video
+effects, plus the parts of `docs/berserker.md` that were missing: X "ร่างคลั่งโลหิต" (`BZR`: 15 s, +3.5% damage per skill level, 10%
+lifesteal, HP never below 1, flinch 30% shorter, at the end a red burst round him and 2 s tired at 70% walk speed, `bzRageEnd`),
+passive เลือดเดือด (+5% damage per 10% HP lost, max +40%, in `heroDmg`) and no interruption during attacks / skills (`hurtPlayer`:
+damage only, no flinch). Skills drawn with the v4 look: acts carry `bz4` and `BZ4SEG` maps their progress onto the three clips
+(chain = sweep wind-up / hold, triple = sweep → one spin turn → vertical slash, shackle / charge release = vertical slash, charge =
+blade raised, leap = raise then slam on landing, guard = still); the chain's ring cleave plays a spin turn (`p.bzSpin`).
+Preview: `art/incoming/action/berserker/v4_cool/skills_ingame.gif`.
