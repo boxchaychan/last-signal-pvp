@@ -3309,8 +3309,9 @@ function drawCell(img, r, c, x, y, flip, alpha) {
   if (alpha !== undefined) ctx.globalAlpha = alpha;
   let src = img, sx = c * C, sy = r * C;
   if (GEAR.helm && GEAR.dir >= 0) { const h = headOf(img, r, c); if (h) { drawHelm(img, r, c, x, y, flip, d, 'back'); [src, sx, sy] = [helmCut(img, r, c, h), 0, 0]; } }
-  if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(src, sx, sy, C, C, -fx, y - fy, D, D); ctx.restore(); }
-  else ctx.drawImage(src, sx, sy, C, C, x - fx, y - fy, D, D);
+  let q = 1; if (TDS) { q = Math.max(1, Math.ceil(S * d - .01)); src = as2Sharp(src, q); }   // td1 on odd K: the same sharp drawing as the Assassin
+  if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(src, sx * q, sy * q, C * q, C * q, -fx, y - fy, D, D); ctx.restore(); }
+  else ctx.drawImage(src, sx * q, sy * q, C * q, C * q, x - fx, y - fy, D, D);
   if (GEAR.helm && GEAR.dir >= 0) drawHelm(img, r, c, x, y, flip, d, 'front');
   ctx.globalAlpha = 1;
 }
@@ -3458,13 +3459,18 @@ function drawBz4(p) {
   else return false;
   if (!img.complete || !img.naturalWidth) return false;
   ctx.save(); ctx.translate(x, 0); if (BZ4.left && !noFlip) ctx.scale(-1, 1);
-  ctx.drawImage(img, f * m.cw, 0, m.cw, m.ch, -m.fx * d, y - m.fy * d, m.cw * d, m.ch * d); ctx.restore(); return true; }
+  const bq = TDM ? Math.max(1, Math.ceil(S * d - .01)) : 1, bsrc = bq > 1 ? as2Sharp(img, bq) : img;
+  ctx.drawImage(bsrc, f * m.cw * bq, 0, m.cw * bq, m.ch * bq, -m.fx * d, y - m.fy * d, m.cw * d, m.ch * d); ctx.restore(); return true; }
 // Assassin v2 look for the rogue (owner 2026-11-12 "ลองเอาเข้าแมพยัง"): PixelLab side-view clips (tools/art/as2_build.py ->
 // art/action/as2/): side run, the katar attack (also played for her skills), stills front / side / back; facing right, mirrored for
 // the left; running straight down / up shows the front / back still with a step bob. ?skin=old = the old rogue. The kit is the rogue's.
 const AS2 = HERO === 'rogue' && QS.get('skin') !== 'old' ? {left: false} : null;
 if (AS2) { fetch('art/action/as2/as2.json?v=2').then(r => r.json()).then(m => { AS2.m = m; }).catch(() => {});
   for (const k of ['still', 'run', 'attack', 'front', 'back']) { const im = new Image(); im.src = 'art/action/as2/' + k + '.png?v=2'; AS2[k] = im; } }
+// sharp drawing (owner 2026-11-12 "ไม่คมเบลอ"): her art pixel lands on 1.5 screen px on a 3x phone; plain smoothing blurred her,
+// so the sheet is first blown up by a whole number with hard pixels (cached) and only that is shrunk a little = crisp edges
+function as2Sharp(img, k) { const c0 = img._sh || (img._sh = {}); if (c0[k]) return c0[k];
+  const c = document.createElement('canvas'); c.width = img.width * k; c.height = img.height * k; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, c.width, c.height); return c0[k] = c; }
 function drawAs2(p) {
   const m = AS2.m; if (!m || !AS2.still.complete) return false;
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
@@ -3482,7 +3488,9 @@ function drawAs2(p) {
   else y -= (Math.floor(G.t * 2.5) % 2) * .7;            // idle: a slow breath
   if (!img.complete || !img.naturalWidth) { ctx.filter = 'none'; return false; }
   ctx.save(); ctx.globalAlpha *= a; ctx.translate(x, 0); if (AS2.left && !noFlip) ctx.scale(-1, 1);
-  ctx.drawImage(img, f * m.cw, 0, m.cw, m.ch, -m.fx * d, y - m.fy * d, m.cw * d, m.ch * d); ctx.restore(); ctx.filter = 'none'; return true; }
+  const z = S * d, k = Math.max(1, Math.ceil(z - .01)), src = Math.abs(z - Math.round(z)) < .01 ? img : as2Sharp(img, k), q = src === img ? 1 : k;
+  if (src === img) ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(src, f * m.cw * q, 0, m.cw * q, m.ch * q, -m.fx * d, y - m.fy * d, m.cw * d, m.ch * d); ctx.restore(); ctx.filter = 'none'; return true; }
 function drawPlayerBody2(p) {
   if (AS2 && drawAs2(p)) return;
   if (BZ4 && drawBz4(p)) return;
@@ -3544,7 +3552,8 @@ function drawMob2(m) {
   else if (M.rows.hurt !== undefined && m.hp > 0 && m.st !== 'atk' && G.t - (m.flT || -9) < .18) { row = M.rows.hurt; f = Math.min(2, (G.t - m.flT) / .06 | 0); }   // stout ones flinch without stopping
   const ts = TDM ? TDMS[m.kind] || 1 : 1;   // td1: monsters as big next to the hero as in map.html
   const one = img => { ctx.save(); ctx.translate(X - m.face * 5 * k, Y); ctx.scale((m.face < 0 ? -1 : 1) * (1 + .12 * k) * ts, (1 - .12 * k) * ts);
-    ctx.drawImage(img, f * D.w, row * D.h, D.w, D.h, -D.fx / dk, -D.fy / dk, D.w / dk, D.h / dk); ctx.restore(); };
+    const q = TDS ? Math.max(1, Math.ceil(S * ts / dk - .01)) : 1, src = q > 1 ? as2Sharp(img, q) : img;
+    ctx.drawImage(src, f * D.w * q, row * D.h * q, D.w * q, D.h * q, -D.fx / dk, -D.fy / dk, D.w / dk, D.h / dk); ctx.restore(); };
   one(T.img); ctx.filter = 'none';
   if (m.frzOn && m.hp > 0 && PFX.pfx_freeze) { const P = PFX.pfx_freeze, q = P.m, e = G.t - m.frz0, left = m.frz - G.t,   // the ice block
       te = e < .62 ? e : left < .3 ? 2.2 + (.3 - left) : .62 + ((e - .62) % 1.4), i = Math.min(q.n - 1, te * q.fps | 0), sc = clamp(M.size / 52, .8, 2.6);
