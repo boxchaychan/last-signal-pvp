@@ -1008,3 +1008,13 @@ Assassin effect prompts (owner 2026-11-12 "พรอมต์แอสซาซ�
 Dimraeth look via `CSTYLE['assassin']`) second on `docs/vfx-pack.html#c_assassin`: hit X, twin-dagger combo, shuriken, shuriken fan,
 shadow step, ground X cut, smoke bomb, hunt mark (loop), execute finisher, venom burst. The Assassin herself is not in the game
 (removed 2026-11-11); her kit is still to be decided.
+
+## Map 2: autumn forest (2026-11-12)
+Owner "ทำแมพรอไปก่อน" (while the Assassin picture waits): `MAP=td2 python3 tools/art/td_map.py` → `art/td/map2/` + `map2_preview.png`:
+grass with carpets of fallen red / orange leaves (the autumn tileset over the pro grass), a river from top to bottom with a plank
+bridge where the road crosses (rails block), one plateau with stairs in the north-east, trees / bushes recoloured to autumn (`autumn()`:
+green hues → red-orange patches), the big rocks, props placed at random free spots (`spot`). map.json now has `exits` (boxes in map
+px → another map) and `entries` (where you arrive from a map); the border is opened where the road crosses an exit box. Map 1's east
+road end ↔ map 2's west road end. action.html: `?map=td2` (MAP), files from `art/td/map2/`, `ROSTER.td2` (skeleton, wolf, wisp,
+shroom, goblin archer, boar guard, golem), exit labels drawn on the road, `spawnAt` uses `entries[FROM]`, travel() carries hp / level.
+(map.html stays map 1 only; td2 has no hero / monster sheets of its own.)
