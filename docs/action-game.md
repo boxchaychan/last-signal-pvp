@@ -931,3 +931,12 @@ characters the SWORDSMAN's (thicker: wider head and shoulders, thicker coat, leg
 `docs/codex/action/refs/REF_MALE_swordsman.png` (front, 3/4, side, back with head / chin / chest / waist / knee / feet lines).
 Before any PixelLab credits: line the new still up next to the rogue and the swordsman and show the owner. A weapon that does not
 fit the 128 canvas gets a bigger canvas, never a smaller body.
+
+### Berserker v4 in the game, one direction (2026-11-11, owner "เอามา 1 ทิศก่อน")
+`tools/art/bz4_build.py` puts the three PixelLab side-view clips from `art/incoming/action/berserker/v4_cool` (sweep, vertical slash,
+3-turn spin) and the still into one cell 296x240 (feet 128, 234; each clip pinned at its canvas feet point) with outline style B
+(pale GPT rim removed, black outline kept), PixelLab's blue swoosh / white dust stripped from the vertical slash, the sweep's white
+swoosh frame skipped -> `art/action/bz4/`. In action.html `BZ4` (default for `?hero=berserker`, `?skin=old` = the old look):
+`bz4Plan` = normal attack sweep, a second press within 1.2 s = vertical slash (hits from bz4.json); `drawBz4` draws facing right,
+mirrored when he faces left (straight up / down keeps the last side); E whirl plays spin frames 2-4 then loops 5-10; idle / move /
+roll / hurt = the still with a bob; other skills and death still the old art. The menu card shows the new still.
