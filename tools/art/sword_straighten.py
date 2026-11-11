@@ -25,10 +25,19 @@ for i in range(getattr(g, 'n_frames', 1)):
     rot = Image.fromarray(part).rotate(-ang, resample=Image.BICUBIC, center=(ox, oy))
     fin = Image.new('RGBA', (W, H)); fin.alpha_composite(rot); fin.alpha_composite(Image.fromarray(a))
     fa = np.asarray(fin).copy(); m2 = fa[..., 3] > 0
-    gr = (fa[..., 1].astype(int) > fa[..., 0] + 40) & (fa[..., 1].astype(int) > fa[..., 2] + 40) & m2; fa[gr, :3] = (46, 30, 36)   # green key spill
+    fi = fa.astype(int); gr = (fi[..., 1] > fi[..., 0] + 40) & (fi[..., 1] > fi[..., 2] + 40) & m2   # int maths: uint8 + 40 wrapped round and blackened the white highlights; fa[gr, :3] = (46, 30, 36)   # green key spill
     l2, n2 = ndimage.label(m2, structure=np.ones((3, 3))); s2 = ndimage.sum(m2, l2, range(1, n2 + 1))
     for q, v in enumerate(s2):
         if v < 60: fa[l2 == q + 1] = 0                                                                                    # specks left behind
     fin = Image.fromarray(fa)
     out.append(fin); durs.append(g.info.get('duration', 100)); print(i, 'orb', int(ox), int(oy), 'lean', round(ang, 1))
-out[0].save(dst, save_all=True, append_images=out[1:], duration=durs, loop=0, disposal=2)
+# master frames as PNG (a GIF palette can turn the bright reds see-through: PIL picks the transparent index among the reds)
+import os
+od = os.path.splitext(dst)[0]; os.makedirs(od, exist_ok=True)
+for i, f in enumerate(out): f.save(os.path.join(od, 'f%02d.png' % i))
+def gifsafe(f):   # 255 colours for the picture, index 255 = see-through only where alpha is 0
+    rgb = f.convert('RGB').quantize(255, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    idx = np.asarray(rgb).copy(); idx[np.asarray(f)[..., 3] < 128] = 255
+    p = Image.fromarray(idx.astype(np.uint8), 'P'); pal = rgb.getpalette()[:765] + [0, 0, 0]; p.putpalette(pal); return p
+gs = [gifsafe(f) for f in out]
+gs[0].save(dst, save_all=True, append_images=gs[1:], duration=durs, loop=0, disposal=2, transparency=255)
