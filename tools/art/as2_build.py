@@ -11,7 +11,9 @@ def clean(im, fx=False):
     a = np.asarray(im.convert('RGBA')).astype(int).copy()
     if fx:
         r, g, b = a[..., 0], a[..., 1], a[..., 2]; mn = a[..., :3].min(2); mx = a[..., :3].max(2)
-        a[(mn > 140) & (np.abs(r - b) < 45)] = 0                                  # pink / white swooshes
+        lt = (mn > 140) & (np.abs(r - b) < 45) & (a[..., 3] > 0)                   # pink / white swooshes: only BIG light patches go,
+        lb, nl = ndimage.label(lt, structure=np.ones((3, 3)))                      # small ones are her skin, eyes and blade shine
+        if nl: sz = ndimage.sum(lt, lb, range(1, nl + 1)); a[np.isin(lb, 1 + np.where(sz >= 60)[0])] = 0
         a[(mx - mn < 26) & (mx > 95) & (mx < 200) & (a[..., 3] > 0) & (np.mgrid[0:a.shape[0], 0:a.shape[1]][1] > 100)] = 0   # grey smoke ahead of her
         a[(np.mgrid[0:a.shape[0], 0:a.shape[1]][0] > 138) & (r > 150) & (g > 120) & (b < 150) & (r - b > 30)] = 0   # beige dust at the feet
     m = a[..., 3] > 0; lab, n = ndimage.label(m, structure=np.ones((3, 3)))
