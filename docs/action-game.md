@@ -1018,3 +1018,4 @@ px → another map) and `entries` (where you arrive from a map); the border is o
 road end ↔ map 2's west road end. action.html: `?map=td2` (MAP), files from `art/td/map2/`, `ROSTER.td2` (skeleton, wolf, wisp,
 shroom, goblin archer, boar guard, golem), exit labels drawn on the road, `spawnAt` uses `entries[FROM]`, travel() carries hp / level.
 (map.html stays map 1 only; td2 has no hero / monster sheets of its own.)
+| 2026-11-12 | Scene props set 2 (owner "ให้โควต้า 30 ทำต้นไม้อุปกรณ์ทำฉากให้สวย ไม่ต้องใช้โปร"): 10 × `create_image_pixen` 512×512 standard, several objects per picture on plain background (`art/td/props/set2/job_<k>.json`, `id_<k>.txt`, `<k>_raw.png`): trees_green, trees_autumn, bushes, logs, ruins, camp, village, water, stones, magic | ids in `set2/id_*.txt` | 10 | 8 good; `logs` came as a dark forest scene (hard to cut), `magic` objects stand on little ground tiles; not cut yet |
