@@ -29,6 +29,22 @@ GREEN, MAGENTA = 'flat pure green (#00FF00)', 'flat pure magenta (#FF00FF)'
 END = {'once': 'Quick build-up, a strong burst, then it fades out completely and the video ends on the empty background.',
        'loop': 'It LOOPS seamlessly: no fade-out, the last frame matches the first.'}
 
+# owner 2026-11-12 (a Dimraeth "Using Skills" clip): "ให้ดูสกิลเค้าทำได้ไหม เอาเป็นพร้อมวิดีโอมาก็ได้ เจน meta" -> a set in the clip's
+# look: glowing light instead of thick black ink (CSTYLE replaces STYLE for that set). The white ghost clone and the red body
+# flash in the clip are done in code (after-images / tint), not as videos (the prompts forbid characters).
+CSTYLE = {'dimraeth': ('2D game skill VFX in the style of polished pixel-art action RPGs like Dimraeth: glowing light-based effects, '
+  'bright additive glow, white-hot cores fading to gold and orange, soft bloom, crisp curved crescent shapes, motion streaks and '
+  'small four-point star glints; thin dark edges only where needed, no thick black ink outlines, smooth fast animation.')}
+DIMRAETH = ('dimraeth', 'แบบ Dimraeth (จากคลิป)', 'Colours: white-hot cores, bright gold and orange fire, a few warm red tips; glowing, like light.', [
+  ('dm_firespin', 'หมุนดาบไฟรอบตัว', 'B', 1.2, 'once', 'a ring one third of the picture wide, low and flat like a disc seen from a little above', 'a whirlwind of orange fire spinning one full turn round an empty spot where a fighter stands: two or three flaming crescents chasing each other round in a circle, curling flames, embers flung outward, then it bursts and fades', GREEN),
+  ('dm_goldslash', 'ฟันทองรัว 3 ที', 'S', 0.9, 'once', 'half of the picture wide', 'three very fast golden crescent sword slashes from left to right, overlapping each other, glowing white-hot edges, gold sparks and tiny star glints flying off', GREEN),
+  ('dm_flamecres', 'คลื่นไฟเสี้ยวใหญ่', 'S', 1, 'once', 'half of the picture wide', 'one huge sweeping crescent of orange fire swinging from left to right, flames curling off its edge, a few wisps of dark smoke at the tips, embers', GREEN),
+  ('dm_crithit', 'คริติคอล (โดนแรง)', 'B', 0.6, 'once', 'small: one fifth of the picture wide', 'a critical hit: a white flash ring snapping outward, a bright four-point star glint in the middle, small gold stars popping out', GREEN),
+  ('dm_crack', 'พื้นแตกใยแมงมุม', 'D', 1.5, 'once', 'a circle half of the picture wide', 'seen from above: a shockwave on the ground, a dark spider-web of cracks racing out from the centre with a faint dust ring and small chunks of earth, then the dust settles', GREEN),
+  ('dm_wind', 'เส้นลมฟัน', 'S', 0.6, 'once', 'a band across half of the picture', 'a few long thin white wind streaks whooshing from left to right like the air cut by a fast blade, then gone', GREEN),
+  ('dm_zap', 'ประกายสายฟ้าแตก', 'B', 0.6, 'once', 'small: one fifth of the picture wide', 'a burst of sharp blue-white electric shards and short lightning lines snapping out from one point, then gone', GREEN),
+])
+
 # Class sets first (owner 2026-11-10 "แยกเป็นของตัวละคร อาชีพก่อน"): each class has its own colour line added to every prompt
 G = GREEN
 CLASSES = [
@@ -188,23 +204,24 @@ FX = [
  ]),
 ]
 
-def prompt(e, tone=''):
+def prompt(e, tone='', style=None):
     key, th, kind, sec, end, size, what, bg = e
     tone = (' ' + tone) if tone else ''
-    return (f'Create a {sec:g}-second VIDEO, SQUARE 1:1, of ONE game visual effect, no character, no people, no weapon. {STYLE} '
+    return (f'Create a {sec:g}-second VIDEO, SQUARE 1:1, of ONE game visual effect, no character, no people, no weapon. {style or STYLE} '
             f'Effect: {what}.{tone} {KIND[kind][0]} Size: {size}, in the middle of the picture with wide empty margins on all four sides; '
             f'nothing ever touches or leaves the edges. {WIDE} {END[end]} Background: {bg} the whole time, nothing else on it: no ground '
             f'texture, no floor, no landscape, no text. Locked camera: no zoom, no pan, no tilt, no shake, no cuts.')
 
-def card(e, tone=''):
+def card(e, tone='', style=None):
     key, th, kind, sec, end, *_ = e
     return (f'<div class="card"><div class="bh"><h3>{html.escape(th)} <small>{key}</small></h3><span class="chip k{kind}">{kind}</span></div>'
             f'<p class="note">{KIND[kind][1]} · {sec:g} วิ{" · วนซ้ำ" if end == "loop" else ""}</p>'
             f'<div class="blk"><div class="bh"><span>พรอมต์</span><button class="cp">คัดลอก</button></div>'
-            f'<textarea rows="6" readonly>{html.escape(prompt(e, tone))}</textarea></div></div>')
+            f'<textarea rows="6" readonly>{html.escape(prompt(e, tone, style))}</textarea></div></div>')
+CLASSES.insert(0, DIMRAETH)
 cards = '<h2 class="big">ชุดของแต่ละอาชีพ</h2><p class="jump">' + ' · '.join(f'<a href="#c_{k}">{th}</a>' for k, th, _, _ in CLASSES) + '</p>'
 for k, th, tone, items in CLASSES:
-    cards += f'<h2 class="sec" id="c_{k}">{th} <small>{len(items)} อัน</small></h2>' + ''.join(card(e, tone) for e in items)
+    cards += f'<h2 class="sec" id="c_{k}">{th} <small>{len(items)} อัน</small></h2>' + ''.join(card(e, tone, CSTYLE.get(k)) for e in items)
 cards += '<h2 class="big">คลังกลาง (มอน ของ อื่นๆ)</h2>'
 for en, th_sec, items in FX:
     cards += f'<h2 class="sec">{th_sec} <small>{en}</small></h2>'

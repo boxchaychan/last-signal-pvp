@@ -18,6 +18,8 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 #hpb{height:15px} #hpb>i{background:linear-gradient(#ff9a86 0 22%,#e84a42 22% 70%,#a8282a 70%)}
 #hpn{position:absolute;inset:0;font-size:10px;font-weight:800;line-height:15px;text-align:center;text-shadow:0 1px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink),0 -1px 0 var(--ink);font-style:normal}
 #stb{height:9px}
+.nofo{filter:grayscale(.75) brightness(.7)}
+#fob{height:7px} #fob>i{background:linear-gradient(#f0d8ff 0 30%,#b06cf4 30% 72%,#6a2aa8 72%)} #fob.no{animation:no .25s 2} #fob.full{box-shadow:0 0 7px #c890ff}
 #pas{display:flex;align-items:center;gap:5px;font-size:11px;text-shadow:0 1px 0 var(--ink);padding-left:2px}
 #pas i{width:9px;height:9px;transform:rotate(45deg);background:#5a5070;border:2px solid var(--ink);margin-right:1px}
 #pas i.f{background:#ffd23c} #pas.rdy i{background:#fff3a0;box-shadow:0 0 6px #ffd23c;animation:skp .35s infinite alternate}
@@ -116,7 +118,7 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 </head>
 <body>
 <canvas id="cv"></canvas>
-<div id="hud"><canvas id="hpor" width="40" height="40"></canvas><div class="bar" id="hpb"><s></s><i></i><em id="hpn"></em></div><div class="bar" id="stb"><i></i></div><div id="xpb"><b>Lv 1</b><span><i></i></span></div><div id="pas"><i></i><i></i><i></i><i></i><span>จังหวะสังหาร</span></div></div>
+<div id="hud"><canvas id="hpor" width="40" height="40"></canvas><div class="bar" id="hpb"><s></s><i></i><em id="hpn"></em></div><div class="bar" id="stb"><i></i></div><div class="bar" id="fob"><i></i></div><div id="xpb"><b>Lv 1</b><span><i></i></span></div><div id="pas"><i></i><i></i><i></i><i></i><span>จังหวะสังหาร</span></div></div>
 <div id="score"></div><button id="fsBtn" title="เต็มจอ">⛶</button>
 <div id="hotbar"></div><button id="bookBtn">สกิล<em></em></button><button id="autoBtn">ออโต้</button><div id="book"></div>
 <div id="skpc"><div class="sq" id="q1"><span>Q</span><b></b></div><div class="sq" id="q2"><span>E</span><b></b></div><div class="sq" id="q3"><span>R</span><b></b></div><div class="sq" id="q4"><span>F</span><b></b></div><div class="sq" id="q5"><span>Z</span><b></b></div><div class="sq" id="q6"><span>X</span><b></b></div></div>
@@ -1274,6 +1276,11 @@ function aimDir() {
   if (best) return dirOf(best.x - p.x, best.y - p.y);
   const [mx, my] = moveInput(); return (mx || my) ? dirOf(mx, my) : p.dir;
 }
+// concentration (owner 2026-11-12, a Dimraeth clip + "สตามิน่าใช้การโจมตีปกติด้วย"): skills spend p.fo, landing normal attacks fills it,
+// a slow trickle on its own; stamina stays for normal attacks, rolls and the mage's blink
+const FO = {k: 1.6, hit: 7, fin: 11, shot: 6, regen: 2.5};
+function gainFo(p, n) { p.fo = Math.min(100, (p.fo ?? 100) + n); }
+function noFocus() { const b = document.getElementById('fob'); b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); }
 function noStamina() { const b = document.getElementById('stb'); b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); }
 function wantAtk(byMouse) { if (!G || G.over) return; G.p.buf = 'atk'; G.p.bufT = .3; G.p.bufMouse = !!byMouse; }
 function wantRoll() { if (!G || G.over) return; G.p.buf = 'roll'; G.p.bufT = .3; }
@@ -1339,12 +1346,12 @@ function ringSprite(R, col, dash) {   // thin pixel ring (2 px), dashed if asked
 function startSk1(p) {
   if (p.mark && p.mark.m.hp > 0 && G.t < p.mark.until) return blinkBehind(p);
   if (!sk1Ready(p)) return false;
-  if (p.st < SK1.cost * .5) { noStamina(); return false; }
+  if (p.fo < Math.round(SK1.cost * FO.k)) { noFocus(); return false; }
   // where: the mouse on PC; else the nearest slime in range; else straight ahead at full range
   let [tx, ty] = p.skT || skTarget(p, 1); p.skT = null;
   const dx = tx - p.x, dy = ty - p.y;
   const d = dirOf(dx, dy), ar = animRow('attack', d); if (!ar) return false;
-  p.st = Math.max(0, p.st - SK1.cost); p.stT = .6; p.cd[1] = G.t + SK1.cd;
+  p.fo -= Math.round(SK1.cost * FO.k); p.cd[1] = G.t + SK1.cd;
   p.dir = d; p.state = 'throw'; p.a = null; p.th = {t: 0, i: 0, ar, ...throwPlan(ar), tx, ty, out: false};
   return true;
 }
@@ -1507,8 +1514,8 @@ function startSk(p, k) { if (HERO === 'priest') return priestSk(p, k); if (HERO 
   return k === 1 ? startSk1(p) : k === 2 ? startSpin(p) : k === 3 ? startBomb(p) : startFlurry(p); }
 function payFor(p, k) {
   const S2 = SKS[k]; if (!skReady(p, k)) return false;
-  if (p.st < S2.cost * .5) { noStamina(); return false; }
-  p.st = Math.max(0, p.st - S2.cost); p.stT = .6; p.cd[k] = G.t + S2.cd; return true;
+  const c = Math.round(S2.cost * FO.k); if (p.fo < c) { noFocus(); return false; }
+  p.fo -= c; p.cd[k] = G.t + S2.cd; return true;
 }
 function hitMob(m, dmg, fx, fy, kb, col = '#ffe066', big = false, noRing = false) {
   if (m.frail > G.t) dmg = Math.round(dmg * 1.25); if (G.p.bless > G.t) dmg = Math.round(dmg * (1 + PRS[3].dmg));   // the priestess: frail, blessing
@@ -1710,7 +1717,7 @@ function doHit(p, h) {
     if (m.hp <= 0) mobDie(m);
   }
   if (any) { G.hs = Math.max(G.hs, h.hs); G.shake = Math.max(G.shake, h.sh);
-    if (h.kb > 60) G.kick = {x: fx * 6, y: fy * 6, t: .12}; }   // last hit: camera kick (the white screen flash is gone: owner saw it as a leftover background)
+    if (h.kb > 60) G.kick = {x: fx * 6, y: fy * 6, t: .12}; if (p.state === 'atk') gainFo(p, h.kb > 60 ? FO.fin : FO.hit); }   // last hit: camera kick (the white screen flash is gone: owner saw it as a leftover background)
   // no wave and no flying air blade (owner 2026-11-08 "ไม่เอาใบมีดลม"): only the air-coloured arcs inside the frames
   // (act_sheet.py) with their glow; airFrames() is kept for skills later
 }
@@ -1795,6 +1802,7 @@ function hudHotbar() {
     if (tick && left <= 0) skIconAnim(h.cv, k, performance.now() / 1000);   // ready skills play their effect
     h.cd.style.height = (Math.min(1, left / cd) * 100).toFixed(1) + '%'; const txt = left > 0 && left < 99 ? (left < 1 ? left.toFixed(1) : Math.ceil(left)) : ''; if (h.ct.textContent != txt) h.ct.textContent = txt;
     h.lv.forEach((e, j) => e.classList.toggle('f', j < (p.skl[k] || 1)));
+    const nf = (p.fo ?? 100) < Math.round((SKS[k].cost || 0) * FO.k); h.el.classList.toggle('nofo', nf); const mb = document.getElementById('bSk' + k); if (mb) mb.classList.toggle('nofo', nf);   // not enough concentration: dimmed
     h.el.classList.toggle('on5', k === 5 && (p.stealth > G.t || p.guard > G.t)); h.el.classList.toggle('on6', k === 6 && (p.venom > G.t || p.rage > G.t || (p.msh > 0 && p.mshT > G.t))); });
   xpB.textContent = 'Lv ' + p.lv; xpI.style.width = (p.lv >= LVMAX ? 100 : p.xp / needXp(p.lv) * 100).toFixed(1) + '%';
   bookBtn.classList.toggle('pts', p.pts > 0); bookPts.textContent = p.pts || '';
@@ -3053,7 +3061,7 @@ function spawnSlimes() {
 function stepPlayer(dt) {
   const p = G.p; if (HERO === 'priest') stepPriest(p, dt); p.inv = Math.max(0, p.inv - dt); const ox = p.x, oy = p.y;
   if (p.bufT > 0) { p.bufT -= dt; if (p.bufT <= 0) p.buf = null; }
-  p.stT -= dt; if (p.stT <= 0) p.st = Math.min(100, p.st + 42 * dt);
+  p.stT -= dt; if (p.stT <= 0) p.st = Math.min(100, p.st + 42 * dt); p.fo = Math.min(100, (p.fo ?? 100) + FO.regen * dt);
   if (p.bzr && p.rage <= G.t) bzRageEnd(p);
   if (p.kx || p.ky) { p.x += p.kx * dt; p.y += p.ky * dt; p.kx *= Math.pow(.0005, dt); p.ky *= Math.pow(.0005, dt); if (Math.abs(p.kx) + Math.abs(p.ky) < 5) p.kx = p.ky = 0; }
   const [mx, my] = moveInput();
@@ -3110,9 +3118,9 @@ function stepPlayer(dt) {
       const hi = P.hits.indexOf(a.i), fin = a.i === P.last;
       if (hi >= 0 && !a.done[a.i]) { a.done[a.i] = 1; if (HERO !== 'mage' && HERO !== 'archer') { const [tx2, ty2] = weaponTip(p); parts(tx2, ty2, p.rage > G.t ? 'red' : SWL ? 'ice' : 'white', fin ? 8 : 5, {k: 'ln', dir: Math.atan2(DV[p.dir][1], DV[p.dir][0]), spread: 1.4, sp: 360, life: .16}); }
         // swordsman normal hits: no extra slash effect (owner "เอาเอฟเฟกต์ตีธรรมดาออก ไม่สวย"); swSlash kept for later
-        if (HERO === 'archer') archerShot(p, P.dmg[hi], P.crit);
-        else if (HERO === 'mage') mageBolt(p, P.dmg[hi], fin);
-        else if (HERO === 'priest') holyBolt(p, P.dmg[hi], fin);
+        if (HERO === 'archer') { archerShot(p, P.dmg[hi], P.crit); if (nearestMob(p, 700)) gainFo(p, FO.shot); }
+        else if (HERO === 'mage') { mageBolt(p, P.dmg[hi], fin); if (nearestMob(p, 480, .35)) gainFo(p, fin ? FO.hit : FO.shot); }
+        else if (HERO === 'priest') { holyBolt(p, P.dmg[hi], fin); if (nearestMob(p, 460, .3)) gainFo(p, fin ? FO.hit : FO.shot); }
         else { if (HERO === 'rogue') rogueCres(p, hi, fin);
           if (HERO === 'berserker') { if (!bzFx('vfx_bzswing', p, 30, -34, {sc: fin ? 1.15 : .95})) rogueCres(p, hi, fin, 1); if (p.rage > G.t) bzWave(p); }   // the Guardian's new moves carry their own swooshes   // owner "ดาบก็สั้น ขยายระยะฟัน": a long steel crescent shows his reach
           doHit(p, SWL ? {dmg: P.dmg[hi], kb: fin ? 150 : 50, hs: fin ? .1 : .06, sh: fin ? 6 : 3, reach: (fin ? 150 : 170) * (HERO === 'guardian' || HERO === 'berserker' ? 1.35 : 1), cone: fin ? 70 : 105, slash: fin ? 2 : 1} : {dmg: P.dmg[hi], kb: fin ? 120 : 22, hs: fin ? .09 : .05, sh: fin ? 5 : 2}); } }
@@ -3797,7 +3805,7 @@ const HELP = {priest: 'WASD เดิน · คลิกซ้าย / J ยิ�
   swordsman: 'WASD เดิน · คลิกซ้าย / J ฟัน · Space กลิ้ง · Q ฟาดแยกพื้น (เล็ง) · E พายุดาบ (กดค้าง) · R ชาร์จฟัน (ค้างแล้วปล่อย) · F กระโดดทุบ (เล็ง) · Z ตั้งรับสวน · X คลั่ง · ติดตัว: ตีโดนได้โล่',
   mage: 'WASD เดิน · คลิกซ้าย / J ยิงเวท · Space กลิ้ง · Q ลูกไฟ (เล็ง) · E สายฟ้าโซ่ · R วงน้ำแข็ง · F วาร์ป · Z อุกกาบาต (เล็ง) · X โล่เวท · ติดตัว: ธาตุประสาน'};
 if (HELP[HERO]) document.getElementById('help').textContent = HELP[HERO];
-const hpI = document.querySelector('#hpb>i'), stI = document.querySelector('#stb>i'), scoreEl = document.getElementById('score'), hpS = document.querySelector('#hpb>s'), hpN = document.getElementById('hpn');
+const foI = document.querySelector('#fob>i'), foEl = document.getElementById('fob'), hpI = document.querySelector('#hpb>i'), stI = document.querySelector('#stb>i'), scoreEl = document.getElementById('score'), hpS = document.querySelector('#hpb>s'), hpN = document.getElementById('hpn');
 const HUDL = {lag: 100, hp: 100, t: 0}, HUDEL = document.getElementById('hud');   // the pale trail behind the HP bar: holds a moment after a hit, then drains
 { const c = document.getElementById('hpor'), im = new Image(); im.onload = () => { const g = c.getContext('2d'); g.imageSmoothingEnabled = false;   // the face: the front view's head
     const C = 116, x0 = 2 * C, d = document.createElement('canvas'); d.width = C; d.height = C; const dg = d.getContext('2d'); dg.drawImage(im, x0, 0, C, C, 0, 0, C, C);
@@ -3806,7 +3814,7 @@ const HUDL = {lag: 100, hp: 100, t: 0}, HUDEL = document.getElementById('hud'); 
 const SKB = [1, 2, 3, 4, 5, 6].map(k => [document.getElementById('bSk' + k), document.getElementById('q' + k)]);
 function hud() { if (!G) return; hudHotbar(); const hp = Math.max(0, G.p.hp), now = performance.now() / 1000, dt = Math.min(.1, now - (HUDL.t || now)); HUDL.t = now;
   if (hp < HUDL.hp) HUDL.hold = .45; HUDL.hp = hp; if (hp > HUDL.lag) HUDL.lag = hp; else if ((HUDL.hold -= dt) <= 0) HUDL.lag = Math.max(hp, HUDL.lag - 60 * dt);
-  hpI.style.width = hp + '%'; hpS.style.width = HUDL.lag + '%'; hpN.textContent = Math.ceil(hp) + ' / 100'; stI.style.width = G.p.st + '%';
+  hpI.style.width = hp + '%'; hpS.style.width = HUDL.lag + '%'; hpN.textContent = Math.ceil(hp) + ' / 100'; stI.style.width = G.p.st + '%'; foI.style.width = (G.p.fo ?? 100) + '%'; foEl.classList.toggle('full', (G.p.fo ?? 100) >= 100);
   const pc = G.p.pc || 0; PASI.forEach((e, i) => e.classList.toggle('f', i < pc)); if (HERO === 'rogue') pasEl.classList.toggle('rdy', pc === PAS.n - 1); stbEl.classList.toggle('gain', G.t - (G.p.stGain || -9) < .35);
   if (SWL) ironI.style.width = ((G.p.iron || 0) / IRON.max * 100).toFixed(1) + '%';
   for (let k = 1; k <= 6; k++) { const mk = k === 1 && !!G.p.mark, cd = mk ? 0 : Math.max(0, (G.p.cd[k] || 0) - G.t) / SKS[k].cd;

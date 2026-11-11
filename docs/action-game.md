@@ -985,3 +985,13 @@ Moves per hero at that point (own directions, the rest mirrored/borrowed): run 8
 the Berserker's v4 look (side view, left/right); attacks: swordsman / mage / priest 5, archer 6, rogue 4 (south-east borrows east),
 Guardian 1 (side), Berserker v4 side view (sweep, vertical, spin, chain, leap). Missing: Guardian and Berserker run/attack facing
 up and down.
+
+## Concentration + Dimraeth-style effect prompts (2026-11-12)
+Owner sent a Dimraeth "Using Skills" clip (skills cost concentration, landing attacks refills it) and "สตามิน่าใช้การโจมตีปกติด้วย":
+`FO` in action.html: skills (`payFor`, the rogue's Q) spend `p.fo` = cost × 1.6, no stamina; landing a normal hit gives 7 (11 on a
+finisher), a basic shot fired at a monster in reach 6, and 2.5 per second on its own. Stamina stays for normal attacks, rolls and the
+mage's blink. HUD: purple bar `#fob` under stamina, skills without enough concentration are greyed (`.nofo`).
+Effects from the clip ("เอาเป็นพร้อมวิดีโอมาก็ได้ เจน meta"): a 7-card set "แบบ Dimraeth (จากคลิป)" at the top of `docs/vfx-pack.html`
+(`DIMRAETH` + `CSTYLE` in `tools/art/vfx_pack.py`: glowing light instead of thick ink): fire spin, triple gold slash, big fire
+crescent, crit hit ring, spider-web ground crack, wind streaks, electric shards. The clip's white ghost clone and red body flash are
+code jobs (after-images / tint), not videos.
