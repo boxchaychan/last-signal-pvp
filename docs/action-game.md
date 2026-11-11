@@ -972,3 +972,6 @@ list) plays this map with the full fight system. `TDM` / `TDK` (= 4/3 world px p
 S): WW × WH 2400 × 1467, the walk grid `WATER` (4 px cells) comes from block.png, `drawGroundChunks` draws ground.png, props come from
 the atlas (`q.td`, all `soft`: the block picture already holds their footprints), tree crowns `TD.over` are drawn over the bodies,
 camps = the map's `spawn` groups, roster `ROSTER.td1`. Tested: stairs up, cliffs and the pond block, auto fight, 60 fps.
+td1 view (owner 2026-11-11 "ภาพจอก็ไม่เท่ากับเทส"): `onResize` gives td1 the map.html view (~400 map px tall, K = whole screen px
+per map px, S = K / TDK); the hero is then 2/3 world px per art px and, when K is odd (`TDS`), hero and monsters are drawn smooth.
+A ⛶ button (`#fsBtn`, under the score) toggles fullscreen on every map (start() only asks for it on touch when the start was a tap).
