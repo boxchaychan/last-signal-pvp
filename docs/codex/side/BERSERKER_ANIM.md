@@ -13,6 +13,9 @@ same kind of greatsword berserker doing the move, frame by frame (the red number
 picture and copy its POSES and its timing frame by frame; draw the character only from `1_SIDE_main.png` (the silhouettes
 are an older design: copy the body positions, not the shapes of the armour). Guides: idle, run, attack1 (horizontal slash),
 attack3 (overhead slash), spin, chain, slam, roll, hurt, death. Rows without a guide follow the text.
+Guides can also come from the owner's Meta AI clips (motion only, the face does not matter): Claude runs
+`python3 tools/art/video_pose_guide.py <clip.mp4> <action> <frames> [start s] [end s]` (N evenly spaced frames → grey
+silhouettes, numbered). Example: `walk_video_POSES.png` = one walk cycle of the owner's clip (1.0-2.35 s, 12 frames).
 
 ## Character checklist (check every frame against it)
 1. Closed black demon helmet with a crown of tall jagged spikes and a red crest, narrow visor with glowing RED eyes, no face.
