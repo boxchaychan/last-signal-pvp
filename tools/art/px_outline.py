@@ -4,7 +4,7 @@
 # round the silhouette (the neighbour's own colour darkened, like a hand-drawn line).
 import numpy as np
 from scipy import ndimage
-def outline(a, pale=95, dark=.28):
+def outline(a, pale=95, dark=.28, black=None):   # black = a fixed outline colour, e.g. (14, 10, 18)
     a = a.astype(int).copy()
     for _ in range(2):
         m = a[..., 3] > 0; e = m & ~ndimage.binary_erosion(m)
@@ -22,5 +22,5 @@ def outline(a, pale=95, dark=.28):
         sh = np.roll(np.roll(a, dy, 0), dx, 1); ok = sh[..., 3] > 0
         lum = sh[..., :3].sum(2); cur = acc.sum(2)
         better = ok & (lum < cur); acc[better] = sh[better][:, :3]
-    a[ring, :3] = (acc[ring] * dark + np.array([20, 14, 26]) * (1 - dark)).astype(int); a[ring, 3] = 255
+    a[ring, :3] = black if black is not None else (acc[ring] * dark + np.array([20, 14, 26]) * (1 - dark)).astype(int); a[ring, 3] = 255
     return a.clip(0, 255).astype(np.uint8)
