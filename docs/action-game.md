@@ -975,3 +975,6 @@ camps = the map's `spawn` groups, roster `ROSTER.td1`. Tested: stairs up, cliffs
 td1 view (owner 2026-11-11 "ภาพจอก็ไม่เท่ากับเทส"): `onResize` gives td1 the map.html view (~400 map px tall, K = whole screen px
 per map px, S = K / TDK); the hero is then 2/3 world px per art px and, when K is odd (`TDS`), hero and monsters are drawn smooth.
 A ⛶ button (`#fsBtn`, under the score) toggles fullscreen on every map (start() only asks for it on touch when the start was a tap).
+td1 vs map.html (owner 2026-11-11 "ทำไมคนละระดับ" + two screenshots): the Berserker's v4 side-view sheets (bz4, figure 135 art px)
+were drawn at a whole screen px per art px = ~90 CSS px tall, almost twice the walk test; td1 now draws him at .54 world px per art
+px (~73 world px like the other heroes), monsters scaled by `TDMS` to the walk test's sizes, and the walk test's dark edges are drawn.
