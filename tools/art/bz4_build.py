@@ -13,6 +13,7 @@ CLIPS = {
     'sweep': ('test_sweep', (72, 154), [1, 2, 4, 5, 6, 8, 10, 12, 13, 14, 15, 16], [2]),
     'vert':  ('test_vert', (72, 234), [1, 2, 3, 4, 6, 7, 9, 11, 13, 14, 15, 16], [4]),
     'spin':  ('test_spin', (128, 170), list(range(1, 25)), [4, 10, 16]),
+    'run':   ('test_run', (72, 146), list(range(4, 17)), []),   # 1-3 = starting from the stance, 4-16 loop
 }
 
 def clean(im, strip=False):
