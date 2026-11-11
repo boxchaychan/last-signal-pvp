@@ -1052,3 +1052,6 @@ Sharpness (owner 2026-11-12 "ไม่คมเบลอ"): on a 3x phone td1 ha
 smoothing blurred it. "Sharp bilinear" now: `as2Sharp(img, k)` caches the sheet blown up by a whole number with hard pixels, and only
 that copy is shrunk a little with smoothing (crisp edges, no blur). Used by the Assassin (`drawAs2`), every hero cell (`drawCell`
 when `TDS`), the Berserker v4 on td maps, and the monsters (`drawMob2` when `TDS`). 58-60 fps on the phone test.
+Class-2 sprites cleaned (owner 2026-11-12 "พวกคลาส 1 ดูคมหมด" = the class-2 heroes looked broken): the Assassin and Berserker v4 clips
+had a speckled pale rim from the white background and no outline. `tools/art/px_outline.py` (used by as2_build.py and bz4_build.py)
+drops pale edge pixels and specks and draws a 1 px dark outline like the class-1 sheets.
