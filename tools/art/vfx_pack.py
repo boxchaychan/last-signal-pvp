@@ -35,6 +35,24 @@ END = {'once': 'Quick build-up, a strong burst, then it fades out completely and
 CSTYLE = {'dimraeth': ('2D game skill VFX in the style of polished pixel-art action RPGs like Dimraeth: glowing light-based effects, '
   'bright additive glow, white-hot cores fading to gold and orange, soft bloom, crisp curved crescent shapes, motion streaks and '
   'small four-point star glints; thin dark edges only where needed, no thick black ink outlines, smooth fast animation.')}
+# owner 2026-11-12 "พรอมต์แอสซาซินหน่อย คลาส 2": the rogue's class 2 (black outfit, glowing purple, two curved daggers, shuriken;
+# art/incoming/action/rogue/class2/assassin_cut.png) in the same glowing look as the Dimraeth set, in violet
+CSTYLE['assassin'] = ('2D game skill VFX in the style of polished pixel-art action RPGs like Dimraeth: glowing light-based effects, '
+  'bright additive glow, white-hot cores fading to bright violet and deep purple, soft bloom, razor-thin sharp crescent and X shapes, '
+  'fast motion streaks and small four-point star glints; thin dark edges only where needed, no thick black ink outlines, smooth very fast animation.')
+ASSASSIN = ('assassin', 'แอสซาซิน (คลาส 2 นักมีด)', 'Colours ONLY white-hot cores, bright NEON VIOLET and deep purple light, with wisps of black shadow; no gold, no orange, no green, no blue.', [
+  ('as_hit', 'โดนแทง (ตีธรรมดา)', 'B', 0.6, 'once', 'small: one sixth of the picture wide', 'a quick twin-dagger hit: two thin crossing violet slash lines forming a sharp X with a white-hot centre, a tiny star glint, then gone', GREEN),
+  ('as_combo', 'ฟันมีดคู่รัว', 'S', 0.9, 'once', 'half of the picture wide', 'a lightning-fast twin-dagger combo: five or six very thin curved violet slash crescents criss-crossing from left to right one after another, white-hot edges, purple sparks and tiny star glints', GREEN),
+  ('as_shuriken', 'ดาวกระจายพุ่ง', 'S', 0.8, 'once', 'the star one tenth wide, flying across half of the picture', 'one spinning four-point shuriken made of glowing violet light flying fast from left to right, a thin purple light trail and a small violet burst at the end', GREEN),
+  ('as_fan', 'ดาวกระจายพัด 5 ดวง', 'S', 1, 'once', 'a fan across half of the picture', 'five spinning violet light shurikens fanning out from a point on the left and flying to the right in a wide fan, each with a thin purple trail', GREEN),
+  ('as_step', 'ก้าวเงา (วาร์ปหลังเป้า)', 'B', 0.8, 'once', 'one fifth of the picture wide', 'a shadow step: a burst of black shadow wisps and violet light collapsing into a point with a sharp purple flash, a few violet feathers of light, then gone', GREEN),
+  ('as_xcut', 'กากบาทผ่าพื้น', 'D', 1.2, 'once', 'an X across half of the picture', 'seen from above: two huge glowing violet slash lines cut the ground in a giant X, one after the other, the cut glows white-hot, then it bursts into violet light and fades', GREEN),
+  ('as_smoke', 'ระเบิดควันเงา', 'B', 1.5, 'once', 'one third of the picture wide, low', 'a smoke bomb: a small violet flash, then dark black-purple smoke billowing into a wide low cloud with glowing violet edges and sparks inside, then thinning out', GREEN),
+  ('as_mark', 'เครื่องหมายล่า (วนซ้ำ)', 'D', 2, 'loop', 'a circle one fifth of the picture wide', 'seen from above: a thin glowing violet rune ring with four sharp points turning slowly on the ground, faint purple light pulsing', GREEN),
+  ('as_execute', 'X ประหาร (ไม้ตาย)', 'B', 2, 'once', 'one third of the picture wide', 'an assassin finisher: dozens of razor-thin violet slash lines appear all round one point from every angle in a split second like a sphere of cuts, freeze, then everything bursts in a big violet explosion with a white-hot flash, black shadow wisps and star glints', GREEN),
+  ('as_venom', 'มีดพิษ (ระเบิดพิษ)', 'B', 1, 'once', 'one quarter of the picture wide', 'a venom burst: glowing purple poison drops and bubbles splashing out from a point, a ring of violet mist, then it fades', GREEN),
+])
+
 DIMRAETH = ('dimraeth', 'แบบ Dimraeth (จากคลิป)', 'Colours: white-hot cores, bright gold and orange fire, a few warm red tips; glowing, like light.', [
   ('dm_firespin', 'หมุนดาบไฟรอบตัว', 'B', 1.2, 'once', 'a ring one third of the picture wide, low and flat like a disc seen from a little above', 'a whirlwind of orange fire spinning one full turn round an empty spot where a fighter stands: two or three flaming crescents chasing each other round in a circle, curling flames, embers flung outward, then it bursts and fades', GREEN),
   ('dm_goldslash', 'ฟันทองรัว 3 ที', 'S', 0.9, 'once', 'half of the picture wide', 'three very fast golden crescent sword slashes from left to right, overlapping each other, glowing white-hot edges, gold sparks and tiny star glints flying off', GREEN),
@@ -218,7 +236,7 @@ def card(e, tone='', style=None):
             f'<p class="note">{KIND[kind][1]} · {sec:g} วิ{" · วนซ้ำ" if end == "loop" else ""}</p>'
             f'<div class="blk"><div class="bh"><span>พรอมต์</span><button class="cp">คัดลอก</button></div>'
             f'<textarea rows="6" readonly>{html.escape(prompt(e, tone, style))}</textarea></div></div>')
-CLASSES.insert(0, DIMRAETH)
+CLASSES.insert(0, DIMRAETH); CLASSES.insert(1, ASSASSIN)
 cards = '<h2 class="big">ชุดของแต่ละอาชีพ</h2><p class="jump">' + ' · '.join(f'<a href="#c_{k}">{th}</a>' for k, th, _, _ in CLASSES) + '</p>'
 for k, th, tone, items in CLASSES:
     cards += f'<h2 class="sec" id="c_{k}">{th} <small>{len(items)} อัน</small></h2>' + ''.join(card(e, tone, CSTYLE.get(k)) for e in items)

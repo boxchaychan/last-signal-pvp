@@ -1004,3 +1004,7 @@ dm_goldslash; every hero's critical-hit flash = dm_crithit; the mage's chain lig
 Owner's next Meta clip (2026-11-12): a black crescent with a neon-red edge and red fire / black smoke (the Berserker colours) →
 `dm_bzcres` (230 wide, 0.75 s; the smoke's green spill neutralised and the last 6 frames faded out in the sheet because the clip ended
 with the crescent still up). Drawn on the Berserker's R charge release, along the aim, next to his crack line.
+Assassin effect prompts (owner 2026-11-12 "พรอมต์แอสซาซินหน่อย คลาส 2"): set `ASSASSIN` (10 cards, `as_*`, glowing violet, the
+Dimraeth look via `CSTYLE['assassin']`) second on `docs/vfx-pack.html#c_assassin`: hit X, twin-dagger combo, shuriken, shuriken fan,
+shadow step, ground X cut, smoke bomb, hunt mark (loop), execute finisher, venom burst. The Assassin herself is not in the game
+(removed 2026-11-11); her kit is still to be decided.
