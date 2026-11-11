@@ -1048,3 +1048,7 @@ still the rogue's. Missing moves: idle, front / back runs, hurt, death, a right-
 Fix (owner 2026-11-12 "ทำไมแอสตัวแปลกๆ"): the swoosh cleaner in as2_build.py also cut her light skin round the eyes (her face
 showed see-through holes in the attack frames); it now removes only big light patches (≥60 px). Her normal hits drew the old rogue's
 white ice crescents in front of her; she now gets a few short white stab lines at the blade instead.
+Sharpness (owner 2026-11-12 "ไม่คมเบลอ"): on a 3x phone td1 has K = 3 (S = 2.25), so a hero art pixel is 1.5 screen px and plain
+smoothing blurred it. "Sharp bilinear" now: `as2Sharp(img, k)` caches the sheet blown up by a whole number with hard pixels, and only
+that copy is shrunk a little with smoothing (crisp edges, no blur). Used by the Assassin (`drawAs2`), every hero cell (`drawCell`
+when `TDS`), the Berserker v4 on td maps, and the monsters (`drawMob2` when `TDS`). 58-60 fps on the phone test.
