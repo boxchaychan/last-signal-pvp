@@ -294,7 +294,11 @@ if T2: BAD |= dil(deck, 6)
 for k_, x_, y_ in SPW: BAD |= ((xx - x_) / 46) ** 2 + ((yy - y_) / 32) ** 2 < 1
 WATERS = (pond if not T2 else river & ~deck)
 NUD = [(0, 0)] + [(round(math.cos(a) * r), round(math.sin(a) * r * .7)) for r in (14, 28, 42, 56) for a in np.linspace(0, 6.28, 12, endpoint=False)]
+# owner 2026-11-12: no village things in the wild (lamps, benches, wells, hay, tents, crates, signs: they look usable and do not
+# belong in a forest), no stone stairs without a hill, no reeds in the water (they read as bushes)
+SKIP = lambda n: n.startswith(('camp_', 'village_')) or n in ('ruins_7', 'water_2', 'water_3', 'water_4', 'water_5')
 def H_(kind, name, h, x, y, flip=None, wet=False):
+    if SKIP(name): return
     f = name if name.startswith('art/') else P2 + name + '.png'
     for dx, dy in NUD:
         X, Y = x + dx, y + dy
@@ -316,6 +320,9 @@ if not T2:
     for k, n, h, x, y in (('solid', 'camp_0', 96, 255, 830), ('small', 'camp_1', 50, 335, 862), ('small', 'camp_2', 44, 182, 846), ('small', 'camp_3', 46, 176, 896),
                           ('small', 'camp_5', 48, 222, 918), ('small', 'camp_8', 40, 270, 935), ('small', 'logs2_0', 44, 350, 915), ('small', 'camp_6', 56, 400, 845),
                           ('fence', 'village_1', 40, 120, 800), ('small', 'logs2_2', 46, 110, 900)):
+        H_(k, n, h, x, y)
+    # where the camp was: a fallen-tree corner
+    for k, n, h, x, y in (('small', 'logs2_0', 50, 250, 850), ('small', 'logs2_3', 46, 320, 880), ('bush', 'bushes_6', 46, 200, 900), ('small', 'stones_5', 34, 290, 930)):
         H_(k, n, h, x, y)
     # the crossroads: lamps, a signpost, a well, hay, a bench
     for k, n, h, x, y in (('small', 'village_4', 88, 470, 668), ('small', 'village_4', 88, 628, 560), ('small', 'village_2', 56, 515, 652), ('solid', 'village_5', 92, 735, 560),
@@ -347,6 +354,9 @@ else:
                        ('trees_autumn_1', 225, 620, 470), ('trees_autumn_2', 215, 1090, 300), ('trees_autumn_3', 190, 1180, 420), ('trees_autumn_3', 180, 380, 1030),
                        ('trees_autumn_0', 225, 1700, 1010), ('trees_autumn_1', 220, 980, 1040)):
         H_('tree2', n, h, x, y)
+    # the north-west clearing: mushrooms and stumps
+    for k, n, h, x, y in (('small', 'logs2_3', 46, 290, 490), ('small', 'logs2_2', 50, 360, 530), ('bush', 'bushes_2', 44, 230, 520), ('small', 'stones_9', 32, 320, 570)):
+        H_(k, n, h, x, y)
     # camp in the north-west clearing
     for k, n, h, x, y in (('solid', 'camp_0', 96, 290, 480), ('small', 'camp_1', 50, 370, 512), ('small', 'camp_2', 44, 215, 500), ('small', 'camp_7', 50, 232, 546),
                           ('small', 'camp_8', 40, 300, 560), ('small', 'logs2_0', 44, 380, 566), ('small', 'village_3', 58, 150, 712)):
