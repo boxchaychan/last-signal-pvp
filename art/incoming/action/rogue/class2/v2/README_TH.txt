@@ -1,6 +1,6 @@
 แอสซาซินชุดใหม่ (นักมีดคลาส 2) ทำใน ChatGPT แล้วค่อยไป PixelLab
 
-1. เปิด ChatGPT สร้างภาพ แนบ 3 รูป: 1_WHO_rogue.png, 2_STYLE_berserker.png, 3_SIZE_female_ruler.png
+1. เปิด ChatGPT สร้างภาพ แนบ 2 รูป: 1_WHO_rogue.png, 2_SIZE_female_ruler.png
 2. คัดลอกข้อความใน PROMPT_GPT.txt ทั้งหมด วางแล้วส่ง
 3. ได้ภาพแล้วส่งกลับมาเป็นไฟล์ (ไม่ใช่วางในแชท)
 4. Claude เช็กขนาดเทียบนักมีด/นักดาบ แล้วแจ้งเครดิตก่อนทุกงาน PixelLab:
