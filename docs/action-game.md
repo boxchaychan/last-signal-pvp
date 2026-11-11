@@ -1060,3 +1060,5 @@ drops pale edge pixels and specks and draws a 1 px dark outline like the class-1
 Assassin redraw recoloured for free (owner 2026-11-12 "แก้อะไร สีหรือ"): `pl_redraw200_purple.png` = the redraw with its grey steel
 (blades, armour edges) tinted neon violet and the purple cloth a bit more vivid (preview `pl_redraw200_purple_x4.png`). Not in the game
 yet: the run and attack clips were made from the faithful picture and would have to be made again from this one (1 gen each).
+Owner 2026-11-12 (design note, not built): the rogue's spin skill becomes the Assassin's AWAKENING skill; the rogue's parallel
+class 2 (the other branch next to the Assassin) is the NINJA.
