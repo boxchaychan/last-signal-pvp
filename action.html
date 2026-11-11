@@ -3413,7 +3413,9 @@ const BZ4SEG = {chain: [['chain', 0, 1, 0, .4], ['chain', 2, 7, .4, .8], ['chain
   shackle: [['vert', 0, 7, 0, 1]], release: [['vert', 3, 8, 0, 1]]};
 function drawBz4(p) {
   const m = BZ4.m; if (!m || !BZ4.still.complete) return false;
-  const n = N128 ? (HZ || Math.max(1, Math.round(S * 2 / 3))) : S, d = n / S, x = Math.round(p.x * S) / S; let y = Math.round(p.y * S) / S;
+  // td1: his 135 px figure drawn as tall as the other heroes there (~73 world px, like map.html), smooth when it is not whole pixels
+  if (TDM) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
+  const n = N128 ? (HZ || Math.max(1, Math.round(S * 2 / 3))) : S, d = TDM ? .54 : n / S, x = Math.round(p.x * S) / S; let y = Math.round(p.y * S) / S;
   const dx = DV[p.vd !== undefined && (p.state === 'idle' || p.state === 'move') ? p.vd : p.dir][0];
   if (dx < -.1) BZ4.left = true; else if (dx > .1) BZ4.left = false;    // straight up / down keeps the last side
   let img = BZ4.still, f = 0;
@@ -3478,6 +3480,7 @@ function drawPlayerBody2(p) {
   drawStill(p.dir, p.x, y);
 }
 const MSH = {}, MRG = {};
+const TDMS = {wolf: .85, shroom: .77, skeleton: .92, boar_guard: .93, goblin_archer: .96};
 function drawMob2(m) {
   if (TDS) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
   const T = MOBS[m.kind], M = T.m; let row = M.rows.walk, f = 0;
@@ -3492,7 +3495,8 @@ function drawMob2(m) {
   const hr = M.rows.hurt !== undefined && m.hp > 0 && m.st === 'hurt', k = m.hp > 0 && !hr ? Math.max(0, m.hit / .12) : 0;
   if (hr) { row = M.rows.hurt; f = Math.min(5, m.t / .045 | 0); }
   else if (M.rows.hurt !== undefined && m.hp > 0 && m.st !== 'atk' && G.t - (m.flT || -9) < .18) { row = M.rows.hurt; f = Math.min(2, (G.t - m.flT) / .06 | 0); }   // stout ones flinch without stopping
-  const one = img => { ctx.save(); ctx.translate(X - m.face * 5 * k, Y); ctx.scale((m.face < 0 ? -1 : 1) * (1 + .12 * k), 1 - .12 * k);
+  const ts = TDM ? TDMS[m.kind] || 1 : 1;   // td1: monsters as big next to the hero as in map.html
+  const one = img => { ctx.save(); ctx.translate(X - m.face * 5 * k, Y); ctx.scale((m.face < 0 ? -1 : 1) * (1 + .12 * k) * ts, (1 - .12 * k) * ts);
     ctx.drawImage(img, f * D.w, row * D.h, D.w, D.h, -D.fx / dk, -D.fy / dk, D.w / dk, D.h / dk); ctx.restore(); };
   one(T.img); ctx.filter = 'none';
   if (m.frzOn && m.hp > 0 && PFX.pfx_freeze) { const P = PFX.pfx_freeze, q = P.m, e = G.t - m.frz0, left = m.frz - G.t,   // the ice block
@@ -3758,6 +3762,11 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0d0f0c'; const vr = Math.round(OX + VW * S), vb = Math.round(OY + VH * S);
   if (OY > 0) { ctx.fillRect(0, 0, cv.width, OY); ctx.fillRect(0, vb, cv.width, cv.height - vb); }
   if (OX > 0) { ctx.fillRect(0, 0, OX, cv.height); ctx.fillRect(vr, 0, cv.width - vr, cv.height); }
+  if (TDM) { if (!TD.vig || TD.vig.width !== cv.width || TD.vig.height !== cv.height) {   // dark edges like map.html (owner 2026-11-11 "ลองดูเองสิ")
+      const c = TD.vig = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const g = c.getContext('2d');
+      const gr = g.createRadialGradient(c.width / 2, c.height / 2, c.height * .35, c.width / 2, c.height / 2, Math.hypot(c.width, c.height) * .62);
+      gr.addColorStop(0, 'rgba(10,14,6,0)'); gr.addColorStop(1, 'rgba(10,14,6,.55)'); g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height); }
+    ctx.drawImage(TD.vig, 0, 0); }
   // screen-space: hit flash, joystick, wave banner
   ctx.setTransform(Q, 0, 0, Q, 0, 0);
   if (G.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (G.flash / .09 * .16).toFixed(3) + ')'; ctx.fillRect(0, 0, innerWidth, innerHeight); }
