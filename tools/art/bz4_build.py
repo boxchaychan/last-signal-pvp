@@ -15,6 +15,8 @@ CLIPS = {
     'spin':  ('test_spin', (128, 170), list(range(1, 25)), [4, 10, 16]),
     'run':   ('test_run', (72, 146), list(range(4, 17)), []),   # 1-3 = starting from the stance, 4-16 loop
     'idle':  ('test_idle', (72, 146), list(range(1, 9)), []),
+    'run_s': ('test_run_s', (70, 146), list(range(1, 17)), []),  # running toward the camera (2026-11-12, 1 gen)
+    'run_n': ('test_run_n', (70, 146), list(range(1, 17)), []),  # running away from the camera (1 gen)
     'hurt':  ('test_hurt', (72, 146), list(range(1, 9)), []),
     'roll':  ('test_roll', (72, 146), list(range(1, 13)), []),
     'death': ('test_death', (90, 154), list(range(1, 17)), []),
