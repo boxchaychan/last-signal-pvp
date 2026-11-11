@@ -43,20 +43,37 @@ silhouettes, numbered). Example: `walk_video_POSES.png` = one walk cycle of the 
 - Mark the row `done` here. Work in order; when the owner says "ทำท่าเบอร์เซิร์กเกอร์ต่อ", continue at the first `todo`.
 - Branch `codex/hero-berserker`, open a pull request, never merge, never push to `main`. When you stop, `git checkout main`.
 
+## Several sheets per move (owner 2026-11-11 "สั่งชีทแบบละเอียด แบ่งหลายชีท")
+Big moves are split into PARTS, one picture per part, 12 frames each (6x2). The LAST frame of a part and the FIRST frame of
+the next part are the SAME pose, so Claude can join them without a jump. Attach the previous part's picture too, so the
+character stays identical. File names: `anim/<action>_p1.png`, `anim/<action>_p2.png`, ...
+
 ## Queue
-| # | action | frames / grid | what happens (key poses; draw the in-betweens evenly between them) | status |
-|---|--------|---------------|------------------------------|--------|
-| 1 | idle | 12 / 6x2 | Standing ready, sword on the right shoulder. One slow heavy breath: chest and shoulders rise (frames 1-6), the cape lifts a little, then come down, knees bending slightly at the lowest point (7-12). Frame 12 leads back into 1. Only small moves. | todo |
-| 2 | walk | 12 / 6x2 | (done by the owner, `anim/walk_sheet_owner.webp`) | done |
-| 3 | run | 12 / 6x2 | Heavy run, body leaning forward, sword stays on the shoulder. 1 right foot lands far in front, 3 lowest, 4 push off, 5 both feet off the ground, 6 left knee drives forward, 7 left foot lands, 9 lowest, 10 push off, 11 airborne, 12 right knee forward. Cape streams back. Loops. | todo |
-| 4 | attack1 | 12 / 6x2 | HIT 1, wide horizontal slash. 1 ready pose (as the reference); 2-4 wind-up: takes the sword off the shoulder and pulls it far back, body twisted away; 5-6 step forward, the blade comes round at waist height; 7 IMPACT: arms fully stretched, the blade level and reaching FAR in front; 8-9 follow-through past the front; 10-12 sword back onto the shoulder. | todo |
-| 5 | attack2 | 12 / 6x2 | HIT 2, rising slash. 1 ready; 2-4 drops the blade low behind him, crouching; 5-6 sweeps it forward low near the ground; 7 IMPACT: swings up diagonally, the tip high in front, arms stretched; 8-9 blade above the head; 10-12 back to the ready pose. | todo |
-| 6 | attack3 | 16 / 4x4 | HIT 3, crushing overhead slam. 1 ready; 2-4 both hands on the grip, lifting; 5-6 sword straight up high above the head, up on his toes; 7-8 the blade starts down, big step forward; 9 IMPACT: the blade smashes into the ground FAR in front, deep crouch; 10-12 holds the low pose (small shake); 13-14 pulls the sword up; 15-16 ready pose. | todo |
-| 7 | jump | 12 / 6x2 | 1-2 crouch to jump; 3 take-off, legs straight; 4-5 rising, knees tucked, cape below; 6-7 top of the jump; 8-10 falling, legs reaching down, cape up; 11-12 landing crouch. Sword stays on the shoulder. Feet leave the ground line in 3-10. | todo |
-| 8 | hurt | 8 / 4x2 | 1-2 hit from the front: head and chest jerk back; 3-4 staggers half a step back; 5-6 recovers balance; 7-8 ready pose. | todo |
-| 9 | death | 12 / 6x2 | 1-2 struck, staggers back; 3-4 drops to one knee, the sword point on the ground; 5-6 leans on the sword; 7-8 the sword falls, he tips forward; 9-10 lands face down, cape settling over him; 11-12 still. | todo |
-| 10 | chain | 12 / 6x2 | Skill Q, chain throw with the LEFT arm, the sword stays on the right shoulder. 1 ready; 2-3 left arm pulled far back; 4-5 whips the arm forward, the chain flies out straight to the right; 6-7 arm fully out, chain taut and long (to the cell edge); 8-10 yanks the chain back hard, leaning back; 11-12 ready. | todo |
-| 11 | spin | 12 / 6x2 | Skill E, one full spin slash. 1 ready; 2-3 sword held out to the side at waist height with both hands; 4-9 turns round on the spot in even steps (side, three-quarter back, back, three-quarter front, front, three-quarter front), the blade always stretched out; 10 side again, blade in front; 11-12 ready. | todo |
-| 12 | slam | 16 / 4x4 | Skill R, leaping slam. 1-2 crouch; 3-4 jumps up raising the sword; 5-7 high in the air, sword overhead; 8-9 falling forward; 10 IMPACT: lands and slams the blade into the ground in front, deep crouch; 11-12 holds; 13-14 rises; 15-16 ready. | todo |
-| 13 | rage | 12 / 6x2 | Skill X, rage awakening. 1 ready; 2-4 crouches, fists clenched; 5-7 throws his head back, chest out, arms spread (roar); 8-9 holds the roar; 10-11 brings the sword back to the ready pose; 12 ready with the eyes glowing brighter. | todo |
-| 14 | climb | 8 / 4x2 | BACK VIEW (use the back of `2_TURNAROUND.png`): climbing a rope, sword on his back: 1-2 right hand reaches high, left knee up; 3-4 pulls up; 5-6 left hand high, right knee up; 7-8 pulls up. Loops. | todo |
+| # | action | part | frames / grid | what happens in this part (draw small, even steps) | status |
+|---|--------|------|---------------|-----------------------------------------------------|--------|
+| 1 | idle | 1 | 12 / 6x2 | Standing ready, sword on the right shoulder. One slow heavy breath: rise (1-6), cape lifts a little, come down, knees bend slightly at the lowest point (7-12). 12 leads back into 1. | todo |
+| 2 | walk | - | 12 / 6x2 | (done by the owner, `anim/walk_sheet_owner.webp`) | done |
+| 3 | run | 1 | 12 / 6x2 | Heavy run, leaning forward, sword on the shoulder: right foot lands (1), lowest (3), push off (4), airborne (5), left knee forward (6), left foot lands (7), lowest (9), push off (10), airborne (11), right knee forward (12). Loops. | todo |
+| 4 | attack1 | p1 | 12 / 6x2 | HIT 1 wind-up: from the ready pose (1) he takes the sword off the shoulder (2-5) and pulls it far back behind him, body twisting away, weight on the back foot (6-12). | todo |
+| 5 | attack1 | p2 | 12 / 6x2 | HIT 1 strike: from the last pose of p1 (1) he steps forward and swings the blade round at waist height (2-5), IMPACT at 6 (arms fully stretched, blade level, reaching FAR in front), follow-through past the front (7-12). | todo |
+| 6 | attack1 | p3 | 12 / 6x2 | HIT 1 recovery: from the last pose of p2 (1) he brings the sword back (2-8) and rests it on the shoulder in the ready pose (9-12). | todo |
+| 7 | attack2 | p1 | 12 / 6x2 | HIT 2 wind-up: from the ready pose (1) he drops the blade low behind him and crouches (2-12). | todo |
+| 8 | attack2 | p2 | 12 / 6x2 | HIT 2 strike: sweeps the blade forward low (1-5), IMPACT at 6 (rising diagonal, tip high in front, arms stretched), blade carries on above the head (7-12). | todo |
+| 9 | attack2 | p3 | 12 / 6x2 | HIT 2 recovery: from above the head back down to the ready pose (1-12). | todo |
+| 10 | attack3 | p1 | 12 / 6x2 | HIT 3 wind-up: both hands on the grip (1-4), lifting the sword straight up high above the head, up on his toes (5-12). | todo |
+| 11 | attack3 | p2 | 12 / 6x2 | HIT 3 slam: big step forward, the blade comes down (1-5), IMPACT at 6 (the blade smashes into the ground FAR in front, deep crouch), holds the low pose with a small shake (7-12). | todo |
+| 12 | attack3 | p3 | 12 / 6x2 | HIT 3 recovery: pulls the sword out of the ground (1-6), back to the ready pose (7-12). | todo |
+| 13 | jump | 1 | 12 / 6x2 | Crouch (1-2), take-off (3), rising knees tucked (4-5), top (6-7), falling legs reaching down (8-10), landing crouch (11-12). Feet off the ground in 3-10. | todo |
+| 14 | hurt | 1 | 8 / 4x2 | Hit from the front: head and chest jerk back (1-2), staggers back (3-4), recovers (5-6), ready (7-8). | todo |
+| 15 | death | p1 | 12 / 6x2 | Struck, staggers back (1-4), drops to one knee, sword point on the ground (5-8), leans on the sword (9-12). | todo |
+| 16 | death | p2 | 12 / 6x2 | The sword falls (1-4), he tips forward (5-8), lies face down, cape settling over him, then still (9-12). | todo |
+| 17 | chain | p1 | 12 / 6x2 | Skill Q (sword stays on the right shoulder): left arm pulled far back (1-5), whips forward (6-8), the chain flies out straight to the right to the cell edge (9-12). | todo |
+| 18 | chain | p2 | 12 / 6x2 | Arm fully out, chain taut (1-3), yanks the chain back hard, leaning back (4-8), back to the ready pose (9-12). | todo |
+| 19 | spin | p1 | 12 / 6x2 | Skill E: from ready (1) the sword comes out to the side at waist height with both hands (2-4), turning round (5-12: side, 3/4 back, back, 3/4 back, ...), the blade always stretched out. | todo |
+| 20 | spin | p2 | 12 / 6x2 | Turning on (1-8: 3/4 front, front, 3/4 front, side), blade in front (9), back to the ready pose (10-12). | todo |
+| 21 | slam | p1 | 12 / 6x2 | Skill R: crouch (1-3), jumps up raising the sword (4-8), high in the air, sword overhead (9-12). | todo |
+| 22 | slam | p2 | 12 / 6x2 | Falling forward (1-5), IMPACT at 6 (lands and slams the blade into the ground in front, deep crouch), holds (7-12). | todo |
+| 23 | slam | p3 | 12 / 6x2 | Rises and pulls the sword up (1-8), ready (9-12). | todo |
+| 24 | rage | p1 | 12 / 6x2 | Skill X: crouches, fists clenched (1-5), throws his head back, chest out, arms spread in a roar (6-12). | todo |
+| 25 | rage | p2 | 12 / 6x2 | Holds the roar (1-4), brings the sword back to the ready pose (5-10), ready with the eyes glowing brighter (11-12). | todo |
+| 26 | climb | 1 | 8 / 4x2 | BACK VIEW (the back of `2_TURNAROUND.png`): climbing a rope, sword on his back: right hand high, left knee up (1-2), pull (3-4), left hand high, right knee up (5-6), pull (7-8). Loops. | todo |
