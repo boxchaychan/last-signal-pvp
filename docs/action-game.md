@@ -1032,3 +1032,7 @@ to 56 px off road / water / cliffs / monster camps, else dropped and printed). M
 (lamps, signpost, bench, well, hay), a fishing pond (lily pads, reeds, bench, lamp, willow), ruins on the island and the north ridge,
 a grove of logs in the south-east. Map 2: a camp in the north-west clearing, lamps at both ends of the bridge, reeds / lily pads / a
 boat along the river, temple ruins round the south road, dead wood east of the river, ruins on the plateau.
+Owner 2026-11-12 ("พุ่มไม้ไปอยู่ในน้ำได้", "บันได...ไม่ได้มีเนิน", "ของตกแต่งกับใช้งานแยกไม่ออก", "โคมไฟในป่าเข้ากันไหม"): the wild maps
+now hold only nature and ancient ruins: `SKIP` in td_map.py drops every camp_* / village_* piece (lamps, benches, well, hay, tent,
+crates, signs), the stone-stairs ruin and the reeds in the water; fallen logs / mushrooms / stones fill the old camp spots. Village
+things are for the town map later.
