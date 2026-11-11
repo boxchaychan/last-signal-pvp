@@ -1026,3 +1026,9 @@ Props set 2 in the maps (2026-11-12): `tools/art/props_cut.py <raw> <dir> <name>
 (green on map 1, autumn on map 2), a camp (tent, fire, crates, barrels, sacks), lamp posts / a well / hay / a bench (map 1) or a
 signpost (map 2) by the road, ruins (on map 1's plateau, round map 2), logs and stumps, bushes, stones, lily pads in the pond /
 river, reeds on the banks, a rowing boat on map 2's river. `magic2` is not used.
+Hand-placed maps (owner 2026-11-12 "ของจริงใส่มั่วไปหมด" after the showcase scenes `tools/art/td_showcase.py`): `td_map.py` now keeps
+only the edge forest from the code placement and puts every inside prop by hand in themed groups (`H_(kind, name, h, x, y)`, nudged up
+to 56 px off road / water / cliffs / monster camps, else dropped and printed). Map 1: a camp south-west of the road, the crossroads
+(lamps, signpost, bench, well, hay), a fishing pond (lily pads, reeds, bench, lamp, willow), ruins on the island and the north ridge,
+a grove of logs in the south-east. Map 2: a camp in the north-west clearing, lamps at both ends of the bridge, reeds / lily pads / a
+boat along the river, temple ruins round the south road, dead wood east of the river, ruins on the plateau.
