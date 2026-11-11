@@ -33,7 +33,8 @@ def figs(im):
     return [im.crop((s[1].start, s[0].start, s[1].stop, s[0].stop)) for s in ob]
 hero = figs(cut(Image.open('art/incoming/action/berserker/v5_style/out_basic.png')))[1]
 ground = FLOOR - T // 2 + 10                                          # the grass line inside the top tiles
-img.alpha_composite(hero, (640, ground - hero.height))
+import os
+if not os.environ.get('NOHERO'): img.alpha_composite(hero, (640, ground - hero.height))
 def mob(k):
     m = json.load(open('art/action/mobs_hr/%s.json' % k)); im = Image.open('art/action/mobs_hr/%s.png' % k).convert('RGBA')
     c = im.crop((0, 0, m['w'], m['h'])); return c.crop(c.getbbox())
@@ -44,4 +45,4 @@ ov = Image.new('RGBA', (SW, SH)); o = ImageDraw.Draw(ov)
 o.rectangle((0, SH - 70, SW, SH), fill=(0, 0, 0, 150)); o.rectangle((40, SH - 52, 520, SH - 22), fill=(196, 30, 42, 255)); o.rectangle((560, SH - 52, 1040, SH - 22), fill=(30, 86, 196, 255)); o.rectangle((0, SH - 12, SW, SH), fill=(224, 176, 32, 255))
 for (x, y, r) in ((2380, 900, 90), (2210, 1010, 62), (2210, 830, 62), (2330, 700, 62)): o.ellipse((x - r, y - r, x + r, y + r), fill=(255, 255, 255, 40), outline=(255, 255, 255, 150), width=6)
 o.ellipse((60, 760, 300, 1000), fill=(255, 255, 255, 30), outline=(255, 255, 255, 130), width=6)
-img.alpha_composite(ov); img.convert('RGB').save('art/side/mock_map1.png'); print('hero', hero.size)
+img.alpha_composite(ov); img.convert('RGB').save(os.environ.get('OUT', 'art/side/mock_map1.png')); print('hero', hero.size, 'ground', ground)
