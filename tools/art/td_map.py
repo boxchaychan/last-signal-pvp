@@ -233,6 +233,50 @@ else:
     spot(6, 70, lambda x, y: put('pebble', FR + 'rocks.png', random.randint(30, 38), x, y, random.random() < .5, moss=True))
     spot(5, 60, lambda x, y: put('flowers', FR + 'flowers.png', 20, x, y, random.random() < .5))
     put('sign', FR + 'sign.png', 42, 150, 700); put('fence', FR + 'fence.png', 34, 700, 590); put('fence', FR + 'fence.png', 34, 930, 580)
+# ---- props set 2 (PixelLab 2026-11-12, 12 gen; cut by tools/art/props_cut.py into art/td/props/set2/cut/): more trees, a camp,
+# village bits along the road, ruins on the plateau, logs and stumps, bushes, stones, water plants (owner "ทำฉากให้สวย")
+P2 = 'art/td/props/set2/cut/'
+FP.update({'tree2': (.16, 10, 6), 'solid': (.4, .16, .1), 'small': (.3, .2, 0), 'flat': None, 'water': None})
+OCC = dil(road, 26) | dil(bank, 18) | dil(FACE | RAMP, 14) | (yy < 230)
+NEAR = dil(road, 62) & ~dil(road, 30) & ~dil(bank, 10) & ~dil(FACE | RAMP, 10)
+TAKEN = [(p['x'], p['y'], 0) for p in PROPS]; GID = [0]
+def spot2(n, gap, cb, where=None, own=60):   # gap = between the pieces of this call, own = from everything else
+    GID[0] += 1; g = GID[0]; got = 0
+    for _ in range(8000):
+        if got >= n: break
+        x, y = random.randrange(80, W - 80), random.randrange(240, H - 60)
+        if (where is not None and not where[y, x]) or (where is None and OCC[y, x]): continue
+        if any(math.hypot(x - a, (y - b) * 1.4) < (gap if r == g else own) for a, b, r in TAKEN): continue
+        cb(x, y); TAKEN.append((x, y, g)); got += 1
+    if got < n: print('  only', got, 'of', n)
+def P(kind, name, h, x, y): put(kind, P2 + name + '.png', h, x, y, random.random() < .5)
+def camp(x, y):
+    for kind, name, h, dx, dy in (('solid', 'camp_0', 95, 0, 0), ('small', 'camp_1', 50, 85, 34), ('small', 'camp_2', 44, -78, 22), ('small', 'camp_5', 48, -46, 62), ('small', 'camp_8', 40, 40, 74)):
+        if not OCC[min(H - 1, y + dy), min(W - 1, x + dx)]: P(kind, name, h, x + dx, y + dy)
+    TAKEN.append((x, y, -1))
+pondI = ndimage.binary_erosion(pond, iterations=18)
+if not T2:
+    spot2(5, 170, lambda x, y: P('tree2', random.choice(['trees_green_0', 'trees_green_1', 'trees_green_2', 'trees_green_3']), random.randint(210, 250), x, y))
+    spot2(1, 300, camp, None, 130)
+    spot2(3, 260, lambda x, y: P('small', 'village_4', 88, x, y), NEAR)          # lamp posts by the road
+    spot2(1, 200, lambda x, y: P('solid', 'village_5', 92, x, y), NEAR)          # a well
+    spot2(2, 200, lambda x, y: P('small', 'village_7', 44, x, y), NEAR)          # hay
+    spot2(1, 200, lambda x, y: P('small', 'village_8', 40, x, y), NEAR)          # a bench
+    spot2(4, 120, lambda x, y: P('solid', random.choice(['ruins_0', 'ruins_2', 'ruins_8', 'ruins_4']), random.randint(80, 115), x, y), UP & (yy > 150) & ~dil(FACE, 30))
+else:
+    spot2(6, 170, lambda x, y: P('tree2', random.choice(['trees_autumn_0', 'trees_autumn_1', 'trees_autumn_2', 'trees_autumn_3']), random.randint(210, 250), x, y))
+    spot2(1, 300, camp, None, 130)
+    spot2(2, 260, lambda x, y: P('small', 'village_4', 88, x, y), NEAR)
+    spot2(1, 200, lambda x, y: P('small', 'village_3', 58, x, y), NEAR)          # a signpost
+    spot2(5, 160, lambda x, y: P('solid', random.choice(['ruins_0', 'ruins_1', 'ruins_6', 'ruins_7', 'ruins_8', 'ruins_5']), random.randint(85, 140), x, y))
+    spot2(2, 120, lambda x, y: P('solid', random.choice(['ruins_0', 'ruins_8']), random.randint(90, 115), x, y), UP & (yy > 150) & ~dil(FACE, 30))
+spot2(6, 130, lambda x, y: P('small', random.choice(['logs2_0', 'logs2_1', 'logs2_2', 'logs2_3', 'logs2_4', 'logs2_5']), random.randint(46, 62), x, y))
+spot2(10, 90, lambda x, y: P('bush', random.choice(['bushes_%d' % i for i in range(11)]), random.randint(36, 52), x, y))
+spot2(7, 80, lambda x, y: P('small', random.choice(['stones_%d' % i for i in (0, 1, 2, 4, 5, 8, 9, 10, 11, 12)]), random.randint(22, 40), x, y))
+WATERP = pondI if not T2 else ndimage.binary_erosion(river, iterations=10) & ~dil(deck, 40)
+spot2(4 if not T2 else 3, 70, lambda x, y: P('water', random.choice(['water_0', 'water_1']), random.randint(40, 52), x, y), WATERP, 40)
+spot2(5, 70, lambda x, y: P('water', random.choice(['water_2', 'water_3', 'water_4', 'water_5']), random.randint(52, 64), x, y), edge(pond) & ~dil(deck if T2 else np.zeros_like(pond), 30), 40)
+if T2: spot2(1, 200, lambda x, y: P('water', 'water_8', 64, x, y), WATERP, 40)        # a rowing boat on the river
 # dark tree crowns hanging over the bottom edge (drawn over everything)
 cr = fit(TREE, 300).crop((0, 0, 420, 140)); cr = autumn(cr, 99) if T2 else cr; ca = np.asarray(cr).copy(); ca[..., :3] = (ca[..., :3] * .5).astype(np.uint8); SPR[('crown', 0, 0)] = Image.fromarray(ca)
 SPR[('crown', 0, 1)] = SPR[('crown', 0, 0)].transpose(Image.FLIP_LEFT_RIGHT)
@@ -244,8 +288,8 @@ blk = np.zeros((H, W), bool)
 sh = np.ones((H, W))
 for p in PROPS:
     im = SPR[p['s']]; w, h = im.size; x, y = p['x'], p['y']
-    if p['kind'] in ('crown', 'flowers'): continue
-    if p['kind'] in ('tree', 'stree'):
+    if p['kind'] in ('crown', 'flowers', 'flat', 'water'): continue
+    if p['kind'] in ('tree', 'stree', 'tree2'):
         e = ((xx - x - w * .1) / (w * .42)) ** 2 + ((yy - y + 6) / (w * .17)) ** 2 < 1
     else:
         e = ((xx - x - w * .06) / (w * .5)) ** 2 + ((yy - y + h * .08) / (h * .16 + 3)) ** 2 < 1

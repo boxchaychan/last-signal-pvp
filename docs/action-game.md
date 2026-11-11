@@ -1020,3 +1020,9 @@ px → another map) and `entries` (where you arrive from a map); the border is o
 road end ↔ map 2's west road end. action.html: `?map=td2` (MAP), files from `art/td/map2/`, `ROSTER.td2` (skeleton, wolf, wisp,
 shroom, goblin archer, boar guard, golem), exit labels drawn on the road, `spawnAt` uses `entries[FROM]`, travel() carries hp / level.
 (map.html stays map 1 only; td2 has no hero / monster sheets of its own.)
+Props set 2 in the maps (2026-11-12): `tools/art/props_cut.py <raw> <dir> <name> [--grid=CxR]` cut the 11 pictures into 70 pieces
+(`art/td/props/set2/cut/`; the trees cleaned by hand of drawn shadows / leaf litter); `td_map.py` adds them on both maps with
+`spot2` (random free spots; `gap` between pieces of one call, `own` from everything else; `NEAR` = beside the road): extra trees
+(green on map 1, autumn on map 2), a camp (tent, fire, crates, barrels, sacks), lamp posts / a well / hay / a bench (map 1) or a
+signpost (map 2) by the road, ruins (on map 1's plateau, round map 2), logs and stumps, bushes, stones, lily pads in the pond /
+river, reeds on the banks, a rowing boat on map 2's river. `magic2` is not used.
