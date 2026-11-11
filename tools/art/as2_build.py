@@ -5,6 +5,7 @@
 import os, json, numpy as np
 from PIL import Image
 from scipy import ndimage
+import sys; sys.path.insert(0, 'tools/art'); from px_outline import outline
 S = 'art/incoming/action/rogue/class2/v2/'; O = 'art/action/as2/'; os.makedirs(O, exist_ok=True)
 CW, CH = 196, 152
 def clean(im, fx=False):
@@ -21,7 +22,7 @@ def clean(im, fx=False):
         sz = ndimage.sum(m, lab, range(1, n + 1))
         for i, s in enumerate(sz):
             if s < 30: a[lab == i + 1] = 0
-    return Image.fromarray(a.clip(0, 255).astype(np.uint8))
+    return Image.fromarray(outline(a.clip(0, 255)))
 def row(frames, fx=False):
     out = Image.new('RGBA', (CW * len(frames), CH))
     for i, f in enumerate(frames): out.alpha_composite(clean(Image.open(f), fx), (i * CW, 0))

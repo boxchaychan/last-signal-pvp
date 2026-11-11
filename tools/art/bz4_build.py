@@ -7,6 +7,7 @@
 import os, json, numpy as np
 from PIL import Image
 from scipy import ndimage
+import sys; sys.path.insert(0, 'tools/art'); from px_outline import outline
 SRC = 'art/incoming/action/berserker/v4_cool/'; OUT = 'art/action/bz4/'; os.makedirs(OUT, exist_ok=True)
 # clip: folder, feet point of the canvas, frames used, hit frames (index into the used list)
 CLIPS = {
@@ -37,7 +38,7 @@ def clean(im, strip=False):
         sz = ndimage.sum(m, lab, range(1, n + 1))
         for i, s in enumerate(sz):
             if s < 12: a[lab == i + 1] = 0
-    return Image.fromarray(a.astype(np.uint8))
+    return Image.fromarray(outline(a))
 
 L = max(fx for _, (fx, fy), _, _ in CLIPS.values()); T = max(fy for _, (fx, fy), _, _ in CLIPS.values())
 R = 0
