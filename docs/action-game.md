@@ -1054,4 +1054,4 @@ that copy is shrunk a little with smoothing (crisp edges, no blur). Used by the 
 when `TDS`), the Berserker v4 on td maps, and the monsters (`drawMob2` when `TDS`). 58-60 fps on the phone test.
 Class-2 sprites cleaned (owner 2026-11-12 "พวกคลาส 1 ดูคมหมด" = the class-2 heroes looked broken): the Assassin and Berserker v4 clips
 had a speckled pale rim from the white background and no outline. `tools/art/px_outline.py` (used by as2_build.py and bz4_build.py)
-drops pale edge pixels and specks and draws a 1 px dark outline like the class-1 sheets.
+drops pale edge pixels and specks and draws a 1 px dark outline like the class-1 sheets; the Assassin's is pure black (owner "แอสลองใส่เส้นดำสิ", `black=`).

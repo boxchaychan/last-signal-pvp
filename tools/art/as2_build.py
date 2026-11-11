@@ -22,7 +22,7 @@ def clean(im, fx=False):
         sz = ndimage.sum(m, lab, range(1, n + 1))
         for i, s in enumerate(sz):
             if s < 30: a[lab == i + 1] = 0
-    return Image.fromarray(outline(a.clip(0, 255)))
+    return Image.fromarray(outline(a.clip(0, 255), black=(14, 10, 18)))   # owner "แอสลองใส่เส้นดำสิ": a black line
 def row(frames, fx=False):
     out = Image.new('RGBA', (CW * len(frames), CH))
     for i, f in enumerate(frames): out.alpha_composite(clean(Image.open(f), fx), (i * CW, 0))
