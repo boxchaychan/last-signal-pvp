@@ -3369,10 +3369,10 @@ function drawPlayerBody(p) {
 // Berserker v4 test look (owner 2026-11-11 "เอามา 1 ทิศก่อน"): the new black-and-red Berserker, PixelLab side-view clips on wide
 // canvases so the greatsword reaches far (tools/art/bz4_build.py -> art/action/bz4/). ONE direction: facing right, mirrored when
 // he faces left. Normal attack = sweep, then a vertical slash if pressed again within 1.2 s; the spin skill plays his 3-turn spin.
-// Standing / walking / roll / hurt = the still with a bob; other skills and death still use the old art. ?skin=old = the old look.
+// Every move has its own PixelLab clip now (idle, run, roll, hurt, death, chain, leap, sweep, vertical, spin; owner "เอาให้ครบ"). ?skin=old = the old look.
 const BZ4 = HERO === 'berserker' && QS.get('skin') !== 'old' ? {left: false} : null;
-if (BZ4) { fetch('art/action/bz4/bz4.json?v=2').then(r => r.json()).then(m => { BZ4.m = m; }).catch(() => {});
-  for (const k of ['still', 'sweep', 'vert', 'spin', 'run']) { const im = new Image(); im.src = 'art/action/bz4/' + k + '.png?v=2'; BZ4[k] = im; } }
+if (BZ4) { fetch('art/action/bz4/bz4.json?v=3').then(r => r.json()).then(m => { BZ4.m = m; }).catch(() => {});
+  for (const k of ['still', 'sweep', 'vert', 'spin', 'run', 'idle', 'hurt', 'roll', 'death', 'chain', 'leap']) { const im = new Image(); im.src = 'art/action/bz4/' + k + '.png?v=3'; BZ4[k] = im; } }
 function bz4Plan() {
   const m = BZ4.m; BZ4.c = G.t - (BZ4.cT || -9) < 1.2 ? ((BZ4.c || 0) + 1) % 2 : 0; BZ4.cT = G.t;
   const k = BZ4.c ? 'vert' : 'sweep', n = m.n[k], H = m.hits[k], ms = [];
@@ -3380,7 +3380,7 @@ function bz4Plan() {
   return {ar: {bz4: k, n}, hits: H, dmg: [Math.round((k === 'vert' ? 34 : 24) * 1.3)], ms, fr: [...Array(n).keys()], n, first: H[0], last: H[H.length - 1], crit: false};
 }
 // skill acts on the new look: [clip, first frame, last frame, from, to] over the act's progress 0..1
-const BZ4SEG = {chain: [['sweep', 0, 1, 0, .35], ['sweep', 2, 2, .35, .75], ['sweep', 9, 11, .75, 1]],
+const BZ4SEG = {chain: [['chain', 0, 1, 0, .4], ['chain', 2, 7, .4, .8], ['chain', 8, 11, .8, 1]],
   triple: [['sweep', 0, 4, 0, .35], ['spin', 4, 9, .35, .54], ['vert', 1, 7, .54, 1]],   // hits at .22 / .48 / .9 s of 1.15 s
   shackle: [['vert', 0, 7, 0, 1]], release: [['vert', 3, 8, 0, 1]]};
 function drawBz4(p) {
@@ -3393,20 +3393,22 @@ function drawBz4(p) {
   else if (p.state === 'act' && p.ac && p.ac.bz4) { const q = p.ac, L = q.fr.length, i = Math.min(q.i, L - 1), u = Math.min(.999, (i + Math.min(1, q.t / (q.ms[i] || 50))) / L);
     let seg = BZ4SEG[q.bz4];
     if (q.bz4 === 'charge') { const t = G.t - q.t0; seg = null; img = BZ4.vert; f = Math.min(3, Math.floor(t / .08)); }
-    else if (q.bz4 === 'leap') { seg = null; img = BZ4.vert; f = i <= q.dn ? Math.round(i / q.dn * 3) : Math.min(11, 4 + Math.floor((i - q.dn) / Math.max(1, L - q.dn) * 8)); }
-    else if (q.bz4 === 'guard') { seg = null; img = BZ4.still; f = 0; }
+    else if (q.bz4 === 'leap') { seg = null; img = BZ4.leap; f = i <= q.dn ? Math.round(i / q.dn * 5) : Math.min(15, 5 + Math.floor((i - q.dn) / Math.max(1, L - q.dn) * 11)); }
+    else if (q.bz4 === 'guard') { seg = null; img = BZ4.idle; f = Math.floor(G.t * 6) % m.n.idle; }
     if (seg) { const s = seg.find(z => u < z[4]) || seg[seg.length - 1]; img = BZ4[s[0]]; f = Math.min(s[2], s[1] + Math.floor((u - s[3]) / (s[4] - s[3]) * (s[2] - s[1] + 1))); } }
   else if (G.t - (p.bzSpin || -9) < .45 && (p.state === 'idle' || p.state === 'move' || p.state === 'act')) { const t = G.t - p.bzSpin; img = BZ4.spin; f = t < .3 ? 4 + Math.floor(t / .05) % 6 : Math.min(23, 20 + Math.floor((t - .3) / .04)); }
   else if (p.state === 'act' && p.ac && p.ac.tick === whirlTick) { const t = G.t - p.ac.t0; img = BZ4.spin; f = t < .15 ? 1 + Math.floor(t / .05) : 4 + Math.floor((t - .15) / .047) % 6; }
   else if (p.state === 'move') { if (m.n.run && BZ4.run.complete) { img = BZ4.run; f = Math.floor(G.t * 18) % m.n.run; } else y -= (Math.floor(G.t * 10) % 2) * d * 2; }   // his PixelLab run (owner "ยังไม่เจนท่าวิ่งหรือ")
-  else if (p.state === 'idle') y -= (Math.floor(G.t * 3) % 2) * d;
-  else if (p.state === 'roll' && p.roll) y -= Math.round(Math.sin(p.roll.t / ROLL.t * Math.PI) * 10);
-  else if (p.state !== 'hurt') return false;
+  else if (p.state === 'idle') { if (m.n.idle) { img = BZ4.idle; f = Math.floor(G.t * 6) % m.n.idle; } else y -= (Math.floor(G.t * 3) % 2) * d; }
+  else if (p.state === 'roll' && p.roll) { if (m.n.roll) { img = BZ4.roll; f = Math.min(m.n.roll - 1, Math.floor(p.roll.t / ROLL.t * m.n.roll)); } else y -= Math.round(Math.sin(p.roll.t / ROLL.t * Math.PI) * 10); }
+  else if (p.state === 'hurt') { if (m.n.hurt) { img = BZ4.hurt; f = clamp(Math.floor((1 - p.hurtT / HURT_T) * m.n.hurt), 0, m.n.hurt - 1); } }
+  else if (p.state === 'dead') { if (!m.n.death) return false; img = BZ4.death; f = Math.min(m.n.death - 1, Math.floor((p.deadT || 0) / DEATH_T * m.n.death)); }
+  else return false;
   if (!img.complete || !img.naturalWidth) return false;
   ctx.save(); ctx.translate(x, 0); if (BZ4.left) ctx.scale(-1, 1);
   ctx.drawImage(img, f * m.cw, 0, m.cw, m.ch, -m.fx * d, y - m.fy * d, m.cw * d, m.ch * d); ctx.restore(); return true; }
 function drawPlayerBody2(p) {
-  if (BZ4 && p.state !== 'dead' && drawBz4(p)) return;
+  if (BZ4 && drawBz4(p)) return;
   if (p.state === 'act' && p.ac && p.ac.draw) { p.ac.draw(p, p.ac); return; }
   if (p.state === 'act' && p.ac) { const q = p.ac, f = q.fr[Math.min(q.i, q.fr.length - 1)];
     drawCell(q.ar.img, q.ar.r, f, p.x, p.y, q.ar.flip);
