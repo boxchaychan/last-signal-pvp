@@ -14,13 +14,20 @@ CLIPS = {
     'vert':  ('test_vert', (72, 234), [1, 2, 3, 4, 6, 7, 9, 11, 13, 14, 15, 16], [4]),
     'spin':  ('test_spin', (128, 170), list(range(1, 25)), [4, 10, 16]),
     'run':   ('test_run', (72, 146), list(range(4, 17)), []),   # 1-3 = starting from the stance, 4-16 loop
+    'idle':  ('test_idle', (72, 146), list(range(1, 9)), []),
+    'hurt':  ('test_hurt', (72, 146), list(range(1, 9)), []),
+    'roll':  ('test_roll', (72, 146), list(range(1, 13)), []),
+    'death': ('test_death', (90, 154), list(range(1, 17)), []),
+    'chain': ('test_chain', (72, 146), list(range(1, 13)), [2]),    # 2 = the chain flies out
+    'leap':  ('test_leap', (72, 234), list(range(1, 17)), [5]),     # 5 = the blade hits the ground
 }
+STRIP = {'vert', 'hurt', 'roll', 'death', 'leap'}   # clips with PixelLab's own swooshes / dust
 
 def clean(im, strip=False):
     a = np.asarray(im.convert('RGBA')).astype(int).copy()
     if strip:   # PixelLab's blue swoosh and white dust (he has no blue and no near-white)
         r, g, b = a[..., 0], a[..., 1], a[..., 2]
-        a[((b > r + 30) & (b > g + 20)) | (a[..., :3].min(2) > 215)] = 0
+        a[((b > r + 30) & (b > g + 20)) | (a[..., :3].min(2) > 205)] = 0
     for _ in range(2):   # pale rim on the outside edge (style B)
         m = a[..., 3] > 0; e = m & ~ndimage.binary_erosion(m); a[e & (a[..., :3].min(2) > 110)] = 0
     m = a[..., 3] > 0; lab, n = ndimage.label(m, structure=np.ones((3, 3)))   # drop loose specks
@@ -39,7 +46,7 @@ meta = {'cw': cw, 'ch': ch, 'fx': L, 'fy': T, 'n': {}, 'hits': {}}
 for k, (d, (fx, fy), fr, hits) in CLIPS.items():
     row = Image.new('RGBA', (cw * len(fr), ch))
     for i, f in enumerate(fr):
-        im = clean(Image.open(SRC + d + '/f%02d.png' % f), strip=(k == 'vert'))
+        im = clean(Image.open(SRC + d + '/f%02d.png' % f), strip=(k in STRIP))
         row.alpha_composite(im, (i * cw + L - fx, T - fy))
     row.save(OUT + k + '.png'); meta['n'][k] = len(fr); meta['hits'][k] = hits
 st = Image.new('RGBA', (cw, ch)); st.alpha_composite(clean(Image.open(SRC + 'test_sweep/f00.png')), (L - 72, T - 154)); st.save(OUT + 'still.png')
