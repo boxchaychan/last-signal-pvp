@@ -1039,3 +1039,9 @@ Owner 2026-11-12 ("พุ่มไม้ไปอยู่ในน้ำได�
 now hold only nature and ancient ruins: `SKIP` in td_map.py drops every camp_* / village_* piece (lamps, benches, well, hay, tent,
 crates, signs), the stone-stairs ruin and the reeds in the water; fallen logs / mushrooms / stones fill the old camp spots. Village
 things are for the town map later.
+Assassin v2 in the game (owner 2026-11-12 "ลองเอาเข้าแมพยัง"): `tools/art/as2_build.py` → `art/action/as2/` (cell 196x152, feet
+70,146; run 14 frames, attack 9 = the left thrust + the upward slash with PixMiniMax's pink swooshes / dust removed, stills side /
+front / back). action.html `AS2` / `drawAs2`: the rogue (`?hero=rogue`, default look; `?skin=old` = the old rogue) draws with it:
+side run (mirrored left), front / back still with a bob when running straight down / up, the attack row for normal attacks, skills
+and the knife throw, a bright flash when hurt, fade on death. Drawn at 2/3 world px per art px (as tall as the old rogue). Her kit is
+still the rogue's. Missing moves: idle, front / back runs, hurt, death, a right-hand thrust.
