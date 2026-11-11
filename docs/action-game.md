@@ -957,3 +957,5 @@ damage only, no flinch). Skills drawn with the v4 look: acts carry `bz4` and `BZ
 (chain = sweep wind-up / hold, triple = sweep → one spin turn → vertical slash, shackle / charge release = vertical slash, charge =
 blade raised, leap = raise then slam on landing, guard = still); the chain's ring cleave plays a spin turn (`p.bzSpin`).
 Preview: `art/incoming/action/berserker/v4_cool/skills_ingame.gif`.
+
+- 2026-11-11 `create_image_pixen` 512×512, 4 Dimraeth-style big stacked rocks in one picture (owner "ลองเอามา"), 1 gen, job 32002150. Came on black (no_background refused above 65,536 px area); cut into `art/td/props/rock0-3.png`, placed in `art/td/mock_map2_rocks.png` at ~3.2× / 2.6× / 1.8× the hero.

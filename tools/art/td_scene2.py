@@ -107,7 +107,8 @@ F = 'art/side/forest/'
 put('art/side/map30/tree.png', int(HERO * 4.6), 90, 140); put('art/side/map30/tree.png', int(HERO * 4.2), 560, 70, True)
 put(F + 'small_tree.png', int(HERO * 2.2), 790, 90); put(F + 'small_tree.png', int(HERO * 2), 360, 385, True)
 put(F + 'bush.png', int(HERO * 1.0), 230, 120); put(F + 'bush.png', int(HERO * .9), 480, 380, True); put(F + 'bush.png', int(HERO * .9), 700, 60)
-put(F + 'rocks.png', int(HERO * .7), 640, 330); put(F + 'flowers.png', int(HERO * .4), 150, 330)
+put(F + 'rocks.png', int(HERO * .7), 640, 330)
+put('art/td/props/rock0.png', int(HERO * 3.2), 330, 215); put('art/td/props/rock1.png', int(HERO * 2.6), 700, 300); put('art/td/props/rock3.png', int(HERO * 1.8), 520, 385); put(F + 'flowers.png', int(HERO * .4), 150, 330)
 M = json.load(open('art/action/n128/berserker.json')); C = M['cell']
 hero = Image.open('art/action/n128/berserker_still.png').crop((C, 0, 2 * C, C)); hero = hero.crop(hero.getbbox())
 k = HERO / hero.height; hero = hero.resize((round(hero.width * k), HERO), Image.LANCZOS); ha = np.asarray(hero).copy(); ha[..., 3] = (ha[..., 3] > 110) * 255
@@ -127,4 +128,4 @@ base = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 crown = fit('art/side/map30/tree.png', 260).crop((0, 0, 400, 130)); cr = np.asarray(crown).copy(); cr[..., :3] = (cr[..., :3] * .55).astype(np.uint8); crown = Image.fromarray(cr)
 for cx in (-40, 210): base.alpha_composite(crown, (cx, VH - 70))
 o = ImageDraw.Draw(base); o.ellipse((470, 248, 560, 284), outline=(255, 80, 60, 220), width=2)
-base.resize((VW * 3, VH * 3), Image.NEAREST).convert('RGB').save('art/td/mock_map2.png'); print('ok')
+base.resize((VW * 3, VH * 3), Image.NEAREST).convert('RGB').save(__import__('os').environ.get('OUT','art/td/mock_map2.png')); print('ok')
