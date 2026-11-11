@@ -1015,7 +1015,8 @@ const SLB = [41, 99, 150, -175, -138, -84, -33, 3];
 function slashFor(deg, t = '') { let b = 0, bd = 999; for (let k = 0; k < 8; k++) { const d = Math.abs(((SLB[k] - deg) % 360 + 540) % 360 - 180); if (d < bd) { bd = d; b = k; } } return 'dslash' + t + b; }
 // owner 2026-11-10 "ทำ vfx ไว้ โทนแดงนีออน ดำ ไฟ": the Berserker draws the swordsman's effects recoloured black + neon red + fire
 // (tools/art/bz_fx.py -> fx/<key>_bz.png); they replace the normal sheets once loaded
-const BZTRY = QS.get('bz') === '1';   // owner had not okayed these on the live game yet (2026-11-10): only with ?bz=1
+const BZTRY = HERO === 'berserker' && QS.get('bz') !== '0';   // owner 2026-11-11 "เอาสกิลใหม่มาใส่": his own kit is the default now (?bz=0 = the swordsman's)
+//   // owner had not okayed these on the live game yet (2026-11-10): only with ?bz=1
 const BZV = ['vfx_bzswing', 'vfx_bzchain1', 'vfx_bzchainall', 'vfx_bzchainring', 'vfx_bztriple', 'vfx_bzslam', 'vfx_bzslamring', 'vfx_bzcrack', 'vfx_bzhook', 'vfx_bzshackle', 'vfx_bzrage', 'vfx_bzwave'];   // the owner's Meta AI clips, cut with tools/video/vfx_cut.py (2026-11-10 "ลองประกอบมาก่อน")
 const bzv = k => HERO === 'berserker' && BZTRY && PFX[k] && PFX[k].m;
 const BZFX = ['pfx_fireline', 'pfx_earthsplit', 'pfx_whirl', 'pfx_whirl_k', 'pfx_dashstrike_v', 'pfx_swcharge', 'pfx_swslash', 'cslam', 'gslam', 'quake', 'parry', 'wvfx1', 'wvfx2', 'wvfx3', 'wvfx4', 'wvfx5'];
@@ -1711,9 +1712,10 @@ const SKICON = {priest: [['pfx_heal_y', .4], ['pfx_skyarrow_y', .35], ['critg', 
 for (const T of [SKNAME, SKDESC, SKICON, PASDESC]) if (T.swordsman !== undefined) T.guardian = T.berserker = T.swordsman;
 SKNAME.guardian = ['ฟาดแยกพื้น', 'พายุดาบ', 'ชาร์จฟัน', 'กระโดดทุบ', 'ยกโล่สวน', 'คลั่ง'];
 // the Berserker's own Q (owner's chain sheet 2026-11-10): chains fan out, drag the monsters in front of him, a ring cleave round him
-if (QS.get('bz') === '1') SKNAME.berserker = ['โซ่รวบวิญญาณ', 'ฟาดสามยมทูต', 'ชาร์จฟัน', 'กระโดดทุบ', 'ตรวนนรก', 'ร่างคลั่งโลหิต'];
-if (QS.get('bz') === '1') SKDESC.berserker = ['เหวี่ยงโซ่เป็นพัดกว้างไปทางที่เล็ง ดึงมอนที่โดนมากองหน้าตัวและมึน แล้วฟันวงรอบตัวแรงๆ', ...SKDESC.swordsman.slice(1)];
-if (QS.get('bz') === '1') SKICON.berserker = [['pfx_bzchain', .3], ...SKICON.swordsman.slice(1)];
+if (BZTRY) SKNAME.berserker = ['โซ่รวบวิญญาณ', 'ฟาดสามยมทูต', 'ชาร์จฟัน', 'กระโดดทุบ', 'ตรวนนรก', 'ร่างคลั่งโลหิต'];
+if (BZTRY) SKDESC.berserker = ['เหวี่ยงโซ่ไปเกี่ยวมอนรอบตัว (สูงสุด 8 ตัว) ดึงมากองหน้าตัวและมึน แล้วหมุนฟันวงรอบตัวแรงๆ', 'ฟัน 3 จังหวะ: กวาด หมุนตัวฟันรอบ แล้วฟาดลงพื้น จังหวะสุดท้ายมอนมึน', SKDESC.swordsman[2], SKDESC.swordsman[3], 'วงเวทโซ่ตรวนตรงหน้า รัดมอนข้างในไว้ 2 วิ', 'ร่างคลั่ง 15 วิ แรงขึ้น 3.5% ต่อระดับ ดูดเลือด 10% เลือดไม่ลดต่ำกว่า 1 ท่าไม่โดนขัด ตอนจบระเบิดไอแดงรอบตัวแล้วเหนื่อย 2 วิ'];
+if (BZTRY) PASDESC.berserker = 'ติดตัว: เลือดเดือด เลือดหายทุก 10% แรงขึ้น 5% (สูงสุด +40%) · ง้างและฟันไม่โดนขัด · เกราะหินแบบนักดาบ';
+if (BZTRY) SKICON.berserker = [['pfx_bzchain', .3], ...SKICON.swordsman.slice(1)];
 // level cap 50: the 2nd class comes at level 50 (owner 2026-11-09, not built yet)
 const SKEYL = ['Q', 'E', 'R', 'F', 'Z', 'X'], SKMAX = 10, LVMAX = 50, SKUPD = .1, SKUPC = .04;
 const SKBASE = {}; for (let k = 1; k <= 6; k++) SKBASE[k] = JSON.parse(JSON.stringify(SKS[k]));
@@ -1938,13 +1940,23 @@ function nearestMob(p, R, cone) {
 }
 function tag(x, y, txt, col) { G.tags.push({x, y, txt, col, t: 0}); }
 function zapDmg(m, d, col) { if (m.hp <= 0) return; m.hp -= d; m.hit = .12; G.nums.push({x: m.x + (rnd() - .5) * 12, y: m.y - 50, v: d, t: 0, big: true, col, sz: U + 1}); if (m.hp <= 0) mobDie(m); }
+// Berserker X "ร่างคลั่งโลหิต" (docs/berserker.md): 15 s, +3.5% damage per skill level, 10% lifesteal, HP never below 1, flinches 30%
+// shorter, wind-ups and swings are not interrupted; at the end a red burst round him, then 2 s tired (walks 30% slower)
+const BZR = {dur: 15, atk: .035, leech: .1, boil: .4, burst: 26, br: 150, tired: 2};
+function bzRageEnd(p) { p.bzr = 0; p.tired = G.t + BZR.tired; G.shake = Math.max(G.shake, 6); G.flash = .05;
+  for (let i = 0; i < 18; i++) { const a = i / 18 * 6.28; puff(p.x + Math.cos(a) * 40, p.y - 10 + Math.sin(a) * 14, i & 1 ? '#ff3050' : '#3a0510'); }
+  G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 16, r1: BZR.br, t: 0, life: .4, c: '#ff3050'});
+  for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.25) < BZR.br + m.r) hitMob(m, BZR.burst, p.x, p.y, 90, '#ff3050', true, true);
+  tag(p.x, p.y - 96, 'เหนื่อย', '#ffb0a0'); }
 function heroDmg(m, dmg) {
   const p = G.p; let sty = {};
   if (p.forceCrit === G.t) { sty = {col: '#ffd23c', sz: U + 2, big: true}; pfx('critg', m.x, m.y - 26); }
   if (SWL) {
     if (p.ironT !== G.t) { p.ironT = G.t; p.iron = Math.min(IRON.max, (p.iron || 0) + IRON.per); }
     p.ironHit = G.t;
-    if (p.rage > G.t) { dmg = Math.round(dmg * (1 + SWS[6].atk * (p.skl[6] || 1))); if (!sty.col) sty = {col: '#ff7070'}; }
+    if (p.rage > G.t) { dmg = Math.round(dmg * (1 + (BZTRY ? BZR.atk : SWS[6].atk) * (p.skl[6] || 1))); if (!sty.col) sty = {col: '#ff7070'}; }
+    if (BZTRY) { dmg = Math.round(dmg * (1 + Math.min(BZR.boil, Math.floor((100 - p.hp) / 10) * .05)));   // passive เลือดเดือด: +5% per 10% HP lost
+      if (p.rage > G.t && p.hp > 0) p.hp = Math.min(100, p.hp + dmg * BZR.leech); }
   }
   return [dmg, sty];
 }
@@ -1969,7 +1981,7 @@ function swordSk(p, k) {
     p.dir = d; const h = ar.hits && ar.hits.length ? ar.hits : [3, 9], sl = h[h.length - 1], fr = [];
     for (let f = Math.max(0, sl - 3); f <= Math.min(ar.n - 1, sl + 3); f++) fr.push(f);
     const rel = fr.indexOf(sl);
-    return playAct(p, ar, fr, fr.map((f, i) => i < rel ? 50 : i === rel ? 120 : 60), {[rel]: () => { releaseAt(p, 'fire', false, true); groundSplit(p, tx, ty); }}, {wind: {i: rel, c: 'fire', up: true}});
+    return playAct(p, ar, fr, fr.map((f, i) => i < rel ? 50 : i === rel ? 120 : 60), {[rel]: () => { releaseAt(p, 'fire', false, true); groundSplit(p, tx, ty); }}, {wind: {i: rel, c: 'fire', up: true}, bz4: 'release'});
   }
   if (k === 2) {                                         // E whirlwind while held
     return startWhirl(p, S, 2);   // startWhirl pays for it (paying here too made the second check fail: E never spun)
@@ -1977,25 +1989,25 @@ function swordSk(p, k) {
   if (k === 3) {                                         // R charge while held, strike on release
     const d = aimDir(), ar = animRow('charge', d) || animRow('idle', d); if (!ar || !payFor(p, 3)) return false;
     p.dir = d; const fr = [...Array(ar.n).keys()];
-    return playAct(p, ar, fr, 65, {}, {loopFrom: Math.max(0, ar.n - 3), t0: G.t, lv: 0, tick: chargeTick, canRoll: true});
+    return playAct(p, ar, fr, 65, {}, {loopFrom: Math.max(0, ar.n - 3), t0: G.t, lv: 0, tick: chargeTick, canRoll: true, bz4: 'charge'});
   }
   if (k === 4) {                                         // F leap slam onto the aimed spot
     const [tx, ty] = p.skT || skTarget(p, 4); p.skT = null;
     const d = dirOf(tx - p.x, ty - p.y), ar = animRow('leap', d); if (!ar || !payFor(p, 4)) return false;
     p.dir = d; const n = ar.n, dn = (ar.hits && ar.hits[0]) || Math.round(n * .42), up = Math.max(1, dn - 3), sx = p.x, sy = p.y;   // landing frame = the leap row's hit (hero_build.sh)
     p.inv = Math.max(p.inv, n * .05);
-    return playAct(p, ar, [...Array(n).keys()], 50, {[dn]: () => leapLand(p)}, {canRoll: false,
+    return playAct(p, ar, [...Array(n).keys()], 50, {[dn]: () => leapLand(p)}, {canRoll: false, bz4: 'leap', dn,
       tick: (p2, dt, q) => { const u = clamp((q.i + q.t / 50 - up) / (dn - up), 0, 1); p2.x = sx + (tx - sx) * u; p2.y = sy + (ty - sy) * u; }});
   }
   if (k === 5) {                                         // Z parry stance
     const ar = animRow('guard', p.dir) || animRow('idle', p.dir); if (!ar || !payFor(p, 5)) return false;
     p.guard = G.t + S.dur; const fr = [...Array(Math.min(ar.n, 5)).keys()]; while (fr.length < 13) fr.push(fr[fr.length - 1]);
     for (let k2 = 0; k2 < 6; k2++) spark(p.x + DV[p.dir][0] * 16, p.y - 34, 1, '#dff4ff');
-    return playAct(p, ar, fr, 70, {}, {end: p2 => { p2.guard = 0; }});
+    return playAct(p, ar, fr, 70, {}, {end: p2 => { p2.guard = 0; }, bz4: 'guard'});
   }
   if (k === 6) {                                         // X berserk
     if (!payFor(p, 6)) return false;
-    p.rage = G.t + S.dur; G.flash = .07; G.shake = Math.max(G.shake, 5); tag(p.x, p.y - 96, 'คลั่ง!', '#ff6060');
+    p.rage = G.t + (BZTRY ? BZR.dur : S.dur); if (BZTRY) p.bzr = 1; G.flash = .07; G.shake = Math.max(G.shake, 5); tag(p.x, p.y - 96, 'คลั่ง!', '#ff6060');
     for (let i = 0; i < 18; i++) { const a = i / 18 * 6.28; puff(p.x + Math.cos(a) * 26, p.y - 10 + Math.sin(a) * 10, i & 1 ? '#ff3050' : '#ffb0a0'); }
     return true;
   }
@@ -2008,7 +2020,7 @@ function bzChain(p, S) {
   const [tx, ty] = p.skT || skTarget(p, 1); p.skT = null;
   const d = dirOf(tx - p.x, ty - p.y), ar = animRow('chain', d) || animRow('attack', d); if (!ar || !payFor(p, 1)) return false;
   p.dir = d; const rel = (ar.hits && ar.hits[0]) || Math.round(ar.n * .4), fr = [...Array(ar.n).keys()];
-  return playAct(p, ar, fr, fr.map((f, i) => i === rel ? 110 : 55), {[rel]: () => bzChainCast(p, S, tx, ty)}, {});
+  return playAct(p, ar, fr, fr.map((f, i) => i === rel ? 110 : 55), {[rel]: () => bzChainCast(p, S, tx, ty)}, {bz4: 'chain'});
 }
 // owner 2026-11-10 "โซ่ทำให้ดึงตามเป้าไม่ได้หรือ": one chain (one arm cut out of the star clip, tools/video/vfx_one_arm.py) flies to
 // every monster round him (the 8 nearest within reach), bites, and drags it in as the chain winds back; then the ring cleave
@@ -2024,7 +2036,7 @@ function bzChainTarget(p, S) {
     for (let j = 1; j <= 8; j++) G.later.push({t: bite + .06 + j / 40, fn: () => { if (m.hp > 0) { m.x += (gx - m.x) * .32; m.y += (gy - m.y) * .32; } }});
   }
   G.shake = Math.max(G.shake, 4);
-  G.later.push({t: bite + .42, fn: () => { const q = G.p;
+  G.later.push({t: bite + .42, fn: () => { const q = G.p; q.bzSpin = G.t;
     if (!(bzv('vfx_bzchainring') && pfx('vfx_bzchainring', q.x, q.y, {sy: .6}))) pfx('pfx_bzring', q.x, q.y + 4, {sc: 1.15}); G.shake = Math.max(G.shake, 8); G.hs = Math.max(G.hs, .08); G.flash = .05;
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - q.x, (m.y - q.y) * 1.25) < 150 + m.r) hitMob(m, Math.round(S.dmg * 1.5), q.x, q.y, 14, '#ff3050', true, true); }});   // a small push only: the pull must not be undone
 }
@@ -2041,7 +2053,7 @@ function bzChainCast(p, S, tx, ty) {
     const a = (i - (caught.length - 1) / 2) * .5, gx = p.x + (ux * Math.cos(a) - uy * Math.sin(a)) * 62, gy = p.y + (uy * Math.cos(a) + ux * Math.sin(a)) * 34;
     for (let j = 1; j <= 7; j++) G.later.push({t: .12 + j / 30, fn: () => { if (m.hp > 0) { m.x += (gx - m.x) * .38; m.y += (gy - m.y) * .38; } }});
   });
-  G.later.push({t: .5, fn: () => { const q = G.p;
+  G.later.push({t: .5, fn: () => { const q = G.p; q.bzSpin = G.t;
     if (!(bzv('vfx_bzchainring') && pfx('vfx_bzchainring', q.x, q.y, {sy: .6}))) pfx('pfx_bzring', q.x, q.y + 4, {sc: 1.15}); G.shake = Math.max(G.shake, 8); G.hs = Math.max(G.hs, .08); G.flash = .05;
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - q.x, (m.y - q.y) * 1.25) < 150 + m.r) hitMob(m, Math.round(S.dmg * 1.5), q.x, q.y, 70, '#ff3050', true, true); }});
 }
@@ -2058,12 +2070,12 @@ function bzTriple(p, S) { const d = aimDir(), ar = animRow('attack', d); if (!ar
   G.later.push({t: .22, fn: () => doHit(p, {dmg: 22, kb: 50, hs: .05, sh: 3, reach: 200, cone: 100, slash: 1})});
   G.later.push({t: .48, fn: () => doHit(p, {dmg: 22, kb: 50, hs: .05, sh: 3, reach: 200, cone: 100, slash: 1})});
   G.later.push({t: .9, fn: () => { doHit(p, {dmg: 40, kb: 130, hs: .1, sh: 7, reach: 230, cone: 70, slash: 2}); for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, m.y - p.y) < 240) m.stun = Math.max(m.stun || 0, G.t + .8); }});
-  return playAct(p, ar, [...Array(ar.n).keys()], 1150 / ar.n, {}, {}); }
+  return playAct(p, ar, [...Array(ar.n).keys()], 1150 / ar.n, {}, {bz4: 'triple'}); }
 // Z "ตรวนนรก": a rune circle with chains on the ground in front of him, everything inside is held for 2 s
 function bzShackle(p, S) { if (!payFor(p, 5)) return false; const ar = animRow('chain', p.dir) || animRow('idle', p.dir), tx = p.x + DV[p.dir][0] * 130, ty = p.y + DV[p.dir][1] * 70;
   pfx('vfx_bzshackle', tx, ty, {sy: .6}); G.shake = Math.max(G.shake, 3);
   G.later.push({t: .45, fn: () => { for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - tx, (m.y - ty) * 1.6) < 105 + m.r) { hitMob(m, 12, tx, ty, 0, '#ff3050', false, true); m.stun = Math.max(m.stun || 0, G.t + 2); } }});
-  if (!ar) return true; return playAct(p, ar, [...Array(ar.n).keys()], 55, {}, {}); }
+  if (!ar) return true; return playAct(p, ar, [...Array(ar.n).keys()], 55, {}, {bz4: 'shackle'}); }
 function groundSplit(p, tx, ty) {
   const S = SWS[1], dx = tx - p.x, dy = ty - p.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
   const x1 = p.x + ux * 24, y1 = p.y + uy * 14, x2 = p.x + ux * S.range, y2 = p.y + uy * S.range, L = Math.hypot(x2 - x1, y2 - y1);
@@ -2141,7 +2153,7 @@ function chargeRelease(p, lv) {
   const rel = fr.indexOf(h0);
   playAct(p, ar, fr, fr.map((f, i) => i === rel ? 130 : 45), {[rel]: () => {
     if (lv >= 3) { p.forceCrit = G.t; G.flash = .08; G.kick = {x: DV[d][0] * 9, y: DV[d][1] * 9, t: .14}; }
-    if (lv < 3 || !inkCrescent(p, true)) swordArc(p, true); chargeBlast(p, lv); doHit(p, {dmg: S.dmg[lv - 1], kb: 60 + lv * 60, hs: .05 + lv * .03, sh: 2 + lv * 3, reach: 175 + lv * 15, cone: 100, slash: lv >= 3 ? 3 : 2}); }});
+    if (lv < 3 || !inkCrescent(p, true)) swordArc(p, true); chargeBlast(p, lv); doHit(p, {dmg: S.dmg[lv - 1], kb: 60 + lv * 60, hs: .05 + lv * .03, sh: 2 + lv * 3, reach: 175 + lv * 15, cone: 100, slash: lv >= 3 ? 3 : 2}); }}, {bz4: 'release'});
 }
 function leapLand(p) {
   const S = SWS[4];
@@ -2829,8 +2841,11 @@ function hurtPlayer(dmg, fromX, fromY) {
   if (p.msh > 0 && p.mshT > G.t) { const a = Math.min(p.msh, dmg); p.msh -= a; dmg -= a; spark(p.x, p.y - 40, 6, '#7af0ff'); if (p.msh <= 0) shieldPop(p); }
   if (dmg <= 0) { p.inv = .35; return; }
   p.hp -= dmg; p.inv = .7; G.shake = 6; G.hs = .06;
-  const dx = p.x - fromX, dy = p.y - fromY, l = Math.hypot(dx, dy) || 1; p.kx = dx / l * 260; p.ky = dy / l * 260;
-  p.a = null; p.state = 'hurt'; p.hurtT = HURT_T; p.dir = dirOf(-dx, -dy);    // flinch facing the hitter
+  if (BZTRY && p.rage > G.t && p.hp < 1) p.hp = 1;   // the Berserker's rage: cannot die
+  const dx = p.x - fromX, dy = p.y - fromY, l = Math.hypot(dx, dy) || 1;
+  if (BZTRY && (p.state === 'atk' || p.state === 'act')) { G.nums.push({x: p.x, y: p.y - 130, v: dmg, t: 0, big: true, red: true}); if (p.hp <= 0) { p.hp = 0; G.over = true; p.state = 'dead'; p.deadT = 0; p.a = null; p.ac = null; setTimeout(() => showOver(), 1600); } return; }   // heavy swings are not interrupted (owner 2026-11-09)
+  p.kx = dx / l * 260; p.ky = dy / l * 260;
+  p.a = null; p.state = 'hurt'; p.hurtT = HURT_T * (BZTRY && p.rage > G.t ? .7 : 1); p.dir = dirOf(-dx, -dy);    // flinch facing the hitter
   G.nums.push({x: p.x, y: p.y - 130, v: dmg, t: 0, big: true, red: true});
   if (p.hp <= 0 && p.mir > G.t) { p.mir = 0; p.hp = PRS[6].rev; p.inv = 1.2; G.flash = .12; tag(p.x, p.y - 110, 'ฟื้นคืน!', '#fff6d0');   // the miracle
     G.fx.push({k: 'ring', x: p.x, y: p.y, r0: 10, r1: 140, t: 0, life: .5, c: '#fff6d0'}); parts(p.x, p.y - 40, PRY.mid, 30, {k: 'ln', sp: 500, life: .35}); return; }
@@ -3011,6 +3026,7 @@ function stepPlayer(dt) {
   const p = G.p; if (HERO === 'priest') stepPriest(p, dt); p.inv = Math.max(0, p.inv - dt); const ox = p.x, oy = p.y;
   if (p.bufT > 0) { p.bufT -= dt; if (p.bufT <= 0) p.buf = null; }
   p.stT -= dt; if (p.stT <= 0) p.st = Math.min(100, p.st + 42 * dt);
+  if (p.bzr && p.rage <= G.t) bzRageEnd(p);
   if (p.kx || p.ky) { p.x += p.kx * dt; p.y += p.ky * dt; p.kx *= Math.pow(.0005, dt); p.ky *= Math.pow(.0005, dt); if (Math.abs(p.kx) + Math.abs(p.ky) < 5) p.kx = p.ky = 0; }
   const [mx, my] = moveInput();
   if (p.state === 'hurt') { p.hurtT -= dt; if (p.hurtT <= 0) p.state = 'idle'; }
@@ -3093,7 +3109,7 @@ function stepPlayer(dt) {
   }
   if (p.state === 'idle' || p.state === 'move') {
     if (mx || my) {
-      p.state = 'move'; const sp = RUN * (p.stealth > G.t ? 1.3 : 1); p.x += mx * sp * dt; p.y += my * sp * dt; p.dir = dirOf(mx, my);
+      p.state = 'move'; const sp = RUN * (p.stealth > G.t ? 1.3 : 1) * (p.tired > G.t ? .7 : 1); p.x += mx * sp * dt; p.y += my * sp * dt; p.dir = dirOf(mx, my);
       p.step += dt; if (p.step > .15) { p.step = 0; p.bob ^= 1; puff(p.x - DV[p.dir][0] * 10 + (rnd() - .5) * 8, p.y - 1, p.bob ? '#efe6c9' : '#d9e8b4'); }   // kicked-up dust
     } else { p.state = 'idle'; p.bob = 0; }
   }
@@ -3363,6 +3379,10 @@ function bz4Plan() {
   for (let i = 0; i < n; i++) ms.push(H.includes(i) ? ATK.hitMs : H.includes(i + 1) ? ATK.preMs * 1.6 : ATK.base);
   return {ar: {bz4: k, n}, hits: H, dmg: [Math.round((k === 'vert' ? 34 : 24) * 1.3)], ms, fr: [...Array(n).keys()], n, first: H[0], last: H[H.length - 1], crit: false};
 }
+// skill acts on the new look: [clip, first frame, last frame, from, to] over the act's progress 0..1
+const BZ4SEG = {chain: [['sweep', 0, 1, 0, .35], ['sweep', 2, 2, .35, .75], ['sweep', 9, 11, .75, 1]],
+  triple: [['sweep', 0, 4, 0, .35], ['spin', 4, 9, .35, .54], ['vert', 1, 7, .54, 1]],   // hits at .22 / .48 / .9 s of 1.15 s
+  shackle: [['vert', 0, 7, 0, 1]], release: [['vert', 3, 8, 0, 1]]};
 function drawBz4(p) {
   const m = BZ4.m; if (!m || !BZ4.still.complete) return false;
   const n = N128 ? (HZ || Math.max(1, Math.round(S * 2 / 3))) : S, d = n / S, x = Math.round(p.x * S) / S; let y = Math.round(p.y * S) / S;
@@ -3370,6 +3390,13 @@ function drawBz4(p) {
   if (dx < -.1) BZ4.left = true; else if (dx > .1) BZ4.left = false;    // straight up / down keeps the last side
   let img = BZ4.still, f = 0;
   if (p.state === 'atk' && p.a) { const k = p.a.plan.ar.bz4; if (!k) return false; img = BZ4[k]; f = Math.min(p.a.i, m.n[k] - 1); }
+  else if (p.state === 'act' && p.ac && p.ac.bz4) { const q = p.ac, L = q.fr.length, i = Math.min(q.i, L - 1), u = Math.min(.999, (i + Math.min(1, q.t / (q.ms[i] || 50))) / L);
+    let seg = BZ4SEG[q.bz4];
+    if (q.bz4 === 'charge') { const t = G.t - q.t0; seg = null; img = BZ4.vert; f = Math.min(3, Math.floor(t / .08)); }
+    else if (q.bz4 === 'leap') { seg = null; img = BZ4.vert; f = i <= q.dn ? Math.round(i / q.dn * 3) : Math.min(11, 4 + Math.floor((i - q.dn) / Math.max(1, L - q.dn) * 8)); }
+    else if (q.bz4 === 'guard') { seg = null; img = BZ4.still; f = 0; }
+    if (seg) { const s = seg.find(z => u < z[4]) || seg[seg.length - 1]; img = BZ4[s[0]]; f = Math.min(s[2], s[1] + Math.floor((u - s[3]) / (s[4] - s[3]) * (s[2] - s[1] + 1))); } }
+  else if (G.t - (p.bzSpin || -9) < .45 && (p.state === 'idle' || p.state === 'move' || p.state === 'act')) { const t = G.t - p.bzSpin; img = BZ4.spin; f = t < .3 ? 4 + Math.floor(t / .05) % 6 : Math.min(23, 20 + Math.floor((t - .3) / .04)); }
   else if (p.state === 'act' && p.ac && p.ac.tick === whirlTick) { const t = G.t - p.ac.t0; img = BZ4.spin; f = t < .15 ? 1 + Math.floor(t / .05) : 4 + Math.floor((t - .15) / .047) % 6; }
   else if (p.state === 'move') y -= (Math.floor(G.t * 10) % 2) * d * 2;
   else if (p.state === 'idle') y -= (Math.floor(G.t * 3) % 2) * d;
