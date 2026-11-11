@@ -959,3 +959,11 @@ blade raised, leap = raise then slam on landing, guard = still); the chain's rin
 Preview: `art/incoming/action/berserker/v4_cool/skills_ingame.gif`.
 
 - 2026-11-11 `create_image_pixen` 512×512, 4 Dimraeth-style big stacked rocks in one picture (owner "ลองเอามา"), 1 gen, job 32002150. Came on black (no_background refused above 65,536 px area); cut into `art/td/props/rock0-3.png`, placed in `art/td/mock_map2_rocks.png` at ~3.2× / 2.6× / 1.8× the hero.
+
+## Map 1 walk test (2026-11-11)
+Owner "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู": `map.html` = walk-only test of one full top-down map (1800×1100 map px, hero 50 px,
+about 400 map px tall on screen, blown up by a whole number). Built for free by `python3 tools/art/td_map.py` → `art/td/map1/`
+(ground.png with cliffs / stairs / prop shadows baked in, props.png atlas, block.png = where you cannot walk at half size, hero and
+monster sheets shrunk to map size, map.json) + `art/td/map1_preview.png`. Two plateaus (top band + an island) with stairs, a pond,
+the 4 PixelLab rocks (moss added), forest edges, olive grade. Controls: WASD / arrows, touch = hold and drag; `?dbg` or B shows the
+blocked area. Monsters only wander for now. No fighting yet.

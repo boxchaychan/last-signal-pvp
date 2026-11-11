@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>แมพ 1 ลองเดิน</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #10140c; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+  #hint { position: fixed; left: 12px; top: 10px; color: #f4ecd0; font: 600 14px/1.4 system-ui, sans-serif; text-shadow: 0 1px 2px #000; pointer-events: none; transition: opacity 1s; }
+  #fs { position: fixed; right: 10px; top: 10px; width: 40px; height: 40px; border: 2px solid #f4ecd088; border-radius: 8px; background: #0008; color: #f4ecd0; font-size: 20px; }
+  #load { position: fixed; inset: 0; display: grid; place-items: center; color: #f4ecd0; font: 600 18px system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="hint">เดิน: WASD / ลูกศร · มือถือ: แตะค้างแล้วลากนิ้ว</div>
+<button id="fs" title="เต็มจอ">⛶</button>
+<div id="load">กำลังโหลดแมพ…</div>
+<script>
+// Map 1 walk test (owner 2026-11-11 "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู"). Assets from tools/art/td_map.py (art/td/map1/):
+// everything is at map size (1 map px = 1 screen px on a landscape phone) and blown up by a whole number K, so pixels stay square.
+const A = 'art/td/map1/', cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const img = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = A + s; });
+let M, GR, PR, HR = {}, MB = {}, BLK, BW, BH, K = 1, VW = 0, VH = 0;
+const P = {x: 0, y: 0, d: 1, mv: 0, t: 0}, keys = {}, joy = {id: null, x0: 0, y0: 0, x: 0, y: 0};
+let mobs = [], cam = {x: 0, y: 0}, dbg = /dbg/.test(location.search), VIG;
+
+function blocked(x, y) {
+  if (x < 0 || y < 0 || x >= M.w || y >= M.h) return true;
+  return BLK[((y / M.bk) | 0) * BW + ((x / M.bk) | 0)] > 0;
+}
+function free(x, y, r) { return !blocked(x, y) && !blocked(x - r, y) && !blocked(x + r, y) && !blocked(x, y - r * .5) && !blocked(x, y + r * .5); }
+function move(o, dx, dy, r) {                      // slide along walls: x and y on their own
+  if (dx && free(o.x + dx, o.y, r)) o.x += dx;
+  if (dy && free(o.x, o.y + dy, r)) o.y += dy;
+}
+function resize() {
+  const dpr = window.devicePixelRatio || 1, w = innerWidth, h = innerHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  K = Math.max(1, Math.round(cv.height / 400));     // about 400 map px tall on any screen, whole-number pixels
+  VW = Math.ceil(cv.width / K); VH = Math.ceil(cv.height / K);
+  const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(c.width / 2, c.height / 2, c.height * .35, c.width / 2, c.height / 2, Math.hypot(c.width, c.height) * .62);
+  gr.addColorStop(0, 'rgba(10,14,6,0)'); gr.addColorStop(1, 'rgba(10,14,6,.55)'); g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height); VIG = c;
+}
+addEventListener('resize', resize);
+
+async function boot() {
+  M = await fetch(A + 'map.json', {cache: 'no-cache'}).then(r => r.json());
+  const ld = [img('ground.png').then(i => GR = i), img('props.png').then(i => PR = i), img('block.png').then(i => {
+    BW = i.width; BH = i.height; const c = document.createElement('canvas'); c.width = BW; c.height = BH; const g = c.getContext('2d'); g.drawImage(i, 0, 0);
+    const d = g.getImageData(0, 0, BW, BH).data; BLK = new Uint8Array(BW * BH); for (let k = 0; k < BW * BH; k++) BLK[k] = d[k * 4] > 128 ? 1 : 0; }),
+    img('hero_run.png').then(i => HR.run = i), img('hero_idle.png').then(i => HR.idle = i)];
+  for (const k in M.mobs) ld.push(img('mob_' + k + '.png').then(i => MB[k] = i));
+  await Promise.all(ld);
+  P.x = M.start[0]; P.y = M.start[1];
+  mobs = M.spawn.map(([k, x, y], i) => ({k, x, y, hx: x, hy: y, tx: x, ty: y, w: 1 + Math.random() * 2, f: Math.random() > .5 ? 1 : -1, t: Math.random() * 3, mv: 0}));
+  document.getElementById('load').remove(); resize(); cam.x = P.x - VW / 2; cam.y = P.y - VH / 2; requestAnimationFrame(frame);
+  setTimeout(() => document.getElementById('hint').style.opacity = 0, 6000);
+}
+
+// ---- input
+addEventListener('keydown', e => { keys[e.code] = 1; if (e.code === 'KeyB') dbg = !dbg; });
+addEventListener('keyup', e => { keys[e.code] = 0; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; });
+cv.addEventListener('pointerdown', e => {
+  if (joy.id !== null) return; joy.id = e.pointerId; joy.x0 = joy.x = e.clientX; joy.y0 = joy.y = e.clientY; cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => { if (e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const up = e => { if (e.pointerId === joy.id) joy.id = null; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+document.getElementById('fs').onclick = () => {
+  const d = document.documentElement;
+  if (!document.fullscreenElement) (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d)?.then?.(() => screen.orientation?.lock?.('landscape').catch(() => {})).catch?.(() => {});
+  else document.exitFullscreen?.();
+};
+
+// ---- update
+const SPD = 150;
+function step(dt) {
+  let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  let iy = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
+  if (joy.id !== null) {
+    const dx = joy.x - joy.x0, dy = joy.y - joy.y0, l = Math.hypot(dx, dy), R = 46;
+    if (l > R) { joy.x0 = joy.x - dx / l * R; joy.y0 = joy.y - dy / l * R; }   // the base follows the finger
+    if (l > 8) { ix = dx / Math.max(l, R); iy = dy / Math.max(l, R); }
+  }
+  const l = Math.hypot(ix, iy);
+  if (l > .1) {
+    const s = Math.min(1, l) / l; ix *= s; iy *= s;
+    move(P, ix * SPD * dt, iy * SPD * dt, 7);
+    P.d = (Math.round(Math.atan2(iy, ix) / (Math.PI / 4)) + 8) % 8;
+    if (!P.mv) P.t = 0; P.mv = 1;
+  } else { if (P.mv) P.t = 0; P.mv = 0; }
+  P.t += dt;
+  for (const m of mobs) {                           // wander round home
+    m.t -= dt;
+    if (m.t <= 0) {
+      if (m.mv) { m.mv = 0; m.t = 1 + Math.random() * 2.5; }
+      else { const a = Math.random() * 6.28, r = Math.random() * 70; m.tx = m.hx + Math.cos(a) * r; m.ty = m.hy + Math.sin(a) * r * .6; m.mv = 1; m.t = 3; }
+    }
+    if (m.mv) {
+      const dx = m.tx - m.x, dy = m.ty - m.y, d = Math.hypot(dx, dy), sp = 32;
+      if (d < 3) { m.mv = 0; m.t = 1 + Math.random() * 2; }
+      else { const ox = m.x, oy = m.y; move(m, dx / d * sp * dt, dy / d * sp * dt, 6); if (Math.abs(dx) > 2) m.f = dx > 0 ? 1 : -1; if (ox === m.x && oy === m.y) { m.mv = 0; m.t = .5; } }
+    }
+    m.w += dt;
+  }
+  // camera eases toward the hero, kept inside the map
+  const tx = P.x - VW / 2, ty = P.y - 12 - VH / 2, e = 1 - Math.exp(-dt * 8);
+  cam.x += (tx - cam.x) * e; cam.y += (ty - cam.y) * e;
+  cam.x = Math.max(0, Math.min(M.w - VW, cam.x)); cam.y = Math.max(0, Math.min(M.h - VH, cam.y));
+  if (VW > M.w) cam.x = (M.w - VW) / 2; if (VH > M.h) cam.y = (M.h - VH) / 2;
+}
+
+// ---- draw (in map px, snapped to whole pixels, then blown up by K)
+function shadow(x, y, w) { ctx.fillStyle = 'rgba(12,18,6,.38)'; ctx.beginPath(); ctx.ellipse(x, y, w, w * .36, 0, 0, 6.29); ctx.fill(); }
+function drawHero() {
+  const H = M.hero, sh = P.mv ? HR.run : HR.idle, fps = P.mv ? 13 : 7, f = (P.t * fps | 0) % 8;
+  const x = Math.round(P.x), y = Math.round(P.y);
+  shadow(x, y, 13);
+  ctx.drawImage(sh, f * H.c, P.d * H.c, H.c, H.c, x - H.fx, y - H.fy, H.c, H.c);
+}
+function drawMob(m) {
+  const T = M.mobs[m.k], i = MB[m.k], f = m.mv ? (m.w * 8 | 0) % T.n : 0, x = Math.round(m.x), y = Math.round(m.y);
+  shadow(x, y, T.w * .22);
+  ctx.save(); ctx.translate(x, y); ctx.scale(m.f, 1); ctx.drawImage(i, f * T.w, 0, T.w, T.h, -T.fx, -T.fy, T.w, T.h); ctx.restore();
+}
+function frame(t) {
+  const now = t / 1000, dt = Math.min(.05, now - (frame.l || now)); frame.l = now;
+  step(dt);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#10140c'; ctx.fillRect(0, 0, cv.width, cv.height);
+  const cx = Math.round(cam.x), cy = Math.round(cam.y);
+  ctx.setTransform(K, 0, 0, K, -cx * K, -cy * K);
+  const sx = Math.max(0, cx), sy = Math.max(0, cy), sw = Math.min(M.w - sx, VW + 1), shh = Math.min(M.h - sy, VH + 1);
+  ctx.drawImage(GR, sx, sy, sw, shh, sx, sy, sw, shh);
+  // back-to-front by the feet
+  const L = [];
+  for (const p of M.props) {
+    if (p.o) continue; const [ax, ay, w, h] = p.a, x = Math.round(p.x - w / 2), y = p.y - h;
+    if (x > cx + VW || x + w < cx || y > cy + VH || p.y < cy) continue;
+    L.push({y: p.y, p, x, w, h});
+  }
+  L.push({y: P.y, hero: 1});
+  for (const m of mobs) L.push({y: m.y, m});
+  L.sort((a, b) => a.y - b.y);
+  for (const e of L) {
+    if (e.hero) { drawHero(); continue; }
+    if (e.m) { drawMob(e.m); continue; }
+    const [ax, ay, w, h] = e.p.a, y0 = e.p.y - h;
+    // see-through when the hero walks behind a tall prop
+    const hide = h > 70 && P.y < e.p.y - 4 && P.y > y0 + 10 && P.x > e.x + w * .12 && P.x < e.x + w * .88;
+    if (hide) ctx.globalAlpha = .55;
+    ctx.drawImage(PR, ax, ay, w, h, e.x, y0, w, h);
+    ctx.globalAlpha = 1;
+  }
+  for (const p of M.props) if (p.o) { const [ax, ay, w, h] = p.a; ctx.drawImage(PR, ax, ay, w, h, Math.round(p.x - w / 2), p.y - h, w, h); }
+  if (dbg) {                                         // B: show where you cannot walk
+    ctx.fillStyle = 'rgba(255,0,0,.35)';
+    for (let y = Math.max(0, cy / M.bk | 0); y < Math.min(BH, (cy + VH) / M.bk + 1); y++)
+      for (let x = Math.max(0, cx / M.bk | 0); x < Math.min(BW, (cx + VW) / M.bk + 1); x++) if (BLK[y * BW + x]) ctx.fillRect(x * M.bk, y * M.bk, M.bk, M.bk);
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(VIG, 0, 0);
+  if (joy.id !== null) {                             // the stick
+    const d = devicePixelRatio || 1; ctx.lineWidth = 3 * d; ctx.strokeStyle = 'rgba(244,236,208,.45)'; ctx.fillStyle = 'rgba(244,236,208,.35)';
+    ctx.beginPath(); ctx.arc(joy.x0 * d, joy.y0 * d, 46 * d, 0, 6.29); ctx.stroke();
+    ctx.beginPath(); ctx.arc(joy.x * d, joy.y * d, 20 * d, 0, 6.29); ctx.fill();
+  }
+  requestAnimationFrame(frame);
+}
+boot().catch(e => { document.getElementById('load').textContent = 'โหลดไม่ได้: ' + e; });
+</script>
+</body>
+</html>
