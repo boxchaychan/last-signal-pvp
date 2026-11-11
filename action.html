@@ -38,6 +38,8 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 #ov .over .row{display:flex;gap:10px;justify-content:center} #ov .over #go{background:#7fdc6a;box-shadow:0 4px 0 #2f6a26}
 #help{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);font-size:12px;opacity:.8;text-shadow:0 1px 0 var(--ink);pointer-events:none;white-space:nowrap}
 .town #score{display:none}
+#fsBtn{position:fixed;right:max(8px,env(safe-area-inset-right));top:52px;width:38px;height:38px;padding:0;border:2px solid #1d1a22;border-radius:6px;background:#f4ecd0cc;color:#1d1a22;font-size:20px;line-height:1;z-index:5}
+.fs #fsBtn{opacity:.55}
 #townui{position:fixed;left:50%;bottom:18%;transform:translateX(-50%);z-index:30;background:#1d1a22e8;color:#f0ece0;border:3px solid #d8b048;padding:10px 16px;text-align:center;font:600 15px 'Leelawadee UI','Noto Sans Thai',Tahoma,sans-serif;min-width:200px}
 #townui p{margin:4px 0 8px;color:#c9c2b0;font-size:13px} #townui button{display:block;width:100%;margin:5px 0;font:inherit;padding:6px 10px;border:2px solid #1d1a22;background:#f0ece0;color:#1d1a22;cursor:pointer}
 #btns{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:16px;width:300px;height:240px;display:none;pointer-events:none}
@@ -115,7 +117,7 @@ html,body{margin:0;height:100%;background:#21331d;overflow:hidden;touch-action:n
 <body>
 <canvas id="cv"></canvas>
 <div id="hud"><canvas id="hpor" width="40" height="40"></canvas><div class="bar" id="hpb"><s></s><i></i><em id="hpn"></em></div><div class="bar" id="stb"><i></i></div><div id="xpb"><b>Lv 1</b><span><i></i></span></div><div id="pas"><i></i><i></i><i></i><i></i><span>จังหวะสังหาร</span></div></div>
-<div id="score"></div>
+<div id="score"></div><button id="fsBtn" title="เต็มจอ">⛶</button>
 <div id="hotbar"></div><button id="bookBtn">สกิล<em></em></button><button id="autoBtn">ออโต้</button><div id="book"></div>
 <div id="skpc"><div class="sq" id="q1"><span>Q</span><b></b></div><div class="sq" id="q2"><span>E</span><b></b></div><div class="sq" id="q3"><span>R</span><b></b></div><div class="sq" id="q4"><span>F</span><b></b></div><div class="sq" id="q5"><span>Z</span><b></b></div><div class="sq" id="q6"><span>X</span><b></b></div></div>
 <div id="help">WASD เดิน · คลิกซ้าย / J ตี (หันตามเมาส์) · Space / คลิกขวา / K กลิ้งหลบ · Q ปามีด (กดค้างเล็ง โดนแล้วกดอีกที = วาร์ป) · E หมุนตัวฟัน · R ปาระเบิดควันตาบอด · Z ล่องหน · X มีดพิษ · F พุ่งฟัน 6 ครั้ง · ติดตัว: ตีโดนครั้งที่ 4 คริ ×2, ฆ่าได้คืนสตามินา</div>
@@ -145,7 +147,7 @@ const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.get
 const SWL = HERO === 'swordsman' || HERO === 'guardian' || HERO === 'berserker';   // the Berserker too (2026-11-10)
 const HNAME = {rogue: 'นักมีด', swordsman: 'นักดาบ', guardian: 'อัศวินโล่', berserker: 'เบอร์เซิร์กเกอร์', mage: 'เมจ', archer: 'นักธนู', priest: 'นักบวช'};
 const DIRS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
-let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0;
+let S = 1, VW = 960, VH = 540, DPR = 1, U = 2, Q = 1, OX = 0, OY = 0, TDS = false;
 // owner 2026-11-09 "ให้เห็นเท่ากัน ไม่งั้นเสียเปรียบ เอาเท่าที่ส่งมาให้ดู": every screen shows the same piece of the map, FVW x FVH
 // world px (the 2x phone view the owner saw); "ไม่ได้บอกคมเท่ากัน หมายถึงระยะมองเห็นเท่ากัน": only the view is the same, each screen
 // draws at its own pixels (Q = DPR), so S = canvas px per world px is 2 on a 3x phone and in between elsewhere (1.33 on a 2x
@@ -169,6 +171,9 @@ function onResize() {
     // owner 2026-11-11 (two phone screenshots): opened inside an app's browser the bar on top made the view shorter, the rule above
     // missed and the whole world showed at half size; a phone now always gets the 2x step (3 = 2 screen px per hero art px)
     if (TOUCH && DPR >= 2 && S < 2 * ARX) S = 2 * ARX; }
+  // map td1 (owner 2026-11-11 "ภาพจอก็ไม่เท่ากับเทส"): the same view as map.html, about 400 map px tall, K whole screen px per map px;
+  // the hero and monsters then get K / 2 screen px per art px, drawn smooth when that is not a whole number (TDS)
+  if (TDM && !ZM) { Q = DPR; const K = Math.max(1, Math.round(innerHeight * DPR / 400)); S = K / TDK; TDS = K % 2 === 1; }
   const FIT = ZM || (ARX > 1 && !new URLSearchParams(location.search).get('sharp'));
   cv.width = Math.round(innerWidth * Q); cv.height = Math.round(innerHeight * Q);
   VW = FIT ? Math.ceil(cv.width / S) : FVW; VH = FIT ? Math.ceil(cv.height / S) : FVH; OX = Math.round((cv.width - VW * S) / 2); OY = Math.round((cv.height - VH * S) / 2);
@@ -646,7 +651,7 @@ let PROPS = [];
 // a prop's 1.5x picture (art/action/props_hr/, `PROP_K=1.5` in rebuild_props.py / thai_props.py) drawn 1 art px per screen px:
 // the low-res picture still gives the size, feet and boxes; the hr one is pinned at its feet (bottom centre)
 function drawProp(q) {
-  if (q.td) { const [ax, ay, w, h] = q.td; ctx.drawImage(TD.p, ax, ay, w, h, Math.round(q.mx - w / 2) * TDK, (q.my - h) * TDK, w * TDK, h * TDK); return; }
+  if (q.td) { const [ax, ay, w, h] = q.td; ctx.imageSmoothingEnabled = false; ctx.drawImage(TD.p, ax, ay, w, h, Math.round(q.mx - w / 2) * TDK, (q.my - h) * TDK, w * TDK, h * TDK); return; }
   const h = q.img.hr; if (!h || ARX === 1) { ctx.drawImage(q.img, Math.round(q.x - q.ox), Math.round(q.y - q.oy)); return; }
   const w = h.width / ARX, hh = h.height / ARX, x = Math.round((q.x - q.ox + q.img.width / 2 - w / 2) * S) / S, y = Math.round((q.y - q.oy + q.img.height - hh) * S) / S;
   ctx.drawImage(h, x, y, w, hh);
@@ -3278,7 +3283,8 @@ function step(dt) {
 function drawCell(img, r, c, x, y, flip, alpha) {
   const C = META.cell;
   // N128: n screen px per art px (n = the whole number nearest to the 2/3 size, at least 1), placed on whole screen pixels
-  const d = N128 ? (HZ || Math.max(1, Math.round(S * 2 / 3))) / S : 1, D = C * d, fx = META.fx * d, fy = META.fy * d;
+  if (TDS) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
+  const d = TDM && N128 ? 2 / 3 : N128 ? (HZ || Math.max(1, Math.round(S * 2 / 3))) / S : 1, D = C * d, fx = META.fx * d, fy = META.fy * d;
   if (N128) { x = Math.round(x * S) / S; y = Math.round(y * S) / S; } else { x = Math.round(x); y = Math.round(y); }
   if (alpha !== undefined) ctx.globalAlpha = alpha;
   let src = img, sx = c * C, sy = r * C;
@@ -3473,6 +3479,7 @@ function drawPlayerBody2(p) {
 }
 const MSH = {}, MRG = {};
 function drawMob2(m) {
+  if (TDS) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
   const T = MOBS[m.kind], M = T.m; let row = M.rows.walk, f = 0;
   if (m.hp <= 0) { row = M.rows.death; f = Math.min(5, m.dieT / .11 | 0); }
   else if (m.st === 'atk') { row = M.rows.attack; f = m.af; }
@@ -3844,6 +3851,14 @@ function start() {
   ov.style.display = 'none'; newGame(); if (!TEST && !TOWN) spawnCamps(); document.getElementById('bRoll').textContent = G.p.tele ? 'วาร์ป' : 'กลิ้ง'; for (let k = 1; k <= 6; k++) applySkLv(k, G.p.skl[k] || 1); buildHotbar();
   if (TOUCH) { try { document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {}); } catch (e) {} }
 }
+{ const fb = document.getElementById('fsBtn'), d = document.documentElement;   // owner 2026-11-11 "ทำไม่มีปุ่มเต็มจอ"
+  fb.onclick = e => { e.stopPropagation(); const on = document.fullscreenElement || document.webkitFullscreenElement;
+    try { if (on) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else { const r = (d.requestFullscreen || d.webkitRequestFullscreen).call(d); if (r && r.then) r.then(() => screen.orientation?.lock?.('landscape').catch(() => {})).catch(() => {}); } } catch (err) {} };
+  for (const ev of ['pointerdown', 'touchstart']) fb.addEventListener(ev, e => e.stopPropagation(), {passive: true});
+  const upd = () => document.body.classList.toggle('fs', !!(document.fullscreenElement || document.webkitFullscreenElement));
+  document.addEventListener('fullscreenchange', upd); document.addEventListener('webkitfullscreenchange', upd);
+  if (!(d.requestFullscreen || d.webkitRequestFullscreen)) fb.style.display = 'none'; }
 let last = performance.now();
 function frame(t) { const dt = Math.min(1 / 30, (t - last) / 1000); last = t; if (G) step(dt); draw(); if (G && !G.menu) hud(); else menuTick(dt); requestAnimationFrame(frame); }
 load().then(() => { const go = document.getElementById('go'); go.disabled = false; go.textContent = 'เริ่มเล่น'; go.onclick = menuGo;
