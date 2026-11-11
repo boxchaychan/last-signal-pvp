@@ -1,0 +1,284 @@
+# Walkable map 1 (owner 2026-11-11 "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู"): the mock_map2 look as a full map for map.html.
+# Free (no new PixelLab jobs): ground from the PixelLab tile textures laid by smooth masks with big grass patches, raised
+# plateaus with code-drawn cliffs (rounded boulders on the rim, stone stairs up), a pond, the 4 big rocks (moss added),
+# trees / bushes round the edges, an olive grade like Dimraeth. 1 map px = 1 screen px on a landscape phone (hero 50 px).
+#   python3 tools/art/td_map.py -> art/td/map1/{ground.png, props.png, block.png, hero_*.png, mob_*.png, map.json}
+import json, math, os, random, sys, numpy as np
+from PIL import Image, ImageDraw, ImageFilter
+from scipy import ndimage
+sys.path.insert(0, 'tools/art'); from px_smooth import smooth_up
+random.seed(7); np.random.seed(7)
+W, H = 1800, 1100; DH = 62; HERO = 50
+OUT = 'art/td/map1/'; os.makedirs(OUT, exist_ok=True); D = 'art/td/tiles/'
+yy, xx = np.mgrid[0:H, 0:W]
+
+def tex(k, lower):
+    m = json.load(open(D + k + '_meta.json'))['tileset_data']['tiles']; im = Image.open(D + k + '.png').convert('RGB')
+    for t in m:
+        if all((t['corners'][q] == 'lower') == lower for q in t['corners']):
+            b = t['bounding_box']; return im.crop((b['x'], b['y'], b['x'] + 32, b['y'] + 32))
+def tile_fill(t):
+    out = Image.new('RGB', (W, H))
+    for y in range(0, H, 32):
+        for x in range(0, W, 32):
+            out.paste(t.transpose(random.choice([Image.FLIP_LEFT_RIGHT, Image.FLIP_TOP_BOTTOM, Image.ROTATE_180])) if random.random() < .5 else t, (x, y))
+    return np.asarray(out).astype(float)
+GRASS = tile_fill(tex('path_pro', False)); DIRT = tile_fill(tex('path_pro', True)); WATER = tile_fill(tex('river', True)); ROCK = tile_fill(tex('cliff', True))
+def noise(cell):
+    n = np.random.rand(H // cell + 2, W // cell + 2)
+    return np.asarray(Image.fromarray((n * 255).astype(np.uint8)).resize(((W // cell + 2) * cell, (H // cell + 2) * cell), Image.BICUBIC)).astype(float)[:H, :W] / 255
+N8, N40, N90 = noise(8), noise(40), noise(90)
+BAY = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16
+BY = BAY[yy % 4, xx % 4]
+def dil(m, r): return ndimage.binary_dilation(m, iterations=r)
+def edge(m): return m & ~ndimage.binary_erosion(m)
+def band(pts, w):                       # smooth road: distance to a Catmull-Rom curve through pts < w (+ wobble)
+    P = []
+    pp = [pts[0]] + pts + [pts[-1]]
+    for i in range(1, len(pp) - 2):
+        p0, p1, p2, p3 = [np.array(p, float) for p in pp[i - 1:i + 3]]
+        for t in np.linspace(0, 1, 40):
+            P.append(.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
+    line = np.zeros((H, W), bool)
+    for x, y in P:
+        if 0 <= int(y) < H and 0 <= int(x) < W: line[int(y), int(x)] = True
+    d = ndimage.distance_transform_edt(~line)
+    return d < w + (N8 - .5) * 8 + (N40 - .5) * 8
+def blob(cx, cy, rx, ry, wob=.16):
+    a = np.arctan2(yy - cy, xx - cx); r = np.hypot((xx - cx) / rx, (yy - cy) / ry)
+    return r < 1 + wob * np.sin(a * 3 + cx) + wob * .6 * np.sin(a * 5 + cy) + (N8 - .5) * .1
+
+# ---- ground: grass with big light / dark patches (stepped, dithered at the edges), a few bare dirt patches
+img = GRASS.copy()
+lv = N90 * .7 + N40 * .3 + (BY - .5) * .08
+img[lv < .36] *= .86; img[lv < .28] *= .9                                # darker, cooler patches
+lt = lv > .66; img[lt] = img[lt] * 1.08 + np.array([10, 6, -6])         # sunny, yellowish patches
+bare = (N40 > .86) & (N90 > .5) & (N8 + BY * .5 > .7)
+img[bare] = img[bare] * .55 + DIRT[bare] * .45
+# ---- road (Catmull-Rom) with a dark grass rim
+ROADS = [[(-30, 720), (180, 700), (380, 660), (540, 590), (640, 470), (660, 380)],
+         [(540, 600), (760, 650), (980, 720), (1180, 700), (1330, 640), (1400, 600)],
+         [(1180, 700), (1420, 780), (1640, 800), (1840, 770)]]
+road = np.zeros((H, W), bool)
+for r in ROADS: road |= band(r, 24)
+img[road] = DIRT[road]
+rim = edge(dil(road, 2)) & ~road; img[rim] = img[rim] * .7 + np.array([60, 96, 36]) * .3
+# ---- pond with a muddy bank and foam
+pond = blob(1080, 950, 190, 80); bank = dil(pond, 6)
+img[bank & ~pond] = np.array([112, 80, 52]) + (N8[bank & ~pond, None] - .5) * 30
+img[pond] = WATER[pond]; deep = ndimage.binary_erosion(pond, iterations=14); img[deep] *= .82
+img[edge(pond)] = np.array([210, 236, 250])
+# ---- plateaus: footprint at ground level, top drawn DH higher, cliff face below
+BOULDERS = []; UP = np.zeros((H, W), bool); FACE = np.zeros((H, W), bool); RAMP = np.zeros((H, W), bool)
+def shift_up(m, k):
+    o = np.zeros_like(m); o[:H - k] = m[k:]; return o
+def plateau(mask, ramps):
+    global UP, FACE
+    up = shift_up(mask, DH); span = np.zeros_like(mask); depth = np.zeros((H, W))
+    for k in range(DH + 1):
+        sh = shift_up(mask, k); depth[sh & ~span] = k; span |= sh
+    face = span & ~up
+    foot = dil(mask, 5) & ~span; img[foot] *= .7                                   # dark shadow at the foot
+    sh_k = np.clip(.55 + depth / DH * .5, .5, 1.05)[..., None]                      # darker toward the foot
+    img[face] = (ROCK[face] * .62 + np.array([112, 78, 50]) * .38) * sh_k[face]
+    vs = face & ((xx * 7 + (yy // 5) * 3) % 13 == 0) & (N8 > .4); img[vs] *= .72  # vertical cracks
+    st = face & ((yy + (xx // 11) * 4) % 12 == 0); img[st] *= .8                   # strata
+    roots = face & (N8 > .82) & (depth > DH * .55); img[roots] = np.array([70, 52, 34])
+    img[up] = GRASS[up] * 1.04 + np.array([4, 4, 0])
+    img[edge(up)] = np.array([150, 196, 92])                                        # sunlit rim
+    img[edge(span) & ~up] = np.array([38, 26, 20])                                  # dark outline round the face
+    # rounded boulders along the rim (columns: the first face pixel under the top)
+    cols = np.where(face.any(0))[0]; last = -99
+    for x in cols:
+        if x - last < random.randint(9, 14): continue
+        ys = np.nonzero(face[:, x])[0]
+        if ys.size == 0: continue
+        y0 = ys[0]
+        if y0 < 4 or not up[y0 - 1, x] or ys[-1] - y0 < DH * .5 or not (up[y0 - 1, max(0, x - 4)] and up[y0 - 1, min(W - 1, x + 4)]): continue
+        last = x; BOULDERS.append((x, y0 + random.randint(1, 4), random.randint(6, 10)))
+    for x0, x1 in ramps:                                                            # stone stairs over the face
+        for x in range(x0, x1):
+            ys = np.nonzero(face[:, x])[0]
+            if ys.size: RAMP[max(0, ys[0] - 3):ys[-1] + 3, x] = True
+    UP |= up; FACE |= face
+    return up
+plateau(yy < 300 + 55 * np.sin(xx / 240) + 26 * np.sin(xx / 93 + 1) + (N40 - .5) * 30, [(632, 690)])
+plateau(blob(1460, 560, 200, 84), [(1380, 1430)])
+# ---- stairs
+for x in range(W):
+    ys = np.nonzero(RAMP[:, x])[0]
+    if not ys.size: continue
+    left = not RAMP[:, x - 1].any(); right = not RAMP[:, min(W - 1, x + 1)].any()
+    for y in ys:
+        i = (y - ys[0]) // 7; c = np.array([150, 132, 108]) * (1 - .025 * i)
+        if (y - ys[0]) % 7 == 0: c = np.array([196, 178, 146])
+        if (x * 5 + i * 17) % 23 == 0: c = c * .7
+        elif (y - ys[0]) % 7 == 6: c = np.array([96, 86, 76])
+        img[y, x] = c
+    if left or right: img[ys, x] = np.array([60, 46, 36])
+img = np.clip(img, 0, 255)
+
+# ---- props (sprites placed by their feet)
+def fit(f, h, flip=False):
+    im = Image.open(f).convert('RGBA'); im = im.crop(im.getbbox()); k = h / im.height
+    if k >= 1: im = smooth_up(im, k)
+    else: im = im.resize((max(1, round(im.width * k)), h), Image.LANCZOS)
+    a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+    im = Image.fromarray(a); return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
+def mossify(im, seed):
+    a = np.asarray(im).astype(float).copy(); h, w = a.shape[:2]; rs = np.random.RandomState(seed)
+    n = np.asarray(Image.fromarray((rs.rand(h // 10 + 2, w // 10 + 2) * 255).astype(np.uint8)).resize((w // 10 * 10 + 20, h // 10 * 10 + 20), Image.BICUBIC)).astype(float)[:h, :w] / 255
+    L = a[..., :3].mean(2); al = a[..., 3] > 0
+    above = np.zeros_like(al); above[3:] = al[:-3]
+    top = al & (L > np.percentile(L[al], 55))                                        # lit, upward-facing stone
+    yy2 = np.mgrid[0:h, 0:w][0] / h
+    m1 = top & (n + (1 - yy2) * .1 > .8) & (rs.rand(h, w) < .6); m2 = m1 & (n > .86)
+    a[m1, :3] = a[m1, :3] * .5 + np.array([88, 112, 52]) * .5
+    a[m2, :3] = a[m2, :3] * .4 + np.array([132, 160, 70]) * .6
+    a[..., :3] *= (1.06 - yy2 * .22)[..., None]                                      # lighter top, darker foot
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+SPR = {}; PROPS = []
+def sprite(key, f, h, flip=False, moss=False):
+    k = (key, h, flip)
+    if k not in SPR:
+        im = fit(f, h, flip)
+        if moss: im = mossify(im, len(SPR))
+        SPR[k] = im
+    return k
+FP = {'tree': (.17, 11, 6), 'stree': (.14, 6, 3), 'bush': (.34, .16, 0), 'rock': (.42, .17, .12), 'pebble': (.36, .22, 0),
+      'fence': (.46, 4, 0), 'sign': (.12, 3, 0), 'flowers': None, 'crown': None}
+FR = 'art/side/forest/'
+def put(kind, f, h, x, y, flip=False, moss=False, over=False):
+    PROPS.append({'s': sprite(kind + f, f, h, flip, moss), 'x': x, 'y': y, 'kind': kind, 'over': over})
+TREE = 'art/side/map30/tree.png'
+# forest along the top plateau, the left / right edges
+for x in range(-40, W + 60, 150):
+    put('tree', TREE, random.randint(220, 270), x + random.randint(-30, 30), random.randint(110, 170), random.random() < .5)
+for x in range(60, W - 60, 230):
+    if random.random() < .7: put('stree', FR + 'small_tree.png', random.randint(95, 120), x + random.randint(-40, 40), random.randint(205, 235), random.random() < .5)
+for y in range(390, H + 40, 150):
+    put('tree', TREE, random.randint(220, 260), random.randint(-30, 30), y + random.randint(-20, 20), random.random() < .5)
+    put('tree', TREE, random.randint(220, 260), W + random.randint(-30, 30), y + random.randint(-20, 20), random.random() < .5)
+# trees and bushes inside
+for x, y, h in ((300, 470, 240), (820, 560, 230), (1250, 420, 200), (1700, 640, 230), (470, 900, 240), (1440, 960, 220), (1660, 520, 210)):
+    put('tree', TREE, h, x, y, random.random() < .5)
+for x, y in ((150, 560), (430, 520), (700, 420), (1020, 600), (1130, 480), (600, 780), (900, 850), (1300, 900), (1580, 700), (360, 820), (1700, 950), (230, 1010)):
+    put('bush', FR + 'bush.png', random.randint(42, 52), x, y, random.random() < .5)
+for x, y in ((520, 740), (800, 1010), (1350, 520), (1560, 500), (180, 880)):
+    put('stree', FR + 'small_tree.png', random.randint(100, 115), x, y, random.random() < .5)
+# the 4 big PixelLab rocks (Dimraeth size: ~4x the hero) + small rock piles
+for f, h, x, y, fl in (('rock0', 210, 1000, 470, False), ('rock1', 180, 260, 980, True), ('rock2', 150, 760, 900, False), ('rock3', 120, 1560, 560, False),
+                       ('rock3', 110, 420, 240, True), ('rock1', 150, 1200, 260, False)):
+    put('rock', 'art/td/props/%s.png' % f, h, x, y, fl, moss=True)
+for x, y in ((660, 700), (1240, 820), (90, 760), (1500, 860), (880, 300)):
+    put('pebble', FR + 'rocks.png', random.randint(30, 38), x, y, random.random() < .5, moss=True)
+for x, y in ((240, 640), (690, 990), (1150, 560), (1620, 900), (980, 820), (350, 300)):
+    put('flowers', FR + 'flowers.png', 20, x, y, random.random() < .5)
+put('sign', FR + 'sign.png', 42, 330, 650); put('fence', FR + 'fence.png', 34, 440, 600); put('fence', FR + 'fence.png', 34, 485, 576)
+# dark tree crowns hanging over the bottom edge (drawn over everything)
+cr = fit(TREE, 300).crop((0, 0, 420, 140)); ca = np.asarray(cr).copy(); ca[..., :3] = (ca[..., :3] * .5).astype(np.uint8); SPR[('crown', 0, 0)] = Image.fromarray(ca)
+SPR[('crown', 0, 1)] = SPR[('crown', 0, 0)].transpose(Image.FLIP_LEFT_RIGHT)
+for i, x in enumerate(range(-60, W + 100, 330)):
+    PROPS.append({'s': ('crown', 0, i % 2), 'x': x + random.randint(-30, 30), 'y': H + 70, 'kind': 'crown', 'over': True})
+
+# ---- prop shadows baked into the ground (to the lower right), collision footprints
+blk = np.zeros((H, W), bool)
+sh = np.ones((H, W))
+for p in PROPS:
+    im = SPR[p['s']]; w, h = im.size; x, y = p['x'], p['y']
+    if p['kind'] in ('crown', 'flowers'): continue
+    if p['kind'] in ('tree', 'stree'):
+        e = ((xx - x - w * .1) / (w * .42)) ** 2 + ((yy - y + 6) / (w * .17)) ** 2 < 1
+    else:
+        e = ((xx - x - w * .06) / (w * .5)) ** 2 + ((yy - y + h * .08) / (h * .16 + 3)) ** 2 < 1
+    sh[e] = np.minimum(sh[e], .7)
+    fp = FP[p['kind']]
+    if fp:
+        rx = fp[0] * w; ry = fp[1] * h if fp[1] < 1 else fp[1]; oy = fp[2] * h if fp[2] < 1 else fp[2]
+        blk |= ((xx - x) / rx) ** 2 + ((yy - y + oy) / ry) ** 2 < 1
+soft = sh < 1; ring = edge(soft) & (BY > .5); sh[ring] = .85
+img *= sh[..., None]
+base = Image.fromarray(img.astype(np.uint8)).convert('RGBA'); dr = ImageDraw.Draw(base)
+for x, y, r in BOULDERS:
+    dr.ellipse((x - r - 1, y - r + 2, x + r + 1, y + r + 4), fill=(40, 28, 22))
+    dr.ellipse((x - r, y - r, x + r, y + r), fill=(118, 80, 52)); dr.ellipse((x - r + 2, y - r + 1, x + r - 3, y + r - 4), fill=(146, 102, 66))
+    dr.ellipse((x - r + 3, y - r + 2, x - 1, y - 2), fill=(172, 128, 84))
+    if random.random() < .5: dr.line((x - r + 2, y - r + 1, x + 2, y - r), fill=(110, 150, 66), width=2)
+# scatter: tufts, leaves, pebbles (not on road / water / faces / stairs)
+okg = ~road & ~bank & ~FACE & ~RAMP & ~blk
+for _ in range(3200):
+    x, y = random.randrange(4, W - 4), random.randrange(8, H - 4)
+    if not okg[y, x]: continue
+    r = random.random()
+    if r < .55:
+        c = random.choice([(46, 108, 40), (118, 176, 70), (72, 144, 52)])
+        for dx in (-2, 0, 2): dr.line((x + dx, y, x + dx + random.choice((-1, 0, 1)), y - random.randint(3, 6)), fill=c)
+    elif r < .78: dr.rectangle((x, y, x + 1, y + 1), fill=random.choice([(196, 72, 40), (226, 140, 52), (176, 52, 40), (230, 210, 120)]))
+    else: dr.ellipse((x, y, x + 3, y + 2), fill=(146, 140, 130)); dr.point((x + 1, y), fill=(198, 194, 184))
+for _ in range(500):                                       # stones on the road
+    x, y = random.randrange(4, W - 4), random.randrange(4, H - 4)
+    if road[y, x] and random.random() < .5: dr.ellipse((x, y, x + 2, y + 1), fill=(150, 128, 104)); dr.point((x, y), fill=(190, 170, 140))
+
+# ---- olive grade (Dimraeth): soften saturation, warm, greens toward olive, lifted darks
+def grade(a, k=1.0):
+    a = a.astype(float); c = a[..., :3]; g = c.mean(2, keepdims=True)
+    o = g + (c - g) * .68
+    gr = np.clip((o[..., 1] - np.maximum(o[..., 0], o[..., 2])) / 50, 0, 1); o[..., 0] += gr * 30; o[..., 1] -= gr * 6; o[..., 2] -= gr * 4
+    o[..., 0] *= 1.03; o[..., 2] *= .88; o = o * .92 + 9
+    a[..., :3] = c + (o - c) * k; return np.clip(a, 0, 255).astype(np.uint8)
+ground = Image.fromarray(grade(np.asarray(base))).convert('RGB'); ground.save(OUT + 'ground.png', optimize=True)
+
+# ---- walk mask: water, cliff faces, the drop round a plateau top (except stairs), props, map border
+drop = dil(UP, 4) & ~UP & ~FACE & ~RAMP
+blk |= pond | (FACE & ~RAMP) | drop
+blk[:, :56] = blk[:, -56:] = True; blk[:140] = True; blk[-46:] = True
+blk = ndimage.binary_opening(blk, iterations=1) | pond
+Image.fromarray((blk[::2, ::2] * 255).astype(np.uint8)).save(OUT + 'block.png', optimize=True)
+
+# ---- props atlas
+keys = list(SPR); at = []; X = Y = rowh = 0; AW = 2048
+for k in sorted(keys, key=lambda k: -SPR[k].height):
+    w, h = SPR[k].size
+    if X + w > AW: X = 0; Y += rowh + 2; rowh = 0
+    at.append((k, X, Y)); X += w + 2; rowh = max(rowh, h)
+atlas = Image.new('RGBA', (AW, Y + rowh))
+pos = {}
+for k, x, y in at:
+    im = SPR[k]
+    if k[0] != 'crown': im = Image.fromarray(grade(np.asarray(im)))
+    atlas.alpha_composite(im, (x, y)); pos[k] = (x, y) + im.size
+atlas.save(OUT + 'props.png', optimize=True)
+props = [{'x': p['x'], 'y': p['y'], 'a': list(pos[p['s']]), 'o': 1 if p['over'] else 0} for p in PROPS]
+
+# ---- hero and monster sheets at map size
+def cells(f, C, rows, cols, k, cut=110):
+    sh = Image.open(f).convert('RGBA'); c2 = round(C * k); out = Image.new('RGBA', (cols * c2, rows * c2))
+    for r in range(rows):
+        for i in range(cols):
+            cl = sh.crop((i * C, r * C, i * C + C, r * C + C)).resize((c2, c2), Image.LANCZOS)
+            a = np.asarray(cl).copy(); a[..., 3] = (a[..., 3] > cut) * 255; out.paste(Image.fromarray(a), (i * c2, r * c2))
+    return out, c2
+M = json.load(open('art/action/n128/berserker.json')); C = M['cell']; hk = HERO / (147 - 38)
+hero = {'c': round(C * hk), 'fx': round(M['fx'] * hk), 'fy': round(M['fy'] * hk), 'dirs': M['dirs']}
+for a in ('run', 'idle'):
+    im, _ = cells('art/action/n128/berserker_%s.png' % a, C, 8, 8, hk); im.save(OUT + 'hero_%s.png' % a, optimize=True)
+MOBS = {'wolf': .72, 'shroom': .5, 'skeleton': .98, 'boar_guard': 1.25, 'goblin_archer': .78}
+mobs = {}
+for kk, s in MOBS.items():
+    mm = json.load(open('art/action/mobs_hr/%s.json' % kk)); sh2 = Image.open('art/action/mobs_hr/%s.png' % kk).convert('RGBA')
+    bb = sh2.crop((0, 0, mm['w'], mm['h'])).getbbox(); k = HERO * s / (bb[3] - bb[1])
+    cw, chh = round(mm['w'] * k), round(mm['h'] * k); out = Image.new('RGBA', (cw * mm['n'], chh))
+    for i in range(mm['n']):
+        cl = sh2.crop((i * mm['w'], 0, (i + 1) * mm['w'], mm['h'])).resize((cw, chh), Image.LANCZOS); a = np.asarray(cl).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+        out.paste(Image.fromarray(a), (i * cw, 0))
+    out.save(OUT + 'mob_%s.png' % kk, optimize=True); mobs[kk] = {'w': cw, 'h': chh, 'fx': round(mm['fx'] * k), 'fy': round(mm['fy'] * k), 'n': mm['n']}
+SPAWN = [('wolf', 980, 650), ('wolf', 1030, 690), ('wolf', 950, 700), ('shroom', 640, 820), ('shroom', 700, 850), ('shroom', 590, 860),
+         ('skeleton', 1320, 760), ('skeleton', 1370, 800), ('boar_guard', 1470, 520), ('goblin_archer', 900, 200), ('goblin_archer', 960, 230),
+         ('wolf', 1620, 760), ('shroom', 300, 560)]
+json.dump({'w': W, 'h': H, 'start': [200, 705], 'props': props, 'hero': hero, 'mobs': mobs, 'spawn': SPAWN, 'bk': 2}, open(OUT + 'map.json', 'w'))
+# preview of the whole map
+pv = ground.convert('RGBA')
+for p in sorted(PROPS, key=lambda p: (p['over'], p['y'])):
+    x, y, w, h = pos[p['s']]; pv.alpha_composite(atlas.crop((x, y, x + w, y + h)), (int(p['x'] - w / 2), int(p['y'] - h)))
+pv.convert('RGB').save('art/td/map1_preview.png')
+print('ok', len(PROPS), 'props', atlas.size, 'boulders', len(BOULDERS))
