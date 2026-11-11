@@ -133,14 +133,15 @@ const TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window
 if (TOUCH) document.body.classList.add('touch');
 // map td1 (owner 2026-11-11 "โอเคเดิยระบบตีเลย"): the walk-test map from tools/art/td_map.py (art/td/map1/), 1 map px = TDK world px
 // (= 2 art px: whole screen pixels at every S), walls / water / cliffs from its block picture, props from its atlas
-const TDM = new URLSearchParams(location.search).get('map') === 'td1', TDK = 4 / 3;
+// owner 2026-11-11 "แมพเก่าเอาออกเลย เริ่มแมพพิกเซลใหม่": td1 is the game's only map now (the old ones only by ?map=west|thai|jungle|town)
+const TDM = !['west', 'thai', 'jungle', 'town'].includes(new URLSearchParams(location.search).get('map')), TDK = 4 / 3;
 const WW = TDM ? 2400 : 6000, WH = TDM ? 1467 : 4000, MARGIN = TDM ? {l: 40, r: 40, t: 40, b: 40} : {l: 180, r: 180, t: 240, b: 260};   // owner: a bigger world so the rogue looks small (4200x2800 -> 6000x4000 on 2026-11-08)
 const AR = WW * WH / (4200 * 2800);   // how many times the first map's area (prop counts follow it)
 // two maps (owner 2026-11-08 picked "a separate map" for the old Thai city): ?map=thai; walking off the road's east end
 // of the first map leads there, its west end leads back (a page reload with ?map=..&from=..)
 // maps (owner 2026-11-09: cities are their own places, field maps join between them; after the Thai city comes the Thai
 // forest with Thai monsters, then on to the next country): west field -> Thai city -> Thai forest (JG) -> China later
-const QS = new URLSearchParams(location.search), MAP = ['thai', 'jungle', 'town', 'td1'].includes(QS.get('map')) ? QS.get('map') : 'west', JG = MAP === 'jungle', TOWN = MAP === 'town', TH = MAP === 'thai' || JG || TOWN, FROM = QS.get('from');
+const QS = new URLSearchParams(location.search), MAP = ['west', 'thai', 'jungle', 'town'].includes(QS.get('map')) ? QS.get('map') : 'td1', JG = MAP === 'jungle', TOWN = MAP === 'town', TH = MAP === 'thai' || JG || TOWN, FROM = QS.get('from');
 // three heroes (owner 2026-11-09: swordsman + mage made in GPT, moves from PixelLab): ?hero= or the last one picked
 const HERO = (() => { let h = QS.get('hero'); if (!h) try { h = localStorage.getItem('act.hero'); } catch (e) {} return ['rogue', 'swordsman', 'guardian', 'berserker', 'mage', 'archer', 'priest'].includes(h) ? h : 'rogue'; })();
 // the Guardian (shield knight, class 2 of the swordsman, 2026-11-10) plays the swordsman's kit with his own pictures
@@ -1096,7 +1097,7 @@ let G;
 // where each map's road leads: west end / east end (to: null = not built yet, a sign only)
 // the Thai town (owner 2026-11-09 "ฉากเมือง ทำแค่เมือง ไม่ต้องมีมอน เอาไว้รับเควส ละก็วาร์ป ... ใช้กำแพงเป็นแมพเลย ไม่ต้องกว้างมาก"):
 // the Thai city's yard only, its walls are the edge of the map, no monsters, a quest board and a warp circle; its gates lead out
-const TOWNX = {w: 'west', e: 'jungle'}, WARPS = [['west', 'ทุ่งหญ้า'], ['thai', 'ทุ่งนาเมืองไทย'], ['jungle', 'ป่าเมืองไทย'], ['td1', 'ป่าเนินผา (แมพใหม่)']];
+const TOWNX = {w: 'west', e: 'jungle'}, WARPS = [['west', 'ทุ่งหญ้า'], ['thai', 'ทุ่งนาเมืองไทย'], ['jungle', 'ป่าเมืองไทย']];
 const TD = {over: []};
 const EXITS = {td1: {}, town: {}, west: {e: ['town', 'เมืองไทย →']}, thai: {w: ['west', '← กลับทุ่งหญ้า'], e: ['jungle', 'ป่าเมืองไทย →']}, jungle: {w: ['town', '← เมืองไทย'], e: [null, 'เมืองจีน → (เร็วๆ นี้)']}}[MAP];
 function spawnAt() {              // where she appears: at the end of the road she came in by (west end from the west map)
@@ -3825,7 +3826,7 @@ const HDESC = {rogue: 'ตี 2 ฮิต ครั้งที่ 4 คริ �
 HROLE.guardian = 'ประชิด · ทนทานที่สุด · โล่'; HDESC.guardian = 'อัศวินโล่ คลาส 2 ของนักดาบ: รับดาเมจน้อยลง 25% · ฟัน 2 ฮิต · ใช้สกิลชุดเดียวกับนักดาบ (ยกโล่สวน = กันแล้วฟันคืน)'; if (HELP.swordsman) HELP.guardian = HELP.berserker = HELP.swordsman;
 HROLE.berserker = 'ประชิด · ฟันหนัก · กว้าง'; HDESC.berserker = 'เบอร์เซิร์กเกอร์ คลาส 2 ของนักดาบ: ดาบใหญ่ ฟันช้าแต่แรงขึ้น 30% ระยะไกลขึ้น · กวาดแล้วทุบพื้น · หมุน 360 · ใช้สกิลชุดเดียวกับนักดาบ';
 if (BZTRY) HDESC.berserker = 'เบอร์เซิร์กเกอร์ คลาส 2 ของนักดาบ: ดาบยักษ์ ฟันช้าแต่หนักและไกล ท่าไม่โดนขัด · โซ่ดึงมอนมากอง · เลือดยิ่งน้อยยิ่งแรง · X ร่างคลั่งไม่ตาย ดูดเลือด';
-const MAPN = {town: 'เมืองไทย', west: 'ทุ่งหญ้า', thai: 'ทุ่งนาเมืองไทย', jungle: 'ป่าเมืองไทย', td1: 'ป่าเนินผา ✨ใหม่'};
+const MAPN = {town: 'เมืองไทย', west: 'ทุ่งหญ้า', thai: 'ทุ่งนาเมืองไทย', jungle: 'ป่าเมืองไทย', td1: 'ป่าเนินผา'};
 const MENU = {h: HERO, m: MAP, cards: {}, t: 0};
 { const pk = document.getElementById('pick'), ds = document.getElementById('hdesc'), mp = document.getElementById('mpick');
   const show = () => { ds.innerHTML = '<b>' + HNAME[MENU.h] + '</b> · ' + HROLE[MENU.h] + '<p>' + HDESC[MENU.h] + '</p>';
@@ -3837,11 +3838,12 @@ const MENU = {h: HERO, m: MAP, cards: {}, t: 0};
     b.onclick = () => { MENU.h = h; show(); }; b.ondblclick = () => { MENU.h = h; document.getElementById('go').click(); };
     MENU.cards[h] = {b, c, im}; pk.appendChild(b); }
   mp.insertAdjacentHTML('beforeend', '<span>เริ่มที่</span>');
-  for (const m of ['td1', 'town', 'west', 'thai', 'jungle']) { const b = document.createElement('button'); b.dataset.m = m; b.textContent = MAPN[m]; b.onclick = () => { MENU.m = m; show(); }; mp.appendChild(b); }
+  mp.style.display = 'none';   // one map only
+  for (const m of ['td1']) { const b = document.createElement('button'); b.dataset.m = m; b.textContent = MAPN[m]; b.onclick = () => { MENU.m = m; show(); }; mp.appendChild(b); }
   show(); if (!FROM && !TEST && !QS.get('auto')) document.body.classList.add('inmenu'); }
 function menuGo() {                     // the start button: another hero / map → reload into it, else start here
   if (MENU.h !== HERO || MENU.m !== MAP) { try { localStorage.setItem('act.hero', MENU.h); } catch (e) {}
-    location.href = 'action.html?hero=' + MENU.h + (MENU.m !== 'west' ? '&map=' + MENU.m : '') + '&auto=1'; return; }
+    location.href = 'action.html?hero=' + MENU.h + (MENU.m !== 'td1' ? '&map=' + MENU.m : '') + '&auto=1'; return; }
   start();
 }
 function menuTick(dt) {                 // the chosen card plays the hero's idle (south-east) while the menu is up
@@ -3854,7 +3856,7 @@ function menuTick(dt) {                 // the chosen card plays the hero's idle
 function showOver() {
   ov.innerHTML = '<div class="over"><h1>พ่ายแพ้</h1><p>' + HNAME[HERO] + ' ล้มลงที่' + (MAPN[MAP] || '') + '</p><div class="st"><div><b>' + G.wave + '</b><small>ระลอก</small></div><div><b>' + G.kills + '</b><small>ล้มมอน</small></div><div><b>' + (G.p.lv || 1) + '</b><small>เลเวล</small></div></div>'
     + '<div class="row"><button id="go">เล่นใหม่</button><button id="menu">เลือกตัวละคร</button></div></div>';
-  ov.style.display = 'flex'; document.getElementById('go').onclick = start; document.getElementById('menu').onclick = () => { location.href = 'action.html?hero=' + HERO + (MAP !== 'west' ? '&map=' + MAP : ''); }; }
+  ov.style.display = 'flex'; document.getElementById('go').onclick = start; document.getElementById('menu').onclick = () => { location.href = 'action.html?hero=' + HERO + (MAP !== 'td1' ? '&map=' + MAP : ''); }; }
 function start() {
   document.body.classList.remove('inmenu'); ov.classList.remove('menu');
   ov.style.display = 'none'; newGame(); if (!TEST && !TOWN) spawnCamps(); document.getElementById('bRoll').textContent = G.p.tele ? 'วาร์ป' : 'กลิ้ง'; for (let k = 1; k <= 6; k++) applySkLv(k, G.p.skl[k] || 1); buildHotbar();
