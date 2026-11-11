@@ -3457,7 +3457,32 @@ function drawBz4(p) {
   if (!img.complete || !img.naturalWidth) return false;
   ctx.save(); ctx.translate(x, 0); if (BZ4.left && !noFlip) ctx.scale(-1, 1);
   ctx.drawImage(img, f * m.cw, 0, m.cw, m.ch, -m.fx * d, y - m.fy * d, m.cw * d, m.ch * d); ctx.restore(); return true; }
+// Assassin v2 look for the rogue (owner 2026-11-12 "ลองเอาเข้าแมพยัง"): PixelLab side-view clips (tools/art/as2_build.py ->
+// art/action/as2/): side run, the katar attack (also played for her skills), stills front / side / back; facing right, mirrored for
+// the left; running straight down / up shows the front / back still with a step bob. ?skin=old = the old rogue. The kit is the rogue's.
+const AS2 = HERO === 'rogue' && QS.get('skin') !== 'old' ? {left: false} : null;
+if (AS2) { fetch('art/action/as2/as2.json?v=1').then(r => r.json()).then(m => { AS2.m = m; }).catch(() => {});
+  for (const k of ['still', 'run', 'attack', 'front', 'back']) { const im = new Image(); im.src = 'art/action/as2/' + k + '.png?v=1'; AS2[k] = im; } }
+function drawAs2(p) {
+  const m = AS2.m; if (!m || !AS2.still.complete) return false;
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const d = TDM ? 2 / 3 : 2 / 3, x = Math.round(p.x * S) / S; let y = Math.round(p.y * S) / S, img = AS2.still, f = 0, noFlip = false, a = 1;
+  const dir = p.vd !== undefined && (p.state === 'idle' || p.state === 'move') ? p.vd : p.dir, dx = DV[dir][0];
+  if (dx < -.1) AS2.left = true; else if (dx > .1) AS2.left = false;
+  const atkF = u => Math.min(m.n.attack - 1, Math.floor(u * m.n.attack));
+  if (p.state === 'atk' && p.a) { const P = p.a.plan, n = P.n || (P.ar && P.ar.n) || 6; img = AS2.attack; f = atkF((p.a.i + Math.min(1, p.a.t / (P.ms[p.a.i] || 50))) / n); }
+  else if (p.state === 'act' && p.ac) { const q = p.ac, L = q.fr.length; img = AS2.attack; f = atkF(Math.min(.999, (Math.min(q.i, L - 1) + Math.min(1, q.t / (q.ms[Math.min(q.i, L - 1)] || 50))) / L)); }
+  else if (p.state === 'throw' && p.th) { img = AS2.attack; f = Math.min(3, p.th.i); }
+  else if (p.state === 'move' && (dir === 2 || dir === 6)) { img = dir === 2 ? AS2.front : AS2.back; noFlip = true; y -= (Math.floor(G.t * 10) % 2); }
+  else if (p.state === 'move' || p.state === 'roll') { img = AS2.run; f = Math.floor(G.t * (p.state === 'roll' ? 30 : 20)) % m.n.run; }
+  else if (p.state === 'hurt') { img = AS2.still; ctx.filter = 'brightness(1.6)'; }
+  else if (p.state === 'dead') { img = AS2.still; a = Math.max(0, 1 - (p.deadT || 0) / DEATH_T); }
+  else y -= (Math.floor(G.t * 2.5) % 2) * .7;            // idle: a slow breath
+  if (!img.complete || !img.naturalWidth) { ctx.filter = 'none'; return false; }
+  ctx.save(); ctx.globalAlpha *= a; ctx.translate(x, 0); if (AS2.left && !noFlip) ctx.scale(-1, 1);
+  ctx.drawImage(img, f * m.cw, 0, m.cw, m.ch, -m.fx * d, y - m.fy * d, m.cw * d, m.ch * d); ctx.restore(); ctx.filter = 'none'; return true; }
 function drawPlayerBody2(p) {
+  if (AS2 && drawAs2(p)) return;
   if (BZ4 && drawBz4(p)) return;
   if (p.state === 'act' && p.ac && p.ac.draw) { p.ac.draw(p, p.ac); return; }
   if (p.state === 'act' && p.ac) { const q = p.ac, f = q.fr[Math.min(q.i, q.fr.length - 1)];
