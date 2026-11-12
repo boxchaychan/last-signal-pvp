@@ -51,7 +51,8 @@ function step(dt){if(G.over)return;G.t+=dt;G.wt-=dt;if(G.msgT>0)G.msgT-=dt;
   if(u.at>=0){const f0=Math.floor(u.at*12);u.at+=dt;const f1=Math.floor(u.at*12);
    if(f0<S.hit&&f1>=S.hit&&u.tg){const t=u.tg,dm=K.dmg[u.star-1];for(const m of G.mobs)if(Math.hypot(m.x-t.x,m.y-t.y)<=K.aoe)hit(m,m===t?dm:dm*.6)}
    if(f1>=S.n){u.at=-1}}
-  else if(u.cd<=0){let best=null,bd=1e9;for(const m of G.mobs){const d=Math.hypot(m.x-u.x,m.y-u.y);if(d<=K.rng&&m.d>(best?best.d:-1)){best=m;bd=d}}
+  else{let nm=null,nd=1e9;for(const m of G.mobs){const d=Math.hypot(m.x-u.x,m.y-u.y);if(d<nd){nd=d;nm=m}}if(nm&&nd<K.rng*1.6)u.dir=nm.x>=u.x?1:-1}
+  if(u.at<0&&u.cd<=0){let best=null,bd=1e9;for(const m of G.mobs){const d=Math.hypot(m.x-u.x,m.y-u.y);if(d<=K.rng&&m.d>(best?best.d:-1)){best=m;bd=d}}
    if(best){u.tg={x:best.x,y:best.y};u.dir=best.x>=u.x?1:-1;u.at=0;u.cd=K.cd}}}
  G.mobs=G.mobs.filter(m=>{if(m.hp>0)return true;G.gold+=m.boss?6:1;G.kills++;G.fx.push({x:m.x,y:m.y-14,t:0,k:'poof'});return false});
  for(const f of G.fx)f.t+=dt;G.fx=G.fx.filter(f=>f.t<(f.k==='fly'?.35:.4));for(const n of G.num)n.t+=dt;G.num=G.num.filter(n=>n.t<.7);
@@ -78,7 +79,12 @@ function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTrans
    g.drawImage(im,f*S.w,0,S.w,S.h,-S.fx*k,-S.fy*k,w,h);g.restore();
    if(o.hp<o.max){const bw=o.boss?44:24;g.fillStyle='#221c28';g.fillRect(x-bw/2-1,y-S.fy*k-7,bw+2,5);g.fillStyle=o.boss?'#f6ce6e':'#ec5454';g.fillRect(x-bw/2,y-S.fy*k-6,Math.max(0,bw*o.hp/o.max),3)}}
   else{const S=SP.units[o.kind+o.star],im=IMG['u_'+o.kind+o.star],f=o.at>=0?Math.min(S.n-1,Math.floor(o.at*12)):0,x=o.x,y=o.y,sc=o.pop>0?1+o.pop*.5:1;
-   g.fillStyle='rgba(10,20,10,.28)';g.beginPath();g.ellipse(x,y+1,17,5,0,0,7);g.fill();g.save();g.translate(x,y);g.scale(o.dir*sc,sc);g.drawImage(im,f*S.w,0,S.w,S.h,-S.fx,-S.fy,S.w,S.h);g.restore();star(x,y-(S.fy-S.top)-9,o.star)}}
+   g.fillStyle='rgba(10,20,10,.28)';g.beginPath();g.ellipse(x,y+1,17,5,0,0,7);g.fill();g.save();g.translate(x,y);g.scale(o.dir*sc,sc);
+   if(o.at>=0)g.drawImage(im,f*S.w,0,S.w,S.h,-S.fx,-S.fy,S.w,S.h);
+   else{   // owner "ตัวละครมันแข็งไป": standing dogs breathe: head and chest sink 1 px in turn (whole pixels, no stretching), each dog on its own beat; ready-to-hit dogs bounce faster
+    const hh=S.fy-S.top,r1=S.top+Math.round(hh*.5),r2=S.top+Math.round(hh*.74),st=Math.floor(G.t*(G.mobs.length?4.2:2.6)+o.slot*1.7)%4,hd=[0,1,1,0][st],cd=[0,0,1,1][st];
+    g.drawImage(im,0,r2,S.w,S.h-r2,-S.fx,r2-S.fy,S.w,S.h-r2);g.drawImage(im,0,r1,S.w,r2-r1,-S.fx,r1-S.fy+cd,S.w,r2-r1);g.drawImage(im,0,0,S.w,r1,-S.fx,-S.fy+hd+cd,S.w,r1)}
+   g.restore();star(x,y-(S.fy-S.top)-9+(o.at<0?Math.floor(G.t*2.6+o.slot*1.7)%4>1?1:0:0),o.star)}}
  for(const f of G.fx){if(f.k==='poof'){const r=6+f.t*40;g.fillStyle='rgba(255,255,255,'+(1-f.t/.4)+')';for(let i=0;i<5;i++){const a=i*1.26+1;g.fillRect(Math.round(f.x+Math.cos(a)*r)-2,Math.round(f.y+Math.sin(a)*r*.6)-2,4,4)}}
   else{const k=f.t/.35;g.fillStyle='#ffd640';g.fillRect(Math.round(f.x+(f.tx-f.x)*k)-3,Math.round(f.y+(f.ty-f.y)*k)-3,6,6)}}
  for(const n of G.num)txt(String(n.v),Math.round(n.x),Math.round(n.y-n.t*26),n.v>=60?20:15,n.v>=60?'#ffd640':'#fff','center');
