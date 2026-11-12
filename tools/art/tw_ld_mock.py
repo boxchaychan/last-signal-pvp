@@ -24,8 +24,8 @@ def noise(c):
 N8, N40 = noise(8), noise(40)
 G = tile_fill(tex('path_pro', False)); DR = tile_fill(tex('path_pro', True))
 img = G.copy(); img[N40 < .35] *= .9; lt = N40 > .65; img[lt] = img[lt] * 1.07 + np.array([10, 6, -4])
-BOARDS = [(46, 'top'), (466, 'me')]          # board top edges
-BW, BH, PW = 358, 300, 30                     # board size, loop width
+BOARDS = [(46, 'top'), (434, 'me')]          # board top edges
+BW, BH, PW = 380, 278, 30   # owner "ทำให้มันสมส่วนหน่อย": units fill their slots, monsters ~2/3 of a unit, a tighter loop                     # board size, loop width
 X0 = (W - BW) // 2
 def rrect(x0, y0, x1, y1, r):
     cx = np.clip(xx, x0 + r, x1 - r); cy = np.clip(yy, y0 + r, y1 - r); return np.hypot(xx - cx, yy - cy) <= r
@@ -52,35 +52,34 @@ for _ in range(500):
     if random.random() < .6: c = random.choice([(52, 116, 44), (118, 178, 72)]); dr.line((x, y, x, y - random.randint(2, 4)), fill=c)
     else: dr.rectangle((x, y, x + 1, y + 1), fill=random.choice([(250, 236, 120), (240, 140, 170), (255, 255, 255)]))
 # slots: 6 x 3 stone tiles inside each loop
-CW, CHh = 46, 62
+CW, CHh = 52, 70
 def fit(f, h, flip=False):
     im = Image.open(f).convert('RGBA'); im = im.crop(im.getbbox()); k = h / im.height
     im = im.resize((max(1, round(im.width * k)), h), Image.LANCZOS); a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255; im = Image.fromarray(a)
     return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
-SB = Image.open(OUT + 'shiba_px64_front.png').convert('RGBA'); k = 46 / SB.height; SB = SB.resize((round(SB.width * k), 46), Image.LANCZOS)
+SB = Image.open(OUT + 'shiba_px64_front.png').convert('RGBA'); k = 60 / SB.height; SB = SB.resize((round(SB.width * k), 60), Image.LANCZOS)
 a = np.asarray(SB).copy(); a[..., 3] = (a[..., 3] > 110) * 255; SB = Image.fromarray(a)
 grey = np.asarray(SB).astype(float).copy(); g = grey[..., :3].mean(2, keepdims=True); grey[..., :3] = g * np.array([.95, .97, 1.08]) * 1.05; GREY = Image.fromarray(np.clip(grey, 0, 255).astype(np.uint8))
 items = []
 for (y0, who), pts in zip(BOARDS, LOOPS):
-    gx = X0 + (BW - 6 * CW) // 2; gy = y0 + (BH - 3 * CHh) // 2 + 4
+    gx = X0 + (BW - 6 * CW) // 2; gy = y0 + (BH - 3 * CHh) // 2
     occ = {(0, 1), (1, 1), (2, 0), (2, 2), (3, 1), (4, 0), (5, 2), (1, 2), (4, 2)} if who == 'me' else {(0, 0), (1, 2), (3, 1), (4, 1), (5, 0), (2, 1)}
     for c in range(6):
         for r in range(3):
             x, y = gx + c * CW, gy + r * CHh
-            dr.rounded_rectangle((x + 3, y + 3, x + CW - 3, y + CHh - 3), 6, fill=(60, 52, 44, 255))
-            dr.rounded_rectangle((x + 4, y + 4, x + CW - 4, y + CHh - 6), 6, fill=(160, 150, 132, 255) if who == 'me' else (142, 136, 128, 255))
-            dr.line((x + 8, y + 6, x + CW - 8, y + 6), fill=(206, 198, 180, 255))
-            if (c, r) in occ: items.append((y + CHh - 6, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
+            dr.ellipse((x + 4, y + CHh - 22, x + CW - 4, y + CHh - 2), fill=(52, 44, 38, 255))
+            dr.ellipse((x + 5, y + CHh - 24, x + CW - 5, y + CHh - 5), fill=(170, 160, 142, 255) if who == 'me' else (150, 144, 136, 255))
+            dr.arc((x + 9, y + CHh - 22, x + CW - 9, y + CHh - 8), 200, 340, fill=(214, 206, 188, 255))
+            if (c, r) in occ: items.append((y + CHh - 12, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
     # monsters on the loop
-    for i in range(0, 400, 17 if who == 'me' else 23):
+    for i in range(0, 400, 15 if who == 'me' else 21):
         px, py = pts[(i + (0 if who == 'me' else 50)) % 400]; k2 = random.choice(['shroom', 'wisp', 'wolf'])
         m = json.load(open('art/action/mobs_hr/%s.json' % k2)); im = Image.open('art/action/mobs_hr/%s.png' % k2).crop((0, 0, m['w'], m['h'])); im = im.crop(im.getbbox())
-        h = 22 if k2 != 'wolf' else 24; kk = h / im.height; im = im.resize((round(im.width * kk), h), Image.LANCZOS); a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+        h = 36 if k2 != 'wolf' else 38; kk = h / im.height; im = im.resize((round(im.width * kk), h), Image.LANCZOS); a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
         nx, ny = pts[(i + 5 + (0 if who == 'me' else 50)) % 400]; im = Image.fromarray(a); im = im if nx >= px else im.transpose(Image.FLIP_LEFT_RIGHT)
-        items.append((int(py) + 8, im, int(px) - im.width // 2))
+        items.append((int(py) + 12, im, int(px) - im.width // 2))
 # small trees / rocks in the margins and the middle strip
-for x, y, n, h in ((10, 470, 'trees_green_1', 70), (380, 470, 'trees_green_3', 64), (12, 46, 'trees_green_0', 62), (378, 48, 'trees_green_2', 60),
-                   (40, 432, 'bushes_1', 20), (350, 436, 'bushes_6', 20), (200, 440, 'stones_0', 12)):
+for x, y, n, h in ((30, 840, 'bushes_1', 26), (360, 842, 'bushes_6', 26), (200, 842, 'stones_0', 14)):
     items.append((y, fit(P2 + n + '.png', h, random.random() < .5), x - 20))
 sh = Image.new('RGBA', base.size); sd = ImageDraw.Draw(sh)
 for y, im, x in items: sd.ellipse((x + im.width * .15, y - 3, x + im.width * .85, y + 3), fill=(10, 24, 8, 90))
@@ -91,13 +90,13 @@ hd = ImageDraw.Draw(base); F = ImageFont.truetype('/usr/share/fonts/truetype/dej
 def bar(y, txt, col):
     hd.rounded_rectangle((8, y, W - 8, y + 26), 7, fill=(30, 24, 30, 225), outline=(250, 236, 200), width=2); hd.text((16, y + 5), txt, fill=col, font=F)
 bar(10, 'CATS  (opponent)      monsters 31/100', (255, 210, 230))
-hd.rounded_rectangle((8, 360, W - 8, 452), 10, fill=(30, 24, 30, 200), outline=(250, 236, 200), width=2)
-hd.text((20, 368), 'WAVE 12      00:24', fill=(250, 240, 210), font=FB); hd.text((20, 392), 'monsters 47/100', fill=(255, 140, 140), font=F)
-hd.rectangle((20, 412, 370, 422), fill=(60, 40, 40)); hd.rectangle((20, 412, 20 + int(350 * .47), 422), fill=(230, 80, 80))
-hd.text((20, 428), 'DOGS  (you)', fill=(255, 220, 140), font=F)
-hd.rounded_rectangle((8, 776, W - 8, 836), 10, fill=(30, 24, 30, 225), outline=(250, 236, 200), width=2)
+hd.rounded_rectangle((8, 332, W - 8, 426), 10, fill=(30, 24, 30, 200), outline=(250, 236, 200), width=2)
+hd.text((20, 340), 'WAVE 12      00:24', fill=(250, 240, 210), font=FB); hd.text((20, 364), 'monsters 47/100', fill=(255, 140, 140), font=F)
+hd.rectangle((20, 384, 370, 394), fill=(60, 40, 40)); hd.rectangle((20, 384, 20 + int(350 * .47), 394), fill=(230, 80, 80))
+hd.text((20, 402), 'DOGS  (you)', fill=(255, 220, 140), font=F)
+hd.rounded_rectangle((8, 748, W - 8, 808), 10, fill=(30, 24, 30, 225), outline=(250, 236, 200), width=2)
 for i, (t, c, col) in enumerate((('SUMMON', '20', (250, 200, 60)), ('UPGRADE', '50', (120, 200, 250)), ('LUCKY', '1', (200, 140, 250)))):
-    x = 16 + i * 122; hd.rounded_rectangle((x, 784, x + 114, 828), 8, fill=col, outline=(30, 20, 18), width=2)
-    hd.text((x + 10, 788), t, fill=(30, 20, 18), font=FB); hd.text((x + 10, 808), '@ ' + c, fill=(30, 20, 18), font=F)
-hd.text((300, 752), 'gold 140', fill=(255, 220, 120), font=F)
+    x = 16 + i * 122; hd.rounded_rectangle((x, 756, x + 114, 800), 8, fill=col, outline=(30, 20, 18), width=2)
+    hd.text((x + 10, 760), t, fill=(30, 20, 18), font=FB); hd.text((x + 10, 780), '@ ' + c, fill=(30, 20, 18), font=F)
+hd.text((300, 724), 'gold 140', fill=(255, 220, 120), font=F)
 base.resize((W * 2, H * 2), Image.NEAREST).save(OUT + 'tw_ld_mock.png'); print('ok')
