@@ -28,7 +28,7 @@ const KIND={   // per star: damage; rng = reach in px, cd = seconds between atta
  shiba:{name:'ชิบะ',cost:3,rng:92,cd:.85,aoe:34,dmg:[14,34,85],col:'#96a0ae'},
  corgi:{name:'คอร์กี้',cost:4,rng:250,cd:1.7,aoe:46,dmg:[22,52,130],col:'#68be78'}};
 const MOBK=['shroom','wisp','kappa','kasa_obake','paper_doll','monkey','goblin_archer','wolf'];
-let GEO,SP,G;
+let GEO,SP,G,FAST=+(localStorage.getItem('dc.fast')||1);   // owner "ลองทำให้เกม x2": a x1 / x2 speed button (top right), remembered
 function newGame(){G={t:0,wave:0,wt:0,wlen:25,hp:100,gold:9,units:[],mobs:[],fx:[],num:[],shots:[],hs:0,shake:0,sel:null,spawn:[],over:false,kills:0,msg:'แตะการ์ดข้างล่าง แล้วแตะแท่นหินเพื่อวางหมา',msgT:6};nextWave()}
 function nextWave(){G.wave++;G.wt=G.wlen;const n=6+Math.floor(G.wave*1.6),hp=26*Math.pow(1.17,G.wave-1),boss=G.wave%5===0;
  for(let i=0;i<n;i++)G.spawn.push({at:G.t+i*(9/n),k:MOBK[Math.min(MOBK.length-2,Math.floor(Math.random()*Math.min(MOBK.length-1,1+G.wave/2)))],hp});
@@ -102,7 +102,7 @@ function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTrans
  for(const n of G.num)txt(String(n.v),Math.round(n.x),Math.round(n.y-n.t*26),n.v>=60?20:15,n.v>=60?'#ffd640':'#fff','center');
  g.setTransform(1,0,0,1,0,0);
  // top HUD
- panel(8,6,W-16,96);txt('เวฟ '+G.wave,22,30,24);txt(G.wt.toFixed(0).padStart(2,'0')+' วิ',150,31,20,G.wt<6?'#ff8c78':'#ffe296');txt('มอน '+G.mobs.length,250,31,17,'#ffbedc');
+ panel(8,6,W-16,96);txt('เวฟ '+G.wave,22,30,24);g.fillStyle='#221c28';rr(W-104,14,84,34,7);g.fill();g.fillStyle=FAST>1?'#ffd640':'#8c86a0';rr(W-102,16,80,30,6);g.fill();txt('เร็ว x'+FAST,W-62,32,17,'#221c28','center');txt(G.wt.toFixed(0).padStart(2,'0')+' วิ',150,31,20,G.wt<6?'#ff8c78':'#ffe296');txt('มอน '+G.mobs.length,250,31,17,'#ffbedc');
  g.fillStyle='#463240';g.fillRect(22,54,W-44,12);g.fillStyle='#96c8ff';g.fillRect(22,54,(W-44)*Math.max(0,G.wt/G.wlen),12);
  txt('❤',22,84,17,'#ff6e6e');g.fillStyle='#463240';g.fillRect(48,77,W-180,14);g.fillStyle=G.hp>30?'#6ed27a':'#ec5454';g.fillRect(48,77,(W-180)*G.hp/100,14);txt(G.hp+' / 100',W-120,84,16);
  if(G.msgT>0){g.globalAlpha=Math.min(1,G.msgT*2);panel(40,108,W-80,36,'#3a2c4a');txt(G.msg,W/2,126,16,'#fff','center');g.globalAlpha=1}
@@ -116,9 +116,10 @@ function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTrans
   txt(kind==='shiba'?'ตีใกล้ เร็ว':'ยิงไกล ระเบิด',x+98,1228,13,'#221c28');g.globalAlpha=1}}
 // ---------- input
 cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;if(G.over)return;
+ if(y<52&&x>W-110){FAST=FAST>1?1:2;localStorage.setItem('dc.fast',FAST);return}
  if(y>1130){for(const [kind,cx] of CARDS)if(x>=cx&&x<=cx+180){G.sel=G.sel===kind?null:kind;if(G.sel)say('แตะแท่นหินที่ว่างเพื่อวาง '+KIND[kind].name)}return}
  if(G.sel){let bi=-1,bd=42;GEO.slots.forEach(([sx,sy],i)=>{const d=Math.hypot(x-sx,y-(sy-18));if(d<bd){bd=d;bi=i}});if(bi>=0)place(G.sel,bi)}});
-let last=0;function frame(t){const dt=Math.min(.05,(t-last)/1000||0)*SPD;last=t;step(dt);draw();requestAnimationFrame(frame)}
+let last=0;function frame(t){const dt=Math.min(.05,(t-last)/1000||0)*SPD;last=t;for(let i=0;i<FAST;i++)step(dt);draw();requestAnimationFrame(frame)}
 (async()=>{GEO=await (await fetch('art/dogcat/geo.json')).json();SP=await (await fetch('art/dogcat/sprites.json')).json();IMG.bg=await img('art/dogcat/bg.png');
  for(const k in SP.units){IMG['u_'+k]=await img('art/dogcat/units/'+k+'.png');if(SP.units[k].idle)IMG['i_'+k]=await img('art/dogcat/units/'+k+'_idle.png')}for(const k in SP.mobs)IMG['m_'+k]=await img('art/dogcat/mobs/'+k+'.png');
  newGame();window.DC={G:()=>G,place,step,KIND};requestAnimationFrame(frame)})();
