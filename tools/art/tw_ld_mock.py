@@ -28,9 +28,13 @@ def noise(c):
 N8, N40 = noise(8), noise(40)
 G = tile_fill(tex('path_pro', False)); DR = tile_fill(tex('path_pro', True))
 img = G.copy(); img[N40 < .35] *= .9; lt = N40 > .65; img[lt] = img[lt] * 1.07 + np.array([10, 6, -4])
-BOARDS = [(z(46), 'top'), (z(434), 'me')]          # board top edges
-BW, BH, PW = z(380), z(278), z(30)   # owner "ทำให้มันสมส่วนหน่อย": units fill their slots, monsters ~2/3 of a unit, a tighter loop                     # board size, loop width
+SOLO = os.environ.get('SOLO') == '1'      # owner 2026-11-12 "โชว์แต่จอตัวเอง": only your board, the opponent shrinks to one bar
+BOARDS = [(z(104), 'me')] if SOLO else [(z(46), 'top'), (z(434), 'me')]          # board top edges
+FIT = os.environ.get('FIT', '1') == '1'   # SOLO + FIT=0: keep the two-board cell size and leave the rest of the screen empty ("ดูว่าจะเหลือที่เยอะไหม")
+BW, BH, PW = z(380), z(599 if SOLO else 278), z(30)   # owner "ทำให้มันสมส่วนหน่อย": units fill their slots, monsters ~2/3 of a unit, a tighter loop                     # board size, loop width
 X0 = (W - BW) // 2
+if SOLO and not FIT:
+    _gr = int(os.environ.get('GR', '4')); BH = 2 * PW + z(10) + _gr * ((z(278) - 2 * PW - z(10)) // 4)
 def rrect(x0, y0, x1, y1, r):
     cx = np.clip(xx, x0 + r, x1 - r); cy = np.clip(yy, y0 + r, y1 - r); return np.hypot(xx - cx, yy - cy) <= r
 road = np.zeros((H, W), bool); plat = np.zeros((H, W), bool); floor = np.zeros((H, W), bool); LOOPS = []
@@ -72,8 +76,8 @@ for _ in range(z(z(500))):
     if random.random() < .6: c = random.choice([(52, 116, 44), (118, 178, 72)]); dr.line((x, y, x, y - random.randint(2, 4)), fill=c)
     else: dr.rectangle((x, y, x + 1, y + 1), fill=random.choice([(250, 236, 120), (240, 140, 170), (255, 255, 255)]))
 # slots: 6 x 3 stone tiles inside each loop
-GC, GR = int(os.environ.get('GC', '6')), int(os.environ.get('GR', '3'))   # grid size; owner 2026-11-12 "เพิ่มช่อง" for zoom 2: GC=8 GR=4
-CW, CHh = (z(52), z(70)) if (GC, GR) == (6, 3) else ((BW - 2 * PW - z(16)) // GC, (BH - 2 * PW - z(10)) // GR)
+GC, GR = int(os.environ.get('GC', '7' if SOLO else '6')), int(os.environ.get('GR', ('8' if FIT else '4') if SOLO else '3'))   # grid size; owner 2026-11-12 "เพิ่มช่อง" for zoom 2: GC=8 GR=4
+CW, CHh = (z(52), z(70)) if (GC, GR) == (6, 3) and not SOLO else ((BW - 2 * PW - z(16)) // GC, (BH - 2 * PW - z(10)) // GR)
 def fit(f, h, flip=False):
     im = Image.open(f).convert('RGBA'); im = im.crop(im.getbbox()); k = h / im.height
     im = im.resize((max(1, round(im.width * k)), h), Image.LANCZOS); a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255; im = Image.fromarray(a)
@@ -85,7 +89,7 @@ items = []
 for (y0, who), pts in zip(BOARDS, LOOPS):
     gx = X0 + (BW - GC * CW) // 2; gy = y0 + (BH - GR * CHh) // 2
     occ = {(0, 1), (1, 1), (2, 0), (2, 2), (3, 1), (4, 0), (5, 2), (1, 2), (4, 2)} if who == 'me' else {(0, 0), (1, 2), (3, 1), (4, 1), (5, 0), (2, 1)}
-    if (GC, GR) != (6, 3):
+    if (GC, GR) != (6, 3) or SOLO:
         cells = [(c, r) for c in range(GC) for r in range(GR)]; occ = set(random.Random(5 if who == 'me' else 8).sample(cells, len(cells) // 2 if who == 'me' else len(cells) // 3))
     for c in range(GC):
         for r in range(GR):
@@ -102,7 +106,7 @@ for (y0, who), pts in zip(BOARDS, LOOPS):
             dr.line((l, fb + 1, rr, fb + 1), fill=tuple(int(v * .8) for v in tp)); dr.line((mx - 3, fb + 2, mx - 3, fb + round(8 * P)), fill=(34, 30, 38))
             if (c, r) in occ: items.append(((t + fb) // 2 + 3, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
     # monsters on the loop
-    for i in range(0, 400, 15 if who == 'me' else 21):
+    for i in range(0, 400, (9 if SOLO else 15) if who == 'me' else 21):
         px, py = pts[(i + (0 if who == 'me' else 50)) % 400]; k2 = random.choice(['shroom', 'wisp', 'wolf'])
         m = json.load(open('art/action/mobs_hr/%s.json' % k2)); im = Image.open('art/action/mobs_hr/%s.png' % k2).crop((0, 0, m['w'], m['h'])); im = im.crop(im.getbbox())
         h = 36 if k2 != 'wolf' else 38; kk = h / im.height; im = im.resize((round(im.width * kk), h), Image.LANCZOS); a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
@@ -120,13 +124,23 @@ hd = ImageDraw.Draw(base); F = ImageFont.truetype('/usr/share/fonts/truetype/dej
 def bar(y, txt, col):
     hd.rounded_rectangle((z(8), z(y), W - z(8), z(y + 26)), z(7), fill=(30, 24, 30, 225), outline=(250, 236, 200), width=z(2)); hd.text((z(16), z(y + 5)), txt, fill=col, font=F)
 bar(10, 'CATS  (opponent)      monsters 31/100', (255, 210, 230))
-hd.rounded_rectangle((z(8), z(332), W - z(8), z(426)), z(10), fill=(30, 24, 30, 200), outline=(250, 236, 200), width=z(2))
-hd.text((z(20), z(340)), 'WAVE 12      00:24', fill=(250, 240, 210), font=FB); hd.text((z(20), z(364)), 'monsters 47/100', fill=(255, 140, 140), font=F)
-hd.rectangle((z(20), z(384), z(370), z(394)), fill=(60, 40, 40)); hd.rectangle((z(20), z(384), z(20 + 350 * .47), z(394)), fill=(230, 80, 80))
-hd.text((z(20), z(402)), 'DOGS  (you)', fill=(255, 220, 140), font=F)
+if SOLO:
+    hd.rounded_rectangle((z(8), z(42), W - z(8), z(94)), z(10), fill=(30, 24, 30, 215), outline=(250, 236, 200), width=z(2))
+    hd.text((z(20), z(47)), 'WAVE 12    00:24', fill=(250, 240, 210), font=FB); hd.text((z(232), z(50)), 'DOGS  47/100', fill=(255, 160, 150), font=F)
+    hd.rectangle((z(20), z(74), z(370), z(84)), fill=(60, 40, 40)); hd.rectangle((z(20), z(74), z(20 + 350 * .47), z(84)), fill=(230, 80, 80))
+else:
+    hd.rounded_rectangle((z(8), z(332), W - z(8), z(426)), z(10), fill=(30, 24, 30, 200), outline=(250, 236, 200), width=z(2))
+    hd.text((z(20), z(340)), 'WAVE 12      00:24', fill=(250, 240, 210), font=FB); hd.text((z(20), z(364)), 'monsters 47/100', fill=(255, 140, 140), font=F)
+    hd.rectangle((z(20), z(384), z(370), z(394)), fill=(60, 40, 40)); hd.rectangle((z(20), z(384), z(20 + 350 * .47), z(394)), fill=(230, 80, 80))
+    hd.text((z(20), z(402)), 'DOGS  (you)', fill=(255, 220, 140), font=F)
 hd.rounded_rectangle((z(8), z(748), W - z(8), z(808)), z(10), fill=(30, 24, 30, 225), outline=(250, 236, 200), width=z(2))
 for i, (t, c, col) in enumerate((('SUMMON', '20', (250, 200, 60)), ('UPGRADE', '50', (120, 200, 250)), ('LUCKY', '1', (200, 140, 250)))):
     x = 16 + i * 122; hd.rounded_rectangle((z(x), z(756), z(x + 114), z(800)), z(8), fill=col, outline=(30, 20, 18), width=z(2))
     hd.text((z(x + 10), z(760)), t, fill=(30, 20, 18), font=FB); hd.text((z(x + 10), z(780)), '@ ' + c, fill=(30, 20, 18), font=F)
 hd.text((z(300), z(724)), 'gold 140', fill=(255, 220, 120), font=F)
-base.resize((W * 2, H * 2), Image.NEAREST).save(OUT + ('tw_ld_mock.png' if Z == 1 else 'tw_ld_mock_zo%g%s.png' % (Z, '' if (GC, GR) == (6, 3) else '_%dx%d' % (GC, GR)))); print('ok', W, H)
+if SOLO and not FIT:
+    y0e = BOARDS[0][0] + BH + z(16); y1e = z(716)
+    for x in range(z(12), W - z(12), z(10)): hd.line((x, y0e, x + z(5), y0e), fill=(255, 240, 120)); hd.line((x, y1e, x + z(5), y1e), fill=(255, 240, 120))
+    for y in range(y0e, y1e, z(10)): hd.line((z(12), y, z(12), y + z(5)), fill=(255, 240, 120)); hd.line((W - z(12), y, W - z(12), y + z(5)), fill=(255, 240, 120))
+    hd.text((W // 2 - z(70), (y0e + y1e) // 2 - z(10)), 'EMPTY  %d px' % (y1e - y0e), fill=(255, 240, 120), font=FB)
+base.resize((W * 2, H * 2), Image.NEAREST).save(OUT + (('tw_ld_solo_zo%g_%dx%d%s.png' % (Z, GC, GR, '' if FIT else '_space')) if SOLO else 'tw_ld_mock.png' if Z == 1 else 'tw_ld_mock_zo%g%s.png' % (Z, '' if (GC, GR) == (6, 3) else '_%dx%d' % (GC, GR)))); print('ok', W, H)
