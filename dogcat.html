@@ -37,7 +37,7 @@ function sellVal(u){return KIND[u.kind].cost*Math.pow(3,u.star-1)-1}
 let TITLE=!Q.get('skip');
 // ---------- the bag (owner 2026-11-13 "ภาพช่วงล่างทำกระเป๋าเลย"): Backpack-style grid under the board. Items DROP from monsters (TFT style) into a tray of 3;
 // drag one onto the grid, tap = turn it, drag to the bin = throw away. Every item in the grid works for EVERY dog; a treat makes the items touching it 25% stronger.
-const BAG={x:22,y:800,c:7,r:4,s:56},TRAY={x:438,y:800,s:66,n:3},BIN={x:438,y:1018,w:126,h:64};
+const BAG={x:22,y:800,c:7,r:4,s:56},TRAY={x:438,y:800,s:66,n:3},BIN={x:438,y:1018,w:126,h:64};   // matches art/dogcat/bag/panel.png drawn at (6,716)
 const ITEM={
  bone:{name:'กระดูก',ico:'🦴',col:'#e8dcc0',cells:[[0,0],[1,0]],st:{atk:.10},d:'โจมตี +10%'},
  collar:{name:'ปลอกคอหนาม',ico:'📿',col:'#e09a9a',cells:[[0,0]],st:{crit:.06},d:'คริ +6%'},
@@ -123,7 +123,7 @@ function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTrans
    g.restore();star(x,y-(S.fy-S.top)-9+(o.at<0&&!S.idle?Math.floor(G.t*2.6+o.slot*1.7)%4>1?1:0:0),o.star)}}
  for(const b of G.shots){const x=Math.round(b.x),y=Math.round(b.y),r=3+b.star;g.fillStyle='#221c28';g.fillRect(x-r-1,y-r-1,2*r+2,2*r+2);g.fillStyle='#4a4656';g.fillRect(x-r,y-r,2*r,2*r);g.fillStyle='#b4b4c8';g.fillRect(x-r+1,y-r+1,r-1,r-1)}
  for(const f of G.fx){if(f.k==='dust'){const k=f.t/.3,r=f.r*(.4+.6*k);g.fillStyle='rgba(255,244,214,'+(1-k)+')';for(let i=0;i<10;i++){const a=i*.628;g.fillRect(Math.round(f.x+Math.cos(a)*r)-3,Math.round(f.y+Math.sin(a)*r*.55)-3,6,6)}}
-  else if(f.k==='drop'){const k=f.t/.6,e=k*k,tx=TRAY.x+TRAY.s/2,ty=TRAY.y+TRAY.s/2,cx=f.x+(tx-f.x)*e,cy=f.y+(ty-f.y)*e-Math.sin(k*3.14)*60;g.font='26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(ITEM[f.ik].ico,cx,cy)}
+  else if(f.k==='drop'){const k=f.t/.6,e=k*k,tx=TRAY.x+TRAY.s/2,ty=TRAY.y+TRAY.s/2,cx=f.x+(tx-f.x)*e,cy=f.y+(ty-f.y)*e-Math.sin(k*3.14)*60;const im=IMG['b_'+f.ik];if(im){const q=28/Math.max(im.width,im.height);g.drawImage(im,Math.round(cx-im.width*q/2),Math.round(cy-im.height*q/2),im.width*q,im.height*q)}}
   else if(f.k==='coin'){if(f.t<0)continue;const k=f.t/.55,e=k*k,cx=f.x+(462-f.x)*e,cy=f.y+(1150-f.y)*e-Math.sin(k*3.14)*46,w=Math.max(2,Math.round(Math.abs(Math.cos(f.t*18))*8));g.fillStyle='#221c28';g.fillRect(Math.round(cx-w/2)-1,Math.round(cy)-5,w+2,10);g.fillStyle='#fac83c';g.fillRect(Math.round(cx-w/2),Math.round(cy)-4,w,8);g.fillStyle='#fff0a0';g.fillRect(Math.round(cx-w/2),Math.round(cy)-4,Math.max(1,w>>1),3)}
   else if(f.k==='poof'){const r=6+f.t*40;g.fillStyle='rgba(255,255,255,'+(1-f.t/.4)+')';for(let i=0;i<5;i++){const a=i*1.26+1;g.fillRect(Math.round(f.x+Math.cos(a)*r)-2,Math.round(f.y+Math.sin(a)*r*.6)-2,4,4)}}
   else{const k=f.t/.35;g.fillStyle='#ffd640';g.fillRect(Math.round(f.x+(f.tx-f.x)*k)-3,Math.round(f.y+(f.ty-f.y)*k)-3,6,6)}}
@@ -154,26 +154,26 @@ function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTrans
   const A=SP.units.shiba3,B=SP.units.corgi3;g.drawImage(IMG.u_shiba3,0,0,104,104,150-A.fx,540-A.fy+b,104,104);g.drawImage(IMG.u_corgi3,0,0,104,104,250-B.fx,540-B.fy-b,104,104);
   g.fillStyle='#221c28';rr(330,486,170,60,10);g.fill();g.fillStyle='#6ed27a';rr(333,489,164,54,8);g.fill();txt('เริ่มเล่น',415,517,26,'#1c2e1e','center')}}
 function itemBox(it){const c=cellsOf(it);return[Math.max(...c.map(q=>q[0]))+1,Math.max(...c.map(q=>q[1]))+1]}
-function drawItem(it,px,py,s,al){const D=ITEM[it.k],c=cellsOf(it),[bw,bh]=itemBox(it);g.globalAlpha=al||1;
- for(const [x,y] of c){g.fillStyle='#221c28';g.fillRect(px+x*s,py+y*s,s,s)}for(const [x,y] of c){g.fillStyle=D.col;g.fillRect(px+x*s+2,py+y*s+2,s-4,s-4);g.fillStyle='rgba(255,255,255,.35)';g.fillRect(px+x*s+2,py+y*s+2,s-4,4)}
- for(const [x,y] of c){if(c.some(q=>q[0]===x+1&&q[1]===y)){g.fillStyle=D.col;g.fillRect(px+x*s+s-3,py+y*s+6,6,s-12)}if(c.some(q=>q[0]===x&&q[1]===y+1)){g.fillStyle=D.col;g.fillRect(px+x*s+6,py+y*s+s-3,s-12,6)}}
- const [ix,iy]=c.length===3&&bw===2&&bh===2?c[1]:[(bw-1)/2,(bh-1)/2];g.font=Math.round(s*.62)+'px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillStyle='#000';g.fillText(D.ico,px+ix*s+s/2,py+iy*s+s/2+2);
- if(it.m>1){g.fillStyle='#ffd640';g.fillRect(px+3,py+3,8,8);g.fillStyle='#221c28';g.fillRect(px+5,py+5,4,4)}g.globalAlpha=1}
-function drawBag(){const B=G.buf,s=BAG.s;panel(6,716,W-12,404,'#3b2a22');txt('กระเป๋า',22,740,18,'#ffe296');txt('ของทุกชิ้นใช้กับหมาทุกตัว',104,741,13,'#d8c8b0');
+function drawItem(it,px,py,s,al){   // a pixel sprite (art/dogcat/bag/, tools/art/dogcat_bag.py) over a tinted pocket shape, turned in 90-degree steps
+ const D=ITEM[it.k],c=cellsOf(it),[bw,bh]=itemBox(it),im=IMG['b_'+it.k],k=s/56;g.globalAlpha=al||1;
+ for(const [x,y] of c){g.fillStyle='rgba(20,14,20,.55)';g.fillRect(px+x*s+1,py+y*s+1,s-2,s-2)}
+ g.globalAlpha=(al||1)*.42;for(const [x,y] of c){g.fillStyle=D.col;g.fillRect(px+x*s+3,py+y*s+3,s-6,s-6);if(c.some(q=>q[0]===x+1&&q[1]===y))g.fillRect(px+x*s+s-3,py+y*s+3,6,s-6);if(c.some(q=>q[0]===x&&q[1]===y+1))g.fillRect(px+x*s+3,py+y*s+s-3,s-6,6)}
+ g.globalAlpha=al||1;if(im){g.save();g.translate(px+bw*s/2,py+bh*s/2);g.rotate(it.rot*Math.PI/2);g.scale(k,k);g.drawImage(im,-im.width/2,-im.height/2);g.restore()}
+ if(it.m>1&&s>40){star(px+10,py+10,1)}g.globalAlpha=1}
+function drawBag(){const B=G.buf,s=BAG.s;g.drawImage(IMG.bagp,6,716);txt('กระเป๋า',34,750,20,'#ffe296');
  const L=[];if(B.atk)L.push('โจมตี +'+Math.round(B.atk*100)+'%');if(B.spd)L.push('เร็ว +'+Math.round(B.spd*100)+'%');if(B.rng)L.push('ระยะ +'+Math.round(B.rng*100)+'%');if(B.crit)L.push('คริ '+Math.round(B.crit*100)+'%');if(B.gold)L.push('ทอง +'+Math.round(B.gold*100)+'%');
- txt(L.length?L.join('  '):'ยังไม่มีของ ฆ่ามอนให้ของดรอป',22,772,14,L.length?'#9be6a0':'#b8a890');
- for(let y=0;y<BAG.r;y++)for(let x=0;x<BAG.c;x++){g.fillStyle='#221c28';g.fillRect(BAG.x+x*s,BAG.y+y*s,s,s);g.fillStyle=(x+y)%2?'#5a4234':'#644a3a';g.fillRect(BAG.x+x*s+1,BAG.y+y*s+1,s-2,s-2)}
- if(DRAG&&DRAG.moved){const gx=Math.round((DRAG.x-DRAG.ox-BAG.x)/s),gy=Math.round((DRAG.y-DRAG.oy-BAG.y)/s),ok=fits(DRAG.it,gx,gy);for(const [cx,cy] of cellsOf(DRAG.it)){const x=gx+cx,y=gy+cy;if(x>=0&&y>=0&&x<BAG.c&&y<BAG.r){g.fillStyle=ok?'rgba(110,230,120,.55)':'rgba(240,80,80,.55)';g.fillRect(BAG.x+x*s+1,BAG.y+y*s+1,s-2,s-2)}}}
+ txt(L.length?L.join('  '):'ของทุกชิ้นใช้กับหมาทุกตัว · ฆ่ามอนให้ของดรอป',116,751,13,L.length?'#a8f0aa':'#d8c8b0');
+ if(DRAG&&DRAG.moved){const gx=Math.round((DRAG.x-DRAG.ox-BAG.x)/s),gy=Math.round((DRAG.y-DRAG.oy-BAG.y)/s),ok=fits(DRAG.it,gx,gy);for(const [cx,cy] of cellsOf(DRAG.it)){const x=gx+cx,y=gy+cy;if(x>=0&&y>=0&&x<BAG.c&&y<BAG.r){g.fillStyle=ok?'rgba(110,230,120,.55)':'rgba(240,80,80,.55)';g.fillRect(BAG.x+x*s+2,BAG.y+y*s+2,s-4,s-4)}}}
  for(const it of G.items)if(!it.tray&&!(DRAG&&DRAG.it===it&&DRAG.moved))drawItem(it,BAG.x+it.gx*s,BAG.y+it.gy*s,s);
- txt('ของที่ดรอป',TRAY.x,784,13,'#d8c8b0');const T=G.items.filter(i=>i.tray);
- for(let i=0;i<TRAY.n;i++){const y=TRAY.y+i*(TRAY.s+6);g.fillStyle='#221c28';rr(TRAY.x,y,126,TRAY.s,6);g.fill();g.fillStyle='#4a362c';rr(TRAY.x+2,y+2,122,TRAY.s-4,5);g.fill();const it=T[i];
-  if(it&&!(DRAG&&DRAG.it===it&&DRAG.moved)){const [bw,bh]=itemBox(it),k=Math.min(26,Math.floor(56/Math.max(bw,bh)));drawItem(it,TRAY.x+8+(56-bw*k)/2,y+5+(56-bh*k)/2,k);txt(ITEM[it.k].d,TRAY.x+68,y+TRAY.s/2,10,'#ffe296')}}
- g.fillStyle='#221c28';rr(BIN.x,BIN.y,BIN.w,BIN.h,6);g.fill();g.fillStyle=DRAG&&DRAG.moved&&inBin(DRAG.x,DRAG.y)?'#ec6a5a':'#6a4a44';rr(BIN.x+2,BIN.y+2,BIN.w-4,BIN.h-4,5);g.fill();txt('🗑 ทิ้ง',BIN.x+BIN.w/2,BIN.y+BIN.h/2,17,'#ffe0d8','center');
- txt('ลาก = วาง · แตะ = หมุน',22,1100,12,'#b8a890');
- if(DRAG&&DRAG.moved)drawItem(DRAG.it,DRAG.x-DRAG.ox,DRAG.y-DRAG.oy,s,.85)}
+ const T=G.items.filter(i=>i.tray);
+ for(let i=0;i<TRAY.n;i++){const y=TRAY.y+i*72,it=T[i];if(it&&!(DRAG&&DRAG.it===it&&DRAG.moved)){const [bw,bh]=itemBox(it),k=Math.min(28,Math.floor(56/Math.max(bw,bh)));drawItem(it,TRAY.x+6+(56-bw*k)/2,y+5+(56-bh*k)/2,k);txt(ITEM[it.k].name,TRAY.x+66,y+24,10,'#ffe296');txt(ITEM[it.k].d,TRAY.x+66,y+42,9,'#d8c8b0')}
+  else if(!it&&i===T.length)txt('ของที่ดรอป',TRAY.x+63,y+33,12,'#8a705c','center')}
+ if(DRAG&&DRAG.moved&&inBin(DRAG.x,DRAG.y)){g.fillStyle='rgba(240,80,70,.5)';rr(BIN.x+2,BIN.y+2,BIN.w-4,BIN.h-4,5);g.fill()}txt('ทิ้ง',BIN.x+82,BIN.y+32,17,'#ffe0d8','center');
+ txt('ลาก = วาง · แตะ = หมุน',24,1050,12,'#d8c8b0');
+ if(DRAG&&DRAG.moved)drawItem(DRAG.it,DRAG.x-DRAG.ox,DRAG.y-DRAG.oy,s,.9)}
 function inBin(x,y){return x>=BIN.x&&x<=BIN.x+BIN.w&&y>=BIN.y&&y<=BIN.y+BIN.h}
 function itemAt(x,y){const s=BAG.s;for(const it of G.items)if(!it.tray)for(const [cx,cy] of cellsOf(it)){const px=BAG.x+(it.gx+cx)*s,py=BAG.y+(it.gy+cy)*s;if(x>=px&&x<px+s&&y>=py&&y<py+s)return[it,x-(BAG.x+it.gx*s),y-(BAG.y+it.gy*s)]}
- const T=G.items.filter(i=>i.tray);for(let i=0;i<T.length;i++){const ty=TRAY.y+i*(TRAY.s+6);if(x>=TRAY.x&&x<=TRAY.x+126&&y>=ty&&y<=ty+TRAY.s)return[T[i],s/2,s/2]}return null}
+ const T=G.items.filter(i=>i.tray);for(let i=0;i<T.length;i++){const ty=TRAY.y+i*72;if(x>=TRAY.x&&x<=TRAY.x+126&&y>=ty&&y<=ty+TRAY.s)return[T[i],s/2,s/2]}return null}
 function pt(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]}
 cv.addEventListener('pointermove',e=>{if(!DRAG)return;const [x,y]=pt(e);DRAG.x=x;DRAG.y=y;if(Math.hypot(x-DRAG.sx,y-DRAG.sy)>9)DRAG.moved=true});
 function dropDrag(){const D=DRAG;if(!D)return;DRAG=null;const it=D.it,s=BAG.s;
@@ -193,6 +193,6 @@ cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),x=(e.cl
  const u=bi>=0?unitAt(bi):null;G.pick=u&&G.pick!==u?u:null;if(u)G.sel=null});
 let last=0;function frame(t){const dt=Math.min(.05,(t-last)/1000||0)*SPD;last=t;if(!TITLE)for(let i=0;i<FAST;i++)step(dt);draw();requestAnimationFrame(frame)}
 (async()=>{GEO=await (await fetch('art/dogcat/geo.json')).json();SP=await (await fetch('art/dogcat/sprites.json')).json();IMG.bg=await img('art/dogcat/bg.png');
- for(const k in SP.units){IMG['u_'+k]=await img('art/dogcat/units/'+k+'.png');if(SP.units[k].idle)IMG['i_'+k]=await img('art/dogcat/units/'+k+'_idle.png')}for(const k in SP.mobs)IMG['m_'+k]=await img('art/dogcat/mobs/'+k+'.png');
+ for(const k in SP.units){IMG['u_'+k]=await img('art/dogcat/units/'+k+'.png');if(SP.units[k].idle)IMG['i_'+k]=await img('art/dogcat/units/'+k+'_idle.png')}for(const k in SP.mobs)IMG['m_'+k]=await img('art/dogcat/mobs/'+k+'.png');IMG.bagp=await img('art/dogcat/bag/panel.png');for(const k in ITEM)IMG['b_'+k]=await img('art/dogcat/bag/'+k+'.png');
  newGame();window.DC={G:()=>G,place,step,KIND,give,buffs,fits,start:()=>{TITLE=false}};requestAnimationFrame(frame)})();
 </script></body></html>
