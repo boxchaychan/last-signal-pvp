@@ -53,8 +53,9 @@ def blob(cx, cy, rx, ry): return ((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2 +
 def seg(x0, y0, x1, y1, r):
     dx, dy = x1 - x0, y1 - y0; t = np.clip(((xx - x0) * dx + (yy - y0) * dy) / (dx * dx + dy * dy), 0, 1)
     return np.hypot(xx - (x0 + t * dx), yy - (y0 + t * dy)) + (N24 - .5) * 16 + (N9 - .5) * 6 < r
+import os; HOUSE = os.environ.get('HOUSE') == '1'
 HX, HY = 292, 918                                                   # the dog house's door step
-dirt = blob(HX, HY + 26, 150, 78) | seg(HX, HY + 40, HX - 10, 1130, 26) | seg(HX - 120, HY + 30, 0, HY + 70, 20) | seg(HX + 120, HY + 30, W, HY + 10, 20)
+dirt = (blob(HX, HY + 26, 150, 78) if HOUSE else blob(HX, HY + 40, 60, 30)) | seg(HX, HY + 40, HX - 10, 1130, 26) | seg(HX - 120, HY + 30, 0, HY + 70, 20) | seg(HX + 120, HY + 30, W, HY + 10, 20)
 img[dirt] = DIRT[dirt]
 e = dirt & ~ndimage.binary_erosion(dirt, iterations=2); img[e] *= .8
 e = ndimage.binary_dilation(dirt, iterations=2) & ~dirt; img[e] = img[e] * .7 + np.array([52, 92, 40]) * .3
@@ -75,6 +76,17 @@ ROAD = blocks(H, W, 15, 11, [(126, 132, 150), (112, 120, 140), (140, 144, 158), 
 FLOOR = blocks(H, W, 33, 26, [(226, 208, 170), (214, 196, 158), (234, 218, 184), (206, 188, 154)], seed=5, bond=False, lip=1, x0=-(GX % 33), y0=-(GY % 26), mortar=(150, 126, 104))
 WALL = blocks(H, W, 17, 8, [(92, 96, 116), (82, 86, 106), (100, 100, 118)], seed=7, lip=0, mortar=(40, 38, 52), moss=.16)
 KERB = blocks(H, W, 12, 30, [(176, 178, 190), (162, 166, 182)], seed=9, lip=0, mortar=(70, 70, 88))
+# owner 2026-11-12 "เอาพื้นไปใส่สวยๆ" (the painted tile sheet, tools/art/floor_sheet.py): grey slab groups for the loop, warm slab
+# groups for the dais (one group per half cell, so the joints follow the slots), each cut to few colours with more contrast
+if os.environ.get('TEX', 'sheet') == 'sheet':
+    import floor_sheet as FS
+    def punch(a, k=1.28, lift=1.0, tint=(1, 1, 1)):
+        m = a.reshape(-1, 3).mean(0); a = (m + (a - m) * k) * lift * np.array(tint)
+        return np.asarray(Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).quantize(14, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')).astype(float)
+    ROAD = punch(FS.patchwork(['f23', 'f29', 'f12'], W, H, 48, 44, x0=BX, y0=BY, seed=4), 1.3, .86, (.94, .97, 1.1))
+    FLOOR = punch(FS.patchwork(['f34', 'f25', 'f8'], W, H, CW, CH // 2, x0=GX, y0=GY, seed=6), 1.25, 1.2, (1.04, 1.0, .9))
+    WALL = punch(FS.mirror_tile(FS.px(FS.crop('road')), W, H), 1.2, .6, (.9, .92, 1.1))
+    DIRT2 = punch(FS.mirror_tile(FS.px(FS.crop('dirt').crop((0, 0, 190, 60))), W, H), 1.0, 1.02); img[dirt & ndimage.binary_erosion(dirt, iterations=2)] = DIRT2[dirt & ndimage.binary_erosion(dirt, iterations=2)]
 wall = down(plat, 13) & ~plat
 sh = (down(right(plat | wall, 12), 12)) & ~plat & ~wall; img[sh] = img[sh] * np.array([.62, .68, .74])     # the platform's shadow on the grass
 img[ring] = ROAD[ring]; img[inner] = FLOOR[inner]; img[wall] = WALL[wall]
@@ -215,12 +227,19 @@ for i in range(BN):
 for i, (kind, s) in ((0, ('shiba', 1)), (1, ('shiba', 1)), (3, ('corgi', 1))):
     im, an = unit(kind, s, 'idle'); cx = bx0 + i * BWd + BWd // 2 - 1; put(im, cx, byy + 30, anchor=an); stars.append((cx, byy + 30 - (an[1] - an[2]) - 13, s))
 # ---------- the yard
-put(kennel(), HX + 10, HY); put(flag(), HX - 62, HY - 6); put(bowl(), HX - 86, HY + 34, sh=False); put(bone(), HX - 50, HY + 52, sh=False); put(flip(bone()), HX + 44, HY + 96, sh=False)
-YARD = [('trees_green_0', 2, 74, 842), ('trees_green_1', 2, 536, 800), ('trees_green_3', 2, 500, 1118), ('trees_green_2', 2, 70, 1180), ('trees_green_1', 2, 14, 1010),
+# owner "เอาบ้านมาทำไม" + a painted swamp sheet "เอาไปตกแต่ง" (art/incoming/dogcat/swamp/, cut by swamp boxes): no dog house; the big old tree
+# on its sandy mound is the yard's centrepiece, the lily ponds and moss lie on the grass (reduce() by whole numbers, 1 px ink line)
+def swamp(n, k): return Image.fromarray(outline(np.asarray(crop(reduce(Image.open(DC + 'swamp/' + n + '.png'), k))), pale=999, black=INK).astype(np.uint8))
+if HOUSE: put(kennel(), HX + 10, HY); put(flag(), HX - 62, HY - 6); put(bowl(), HX - 86, HY + 34, sh=False)
+else:
+    t_ = swamp('tree', 3); put(t_, HX, HY + 44, anchor=(t_.width // 2, t_.height - 30, 0))
+    for n, k, x, y in (('lily_dark', 3, 452, 1096), ('pond_blue', 2, 96, 1066), ('moss', 2, 520, 962), ('lily_patch', 3, 150, 792), ('stump', 3, 60, 930), ('pond_rock', 2, 496, 846)):
+        im = swamp(n, k); items.append((y - im.height // 2 - 400, im, x - im.width // 2, y - im.height, False))
+YARD = [('trees_green_2', 2, 60, 870), ('trees_green_1', 2, 536, 800), ('trees_green_3', 2, 500, 1118), ('trees_green_2', 2, 70, 1180), ('trees_green_1', 2, 14, 1010),
         ('village_1', 2, 30, 742), ('village_1', 2, 82, 742), ('village_1', 2, 134, 742), ('village_1', 2, 452, 742), ('village_1', 2, 504, 742), ('village_1', 2, 556, 742),
-        ('camp_1', 3, 408, 968), ('logs2_0', 3, 470, 990), ('logs2_1', 3, 372, 1012), ('camp_4', 3, 196, 900), ('camp_2', 3, 160, 916), ('camp_7', 3, 386, 884),
-        ('village_5', 2, 492, 908), ('village_7', 3, 110, 962), ('village_3', 2, 330, 1090), ('village_4', 2, 236, 1070), ('camp_5', 2, 150, 1040),
-        ('water_0', 1, 440, 1100), ('water_3', 3, 384, 1084), ('water_4', 3, 512, 1042), ('logs2_3', 3, 118, 868), ('stones_9', 3, 566, 960), ('stones_1', 3, 24, 900),
+        ('camp_1', 3, 408, 968), ('logs2_0', 3, 470, 990), ('logs2_1', 3, 372, 1012), ('camp_7', 3, 30, 836),
+        ('village_3', 2, 330, 1090), ('village_4', 2, 236, 1070), ('camp_5', 2, 150, 1040),
+        ('water_3', 3, 384, 1084), ('water_4', 3, 512, 1042), ('logs2_3', 3, 200, 1010), ('stones_9', 3, 566, 960), ('stones_1', 3, 24, 900),
         ('bushes_1', 3, 28, 772), ('bushes_3', 3, 176, 760), ('bushes_0', 3, 418, 764), ('bushes_5', 3, 562, 780), ('bushes_9', 3, 250, 1118), ('bushes_1', 3, 548, 870),
         ('bushes_6', 3, 204, 1004), ('bushes_10', 3, 40, 1090), ('bushes_3', 3, 350, 1124), ('bushes_0', 3, 30, 616), ('bushes_5', 3, 558, 620), ('bushes_1', 3, 300, 134), ('bushes_9', 3, 60, 138), ('bushes_3', 3, 520, 140)]
 for n, k, x, y in YARD:
