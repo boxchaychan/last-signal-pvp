@@ -17,7 +17,7 @@ html,body{margin:0;height:100%;background:#16131c;overflow:hidden;touch-action:n
 // Dogs vs cats, step 1 (2026-11-12): one stone board 7x4, monsters walk the loop, buy a dog, tap a pedestal to place it, it fights
 // by itself; 3 of the same dog and star merge into the next star (TFT style). Each wave has a countdown: monsters still on the
 // loop when it ends cost HP by their number and STAY for the next wave (owner "ให้มอนค้างไปก่อน"). HP 0 = lose.
-// Not in yet: shop reroll, bench, drops + backpack, path choice every 10 waves, the cats' side. Art: art/dogcat/ (tools/art/
+// Not in yet: bench, drops + backpack, path choice every 10 waves, the cats' side. Art: art/dogcat/ (tools/art/
 // dogcat_assets.py, BG=1 tw_scene.py). World = 585x1266 px, 1 art px = 1 world px, blown up by the browser with hard pixels.
 'use strict';
 const W=585,H=1266,cv=document.getElementById('cv'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
@@ -29,11 +29,16 @@ const KIND={   // per star: damage; rng = reach in px, cd = seconds between atta
  corgi:{name:'คอร์กี้',cost:4,rng:250,cd:1.7,aoe:46,dmg:[22,52,130],col:'#68be78'}};
 const MOBK=['shroom','wisp','kappa','kasa_obake','paper_doll','monkey','goblin_archer','wolf'];
 let GEO,SP,G,FAST=+(localStorage.getItem('dc.fast')||1);   // owner "ลองทำให้เกม x2": a x1 / x2 speed button (top right), remembered
-function newGame(){G={t:0,wave:0,wt:0,wlen:25,hp:100,gold:9,units:[],mobs:[],fx:[],num:[],shots:[],hs:0,shake:0,sel:null,spawn:[],over:false,kills:0,msg:'แตะการ์ดข้างล่าง แล้วแตะแท่นหินเพื่อวางหมา',msgT:6};nextWave()}
+function newGame(){G={t:0,wave:0,wt:0,wlen:25,hp:100,gold:9,units:[],mobs:[],fx:[],num:[],shots:[],hs:0,shake:0,sel:null,pick:null,shop:[],ban:null,gb:0,red:0,spawn:[],over:false,kills:0,msg:'แตะการ์ดข้างล่าง แล้วแตะแท่นหินเพื่อวางหมา',msgT:6};nextWave()}
+// owner 2026-11-13 "แก้ให้ดูเป็นเกมมากขึ้น": a title screen, a shop of 5 random cards with a reroll (1 gold, free refresh every wave), a wave banner
+// (red for bosses), coins that fly to the gold counter, a monster portal, tap a dog to see its reach and sell it, a red warning in the last 5 s
+function roll(){G.shop=[];for(let i=0;i<5;i++)G.shop.push(Math.random()<.58?'shiba':'corgi');G.sel=null}
+function sellVal(u){return KIND[u.kind].cost*Math.pow(3,u.star-1)-1}
+let TITLE=!Q.get('skip');
 function nextWave(){G.wave++;G.wt=G.wlen;const n=6+Math.floor(G.wave*1.6),hp=26*Math.pow(1.17,G.wave-1),boss=G.wave%5===0;
  for(let i=0;i<n;i++)G.spawn.push({at:G.t+i*(9/n),k:MOBK[Math.min(MOBK.length-2,Math.floor(Math.random()*Math.min(MOBK.length-1,1+G.wave/2)))],hp});
  if(boss)G.spawn.push({at:G.t+4,k:'wolf',hp:hp*9,boss:1});
- G.gold+=G.wave>1?3:0}
+ G.gold+=G.wave>1?3:0;roll();G.ban={t:0,txt:boss?'บอสมา!':'เวฟ '+G.wave,boss}}
 // the loop: a rectangle walked clockwise from the top-left corner
 function loopPos(d){const [a,b,c,e]=GEO.loop,w=c-a,h=e-b,p=2*(w+h);d=((d%p)+p)%p;if(d<w)return[a+d,b,1];d-=w;if(d<h)return[c,b+d,1];d-=h;if(d<w)return[c-d,e,-1];d-=w;return[a,e-d,-1]}
 function unitAt(i){return G.units.find(u=>u.slot===i)}
@@ -41,9 +46,9 @@ function place(kind,slot){const K=KIND[kind];if(G.gold<K.cost){say('ทองไ
  G.gold-=K.cost;const [x,y]=GEO.slots[slot];G.units.push({kind,star:1,slot,x,y,cd:.3,at:-1,dir:1,pop:.25});merge()}
 function merge(){for(;;){let done=true;for(const kind in KIND)for(let s=1;s<3;s++){const m=G.units.filter(u=>u.kind===kind&&u.star===s);
   if(m.length>=3){const keep=m[m.length-1];for(const u of m.slice(0,2)){G.units.splice(G.units.indexOf(u),1);G.fx.push({x:u.x,y:u.y-30,tx:keep.x,ty:keep.y-30,t:0,k:'fly'})}
-   keep.star++;keep.pop=.5;say(KIND[kind].name+' '+keep.star+' ดาว!');done=false}}if(done)break}}
+   keep.star++;keep.pop=.5;G.pick=null;say(KIND[kind].name+' '+keep.star+' ดาว!');done=false}}if(done)break}}
 function say(s){G.msg=s;G.msgT=2.5}
-function step(dt){if(G.over)return;if(G.hs>0){G.hs-=dt;if(G.shake>0)G.shake-=dt;return}G.t+=dt;G.wt-=dt;if(G.msgT>0)G.msgT-=dt;
+function step(dt){if(G.over)return;if(G.ban)G.ban.t+=dt;if(G.gb>0)G.gb-=dt;if(G.red>0)G.red-=dt;if(G.hs>0){G.hs-=dt;if(G.shake>0)G.shake-=dt;return}G.t+=dt;G.wt-=dt;if(G.msgT>0)G.msgT-=dt;
  while(G.spawn.length&&G.spawn[0].at<=G.t){const s=G.spawn.shift();G.mobs.push({k:s.k,hp:s.hp,max:s.hp,d:0,sp:(s.boss?30:44)+Math.random()*8,boss:s.boss||0,hurt:0,ph:Math.random()*9})}
  G.spawn.sort((a,b)=>a.at-b.at);
  for(const m of G.mobs){m.d+=m.sp*dt;m.hurt-=dt;if(m.kb>0)m.kb-=dt;const p=loopPos(m.d);m.x=p[0];m.y=p[1];m.dir=p[2]}
@@ -58,9 +63,9 @@ function step(dt){if(G.over)return;if(G.hs>0){G.hs-=dt;if(G.shake>0)G.shake-=dt;
    if(best){u.tg={x:best.x,y:best.y,m:best};u.dir=best.x>=u.x?1:-1;u.at=0;u.cd=K.cd}}}
  for(const b of G.shots){if(b.m&&b.m.hp>0){b.tx=b.m.x;b.ty=b.m.y-14}const dx=b.tx-b.x,dy=b.ty-b.y,d=Math.hypot(dx,dy),v=560*dt;if(d<=v){b.done=1;blast(b.tx,b.ty+14,b.dm,b.aoe,b.star,b.dir,1)}else{b.x+=dx/d*v;b.y+=dy/d*v}}
  G.shots=G.shots.filter(b=>!b.done);
- G.mobs=G.mobs.filter(m=>{if(m.hp>0)return true;G.gold+=m.boss?6:1;G.kills++;G.fx.push({x:m.x,y:m.y-14,t:0,k:'poof'});return false});
- for(const f of G.fx)f.t+=dt;G.fx=G.fx.filter(f=>f.t<(f.k==='fly'?.35:f.k==='dust'?.3:.4));for(const n of G.num)n.t+=dt;G.num=G.num.filter(n=>n.t<.7);
- if(G.wt<=0){const left=G.mobs.length;if(left){G.hp-=left;say('หมดเวลา! มอนเหลือ '+left+' ตัว เลือด -'+left);G.shake=.3}else{G.gold+=2;say('เคลียร์หมด! +2 ทอง')}
+ G.mobs=G.mobs.filter(m=>{if(m.hp>0)return true;const gv=m.boss?6:1;G.gold+=gv;G.kills++;G.fx.push({x:m.x,y:m.y-14,t:0,k:'poof'});for(let i=0;i<Math.min(gv,4);i++)G.fx.push({x:m.x+i*6-6,y:m.y-20,t:-i*.06,k:'coin'});return false});
+ for(const f of G.fx)f.t+=dt;for(const f of G.fx)if(f.k==='coin'&&f.t>=.55&&!f.d){f.d=1;G.gb=.18}G.fx=G.fx.filter(f=>f.t<(f.k==='fly'?.35:f.k==='dust'?.3:f.k==='coin'?.56:.4));for(const n of G.num)n.t+=dt;G.num=G.num.filter(n=>n.t<.7);
+ if(G.wt<=0){const left=G.mobs.length;if(left){G.hp-=left;say('หมดเวลา! มอนเหลือ '+left+' ตัว เลือด -'+left);G.shake=.3;G.red=.6}else{G.gold+=2;say('เคลียร์หมด! +2 ทอง')}
   if(G.hp<=0){G.hp=0;G.over=true;over()}else nextWave()}
  else if(!G.mobs.length&&!G.spawn.length&&G.wt>1.5){G.gold+=2;say('เคลียร์ก่อนเวลา! +2 ทอง');nextWave()}
  if(G.shake>0)G.shake-=dt}
@@ -81,7 +86,10 @@ function txt(s,x,y,sz,col,al){g.font='700 '+sz+'px system-ui,"Noto Sans Thai",sa
 const CARDS=[['shiba',14],['corgi',204]];   // shop cards: kind, x
 function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTransform(1,0,0,1,sx,0);g.drawImage(IMG.bg,0,0);
  // free pedestals glow while a card is selected
- if(G.sel)for(let i=0;i<GEO.slots.length;i++)if(!unitAt(i)){const [x,y]=GEO.slots[i];g.strokeStyle='rgba(255,236,120,'+(.55+.35*Math.sin(G.t*6))+')';g.lineWidth=2;g.beginPath();g.ellipse(x,y-3,24,10,0,0,7);g.stroke()}
+ if(G.sel!==null)for(let i=0;i<GEO.slots.length;i++)if(!unitAt(i)){const [x,y]=GEO.slots[i];g.strokeStyle='rgba(255,236,120,'+(.55+.35*Math.sin(G.t*6))+')';g.lineWidth=2;g.beginPath();g.ellipse(x,y-3,24,10,0,0,7);g.stroke()}
+ {const [pa,pb]=GEO.loop,px=Math.round(pa)-4,py=Math.round(pb)-8;for(let i=0;i<4;i++){g.fillStyle=['#2a1440','#5a2a96','#9a52e0','#e0b4ff'][i];g.beginPath();g.ellipse(px,py,26-i*6,13-i*3,0,0,7);g.fill()}
+  for(let i=0;i<7;i++){const a=G.t*3+i*.9,r=22-((G.t*10+i*3)%20);g.fillStyle=i%2?'#e0b4ff':'#b478ff';g.fillRect(px+Math.round(Math.cos(a)*r)-1,py+Math.round(Math.sin(a)*r*.5)-1,3,3)}}
+ if(G.pick){const u=G.pick,r=KIND[u.kind].rng;g.fillStyle='rgba(120,200,255,.13)';g.beginPath();g.arc(u.x,u.y-8,r,0,7);g.fill();g.strokeStyle='rgba(160,220,255,.9)';g.lineWidth=2;g.setLineDash([6,5]);g.lineDashOffset=-G.t*14;g.stroke();g.setLineDash([])}
  const list=[];for(const u of G.units)list.push([u.y,u,0]);for(const m of G.mobs)list.push([m.y,m,1]);list.sort((a,b)=>a[0]-b[0]);
  for(const [,o,isM] of list){if(isM){const S=SP.mobs[o.k],im=IMG['m_'+o.k],f=Math.floor(G.t*8+o.ph)%S.n,k=o.boss?2:1,w=S.w*k,h=S.h*k,x=Math.round(o.x),y=Math.round(o.y);
    g.fillStyle='rgba(10,20,10,.3)';g.beginPath();g.ellipse(x,y,S.w*.3*k,4*k,0,0,7);g.fill();g.save();g.translate(x+(o.kb>0?Math.round(o.kd*o.kb*30):0),y);if(o.kb>0)g.scale(1+o.kb*.9,1-o.kb*1.1);if(o.dir<0)g.scale(-1,1);if(o.hurt>0)g.filter='brightness(2.2)';
@@ -97,30 +105,45 @@ function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTrans
    g.restore();star(x,y-(S.fy-S.top)-9+(o.at<0&&!S.idle?Math.floor(G.t*2.6+o.slot*1.7)%4>1?1:0:0),o.star)}}
  for(const b of G.shots){const x=Math.round(b.x),y=Math.round(b.y),r=3+b.star;g.fillStyle='#221c28';g.fillRect(x-r-1,y-r-1,2*r+2,2*r+2);g.fillStyle='#4a4656';g.fillRect(x-r,y-r,2*r,2*r);g.fillStyle='#b4b4c8';g.fillRect(x-r+1,y-r+1,r-1,r-1)}
  for(const f of G.fx){if(f.k==='dust'){const k=f.t/.3,r=f.r*(.4+.6*k);g.fillStyle='rgba(255,244,214,'+(1-k)+')';for(let i=0;i<10;i++){const a=i*.628;g.fillRect(Math.round(f.x+Math.cos(a)*r)-3,Math.round(f.y+Math.sin(a)*r*.55)-3,6,6)}}
+  else if(f.k==='coin'){if(f.t<0)continue;const k=f.t/.55,e=k*k,cx=f.x+(462-f.x)*e,cy=f.y+(1150-f.y)*e-Math.sin(k*3.14)*46,w=Math.max(2,Math.round(Math.abs(Math.cos(f.t*18))*8));g.fillStyle='#221c28';g.fillRect(Math.round(cx-w/2)-1,Math.round(cy)-5,w+2,10);g.fillStyle='#fac83c';g.fillRect(Math.round(cx-w/2),Math.round(cy)-4,w,8);g.fillStyle='#fff0a0';g.fillRect(Math.round(cx-w/2),Math.round(cy)-4,Math.max(1,w>>1),3)}
   else if(f.k==='poof'){const r=6+f.t*40;g.fillStyle='rgba(255,255,255,'+(1-f.t/.4)+')';for(let i=0;i<5;i++){const a=i*1.26+1;g.fillRect(Math.round(f.x+Math.cos(a)*r)-2,Math.round(f.y+Math.sin(a)*r*.6)-2,4,4)}}
   else{const k=f.t/.35;g.fillStyle='#ffd640';g.fillRect(Math.round(f.x+(f.tx-f.x)*k)-3,Math.round(f.y+(f.ty-f.y)*k)-3,6,6)}}
  for(const n of G.num)txt(String(n.v),Math.round(n.x),Math.round(n.y-n.t*26),n.v>=60?20:15,n.v>=60?'#ffd640':'#fff','center');
  g.setTransform(1,0,0,1,0,0);
+ if(G.wt<5&&G.mobs.length){g.fillStyle='rgba(236,60,60,'+(.07+.07*Math.sin(G.t*12))+')';g.fillRect(0,0,W,H)}if(G.red>0){g.fillStyle='rgba(236,40,40,'+G.red*.5+')';g.fillRect(0,0,W,H)}
+ if(G.ban&&G.ban.t<1.5){const b=G.ban,k=b.t<.18?b.t/.18:b.t>1.2?(1.5-b.t)/.3:1,hh=Math.round(54*k),yy=372;g.fillStyle='#221c28';g.fillRect(0,yy-hh/2-3,W,hh+6);g.fillStyle=b.boss?'#c8323c':'#f6ce6e';g.fillRect(0,yy-hh/2,W,hh);g.fillStyle=b.boss?'#8c1e2c':'#d8a83c';g.fillRect(0,yy+hh/2-Math.min(6,hh),W,Math.min(6,hh));if(k>.6)txt(b.txt,W/2,yy-2,b.boss?40:36,b.boss?'#fff':'#241e2e','center')}
  // top HUD
  panel(8,6,W-16,96);txt('เวฟ '+G.wave,22,30,24);g.fillStyle='#221c28';rr(W-104,14,84,34,7);g.fill();g.fillStyle=FAST>1?'#ffd640':'#8c86a0';rr(W-102,16,80,30,6);g.fill();txt('เร็ว x'+FAST,W-62,32,17,'#221c28','center');txt(G.wt.toFixed(0).padStart(2,'0')+' วิ',150,31,20,G.wt<6?'#ff8c78':'#ffe296');txt('มอน '+G.mobs.length,250,31,17,'#ffbedc');
- g.fillStyle='#463240';g.fillRect(22,54,W-44,12);g.fillStyle='#96c8ff';g.fillRect(22,54,(W-44)*Math.max(0,G.wt/G.wlen),12);
+ g.fillStyle='#463240';g.fillRect(22,54,W-44,12);g.fillStyle=G.wt<5?'#ff6e5a':'#96c8ff';g.fillRect(22,54,(W-44)*Math.max(0,G.wt/G.wlen),12);
  txt('❤',22,84,17,'#ff6e6e');g.fillStyle='#463240';g.fillRect(48,77,W-180,14);g.fillStyle=G.hp>30?'#6ed27a':'#ec5454';g.fillRect(48,77,(W-180)*G.hp/100,14);txt(G.hp+' / 100',W-120,84,16);
  if(G.msgT>0){g.globalAlpha=Math.min(1,G.msgT*2);panel(40,108,W-80,36,'#3a2c4a');txt(G.msg,W/2,126,16,'#fff','center');g.globalAlpha=1}
- // bottom: gold + shop cards
- panel(4,1124,W-8,H-1128);txt('ทอง',400,1150,16,'#ffe296');g.fillStyle='#221c28';g.beginPath();g.arc(452,1150,10,0,7);g.fill();g.fillStyle='#fac83c';g.beginPath();g.arc(452,1150,8.5,0,7);g.fill();txt(String(G.gold),470,1151,24,'#ffe296');
- txt('ฆ่า '+G.kills,400,1190,15,'#cfc6da');txt('3 ตัวเหมือนกัน',400,1218,13,'#cfc6da');txt('= รวมดาว',400,1238,13,'#cfc6da');
- for(const [kind,x] of CARDS){const K=KIND[kind],S=SP.units[kind+'1'],on=G.sel===kind,ok=G.gold>=K.cost;g.globalAlpha=ok?1:.55;
-  g.fillStyle='#221c28';rr(x,1134,180,120,8);g.fill();g.fillStyle=on?'#ffe678':K.col;rr(x+2,1136,176,116,7);g.fill();g.fillStyle='#e8dec4';rr(x+6,1140,84,108,5);g.fill();
-  g.drawImage(IMG['u_'+kind+'1'],0,0,S.w,S.h,x+48-S.fx,1240-S.fy,S.w,S.h);txt(K.name,x+98,1160,20,'#221c28');
-  g.fillStyle='#221c28';g.beginPath();g.arc(x+108,1196,10,0,7);g.fill();g.fillStyle='#fac83c';g.beginPath();g.arc(x+108,1196,8.5,0,7);g.fill();txt(String(K.cost),x+124,1197,22,'#221c28');
-  txt(kind==='shiba'?'ตีใกล้ เร็ว':'ยิงไกล ระเบิด',x+98,1228,13,'#221c28');g.globalAlpha=1}}
+ // bottom: shop of 5 cards, gold, reroll; the picked dog's card above it
+ if(G.pick){const u=G.pick,K=KIND[u.kind];panel(96,1052,W-192,66,'#3a2c4a');txt(K.name,112,1074,18);star(190+u.star*5,1074,u.star);txt('ตี '+K.dmg[u.star-1]+'  ระยะ '+K.rng,112,1100,14,'#cfc6da');
+  g.fillStyle='#221c28';rr(378,1062,98,46,7);g.fill();g.fillStyle='#ec6a5a';rr(380,1064,94,42,6);g.fill();txt('ขาย +'+sellVal(u),427,1086,17,'#221c28','center')}
+ panel(4,1124,W-8,H-1128);
+ for(let i=0;i<5;i++){const kind=G.shop[i],x=12+i*92;g.fillStyle='#221c28';rr(x,1134,88,120,7);g.fill();
+  if(!kind){g.fillStyle='#3a3246';rr(x+2,1136,84,116,6);g.fill();continue}
+  const K=KIND[kind],S=SP.units[kind+'1'],on=G.sel===i,ok=G.gold>=K.cost;g.globalAlpha=ok?1:.5;g.fillStyle=on?'#ffe678':K.col;rr(x+2,1136,84,116,6);g.fill();g.fillStyle='#e8dec4';rr(x+5,1139,78,76,4);g.fill();g.fillStyle='#96c46e';g.fillRect(x+5,1198,78,17);
+  g.save();g.beginPath();g.rect(x+5,1139,78,76);g.clip();g.drawImage(IMG['u_'+kind+'1'],0,0,S.w,S.h,x+44-S.fx,1212-S.fy+(on?-3:0),S.w,S.h);g.restore();
+  txt(K.name,x+8,1228,14,'#221c28');g.fillStyle='#221c28';g.beginPath();g.arc(x+62,1240,8,0,7);g.fill();g.fillStyle='#fac83c';g.beginPath();g.arc(x+62,1240,6.5,0,7);g.fill();txt(String(K.cost),x+72,1241,16,'#221c28');g.globalAlpha=1}
+ {const sc=G.gb>0?1.25:1;g.fillStyle='#221c28';g.beginPath();g.arc(492,1154,12*sc,0,7);g.fill();g.fillStyle='#fac83c';g.beginPath();g.arc(492,1154,10*sc,0,7);g.fill();g.fillStyle='#fff0a0';g.beginPath();g.arc(489,1151,4*sc,0,7);g.fill();txt(String(G.gold),510,1155,G.gb>0?28:24,'#ffe296')}
+ g.fillStyle='#221c28';rr(474,1184,102,68,7);g.fill();g.fillStyle=G.gold>=1?'#62aaf0':'#5a5670';rr(476,1186,98,64,6);g.fill();txt('สุ่มใหม่',525,1206,16,'#221c28','center');g.fillStyle='#221c28';g.beginPath();g.arc(512,1232,8,0,7);g.fill();g.fillStyle='#fac83c';g.beginPath();g.arc(512,1232,6.5,0,7);g.fill();txt('1',524,1233,16,'#221c28');
+ if(TITLE){g.fillStyle='rgba(20,16,28,.72)';g.fillRect(0,0,W,H);const b=Math.round(Math.sin(performance.now()/260)*4);
+  g.fillStyle='#221c28';rr(60,330,W-120,250,14);g.fill();g.fillStyle='#f6ce6e';rr(64,334,W-128,242,12);g.fill();g.fillStyle='#2e2440';rr(70,340,W-140,230,9);g.fill();
+  txt('หมา',170,400,54,'#ffb45a','center');txt('VS',W/2,404,34,'#fff','center');txt('แมว',W-170,400,54,'#c88cff','center');txt('กันบ้านให้รอด!',W/2,452,20,'#cfc6da','center');
+  const A=SP.units.shiba3,B=SP.units.corgi3;g.drawImage(IMG.u_shiba3,0,0,104,104,150-A.fx,540-A.fy+b,104,104);g.drawImage(IMG.u_corgi3,0,0,104,104,250-B.fx,540-B.fy-b,104,104);
+  g.fillStyle='#221c28';rr(330,486,170,60,10);g.fill();g.fillStyle='#6ed27a';rr(333,489,164,54,8);g.fill();txt('เริ่มเล่น',415,517,26,'#1c2e1e','center')}}
 // ---------- input
-cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;if(G.over)return;
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;if(TITLE){TITLE=false;newGame();return}if(G.over)return;
  if(y<52&&x>W-110){FAST=FAST>1?1:2;localStorage.setItem('dc.fast',FAST);return}
- if(y>1130){for(const [kind,cx] of CARDS)if(x>=cx&&x<=cx+180){G.sel=G.sel===kind?null:kind;if(G.sel)say('แตะแท่นหินที่ว่างเพื่อวาง '+KIND[kind].name)}return}
- if(G.sel){let bi=-1,bd=42;GEO.slots.forEach(([sx,sy],i)=>{const d=Math.hypot(x-sx,y-(sy-18));if(d<bd){bd=d;bi=i}});if(bi>=0)place(G.sel,bi)}});
-let last=0;function frame(t){const dt=Math.min(.05,(t-last)/1000||0)*SPD;last=t;for(let i=0;i<FAST;i++)step(dt);draw();requestAnimationFrame(frame)}
+ if(G.pick&&x>=378&&x<=476&&y>=1062&&y<=1108){const u=G.pick;G.gold+=sellVal(u);G.gb=.18;G.units.splice(G.units.indexOf(u),1);G.pick=null;say('ขายแล้ว');return}
+ if(y>1130){G.pick=null;if(x>=474){if(G.gold>=1){G.gold--;roll();say('สุ่มร้านใหม่')}else say('ทองไม่พอ');return}
+  const i=Math.floor((x-12)/92);if(i>=0&&i<5&&G.shop[i]){G.sel=G.sel===i?null:i;if(G.sel!==null)say('แตะแท่นหินที่ว่างเพื่อวาง '+KIND[G.shop[i]].name)}return}
+ let bi=-1,bd=42;GEO.slots.forEach(([sx,sy],i)=>{const d=Math.hypot(x-sx,y-(sy-18));if(d<bd){bd=d;bi=i}});
+ if(G.sel!==null&&bi>=0&&!unitAt(bi)){const kind=G.shop[G.sel],g0=G.gold;place(kind,bi);if(G.gold<g0){G.shop[G.sel]=null;G.sel=null}return}
+ const u=bi>=0?unitAt(bi):null;G.pick=u&&G.pick!==u?u:null;if(u)G.sel=null});
+let last=0;function frame(t){const dt=Math.min(.05,(t-last)/1000||0)*SPD;last=t;if(!TITLE)for(let i=0;i<FAST;i++)step(dt);draw();requestAnimationFrame(frame)}
 (async()=>{GEO=await (await fetch('art/dogcat/geo.json')).json();SP=await (await fetch('art/dogcat/sprites.json')).json();IMG.bg=await img('art/dogcat/bg.png');
  for(const k in SP.units){IMG['u_'+k]=await img('art/dogcat/units/'+k+'.png');if(SP.units[k].idle)IMG['i_'+k]=await img('art/dogcat/units/'+k+'_idle.png')}for(const k in SP.mobs)IMG['m_'+k]=await img('art/dogcat/mobs/'+k+'.png');
- newGame();window.DC={G:()=>G,place,step,KIND};requestAnimationFrame(frame)})();
+ newGame();window.DC={G:()=>G,place,step,KIND,start:()=>{TITLE=false}};requestAnimationFrame(frame)})();
 </script></body></html>
