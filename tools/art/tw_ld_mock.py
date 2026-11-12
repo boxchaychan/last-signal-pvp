@@ -72,7 +72,8 @@ for _ in range(z(z(500))):
     if random.random() < .6: c = random.choice([(52, 116, 44), (118, 178, 72)]); dr.line((x, y, x, y - random.randint(2, 4)), fill=c)
     else: dr.rectangle((x, y, x + 1, y + 1), fill=random.choice([(250, 236, 120), (240, 140, 170), (255, 255, 255)]))
 # slots: 6 x 3 stone tiles inside each loop
-CW, CHh = z(52), z(70)
+GC, GR = int(os.environ.get('GC', '6')), int(os.environ.get('GR', '3'))   # grid size; owner 2026-11-12 "เพิ่มช่อง" for zoom 2: GC=8 GR=4
+CW, CHh = (z(52), z(70)) if (GC, GR) == (6, 3) else ((BW - 2 * PW - z(16)) // GC, (BH - 2 * PW - z(10)) // GR)
 def fit(f, h, flip=False):
     im = Image.open(f).convert('RGBA'); im = im.crop(im.getbbox()); k = h / im.height
     im = im.resize((max(1, round(im.width * k)), h), Image.LANCZOS); a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255; im = Image.fromarray(a)
@@ -82,10 +83,12 @@ a = np.asarray(SB).copy(); a[..., 3] = (a[..., 3] > 110) * 255; SB = Image.froma
 grey = np.asarray(SB).astype(float).copy(); g = grey[..., :3].mean(2, keepdims=True); grey[..., :3] = g * np.array([.95, .97, 1.08]) * 1.05; GREY = Image.fromarray(np.clip(grey, 0, 255).astype(np.uint8))
 items = []
 for (y0, who), pts in zip(BOARDS, LOOPS):
-    gx = X0 + (BW - 6 * CW) // 2; gy = y0 + (BH - 3 * CHh) // 2
+    gx = X0 + (BW - GC * CW) // 2; gy = y0 + (BH - GR * CHh) // 2
     occ = {(0, 1), (1, 1), (2, 0), (2, 2), (3, 1), (4, 0), (5, 2), (1, 2), (4, 2)} if who == 'me' else {(0, 0), (1, 2), (3, 1), (4, 1), (5, 0), (2, 1)}
-    for c in range(6):
-        for r in range(3):
+    if (GC, GR) != (6, 3):
+        cells = [(c, r) for c in range(GC) for r in range(GR)]; occ = set(random.Random(5 if who == 'me' else 8).sample(cells, len(cells) // 2 if who == 'me' else len(cells) // 3))
+    for c in range(GC):
+        for r in range(GR):
             x, y = gx + c * CW, gy + r * CHh
             # a raised stone pedestal per slot: top face (4 small tiles) + a front face of 2 blocks
             P = Z ** .35                      # pedestals stay about the character's width when zoomed out (not x Z)
@@ -126,4 +129,4 @@ for i, (t, c, col) in enumerate((('SUMMON', '20', (250, 200, 60)), ('UPGRADE', '
     x = 16 + i * 122; hd.rounded_rectangle((z(x), z(756), z(x + 114), z(800)), z(8), fill=col, outline=(30, 20, 18), width=z(2))
     hd.text((z(x + 10), z(760)), t, fill=(30, 20, 18), font=FB); hd.text((z(x + 10), z(780)), '@ ' + c, fill=(30, 20, 18), font=F)
 hd.text((z(300), z(724)), 'gold 140', fill=(255, 220, 120), font=F)
-base.resize((W * 2, H * 2), Image.NEAREST).save(OUT + ('tw_ld_mock.png' if Z == 1 else 'tw_ld_mock_zo%g.png' % Z)); print('ok', W, H)
+base.resize((W * 2, H * 2), Image.NEAREST).save(OUT + ('tw_ld_mock.png' if Z == 1 else 'tw_ld_mock_zo%g%s.png' % (Z, '' if (GC, GR) == (6, 3) else '_%dx%d' % (GC, GR)))); print('ok', W, H)
