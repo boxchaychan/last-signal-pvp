@@ -1064,3 +1064,10 @@ Assassin redraw recoloured for free (owner 2026-11-12 "แก้อะไร ส
 yet: the run and attack clips were made from the faithful picture and would have to be made again from this one (1 gen each).
 Owner 2026-11-12 (design note, not built): the rogue's spin skill becomes the Assassin's AWAKENING skill; the rogue's parallel
 class 2 (the other branch next to the Assassin) is the NINJA.
+Assassin character in the game (owner 2026-11-12 "เอาเข้าเกมส์ยัง"): `tools/art/as3_build.py` → `art/action/as3/` (168 px cells, feet
+84,144): 8 stills, run (the south-east run stands in for the side, whose arms came out grey; north / north-east keep their matching
+half), slash combo and crit spin in east / south-east / south (one turn kept). PixMiniMax's swooshes / X flash / dust are removed by
+colour: anything far from her own palette (the colours of her 8 stills) plus its rim, loose pieces, dust at the feet; frames that were
+mostly effect or lost their legs behind a swoosh are dropped; black outline. action.html `AS3` / `drawAs3` (used by `drawAs2` once
+loaded): left-hand directions mirrored, upward attacks use the side view, the crit (every 4th hit, `p.pcHit`) and the E whirl play
+the spin. Menu card = her south still.
