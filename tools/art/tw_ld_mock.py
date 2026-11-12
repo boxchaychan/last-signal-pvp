@@ -26,7 +26,10 @@ def noise(c):
     n = np.random.rand(H // c + 2, W // c + 2)
     return np.asarray(Image.fromarray((n * 255).astype(np.uint8)).resize(((W // c + 2) * c, (H // c + 2) * c), Image.BICUBIC)).astype(float)[:H, :W] / 255
 N8, N40 = noise(8), noise(40)
-G = tile_fill(tex('path_pro', False)); DR = tile_fill(tex('path_pro', True))
+TEX = os.environ.get('TEX') == 'sheet'    # owner 2026-11-12 "เอาไปทำพื้นฉาก": ground from the owner's painted tile sheet (tools/art/floor_sheet.py)
+if TEX:
+    sys.path.insert(0, 'tools/art'); import floor_sheet as FS
+G = FS.splat(['grass', 'grass2'], W, H) if TEX else tile_fill(tex('path_pro', False)); DR = tile_fill(tex('path_pro', True))
 img = G.copy(); img[N40 < .35] *= .9; lt = N40 > .65; img[lt] = img[lt] * 1.07 + np.array([10, 6, -4])
 SOLO = os.environ.get('SOLO') == '1'      # owner 2026-11-12 "โชว์แต่จอตัวเอง": only your board, the opponent shrinks to one bar
 BOARDS = [(z(104), 'me')] if SOLO else [(z(46), 'top'), (z(434), 'me')]          # board top edges
@@ -61,6 +64,9 @@ ROAD = blocks(H, W, 14, 10, [(132, 134, 146), (118, 122, 136), (146, 146, 152), 
 FLOOR = blocks(H, W, 26, 20, [(204, 190, 160), (194, 178, 148), (212, 200, 172), (186, 172, 146)], seed=5, bond=False, lip=1, x0=13, mortar=(120, 104, 90))
 STEP = blocks(H, W, 13, 5, [(150, 134, 112), (140, 124, 104)], seed=6, lip=0, mortar=(84, 70, 62))
 WALL = blocks(H, W, 16, 9, [(96, 98, 112), (86, 88, 102), (104, 102, 112)], seed=7, lip=0, mortar=(38, 34, 42), moss=.12)
+if TEX:
+    ROAD = FS.mirror_tile(FS.px(FS.crop('road')), W, H); FLOOR = FS.patchwork(['f23', 'f29', 'f12'], W, H, z(44), z(40), seed=4)
+    WALL = ROAD * .6; STEP = FLOOR * .62
 wall = down(plat, 9) & ~plat; step = down(floor, 4) & road & ~floor
 img[road] = ROAD[road]; img[floor] = FLOOR[floor]; img[step] = STEP[step]; img[wall] = WALL[wall]
 edge = floor ^ ndimage.binary_erosion(floor, iterations=1); img[edge & ~down(floor, 1)] *= .72      # the middle's rim, not its bottom
@@ -86,6 +92,7 @@ SB = Image.open(OUT + 'pl/char/Idle/rotations/south.png').convert('RGBA'); SB = 
 a = np.asarray(SB).copy(); a[..., 3] = (a[..., 3] > 110) * 255; SB = Image.fromarray(a)
 grey = np.asarray(SB).astype(float).copy(); g = grey[..., :3].mean(2, keepdims=True); grey[..., :3] = g * np.array([.95, .97, 1.08]) * 1.05; GREY = Image.fromarray(np.clip(grey, 0, 255).astype(np.uint8))
 items = []
+if TEX: BLK = [FS.sprite(n, 2 * round(20 * Z ** .35) + 2, .6) for n in ('b22', 'b16', 'b17')]   # squashed: the top of a block seen from above at an angle
 for (y0, who), pts in zip(BOARDS, LOOPS):
     gx = X0 + (BW - GC * CW) // 2; gy = y0 + (BH - GR * CHh) // 2
     occ = {(0, 1), (1, 1), (2, 0), (2, 2), (3, 1), (4, 0), (5, 2), (1, 2), (4, 2)} if who == 'me' else {(0, 0), (1, 2), (3, 1), (4, 1), (5, 0), (2, 1)}
@@ -96,7 +103,15 @@ for (y0, who), pts in zip(BOARDS, LOOPS):
             x, y = gx + c * CW, gy + r * CHh
             # a raised stone pedestal per slot: top face (4 small tiles) + a front face of 2 blocks
             P = Z ** .35                      # pedestals stay about the character's width when zoomed out (not x Z)
-            fb = y + CHh - z(13); l, rr = x + CW // 2 - round(20 * P), x + CW // 2 + round(20 * P); t = fb - round(17 * P); tp = (150, 154, 168) if who == 'me' else (140, 140, 150)
+            fb = y + CHh - z(13); l, rr = x + CW // 2 - round(20 * P), x + CW // 2 + round(20 * P); t = fb - round(17 * P);
+            if TEX:   # a single stone block from the sheet as the pedestal top + a dark front face
+                blk = BLK[(c * 7 + r * 3) % len(BLK)]; fh = round(8 * P)
+                dr.rectangle((l - 1, fb - 2, rr + 1, fb + fh + 1), fill=(40, 32, 28)); dr.rectangle((l, fb - 1, rr, fb + fh), fill=(104, 86, 66))
+                dr.line((l, fb - 1, rr, fb - 1), fill=(150, 128, 98)); dr.line((l + (rr - l) // 2, fb, l + (rr - l) // 2, fb + fh), fill=(70, 56, 44))
+                base.alpha_composite(blk, (l + (rr - l - blk.width) // 2, fb - blk.height + 2)); t = fb - blk.height + 2
+                if (c, r) in occ: items.append(((t + fb) // 2 + 3, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
+                continue
+            tp = (150, 154, 168) if who == 'me' else (140, 140, 150)
             dr.rectangle((l - 1, t - 1, rr + 1, fb + round(8 * P) + 1), fill=(34, 30, 38))
             dr.rectangle((l, t, rr, fb), fill=tp); mx, my = (l + rr) // 2, (t + fb) // 2
             dr.line((l, t, rr, t), fill=tuple(min(255, int(v * 1.2)) for v in tp)); dr.line((l, t, l, fb), fill=tuple(int(v * 1.08) for v in tp))
@@ -115,6 +130,11 @@ for (y0, who), pts in zip(BOARDS, LOOPS):
 # small trees / rocks in the margins and the middle strip
 for x, y, n, h in ((30, 840, 'bushes_1', 26), (360, 842, 'bushes_6', 26), (200, 842, 'stones_0', 14)):
     items.append((z(y), fit(P2 + n + '.png', h, random.random() < .5), z(x) - 20))
+if TEX:   # the sheet's bushes and a few loose blocks on the grass round the board
+    yb = BOARDS[-1][0] + BH + z(30)
+    for i, (n, w, xx_, yy_) in enumerate((('bush33', 40, .08, 0), ('bush37', 34, .9, 8), ('bush36', 30, .3, 40), ('bush30', 44, .68, 30), ('b31', 26, .5, 6), ('bush33', 36, .15, 120), ('bush37', 40, .85, 110), ('b22', 22, .6, 140))):
+        if yb + z(yy_) > z(700): continue
+        im = FS.sprite(n, w); items.append((yb + z(yy_) + im.height, im, int(W * xx_) - im.width // 2))
 sh = Image.new('RGBA', base.size); sd = ImageDraw.Draw(sh)
 for y, im, x in items: sd.ellipse((x + im.width * .15, y - 3, x + im.width * .85, y + 3), fill=(10, 24, 8, 90))
 base.alpha_composite(sh.filter(ImageFilter.GaussianBlur(1)))
@@ -143,4 +163,4 @@ if SOLO and not FIT:
     for x in range(z(12), W - z(12), z(10)): hd.line((x, y0e, x + z(5), y0e), fill=(255, 240, 120)); hd.line((x, y1e, x + z(5), y1e), fill=(255, 240, 120))
     for y in range(y0e, y1e, z(10)): hd.line((z(12), y, z(12), y + z(5)), fill=(255, 240, 120)); hd.line((W - z(12), y, W - z(12), y + z(5)), fill=(255, 240, 120))
     hd.text((W // 2 - z(70), (y0e + y1e) // 2 - z(10)), 'EMPTY  %d px' % (y1e - y0e), fill=(255, 240, 120), font=FB)
-base.resize((W * 2, H * 2), Image.NEAREST).save(OUT + (('tw_ld_solo_zo%g_%dx%d%s.png' % (Z, GC, GR, '' if FIT else '_space')) if SOLO else 'tw_ld_mock.png' if Z == 1 else 'tw_ld_mock_zo%g%s.png' % (Z, '' if (GC, GR) == (6, 3) else '_%dx%d' % (GC, GR)))); print('ok', W, H)
+base.resize((W * 2, H * 2), Image.NEAREST).save(OUT + (('tw_ld_solo_zo%g_%dx%d%s%s.png' % (Z, GC, GR, '' if FIT else '_space', '_tex' if TEX else '')) if SOLO else 'tw_ld_mock.png' if Z == 1 else 'tw_ld_mock_zo%g%s.png' % (Z, '' if (GC, GR) == (6, 3) else '_%dx%d' % (GC, GR)))); print('ok', W, H)
