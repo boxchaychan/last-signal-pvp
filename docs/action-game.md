@@ -1071,3 +1071,5 @@ colour: anything far from her own palette (the colours of her 8 stills) plus its
 mostly effect or lost their legs behind a swoosh are dropped; black outline. action.html `AS3` / `drawAs3` (used by `drawAs2` once
 loaded): left-hand directions mirrored, upward attacks use the side view, the crit (every 4th hit, `p.pcHit`) and the E whirl play
 the spin. Menu card = her south still.
+Owner 2026-11-12 "วงไว้ทำตอนสกิล ... ทำไมจะลบเอฟเฟกต์": the spin clip is kept untouched as a second row `spinfx` (PixMiniMax's own glowing
+rings) for the E whirl skill; the old rogue whirl ring and after-images are off for her. The crit after normal hits keeps the clean spin.

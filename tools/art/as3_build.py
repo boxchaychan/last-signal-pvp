@@ -42,16 +42,16 @@ def clean(im, fx):
 def put(im):
     c = Image.new('RGBA', (C, C)); o = (C - im.width) // 2; c.alpha_composite(im, (o, o)); return c
 rows = {}; meta = {'cw': C, 'ch': C, 'fx': FX, 'fy': FY, 'anims': {}}
-def add(name, key, dirs, pick=None, fx=False):
+def add(name, key, dirs, pick=None, fx=False, raw=False):
     imgs = []; meta['anims'][name] = {}
     for d, sel in dirs.items():
         src = d
         if isinstance(sel, tuple): src, sel = sel          # another direction's frames stand in
         fs = frames(key, src); fs = [fs[i] for i in sel] if sel else fs
-        row = [put(clean(Image.open(f), fx)) for f in fs]
+        row = [put(Image.open(f).convert('RGBA') if raw else clean(Image.open(f), fx)) for f in fs]
         area = [int((np.asarray(r)[..., 3] > 0).sum()) for r in row]; med = sorted(area)[len(area) // 2]
         feet = [int((np.asarray(r)[FY - 14:FY + 2, :, 3] > 0).sum()) for r in row]; fm = sorted(feet)[len(feet) // 2]
-        row = [r for r, ar, ft in zip(row, area, feet) if ar > med * .55 and ft > fm * .45]   # frames that were mostly effect (the X flash) or lost their legs behind a swoosh are dropped
+        if not raw: row = [r for r, ar, ft in zip(row, area, feet) if ar > med * .55 and ft > fm * .45]   # frames that were mostly effect (the X flash) or lost their legs behind a swoosh are dropped
         meta['anims'][name][d] = {'r': len(imgs), 'n': len(row)}; imgs.append(row)
     n = max(len(r) for r in imgs); out = Image.new('RGBA', (C * n, C * len(imgs)))
     for j, r in enumerate(imgs):
@@ -67,4 +67,6 @@ SL = [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16]            # 13-14 = the X 
 add('attack', 'a_fast', {'east': SL, 'south-east': SL, 'south': SL}, fx=True)
 SP = [0, 3, 4, 5, 6, 7, 8, 9, 13, 15, 16]                        # one turn, then the landing
 add('spin', 'a_critical', {'east': SP, 'south-east': SP, 'south': SP}, fx=True)
+# owner 2026-11-12 "วงไว้ทำตอนสกิล ... ทำไมจะลบเอฟเฟกต์": the spin WITH PixMiniMax's own glowing rings, untouched, for the E whirl skill
+add('spinfx', 'a_critical', {'east': list(range(3, 14)), 'south-east': list(range(3, 14)), 'south': list(range(3, 14))}, raw=True)
 json.dump(meta, open(O + 'as3.json', 'w')); print(json.dumps(meta)[:400])

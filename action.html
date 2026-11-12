@@ -2145,12 +2145,13 @@ function drawEarthSplit(f) {                          // the Earthsplitter sheet
 }
 function whirlTick(p, dt, q) {
   const S = q.S; p.st -= S.drain * dt; p.stT = .6;
-  if (q.draw) { q.gh -= dt; if (q.gh <= 0) { q.gh = .035; const d = whirlDir(q), ar = animRow('attack', d); if (ar) G.ghosts.push({x: p.x, y: p.y, dir: d, t: 0, k: .5, atk: (ar.hits || [4])[0], a: 1.3, vio: 1}); } }
+  const as3 = HERO === 'rogue' && AS3 && AS3.m && AS3.m.anims.spinfx;   // the Assassin's spin carries its own rings: no old whirl ring / after-images
+  if (q.draw && !as3) { q.gh -= dt; if (q.gh <= 0) { q.gh = .035; const d = whirlDir(q), ar = animRow('attack', d); if (ar) G.ghosts.push({x: p.x, y: p.y, dir: d, t: 0, k: .5, atk: (ar.hits || [4])[0], a: 1.3, vio: 1}); } }
   q.hk -= dt; if (q.hk <= 0) { q.hk = S.every; let any = false;
     for (const m of G.mobs) if (m.hp > 0 && Math.hypot(m.x - p.x, (m.y - p.y) * 1.3) < S.r + m.r) { hitMob(m, S.dmg, p.x, p.y, 26, q.draw ? '#b98aff' : '#eafcff', false, true); any = true;
       if (rnd() < .5) { if (!(q.draw && pfx('pfx_dashstrike_v', m.x, m.y - 26, {f0: 13, fn: 22, rot: rnd() * 6.283, life: 9 / 30}))) cutFx(m.x, m.y - 22, 0, 1); } }
     if (any) { G.hs = Math.max(G.hs, .02); G.shake = Math.max(G.shake, 2); } }
-  q.rk -= dt; if (q.rk <= 0) { const sw = false && SWL && PFX.pfx_swstorm_r && PFX.pfx_swstorm_r.m,   /* owner "ใส่พายุแดงที่ให้ไป": the pasted storm in its own colours */ dm = DMW && !q.draw && dmv('dm_firespin'), wk = dm ? 'dm_firespin' : sw ? 'pfx_swstorm_r' : q.draw && PFX.pfx_whirl_k ? 'pfx_whirl_k' : PFX.pfx_whirl ? 'pfx_whirl' : 'cwhirl', W = PFX[wk]; if (W && W.m) { q.rk = W.m.n / W.m.fps * (dm ? .8 : 1); G.fx.push({k: 'pfx', key: wk, follow: 1, ox: 0, oy: dm ? -18 : sw ? 10 : -14, a: sw ? .9 : .95, sc: sw ? .95 : undefined, sy: dm ? .6 : undefined, depth: sw || dm ? undefined : 'b', t: 0, life: W.m.n / W.m.fps}); } else { q.rk = .32; spinRing(); } }
+  q.rk -= dt; if (!as3 && q.rk <= 0) { const sw = false && SWL && PFX.pfx_swstorm_r && PFX.pfx_swstorm_r.m,   /* owner "ใส่พายุแดงที่ให้ไป": the pasted storm in its own colours */ dm = DMW && !q.draw && dmv('dm_firespin'), wk = dm ? 'dm_firespin' : sw ? 'pfx_swstorm_r' : q.draw && PFX.pfx_whirl_k ? 'pfx_whirl_k' : PFX.pfx_whirl ? 'pfx_whirl' : 'cwhirl', W = PFX[wk]; if (W && W.m) { q.rk = W.m.n / W.m.fps * (dm ? .8 : 1); G.fx.push({k: 'pfx', key: wk, follow: 1, ox: 0, oy: dm ? -18 : sw ? 10 : -14, a: sw ? .9 : .95, sc: sw ? .95 : undefined, sy: dm ? .6 : undefined, depth: sw || dm ? undefined : 'b', t: 0, life: W.m.n / W.m.fps}); } else { q.rk = .32; spinRing(); } }
   if ((!holding(q.k) && G.t - q.t0 > .5) || p.st <= 0 || G.t - q.t0 > S.max) endAct(p);
 }
 function chargeTick(p, dt, q) {
@@ -3475,8 +3476,8 @@ function as2Sharp(img, k) { const c0 = img._sh || (img._sh = {}); if (c0[k]) ret
 // run in 5 directions, the twin-katar slash combo and the crit spin in 3 (side, down-diagonal, down); the left-hand directions are
 // mirrored, upward attacks use the side view. Crit (every 4th hit) plays the spin; the E whirl loops it.
 const AS3 = AS2 ? {} : null;
-if (AS3) { fetch('art/action/as3/as3.json?v=2').then(r => r.json()).then(m => { AS3.m = m; }).catch(() => {});
-  for (const k of ['still', 'run', 'attack', 'spin']) { const im = new Image(); im.src = 'art/action/as3/' + k + '.png?v=2'; AS3[k] = im; } }
+if (AS3) { fetch('art/action/as3/as3.json?v=3').then(r => r.json()).then(m => { AS3.m = m; }).catch(() => {});
+  for (const k of ['still', 'run', 'attack', 'spin', 'spinfx']) { const im = new Image(); im.src = 'art/action/as3/' + k + '.png?v=3'; AS3[k] = im; } }
 const AS3MIR = {west: 'east', 'south-west': 'south-east', 'north-west': 'north-east'};
 function as3Row(name, d) {                       // [row, frames, flip] for a direction name
   const A = AS3.m.anims[name]; let flip = false, k = d;
@@ -3490,7 +3491,7 @@ function drawAs3(p) {
   const dir = p.vd !== undefined && (p.state === 'idle' || p.state === 'move') ? p.vd : p.dir, dn = DIRS[dir];
   const play = (name, u) => { const [rr, n, fl] = as3Row(name, dn); img = AS3[name]; r = rr; flip = fl; f = Math.min(n - 1, Math.floor(u * n)); };
   const crit = G.t - (p.pcHit ?? -9) < .42;
-  if (p.state === 'act' && p.ac && p.ac.tick === whirlTick) play('spin', ((G.t - p.ac.t0) / .5) % 1);
+  if (p.state === 'act' && p.ac && p.ac.tick === whirlTick) play(AS3.m.anims.spinfx ? 'spinfx' : 'spin', ((G.t - p.ac.t0) / .55) % 1);   // the skill keeps the glowing rings
   else if (crit && (p.state === 'atk' || p.state === 'idle' || p.state === 'move')) play('spin', (G.t - p.pcHit) / .42);
   else if (p.state === 'atk' && p.a) { const P = p.a.plan, n = P.n || (P.ar && P.ar.n) || 6; play('attack', Math.min(.999, (p.a.i + Math.min(1, p.a.t / (P.ms[p.a.i] || 50))) / n)); }
   else if (p.state === 'act' && p.ac) { const q = p.ac, L = q.fr.length, i = Math.min(q.i, L - 1); play('attack', Math.min(.999, (i + Math.min(1, q.t / (q.ms[i] || 50))) / L)); }
