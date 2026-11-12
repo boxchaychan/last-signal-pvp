@@ -88,15 +88,16 @@ for (y0, who), pts in zip(BOARDS, LOOPS):
         for r in range(3):
             x, y = gx + c * CW, gy + r * CHh
             # a raised stone pedestal per slot: top face (4 small tiles) + a front face of 2 blocks
-            l, t, rr, fb = x + z(6), y + CHh - z(30), x + CW - z(6), y + CHh - z(13); tp = (150, 154, 168) if who == 'me' else (140, 140, 150)
-            dr.rectangle((l - 1, t - 1, rr + 1, fb + z(8) + 1), fill=(34, 30, 38))
+            P = Z ** .35                      # pedestals stay about the character's width when zoomed out (not x Z)
+            fb = y + CHh - z(13); l, rr = x + CW // 2 - round(20 * P), x + CW // 2 + round(20 * P); t = fb - round(17 * P); tp = (150, 154, 168) if who == 'me' else (140, 140, 150)
+            dr.rectangle((l - 1, t - 1, rr + 1, fb + round(8 * P) + 1), fill=(34, 30, 38))
             dr.rectangle((l, t, rr, fb), fill=tp); mx, my = (l + rr) // 2, (t + fb) // 2
             dr.line((l, t, rr, t), fill=tuple(min(255, int(v * 1.2)) for v in tp)); dr.line((l, t, l, fb), fill=tuple(int(v * 1.08) for v in tp))
             dr.line((mx, t + 1, mx, fb), fill=tuple(int(v * .7) for v in tp)); dr.line((l + 1, my, rr, my), fill=tuple(int(v * .7) for v in tp))
             dr.line((mx + 1, t + 1, mx + 1, fb), fill=tuple(min(255, int(v * 1.1)) for v in tp))
-            fc = tuple(int(v * .62) for v in tp); dr.rectangle((l, fb + 1, rr, fb + z(8)), fill=fc)
-            dr.line((l, fb + 1, rr, fb + 1), fill=tuple(int(v * .8) for v in tp)); dr.line((mx - 3, fb + 2, mx - 3, fb + z(8)), fill=(34, 30, 38))
-            if (c, r) in occ: items.append((y + CHh - z(21) + 2, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
+            fc = tuple(int(v * .62) for v in tp); dr.rectangle((l, fb + 1, rr, fb + round(8 * P)), fill=fc)
+            dr.line((l, fb + 1, rr, fb + 1), fill=tuple(int(v * .8) for v in tp)); dr.line((mx - 3, fb + 2, mx - 3, fb + round(8 * P)), fill=(34, 30, 38))
+            if (c, r) in occ: items.append(((t + fb) // 2 + 3, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
     # monsters on the loop
     for i in range(0, 400, 15 if who == 'me' else 21):
         px, py = pts[(i + (0 if who == 'me' else 50)) % 400]; k2 = random.choice(['shroom', 'wisp', 'wolf'])
