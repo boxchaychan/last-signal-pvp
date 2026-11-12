@@ -29,10 +29,10 @@ BW, BH, PW = 380, 278, 30   # owner "ทำให้มันสมส่วน�
 X0 = (W - BW) // 2
 def rrect(x0, y0, x1, y1, r):
     cx = np.clip(xx, x0 + r, x1 - r); cy = np.clip(yy, y0 + r, y1 - r); return np.hypot(xx - cx, yy - cy) <= r
-road = np.zeros((H, W), bool); LOOPS = []
+road = np.zeros((H, W), bool); plat = np.zeros((H, W), bool); floor = np.zeros((H, W), bool); LOOPS = []
 for y0, who in BOARDS:
     outer = rrect(X0, y0, X0 + BW, y0 + BH, 26); inner = rrect(X0 + PW, y0 + PW, X0 + BW - PW, y0 + BH - PW, 10)
-    road |= outer & ~inner
+    road |= outer & ~inner; plat |= outer; floor |= inner
     # the loop's middle line, for placing the walkers
     a, b, c, d = X0 + PW / 2, y0 + PW / 2, X0 + BW - PW / 2, y0 + BH - PW / 2
     per = 2 * (c - a + d - b); pts = []
@@ -42,9 +42,25 @@ for y0, who in BOARDS:
         elif s < 2 * (c - a) + d - b: pts.append((c - (s - (c - a + d - b)), d))
         else: pts.append((a, d - (s - (2 * (c - a) + d - b))))
     LOOPS.append(pts)
-img[road] = DR[road]
-rim = road ^ ndimage.binary_dilation(road, iterations=2); img[rim] = img[rim] * .68 + np.array([60, 96, 36]) * .32
-inn = ndimage.binary_erosion(road, iterations=1) ^ road; img[inn & road] *= .8
+# owner 2026-11-12 "ทำพื้นเป็นบล็อกหิน": the board is a raised stone platform: grey cobble blocks for the loop, light sandstone
+# slabs (lined up with the slot grid) for the middle, a stone wall face under the front edge, a low step where the middle meets the road
+sys.path.insert(0, 'tools/art'); from stone_px import blocks
+def down(m, n):
+    o = np.zeros_like(m)
+    for k in range(1, n + 1): o[k:] |= m[:-k]
+    return o
+ROAD = blocks(H, W, 14, 10, [(132, 134, 146), (118, 122, 136), (146, 146, 152), (124, 118, 126)], seed=3, moss=.07)
+FLOOR = blocks(H, W, 26, 20, [(204, 190, 160), (194, 178, 148), (212, 200, 172), (186, 172, 146)], seed=5, bond=False, lip=1, x0=13, mortar=(120, 104, 90))
+STEP = blocks(H, W, 13, 5, [(150, 134, 112), (140, 124, 104)], seed=6, lip=0, mortar=(84, 70, 62))
+WALL = blocks(H, W, 16, 9, [(96, 98, 112), (86, 88, 102), (104, 102, 112)], seed=7, lip=0, mortar=(38, 34, 42), moss=.12)
+wall = down(plat, 9) & ~plat; step = down(floor, 4) & road & ~floor
+img[road] = ROAD[road]; img[floor] = FLOOR[floor]; img[step] = STEP[step]; img[wall] = WALL[wall]
+edge = floor ^ ndimage.binary_erosion(floor, iterations=1); img[edge & ~down(floor, 1)] *= .72      # the middle's rim, not its bottom
+ped = plat ^ ndimage.binary_erosion(plat, iterations=1); img[ped] *= .7
+img[down(wall, 1) & ~wall & ~plat] = (40, 36, 44)                                                    # the wall's foot
+sh = down(plat | wall, 5) & ~plat & ~wall; img[sh] *= .7                                              # its shadow on the grass
+rim = (plat | wall) ^ ndimage.binary_dilation(plat | wall, iterations=2); img[rim & ~sh] = img[rim & ~sh] * .78 + np.array([40, 70, 30]) * .22
+road = plat | wall
 base = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).convert('RGBA'); dr = ImageDraw.Draw(base)
 for _ in range(500):
     x, y = random.randrange(2, W - 2), random.randrange(2, H - 2)
@@ -57,7 +73,7 @@ def fit(f, h, flip=False):
     im = Image.open(f).convert('RGBA'); im = im.crop(im.getbbox()); k = h / im.height
     im = im.resize((max(1, round(im.width * k)), h), Image.LANCZOS); a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255; im = Image.fromarray(a)
     return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
-SB = Image.open(OUT + 'shiba_px64_front.png').convert('RGBA'); k = 60 / SB.height; SB = SB.resize((round(SB.width * k), 60), Image.LANCZOS)
+SB = Image.open(OUT + 'pl/char/Idle/rotations/south.png').convert('RGBA'); SB = SB.crop(SB.getbbox())   # the PixelLab character (2026-11-12), 1:1
 a = np.asarray(SB).copy(); a[..., 3] = (a[..., 3] > 110) * 255; SB = Image.fromarray(a)
 grey = np.asarray(SB).astype(float).copy(); g = grey[..., :3].mean(2, keepdims=True); grey[..., :3] = g * np.array([.95, .97, 1.08]) * 1.05; GREY = Image.fromarray(np.clip(grey, 0, 255).astype(np.uint8))
 items = []
@@ -67,10 +83,16 @@ for (y0, who), pts in zip(BOARDS, LOOPS):
     for c in range(6):
         for r in range(3):
             x, y = gx + c * CW, gy + r * CHh
-            dr.ellipse((x + 4, y + CHh - 22, x + CW - 4, y + CHh - 2), fill=(52, 44, 38, 255))
-            dr.ellipse((x + 5, y + CHh - 24, x + CW - 5, y + CHh - 5), fill=(170, 160, 142, 255) if who == 'me' else (150, 144, 136, 255))
-            dr.arc((x + 9, y + CHh - 22, x + CW - 9, y + CHh - 8), 200, 340, fill=(214, 206, 188, 255))
-            if (c, r) in occ: items.append((y + CHh - 12, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
+            # a raised stone pedestal per slot: top face (4 small tiles) + a front face of 2 blocks
+            l, t, rr, fb = x + 6, y + CHh - 30, x + CW - 6, y + CHh - 13; tp = (150, 154, 168) if who == 'me' else (140, 140, 150)
+            dr.rectangle((l - 1, t - 1, rr + 1, fb + 9), fill=(34, 30, 38))
+            dr.rectangle((l, t, rr, fb), fill=tp); mx, my = (l + rr) // 2, (t + fb) // 2
+            dr.line((l, t, rr, t), fill=tuple(min(255, int(v * 1.2)) for v in tp)); dr.line((l, t, l, fb), fill=tuple(int(v * 1.08) for v in tp))
+            dr.line((mx, t + 1, mx, fb), fill=tuple(int(v * .7) for v in tp)); dr.line((l + 1, my, rr, my), fill=tuple(int(v * .7) for v in tp))
+            dr.line((mx + 1, t + 1, mx + 1, fb), fill=tuple(min(255, int(v * 1.1)) for v in tp))
+            fc = tuple(int(v * .62) for v in tp); dr.rectangle((l, fb + 1, rr, fb + 8), fill=fc)
+            dr.line((l, fb + 1, rr, fb + 1), fill=tuple(int(v * .8) for v in tp)); dr.line((mx - 3, fb + 2, mx - 3, fb + 8), fill=(34, 30, 38))
+            if (c, r) in occ: items.append((y + CHh - 19, SB if who == 'me' else GREY, x + CW // 2 - SB.width // 2))
     # monsters on the loop
     for i in range(0, 400, 15 if who == 'me' else 21):
         px, py = pts[(i + (0 if who == 'me' else 50)) % 400]; k2 = random.choice(['shroom', 'wisp', 'wolf'])
