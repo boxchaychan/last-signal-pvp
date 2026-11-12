@@ -46,7 +46,7 @@ def noise(c):
     n = np.random.rand(H // c + 3, W // c + 3)
     return np.asarray(Image.fromarray((n * 255).astype(np.uint8)).resize(((W // c + 3) * c, (H // c + 3) * c), Image.BICUBIC)).astype(float)[:H, :W] / 255
 N60, N24, N9 = noise(60), noise(24), noise(9)
-img = fill(tex('path_pro', False)) * np.array([.96, 1.0, .9])
+img = fill(tex('path_pro', False)) * np.array([.98, 1.08, .86])
 img[N60 < .34] *= .9; lt = N60 > .68; img[lt] = img[lt] * 1.05 + np.array([10, 8, -2])
 DIRT = fill(tex('path_pro', True)) * np.array([1.04, 1.0, .94])
 def blob(cx, cy, rx, ry): return ((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2 + (N24 - .5) * .5 + (N9 - .5) * .22 < 1
@@ -80,12 +80,14 @@ KERB = blocks(H, W, 12, 30, [(176, 178, 190), (162, 166, 182)], seed=9, lip=0, m
 # groups for the dais (one group per half cell, so the joints follow the slots), each cut to few colours with more contrast
 if os.environ.get('TEX', 'sheet') == 'sheet':
     import floor_sheet as FS
-    def punch(a, k=1.28, lift=1.0, tint=(1, 1, 1)):
-        m = a.reshape(-1, 3).mean(0); a = (m + (a - m) * k) * lift * np.array(tint)
+    def punch(a, k=1.28, lift=1.0, tint=(1, 1, 1), sat=1.0):
+        gr = a.mean(2, keepdims=True); a = gr + (a - gr) * sat; m = a.reshape(-1, 3).mean(0); a = (m + (a - m) * k) * lift * np.array(tint)
         return np.asarray(Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).quantize(14, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')).astype(float)
-    ROAD = punch(FS.patchwork(['f23', 'f29', 'f12'], W, H, 48, 44, x0=BX, y0=BY, seed=4), 1.3, .86, (.94, .97, 1.1))
-    FLOOR = punch(FS.patchwork(['f34', 'f25', 'f8'], W, H, CW, CH // 2, x0=GX, y0=GY, seed=6), 1.25, 1.2, (1.04, 1.0, .9))
-    WALL = punch(FS.mirror_tile(FS.px(FS.crop('road')), W, H), 1.2, .6, (.9, .92, 1.1))
+    # owner 2026-11-13 "ภาพเกมดูไม่น่าเล่นเลย": everything was brown (floor, dogs, bag). The stone keeps the sheet's texture but turns cool:
+    # a dark slate-blue loop and a pale blue-grey dais, so the orange dogs and the monsters stand out
+    ROAD = punch(FS.patchwork(['f23', 'f29', 'f12'], W, H, 48, 44, x0=BX, y0=BY, seed=4), 1.35, .6, (.82, .9, 1.22), .25)
+    FLOOR = punch(FS.patchwork(['f34', 'f25', 'f8'], W, H, CW, CH // 2, x0=GX, y0=GY, seed=6), 1.15, 1.42, (.93, .99, 1.1), .2)
+    WALL = punch(FS.mirror_tile(FS.px(FS.crop('road')), W, H), 1.2, .42, (.8, .86, 1.2), .25)
     DIRT2 = punch(FS.mirror_tile(FS.px(FS.crop('dirt').crop((0, 0, 190, 60))), W, H), 1.0, 1.02); img[dirt & ndimage.binary_erosion(dirt, iterations=2)] = DIRT2[dirt & ndimage.binary_erosion(dirt, iterations=2)]
 wall = down(plat, 13) & ~plat
 sh = (down(right(plat | wall, 12), 12)) & ~plat & ~wall; img[sh] = img[sh] * np.array([.62, .68, .74])     # the platform's shadow on the grass
@@ -93,9 +95,9 @@ img[ring] = ROAD[ring]; img[inner] = FLOOR[inner]; img[wall] = WALL[wall]
 kerb = plat & ~ndimage.binary_erosion(plat, iterations=5); img[kerb] = KERB[kerb]                           # a pale kerb round the edge
 img[plat & ~ndimage.binary_erosion(plat, iterations=1)] = INK; img[kerb & ~ndimage.binary_erosion(kerb | ~plat, iterations=1) & ndimage.binary_erosion(plat, iterations=4)] *= .62
 # the middle is a dais 5 px above the road: light top edge, a lip under its front edge, its shadow on the road
-lipm = down(inner, 5) & ring; img[lipm] = np.array([168, 146, 118]); img[down(lipm, 1) & ring & ~lipm] = (60, 54, 66)
+lipm = down(inner, 5) & ring; img[lipm] = np.array([132, 142, 170]); img[down(lipm, 1) & ring & ~lipm] = (60, 54, 66)
 shd = down(right(inner | lipm, 5), 4) & ring & ~lipm; img[shd] *= .72
-img[inner & ~ndimage.binary_erosion(inner, iterations=1)] = (120, 100, 86); img[inner & ~down(inner, 1) & ndimage.binary_erosion(inner | down(inner, 1), iterations=1)] = (250, 240, 214)
+img[inner & ~ndimage.binary_erosion(inner, iterations=1)] = (96, 104, 132); img[inner & ~down(inner, 1) & ndimage.binary_erosion(inner | down(inner, 1), iterations=1)] = (244, 248, 255)
 img[down(wall, 1) & ~wall & ~plat] = INK
 base = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).convert('RGBA'); dr = ImageDraw.Draw(base)
 # grass details: tufts and flower patches (not on stone or dirt)
