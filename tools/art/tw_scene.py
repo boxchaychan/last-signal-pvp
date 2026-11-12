@@ -53,7 +53,7 @@ def blob(cx, cy, rx, ry): return ((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2 +
 def seg(x0, y0, x1, y1, r):
     dx, dy = x1 - x0, y1 - y0; t = np.clip(((xx - x0) * dx + (yy - y0) * dy) / (dx * dx + dy * dy), 0, 1)
     return np.hypot(xx - (x0 + t * dx), yy - (y0 + t * dy)) + (N24 - .5) * 16 + (N9 - .5) * 6 < r
-import os; HOUSE = os.environ.get('HOUSE') == '1'
+import os; HOUSE = os.environ.get('HOUSE') == '1'; BGM = os.environ.get('BG') == '1'   # BG=1: the empty scene for the game (art/dogcat/bg.png + geo.json)
 HX, HY = 292, 918                                                   # the dog house's door step
 dirt = (blob(HX, HY + 26, 150, 78) if HOUSE else blob(HX, HY + 40, 60, 30)) | seg(HX, HY + 40, HX - 10, 1130, 26) | seg(HX - 120, HY + 30, 0, HY + 70, 20) | seg(HX + 120, HY + 30, W, HY + 10, 20)
 img[dirt] = DIRT[dirt]
@@ -193,6 +193,7 @@ U = {(0, 0): ('shiba', 2, 'atkL'), (2, 0): ('corgi', 1, 'idle'), (3, 0): ('shiba
      (1, 1): ('shiba', 1, 'idle'), (4, 1): ('shiba', 2, 'idle'), (6, 1): ('corgi', 3, 'atk'),
      (0, 2): ('corgi', 1, 'idleL'), (2, 2): ('shiba', 1, 'idle'), (3, 2): ('corgi', 2, 'idle'), (5, 2): ('shiba', 1, 'idle'),
      (1, 3): ('shiba', 2, 'idle'), (4, 3): ('corgi', 1, 'idle'), (6, 3): ('shiba', 3, 'atk')}
+if BGM: U = {}
 stars = []
 for c in range(7):
     for r in range(4):
@@ -211,7 +212,7 @@ for s in np.linspace(0, per, 400, endpoint=False):
 MOB = {}
 for k, n in (('shroom', 2), ('wisp', 2), ('wolf', 2), ('kappa', 2), ('kasa_obake', 2), ('paper_doll', 2)):
     m = json.load(open('art/action/mobs_hr/%s.json' % k)); MOB[k] = crop(reduce(crop(Image.open('art/action/mobs_hr/%s.png' % k).crop((0, 0, m['w'], m['h']))), n))
-for i in list(range(8, 400, 19)):
+for i in ([] if BGM else list(range(8, 400, 19))):
     if 318 < i < 345 or 96 < i < 112: continue                                        # room for the swoosh and the cannon blast
     px, py = LOOP[i]; nx, _ = LOOP[(i + 5) % 400]; im = MOB[random.choice(list(MOB))]; put(im if nx >= px else flip(im), int(px) + random.randint(-3, 3), int(py) + 12 + random.randint(-3, 3))
 # flags on the two back corners, bench strip with three dogs waiting
@@ -224,7 +225,7 @@ for i in range(BN):
     dr.line((x, byy - 2, x + BWd - 2, byy - 2), fill=(232, 190, 130)); dr.rectangle((x + BWd - 1, byy - 2, x + BWd - 1, byy + 39), fill=(110, 76, 54))
     dr.line((x, byy + 40, x + BWd - 2, byy + 40), fill=(150, 104, 68))
     for px in (x + 5, x + BWd - 8): dr.rectangle((px, byy + 3, px + 1, byy + 4), fill=(110, 76, 54))
-for i, (kind, s) in ((0, ('shiba', 1)), (1, ('shiba', 1)), (3, ('corgi', 1))):
+for i, (kind, s) in (() if BGM else ((0, ('shiba', 1)), (1, ('shiba', 1)), (3, ('corgi', 1)))):
     im, an = unit(kind, s, 'idle'); cx = bx0 + i * BWd + BWd // 2 - 1; put(im, cx, byy + 30, anchor=an); stars.append((cx, byy + 30 - (an[1] - an[2]) - 13, s))
 # ---------- the yard
 # owner "เอาบ้านมาทำไม" + a painted swamp sheet "เอาไปตกแต่ง" (art/incoming/dogcat/swamp/, cut by swamp boxes): no dog house; the big old tree
@@ -264,6 +265,11 @@ v = np.hypot((xx - W / 2) / (W * .75), (yy - H / 2) / (H * .7))[..., None]; g[..
 base = Image.fromarray(np.clip(g, 0, 255).astype(np.uint8)); dr = ImageDraw.Draw(base)
 for x, y, col in ((210, 700, (255, 255, 255)), (420, 720, (255, 236, 120)), (120, 1010, (255, 190, 220)), (540, 1000, (255, 255, 255))):
     dr.rectangle((x, y, x + 1, y + 1), fill=col); dr.rectangle((x + 3, y - 1, x + 4, y), fill=col); dr.point((x + 2, y + 1), fill=INK)
+if BGM:
+    os.makedirs('art/dogcat', exist_ok=True); base.convert('RGB').save('art/dogcat/bg.png')
+    json.dump({'w': W, 'h': H, 'slots': [[GX + c * CW + CW // 2, GY + r * CH + CH - 19] for r in range(4) for c in range(7)], 'cols': 7, 'rows': 4, 'cw': CW, 'ch': CH,
+               'loop': [a_, b_ + 12, c_, d_ + 12], 'bench': [[bx0 + i * BWd + BWd // 2 - 1, byy + 30] for i in range(BN)]}, open('art/dogcat/geo.json', 'w'))
+    print('bg ok'); sys.exit()
 # ---------- HUD
 F = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 14); FB = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 22); FS = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 11)
 def panel(x0, y0, x1, y1, fill=(36, 30, 46)):
