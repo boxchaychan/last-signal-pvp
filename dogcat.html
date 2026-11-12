@@ -90,10 +90,11 @@ function draw(){const sx=G.shake>0?Math.round((Math.random()-.5)*6):0;g.setTrans
   else{const S=SP.units[o.kind+o.star],im=IMG['u_'+o.kind+o.star],f=o.at>=0?Math.min(S.n-1,Math.floor(o.at*12)):0,x=o.x,y=o.y,sc=o.pop>0?1+o.pop*.5:1;
    g.fillStyle='rgba(10,20,10,.28)';g.beginPath();g.ellipse(x,y+1,17,5,0,0,7);g.fill();g.save();g.translate(x,y);g.scale(o.dir*sc,sc);
    if(o.at>=0)g.drawImage(im,f*S.w,0,S.w,S.h,-S.fx,-S.fy,S.w,S.h);
+   else if(S.idle){const fi=Math.floor(G.t*(G.mobs.length?9:6)+o.slot*2.3)%S.idle;g.drawImage(IMG['i_'+o.kind+o.star],fi*S.w,0,S.w,S.h,-S.fx,-S.fy,S.w,S.h)}   // a real idle clip from PixelLab when the level has one
    else{   // owner "ตัวละครมันแข็งไป": standing dogs breathe: head and chest sink 1 px in turn (whole pixels, no stretching), each dog on its own beat; ready-to-hit dogs bounce faster
     const hh=S.fy-S.top,r1=S.top+Math.round(hh*.5),r2=S.top+Math.round(hh*.74),st=Math.floor(G.t*(G.mobs.length?4.2:2.6)+o.slot*1.7)%4,hd=[0,1,1,0][st],cd=[0,0,1,1][st];
     g.drawImage(im,0,r2,S.w,S.h-r2,-S.fx,r2-S.fy,S.w,S.h-r2);g.drawImage(im,0,r1,S.w,r2-r1,-S.fx,r1-S.fy+cd,S.w,r2-r1);g.drawImage(im,0,0,S.w,r1,-S.fx,-S.fy+hd+cd,S.w,r1)}
-   g.restore();star(x,y-(S.fy-S.top)-9+(o.at<0?Math.floor(G.t*2.6+o.slot*1.7)%4>1?1:0:0),o.star)}}
+   g.restore();star(x,y-(S.fy-S.top)-9+(o.at<0&&!S.idle?Math.floor(G.t*2.6+o.slot*1.7)%4>1?1:0:0),o.star)}}
  for(const b of G.shots){const x=Math.round(b.x),y=Math.round(b.y),r=3+b.star;g.fillStyle='#221c28';g.fillRect(x-r-1,y-r-1,2*r+2,2*r+2);g.fillStyle='#4a4656';g.fillRect(x-r,y-r,2*r,2*r);g.fillStyle='#b4b4c8';g.fillRect(x-r+1,y-r+1,r-1,r-1)}
  for(const f of G.fx){if(f.k==='dust'){const k=f.t/.3,r=f.r*(.4+.6*k);g.fillStyle='rgba(255,244,214,'+(1-k)+')';for(let i=0;i<10;i++){const a=i*.628;g.fillRect(Math.round(f.x+Math.cos(a)*r)-3,Math.round(f.y+Math.sin(a)*r*.55)-3,6,6)}}
   else if(f.k==='poof'){const r=6+f.t*40;g.fillStyle='rgba(255,255,255,'+(1-f.t/.4)+')';for(let i=0;i<5;i++){const a=i*1.26+1;g.fillRect(Math.round(f.x+Math.cos(a)*r)-2,Math.round(f.y+Math.sin(a)*r*.6)-2,4,4)}}
@@ -119,6 +120,6 @@ cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),x=(e.cl
  if(G.sel){let bi=-1,bd=42;GEO.slots.forEach(([sx,sy],i)=>{const d=Math.hypot(x-sx,y-(sy-18));if(d<bd){bd=d;bi=i}});if(bi>=0)place(G.sel,bi)}});
 let last=0;function frame(t){const dt=Math.min(.05,(t-last)/1000||0)*SPD;last=t;step(dt);draw();requestAnimationFrame(frame)}
 (async()=>{GEO=await (await fetch('art/dogcat/geo.json')).json();SP=await (await fetch('art/dogcat/sprites.json')).json();IMG.bg=await img('art/dogcat/bg.png');
- for(const k in SP.units)IMG['u_'+k]=await img('art/dogcat/units/'+k+'.png');for(const k in SP.mobs)IMG['m_'+k]=await img('art/dogcat/mobs/'+k+'.png');
+ for(const k in SP.units){IMG['u_'+k]=await img('art/dogcat/units/'+k+'.png');if(SP.units[k].idle)IMG['i_'+k]=await img('art/dogcat/units/'+k+'_idle.png')}for(const k in SP.mobs)IMG['m_'+k]=await img('art/dogcat/mobs/'+k+'.png');
  newGame();window.DC={G:()=>G,place,step,KIND};requestAnimationFrame(frame)})();
 </script></body></html>

@@ -22,6 +22,14 @@ for s in (1, 2, 3):
     st.save(O + 'units/shiba%d.png' % s); fx, fy, top = feet(fr[0]); S['units']['shiba%d' % s] = {'w': 104, 'h': 104, 'n': 9, 'fx': fx, 'fy': fy, 'top': top, 'hit': 3}
     st = Image.open(DC + 'corgi/game/s%d_attack.png' % s).convert('RGBA'); st.save(O + 'units/corgi%d.png' % s); fx, fy, top = feet(st.crop((0, 0, 104, 104)))
     S['units']['corgi%d' % s] = {'w': 104, 'h': 104, 'n': st.width // 104, 'fx': fx, 'fy': fy, 'top': top, 'hit': 1}
+# idle clips (PixelLab pixminimax, 8 frames + the start frame; owner 2026-11-13 "เอา 1 ดาวมาก่อน"): units/<key>_idle.png, same cell and feet as the attack strip
+import glob
+for key, pat in (('shiba1', DC + 'pl1s/char/Idle/animations/idle_se/south-east/*.png'), ('corgi1', DC + 'corgi/char_s1/Idle/animations/idle_aim*/south-east/*.png')):
+    fs = sorted(glob.glob(pat))[1:]
+    if not fs: continue
+    st = Image.new('RGBA', (104 * len(fs), 104))
+    for i, f in enumerate(fs): st.alpha_composite(Image.open(f).convert('RGBA'), (i * 104, 0))
+    st.save(O + 'units/%s_idle.png' % key); S['units'][key]['idle'] = len(fs)
 for k in ('shroom', 'wisp', 'wolf', 'kappa', 'kasa_obake', 'paper_doll', 'monkey', 'goblin_archer'):
     m = json.load(open('art/action/mobs_hr/%s.json' % k)); im = Image.open('art/action/mobs_hr/%s.png' % k).convert('RGBA'); w, h, n = m['w'], m['h'], m['n']; r = m['rows']['walk']
     fr = [reduce2(im.crop((i * w, r * h, i * w + w, r * h + h))) for i in range(n)]; cw, ch = fr[0].size; st = Image.new('RGBA', (cw * n, ch))
