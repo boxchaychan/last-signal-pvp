@@ -225,7 +225,7 @@ FX = [
 def prompt(e, tone='', style=None):
     key, th, kind, sec, end, size, what, bg = e
     tone = (' ' + tone) if tone else ''
-    return (f'Create a {sec:g}-second VIDEO, SQUARE 1:1, of ONE game visual effect, no character, no people, no weapon. {style or STYLE} '
+    return (f'Create a {sec:g}-second VIDEO, SQUARE 1:1, of ONE game visual effect, no character, no people, no weapon, no target, no target board, no dummy, no objects or props of any kind (the effect alone in empty space). {style or STYLE} '
             f'Effect: {what}.{tone} {KIND[kind][0]} Size: {size}, in the middle of the picture with wide empty margins on all four sides; '
             f'nothing ever touches or leaves the edges. {WIDE} {END[end]} Background: {bg} the whole time, nothing else on it: no ground '
             f'texture, no floor, no landscape, no text. Locked camera: no zoom, no pan, no tilt, no shake, no cuts.')
