@@ -236,7 +236,20 @@ def card(e, tone='', style=None):
             f'<p class="note">{KIND[kind][1]} · {sec:g} วิ{" · วนซ้ำ" if end == "loop" else ""}</p>'
             f'<div class="blk"><div class="bh"><span>พรอมต์</span><button class="cp">คัดลอก</button></div>'
             f'<textarea rows="6" readonly>{html.escape(prompt(e, tone, style))}</textarea></div></div>')
-CLASSES.insert(0, DIMRAETH); CLASSES.insert(1, ASSASSIN)
+# owner 2026-11-12 "จะเจน meta ai จะเอา vfx": the effects of the dogs-vs-cats Siamese ninja's skills (docs/action-game.md, PROMPT_PL_cat_skills.txt),
+# in the default cartoon ink STYLE to match the chibi characters; 1 star = dried fish, 2 stars = silver shurikens, 3 stars = gold + purple
+CATNINJA = ('catninja', 'แมวนินจา (หมา vs แมว) สกิล 1-3 ดาว', 'Colours: silver steel, bright violet purple light, gold for the strongest effects, warm brown for the dried fish, white flashes; no green.', [
+  ('cat1_fish', '1 ดาว: ปาปลาแห้ง 3 ตัวรวด', 'S', 1, 'once', 'half of the picture wide', 'three cartoon dried fish spinning fast one after another from left to right, white speed lines behind each fish, a little dust puff where they start', GREEN),
+  ('cat1_hit', '1 ดาว: ปลาแห้งโดนเป้า', 'B', 0.6, 'once', 'small: one fifth of the picture wide', 'a comic impact: a white star-shaped flash, a puff of round cartoon dust, little fish bones and stars popping out', GREEN),
+  ('cat2_fan', '2 ดาว: ดาวกระจายพัดลงพื้น', 'S', 1, 'once', 'a fan across half of the picture', 'five spinning silver fish-skeleton shurikens fanning out from a point at the top left and flying down to the right, each with a thin purple light trail and small sparks', GREEN),
+  ('cat2_land', '2 ดาว: ลงพื้นกระแทก', 'D', 1, 'once', 'a ring growing to one third of the picture wide', 'seen from above: a heavy landing impact on the ground, a ring of round cartoon dust clouds bursting outward, short ground cracks, small rocks flying', GREEN),
+  ('cat2_hit', '2 ดาว: ดาวกระจายปักเป้า', 'B', 0.6, 'once', 'small: one fifth of the picture wide', 'a shuriken hit: a sharp silver X flash with purple sparks and a tiny four-point star glint', GREEN),
+  ('cat3_charge', '3 ดาว: ชาร์จดาวกระจายทอง', 'B', 1.2, 'once', 'one fifth of the picture wide', 'charging power: glowing golden and purple sparks and small fish-shaped lights swirling inward into a bright point that grows brighter and brighter, then a quick flash', GREEN),
+  ('cat3_spin', '3 ดาว: หมุนตัวเป็นพายุ', 'B', 1, 'once', 'a ring one third of the picture wide, low and flat like a disc seen from a little above', 'a whirl of purple wind and red ribbon-like streaks spinning one full turn round an empty spot where a fighter stands, gold sparks flung outward', GREEN),
+  ('cat3_gold', '3 ดาว: ดาวกระจายทองยักษ์ (บินไปกลับ)', 'S', 1.5, 'once', 'the shuriken one fifth wide, flying across the picture and back', 'one huge spinning golden fish-skeleton shuriken glowing with purple light flies fast from left to right leaving a purple fire trail and golden sparks, then curves round and flies back to the left like a boomerang', GREEN),
+  ('cat3_boom', '3 ดาว: ระเบิดทองม่วง', 'B', 1.2, 'once', 'one third of the picture wide', 'a big golden and purple explosion: a bright white flash, a ring of purple fire, round cartoon smoke clouds, glowing golden fish bones and stars flying out, then fading', GREEN),
+])
+CLASSES.insert(0, CATNINJA); CLASSES.insert(1, DIMRAETH); CLASSES.insert(2, ASSASSIN)
 cards = '<h2 class="big">ชุดของแต่ละอาชีพ</h2><p class="jump">' + ' · '.join(f'<a href="#c_{k}">{th}</a>' for k, th, _, _ in CLASSES) + '</p>'
 for k, th, tone, items in CLASSES:
     cards += f'<h2 class="sec" id="c_{k}">{th} <small>{len(items)} อัน</small></h2>' + ''.join(card(e, tone, CSTYLE.get(k)) for e in items)
