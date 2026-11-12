@@ -10,23 +10,23 @@ O = 'art/dogcat/bag/'; os.makedirs(O, exist_ok=True); INK = (34, 28, 40); R = np
 def fin(c): return Image.fromarray(outline(np.asarray(c), pale=999, black=INK).astype(np.uint8))
 # ---------- panel
 PW, PH = 573, 404; a = np.zeros((PH, PW, 3)); yy, xx = np.mgrid[0:PH, 0:PW]
-n = ndimage.zoom(R.rand(PH // 6 + 2, PW // 6 + 2), 6, order=1)[:PH, :PW]; a[:] = np.array([124, 82, 52]) + (n[..., None] - .5) * 16
+n = ndimage.zoom(R.rand(PH // 6 + 2, PW // 6 + 2), 6, order=1)[:PH, :PW]; a[:] = np.array([58, 84, 140]) + (n[..., None] - .5) * 14          # a navy canvas backpack (the first one was brown like everything else)
 a[R.rand(PH, PW) < .05] *= .92
 im = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).convert('RGBA'); d = ImageDraw.Draw(im)
-d.rounded_rectangle((0, 0, PW - 1, PH - 1), 12, outline=INK, width=3); d.rounded_rectangle((3, 3, PW - 4, PH - 4), 10, outline=(168, 118, 76), width=2); d.rounded_rectangle((5, 5, PW - 6, PH - 6), 9, outline=(92, 58, 38), width=1)
+d.rounded_rectangle((0, 0, PW - 1, PH - 1), 12, outline=INK, width=3); d.rounded_rectangle((3, 3, PW - 4, PH - 4), 10, outline=(120, 150, 210), width=2); d.rounded_rectangle((5, 5, PW - 6, PH - 6), 9, outline=(38, 56, 100), width=1)
 for x in range(14, PW - 14, 10): d.line((x, 10, x + 5, 10), fill=(232, 204, 150)); d.line((x, PH - 11, x + 5, PH - 11), fill=(232, 204, 150))
 for y in range(14, PH - 14, 10): d.line((10, y, 10, y + 5), fill=(232, 204, 150)); d.line((PW - 11, y, PW - 11, y + 5), fill=(232, 204, 150))
-d.rounded_rectangle((14, 16, PW - 15, 70), 8, fill=(104, 66, 42), outline=INK); d.line((18, 19, PW - 19, 19), fill=(150, 104, 68)); d.line((18, 67, PW - 19, 67), fill=(70, 44, 30))      # the flap
+d.rounded_rectangle((14, 16, PW - 15, 70), 8, fill=(44, 64, 112), outline=INK); d.line((18, 19, PW - 19, 19), fill=(96, 124, 184)); d.line((18, 67, PW - 19, 67), fill=(30, 44, 82))      # the flap
 for x in range(22, PW - 22, 9): d.line((x, 64, x + 4, 64), fill=(214, 184, 132))
-bx = PW - 70; d.rounded_rectangle((bx, 26, bx + 44, 60), 4, fill=(226, 186, 76), outline=INK); d.rectangle((bx + 8, 33, bx + 36, 53), fill=(104, 66, 42), outline=INK); d.rectangle((bx + 20, 30, bx + 24, 56), fill=(250, 226, 130), outline=INK); d.line((bx + 3, 29, bx + 41, 29), fill=(255, 240, 170))
-def pocket(x, y, w, h, base=(78, 50, 34)):
+bx = PW - 70; d.rounded_rectangle((bx, 26, bx + 44, 60), 4, fill=(226, 186, 76), outline=INK); d.rectangle((bx + 8, 33, bx + 36, 53), fill=(44, 64, 112), outline=INK); d.rectangle((bx + 20, 30, bx + 24, 56), fill=(250, 226, 130), outline=INK); d.line((bx + 3, 29, bx + 41, 29), fill=(255, 240, 170))
+def pocket(x, y, w, h, base=(34, 48, 86)):
     d.rounded_rectangle((x, y, x + w - 1, y + h - 1), 4, fill=INK); d.rounded_rectangle((x + 1, y + 1, x + w - 2, y + h - 2), 3, fill=base)
     d.line((x + 3, y + 2, x + w - 4, y + 2), fill=tuple(int(v * .62) for v in base)); d.line((x + 2, y + 3, x + 2, y + h - 4), fill=tuple(int(v * .62) for v in base)); d.line((x + 3, y + 3, x + w - 4, y + 3), fill=tuple(int(v * .78) for v in base))
     d.line((x + 3, y + h - 3, x + w - 4, y + h - 3), fill=tuple(min(255, int(v * 1.3)) for v in base)); d.line((x + w - 3, y + 3, x + w - 3, y + h - 4), fill=tuple(min(255, int(v * 1.3)) for v in base))
 GX, GY, S = 16, 84, 56                                   # grid origin inside the panel (the game: BAG.x = 6 + 16, BAG.y = 716 + 84)
 for r in range(4):
-    for c in range(7): pocket(GX + c * S, GY + r * S, S, S, (84, 54, 36) if (r + c) % 2 else (92, 60, 40))
-for i in range(3): pocket(432, 84 + i * 72, 126, 66, (70, 46, 32))
+    for c in range(7): pocket(GX + c * S, GY + r * S, S, S, (36, 52, 92) if (r + c) % 2 else (42, 60, 104))
+for i in range(3): pocket(432, 84 + i * 72, 126, 66, (30, 42, 76))
 d.rounded_rectangle((432, 302, 557, 365), 5, fill=INK); d.rounded_rectangle((434, 304, 555, 363), 4, fill=(112, 60, 54)); d.line((437, 306, 552, 306), fill=(160, 96, 86))
 tx, ty = 452, 318; d.rectangle((tx, ty + 6, tx + 22, ty + 34), fill=(210, 200, 196), outline=INK); d.rectangle((tx - 3, ty + 1, tx + 25, ty + 6), fill=(236, 228, 224), outline=INK); d.rectangle((tx + 7, ty - 3, tx + 15, ty + 1), fill=(236, 228, 224), outline=INK)
 for x in (tx + 6, tx + 11, tx + 16): d.line((x, ty + 11, x, ty + 30), fill=(130, 120, 120))
