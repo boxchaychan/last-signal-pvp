@@ -51,7 +51,7 @@ def add(name, key, dirs, pick=None, fx=False, raw=False):
         row = [put(Image.open(f).convert('RGBA') if raw else clean(Image.open(f), fx)) for f in fs]
         area = [int((np.asarray(r)[..., 3] > 0).sum()) for r in row]; med = sorted(area)[len(area) // 2]
         feet = [int((np.asarray(r)[FY - 14:FY + 2, :, 3] > 0).sum()) for r in row]; fm = sorted(feet)[len(feet) // 2]
-        if not raw: row = [r for r, ar, ft in zip(row, area, feet) if ar > med * .55 and ft > fm * .45]   # frames that were mostly effect (the X flash) or lost their legs behind a swoosh are dropped
+        if not raw and name != 'run': row = [r for r, ar, ft in zip(row, area, feet) if ar > med * .55 and ft > fm * .45]   # frames that were mostly effect (the X flash) or lost their legs behind a swoosh are dropped
         meta['anims'][name][d] = {'r': len(imgs), 'n': len(row)}; imgs.append(row)
     n = max(len(r) for r in imgs); out = Image.new('RGBA', (C * n, C * len(imgs)))
     for j, r in enumerate(imgs):
@@ -62,9 +62,10 @@ st = Image.new('RGBA', (C * 8, C)); DIRS = ['east', 'south-east', 'south', 'sout
 for i, d in enumerate(DIRS): st.alpha_composite(put(clean(Image.open(S + 'rotations/%s.png' % d), False)), (i * C, 0))
 st.save(O + 'still.png')
 # run: east has grey 'robot' arms -> the south-east run stands in for the side; north / north-east: the matching half only
-add('run', 'running', {'east': ('south-east', None), 'south-east': None, 'south': None, 'north-east': [0, 1, 2, 3], 'north': [4, 5, 6, 7]})
+# run: the PixMiniMax run (2026-11-12 "เจนท่าวิ่งเลย", 5 gen); frame 0 is the stance, 1-8 loop; the template run (grey arms) is no longer used
+R8 = list(range(1, 9)); add('run', 'agile', {'east': R8, 'south-east': R8, 'south': R8, 'north-east': R8, 'north': R8}, fx=True)
 SL = [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16]            # 13-14 = the X flash
-add('attack', 'a_fast', {'east': SL, 'south-east': SL, 'south': SL}, fx=True)
+add('attack', 'a_fast_twin', {'east': SL, 'south-east': SL, 'south': SL}, fx=True)
 SP = [0, 3, 4, 5, 6, 7, 8, 9, 13, 15, 16]                        # one turn, then the landing
 add('spin', 'a_critical', {'east': SP, 'south-east': SP, 'south': SP}, fx=True)
 # owner 2026-11-12 "วงไว้ทำตอนสกิล ... ทำไมจะลบเอฟเฟกต์": the spin WITH PixMiniMax's own glowing rings, untouched, for the E whirl skill
