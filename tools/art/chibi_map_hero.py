@@ -19,6 +19,11 @@ for i in big:
 CW = max(c[0].width for c in cells) + (40 if MINSZ > 1000 else 14); CH = max(c[2] for c in cells) + 4; FX, FY = CW // 2, CH - 2
 sheet = Image.new('RGBA', (CW * NV, CH))
 for j, (im, fx, h) in enumerate(cells): sheet.alpha_composite(im, (j * CW + FX - fx, FY - h))
+if len(sys.argv) > 4 and sys.argv[4] == 'halo':          # PixelLab left a pale 1 px rim round the small sprite (white background bleeding in): take it off, one pass
+    q = np.asarray(sheet).copy(); op = q[..., 3] > 0; rgb = q[..., :3].astype(int); pale = op & (rgb.min(2) > 175) & (rgb.max(2) - rgb.min(2) < 34)
+    out_n = ~op; near = np.zeros_like(op)
+    for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)): near |= np.roll(out_n, (dy, dx), (0, 1))
+    q[pale & near, 3] = 0; sheet = Image.fromarray(q)
 sheet.save('art/td/map1/%s.png' % OUT)
 a = np.asarray(sheet); h2, w2 = a.shape[0] // 2, a.shape[1] // 2; out = np.zeros((h2, w2, 4), np.uint8)
 for y in range(h2):
