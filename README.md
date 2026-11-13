@@ -2,6 +2,7 @@
 
 - `map.html` — walk test on the pixel map with the new chibi swordsman (`?hero=chibi16`, `chibi64`, `&px=1..4`).
 - `combo.html` — combo / animation test page.
+- `bag.html` — กระเป๋านักดาบ: a backpack auto-battler (shop, arrange the bag, auto fight).
 - `dogcat.html` — dogs-vs-cats tower defense prototype.
 - `vfxlab.html`, `vfxcut.html`, `fx/`, `art/incoming/pfx*`, `fx_*` — skill effects and the tools to cut / layer them.
 - `action.html` — code of the earlier action RPG (skills, effects, monsters). Its hero art was removed on 2026-11-13; it does not run until the new hero is wired in.
