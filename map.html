@@ -52,7 +52,11 @@ function spinHit(big) { let any = 0; const dm = Math.round(22 * (1 + (ST.lv - 1)
 function kill(m) { m.dead = .35; m.re = 6; ST.kills++; const xp = Math.ceil(MHP[m.k] / 8); ST.xp += xp; NUM.push({x: m.x, y: m.y - 6, v: '+' + xp + ' XP', t: -.15, xp: 1}); while (ST.xp >= need()) { ST.xp -= need(); ST.lv++; ST.up = 1.6; P.hp = HPMAX(); } }
 function hurtHero(d) { if (P.dead || P.inv > 0) return; P.hp -= d; P.inv = .6; SHK = 3; NUM.push({x: P.x, y: P.y - 66, v: '-' + d, t: 0, red: 1}); if (P.hp <= 0) { P.hp = 0; P.dead = 2.4; P.atk = P.act = null; } else if (!P.act) { P.atk = null; P.act = {k: 'hurt', t: 0}; } }
 function startAtk(n, v) { P.atk = {n, i: 0, t: 0, hit: 0, end: 0, v: v || ''}; }
-let CV = null;   // up / down swing tables, filled when the north / south clips are packed
+const CG = (c0, l) => l.map(x => ({f: c0 + x[0], t: x[1]}));   // up / down swings (PixelLab slash_n / slash_s, cells 140+ / 160+ of chibi_pl.png): 2 chained hits each
+const CV = {n: {st: [{f: CG(140, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .07]]), hit: 2, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 58, ry: 34},
+    {f: CG(140, [[9, .04], [10, .05], [11, .05], [12, .09], [13, .08]]), hit: 3, dmg: 28, lunge: 18, kb: 190, stop: .1, rx: 66, ry: 30, big: 1}], en: CG(140, [[14, .06], [15, .06], [16, .06]])},
+  s: {st: [{f: CG(160, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .07]]), hit: 2, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 58, ry: 34},
+    {f: CG(160, [[8, .04], [9, .05], [10, .05], [11, .1], [13, .08]]), hit: 3, dmg: 28, lunge: 18, kb: 190, stop: .1, rx: 66, ry: 30, big: 1}], en: CG(160, [[14, .06], [15, .06], [16, .06]])}};
 const atkV = (ix, iy) => !CV ? '' : Math.abs(iy) > .5 && Math.abs(ix) < .35 ? (iy < 0 ? 'n' : 's') : Math.abs(ix) > .2 ? '' : P.d === 6 ? 'n' : P.d === 2 ? 's' : '';   // which way a new swing goes: up / down clips (CV) or the side combo
 function doHit(s, v) {
   let any = 0; const dm = Math.round(s.dmg * (1 + (ST.lv - 1) * .12)), vy = v === 'n' ? -1 : 1;
