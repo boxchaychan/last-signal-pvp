@@ -1,6 +1,6 @@
 # Last Signal (สัญญาณสุดท้าย) — notes for Claude Code
 
-Short on purpose (owner 2026-11-13: token cost; "ทำเลย" to trimming this file). Everything that used to be here is kept word for word in `docs/claude-archive.md`: read the matching part there BEFORE touching an old game (`bb.html`, `index.html`, `pack.html`, the legends cast, the Berserker, Blender / 3D Storm).
+Short on purpose (owner 2026-11-13: token cost). Big cleanup 2026-11-13 (owner: "เอาออกให้หมด รก เก็บแค่ vfx กับที่เกี่ยวกับเกมนี้", then "ไฟล์เกมเก่าด้วย", "เก็บมอนสเตอร์ไว้ ตัวละครลบเลย … เอาพวก vfx ไว้"): the old games (`bb.html`, `index.html`, `pack.html`, `hd3d*.html`, legends, 3D Storm, their art / docs / tools) and ALL old hero art (swordsman, archer, mage, rogue, priest, guardian, berserker: `art/action/<hero>_*`, `n128`, `as2/3`, `bz4`, `h64`, `art/incoming/action/<hero>/`) are deleted from the tree. Everything is still in git history: the last commit before the cleanup is `70e92df` (`git show 70e92df:<path>` / `git checkout 70e92df -- <path>` brings a file back; the old long notes are `70e92df:docs/claude-archive.md`). Do not bring old characters back unless the owner asks.
 
 ## Owner
 Speaks Thai, not a programmer: reply in Thai, short and plain. Tests on a phone (landscape) and a Windows PC. Owner 2026-11-05: "ทำได้เลยไม่ต้องถามอนุญาต" — go ahead with improvements without asking; ship each batch (commit, PR, merge to `main`) and report after. When the owner is only consulting ("ปรึกษาเฉยๆ", "ถามเฉยๆ"), talk; do not build or generate.
@@ -18,14 +18,14 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 ## Where things are
 - `docs/action-game.md`: progress, decisions, PixelLab job log. Read the newest entries at the END first.
 - `docs/dogcat-design.md` + `dogcat.html`: dogs-vs-cats tower defense (playable; shiba / cat / corgi at 61 px).
-- `action.html`: the level-grinding action RPG (classes at 120 px; maps `art/td/map1`, `map2` from `tools/art/td_map.py`; walk test `map.html`).
+- `action.html`: CODE of the earlier level-grinding action RPG (skills, effect playback, monster AI, waves). Its hero art is gone, so it does not run: it is the code base to wire the new chibi hero into (or to lift systems from). Maps `art/td/map1`, `map2` from `tools/art/td_map.py`; walk test `map.html` (default hero = the chibi swordsman 128).
+- Kept on purpose: monsters (`art/action/mobs*`, `art/incoming/mobs/`, `art/td/map*/mob_*.png`), VFX (`fx/`, `art/incoming/pfx`, `pfx_ref`, `fx_video`, `fx_codex`, `fx_raw`, `vfxlab.html`, `vfxcut.html`, `docs/vfx-pack.html`, `docs/fx-prompts.html`), props / ground / map art, the pose library, dogcat (not named by the owner in the cleanup: ask before deleting it).
 - `combo.html`: combo test page (modes: shiba from a Meta AI sheet / video, the old swordsman's drawn frames, cut-out bones, stick figure, Ozzbit template).
 - `art/poses/`: shared motion library (`std/common`, `std/weapon`), our bone combo (`combo/sword_combo.json`), sketch pose sheets (`ref_sketch/`).
-- Frozen, in the archive: Babies & Beasts `bb.html`, the city game `index.html`, `pack.html`, the legends cast.
 
 ## Direction
 **Game direction (owner 2026-11-11, after Dimraeth clips): a Dimraeth-like action RPG but LEVEL GRINDING is the core ("ยืนพื้นเก็บเลเวล"), NO Dimraeth-style build / skill-loadout system. Combat like Dimraeth: most skills are aimed at a spot on the GROUND (ground-targeted areas), only a few skills lock onto a target. Selling point = big bright stylized skill effects; monsters in packs; bosses with red ground warnings.**
-**Character body standard (owner 2026-11-11): women copy the rogue, men copy the swordsman (thicker); 120 px feet to head, weapons not counted; rulers in `docs/codex/action/refs/REF_FEMALE_rogue.png` / `REF_MALE_swordsman.png`; details in `docs/action-game.md` "Body standard".**
+**Character body standard (owner 2026-11-11): women copy the rogue, men copy the swordsman (thicker); 120 px feet to head, weapons not counted (that standard was for the removed 120 px classes; the new chibi swordsman is ~128 px, 2.5 heads).**
 
 ## Current work (2026-11-13): the new chibi pixel swordsman
 - Look chosen by the owner: the "16 bit" GPT sheet → PixelLab redraw B at body ~128 ("เอา 128 มาทำดีแล้ว"). Files in `art/incoming/darkchibi/sword_v1/` (`pl5_16bit_128.png` = the one in use; also 36 / 64 / 256 tests, 8-bit version, painted original `gpt_turn_v1.png`). Recipe that works for this style: painting → GPT redraws it as a pixel-style sheet (attach a pixel example) → PixelLab B (1 credit); a GPT sheet already on a ~9 px grid can be snapped free with `GPTPX_GRID=8.6,9.5 tools/art/gptpx.py … 16`.

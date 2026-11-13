@@ -468,10 +468,8 @@ def cells(f, C, rows, cols, k, cut=110):
             cl = sh.crop((i * C, r * C, i * C + C, r * C + C)).resize((c2, c2), Image.LANCZOS)
             a = np.asarray(cl).copy(); a[..., 3] = (a[..., 3] > cut) * 255; out.paste(Image.fromarray(a), (i * c2, r * c2))
     return out, c2
-M = json.load(open('art/action/n128/berserker.json')); C = M['cell']; hk = HERO / (147 - 38)
-hero = {'c': round(C * hk), 'fx': round(M['fx'] * hk), 'fy': round(M['fy'] * hk), 'dirs': M['dirs']}
-for a in ('run', 'idle'):
-    im, _ = cells('art/action/n128/berserker_%s.png' % a, C, 8, 8, hk); im.save(OUT + 'hero_%s.png' % a, optimize=True)
+# the old hero sheets were removed 2026-11-13 (owner: old characters out); map.html draws the chibi swordsman from hero_chibi*.png (tools/art/chibi_map_hero.py)
+hero = {'c': 79, 'fx': 39, 'fy': 67, 'dirs': ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east']}
 MOBS = {'wolf': .72, 'shroom': .5, 'skeleton': .98, 'boar_guard': 1.25, 'goblin_archer': .78, 'golem': 1.35, 'wisp': .62}
 mobs = {}
 for kk, s in MOBS.items():

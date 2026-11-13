@@ -52,7 +52,7 @@ async function boot() {
   const ld = [img('ground.png').then(i => GR = i), img('props.png').then(i => PR = i), img('block.png').then(i => {
     BW = i.width; BH = i.height; const c = document.createElement('canvas'); c.width = BW; c.height = BH; const g = c.getContext('2d'); g.drawImage(i, 0, 0);
     const d = g.getImageData(0, 0, BW, BH).data; BLK = new Uint8Array(BW * BH); for (let k = 0; k < BW * BH; k++) BLK[k] = d[k * 4] > 128 ? 1 : 0; }),
-    img('hero_run.png').then(i => HR.run = i), img('hero_idle.png').then(i => HR.idle = i)];
+    ];
   if (CHB) ld.push(img(CHB.f).then(i => CHB.im = i));
   for (const k in M.mobs) ld.push(img('mob_' + k + '.png').then(i => MB[k] = i));
   await Promise.all(ld);
@@ -120,7 +120,7 @@ function step(dt) {
 function shadow(x, y, w) { ctx.fillStyle = 'rgba(12,18,6,.38)'; ctx.beginPath(); ctx.ellipse(x, y, w, w * .36, 0, 0, 6.29); ctx.fill(); }
 // ?hero=chibi (half size, like the map's own hero) or ?hero=chibi2 (full 135 px): the new chibi swordsman's 4 still views
 // (tools/art/chibi_map_hero.py; front / 3-4 / side / back), mirrored for the left; no walk frames yet, he bobs while moving
-const CHQ = new URLSearchParams(location.search).get('hero');
+const CHQ = new URLSearchParams(location.search).get('hero') || 'chibi16';   // the old heroes were removed 2026-11-13: the chibi swordsman (128) is the default
 const CHB = CHQ === 'chibi2' ? {f: 'hero_chibi.png', w: 131, h: 141, fx: 65, fy: 139, s: 18} : CHQ === 'chibi' ? {f: 'hero_chibi_half.png', w: 65, h: 70, fx: 32, fy: 69, s: 11}
   : CHQ === 'chibi128' ? {f: 'hero_chibi256_half.png', w: 104, h: 132, fx: 52, fy: 131, s: 11, z: .5, zoom: 2}   // the 256 sheet halved (body ~125 art px), camera twice as close: one art pixel = half a map pixel
   : CHQ === 'chibi16' ? {f: 'hero_chibi16.png', w: 113, h: 130, fx: 56, fy: 128, s: 11, z: .5, zoom: 2, hp: 1, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // the "16 bit" sheet (PixelLab B 128), 3 views: front / side / back
