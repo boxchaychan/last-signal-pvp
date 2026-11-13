@@ -16,6 +16,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - GPT / Codex is connected to the repo too (`AGENTS.md`): Codex makes pictures on a `codex/<task>` branch into `art/incoming/<task>/` with `REPORT_TH.txt` and opens a PR without merging; Claude writes code and brings the art in (never merge a Codex PR as it is). Claude cannot start Codex: the owner types the phrase on the PC.
 
 ## Where things are
+- Project skills (owner 2026-11-13 "ใส่สกิลให้ Claude"): `.claude/skills/` = game-character-sprites, sprite-importer, combat-designer, game-project-architect, gameplay-qa. Short how-to notes for the recurring jobs; use them, keep them current.
 - `docs/action-game.md`: progress, decisions, PixelLab job log. Read the newest entries at the END first.
 - `docs/dogcat-design.md` + `dogcat.html`: dogs-vs-cats tower defense (playable; shiba / cat / corgi at 61 px).
 - `action.html`: CODE of the earlier level-grinding action RPG (skills, effect playback, monster AI, waves). Its hero art is gone, so it does not run: it is the code base to wire the new chibi hero into (or to lift systems from). Maps `art/td/map1`, `map2` from `tools/art/td_map.py`; walk test `map.html` (default hero = the chibi swordsman 128).
