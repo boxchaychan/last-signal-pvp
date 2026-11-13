@@ -11,19 +11,36 @@ owner in Thai, short and plain. "ทำท่าฟัน" / "ทำท่าฟ
 - Save full size PNG (not shrunk, not re-pixelised) as the row's file; add one Thai line per file to
   `art/incoming/chibi_sword/REPORT_TH.txt` (a pose that does not match its cell, a frame crossing a cell, a changed face or
   costume, a missing cell).
-- Do row 1 first and stop: the owner and Claude look at it before the other rows are made.
+- Do row 0 (run) first, then row 1, and stop: the owner and Claude look at it before the other rows are made.
 - Mark the row `done` here. Branch `codex/chibi-slash`, open a pull request, never merge, never push to `main`. When you
   stop, switch the folder back with `git checkout main`.
 
 ## Queue
 | # | key | move | status | file |
 |---|-----|------|--------|------|
+| 0 | run | run cycle, 8 frames (owner 2026-11-13 "ท่าวิ่งมาเลย": do this one FIRST; "ทำท่าวิ่ง") | todo | `art/incoming/chibi_sword/run.png` |
 | 1 | slash_A | two fast horizontal slashes | todo | `art/incoming/chibi_sword/slash_A.png` |
 | 2 | slash_B | overhead chop, then winding into a spin | todo | `art/incoming/chibi_sword/slash_B.png` |
 | 3 | slash_C | spin, dash, wide slash | todo | `art/incoming/chibi_sword/slash_C.png` |
 | 4 | slash_D | follow-through back to the ready stance | todo | `art/incoming/chibi_sword/slash_D.png` |
 
 ## Prompts
+
+### Row 0: run
+Attach, in this order: `art/poses/ref_sketch/run_std.png` (pose sheet), `art/poses/ref_sketch/CHAR_swordsman16_side.png` (the character).
+
+```
+The FIRST picture is a motion reference: 8 numbered cells in a 4 x 2 grid showing a RUN cycle of another character, seen from the side, facing RIGHT. It is a loop: after cell 8 comes cell 1 again. Use it ONLY for the poses (body lean, arm and leg positions, which foot is on the ground, how the sword is carried). Do not copy that character's look.
+
+The SECOND picture is the character to draw: a chibi pixel-art swordsman (dark violet messy hair with an ahoge, violet eyes, torn red scarf-cape, white shirt, brown belt and gauntlets, dark trousers, brown boots, a straight silver sword with a gold guard in his right hand). Draw THIS character once in every cell, in the same pose as the reference figure of that cell.
+
+Rules:
+- The same character in all 8 cells: same face, hair, colours, outfit and proportions as the second picture (big head, short body and legs: keep HIS proportions, only take the pose), the SAME SIZE in every cell, in the same chunky 16-bit pixel-art style (square pixels on one grid, dark outline, 3 shade steps), side view facing RIGHT.
+- A real run: long strides, the two legs clearly apart in the contact cells, one knee lifted in the passing cells, the body leaning forward, the head bobbing a little. The sword stays in his right hand, held low and back. The red scarf-cape streams out behind him and changes shape from cell to cell.
+- Keep the 4 x 2 grid and the order 1 to 8 (top row left to right, then the bottom row). One figure per cell with empty space around it, feet on the same ground line, nothing crossing into another cell.
+- Do NOT draw the numbers, the cell borders or the ground line. No motion lines, no dust, no effects, no shadow, no text.
+- Plain flat pure white background. Landscape picture, 1536 x 1024.
+```
 
 ### Row 1: slash_A
 Attach, in this order: `art/poses/ref_sketch/slash_A.png` (pose sheet), `art/poses/ref_sketch/CHAR_swordsman16_side.png` (the character).
