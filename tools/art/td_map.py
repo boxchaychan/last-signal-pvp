@@ -5,14 +5,17 @@
 #   python3 tools/art/td_map.py -> art/td/map1/{ground.png, props.png, block.png, hero_*.png, mob_*.png, map.json}
 #   MAP=td2 python3 tools/art/td_map.py -> art/td/map2/ (owner 2026-11-12 "ทำแมพรอไปก่อน": an autumn forest with a river and a
 #   bridge, east of map 1; `exits` / `entries` in map.json join the two maps)
+#   MAP=td3 python3 tools/art/td_map.py -> art/td/map3/ (2026-11-13: a cold ruined graveyard east of map 2 for stronger monsters:
+#   grey dirt and stone with dead grass, a paved road, two plateaus with stairs, a murky pool, graves, ruins, dead trees.
+#   Only art already in the repo, recoloured in code; td1 / td2 output is unchanged apart from map 2's new east exit)
 import json, math, os, random, sys, numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage
 sys.path.insert(0, 'tools/art'); from px_smooth import smooth_up
 random.seed(7); np.random.seed(7)
 W, H = 1800, 1100; DH = 62; HERO = 50
-MAPID = os.environ.get('MAP', 'td1'); T2 = MAPID == 'td2'
-OUT = 'art/td/map2/' if T2 else 'art/td/map1/'; os.makedirs(OUT, exist_ok=True); D = 'art/td/tiles/'
+MAPID = os.environ.get('MAP', 'td1'); T2 = MAPID == 'td2'; T3 = MAPID == 'td3'
+OUT = 'art/td/map3/' if T3 else 'art/td/map2/' if T2 else 'art/td/map1/'; os.makedirs(OUT, exist_ok=True); D = 'art/td/tiles/'
 yy, xx = np.mgrid[0:H, 0:W]
 
 def tex(k, lower):
@@ -60,17 +63,39 @@ img[lv < .36] *= .86; img[lv < .28] *= .9                                # darke
 lt = lv > .66; img[lt] = img[lt] * 1.08 + np.array([10, 6, -6])         # sunny, yellowish patches
 bare = (N40 > .86) & (N90 > .5) & (N8 + BY * .5 > .7)
 img[bare] = img[bare] * .55 + DIRT[bare] * .45
+TOP = GRASS; RIMC = np.array([150, 196, 92])                              # plateau tops: texture and sunlit rim colour
+def grey(a, k, tint=(1, 1, 1)): g = a.mean(2, keepdims=True); return (g + (a - g) * k) * np.array(tint)
+if T3:   # map 3: grey-brown dirt, slabs of rocky ground, patches of dead yellow-grey grass (dithered edges)
+    M90, M40 = noise(90), noise(40)
+    DEAD = grey(GRASS, .3, (1.0, .93, .66)) * .82; STONE = grey(DIRT, .15, (.96, 1, 1.06)) * .66; TOP = DEAD * 1.06; RIMC = np.array([176, 170, 120])
+    img = grey(DIRT, .5) * .84
+    st = M90 * .65 + M40 * .35 + (BY - .5) * .1; img[st > .6] = STONE[st > .6]; mix = (st > .55) & (st <= .6); img[mix] = img[mix] * .5 + STONE[mix] * .5
+    lf = N90 * .6 + N40 * .4 + (BY - .5) * .1; img[lf > .56] = DEAD[lf > .56]; mix = (lf > .5) & (lf <= .56); img[mix] = img[mix] * .5 + DEAD[mix] * .5
+    img[lv < .36] *= .86; img[lv < .28] *= .9; img[lt] = img[lt] * 1.07 + np.array([8, 6, 0])
 # ---- road (Catmull-Rom) with a dark grass rim
 ROADS = [[(-30, 720), (180, 700), (380, 660), (540, 590), (640, 470), (660, 380)],
          [(540, 600), (760, 650), (980, 720), (1180, 700), (1330, 640), (1400, 600)],
          [(1180, 700), (1420, 780), (1640, 800), (1840, 770)]]
 if T2: ROADS = [[(-30, 770), (200, 745), (420, 695), (640, 645), (900, 625), (1120, 592), (1340, 520), (1490, 470), (1525, 372)],
                 [(1120, 592), (1260, 740), (1500, 850), (1720, 900)]]
+if T3: ROADS = [[(-30, 610), (200, 600), (420, 560), (640, 590), (880, 640), (1100, 650), (1290, 690), (1400, 680), (1432, 630)],
+                [(640, 590), (660, 480), (615, 372)],
+                [(880, 640), (850, 800), (700, 900), (560, 930)],
+                [(1100, 650), (1180, 480), (1330, 330), (1540, 292)]]
 road = np.zeros((H, W), bool)
 for r in ROADS: road |= band(r, 24)
 img[road] = DIRT[road]
 rim = edge(dil(road, 2)) & ~road; img[rim] = img[rim] * .7 + np.array([60, 96, 36]) * .3
-if not T2:
+if T3:   # an old paved road: pale worn stone, darker joints, a dark rim
+    PAVE = grey(ROCK, .15, (1.02, 1, .96)) * 1.5 + 14; img[road] = PAVE[road]
+    jo = road & (((xx + (yy // 16) * 9) % 22 == 0) | (yy % 16 == 0)) & (N8 > .3); img[jo] *= .72
+    img[rim] = np.array([52, 48, 46]); worn = road & (N40 > .7) & (N8 > .55); img[worn] = img[worn] * .5 + grey(DIRT, .5)[worn] * .42
+    # ---- a murky pool in the south-east
+    pond = blob(1420, 955, 150, 58); bank = dil(pond, 6); river = pond; deck = np.zeros((H, W), bool)
+    img[bank & ~pond] = np.array([78, 70, 60]) + (N8[bank & ~pond, None] - .5) * 24
+    img[pond] = WATER[pond] * np.array([.36, .52, .44]) + np.array([10, 16, 10]); deep = ndimage.binary_erosion(pond, iterations=14); img[deep] *= .78
+    img[edge(pond)] = np.array([150, 176, 150])
+elif not T2:
     # ---- pond with a muddy bank and foam
     pond = blob(1080, 950, 190, 80); bank = dil(pond, 6)
     img[bank & ~pond] = np.array([112, 80, 52]) + (N8[bank & ~pond, None] - .5) * 30
@@ -105,8 +130,8 @@ def plateau(mask, ramps):
     vs = face & ((xx * 7 + (yy // 5) * 3) % 13 == 0) & (N8 > .4); img[vs] *= .72  # vertical cracks
     st = face & ((yy + (xx // 11) * 4) % 12 == 0); img[st] *= .8                   # strata
     roots = face & (N8 > .82) & (depth > DH * .55); img[roots] = np.array([70, 52, 34])
-    img[up] = GRASS[up] * 1.04 + np.array([4, 4, 0])
-    img[edge(up)] = np.array([150, 196, 92])                                        # sunlit rim
+    img[up] = TOP[up] * 1.04 + np.array([4, 4, 0])
+    img[edge(up)] = RIMC                                        # sunlit rim
     img[edge(span) & ~up] = np.array([38, 26, 20])                                  # dark outline round the face
     # rounded boulders along the rim (columns: the first face pixel under the top)
     cols = np.where(face.any(0))[0]; last = -99
@@ -124,6 +149,9 @@ def plateau(mask, ramps):
     UP |= up; FACE |= face
     return up
 if T2: plateau(blob(1470, 220, 300, 96), [(1500, 1556)])
+elif T3:
+    plateau(blob(560, 225, 330, 92), [(588, 644)])
+    plateau(blob(1500, 545, 215, 86), [(1406, 1458)])
 else:
     plateau(yy < 300 + 55 * np.sin(xx / 240) + 26 * np.sin(xx / 93 + 1) + (N40 - .5) * 30, [(632, 690)])
     plateau(blob(1460, 560, 200, 84), [(1380, 1430)])
@@ -168,12 +196,18 @@ def autumn(im, seed):            # green leaves -> red / orange / yellow patches
     hsv[..., 0] = np.where(g, 2 + n * 24, hsv[..., 0]); hsv[..., 1] = np.where(g, np.minimum(255, hsv[..., 1] * 1.45 + 20), hsv[..., 1])
     hsv[..., 2] = np.where(g, np.minimum(255, hsv[..., 2] * 1.08 + 6), hsv[..., 2])
     rgb = np.asarray(Image.fromarray(hsv.astype(np.uint8), 'HSV').convert('RGB')); a[..., :3] = rgb; return Image.fromarray(a)
+def wither(im, seed):            # green leaves -> dark, cold grey-green (a dead forest); trunks a little greyer
+    a = np.asarray(im.convert('RGBA')).copy(); hsv = np.asarray(Image.fromarray(a[..., :3]).convert('HSV')).astype(float)
+    g = (hsv[..., 0] > 40) & (hsv[..., 0] < 130) & (hsv[..., 1] > 50) & (a[..., 3] > 0)
+    hsv[..., 0] = np.where(g, 96, hsv[..., 0]); hsv[..., 1] = np.where(g, hsv[..., 1] * .3, hsv[..., 1] * .75); hsv[..., 2] = np.where(g, hsv[..., 2] * .62, hsv[..., 2] * .9)
+    a[..., :3] = np.asarray(Image.fromarray(hsv.astype(np.uint8), 'HSV').convert('RGB')); return Image.fromarray(a)
 SPR = {}; PROPS = []
 def sprite(key, f, h, flip=False, moss=False):
     k = (key, h, flip)
     if k not in SPR:
         im = fit(f, h, flip)
         if T2 and key.split('art/')[0] in ('tree', 'stree', 'bush'): im = autumn(im, len(SPR))
+        if T3 and (key.split('art/')[0] in ('tree', 'stree', 'bush') or 'bushes_' in key): im = wither(im, len(SPR))
         if moss: im = mossify(im, len(SPR))
         SPR[k] = im
     return k
@@ -183,7 +217,14 @@ FR = 'art/side/forest/'
 def put(kind, f, h, x, y, flip=False, moss=False, over=False):
     PROPS.append({'s': sprite(kind + f, f, h, flip, moss), 'x': x, 'y': y, 'kind': kind, 'over': over})
 TREE = 'art/side/map30/tree.png'
-if not T2:
+if T3:   # the edge forest only (withered); the inside is placed by hand below
+    for x in range(-40, W + 60, 150):
+        put('tree', TREE, random.randint(220, 270), x + random.randint(-30, 30), random.randint(100, 150), random.random() < .5)
+    for y in range(330, H + 40, 150):
+        for X, gy in ((random.randint(-30, 30), 625), (W + random.randint(-30, 30), -999)):
+            yy0 = y + random.randint(-20, 20)
+            if abs(yy0 - gy) > 75: put('tree', TREE, random.randint(220, 260), X, yy0, random.random() < .5)      # the road gap on the west edge
+elif not T2:
     # forest along the top plateau, the left / right edges
     for x in range(-40, W + 60, 150):
         put('tree', TREE, random.randint(220, 270), x + random.randint(-30, 30), random.randint(110, 170), random.random() < .5)
@@ -255,6 +296,7 @@ def camp(x, y):
         if not OCC[min(H - 1, y + dy), min(W - 1, x + dx)]: P(kind, name, h, x + dx, y + dy)
     TAKEN.append((x, y, -1))
 pondI = ndimage.binary_erosion(pond, iterations=18)
+if T3: spot2 = lambda *a, **k: None          # map 3 has no random pass: everything inside is placed by hand
 if not T2:
     spot2(5, 170, lambda x, y: P('tree2', random.choice(['trees_green_0', 'trees_green_1', 'trees_green_2', 'trees_green_3']), random.randint(210, 250), x, y))
     spot2(1, 300, camp, None, 130)
@@ -280,6 +322,12 @@ if T2: spot2(1, 200, lambda x, y: P('water', 'water_8', 64, x, y), WATERP, 40)  
 SPAWN2 = [('skeleton', 980, 470), ('skeleton', 1030, 500), ('skeleton', 950, 520), ('wolf', 560, 980), ('wolf', 600, 1000), ('wolf', 520, 1010),
           ('boar_guard', 1500, 880), ('boar_guard', 1550, 900), ('golem', 1320, 330), ('goblin_archer', 1400, 160), ('goblin_archer', 1470, 180),
           ('wisp', 640, 860), ('wisp', 690, 900), ('wisp', 600, 920), ('shroom', 480, 470), ('shroom', 520, 500)]
+SPAWN3 = [('skeleton', 330, 860), ('skeleton', 400, 900), ('skeleton', 300, 940), ('skeleton', 440, 830),              # the graveyard
+          ('boar_guard', 1040, 800), ('boar_guard', 1100, 840), ('boar_guard', 1000, 860),                                # south of the crossroads
+          ('golem', 1500, 500), ('golem', 1570, 530), ('golem', 420, 220), ('skeleton', 700, 215), ('skeleton', 760, 235),   # the two plateaus
+          ('wisp', 1250, 900), ('wisp', 1300, 860), ('wisp', 1590, 900), ('wisp', 1220, 960),                             # round the pool
+          ('wisp', 960, 330), ('wisp', 1010, 360), ('wisp', 920, 380), ('boar_guard', 1500, 240), ('boar_guard', 1580, 330),
+          ('skeleton', 1640, 760), ('skeleton', 1690, 800), ('golem', 250, 420)]
 SPAWN = [('wolf', 980, 650), ('wolf', 1030, 690), ('wolf', 950, 700), ('shroom', 640, 820), ('shroom', 700, 850), ('shroom', 590, 860),
          ('skeleton', 1320, 760), ('skeleton', 1370, 800), ('boar_guard', 1470, 520), ('goblin_archer', 900, 200), ('goblin_archer', 960, 230),
          ('wolf', 1600, 960), ('shroom', 300, 560)]
@@ -288,7 +336,7 @@ SPAWN = [('wolf', 980, 650), ('wolf', 1030, 690), ('wolf', 950, 700), ('shroom',
 # ground, a grove of logs and mushrooms). A piece that lands on the road, water, a cliff or a monster camp is nudged a little,
 # or dropped (printed).
 PROPS[:] = [p for p in PROPS if p['kind'] == 'tree' and (p['y'] < 200 or p['x'] < 70 or p['x'] > W - 70)]
-SPW = SPAWN2 if T2 else SPAWN
+SPW = SPAWN3 if T3 else SPAWN2 if T2 else SPAWN
 BAD = dil(road, 18) | dil(bank, 8) | dil(FACE | RAMP, 10) | (yy < 150) | (yy > H - 40)
 if T2: BAD |= dil(deck, 6)
 for k_, x_, y_ in SPW: BAD |= ((xx - x_) / 46) ** 2 + ((yy - y_) / 32) ** 2 < 1
@@ -310,7 +358,48 @@ def H_(kind, name, h, x, y, flip=None, wet=False):
             return
     print('  dropped', name, x, y)
 TR = 'art/side/map30/tree.png'; ST = 'art/side/forest/small_tree.png'; RK = 'art/td/props/'
-if not T2:
+if T3:
+    DT = 'trees_autumn_3'
+    # dead trees that frame the clearings
+    for h, x, y in ((230, 180, 470), (205, 840, 450), (220, 1010, 530), (215, 1130, 1010), (200, 850, 1045), (220, 150, 1040),
+                    (205, 1720, 1000), (215, 1110, 250), (190, 1240, 885)):
+        H_('tree2', DT, h, x, y)
+    # the graveyard in the south-west: rows of headstones, a broken arch at the end of the road, statues, a low wall
+    for r_, y in enumerate((800, 868, 936, 1004)):
+        for c_ in range(5):
+            x = 232 + c_ * 62 + (r_ % 2) * 14
+            if (r_, c_) in ((1, 3), (2, 1), (3, 4)): H_('small', 'stones_%d' % (10, 8, 9)[r_ - 1], 30, x, y)      # a fallen one
+            else: H_('small', 'ruins_8', random.randint(54, 62), x + random.randint(-4, 4), y + random.randint(-4, 4))
+    for k, n, h, x, y in (('solid', 'ruins_1', 140, 610, 868), ('solid', 'ruins_5', 76, 200, 740), ('solid', 'ruins_4', 76, 560, 760), ('solid', 'ruins_6', 96, 130, 900),
+                          ('solid', 'ruins_2', 92, 600, 1010), ('small', 'stones_4', 34, 520, 990), ('small', 'logs2_4', 40, 170, 990)):
+        H_(k, n, h, x, y)
+    # the west plateau: a ruined shrine
+    for k, n, h, x, y in (('solid', 'ruins_1', 132, 500, 190), ('solid', 'ruins_0', 92, 330, 215), ('solid', 'ruins_0', 86, 690, 180), ('solid', 'ruins_6', 96, 820, 215),
+                          ('solid', 'ruins_4', 72, 590, 240), ('small', 'ruins_8', 60, 400, 262), ('small', 'ruins_8', 60, 760, 268)):
+        H_(k, n, h, x, y)
+    # the east plateau: broken pillars round the golems
+    for k, n, h, x, y in (('solid', 'ruins_0', 96, 1400, 478), ('solid', 'ruins_0', 90, 1640, 500), ('solid', 'ruins_2', 96, 1560, 440), ('solid', 'ruins_5', 72, 1450, 545),
+                          ('small', 'stones_2', 34, 1620, 560)):
+        H_(k, n, h, x, y)
+    # the shrine at the end of the north-east road
+    for k, n, h, x, y in (('solid', 'ruins_1', 136, 1640, 262), ('solid', 'ruins_5', 72, 1560, 222), ('small', 'ruins_8', 60, 1690, 330)): H_(k, n, h, x, y)
+    # big rocks and rock piles
+    for f, h, x, y, fl in (('rock0', 200, 330, 520, False), ('rock1', 170, 1010, 1000, True), ('rock2', 150, 1500, 760, False), ('rock3', 120, 1330, 210, True),
+                           ('rock3', 110, 760, 960, False), ('rock1', 150, 1010, 215, False)):
+        H_('rock', RK + f + '.png', h, x, y, fl)
+    for n, h, x, y in (('stones_0', 38, 470, 480), ('stones_1', 40, 1180, 420), ('stones_10', 40, 780, 700), ('stones_11', 38, 1600, 380), ('stones_12', 36, 960, 760),
+                       ('stones_5', 34, 250, 660), ('stones_2', 34, 1340, 760), ('stones_4', 34, 1230, 1040), ('stones_9', 36, 520, 420), ('stones_8', 30, 1420, 260),
+                       ('stones_1', 36, 90, 700), ('stones_0', 34, 1660, 1030), ('stones_10', 36, 900, 1020), ('stones_5', 32, 1440, 380)):
+        H_('small', n, h, x, y)
+    # dead wood, dry grass clumps
+    for n, h, x, y in (('logs2_4', 46, 980, 440), ('logs2_5', 52, 1140, 900), ('logs2_1', 52, 730, 380), ('logs2_0', 46, 1600, 660), ('logs2_5', 48, 300, 330),
+                       ('logs2_4', 42, 1380, 1050), ('logs2_2', 46, 880, 900), ('logs2_1', 50, 1760, 860)):
+        H_('small', n, h, x, y)
+    for n, h, x, y in (('bushes_6', 44, 120, 560), ('bushes_3', 44, 560, 660), ('bushes_7', 40, 1040, 720), ('bushes_8', 40, 1270, 620), ('bushes_6', 46, 1560, 1010),
+                       ('bushes_3', 42, 1250, 300), ('bushes_7', 40, 420, 620), ('bushes_8', 38, 850, 560), ('bushes_6', 44, 1690, 400), ('bushes_3', 40, 700, 820),
+                       ('bushes_7', 38, 1500, 880), ('bushes_8', 40, 1330, 1010), ('bushes_6', 42, 1180, 740), ('bushes_3', 40, 240, 1050)):
+        H_('bush', n, h, x, y)
+elif not T2:
     # trees that frame the clearings
     for n, h, x, y in (('trees_green_0', 240, 300, 470), ('trees_green_1', 225, 840, 520), ('trees_green_2', 215, 1250, 430), ('trees_green_0', 235, 1690, 660),
                        ('trees_green_3', 215, 1300, 925), ('trees_green_1', 220, 120, 1000), ('trees_green_3', 205, 470, 905), ('trees_green_2', 205, 1560, 1010)):
@@ -382,7 +471,7 @@ else:
                           ('small', 'stones_12', 34, 1620, 780), ('bush', 'bushes_5', 46, 430, 900)):
         H_(k, n, h, x, y)
 # dark tree crowns hanging over the bottom edge (drawn over everything)
-cr = fit(TREE, 300).crop((0, 0, 420, 140)); cr = autumn(cr, 99) if T2 else cr; ca = np.asarray(cr).copy(); ca[..., :3] = (ca[..., :3] * .5).astype(np.uint8); SPR[('crown', 0, 0)] = Image.fromarray(ca)
+cr = fit(TREE, 300).crop((0, 0, 420, 140)); cr = autumn(cr, 99) if T2 else wither(cr, 99) if T3 else cr; ca = np.asarray(cr).copy(); ca[..., :3] = (ca[..., :3] * .5).astype(np.uint8); SPR[('crown', 0, 0)] = Image.fromarray(ca)
 SPR[('crown', 0, 1)] = SPR[('crown', 0, 0)].transpose(Image.FLIP_LEFT_RIGHT)
 for i, x in enumerate(range(-60, W + 100, 330)):
     PROPS.append({'s': ('crown', 0, i % 2), 'x': x + random.randint(-30, 30), 'y': H + 70, 'kind': 'crown', 'over': True})
@@ -417,9 +506,9 @@ for _ in range(3200):
     if not okg[y, x]: continue
     r = random.random()
     if r < .55:
-        c = random.choice([(46, 108, 40), (118, 176, 70), (72, 144, 52)])
+        c = random.choice([(46, 108, 40), (118, 176, 70), (72, 144, 52)] if not T3 else [(98, 96, 60), (150, 142, 92), (74, 76, 52)])
         for dx in (-2, 0, 2): dr.line((x + dx, y, x + dx + random.choice((-1, 0, 1)), y - random.randint(3, 6)), fill=c)
-    elif r < .78: dr.rectangle((x, y, x + 1, y + 1), fill=random.choice([(196, 72, 40), (226, 140, 52), (176, 52, 40), (230, 210, 120)]))
+    elif r < .78: dr.rectangle((x, y, x + 1, y + 1), fill=random.choice([(196, 72, 40), (226, 140, 52), (176, 52, 40), (230, 210, 120)] if not T3 else [(206, 204, 190), (120, 116, 110), (176, 170, 150), (90, 84, 80)]))
     else: dr.ellipse((x, y, x + 3, y + 2), fill=(146, 140, 130)); dr.point((x + 1, y), fill=(198, 194, 184))
 for _ in range(500):                                       # stones on the road
     x, y = random.randrange(4, W - 4), random.randrange(4, H - 4)
@@ -431,6 +520,8 @@ def grade(a, k=1.0):
     o = g + (c - g) * .68
     gr = np.clip((o[..., 1] - np.maximum(o[..., 0], o[..., 2])) / 50, 0, 1); o[..., 0] += gr * 30; o[..., 1] -= gr * 6; o[..., 2] -= gr * 4
     o[..., 0] *= 1.03; o[..., 2] *= .88; o = o * .92 + 9
+    if T3:   # cold night-ish grade: greyer, blue in the darks, a little darker
+        g = o.mean(2, keepdims=True); o = g + (o - g) * .72; o[..., 0] *= .9; o[..., 1] *= .97; o[..., 2] *= 1.16; o = o * .93 + np.array([2, 5, 12])
     a[..., :3] = c + (o - c) * k; return np.clip(a, 0, 255).astype(np.uint8)
 ground = Image.fromarray(grade(np.asarray(base))).convert('RGB'); ground.save(OUT + 'ground.png', optimize=True)
 
@@ -438,15 +529,20 @@ ground = Image.fromarray(grade(np.asarray(base))).convert('RGB'); ground.save(OU
 drop = dil(UP, 4) & ~UP & ~FACE & ~RAMP
 blk |= pond | (FACE & ~RAMP) | drop
 if T2: blk |= RAIL
+blk0 = blk.copy()
 blk[:, :56] = blk[:, -56:] = True; blk[:140] = True; blk[-46:] = True
 EXITS = [{'x0': W - 60, 'y0': 700, 'x1': W, 'y1': 860, 'to': 'td2', 'label': 'ป่าใบไม้แดง →'}] if not T2 else [{'x0': 0, 'y0': 700, 'x1': 60, 'y1': 840, 'to': 'td1', 'label': '← ป่าเนินผา'}]
 ENTRIES = {'td2': [W - 100, 785]} if not T2 else {'td1': [100, 770]}
+if T3: EXITS = [{'x0': 0, 'y0': 540, 'x1': 60, 'y1': 680, 'to': 'td2', 'label': '← ป่าใบไม้แดง'}]; ENTRIES = {'td2': [100, 606]}
 for e in EXITS: gap = road & (xx >= e['x0'] - 8) & (xx < e['x1']) & (yy >= e['y0']) & (yy < e['y1']); blk[gap] = False   # open the border where the road leaves
+if T2:   # the south road stops just short of the east edge (the ground is not redrawn: td.html uses it): open the border there
+    e = {'x0': W - 60, 'y0': 850, 'x1': W, 'y1': 950, 'to': 'td3', 'label': 'สุสานซากหิน →'}; EXITS.append(e); ENTRIES['td3'] = [W - 100, 900]
+    gap = (xx >= e['x0'] - 12) & (yy >= e['y0']) & (yy < e['y1']); blk[gap] = blk0[gap]
 blk = ndimage.binary_opening(blk, iterations=1) | pond
 Image.fromarray((blk[::2, ::2] * 255).astype(np.uint8)).save(OUT + 'block.png', optimize=True)
 
 # ---- props atlas
-keys = list(SPR); at = []; X = Y = rowh = 0; AW = 2048
+keys = list(SPR) if not T3 else [k for k in SPR if any(p['s'] == k for p in PROPS)]; at = []; X = Y = rowh = 0; AW = 2048
 for k in sorted(keys, key=lambda k: -SPR[k].height):
     w, h = SPR[k].size
     if X + w > AW: X = 0; Y += rowh + 2; rowh = 0
@@ -480,11 +576,16 @@ for kk, s in MOBS.items():
         cl = sh2.crop((i * mm['w'], 0, (i + 1) * mm['w'], mm['h'])).resize((cw, chh), Image.LANCZOS); a = np.asarray(cl).copy(); a[..., 3] = (a[..., 3] > 110) * 255
         out.paste(Image.fromarray(a), (i * cw, 0))
     out.save(OUT + 'mob_%s.png' % kk, optimize=True); mobs[kk] = {'w': cw, 'h': chh, 'fx': round(mm['fx'] * k), 'fy': round(mm['fy'] * k), 'n': mm['n']}
-json.dump({'w': W, 'h': H, 'start': [120, 770] if T2 else [200, 705], 'props': props, 'hero': hero, 'mobs': mobs, 'spawn': SPAWN2 if T2 else SPAWN, 'bk': 2,
-           'exits': EXITS, 'entries': ENTRIES}, open(OUT + 'map.json', 'w'))
+J = {'w': W, 'h': H, 'start': [100, 606] if T3 else [120, 770] if T2 else [200, 705], 'props': props, 'hero': hero, 'mobs': mobs, 'spawn': SPW, 'bk': 2,
+     'exits': EXITS, 'entries': ENTRIES}
+if T3:
+    J['hpk'] = 1.8                                         # map.html: monster HP / damage / XP multiplier of this zone
+    for k_, x_, y_ in SPW:
+        if blk[y_, x_]: print('  spawn on a blocked spot', k_, x_, y_)
+json.dump(J, open(OUT + 'map.json', 'w'))
 # preview of the whole map
 pv = ground.convert('RGBA')
 for p in sorted(PROPS, key=lambda p: (p['over'], p['y'])):
     x, y, w, h = pos[p['s']]; pv.alpha_composite(atlas.crop((x, y, x + w, y + h)), (int(p['x'] - w / 2), int(p['y'] - h)))
-pv.convert('RGB').save('art/td/%s_preview.png' % ('map2' if T2 else 'map1'))
+pv.convert('RGB').save('art/td/%s_preview.png' % ('map3' if T3 else 'map2' if T2 else 'map1'))
 print('ok', len(PROPS), 'props', atlas.size, 'boulders', len(BOULDERS))
