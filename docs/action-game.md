@@ -1232,3 +1232,4 @@ bag.html attributes (owner 2026-11-13 "คุณสมบัติเกมย�
 
 ### 2026-11-13 item animation in bag.html (owner: "ให้ธนูอยู่บนหัวตัวละครแล้วยิงลูกธนูออกมา")
 - Code only, no credits. A non-melee item that fires pops up above its owner's head (`BT.wp`: pop, glow, recoil, fade), then its shot leaves from there (`BT.pj`): bow = an arrow drawn in code flying straight, wand = a purple orb with a trail, others = the icon thrown in an arc. Both sides. Melee items of rabbit / bear still use the attack clip; for the fox every item goes this way.
+- Later same day (owner: "ดาบก็ให้มีเอฟเฟคฟัน"): melee items (dagger, sword, axe, hammer) swing at the target with a crescent trail drawn in code (`BT.sl`, colour per weapon, bigger on a crit), on both sides; for the fox the blade appears at the enemy instead of being thrown.
