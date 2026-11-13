@@ -9,19 +9,19 @@ O = 'art/incoming/dogcat/pose/'; CW, CH = 384, 512; GY = 440
 COL = dict(head=(250, 210, 60), torso=(60, 110, 230), armF1=(230, 50, 50), armF2=(250, 140, 40), armB1=(150, 70, 200), armB2=(240, 120, 200),
            legF1=(40, 170, 70), legF2=(150, 220, 60), legB1=(20, 140, 150), legB2=(90, 210, 230), sword=(120, 120, 130))
 #        lean  armF(up,fore)  sword  armB(up,fore)  legF(up,low)  legB(up,low)  hip dx,dy     angles: 0 = right, 90 = down
-POSES = [( 0,  ( 60, -50), -125, (115,  70), ( 80, 95), (100, 95),   0,  0),      # 0 stand, sword on the shoulder
+POSES = [( 0,  ( 60, -50), -125, ( 150,  95), ( 80, 95), (100, 95),   0,  0),      # 0 stand, sword on the shoulder
          (-8,  (-70,-110), -150, (120,  60), ( 72,100), (108,100),  -4,  6),      # 1 lifts it
          (-14, (-110,-85), -100, (130,  40), ( 70,102), (112,102),  -8, 10),      # 2 wound up, sword high behind
-         ( 8,  (-45, -25),  -40, (140,  90), ( 62, 98), (116,104),   8,  6),      # 3 swing starts, step forward
+         ( 8,  (-60, -45),  -70, (140,  90), ( 62, 98), (116,104),   8,  6),      # 3 swing starts, step forward
          ( 18, ( 15,   5),   15, (150, 110), ( 55, 95), (124,108),  22,  8),      # 4 HIT: arm and sword straight ahead
-         ( 20, ( 55,  45),   75, (140, 100), ( 56, 96), (124,108),  24, 10),      # 5 follow-through, sword low
+         ( 20, ( 50,  40),   48, (140, 100), ( 56, 96), (124,108),  24, 10),      # 5 follow-through, sword low
          ( 8,  ( 70,  10),  -35, (125,  80), ( 70, 96), (110,100),  10,  4),      # 6 pulls back
          ( 0,  ( 60, -50), -125, (115,  70), ( 80, 95), (100, 95),   0,  0)]      # 7 stand again
 def pt(p, ang, l): return (p[0] + math.cos(math.radians(ang)) * l, p[1] + math.sin(math.radians(ang)) * l)
 def joints(pose):
-    lean, aF, sw, aB, lF, lB, dx, dy = pose; hip = (CW * .42 + dx, GY - 78 + dy); neck = pt(hip, -90 + lean, 62); head = pt(neck, -90 + lean * .6, 66)
+    lean, aF, sw, aB, lF, lB, dx, dy = pose; hip = (CW * .36 + dx, GY - 78 + dy); neck = pt(hip, -90 + lean, 62); head = pt(neck, -90 + lean * .6, 66)
     J = dict(hip=hip, neck=neck, head=head); sh = pt(hip, -90 + lean, 52)
-    J['elbF'] = pt(sh, aF[0], 40); J['handF'] = pt(J['elbF'], aF[1], 36); J['tip'] = pt(J['handF'], sw, 150)
+    J['elbF'] = pt(sh, aF[0], 40); J['handF'] = pt(J['elbF'], aF[1], 36); J['tip'] = pt(J['handF'], sw, 96)
     J['elbB'] = pt(sh, aB[0], 38); J['handB'] = pt(J['elbB'], aB[1], 32)
     J['kneeF'] = pt(hip, lF[0], 36); J['footF'] = (pt(J['kneeF'], lF[1], 40)[0], GY); J['kneeB'] = pt(hip, lB[0], 36); J['footB'] = (pt(J['kneeB'], lB[1], 40)[0], GY); J['sh'] = sh
     return J
