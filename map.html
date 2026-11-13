@@ -38,7 +38,8 @@ function move(o, dx, dy, r) {                      // slide along walls: x and y
 function resize() {
   const dpr = window.devicePixelRatio || 1, w = innerWidth, h = innerHeight;
   cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-  K = Math.max(1, Math.round(cv.height / 400)) * (typeof CHB !== 'undefined' && CHB && CHB.zoom || 1);   // ?hero=chibi128: the map twice as close     // about 400 map px tall on any screen, whole-number pixels
+  K = Math.max(1, Math.round(cv.height / 400)) * (typeof CHB !== 'undefined' && CHB && CHB.zoom || 1);
+  if (typeof CHB !== 'undefined' && CHB && CHB.hp) K = 2 * (+new URLSearchParams(location.search).get('px') || Math.max(1, Math.round(cv.height / 640)));   // chibi16: K = 2 x the screen pixels per hero pixel; default = hero about a fifth of the screen (wider view than zoom 2), &px=1..4 to choose   // ?hero=chibi128: the map twice as close     // about 400 map px tall on any screen, whole-number pixels
   VW = Math.ceil(cv.width / K); VH = Math.ceil(cv.height / K);
   const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const g = c.getContext('2d');
   const gr = g.createRadialGradient(c.width / 2, c.height / 2, c.height * .35, c.width / 2, c.height / 2, Math.hypot(c.width, c.height) * .62);
@@ -122,7 +123,7 @@ function shadow(x, y, w) { ctx.fillStyle = 'rgba(12,18,6,.38)'; ctx.beginPath();
 const CHQ = new URLSearchParams(location.search).get('hero');
 const CHB = CHQ === 'chibi2' ? {f: 'hero_chibi.png', w: 131, h: 141, fx: 65, fy: 139, s: 18} : CHQ === 'chibi' ? {f: 'hero_chibi_half.png', w: 65, h: 70, fx: 32, fy: 69, s: 11}
   : CHQ === 'chibi128' ? {f: 'hero_chibi256_half.png', w: 104, h: 132, fx: 52, fy: 131, s: 11, z: .5, zoom: 2}   // the 256 sheet halved (body ~125 art px), camera twice as close: one art pixel = half a map pixel
-  : CHQ === 'chibi16' ? {f: 'hero_chibi16.png', w: 113, h: 130, fx: 56, fy: 128, s: 11, z: .5, zoom: 2, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // the "16 bit" sheet (PixelLab B 128), 3 views: front / side / back
+  : CHQ === 'chibi16' ? {f: 'hero_chibi16.png', w: 113, h: 130, fx: 56, fy: 128, s: 11, z: .5, zoom: 2, hp: 1, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // the "16 bit" sheet (PixelLab B 128), 3 views: front / side / back
   : CHQ === 'chibi64' ? {f: 'hero_chibi64.png', w: 52, h: 66, fx: 26, fy: 64, s: 11, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // 16-bit sheet, PixelLab B at body 64: one art pixel = one map pixel, normal (wide) view
   : CHQ === 'chibi36' ? {f: 'hero_chibi36.png', w: 39, h: 39, fx: 19, fy: 37, s: 6} : CHQ === 'chibi36x2' ? {f: 'hero_chibi36.png', w: 39, h: 39, fx: 19, fy: 37, s: 11, z: 2} : null;   // 36 px test (PixelLab B at body 36); x2 = drawn with double-size pixels
 const CHV = [[2, 1], [1, 1], [0, 1], [1, -1], [2, -1], [3, -1], [3, 1], [3, 1]];
