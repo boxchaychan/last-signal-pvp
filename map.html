@@ -51,15 +51,21 @@ function spinHit(big) { let any = 0; const dm = Math.round(22 * (1 + (ST.lv - 1)
   FXS.push({ring: 1, x: P.x, y: P.y, t: 0, big: 1}); if (any) { HS = big ? .1 : .05; SHK = big ? 5 : 3; ST.combo++; ST.ct = 1.5; } }
 function kill(m) { m.dead = .35; m.re = 6; ST.kills++; const xp = Math.ceil(MHP[m.k] / 8); ST.xp += xp; NUM.push({x: m.x, y: m.y - 6, v: '+' + xp + ' XP', t: -.15, xp: 1}); while (ST.xp >= need()) { ST.xp -= need(); ST.lv++; ST.up = 1.6; P.hp = HPMAX(); } }
 function hurtHero(d) { if (P.dead || P.inv > 0) return; P.hp -= d; P.inv = .6; SHK = 3; NUM.push({x: P.x, y: P.y - 66, v: '-' + d, t: 0, red: 1}); if (P.hp <= 0) { P.hp = 0; P.dead = 2.4; P.atk = P.act = null; } else if (!P.act) { P.atk = null; P.act = {k: 'hurt', t: 0}; } }
-function startAtk(n) { P.atk = {n, i: 0, t: 0, hit: 0, end: 0}; }
-function doHit(s) {
-  let any = 0; const dm = Math.round(s.dmg * (1 + (ST.lv - 1) * .12));
-  for (const m of mobs) { if (m.dead) continue; const dx = (m.x - P.x) * P.face, dy = m.y - P.y;
-    if (dx > -14 && dx < s.rx && Math.abs(dy) < s.ry) { any = 1; m.hp -= dm; m.fl = .12; m.vx = P.face * s.kb; m.vy = dy * 1.5; m.ag = 6;
+function startAtk(n, v) { P.atk = {n, i: 0, t: 0, hit: 0, end: 0, v: v || ''}; }
+const CG = (c0, l) => l.map(x => ({f: c0 + x[0], t: x[1]}));   // up / down swings (PixelLab slash_n / slash_s, cells 140+ / 160+ of chibi_pl.png): 2 chained hits each
+const CV = {n: {st: [{f: CG(140, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .07]]), hit: 2, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 58, ry: 34},
+    {f: CG(140, [[9, .04], [10, .05], [11, .05], [12, .09], [13, .08]]), hit: 3, dmg: 28, lunge: 18, kb: 190, stop: .1, rx: 66, ry: 30, big: 1}], en: CG(140, [[14, .06], [15, .06], [16, .06]])},
+  s: {st: [{f: CG(160, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .07]]), hit: 2, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 58, ry: 34},
+    {f: CG(160, [[8, .04], [9, .05], [10, .05], [11, .1], [13, .08]]), hit: 3, dmg: 28, lunge: 18, kb: 190, stop: .1, rx: 66, ry: 30, big: 1}], en: CG(160, [[14, .06], [15, .06], [16, .06]])}};
+const atkV = (ix, iy) => !CV ? '' : Math.abs(iy) > .5 && Math.abs(ix) < .35 ? (iy < 0 ? 'n' : 's') : Math.abs(ix) > .2 ? '' : P.d === 6 ? 'n' : P.d === 2 ? 's' : '';   // which way a new swing goes: up / down clips (CV) or the side combo
+function doHit(s, v) {
+  let any = 0; const dm = Math.round(s.dmg * (1 + (ST.lv - 1) * .12)), vy = v === 'n' ? -1 : 1;
+  for (const m of mobs) { if (m.dead) continue; const dx = v ? (m.y - P.y) * vy * 1.5 : (m.x - P.x) * P.face, dy = v ? (m.x - P.x) * .62 : m.y - P.y;   // up / down swings: the same box turned (the ground is seen from above, so depth counts 1.5x)
+    if (dx > -14 && dx < s.rx && Math.abs(dy) < s.ry) { any = 1; m.hp -= dm; m.fl = .12; if (v) { m.vx = (m.x - P.x) * 1.5; m.vy = vy * s.kb * .7; } else { m.vx = P.face * s.kb; m.vy = dy * 1.5; } m.ag = 6;
       NUM.push({x: m.x, y: m.y - M.mobs[m.k].h, v: dm, t: 0, big: s.big});
       for (let k = 0; k < (s.big ? 9 : 5); k++) FXS.push({x: m.x, y: m.y - M.mobs[m.k].h * .5, vx: (Math.random() - .25) * 150 * P.face, vy: -Math.random() * 130, t: 0, c: s.big ? '#ffd24a' : '#eaf6ff'});
       if (m.hp <= 0) kill(m); } }
-  if (any) { HS = s.stop; SHK = s.big ? 5 : 2; ST.combo++; ST.ct = 1.5; FXS.push({ring: 1, x: P.x + P.face * 30, y: P.y, t: 0, big: s.big}); }
+  if (any) { HS = s.stop; SHK = s.big ? 5 : 2; ST.combo++; ST.ct = 1.5; FXS.push({ring: 1, x: P.x + (v ? 0 : P.face * 30), y: P.y + (v ? (v === 'n' ? -22 : 22) : 0), t: 0, big: s.big}); }
 }
 
 function blocked(x, y) {
@@ -139,15 +145,16 @@ function step(dt) {
     else if (a.k === 'spin') { const i = a.t / .05 | 0; if (i >= 6 && a.h < 1) { a.h = 1; spinHit(0); } if (i >= 10 && a.h < 2) { a.h = 2; spinHit(1); } if (a.t >= .8) P.act = null; }
     else if (a.t >= .3) P.act = null;
     ix = iy = 0; BUF = 0; }
-  if (!P.atk && BUF > 0 && CHB && CHB.run) { if (Math.abs(ix) > .2) P.face = ix > 0 ? 1 : -1; startAtk(0); }
+  if (!P.atk && BUF > 0 && CHB && CHB.run) { if (Math.abs(ix) > .2) P.face = ix > 0 ? 1 : -1; const v = atkV(ix, iy); if (v) P.d = v === 'n' ? 6 : 2; startAtk(0, v); }
   if (P.atk) {                                       // attacking: no walking, a short lunge, the next press chains
     const a = P.atk; a.t += dt; P.mv = 0;
-    if (a.end) { if (BUF > 0 && a.n < CSTEP.length - 1) { if (Math.abs(ix) > .2) P.face = ix > 0 ? 1 : -1; startAtk(a.n + 1); }
+    const TS = a.v ? CV[a.v].st : CSTEP, TE = a.v ? CV[a.v].en : CEND;
+    if (a.end) { if (BUF > 0 && a.n < TS.length - 1) { if (Math.abs(ix) > .2) P.face = ix > 0 ? 1 : -1; startAtk(a.n + 1, a.v); }
       else if (Math.hypot(ix, iy) > .3 && a.i >= 1) P.atk = null;
-      else if (a.t >= CEND[a.i].t) { a.t = 0; if (++a.i >= CEND.length) P.atk = null; } }
-    else { const s = CSTEP[a.n], tot = s.f.reduce((q, b) => q + b.t, 0); move(P, P.face * s.lunge / tot * dt * (a.i <= s.hit ? 1.7 : .3), 0, 7);
-      if (a.i >= s.hit && !a.hit) { a.hit = 1; doHit(s); }
-      if (a.t >= s.f[a.i].t) { a.t = 0; if (++a.i >= s.f.length) { if (BUF > 0 && a.n < CSTEP.length - 1) startAtk(a.n + 1); else { a.end = 1; a.i = 0; } } } }
+      else if (a.t >= TE[a.i].t) { a.t = 0; if (++a.i >= TE.length) P.atk = null; } }
+    else { const s = TS[a.n], tot = s.f.reduce((q, b) => q + b.t, 0), lg = s.lunge / tot * dt * (a.i <= s.hit ? 1.7 : .3); if (a.v) move(P, 0, (a.v === 'n' ? -1 : 1) * lg * .8, 7); else move(P, P.face * lg, 0, 7);
+      if (a.i >= s.hit && !a.hit) { a.hit = 1; doHit(s, a.v); }
+      if (a.t >= s.f[a.i].t) { a.t = 0; if (++a.i >= s.f.length) { if (BUF > 0 && a.n < TS.length - 1) startAtk(a.n + 1, a.v); else { a.end = 1; a.i = 0; } } } }
     ix = iy = 0;
   }
   const l = Math.hypot(ix, iy);
@@ -204,7 +211,7 @@ function drawHero() {
       const a = P.act, f = P.dead ? 80 + Math.min(7, (2.4 - P.dead) * 9 | 0) : a ? (a.k === 'roll' ? 90 + Math.min(7, a.t / .055 | 0) : a.k === 'spin' ? 120 + Math.min(15, a.t / .05 | 0) : 70 + Math.min(3, a.t / .075 | 0)) : P.mv ? (P.d === 6 ? 100 : 110) + (P.t * 13 | 0) % 8 : 60 + (P.t * 6 | 0) % 8;
       const side = P.dead || a || !P.mv; shadow(x, y, CHB.s); if (P.inv > 0 && !P.dead && !a && (P.inv * 14 | 0) % 2) ctx.globalAlpha = .55;
       ctx.save(); ctx.translate(x, y); ctx.scale((side ? P.face : 1) * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); ctx.globalAlpha = 1; return; }
-    if (CHB.run && P.atk) { const a = P.atk, f = (a.end ? CEND[a.i] : CSTEP[a.n].f[a.i]).f; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale(P.face * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
+    if (CHB.run && P.atk) { const a = P.atk, f = (a.end ? (a.v ? CV[a.v].en : CEND)[a.i] : (a.v ? CV[a.v].st : CSTEP)[a.n].f[a.i]).f; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale((a.v ? 1 : P.face) * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
     if (CHB.run && P.mv && v !== 0 && !(v === 2 && (P.d === 6))) { const f = (P.t * 13 | 0) % 8; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale(fl * .5, .5); ctx.drawImage(CHB.run, f * 204, 0, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
     shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y - b); ctx.scale(fl * (CHB.z || 1), CHB.z || 1); ctx.drawImage(CHB.im, v * CHB.w, 0, CHB.w, CHB.h, -CHB.fx, -CHB.fy, CHB.w, CHB.h); ctx.restore(); return; }
   const H = M.hero, sh = P.mv ? HR.run : HR.idle, fps = P.mv ? 13 : 7, f = (P.t * fps | 0) % 8;
