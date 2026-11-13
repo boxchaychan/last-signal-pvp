@@ -6,8 +6,9 @@ canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
 #l{left:16px}#r{left:96px}#j{right:100px}#a{right:16px;width:80px;height:80px;background:#ff6a3d55}
 #t{position:fixed;top:6px;left:8px;font-size:12px;opacity:.8;line-height:1.5}</style></head><body>
 <canvas id="c"></canvas>
-<div id="t">ทดสอบคอมโบ 3 จังหวะ · PC: A/D เดิน · J ตี (กดย้ำ) · K/Space กระโดด<br>ท่าทาง: Ozzbit Games (hero template ฟรี, ใช้ส่วนตัว ไม่ใช่เชิงพาณิชย์)</div>
-<div class="b" id="l">◀</div><div class="b" id="r">▶</div><div class="b" id="j">⤒</div><div class="b" id="a">⚔</div>
+<div id="t">ทดสอบคอมโบ 3 จังหวะ (ปุ่มขวาบน = สลับ กระดูกของเรา / เฟรม Ozzbit) · PC: A/D เดิน · J ตี (กดย้ำ) · K/Space กระโดด<br>ท่าทาง: Ozzbit Games (hero template ฟรี, ใช้ส่วนตัว ไม่ใช่เชิงพาณิชย์)</div>
+<div class="b" id="l">◀</div><div class="b" id="r">▶</div><div id="m" style="position:fixed;top:8px;right:8px;padding:8px 12px;border-radius:8px;background:#ffffff22;border:2px solid #ffffff66;font-size:13px"></div>
+<div class="b" id="j">⤒</div><div class="b" id="a">⚔</div>
 <script>
 // Combo test with the free Ozzbit Games hero template (personal / non-commercial, credit required).
 // The free pack has ONE slash (combo_1, 3 frames) + its recovery (combo_1_end, 4). The 3-hit chain is built from it:
@@ -16,6 +17,39 @@ const A='art/thirdparty/ozzbit_hero/',N={idle:10,run:10,jump:6,fall:4,fall_loop:
 for(const k in N){IMG[k]=new Image();IMG[k].src=A+k+'.png'}
 let SW=null; // the white swoosh alone (for drawing it bigger on the heavy hits)
 IMG.combo_1.onload=()=>{const c=document.createElement('canvas');c.width=384;c.height=128;const x=c.getContext('2d');x.drawImage(IMG.combo_1,0,0);const d=x.getImageData(0,0,384,128),a=d.data;for(let i=0;i<a.length;i+=4)if(Math.min(a[i],a[i+1],a[i+2])<225)a[i+3]=0;x.putImageData(d,0,0);SW=c};
+// ---- our own bone moves (art/poses/combo/sword_combo.json): key poses + in-betweens made by the code, every screen frame
+let BONE=null,MODE=localStorage.getItem('cb.mode')||'bone';const BS=.15,TR=[];
+fetch('art/poses/combo/sword_combo.json').then(r=>r.json()).then(j=>{BONE=j;P.pose=j.stand.slice()});
+const BG=[{dmg:10,lunge:26,kb:40,stop:.05,sc:1},{dmg:14,lunge:36,kb:60,stop:.06,sc:1.15,up:1},{dmg:30,lunge:44,kb:150,stop:.12,sc:1.7,slam:1}];
+const BCOL={head:'#fad23c',torso:'#3c6ee6',armF1:'#e63232',armF2:'#fa8c28',armB1:'#9646c8',armB2:'#f078c8',legF1:'#28aa46',legF2:'#96dc3c',legB1:'#148c96',legB2:'#5ad2e6',sword:'#dfe6f0'};
+function pt(p,a,l){a*=Math.PI/180;return[p[0]+Math.cos(a)*l,p[1]+Math.sin(a)*l]}
+function jointsOf(p){const hip=[p[10],0],J={hip,sh:pt(hip,-90+p[0],52),neck:pt(hip,-90+p[0],62)};J.head=pt(J.neck,-90+p[0]*.6,66);
+ J.elbF=pt(J.sh,p[1],40);J.handF=pt(J.elbF,p[2],36);J.tip=pt(J.handF,p[3],96);J.elbB=pt(J.sh,p[4],38);J.handB=pt(J.elbB,p[5],32);
+ J.kneeF=pt(hip,p[6],36);J.footF=pt(J.kneeF,p[7],40);J.kneeB=pt(hip,p[8],36);J.footB=pt(J.kneeB,p[9],40);
+ const low=Math.max(J.footF[1],J.footB[1])+p[11];for(const k in J)J[k]=[J[k][0]*BS,(J[k][1]-low)*BS];return J}
+function mix(a,b,k){return a.map((v,i)=>v+(b[i]-v)*k)}
+function ease(k,e){k=Math.max(0,Math.min(1,k));return e==='in'?k*k*k:e==='out'?1-(1-k)*(1-k):k*k*(3-2*k)}
+function runPose(t){const w=t*11,sF=Math.sin(w),sB=-sF,leg=(sw,ph)=>{const up=90-46*sw;return[up,up+12+58*Math.max(0,Math.cos(ph+.9))]},lf=leg(sF,w),lb=leg(sB,w+Math.PI);
+ return[14,90+52*sB,90+52*sB-78,-125+10*sF,90+52*sF,90+52*sF-78,lf[0],lf[1],lb[0],lb[1],0,6*Math.abs(Math.sin(w))]}
+function bonePose(dt){ // the pose to show when not attacking: blend toward it so nothing snaps
+ const st=BONE.stand;let to;
+ if(P.st==='run')to=runPose(P.t);else if(P.st==='jump')to=[-6,-40,-80,-120,200,150,40,120,110,150,0,0];else if(P.st==='fall')to=[8,-80,-100,-110,220,250,70,100,115,120,0,0];
+ else{to=st.slice();const b=Math.sin(P.t*3);to[6]-=3*b+3;to[7]+=4*b+4;to[8]+=3*b+3;to[9]+=4*b+4;to[1]+=3*b}
+ P.pose=P.st==='run'?mix(P.pose,to,Math.min(1,dt*30)):mix(P.pose,to,Math.min(1,dt*14))}
+function boneStart(n){P.st='atk';P.step=n;P.bt=0;P.hitDone=0;P.from=P.pose.slice();P.x+=P.d*P.pose[10]*BS;P.from[10]=0;for(const k of BONE.steps[n].keys)k._dx=k.p[10]-(n?BONE.steps[n-1].keys.at(-1).p[10]:0);if(key.l)P.d=-1;if(key.r)P.d=1}
+function boneAtk(dt){const S=BONE.steps[P.step],K=S.keys;P.bt+=dt;let a=P.from,t0=0,i=0;while(i<K.length-1&&P.bt>=K[i].t){a=K[i].p.slice();a[10]=K[i]._dx;t0=K[i].t;i++}
+ const b=K[i].p.slice();b[10]=K[i]._dx;P.pose=mix(a,b,ease((P.bt-t0)/(K[i].t-t0),K[i].e));
+ const h=K.find(k=>k.hit);if(P.bt>=h.t&&!P.hitDone){P.hitDone=1;P.x+=0;doHit(BG[P.step],P.pose[10]*BS)}
+ if(P.bt>=K.at(-1).t){if(P.buf>0&&P.step<2)boneStart(P.step+1);else{P.x+=P.d*P.pose[10]*BS;P.pose[10]=0;P.st='end';P.bt=0;P.from=P.pose.slice();if(P.step>=2)P.buf=0}}}
+function boneEnd(dt){P.bt+=dt;if(P.buf>0&&P.step<2&&P.bt<.2){boneStart(P.step+1);return}P.pose=mix(P.from,BONE.stand,ease(P.bt/.28));if(P.bt>=.28){P.st='idle';P.step=0;P.t=0}}
+function drawBone(x,y){const J=jointsOf(P.pose),d=P.d,X=k=>x+J[k][0]*d,Y=k=>y+J[k][1];
+ if(P.st==='atk'||P.st==='end'){TR.push({t:0,a:[X('tip'),Y('tip')],b:[x+(J.handF[0]*.45+J.tip[0]*.55)*d,(Y('handF')*.45+Y('tip')*.55)],on:P.st==='atk'})}
+ for(let i=1;i<TR.length;i++){const p=TR[i-1],q=TR[i];if(!p.on||!q.on||q.t>.1)continue;const sp=Math.hypot(q.a[0]-p.a[0],q.a[1]-p.a[1]);if(sp<1.2)continue;
+  g.globalAlpha=Math.max(0,1-q.t/.1);g.fillStyle=P.step===2?'#fff2b0':'#fff';g.beginPath();g.moveTo(p.a[0],p.a[1]);g.lineTo(q.a[0],q.a[1]);g.lineTo(q.b[0],q.b[1]);g.lineTo(p.b[0],p.b[1]);g.fill()}g.globalAlpha=1;
+ const seg=(a,b,c,w)=>{g.lineCap='round';g.strokeStyle='#14141a';g.lineWidth=w+2;g.beginPath();g.moveTo(X(a),Y(a));g.lineTo(X(b),Y(b));g.stroke();g.strokeStyle=BCOL[c];g.lineWidth=w;g.beginPath();g.moveTo(X(a),Y(a));g.lineTo(X(b),Y(b));g.stroke()};
+ seg('sh','elbB','armB1',2.4);seg('elbB','handB','armB2',2.4);seg('hip','kneeB','legB1',2.6);seg('kneeB','footB','legB2',2.6);seg('hip','neck','torso',6);seg('hip','kneeF','legF1',2.6);seg('kneeF','footF','legF2',2.6);
+ g.fillStyle='#14141a';g.beginPath();g.arc(X('head'),Y('head'),8.2,0,7);g.fill();g.fillStyle=BCOL.head;g.beginPath();g.arc(X('head'),Y('head'),7.2,0,7);g.fill();g.fillStyle='#14141a';g.fillRect(Math.round(X('head')+4*d)-1,Math.round(Y('head'))-1,2,3);
+ seg('handF','tip','sword',1.4);seg('sh','elbF','armF1',2.4);seg('elbF','handF','armF2',2.4)}
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,K;
 function rs(){K=Math.max(2,Math.round(innerHeight/130));W=cv.width=Math.ceil(innerWidth/K);H=cv.height=Math.ceil(innerHeight/K);g.imageSmoothingEnabled=false}rs();onresize=rs;
 const GY=()=>H-34;
@@ -25,21 +59,24 @@ const STEP=[
  {f:[['combo_1',2,.05],['combo_1',1,.07],['combo_1',0,.09]],hit:1,dmg:14,lunge:40,kb:60,stop:.06,sc:1.15,up:1},
  {f:[['jump',1,.06],['jump',3,.09],['fall',1,.07],['combo_1',0,.09],['combo_1',1,.08],['combo_1',2,.1]],hit:3,dmg:30,lunge:30,kb:150,stop:.12,sc:1.7,hop:14,slam:1}];
 const END=[['combo_1_end',0,.07],['combo_1_end',1,.07],['combo_1_end',2,.07],['combo_1_end',3,.07]];
-const P={x:60,y:0,vy:0,d:1,st:'idle',t:0,i:0,step:0,buf:0,hitDone:0},key={},FX=[],NUM=[];let D=[],stop=0,shake=0,cam=0,combo=0,comboT=0;
+const P={pose:null,bt:0,x:60,y:0,vy:0,d:1,st:'idle',t:0,i:0,step:0,buf:0,hitDone:0},key={},FX=[],NUM=[];let D=[],stop=0,shake=0,cam=0,combo=0,comboT=0;
 function spawn(){D=[];for(let i=0;i<4;i++)D.push({x:P.x+90+i*38+Math.random()*10,hp:60,vx:0,y:0,vy:0,fl:0})}spawn();
 function atk(){P.buf=.28}
-function startStep(n){P.st='atk';P.step=n;P.i=0;P.t=0;P.hitDone=0;if(key.l)P.d=-1;if(key.r)P.d=1}
-function doHit(s){
- const R=30*s.sc;let any=0;
- for(const m of D){const dx=(m.x-P.x)*P.d;if(dx>-6&&dx<R&&m.hp>0){any=1;m.hp-=s.dmg;m.vx=P.d*s.kb;m.fl=.12;if(s.up||s.slam)m.vy=-(s.slam?150:90);
+function startStep(n){if(MODE==='bone'&&BONE)return boneStart(n);P.st='atk';P.step=n;P.i=0;P.t=0;P.hitDone=0;if(key.l)P.d=-1;if(key.r)P.d=1}
+function doHit(s,off){
+ const R=30*s.sc;let any=0;off=off||0;
+ for(const m of D){const dx=(m.x-P.x)*P.d-off;if(dx>-6&&dx<R&&m.hp>0){any=1;m.hp-=s.dmg;m.vx=P.d*s.kb;m.fl=.12;if(s.up||s.slam)m.vy=-(s.slam?150:90);
   NUM.push({x:m.x,y:GY()-36,t:0,v:s.dmg,big:s.slam});for(let k=0;k<(s.slam?10:5);k++)FX.push({x:m.x,y:GY()-14,vx:(Math.random()-.2)*120*P.d,vy:-Math.random()*120,t:0,c:s.slam?'#ffd24a':'#fff'})}}
  if(any){stop=s.stop;shake=s.slam?5:2;combo++;comboT=1.2}
- if(s.slam){shake=Math.max(shake,4);for(let k=0;k<12;k++)FX.push({x:P.x+P.d*(8+k*3),y:GY(),vx:(Math.random()-.5)*90,vy:-Math.random()*70,t:0,c:'#c9b48a'})}}
+ if(s.slam){shake=Math.max(shake,4);for(let k=0;k<12;k++)FX.push({x:P.x+P.d*(off+8+k*3),y:GY(),vx:(Math.random()-.5)*90,vy:-Math.random()*70,t:0,c:'#c9b48a'})}}
 function step(dt){
  if(stop>0){stop-=dt;return}
  P.buf-=dt;comboT-=dt;if(comboT<=0)combo=0;
  const mv=(key.r?1:0)-(key.l?1:0),air=P.y<0;
- if(P.st==='atk'){const s=STEP[P.step],f=s.f[P.i];P.t+=dt;
+ for(const q of TR)q.t+=dt;while(TR.length&&TR[0].t>.15)TR.shift();
+ const B=MODE==='bone'&&BONE;
+ if(B&&P.st==='atk'){boneAtk(dt);P.y=0}else if(B&&P.st==='end')boneEnd(dt);
+ else if(P.st==='atk'){const s=STEP[P.step],f=s.f[P.i];P.t+=dt;
   const tot=s.f.reduce((a,b)=>a+b[2],0);P.x+=P.d*s.lunge/tot*dt*(P.i<=s.hit?1.6:.4);
   if(s.hop){const k=(s.f.slice(0,P.i).reduce((a,b)=>a+b[2],0)+P.t)/s.f.slice(0,s.hit).reduce((a,b)=>a+b[2],0);P.y=k<1?-s.hop*4*k*(1-k):0}
   if(P.i>=s.hit&&!P.hitDone){P.hitDone=1;doHit(s)}
@@ -49,12 +86,13 @@ function step(dt){
   if(key.j&&!air){P.vy=-190;key.j=0}
   P.vy+=520*dt;P.y+=P.vy*dt;if(P.y>=0){P.y=0;P.vy=0}
   P.st=P.y<0?(P.vy<0?'jump':'fall'):mv?'run':'idle';P.t+=dt;
+  if(B)bonePose(dt);
   if(P.buf>0&&P.y>=0)startStep(0)}
  for(const m of D){m.x+=m.vx*dt;m.vx*=Math.pow(.02,dt);m.vy+=520*dt;m.y+=m.vy*dt;if(m.y>0){m.y=0;m.vy=0}m.fl-=dt}
  D=D.filter(m=>m.hp>0||m.fl>-.25);if(!D.some(m=>m.hp>0)&&!D.length)spawn();
  for(const f of FX){f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=300*dt}for(const n of NUM)n.t+=dt;
  while(FX.length&&FX[0].t>.5)FX.shift();while(NUM.length&&NUM[0].t>.7)NUM.shift();
- shake*=Math.pow(.001,dt);cam+=(P.x-W*.35-cam)*Math.min(1,dt*6)}
+ shake*=Math.pow(.001,dt);cam+=(P.x+(MODE==='bone'&&P.pose&&P.st==='atk'?P.d*P.pose[10]*BS:0)-W*.35-cam)*Math.min(1,dt*6)}
 function frameOf(){if(P.st==='atk'){const f=STEP[P.step].f[P.i];return[f[0],f[1],STEP[P.step]]}
  if(P.st==='end')return['combo_1_end',P.i];if(P.st==='run')return['run',Math.floor(P.t*14)%10];
  if(P.st==='jump')return['jump',Math.min(5,2+Math.floor(P.t*10)%4)];if(P.st==='fall')return['fall_loop',Math.floor(P.t*10)%3];return['idle',Math.floor(P.t*9)%10]}
@@ -66,11 +104,11 @@ function draw(){
  for(const m of D){const x=Math.round(m.x),y=Math.round(gy+m.y),dead=m.hp<=0;g.globalAlpha=dead?Math.max(0,1+m.fl*4):1;
   g.fillStyle=m.fl>0?'#fff':'#b5533c';g.fillRect(x-6,y-22,12,22);g.fillStyle=m.fl>0?'#fff':'#e0c9a0';g.fillRect(x-5,y-30,10,9);
   if(!dead){g.fillStyle='#000';g.fillRect(x-8,y-36,16,3);g.fillStyle='#6fe06a';g.fillRect(x-7,y-35,Math.max(0,14*m.hp/60),1)}g.globalAlpha=1}
- const [k,i,s]=frameOf(),im=IMG[k];if(im.complete&&im.width){const sc=s&&P.i>=s.hit-0&&k==='combo_1'?s.sc:1,x=Math.round(P.x),y=Math.round(gy+P.y);
+ if(MODE==='bone'&&BONE)drawBone(Math.round(P.x),Math.round(gy+P.y));else{const [k,i,s]=frameOf(),im=IMG[k];if(im.complete&&im.width){const sc=s&&P.i>=s.hit-0&&k==='combo_1'?s.sc:1,x=Math.round(P.x),y=Math.round(gy+P.y);
   g.save();g.translate(x,y);g.scale(P.d,1);
   if(sc>1){ // bigger swoosh only: draw the frame scaled around the feet, then the body again at 1x on top
    if(SW){g.save();g.scale(sc,s.up?-sc*.9:sc);if(s.up)g.translate(0,34);g.drawImage(SW,i*128,0,128,128,-63,-80,128,128);g.restore()}}
-  g.drawImage(im,i*128,0,128,128,-63,-80,128,128);g.restore()}
+  g.drawImage(im,i*128,0,128,128,-63,-80,128,128);g.restore()}}
  for(const f of FX){g.fillStyle=f.c;g.globalAlpha=1-f.t*2;g.fillRect(Math.round(f.x),Math.round(f.y),2,2)}g.globalAlpha=1;
  g.textAlign='center';for(const n of NUM){g.font='bold '+(n.big?14:9)+'px monospace';g.fillStyle='#000';g.fillText(n.v,n.x+1,n.y-n.t*30+1);g.fillStyle=n.big?'#ffd24a':'#fff';g.fillText(n.v,n.x,n.y-n.t*30)}
  g.restore();
@@ -82,5 +120,7 @@ onkeydown=e=>{const k=e.key.toLowerCase();if(k==='j'||k==='z'||k==='x'){if(!e.re
 onkeyup=e=>{const k=KM[e.key.toLowerCase()];if(k)key[k]=0};
 for(const [id,k] of [['l','l'],['r','r']]){const b=document.getElementById(id);b.onpointerdown=e=>{key[k]=1;e.preventDefault()};b.onpointerup=b.onpointercancel=b.onpointerleave=()=>key[k]=0}
 document.getElementById('j').onpointerdown=e=>{key.j=1;e.preventDefault()};document.getElementById('a').onpointerdown=e=>{atk();e.preventDefault()};
-window.CB={P,atk,step,draw,STEP,get D(){return D}};
+const MB=document.getElementById('m');function mlab(){MB.textContent=MODE==='bone'?'🦴 กระดูกของเรา (แตะสลับ)':'🎞 เฟรม Ozzbit (แตะสลับ)'}mlab();
+MB.onpointerdown=e=>{if(P.st==='atk'||P.st==='end')return;MODE=MODE==='bone'?'frames':'bone';localStorage.setItem('cb.mode',MODE);mlab();e.preventDefault()};
+window.CB={get MODE(){return MODE},P,atk,step,draw,STEP,get D(){return D}};
 </script></body></html>
