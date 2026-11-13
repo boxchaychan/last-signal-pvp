@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>แมพ 1 ลองเดิน</title>
+<title>เก็บเลเวล</title>
 <style>
   html, body { margin: 0; height: 100%; background: #10140c; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
@@ -17,9 +17,13 @@
 </head>
 <body>
 <canvas id="cv"></canvas>
-<div id="hint">เดิน: WASD / ลูกศร · ฟัน: J / Space (กดย้ำ = คอมโบ) · หมุนฟัน: K · กลิ้งหลบ: L / Shift · มือถือ: ลากนิ้วเดิน ปุ่ม ⚔ 🌀 💨</div>
+<div id="hint">เดิน: WASD / ลูกศร · ฟัน: J / Space (กดย้ำ = คอมโบ) · หมุนฟัน: K · กลิ้งหลบ: L / Shift · อัปเกรด: U / 🛒 · มือถือ: ลากนิ้วเดิน ปุ่ม ⚔ 🌀 💨</div>
 <button id="fs" title="เต็มจอ">⛶</button>
 <button id="atk" title="ฟัน">⚔</button><button id="spin" title="หมุนฟัน">🌀</button><button id="roll" title="กลิ้งหลบ">💨</button><button id="sw" title="เปลี่ยนตัวละคร" style="position:fixed;left:10px;bottom:10px;z-index:5;height:38px;padding:0 12px;border-radius:10px;border:2px solid #0008;background:#3a2c58;color:#fff;font:600 13px system-ui">👤 เปลี่ยนตัว</button>
+<button id="shop" title="อัปเกรด (U)" style="position:fixed;left:10px;bottom:56px;z-index:5;height:38px;padding:0 12px;border-radius:10px;border:2px solid #0008;background:#7a5a18;color:#fff;font:600 13px system-ui">🛒 อัปเกรด</button>
+<div id="pan" style="display:none;position:fixed;inset:0;z-index:9;background:#000a;place-items:center"><div style="background:#1c2414;border:2px solid #f4ecd088;border-radius:14px;padding:12px 16px;color:#f4ecd0;font:600 14px/1.5 system-ui,sans-serif;min-width:310px;max-height:92vh;overflow:auto">
+<div id="pg" style="font-size:17px;margin-bottom:6px"></div><div id="pl"></div>
+<div style="display:flex;justify-content:space-between;margin-top:10px"><button id="prs" style="height:34px;padding:0 10px;border-radius:8px;border:0;background:#5a2a22;color:#fff;font:600 12px system-ui">เริ่มใหม่ทั้งหมด</button><button id="pcl" style="height:34px;padding:0 22px;border-radius:8px;border:0;background:#3a6a2a;color:#fff;font:700 14px system-ui">เล่นต่อ</button></div></div></div>
 <div id="load">กำลังโหลดแมพ…</div>
 <script>
 // Map 1 walk test (owner 2026-11-11 "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู"). Assets from tools/art/td_map.py (art/td/map1/):
@@ -46,17 +50,40 @@ let CEND = CF([[33, .06], [35, .06], [36, .06], [38, .06], [40, .06]]);
 const MHP0 = {wolf: 34, shroom: 22, skeleton: 46, boar_guard: 80, goblin_archer: 30, golem: 130, wisp: 20};
 let MHP = MHP0;                                     // this map's monster HP (map.json `hpk` makes a zone stronger)
 const NUM = [], FXS = []; let HS = 0, SHK = 0, BUF = 0;
-const ST = {lv: 1, xp: 0, kills: 0, combo: 0, ct: 0, up: 0};
+// ---- grinding loop (owner 2026-11-13 "ทำเกมเก็บเลเวลต่อ"): progress is saved in the browser (level, XP, gold, upgrades; shared by both heroes, kept across
+// maps and the hero swap), monsters drop gold + hearts, 1 in 8 is an elite, gold buys 3 plain upgrades (🛒), and every map has a boss with red ground warnings.
+const SVK = 'ls_grind1', SV = (() => { try { return /[?&]new=1/.test(location.search) ? {} : JSON.parse(localStorage.getItem(SVK)) || {}; } catch (e) { return {}; } })();
+const ST = {lv: SV.lv || 1, xp: SV.xp || 0, kills: SV.kills || 0, gold: SV.gold || 0, u: Object.assign({a: 0, h: 0, c: 0}, SV.u), combo: 0, ct: 0, up: 0};
+let DIRTY = 0, PAUSE = 0, CRIT = 0, BOSS = null, BK = 0, BNEED = 12, MSG = null; const DRP = [], HZ = [];
+function save() { DIRTY = 0; try { localStorage.setItem(SVK, JSON.stringify({lv: ST.lv, xp: ST.xp, kills: ST.kills, gold: ST.gold, u: ST.u})); } catch (e) {} }
+function DM(b) { CRIT = Math.random() < .05 + ST.u.c * .04 ? 1 : 0; return Math.round(b * (1 + (ST.lv - 1) * .12) * (1 + ST.u.a * .1) * (CRIT ? 2 : 1)); }   // one roll per swing
+const MH = m => M.mobs[m.k].h * (m.sc || 1);
+const BOSSD = {td1: {k: 'boar_guard', n: 'จ่าฝูงหมูป่า', sc: 1.7, hp: 600, dm: 18}, td2: {k: 'golem', n: 'โกเลมใบไม้แดง', sc: 1.6, hp: 1400, dm: 28}, td3: {k: 'golem', n: 'ราชาสุสานหิน', sc: 1.9, hp: 3200, dm: 45}};
+function mkMob(k, x, y) { const el = Math.random() < .12 ? 1 : 0, mh = Math.round(MHP[k] * (el ? 2.5 : 1));   // elite: bigger, 2.5x HP, hits harder, more XP / gold, often a heart
+  return {hp: mh, mh, el, sc: el ? 1.25 : 1, r: el ? 6 : 0, dm: Math.max(3, Math.round(MHP[k] / 9 * (el ? 1.5 : 1))), vx: 0, vy: 0, fl: 0, ag: 0, at: 0, dead: 0, gone: 0, k, x, y, hx: x, hy: y, tx: x, ty: y, w: 1 + Math.random() * 2, f: Math.random() > .5 ? 1 : -1, t: Math.random() * 3, mv: 0}; }
+function drop(k, m, v) { DRP.push({k, v, x: m.x, y: m.y - 4, vx: (Math.random() - .5) * 190, vy: (Math.random() - .5) * 120, t: 0, pt: 0}); }
+function spawnBoss() { const B = BOSSD[MAPID]; if (!B || !M.mobs[B.k]) return; let x = P.x, y = P.y;
+  for (let i = 0; i < 24; i++) { const a = i * 2.4, r = 170 - (i / 8 | 0) * 40, tx = P.x + Math.cos(a) * r, ty = P.y + Math.sin(a) * r * .6; if (free(tx, ty, 16)) { x = tx; y = ty; break; } }
+  BOSS = Object.assign(mkMob(B.k, x, y), {boss: 1, el: 0, name: B.n, hp: B.hp, mh: B.hp, sc: B.sc, r: 22, dm: Math.round(B.dm * .5), ag: 1e9, born: 1.2, bt: 2.2, bn: 0, cast: 0}); mobs.push(BOSS); MSG = {s: '⚠ บอสปรากฏ: ' + B.n, t: 3, red: 1}; SHK = 6; }
+function bossAtk(m) { const B = BOSSD[MAPID], n = m.bn++ % 4, rage = m.hp < m.mh * .4 ? .8 : 1, hz = (x, y, r, T) => HZ.push({x, y, r, t: 0, T: T * rage, d: B.dm});   // red areas on the ground: get out before they go off (rolling through works too)
+  if (n === 3) hz(m.x, m.y, 125, 1.25);                       // burst round the boss
+  else if (n === 1) { hz(P.x, P.y, 50, .9); for (let i = 0; i < 2; i++) { const a = Math.random() * 6.28; hz(P.x + Math.cos(a) * 95, P.y + Math.sin(a) * 60, 50, 1.1 + i * .2); } }   // three small ones
+  else hz(P.x, P.y, 66, .85);                                 // one under the hero
+  m.cast = .9 * rage; m.bt = (n === 3 ? 3 : 2.4) * rage; }
 const need = () => 20 + ST.lv * 15;
 function attack() { BUF = .3; }
-const HPMAX = () => 100 + (ST.lv - 1) * 15, CD = {spin: 0, roll: 0};
+const HPMAX = () => 100 + (ST.lv - 1) * 15 + ST.u.h * 25, CD = {spin: 0, roll: 0};
 function act(k) { if (P.dead || P.act || !(CHB && CHB.run)) return; if (CD[k] > 0) return; if (k === 'spin' && P.atk && !P.atk.end) return; P.atk = null; BUF = 0; P.act = {k, t: 0, h: 0}; CD[k] = k === 'spin' ? (CHB.dg ? 4 : 5) : (CHB.dg ? .7 : 1.1); if (k === 'roll') P.inv = .45; }
-function spinHit(big) { let any = 0; const dm = Math.round(22 * (1 + (ST.lv - 1) * .12));
-  for (const m of mobs) { if (m.dead || m.gone) continue; const dx = m.x - P.x, dy = (m.y - P.y) * 1.6, d = Math.hypot(dx, dy); if (d < 78) { any = 1; m.hp -= dm; m.fl = .12; m.vx = dx / (d || 1) * (big ? 220 : 90); m.vy = dy / (d || 1) * (big ? 130 : 50); m.ag = 6;
-    NUM.push({x: m.x, y: m.y - M.mobs[m.k].h, v: dm, t: 0, big}); for (let k = 0; k < 6; k++) FXS.push({x: m.x, y: m.y - M.mobs[m.k].h * .5, vx: (Math.random() - .5) * 200, vy: -Math.random() * 130, t: 0, c: '#bfe9ff'}); if (m.hp <= 0) kill(m); } }
+function spinHit(big) { let any = 0; const dm = DM(22);
+  for (const m of mobs) { if (m.dead || m.gone) continue; const dx = m.x - P.x, dy = (m.y - P.y) * 1.6, d = Math.hypot(dx, dy); if (d < 78 + (m.r || 0)) { any = 1; m.hp -= dm; m.fl = .12; m.vx = dx / (d || 1) * (big ? 220 : 90); m.vy = dy / (d || 1) * (big ? 130 : 50); m.ag = 6;
+    NUM.push({x: m.x, y: m.y - MH(m), v: dm, t: 0, big: big || CRIT}); for (let k = 0; k < 6; k++) FXS.push({x: m.x, y: m.y - MH(m) * .5, vx: (Math.random() - .5) * 200, vy: -Math.random() * 130, t: 0, c: '#bfe9ff'}); if (m.hp <= 0) kill(m); } }
   FXS.push({ring: 1, x: P.x, y: P.y, t: 0, big: 1}); if (any) { HS = big ? .1 : .05; SHK = big ? 5 : 3; ST.combo++; ST.ct = 1.5; } }
-function kill(m) { m.dead = .35; m.re = 6; ST.kills++; const xp = Math.ceil(MHP[m.k] / 8); ST.xp += xp; NUM.push({x: m.x, y: m.y - 6, v: '+' + xp + ' XP', t: -.15, xp: 1}); while (ST.xp >= need()) { ST.xp -= need(); ST.lv++; ST.up = 1.6; P.hp = HPMAX(); } }
-function hurtHero(d) { if (P.dead || P.inv > 0) return; P.hp -= d; P.inv = .6; SHK = 3; NUM.push({x: P.x, y: P.y - 66, v: '-' + d, t: 0, red: 1}); if (P.hp <= 0) { P.hp = 0; P.dead = 2.4; P.atk = P.act = null; } else if (!P.act) { P.atk = null; P.act = {k: 'hurt', t: 0}; } }
+function kill(m) { m.dead = .35; m.re = m.boss ? 1e9 : 6; ST.kills++; const xp = Math.ceil(m.mh / 8 * (m.el || m.boss ? 1.5 : 1)); ST.xp += xp; NUM.push({x: m.x, y: m.y - 6, v: '+' + xp + ' XP', t: -.15, xp: 1});
+  const g = Math.ceil(m.mh / 10) * (m.el ? 2 : 1), n = Math.min(m.boss ? 24 : 6, Math.max(1, g / 3 | 0)), q = g / n | 0; for (let i = 0; i < n; i++) drop('g', m, i ? q : g - q * (n - 1));
+  if (m.boss || Math.random() < (m.el ? .5 : .1)) for (let i = 0; i < (m.boss ? 3 : 1); i++) drop('h', m, 0);
+  if (m.boss) { BOSS = null; BK = 0; BNEED = 15; HZ.length = 0; MSG = {s: 'ชนะบอส!  ' + m.name, t: 3.5}; SHK = 9; } else if (!BOSS) BK++;
+  while (ST.xp >= need()) { ST.xp -= need(); ST.lv++; ST.up = 1.6; P.hp = HPMAX(); } save(); }
+function hurtHero(d) { if (P.dead || P.inv > 0) return; P.hp -= d; P.inv = .6; P.ht = 5; SHK = 3; NUM.push({x: P.x, y: P.y - 66, v: '-' + d, t: 0, red: 1}); if (P.hp <= 0) { P.hp = 0; P.dead = 2.4; P.atk = P.act = null; } else if (!P.act) { P.atk = null; P.act = {k: 'hurt', t: 0}; } }
 function startAtk(n, v) { P.atk = {n, i: 0, t: 0, hit: 0, end: 0, v: v || ''}; }
 const CG = (c0, l) => l.map(x => ({f: c0 + x[0], t: x[1]}));   // up / down swings (PixelLab slash_n / slash_s, cells 140+ / 160+ of chibi_pl.png): 2 chained hits each
 const CV = {n: {st: [{f: CG(140, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .07]]), hit: 2, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 58, ry: 34},
@@ -66,11 +93,11 @@ const CV = {n: {st: [{f: CG(140, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .0
 const atkV = (ix, iy) => !CV || (CHB && CHB.noV) ? '' : Math.abs(iy) > .5 && Math.abs(ix) < .35 ? (iy < 0 ? 'n' : 's') : Math.abs(ix) > .2 ? '' : P.d === 6 ? 'n' : P.d === 2 ? 's' : '';   // which way a new swing goes: up / down clips (CV) or the side combo
 function doHit(s, v) {
   if (s.fx && SPR[s.fx[0]]) FXS.push({spr: s.fx[0], sc: s.fx[1], x: P.x + P.face * s.fx[2], y: P.y + s.fx[3], face: P.face, t: 0});
-  let any = 0; const dm = Math.round(s.dmg * (1 + (ST.lv - 1) * .12)), vy = v === 'n' ? -1 : 1;
+  let any = 0; const dm = DM(s.dmg), vy = v === 'n' ? -1 : 1;
   for (const m of mobs) { if (m.dead) continue; const dx = v ? (m.y - P.y) * vy * 1.5 : (m.x - P.x) * P.face, dy = v ? (m.x - P.x) * .62 : m.y - P.y;   // up / down swings: the same box turned (the ground is seen from above, so depth counts 1.5x)
-    if (dx > -14 && dx < s.rx && Math.abs(dy) < s.ry) { any = 1; m.hp -= dm; m.fl = .12; if (v) { m.vx = (m.x - P.x) * 1.5; m.vy = vy * s.kb * .7; } else { m.vx = P.face * s.kb; m.vy = dy * 1.5; } m.ag = 6;
-      NUM.push({x: m.x, y: m.y - M.mobs[m.k].h, v: dm, t: 0, big: s.big});
-      for (let k = 0; k < (s.big ? 9 : 5); k++) FXS.push({x: m.x, y: m.y - M.mobs[m.k].h * .5, vx: (Math.random() - .25) * 150 * P.face, vy: -Math.random() * 130, t: 0, c: s.big ? '#ffd24a' : '#eaf6ff'});
+    if (dx > -14 - (m.r || 0) && dx < s.rx + (m.r || 0) && Math.abs(dy) < s.ry + (m.r || 0)) { any = 1; m.hp -= dm; m.fl = .12; if (v) { m.vx = (m.x - P.x) * 1.5; m.vy = vy * s.kb * .7; } else { m.vx = P.face * s.kb; m.vy = dy * 1.5; } m.ag = 6;
+      NUM.push({x: m.x, y: m.y - MH(m), v: dm, t: 0, big: s.big || CRIT});
+      for (let k = 0; k < (s.big ? 9 : 5); k++) FXS.push({x: m.x, y: m.y - MH(m) * .5, vx: (Math.random() - .25) * 150 * P.face, vy: -Math.random() * 130, t: 0, c: s.big ? '#ffd24a' : '#eaf6ff'});
       if (m.hp <= 0) kill(m); } }
   if (any) { HS = s.stop; SHK = s.big ? 5 : 2; ST.combo++; ST.ct = 1.5; FXS.push({ring: 1, x: P.x + (v ? 0 : P.face * 30), y: P.y + (v ? (v === 'n' ? -22 : 22) : 0), t: 0, big: s.big}); }
 }
@@ -109,8 +136,8 @@ async function loadMap(id, from) {                   // everything of one map is
   MHP = {}; for (const k in MHP0) MHP[k] = Math.round(MHP0[k] * (M.hpk || 1));
   const at = from && M.entries && M.entries[from] || M.start; M.start = at.slice();   // falling here = back at the gate he came in by
   P.x = at[0]; P.y = at[1]; P.atk = P.act = null; NUM.length = FXS.length = 0;
-  mobs = M.spawn.map(([k, x, y], i) => ({hp: MHP[k], vx: 0, vy: 0, fl: 0, k, x, y, hx: x, hy: y, tx: x, ty: y, w: 1 + Math.random() * 2, f: Math.random() > .5 ? 1 : -1, t: Math.random() * 3, mv: 0}));
-  document.title = MAPS[id].name + ' · ลองเดิน'; BAN = 3;
+  mobs = M.spawn.map(([k, x, y]) => mkMob(k, x, y)); BOSS = null; BK = 0; BNEED = 12; HZ.length = DRP.length = 0;
+  document.title = MAPS[id].name + ' · เก็บเลเวล'; BAN = 3;
   if (VW) { cam.x = P.x - VW / 2; cam.y = P.y - VH / 2; }
 }
 function travel(to) {                                // fade out, load, fade in
@@ -129,7 +156,7 @@ async function boot() {
 }
 
 // ---- input
-addEventListener('keydown', e => { keys[e.code] = 1; if (e.code === 'KeyB') dbg = !dbg; if ((e.code === 'KeyJ' || e.code === 'Space') && !e.repeat) { attack(); e.preventDefault(); } if (e.code === 'KeyK' && !e.repeat) act('spin'); if ((e.code === 'KeyL' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) act('roll'); });
+addEventListener('keydown', e => { keys[e.code] = 1; if (e.code === 'KeyB') dbg = !dbg; if (e.code === 'KeyU' || (e.code === 'Escape' && PAUSE)) shop(!PAUSE); if ((e.code === 'KeyJ' || e.code === 'Space') && !e.repeat) { attack(); e.preventDefault(); } if (e.code === 'KeyK' && !e.repeat) act('spin'); if ((e.code === 'KeyL' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) act('roll'); });
 for (const k of ['spin', 'roll']) document.getElementById(k).addEventListener('pointerdown', e => { act(k); e.preventDefault(); e.stopPropagation(); });
 document.getElementById('atk').addEventListener('pointerdown', e => { attack(); e.preventDefault(); e.stopPropagation(); });
 addEventListener('keyup', e => { keys[e.code] = 0; });
@@ -152,7 +179,8 @@ function step(dt) {
   for (const n of NUM) n.t += dt; while (NUM.length && NUM[0].t > .8) NUM.shift();
   for (const f of FXS) { f.t += dt; if (!f.ring && !f.spr) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 380 * dt; } } while (FXS.length && FXS[0].t > (FXS[0].spr ? 1 : .45)) FXS.shift();
   SHK *= Math.pow(.002, dt); ST.ct -= dt; if (ST.ct <= 0) ST.combo = 0; ST.up -= dt; BUF -= dt;
-  BAN -= dt;
+  BAN -= dt; if (MSG && (MSG.t -= dt) <= 0) MSG = null; if (DIRTY && (DIRTY += dt) > 3) save();
+  if (PAUSE) return;
   if (TRV) { TRV.t += dt; if (TRV.ok && TRV.t > .25) { TRV.out = (TRV.out || 0) + dt; if (TRV.out > .3) TRV = null; } return; }   // the world stands still while the next map loads
   if (HS > 0) { HS -= dt; return; }
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
@@ -162,7 +190,17 @@ function step(dt) {
     if (l > R) { joy.x0 = joy.x - dx / l * R; joy.y0 = joy.y - dy / l * R; }   // the base follows the finger
     if (l > 8) { ix = dx / Math.max(l, R); iy = dy / Math.max(l, R); }
   }
-  if (P.face === undefined) { P.face = 1; P.hp = HPMAX(); P.inv = 0; }
+  if (P.face === undefined) { P.face = 1; P.hp = HPMAX(); P.inv = 0; P.ht = 0; }
+  if (!P.dead) { P.ht -= dt; if (P.ht <= 0 && P.hp < HPMAX()) P.hp = Math.min(HPMAX(), P.hp + HPMAX() * .03 * dt); }   // out of a fight for 5 s: HP comes back slowly
+  for (let i = DRP.length - 1; i >= 0; i--) { const d = DRP[i]; d.t += dt; const dx = P.x - d.x, dy = P.y - 12 - d.y, l = Math.hypot(dx, dy) || 1;   // drops: scatter, then fly to the hero when he is near
+    if (d.t < .35) { const k = Math.pow(.01, dt); d.x += d.vx * dt; d.y += d.vy * dt; d.vx *= k; d.vy *= k; }
+    else if (!P.dead && (d.pull || l < 120)) { d.pull = 1; d.pt += dt; const sp = Math.min(l, (150 + d.pt * 700) * dt); d.x += dx / l * sp; d.y += dy / l * sp;
+      if (l < 12) { if (d.k === 'g') { ST.gold += d.v; ST.gf = .25; DIRTY = DIRTY || .01; } else { const h = Math.round(HPMAX() * .25); P.hp = Math.min(HPMAX(), P.hp + h); NUM.push({x: P.x, y: P.y - 70, v: '+' + h, t: 0, xp: 1, big: 1}); } DRP.splice(i, 1); } }
+    else if (d.t > 45) DRP.splice(i, 1); }
+  for (let i = HZ.length - 1; i >= 0; i--) { const h = HZ[i]; h.t += dt; if (h.t < h.T) continue; HZ.splice(i, 1); SHK = Math.max(SHK, 5); FXS.push({ring: 1, red: 1, r: h.r, x: h.x, y: h.y, t: 0});
+    for (let k = 0; k < 10; k++) FXS.push({x: h.x + (Math.random() - .5) * h.r * 1.4, y: h.y + (Math.random() - .5) * h.r * .7, vx: (Math.random() - .5) * 120, vy: -60 - Math.random() * 150, t: 0, c: k % 2 ? '#ff7a3a' : '#ffd24a'});
+    const ex = (P.x - h.x) / h.r, ey = (P.y - h.y) / (h.r * .55); if (ex * ex + ey * ey < 1) hurtHero(h.d); }
+  if (ST.gf > 0) ST.gf -= dt;
   if (P.inv > 0) P.inv -= dt; CD.spin -= dt; CD.roll -= dt;
   if (P.dead) { P.dead -= dt; P.mv = 0; if (P.dead <= 0) { P.dead = 0; P.x = M.start[0]; P.y = M.start[1]; P.hp = HPMAX(); P.inv = 2; } ix = iy = 0; BUF = 0; }
   else if (P.act) { const a = P.act; a.t += dt; P.mv = 0;
@@ -170,9 +208,9 @@ function step(dt) {
     else if (a.k === 'spin' && CHB.dg) {               // dagger girl: dash straight through the pack, every monster on the line is cut twice (the neon teleport-strike effect on each)
       if (!a.d) { a.d = [P.face, 0]; a.x0 = P.x; P.inv = .6; FXS.push({spr: 'dashhit_n', sc: .6, x: P.x, y: P.y - 30, face: P.face, t: 0}); }
       if (a.t < .2) move(P, P.face * 780 * dt, 0, 7);
-      else if (!a.h) { a.h = 1; const x0 = Math.min(a.x0, P.x) - 24, x1 = Math.max(a.x0, P.x) + 24, dm = Math.round(30 * (1 + (ST.lv - 1) * .12)); let any = 0;
-        for (const m of mobs) { if (m.dead || m.gone || m.x < x0 || m.x > x1 || Math.abs(m.y - P.y) > 36) continue; any = 1; m.hp -= dm; m.fl = .15; m.vx = -P.face * 60; m.vy = 0; m.ag = 6; NUM.push({x: m.x, y: m.y - M.mobs[m.k].h, v: dm, t: 0, big: 1});
-          FXS.push({spr: 'dg_tele_n', sc: .55, x: m.x, y: m.y - M.mobs[m.k].h * .5, face: P.face, t: -.0}); if (m.hp <= 0) kill(m); }
+      else if (!a.h) { a.h = 1; const x0 = Math.min(a.x0, P.x) - 24, x1 = Math.max(a.x0, P.x) + 24, dm = DM(30); let any = 0;
+        for (const m of mobs) { if (m.dead || m.gone || m.x < x0 || m.x > x1 || Math.abs(m.y - P.y) > 36 + (m.r || 0)) continue; any = 1; m.hp -= dm; m.fl = .15; m.vx = -P.face * 60; m.vy = 0; m.ag = 6; NUM.push({x: m.x, y: m.y - MH(m), v: dm, t: 0, big: 1});
+          FXS.push({spr: 'dg_tele_n', sc: .55, x: m.x, y: m.y - MH(m) * .5, face: P.face, t: -.0}); if (m.hp <= 0) kill(m); }
         if (!any) FXS.push({spr: 'xcut_n', sc: .5, x: (a.x0 + P.x) / 2, y: P.y - 30, face: P.face, t: 0}); else { HS = .1; SHK = 5; ST.combo++; ST.ct = 1.5; } }
       if (a.t >= .42) P.act = null; }
     else if (a.k === 'spin') { const i = a.t / .05 | 0; if (i >= 6 && a.h < 1) { a.h = 1; spinHit(0); } if (i >= 10 && a.h < 2) { a.h = 2; spinHit(1); } if (a.t >= .8) P.act = null; }
@@ -203,11 +241,13 @@ function step(dt) {
   for (const m of mobs) {                           // wander round home
     if (m.fl > 0) m.fl -= dt; if (m.ag > 0) m.ag -= dt;
     if (m.dead) { m.dead -= dt; if (m.dead <= 0) { m.dead = 0; m.gone = 1; } }
-    if (m.gone) { m.re -= dt; if (m.re <= 0 && Math.hypot(m.hx - P.x, m.hy - P.y) > 120) { m.gone = 0; m.x = m.hx; m.y = m.hy; m.hp = MHP[m.k]; m.vx = m.vy = 0; } continue; }
-    if (Math.abs(m.vx) + Math.abs(m.vy) > 4) { move(m, m.vx * dt, m.vy * dt, 6); const k = Math.pow(.004, dt); m.vx *= k; m.vy *= k; }
+    if (m.gone) { m.re -= dt; if (m.re <= 0 && Math.hypot(m.hx - P.x, m.hy - P.y) > 120) Object.assign(m, mkMob(m.k, m.hx, m.hy)); continue; }
+    if (m.born > 0) { m.born -= dt; continue; }
+    if (Math.abs(m.vx) + Math.abs(m.vy) > 4) { const kb = m.boss ? .12 : m.el ? .6 : 1; move(m, m.vx * kb * dt, m.vy * kb * dt, 6); const k = Math.pow(.004, dt); m.vx *= k; m.vy *= k; }
     const pd = Math.hypot(P.x - m.x, P.y - m.y);
-    if (!m.dead && !P.dead && pd < 34) { m.at = (m.at || 0) + dt; if (m.at > 1.2) { m.at = 0; hurtHero(Math.max(3, Math.round(MHP[m.k] / 9))); } } else m.at = Math.min(m.at || 0, .6);
-    if (!m.dead && (pd < 170 || m.ag > 0) && pd > 30) { const sp = 46; move(m, (P.x - m.x) / pd * sp * dt, (P.y - m.y) / pd * sp * dt, 6); m.f = P.x > m.x ? 1 : -1; m.mv = 1; m.t = .3; m.w += dt; continue; }   // comes at the hero (no damage to him yet)
+    if (!m.dead && !P.dead && pd < 34 + (m.r || 0)) { m.at = (m.at || 0) + dt; if (m.at > 1.2) { m.at = 0; hurtHero(m.dm); } } else m.at = Math.min(m.at || 0, .6);
+    if (m.boss && !m.dead && !P.dead) { m.bt -= dt; if (m.bt <= 0) bossAtk(m); if (m.cast > 0) { m.cast -= dt; m.mv = 0; m.f = P.x > m.x ? 1 : -1; continue; } }
+    if (!m.dead && (pd < 170 || m.ag > 0) && pd > 30 + (m.r || 0)) { const sp = m.boss ? 40 : m.el ? 54 : 46; move(m, (P.x - m.x) / pd * sp * dt, (P.y - m.y) / pd * sp * dt, 6); m.f = P.x > m.x ? 1 : -1; m.mv = 1; m.t = .3; m.w += dt; continue; }   // comes at the hero (no damage to him yet)
     m.t -= dt;
     if (m.t <= 0) {
       if (m.mv) { m.mv = 0; m.t = 1 + Math.random() * 2.5; }
@@ -220,6 +260,7 @@ function step(dt) {
     }
     m.w += dt;
   }
+  if (!BOSS && BK >= BNEED && !P.dead) spawnBoss();
   // camera eases toward the hero, kept inside the map
   const tx = P.x - VW / 2, ty = P.y - 12 - VH / 2, e = 1 - Math.exp(-dt * 8);
   cam.x += (tx - cam.x) * e; cam.y += (ty - cam.y) * e;
@@ -278,10 +319,11 @@ function drawHero() {
 }
 function drawMob(m) {
   if (m.gone) return;
-  const T = M.mobs[m.k], i = m.fl > 0 ? MBW[m.k] : MB[m.k], f = m.mv ? (m.w * 8 | 0) % T.n : 0, x = Math.round(m.x), y = Math.round(m.y), dk = m.dead ? m.dead / .35 : 1;
-  shadow(x, y, T.w * .22);
-  if (!m.dead && m.hp < MHP[m.k]) { ctx.fillStyle = '#000a'; ctx.fillRect(x - 13, y - T.h - 7, 26, 4); ctx.fillStyle = '#e8503a'; ctx.fillRect(x - 12, y - T.h - 6, 24 * Math.max(0, m.hp) / MHP[m.k], 2); }
-  ctx.globalAlpha = dk; ctx.save(); ctx.translate(x, y); ctx.scale(m.f * (m.fl > 0 ? 1.08 : 1), (m.fl > 0 ? .9 : 1) * (.4 + .6 * dk)); ctx.drawImage(i, f * T.w, 0, T.w, T.h, -T.fx, -T.fy, T.w, T.h); ctx.restore(); ctx.globalAlpha = 1;
+  const T = M.mobs[m.k], i = m.fl > 0 ? MBW[m.k] : MB[m.k], f = m.mv ? (m.w * 8 | 0) % T.n : 0, x = Math.round(m.x), y = Math.round(m.y), sc = m.sc || 1, dk = (m.dead ? m.dead / .35 : 1) * (m.born > 0 ? 1 - m.born / 1.2 : 1);
+  shadow(x, y, T.w * .22 * sc);
+  if ((m.el || m.boss) && !m.dead) { const pu = .5 + .5 * Math.sin(m.w * 5); ctx.strokeStyle = m.boss ? 'rgba(255,70,50,' + (.5 + .4 * pu) + ')' : 'rgba(255,200,60,' + (.45 + .4 * pu) + ')'; ctx.lineWidth = m.boss ? 3 : 2; ctx.beginPath(); ctx.ellipse(x, y, T.w * .3 * sc, T.w * .12 * sc, 0, 0, 6.29); ctx.stroke(); }   // elite = gold ring at the feet, boss = red
+  if (!m.dead && !m.boss && m.hp < m.mh) { ctx.fillStyle = '#000a'; ctx.fillRect(x - 13, y - T.h * sc - 7, 26, 4); ctx.fillStyle = m.el ? '#ffc83c' : '#e8503a'; ctx.fillRect(x - 12, y - T.h * sc - 6, 24 * Math.max(0, m.hp) / m.mh, 2); }
+  ctx.globalAlpha = dk; ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); ctx.scale(m.f * (m.fl > 0 ? 1.08 : 1), (m.fl > 0 ? .9 : 1) * (.4 + .6 * Math.min(1, dk))); ctx.drawImage(i, f * T.w, 0, T.w, T.h, -T.fx, -T.fy, T.w, T.h); ctx.restore(); ctx.globalAlpha = 1;
 }
 function frame(t) {
   const now = t / 1000, dt = Math.min(.05, now - (frame.l || now)); frame.l = now;
@@ -292,6 +334,11 @@ function frame(t) {
   ctx.setTransform(K, 0, 0, K, -cx * K, -cy * K);
   const sx = Math.max(0, cx), sy = Math.max(0, cy), sw = Math.min(M.w - sx, VW + 1), shh = Math.min(M.h - sy, VH + 1);
   ctx.drawImage(GR, sx, sy, sw, shh, sx, sy, sw, shh);
+  for (const h of HZ) { const k = h.t / h.T, e = (r, st) => { ctx.beginPath(); ctx.ellipse(h.x, h.y, r, r * .55, 0, 0, 6.29); st ? ctx.stroke() : ctx.fill(); };   // boss warnings: red area, the inner disc grows until it goes off
+    ctx.fillStyle = 'rgba(225,35,25,' + (.18 + .16 * k) + ')'; e(h.r); ctx.fillStyle = 'rgba(255,80,40,.4)'; e(h.r * k); ctx.strokeStyle = (h.t * 10 | 0) % 2 ? '#ff5a3a' : '#ffd0a0'; ctx.lineWidth = 2; e(h.r, 1); }
+  for (const d of DRP) { const x = Math.round(d.x), y = Math.round(d.y - Math.abs(Math.sin(d.t * 6)) * (d.pull ? 0 : 3));
+    if (d.k === 'g') { ctx.fillStyle = '#7a4a08'; ctx.fillRect(x - 2, y - 2, 5, 5); ctx.fillStyle = '#ffc83c'; ctx.fillRect(x - 2, y - 3, 4, 4); ctx.fillStyle = '#fff3b0'; ctx.fillRect(x - 1, y - 2, 1, 2); }
+    else { ctx.fillStyle = '#5a0a14'; ctx.fillRect(x - 4, y - 4, 9, 6); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(x - 4, y - 5, 4, 5); ctx.fillRect(x, y - 5, 4, 5); ctx.fillRect(x - 3, y, 6, 1); ctx.fillRect(x - 2, y + 1, 4, 1); ctx.fillRect(x - 1, y + 2, 2, 1); ctx.fillStyle = '#ffc0c8'; ctx.fillRect(x - 3, y - 4, 1, 2); } }
   // back-to-front by the feet
   const L = [];
   for (const p of M.props) {
@@ -315,7 +362,7 @@ function frame(t) {
   for (const p of M.props) if (p.o) { const [ax, ay, w, h] = p.a; ctx.drawImage(PR, ax, ay, w, h, Math.round(p.x - w / 2), p.y - h, w, h); }
   for (const f of FXS) {                             // hit sparks + a soft flash on the ground (smooth light over the pixels, like the reference clip)
     if (f.spr) { const d = SPR[f.spr], n = f.t * d.fps * 1.3 | 0; if (n < d.n && d.im.width) { ctx.save(); ctx.translate(Math.round(f.x), Math.round(f.y)); ctx.scale(f.face * f.sc, f.sc); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(d.im, n % d.cols * d.w, (n / d.cols | 0) * d.h, d.w, d.h, -d.ax, -d.ay, d.w, d.h); ctx.restore(); ctx.globalCompositeOperation = 'source-over'; } continue; }
-    if (f.ring) { const k = f.t / .45, r = (f.big ? 46 : 28) * (.4 + k); ctx.globalCompositeOperation = 'lighter'; const g2 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); g2.addColorStop(0, 'rgba(190,230,255,' + (.5 * (1 - k)) + ')'); g2.addColorStop(1, 'rgba(120,190,255,0)');
+    if (f.ring) { const k = f.t / .45, r = f.r ? f.r * (.7 + .4 * k) : (f.big ? 46 : 28) * (.4 + k); ctx.globalCompositeOperation = 'lighter'; const g2 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); g2.addColorStop(0, (f.red ? 'rgba(255,170,90,' : 'rgba(190,230,255,') + ((f.red ? .8 : .5) * (1 - k)) + ')'); g2.addColorStop(1, f.red ? 'rgba(255,60,30,0)' : 'rgba(120,190,255,0)');
       ctx.fillStyle = g2; ctx.save(); ctx.translate(0, f.y * .55); ctx.scale(1, .45); ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.29); ctx.fill(); ctx.restore(); ctx.globalCompositeOperation = 'source-over'; }
     else { ctx.globalAlpha = Math.max(0, 1 - f.t / .45); ctx.fillStyle = f.c; ctx.fillRect(Math.round(f.x), Math.round(f.y), 2, 2); ctx.globalAlpha = 1; } }
   ambience(cx, cy);
@@ -328,13 +375,17 @@ function frame(t) {
       for (let x = Math.max(0, cx / M.bk | 0); x < Math.min(BW, (cx + VW) / M.bk + 1); x++) if (BLK[y * BW + x]) ctx.fillRect(x * M.bk, y * M.bk, M.bk, M.bk);
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(VIG, 0, 0);
-  { const d = devicePixelRatio || 1, x0 = 12 * d, y0 = 40 * d, w = 150 * d; ctx.textAlign = 'left'; ctx.font = '700 ' + 15 * d + 'px system-ui'; ctx.fillStyle = '#000a'; ctx.fillText('Lv ' + ST.lv + '   ล้ม ' + ST.kills, x0 + 1, y0 + 1); ctx.fillStyle = '#f4ecd0'; ctx.fillText('Lv ' + ST.lv + '   ล้ม ' + ST.kills, x0, y0);
+  { const d = devicePixelRatio || 1, x0 = 12 * d, y0 = 40 * d, w = 150 * d; ctx.textAlign = 'left'; ctx.font = '700 ' + 15 * d + 'px system-ui'; const s1 = 'Lv ' + ST.lv + '   ล้ม ' + ST.kills + '   ', s2 = 'ทอง ' + ST.gold; ctx.fillStyle = '#000a'; ctx.fillText(s1 + s2, x0 + 1, y0 + 1); ctx.fillStyle = '#f4ecd0'; ctx.fillText(s1, x0, y0); ctx.fillStyle = ST.gf > 0 ? '#fff3b0' : '#ffc83c'; ctx.fillText(s2, x0 + ctx.measureText(s1).width, y0);
+    if (!BOSS && BOSSD[MAPID]) { ctx.font = '600 ' + 11 * d + 'px system-ui'; ctx.fillStyle = '#000a'; ctx.fillText('บอส ' + Math.min(BK, BNEED) + '/' + BNEED, x0 + 1, y0 + 40 * d + 1); ctx.fillStyle = '#ff9a8a'; ctx.fillText('บอส ' + Math.min(BK, BNEED) + '/' + BNEED, x0, y0 + 40 * d); }
+    if (BOSS && !BOSS.gone) { const bw = Math.min(cv.width * .44, 420 * d), bx = (cv.width - bw) / 2, by = 14 * d; ctx.fillStyle = '#000b'; ctx.fillRect(bx - 2 * d, by, bw + 4 * d, 14 * d); ctx.fillStyle = '#c8281e'; ctx.fillRect(bx, by + 2 * d, bw * Math.max(0, BOSS.hp) / BOSS.mh, 10 * d); ctx.textAlign = 'center'; ctx.font = '700 ' + 12 * d + 'px system-ui'; ctx.fillStyle = '#000'; ctx.fillText(BOSS.name, cv.width / 2 + 1, by + 28 * d + 1); ctx.fillStyle = '#ffd0c0'; ctx.fillText(BOSS.name, cv.width / 2, by + 28 * d); ctx.textAlign = 'left'; }
+    for (const k of ['spin', 'roll']) { const b = CDB[k], q = Math.ceil(Math.max(0, CD[k]) / (k === 'spin' ? (CHB && CHB.dg ? 4 : 5) : (CHB && CHB.dg ? .7 : 1.1)) * 24); if (b.q !== q) { b.q = q; b.el.style.background = q ? 'conic-gradient(#000c ' + q * 15 + 'deg, ' + b.c + ' 0)' : b.c; } }   // cooldown sweep on the skill buttons
     ctx.fillStyle = '#000a'; ctx.fillRect(x0, y0 + 16 * d, w, 9 * d); ctx.fillStyle = '#e8503a'; ctx.fillRect(x0 + d, y0 + 17 * d, (w - 2 * d) * Math.max(0, P.hp || 0) / HPMAX(), 7 * d);
     if (P.dead) { ctx.textAlign = 'center'; ctx.font = '800 ' + 26 * d + 'px system-ui'; ctx.fillStyle = '#ff8a7a'; ctx.fillText('ล้มแล้ว… กำลังเกิดใหม่', cv.width / 2, cv.height * .3); ctx.textAlign = 'left'; }
     ctx.fillStyle = '#000a'; ctx.fillRect(x0, y0 + 6 * d, w, 7 * d); ctx.fillStyle = '#9fe870'; ctx.fillRect(x0 + d, y0 + 7 * d, (w - 2 * d) * ST.xp / need(), 5 * d);
     if (ST.combo > 1) { ctx.textAlign = 'right'; ctx.font = '800 ' + 22 * d + 'px system-ui'; ctx.fillStyle = '#ffd24a'; ctx.fillText(ST.combo + ' HIT', cv.width - 64 * d, 40 * d); }
     if (ST.up > 0) { ctx.textAlign = 'center'; ctx.font = '800 ' + 30 * d + 'px system-ui'; ctx.globalAlpha = Math.min(1, ST.up); ctx.fillStyle = '#ffe27a'; ctx.fillText('LEVEL UP!  Lv ' + ST.lv, cv.width / 2, cv.height * .3); ctx.globalAlpha = 1; } }
   if (BAN > 0 && !TRV) { const d = devicePixelRatio || 1; ctx.textAlign = 'center'; ctx.font = '800 ' + 24 * d + 'px system-ui'; ctx.globalAlpha = Math.min(1, BAN); ctx.fillStyle = '#000a'; ctx.fillText(MAPS[MAPID].name, cv.width / 2 + 2, cv.height * .18 + 2); ctx.fillStyle = '#f4ecd0'; ctx.fillText(MAPS[MAPID].name, cv.width / 2, cv.height * .18); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
+  if (MSG && !TRV) { const d = devicePixelRatio || 1; ctx.textAlign = 'center'; ctx.font = '800 ' + 24 * d + 'px system-ui'; ctx.globalAlpha = Math.min(1, MSG.t); ctx.fillStyle = '#000c'; ctx.fillText(MSG.s, cv.width / 2 + 2, cv.height * .42 + 2); ctx.fillStyle = MSG.red ? '#ff6a4a' : '#ffe27a'; ctx.fillText(MSG.s, cv.width / 2, cv.height * .42); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
   if (TRV) { ctx.globalAlpha = TRV.out ? Math.max(0, 1 - TRV.out / .3) : Math.min(1, TRV.t / .25); ctx.fillStyle = '#0a0c08'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.globalAlpha = 1; }
   if (joy.id !== null) {                             // the stick
     const d = devicePixelRatio || 1; ctx.lineWidth = 3 * d; ctx.strokeStyle = 'rgba(244,236,208,.45)'; ctx.fillStyle = 'rgba(244,236,208,.35)';
@@ -343,9 +394,18 @@ function frame(t) {
   }
   requestAnimationFrame(frame);
 }
-{ const sw = document.getElementById('sw'), dg = CHB && CHB.dg; sw.textContent = dg ? '👤 นักดาบ' : '👤 สาวมีดคู่'; sw.onclick = () => { const u = new URLSearchParams(location.search); u.set('hero', dg ? 'chibi16' : 'dagger'); if (!u.get('px')) u.set('px', '1'); u.set('map', MAPID); location.search = u.toString(); };
-  if (dg) { document.getElementById('hint').textContent = 'เดิน: WASD / ลูกศร · ฟัน: J / Space (กดย้ำ = 3 จังหวะ) · พุ่งทะลุ: K · แวบหลบ: L / Shift · มือถือ: ลากนิ้วเดิน ปุ่ม ⚔ 🌀 💨'; document.getElementById('spin').title = 'พุ่งทะลุ'; document.getElementById('roll').title = 'แวบหลบ'; } }
-window.GM = {P, ST, attack, act, CD, hurtHero, step, get mobs() { return mobs; }, frame, travel, get map() { return MAPID; }, get M() { return M; }, get busy() { return !!TRV; }};
+{ const sw = document.getElementById('sw'), dg = CHB && CHB.dg; sw.textContent = dg ? '👤 นักดาบ' : '👤 สาวมีดคู่'; sw.onclick = () => { save(); const u = new URLSearchParams(location.search); u.set('hero', dg ? 'chibi16' : 'dagger'); if (!u.get('px')) u.set('px', '1'); u.set('map', MAPID); location.search = u.toString(); };
+  if (dg) { document.getElementById('hint').textContent = 'เดิน: WASD / ลูกศร · ฟัน: J / Space (กดย้ำ = 3 จังหวะ) · พุ่งทะลุ: K · แวบหลบ: L / Shift · อัปเกรด: U / 🛒 · มือถือ: ลากนิ้วเดิน ปุ่ม ⚔ 🌀 💨'; document.getElementById('spin').title = 'พุ่งทะลุ'; document.getElementById('roll').title = 'แวบหลบ'; } }
+const CDB = {spin: {el: document.getElementById('spin'), c: '#2a78c888'}, roll: {el: document.getElementById('roll'), c: '#5a9a3a88'}};
+const UPG = [['a', '⚔ พลังโจมตี', '+10%', 99], ['h', '❤ เลือดสูงสุด', '+25', 99], ['c', '✦ คริติคอล (แรง x2)', '+4%', 10]], cost = k => Math.round(30 * Math.pow(1.55, ST.u[k]) / 5) * 5;
+function shop(o) { PAUSE = o ? 1 : 0; const pan = document.getElementById('pan'); pan.style.display = o ? 'grid' : 'none'; if (!o) return;
+  document.getElementById('pg').innerHTML = 'อัปเกรด · <span style="color:#ffc83c">ทอง ' + ST.gold + '</span>';
+  document.getElementById('pl').innerHTML = UPG.map(([k, n, d, mx]) => { const c = cost(k), full = ST.u[k] >= mx; return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid #f4ecd022"><div style="flex:1">' + n + ' <span style="opacity:.7">ขั้น ' + ST.u[k] + ' (' + d + '/ขั้น)</span></div><button data-k="' + k + '" ' + (full || ST.gold < c ? 'disabled style="opacity:.4;' : 'style="') + 'height:36px;min-width:92px;border-radius:8px;border:0;background:#b8861c;color:#fff;font:700 13px system-ui">' + (full ? 'เต็มแล้ว' : 'ทอง ' + c) + '</button></div>'; }).join(''); }
+document.getElementById('pl').addEventListener('click', e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; const c = cost(k); if (ST.gold < c) return; ST.gold -= c; ST.u[k]++; if (k === 'h') P.hp = Math.min(HPMAX(), (P.hp || 0) + 25); save(); shop(1); });
+document.getElementById('shop').onclick = () => shop(1); document.getElementById('pcl').onclick = () => shop(0);
+document.getElementById('prs').onclick = () => { if (confirm('ลบเลเวล ทอง และอัปเกรดทั้งหมด แล้วเริ่มใหม่?')) { try { localStorage.removeItem(SVK); } catch (e) {} DIRTY = 0; removeEventListener('pagehide', save); location.reload(); } };
+addEventListener('pagehide', save);
+window.GM = {P, ST, shop, save, spawnBoss, HZ, DRP, get boss() { return BOSS; }, set bk(v) { BK = v; }, get bk() { return BK; }, attack, act, CD, hurtHero, step, get mobs() { return mobs; }, frame, travel, get map() { return MAPID; }, get M() { return M; }, get busy() { return !!TRV; }};
 boot().catch(e => { document.getElementById('load').textContent = 'โหลดไม่ได้: ' + e; });
 </script>
 </body>
