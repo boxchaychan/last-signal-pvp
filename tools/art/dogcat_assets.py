@@ -30,6 +30,9 @@ for key, pat in (('shiba1', DC + 'pl1s/char/Idle/animations/idle_se/south-east/*
     st = Image.new('RGBA', (104 * len(fs), 104))
     for i, f in enumerate(fs): st.alpha_composite(Image.open(f).convert('RGBA'), (i * 104, 0))
     st.save(O + 'units/%s_idle.png' % key); S['units'][key]['idle'] = len(fs)
+# rig-made idle (tools/art/bone_rig.py, free): the 2-star shiba
+import shutil
+if os.path.exists(DC + 'rig/shiba2_idle.png'): shutil.copy(DC + 'rig/shiba2_idle.png', O + 'units/shiba2_idle.png'); S['units']['shiba2']['idle'] = 16
 for k in ('shroom', 'wisp', 'wolf', 'kappa', 'kasa_obake', 'paper_doll', 'monkey', 'goblin_archer'):
     m = json.load(open('art/action/mobs_hr/%s.json' % k)); im = Image.open('art/action/mobs_hr/%s.png' % k).convert('RGBA'); w, h, n = m['w'], m['h'], m['n']; r = m['rows']['walk']
     fr = [reduce2(im.crop((i * w, r * h, i * w + w, r * h + h))) for i in range(n)]; cw, ch = fr[0].size; st = Image.new('RGBA', (cw * n, ch))
