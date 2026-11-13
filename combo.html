@@ -20,9 +20,10 @@ IMG.combo_1.onload=()=>{const c=document.createElement('canvas');c.width=384;c.h
 // ---- our own bone moves (art/poses/combo/sword_combo.json): key poses + in-betweens made by the code, every screen frame
 let BONE=null,MODE=localStorage.getItem('cb.mode2')||'hero';const RIG=()=>MODE!=='frames'&&BONE;
 // the swordsman (class 1) on the same bones: head / torso / sword are his own pixels (tools/art/rig_parts.py), arms and legs pixel capsules
-const HL={sh:40,neck:46,head:0,ua:13,fa:12,sw:52,th:16,sn:19,k:.46},GL={sh:52,neck:62,head:66,ua:40,fa:36,sw:96,th:36,sn:40,k:1,ub:38,fb:32};HL.ub=13;HL.fb=12;
-let PART=null;const PIM=new Image();PIM.src='art/poses/combo/swordsman_parts.png';fetch('art/poses/combo/swordsman_parts.json').then(r=>r.json()).then(j=>PART=j);
-function dxW(){return MODE==='hero'?P.pose[10]*HL.k/Z:P.pose[10]*BS}
+const HL0={sh:40,neck:46,head:0,ua:13,fa:12,sw:52,th:16,sn:19,k:.46,ub:13,fb:12,ch:340,lw:7,aw:6,ft:1,rot:6,c:['#241c1e','#5e3a26','#2e2426','#7a4c32','#4d5d84','#5a3a2a','#f0d2b4'],src:'swordsman_parts'},
+ HL1={sh:17,neck:24,head:0,ua:7,fa:6,sw:32,th:4,sn:4,k:.3,ub:7,fb:6,ch:190,lw:5,aw:5,ft:0,rot:15,c:['#c8742a','#c8742a','#f59a3c','#f59a3c','#453c5c','#453c5c','#fbe3c0'],src:'shiba2_parts'};let HL=HL0,GL={sh:52,neck:62,head:66,ua:40,fa:36,sw:96,th:36,sn:40,k:1,ub:38,fb:32};
+let PART=null;const PIM=new Image();function setChar(){HL=MODE==='shiba'?HL1:HL0;PART=null;PIM.src='art/poses/combo/'+HL.src+'.png';fetch('art/poses/combo/'+HL.src+'.json').then(r=>r.json()).then(j=>PART=j)}setChar();const ISH=()=>MODE==='hero'||MODE==='shiba';
+function dxW(){return ISH()?P.pose[10]*HL.k/Z:P.pose[10]*BS}
 const BS=.15,TR=[];
 fetch('art/poses/combo/sword_combo.json').then(r=>r.json()).then(j=>{BONE=j;P.pose=j.stand.slice()});
 const BG=[{dmg:10,lunge:26,kb:40,stop:.05,sc:1},{dmg:14,lunge:36,kb:60,stop:.06,sc:1.15,up:1},{dmg:30,lunge:44,kb:150,stop:.12,sc:1.7,slam:1}];
@@ -55,11 +56,11 @@ function drawHero(x,y){const J=jointsOf(P.pose,HL,1),d=P.d,p=P.pose,xr=Math.roun
   g.globalAlpha=Math.max(0,1-q.t/.1)*.9;g.fillStyle=P.step===2?'#ffe9a0':'#bfe6ff';g.beginPath();g.moveTo(a.a[0],a.a[1]);g.lineTo(q.a[0],q.a[1]);g.lineTo(q.b[0],q.b[1]);g.lineTo(a.b[0],a.b[1]);g.fill()}g.globalAlpha=1;
  if(!PART||!PIM.width)return;g.save();g.translate(xr,yr);g.scale(d/Z,1/Z);
  const R=a=>[Math.round(a[0]),Math.round(a[1])],part=(n,q,sh,rot)=>{const r=PART[n];g.save();g.translate(Math.round(q[0]),Math.round(q[1]));if(sh)g.transform(1,0,-Math.tan(sh*Math.PI/180),1,0,0);if(rot)g.rotate(rot*Math.PI/180);g.drawImage(PIM,r.x,r.y,r.w,r.h,-r.px,-r.py,r.w,r.h);g.restore()};
- const leg=(k,f,c1,c2)=>{limb(J.hip,J[k],7,c1,1);limb(J[k],J[f],7,c2,1);const ft=R(J[f]);g.fillStyle='#1c1416';g.fillRect(ft[0]-4,ft[1]-4,13,6);g.fillStyle=c2;g.fillRect(ft[0]-3,ft[1]-3,11,4)};
- leg('kneeB','footB','#241c1e','#5e3a26');part('torso',J.hip,p[0]);leg('kneeF','footF','#2e2426','#7a4c32');
- part('head',[J.neck[0]+p[0]*.05,J.neck[1]+1]);part('sword',J.handF,0,p[3]+6);
- limb(J.sh,J.elbF,6,'#4d5d84',1);limb(J.elbF,J.handF,5,'#5a3a2a',1);const h=R(J.handF);g.fillStyle='#1c1416';g.fillRect(h[0]-3,h[1]-3,7,7);g.fillStyle='#f0d2b4';g.fillRect(h[0]-2,h[1]-2,5,5);g.restore()}
-function drawBone(x,y){if(MODE==='hero')return drawHero(x,y);const J=jointsOf(P.pose),d=P.d,X=k=>x+J[k][0]*d,Y=k=>y+J[k][1];
+ const C=HL.c,leg=(k,f,c1,c2)=>{limb(J.hip,J[k],HL.lw,c1,1);limb(J[k],J[f],HL.lw,c2,1);const ft=R(J[f]);g.fillStyle='#1c1416';if(HL.ft){g.fillRect(ft[0]-4,ft[1]-4,13,6);g.fillStyle=c2;g.fillRect(ft[0]-3,ft[1]-3,11,4)}else{g.fillRect(ft[0]-3,ft[1]-2,9,4);g.fillStyle='#fbe3c0';g.fillRect(ft[0]-2,ft[1]-1,7,2)}};
+ leg('kneeB','footB',C[0],C[1]);if(HL.ft)part('torso',J.hip,p[0]);leg('kneeF','footF',C[2],C[3]);if(!HL.ft)part('torso',[J.hip[0],J.hip[1]+2],p[0]*.6);
+ part('head',[J.neck[0]+p[0]*.05,J.neck[1]+1]);part('sword',J.handF,0,p[3]+HL.rot);
+ limb(J.sh,J.elbF,HL.aw,C[4],1);limb(J.elbF,J.handF,HL.aw-1,C[5],1);const h=R(J.handF);g.fillStyle='#1c1416';g.fillRect(h[0]-3,h[1]-3,7,7);g.fillStyle=C[6];g.fillRect(h[0]-2,h[1]-2,5,5);g.restore()}
+function drawBone(x,y){if(ISH())return drawHero(x,y);const J=jointsOf(P.pose),d=P.d,X=k=>x+J[k][0]*d,Y=k=>y+J[k][1];
  if(P.st==='atk'||P.st==='end'){TR.push({t:0,a:[X('tip'),Y('tip')],b:[x+(J.handF[0]*.45+J.tip[0]*.55)*d,(Y('handF')*.45+Y('tip')*.55)],on:P.st==='atk'})}
  for(let i=1;i<TR.length;i++){const p=TR[i-1],q=TR[i];if(!p.on||!q.on||q.t>.1)continue;const sp=Math.hypot(q.a[0]-p.a[0],q.a[1]-p.a[1]);if(sp<1.2)continue;
   g.globalAlpha=Math.max(0,1-q.t/.1);g.fillStyle=P.step===2?'#fff2b0':'#fff';g.beginPath();g.moveTo(p.a[0],p.a[1]);g.lineTo(q.a[0],q.a[1]);g.lineTo(q.b[0],q.b[1]);g.lineTo(p.b[0],p.b[1]);g.fill()}g.globalAlpha=1;
@@ -69,7 +70,7 @@ function drawBone(x,y){if(MODE==='hero')return drawHero(x,y);const J=jointsOf(P.
  seg('handF','tip','sword',1.4);seg('sh','elbF','armF1',2.4);seg('elbF','handF','armF2',2.4)}
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,K;
 let Z=1;
-function rs(){if(MODE==='hero'){const dp=devicePixelRatio||1,kk=Math.max(1,Math.round(innerHeight*dp/340));cv.width=Math.ceil(innerWidth*dp/kk);cv.height=Math.ceil(innerHeight*dp/kk);Z=cv.height/130;W=cv.width/Z;H=130}
+function rs(){if(ISH()){const dp=devicePixelRatio||1,kk=Math.max(1,Math.round(innerHeight*dp/HL.ch));cv.width=Math.ceil(innerWidth*dp/kk);cv.height=Math.ceil(innerHeight*dp/kk);Z=cv.height/130;W=cv.width/Z;H=130}
  else{Z=1;K=Math.max(2,Math.round(innerHeight/130));W=cv.width=Math.ceil(innerWidth/K);H=cv.height=Math.ceil(innerHeight/K)}g.imageSmoothingEnabled=false}rs();onresize=rs;
 const GY=()=>Math.round(H-34);
 // steps of the chain: frames = [sheet, frame, seconds]; hit = index of the frame that deals damage
@@ -139,7 +140,7 @@ onkeydown=e=>{const k=e.key.toLowerCase();if(k==='j'||k==='z'||k==='x'){if(!e.re
 onkeyup=e=>{const k=KM[e.key.toLowerCase()];if(k)key[k]=0};
 for(const [id,k] of [['l','l'],['r','r']]){const b=document.getElementById(id);b.onpointerdown=e=>{key[k]=1;e.preventDefault()};b.onpointerup=b.onpointercancel=b.onpointerleave=()=>key[k]=0}
 document.getElementById('j').onpointerdown=e=>{key.j=1;e.preventDefault()};document.getElementById('a').onpointerdown=e=>{atk();e.preventDefault()};
-const MB=document.getElementById('m');function mlab(){MB.textContent=(MODE==='hero'?'🗡 นักดาบบนกระดูก':MODE==='bone'?'🦴 หุ่นกระดูก':'🎞 เฟรม Ozzbit')+' (แตะสลับ)'}mlab();
-MB.onpointerdown=e=>{if(P.st==='atk'||P.st==='end')return;MODE=MODE==='hero'?'bone':MODE==='bone'?'frames':'hero';localStorage.setItem('cb.mode2',MODE);mlab();rs();e.preventDefault()};
-window.CB={get MODE(){return MODE},P,atk,step,draw,STEP,get D(){return D}};
+const MB=document.getElementById('m');function mlab(){MB.textContent=(MODE==='hero'?'🗡 นักดาบบนกระดูก':MODE==='shiba'?'🐕 ชิบะบนกระดูก':MODE==='bone'?'🦴 หุ่นกระดูก':'🎞 เฟรม Ozzbit')+' (แตะสลับ)'}mlab();
+MB.onpointerdown=e=>{if(P.st==='atk'||P.st==='end')return;MODE=MODE==='hero'?'shiba':MODE==='shiba'?'bone':MODE==='bone'?'frames':'hero';localStorage.setItem('cb.mode2',MODE);mlab();setChar();rs();e.preventDefault()};
+window.CB={setMode(m){MODE=m;mlab();setChar();rs()},get MODE(){return MODE},P,atk,step,draw,STEP,get D(){return D}};
 </script></body></html>
