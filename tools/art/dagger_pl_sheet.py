@@ -1,6 +1,6 @@
 # The dagger girl's PixelLab clips (character ea60ebea, canvas 204) packed like chibi_pl.png so map.html plays her with the same code.
 #   python3 tools/art/dagger_pl_sheet.py -> art/poses/combo/dagger_pl.png (10 columns of 204 px)
-# cells: run 0-7 · slash 10-26 (cell 10 + frame) · idle 60 · hurt 70 · death 80 · roll 90 (no roll clip yet: the run frames) · run north 100 · run south 110 · spin 120 (her K skill is a dash: the run frames)
+# cells: run 0-7 · slash 10-26 (upright take, `?atk=up`) · attack3b 30-46 (the fluid take, default) · idle 60 · hurt 70 · death 80 · roll 90 (no roll clip yet: the run frames) · run north 100 · run south 110 · spin 120 (her K skill is a dash: the run frames)
 # Every frame is shifted by the same amount so her feet stand on x 103 like the swordsman's. Nothing is removed. The magenta trails PixelLab drew are
 # RECOLOURED to the neon violet the owner chose for her effects (hue only; raw frames stay in art/incoming/darkchibi/dagger/pl_char/char).
 import glob, numpy as np
@@ -17,6 +17,7 @@ def put(c, im): sheet.alpha_composite(im, (c % 10 * C + dx, c // 10 * C + dy)) i
 run = fr('run', 'east')[1:]; sl = [neon(f) for f in fr('slash', 'east')]
 for i, f in enumerate(run): put(i, f); put(90 + i, f)
 for i, f in enumerate(sl): put(10 + i, f)
+for i, f in enumerate(fr('attack3b', 'east')): put(30 + i, neon(f))   # the lower, more fluid 3-hit combo (second PixelLab take): the one map.html plays; cells 30 + frame
 for i, f in enumerate(idle[1:]): put(60 + i, f)
 for i, f in enumerate(fr('hurt', 'east')[1:]): put(70 + i, f)
 for i, f in enumerate(fr('death', 'east')[1:]): put(80 + i, f)
