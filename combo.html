@@ -1,0 +1,86 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>ทดสอบคอมโบ</title>
+<style>html,body{margin:0;height:100%;background:#1b2130;overflow:hidden;font-family:sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+.b{position:fixed;bottom:16px;width:68px;height:68px;border-radius:50%;background:#ffffff22;border:2px solid #ffffff66;font-size:26px;display:flex;align-items:center;justify-content:center}
+#l{left:16px}#r{left:96px}#j{right:100px}#a{right:16px;width:80px;height:80px;background:#ff6a3d55}
+#t{position:fixed;top:6px;left:8px;font-size:12px;opacity:.8;line-height:1.5}</style></head><body>
+<canvas id="c"></canvas>
+<div id="t">ทดสอบคอมโบ 3 จังหวะ · PC: A/D เดิน · J ตี (กดย้ำ) · K/Space กระโดด<br>ท่าทาง: Ozzbit Games (hero template ฟรี, ใช้ส่วนตัว ไม่ใช่เชิงพาณิชย์)</div>
+<div class="b" id="l">◀</div><div class="b" id="r">▶</div><div class="b" id="j">⤒</div><div class="b" id="a">⚔</div>
+<script>
+// Combo test with the free Ozzbit Games hero template (personal / non-commercial, credit required).
+// The free pack has ONE slash (combo_1, 3 frames) + its recovery (combo_1_end, 4). The 3-hit chain is built from it:
+// hit 1 = the slash, hit 2 = the slash played backwards with a lunge (reads as a rising cut), hit 3 = hop (jump frames) + big slam slash.
+const A='art/thirdparty/ozzbit_hero/',N={idle:10,run:10,jump:6,fall:4,fall_loop:3,combo_1:3,combo_1_end:4},IMG={};
+for(const k in N){IMG[k]=new Image();IMG[k].src=A+k+'.png'}
+let SW=null; // the white swoosh alone (for drawing it bigger on the heavy hits)
+IMG.combo_1.onload=()=>{const c=document.createElement('canvas');c.width=384;c.height=128;const x=c.getContext('2d');x.drawImage(IMG.combo_1,0,0);const d=x.getImageData(0,0,384,128),a=d.data;for(let i=0;i<a.length;i+=4)if(Math.min(a[i],a[i+1],a[i+2])<225)a[i+3]=0;x.putImageData(d,0,0);SW=c};
+const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,K;
+function rs(){K=Math.max(2,Math.round(innerHeight/130));W=cv.width=Math.ceil(innerWidth/K);H=cv.height=Math.ceil(innerHeight/K);g.imageSmoothingEnabled=false}rs();onresize=rs;
+const GY=()=>H-34;
+// steps of the chain: frames = [sheet, frame, seconds]; hit = index of the frame that deals damage
+const STEP=[
+ {f:[['combo_1',0,.07],['combo_1',1,.07],['combo_1',2,.08]],hit:0,dmg:10,lunge:26,kb:40,stop:.05,sc:1},
+ {f:[['combo_1',2,.05],['combo_1',1,.07],['combo_1',0,.09]],hit:1,dmg:14,lunge:40,kb:60,stop:.06,sc:1.15,up:1},
+ {f:[['jump',1,.06],['jump',3,.09],['fall',1,.07],['combo_1',0,.09],['combo_1',1,.08],['combo_1',2,.1]],hit:3,dmg:30,lunge:30,kb:150,stop:.12,sc:1.7,hop:14,slam:1}];
+const END=[['combo_1_end',0,.07],['combo_1_end',1,.07],['combo_1_end',2,.07],['combo_1_end',3,.07]];
+const P={x:60,y:0,vy:0,d:1,st:'idle',t:0,i:0,step:0,buf:0,hitDone:0},key={},FX=[],NUM=[];let D=[],stop=0,shake=0,cam=0,combo=0,comboT=0;
+function spawn(){D=[];for(let i=0;i<4;i++)D.push({x:P.x+90+i*38+Math.random()*10,hp:60,vx:0,y:0,vy:0,fl:0})}spawn();
+function atk(){P.buf=.28}
+function startStep(n){P.st='atk';P.step=n;P.i=0;P.t=0;P.hitDone=0;if(key.l)P.d=-1;if(key.r)P.d=1}
+function doHit(s){
+ const R=30*s.sc;let any=0;
+ for(const m of D){const dx=(m.x-P.x)*P.d;if(dx>-6&&dx<R&&m.hp>0){any=1;m.hp-=s.dmg;m.vx=P.d*s.kb;m.fl=.12;if(s.up||s.slam)m.vy=-(s.slam?150:90);
+  NUM.push({x:m.x,y:GY()-36,t:0,v:s.dmg,big:s.slam});for(let k=0;k<(s.slam?10:5);k++)FX.push({x:m.x,y:GY()-14,vx:(Math.random()-.2)*120*P.d,vy:-Math.random()*120,t:0,c:s.slam?'#ffd24a':'#fff'})}}
+ if(any){stop=s.stop;shake=s.slam?5:2;combo++;comboT=1.2}
+ if(s.slam){shake=Math.max(shake,4);for(let k=0;k<12;k++)FX.push({x:P.x+P.d*(8+k*3),y:GY(),vx:(Math.random()-.5)*90,vy:-Math.random()*70,t:0,c:'#c9b48a'})}}
+function step(dt){
+ if(stop>0){stop-=dt;return}
+ P.buf-=dt;comboT-=dt;if(comboT<=0)combo=0;
+ const mv=(key.r?1:0)-(key.l?1:0),air=P.y<0;
+ if(P.st==='atk'){const s=STEP[P.step],f=s.f[P.i];P.t+=dt;
+  const tot=s.f.reduce((a,b)=>a+b[2],0);P.x+=P.d*s.lunge/tot*dt*(P.i<=s.hit?1.6:.4);
+  if(s.hop){const k=(s.f.slice(0,P.i).reduce((a,b)=>a+b[2],0)+P.t)/s.f.slice(0,s.hit).reduce((a,b)=>a+b[2],0);P.y=k<1?-s.hop*4*k*(1-k):0}
+  if(P.i>=s.hit&&!P.hitDone){P.hitDone=1;doHit(s)}
+  if(P.t>=f[2]){P.t=0;P.i++;if(P.i>=s.f.length){if(P.buf>0&&P.step<2)startStep(P.step+1);else{P.st='end';P.i=0;P.buf=P.step<2?P.buf:0}}}}
+ else if(P.st==='end'){P.t+=dt;if(P.buf>0&&P.step<2&&P.i<3){startStep(P.step+1)}else if(P.t>=END[P.i][2]){P.t=0;P.i++;if(P.i>=4){P.st='idle';P.step=0}}}
+ else{if(mv){P.d=mv;P.x+=mv*70*dt}
+  if(key.j&&!air){P.vy=-190;key.j=0}
+  P.vy+=520*dt;P.y+=P.vy*dt;if(P.y>=0){P.y=0;P.vy=0}
+  P.st=P.y<0?(P.vy<0?'jump':'fall'):mv?'run':'idle';P.t+=dt;
+  if(P.buf>0&&P.y>=0)startStep(0)}
+ for(const m of D){m.x+=m.vx*dt;m.vx*=Math.pow(.02,dt);m.vy+=520*dt;m.y+=m.vy*dt;if(m.y>0){m.y=0;m.vy=0}m.fl-=dt}
+ D=D.filter(m=>m.hp>0||m.fl>-.25);if(!D.some(m=>m.hp>0)&&!D.length)spawn();
+ for(const f of FX){f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=300*dt}for(const n of NUM)n.t+=dt;
+ while(FX.length&&FX[0].t>.5)FX.shift();while(NUM.length&&NUM[0].t>.7)NUM.shift();
+ shake*=Math.pow(.001,dt);cam+=(P.x-W*.35-cam)*Math.min(1,dt*6)}
+function frameOf(){if(P.st==='atk'){const f=STEP[P.step].f[P.i];return[f[0],f[1],STEP[P.step]]}
+ if(P.st==='end')return['combo_1_end',P.i];if(P.st==='run')return['run',Math.floor(P.t*14)%10];
+ if(P.st==='jump')return['jump',Math.min(5,2+Math.floor(P.t*10)%4)];if(P.st==='fall')return['fall_loop',Math.floor(P.t*10)%3];return['idle',Math.floor(P.t*9)%10]}
+function draw(){
+ const gy=GY(),sx=Math.round((Math.random()-.5)*shake),sy=Math.round((Math.random()-.5)*shake);
+ g.fillStyle='#2a3350';g.fillRect(0,0,W,H);g.fillStyle='#343f63';for(let i=-1;i<W/60+2;i++){const x=i*60-((cam*.4)%60);g.fillRect(Math.round(x),gy-50-(i*37%23),28,60)}
+ g.save();g.translate(sx-Math.round(cam),sy);
+ g.fillStyle='#55633f';g.fillRect(Math.round(cam)-8,gy,W+16,H);g.fillStyle='#6f8050';g.fillRect(Math.round(cam)-8,gy,W+16,2);
+ for(const m of D){const x=Math.round(m.x),y=Math.round(gy+m.y),dead=m.hp<=0;g.globalAlpha=dead?Math.max(0,1+m.fl*4):1;
+  g.fillStyle=m.fl>0?'#fff':'#b5533c';g.fillRect(x-6,y-22,12,22);g.fillStyle=m.fl>0?'#fff':'#e0c9a0';g.fillRect(x-5,y-30,10,9);
+  if(!dead){g.fillStyle='#000';g.fillRect(x-8,y-36,16,3);g.fillStyle='#6fe06a';g.fillRect(x-7,y-35,Math.max(0,14*m.hp/60),1)}g.globalAlpha=1}
+ const [k,i,s]=frameOf(),im=IMG[k];if(im.complete&&im.width){const sc=s&&P.i>=s.hit-0&&k==='combo_1'?s.sc:1,x=Math.round(P.x),y=Math.round(gy+P.y);
+  g.save();g.translate(x,y);g.scale(P.d,1);
+  if(sc>1){ // bigger swoosh only: draw the frame scaled around the feet, then the body again at 1x on top
+   if(SW){g.save();g.scale(sc,s.up?-sc*.9:sc);if(s.up)g.translate(0,34);g.drawImage(SW,i*128,0,128,128,-63,-80,128,128);g.restore()}}
+  g.drawImage(im,i*128,0,128,128,-63,-80,128,128);g.restore()}
+ for(const f of FX){g.fillStyle=f.c;g.globalAlpha=1-f.t*2;g.fillRect(Math.round(f.x),Math.round(f.y),2,2)}g.globalAlpha=1;
+ g.textAlign='center';for(const n of NUM){g.font='bold '+(n.big?14:9)+'px monospace';g.fillStyle='#000';g.fillText(n.v,n.x+1,n.y-n.t*30+1);g.fillStyle=n.big?'#ffd24a':'#fff';g.fillText(n.v,n.x,n.y-n.t*30)}
+ g.restore();
+ if(combo>1){g.font='bold 12px monospace';g.textAlign='right';g.fillStyle='#ffd24a';g.fillText(combo+' HIT',W-8,30)}
+}
+let last=0;function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;step(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+const KM={a:'l',arrowleft:'l',d:'r',arrowright:'r',k:'j',' ':'j',w:'j',arrowup:'j'};
+onkeydown=e=>{const k=e.key.toLowerCase();if(k==='j'||k==='z'||k==='x'){if(!e.repeat)atk()}else if(KM[k]){if(!(KM[k]==='j'&&e.repeat))key[KM[k]]=1;e.preventDefault()}};
+onkeyup=e=>{const k=KM[e.key.toLowerCase()];if(k)key[k]=0};
+for(const [id,k] of [['l','l'],['r','r']]){const b=document.getElementById(id);b.onpointerdown=e=>{key[k]=1;e.preventDefault()};b.onpointerup=b.onpointercancel=b.onpointerleave=()=>key[k]=0}
+document.getElementById('j').onpointerdown=e=>{key.j=1;e.preventDefault()};document.getElementById('a').onpointerdown=e=>{atk();e.preventDefault()};
+window.CB={P,atk,step,draw,STEP,get D(){return D}};
+</script></body></html>
