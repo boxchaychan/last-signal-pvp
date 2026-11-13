@@ -14,7 +14,9 @@ L={'slash2':('melee/double-slash','c',13,18),'flurry':('melee/dagger-flurry','c'
  'healaoe':('holy/heal-aoe','g',36,15),'feather':('holy/feather-burst','c',37,15),'hex':('shadow/hex-sigil','c',51,16),
  'mburst':('arcane/mana-burst','c',23,15),'quake':('nature/quake','g',30,15),'darkx':('shadow/dark-explosion','c',30,12),
  'pillar':('holy/holy-pillar','g',30,12),'firering':('fire/fire-ring','g',30,10),
- 'pmeteor':('fire/meteor','g',152,30)}   # owner 2026-11-09: the mage's meteor (falls in, explodes, smokes)
+ 'pmeteor':('fire/meteor','g',152,30),
+ # dagger girl (2026-11-13), rendered with the violet ramp: --opts '{"palette":["#2b1252","#481c88","#6b2cc0","#9a48ec","#c684ff","#ecc8ff","#ffffff"],"sparks":["#fff3a6","#ffe26b","#c684ff","#9a48ec"]}' into its own --out dir
+ 'dg_cut':('melee/sword-slash','c',10,18),'dg_ring':('melee/spin-slash','c',13,18),'dg_x':('melee/double-slash','c',13,18),'dg_orb':('arcane/arcane-orb','c',36,15)}   # owner 2026-11-09: the mage's meteor (falls in, explodes, smokes)
 ONLY=sys.argv[3:]   # optional keys: import just these
 man=json.load(open(os.path.join(DST,'manifest.json')))
 tot=0
