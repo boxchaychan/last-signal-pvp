@@ -18,15 +18,20 @@ for(const k in N){IMG[k]=new Image();IMG[k].src=A+k+'.png'}
 let SW=null; // the white swoosh alone (for drawing it bigger on the heavy hits)
 IMG.combo_1.onload=()=>{const c=document.createElement('canvas');c.width=384;c.height=128;const x=c.getContext('2d');x.drawImage(IMG.combo_1,0,0);const d=x.getImageData(0,0,384,128),a=d.data;for(let i=0;i<a.length;i+=4)if(Math.min(a[i],a[i+1],a[i+2])<225)a[i+3]=0;x.putImageData(d,0,0);SW=c};
 // ---- our own bone moves (art/poses/combo/sword_combo.json): key poses + in-betweens made by the code, every screen frame
-let BONE=null,MODE=localStorage.getItem('cb.mode')||'bone';const BS=.15,TR=[];
+let BONE=null,MODE=localStorage.getItem('cb.mode2')||'hero';const RIG=()=>MODE!=='frames'&&BONE;
+// the swordsman (class 1) on the same bones: head / torso / sword are his own pixels (tools/art/rig_parts.py), arms and legs pixel capsules
+const HL={sh:40,neck:46,head:0,ua:13,fa:12,sw:52,th:16,sn:19,k:.46},GL={sh:52,neck:62,head:66,ua:40,fa:36,sw:96,th:36,sn:40,k:1,ub:38,fb:32};HL.ub=13;HL.fb=12;
+let PART=null;const PIM=new Image();PIM.src='art/poses/combo/swordsman_parts.png';fetch('art/poses/combo/swordsman_parts.json').then(r=>r.json()).then(j=>PART=j);
+function dxW(){return MODE==='hero'?P.pose[10]*HL.k/Z:P.pose[10]*BS}
+const BS=.15,TR=[];
 fetch('art/poses/combo/sword_combo.json').then(r=>r.json()).then(j=>{BONE=j;P.pose=j.stand.slice()});
 const BG=[{dmg:10,lunge:26,kb:40,stop:.05,sc:1},{dmg:14,lunge:36,kb:60,stop:.06,sc:1.15,up:1},{dmg:30,lunge:44,kb:150,stop:.12,sc:1.7,slam:1}];
 const BCOL={head:'#fad23c',torso:'#3c6ee6',armF1:'#e63232',armF2:'#fa8c28',armB1:'#9646c8',armB2:'#f078c8',legF1:'#28aa46',legF2:'#96dc3c',legB1:'#148c96',legB2:'#5ad2e6',sword:'#dfe6f0'};
 function pt(p,a,l){a*=Math.PI/180;return[p[0]+Math.cos(a)*l,p[1]+Math.sin(a)*l]}
-function jointsOf(p){const hip=[p[10],0],J={hip,sh:pt(hip,-90+p[0],52),neck:pt(hip,-90+p[0],62)};J.head=pt(J.neck,-90+p[0]*.6,66);
- J.elbF=pt(J.sh,p[1],40);J.handF=pt(J.elbF,p[2],36);J.tip=pt(J.handF,p[3],96);J.elbB=pt(J.sh,p[4],38);J.handB=pt(J.elbB,p[5],32);
- J.kneeF=pt(hip,p[6],36);J.footF=pt(J.kneeF,p[7],40);J.kneeB=pt(hip,p[8],36);J.footB=pt(J.kneeB,p[9],40);
- const low=Math.max(J.footF[1],J.footB[1])+p[11];for(const k in J)J[k]=[J[k][0]*BS,(J[k][1]-low)*BS];return J}
+function jointsOf(p,L,sc){L=L||GL;sc=sc||BS;const hip=[p[10]*L.k,0],J={hip,sh:pt(hip,-90+p[0],L.sh),neck:pt(hip,-90+p[0],L.neck)};J.head=pt(J.neck,-90+p[0]*.6,L.head);
+ J.elbF=pt(J.sh,p[1],L.ua);J.handF=pt(J.elbF,p[2],L.fa);J.tip=pt(J.handF,p[3],L.sw);J.elbB=pt(J.sh,p[4],L.ub);J.handB=pt(J.elbB,p[5],L.fb);
+ J.kneeF=pt(hip,p[6],L.th);J.footF=pt(J.kneeF,p[7],L.sn);J.kneeB=pt(hip,p[8],L.th);J.footB=pt(J.kneeB,p[9],L.sn);
+ const low=Math.max(J.footF[1],J.footB[1])+p[11]*L.k;for(const k in J)J[k]=[J[k][0]*sc,(J[k][1]-low)*sc];return J}
 function mix(a,b,k){return a.map((v,i)=>v+(b[i]-v)*k)}
 function ease(k,e){k=Math.max(0,Math.min(1,k));return e==='in'?k*k*k:e==='out'?1-(1-k)*(1-k):k*k*(3-2*k)}
 function runPose(t){const w=t*11,sF=Math.sin(w),sB=-sF,leg=(sw,ph)=>{const up=90-46*sw;return[up,up+12+58*Math.max(0,Math.cos(ph+.9))]},lf=leg(sF,w),lb=leg(sB,w+Math.PI);
@@ -36,13 +41,25 @@ function bonePose(dt){ // the pose to show when not attacking: blend toward it s
  if(P.st==='run')to=runPose(P.t);else if(P.st==='jump')to=[-6,-40,-80,-120,200,150,40,120,110,150,0,0];else if(P.st==='fall')to=[8,-80,-100,-110,220,250,70,100,115,120,0,0];
  else{to=st.slice();const b=Math.sin(P.t*3);to[6]-=3*b+3;to[7]+=4*b+4;to[8]+=3*b+3;to[9]+=4*b+4;to[1]+=3*b}
  P.pose=P.st==='run'?mix(P.pose,to,Math.min(1,dt*30)):mix(P.pose,to,Math.min(1,dt*14))}
-function boneStart(n){P.st='atk';P.step=n;P.bt=0;P.hitDone=0;P.from=P.pose.slice();P.x+=P.d*P.pose[10]*BS;P.from[10]=0;for(const k of BONE.steps[n].keys)k._dx=k.p[10]-(n?BONE.steps[n-1].keys.at(-1).p[10]:0);if(key.l)P.d=-1;if(key.r)P.d=1}
+function boneStart(n){P.st='atk';P.step=n;P.bt=0;P.hitDone=0;P.from=P.pose.slice();P.x+=P.d*dxW();P.from[10]=0;for(const k of BONE.steps[n].keys)k._dx=k.p[10]-(n?BONE.steps[n-1].keys.at(-1).p[10]:0);if(key.l)P.d=-1;if(key.r)P.d=1}
 function boneAtk(dt){const S=BONE.steps[P.step],K=S.keys;P.bt+=dt;let a=P.from,t0=0,i=0;while(i<K.length-1&&P.bt>=K[i].t){a=K[i].p.slice();a[10]=K[i]._dx;t0=K[i].t;i++}
  const b=K[i].p.slice();b[10]=K[i]._dx;P.pose=mix(a,b,ease((P.bt-t0)/(K[i].t-t0),K[i].e));
- const h=K.find(k=>k.hit);if(P.bt>=h.t&&!P.hitDone){P.hitDone=1;P.x+=0;doHit(BG[P.step],P.pose[10]*BS)}
- if(P.bt>=K.at(-1).t){if(P.buf>0&&P.step<2)boneStart(P.step+1);else{P.x+=P.d*P.pose[10]*BS;P.pose[10]=0;P.st='end';P.bt=0;P.from=P.pose.slice();if(P.step>=2)P.buf=0}}}
+ const h=K.find(k=>k.hit);if(P.bt>=h.t&&!P.hitDone){P.hitDone=1;P.x+=0;doHit(BG[P.step],dxW())}
+ if(P.bt>=K.at(-1).t){if(P.buf>0&&P.step<2)boneStart(P.step+1);else{P.x+=P.d*dxW();P.pose[10]=0;P.st='end';P.bt=0;P.from=P.pose.slice();if(P.step>=2)P.buf=0}}}
 function boneEnd(dt){P.bt+=dt;if(P.buf>0&&P.step<2&&P.bt<.2){boneStart(P.step+1);return}P.pose=mix(P.from,BONE.stand,ease(P.bt/.28));if(P.bt>=.28){P.st='idle';P.step=0;P.t=0}}
-function drawBone(x,y){const J=jointsOf(P.pose),d=P.d,X=k=>x+J[k][0]*d,Y=k=>y+J[k][1];
+function limb(a,b,w,c,o){const n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1]))+1,h=w>>1;for(const pass of [0,1]){g.fillStyle=pass?c:'#1c1416';for(let i=0;i<n;i++){const k=n>1?i/(n-1):0,x=Math.round(a[0]+(b[0]-a[0])*k),y=Math.round(a[1]+(b[1]-a[1])*k);
+  if(pass)g.fillRect(x-h,y-h,w,w);else if(o)g.fillRect(x-h-1,y-h-1,w+2,w+2)}}}
+function drawHero(x,y){const J=jointsOf(P.pose,HL,1),d=P.d,p=P.pose,xr=Math.round(x*Z)/Z,yr=Math.round(y*Z)/Z,X=k=>xr+J[k][0]*d/Z,Y=k=>yr+J[k][1]/Z;
+ if(P.st==='atk'||P.st==='end')TR.push({t:0,a:[X('tip'),Y('tip')],b:[xr+(J.handF[0]*.35+J.tip[0]*.65)*d/Z,yr+(J.handF[1]*.35+J.tip[1]*.65)/Z],on:P.st==='atk'});
+ for(let i=1;i<TR.length;i++){const a=TR[i-1],q=TR[i];if(!a.on||!q.on||q.t>.1)continue;if(Math.hypot(q.a[0]-a.a[0],q.a[1]-a.a[1])<1.2)continue;
+  g.globalAlpha=Math.max(0,1-q.t/.1)*.9;g.fillStyle=P.step===2?'#ffe9a0':'#bfe6ff';g.beginPath();g.moveTo(a.a[0],a.a[1]);g.lineTo(q.a[0],q.a[1]);g.lineTo(q.b[0],q.b[1]);g.lineTo(a.b[0],a.b[1]);g.fill()}g.globalAlpha=1;
+ if(!PART||!PIM.width)return;g.save();g.translate(xr,yr);g.scale(d/Z,1/Z);
+ const R=a=>[Math.round(a[0]),Math.round(a[1])],part=(n,q,sh,rot)=>{const r=PART[n];g.save();g.translate(Math.round(q[0]),Math.round(q[1]));if(sh)g.transform(1,0,-Math.tan(sh*Math.PI/180),1,0,0);if(rot)g.rotate(rot*Math.PI/180);g.drawImage(PIM,r.x,r.y,r.w,r.h,-r.px,-r.py,r.w,r.h);g.restore()};
+ const leg=(k,f,c1,c2)=>{limb(J.hip,J[k],7,c1,1);limb(J[k],J[f],7,c2,1);const ft=R(J[f]);g.fillStyle='#1c1416';g.fillRect(ft[0]-4,ft[1]-4,13,6);g.fillStyle=c2;g.fillRect(ft[0]-3,ft[1]-3,11,4)};
+ leg('kneeB','footB','#241c1e','#5e3a26');part('torso',J.hip,p[0]);leg('kneeF','footF','#2e2426','#7a4c32');
+ part('head',[J.neck[0]+p[0]*.05,J.neck[1]+1]);part('sword',J.handF,0,p[3]+6);
+ limb(J.sh,J.elbF,6,'#4d5d84',1);limb(J.elbF,J.handF,5,'#5a3a2a',1);const h=R(J.handF);g.fillStyle='#1c1416';g.fillRect(h[0]-3,h[1]-3,7,7);g.fillStyle='#f0d2b4';g.fillRect(h[0]-2,h[1]-2,5,5);g.restore()}
+function drawBone(x,y){if(MODE==='hero')return drawHero(x,y);const J=jointsOf(P.pose),d=P.d,X=k=>x+J[k][0]*d,Y=k=>y+J[k][1];
  if(P.st==='atk'||P.st==='end'){TR.push({t:0,a:[X('tip'),Y('tip')],b:[x+(J.handF[0]*.45+J.tip[0]*.55)*d,(Y('handF')*.45+Y('tip')*.55)],on:P.st==='atk'})}
  for(let i=1;i<TR.length;i++){const p=TR[i-1],q=TR[i];if(!p.on||!q.on||q.t>.1)continue;const sp=Math.hypot(q.a[0]-p.a[0],q.a[1]-p.a[1]);if(sp<1.2)continue;
   g.globalAlpha=Math.max(0,1-q.t/.1);g.fillStyle=P.step===2?'#fff2b0':'#fff';g.beginPath();g.moveTo(p.a[0],p.a[1]);g.lineTo(q.a[0],q.a[1]);g.lineTo(q.b[0],q.b[1]);g.lineTo(p.b[0],p.b[1]);g.fill()}g.globalAlpha=1;
@@ -51,8 +68,10 @@ function drawBone(x,y){const J=jointsOf(P.pose),d=P.d,X=k=>x+J[k][0]*d,Y=k=>y+J[
  g.fillStyle='#14141a';g.beginPath();g.arc(X('head'),Y('head'),8.2,0,7);g.fill();g.fillStyle=BCOL.head;g.beginPath();g.arc(X('head'),Y('head'),7.2,0,7);g.fill();g.fillStyle='#14141a';g.fillRect(Math.round(X('head')+4*d)-1,Math.round(Y('head'))-1,2,3);
  seg('handF','tip','sword',1.4);seg('sh','elbF','armF1',2.4);seg('elbF','handF','armF2',2.4)}
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,K;
-function rs(){K=Math.max(2,Math.round(innerHeight/130));W=cv.width=Math.ceil(innerWidth/K);H=cv.height=Math.ceil(innerHeight/K);g.imageSmoothingEnabled=false}rs();onresize=rs;
-const GY=()=>H-34;
+let Z=1;
+function rs(){if(MODE==='hero'){const dp=devicePixelRatio||1,kk=Math.max(1,Math.round(innerHeight*dp/340));cv.width=Math.ceil(innerWidth*dp/kk);cv.height=Math.ceil(innerHeight*dp/kk);Z=cv.height/130;W=cv.width/Z;H=130}
+ else{Z=1;K=Math.max(2,Math.round(innerHeight/130));W=cv.width=Math.ceil(innerWidth/K);H=cv.height=Math.ceil(innerHeight/K)}g.imageSmoothingEnabled=false}rs();onresize=rs;
+const GY=()=>Math.round(H-34);
 // steps of the chain: frames = [sheet, frame, seconds]; hit = index of the frame that deals damage
 const STEP=[
  {f:[['combo_1',0,.07],['combo_1',1,.07],['combo_1',2,.08]],hit:0,dmg:10,lunge:26,kb:40,stop:.05,sc:1},
@@ -62,7 +81,7 @@ const END=[['combo_1_end',0,.07],['combo_1_end',1,.07],['combo_1_end',2,.07],['c
 const P={pose:null,bt:0,x:60,y:0,vy:0,d:1,st:'idle',t:0,i:0,step:0,buf:0,hitDone:0},key={},FX=[],NUM=[];let D=[],stop=0,shake=0,cam=0,combo=0,comboT=0;
 function spawn(){D=[];for(let i=0;i<4;i++)D.push({x:P.x+90+i*38+Math.random()*10,hp:60,vx:0,y:0,vy:0,fl:0})}spawn();
 function atk(){P.buf=.28}
-function startStep(n){if(MODE==='bone'&&BONE)return boneStart(n);P.st='atk';P.step=n;P.i=0;P.t=0;P.hitDone=0;if(key.l)P.d=-1;if(key.r)P.d=1}
+function startStep(n){if(RIG())return boneStart(n);P.st='atk';P.step=n;P.i=0;P.t=0;P.hitDone=0;if(key.l)P.d=-1;if(key.r)P.d=1}
 function doHit(s,off){
  const R=30*s.sc;let any=0;off=off||0;
  for(const m of D){const dx=(m.x-P.x)*P.d-off;if(dx>-6&&dx<R&&m.hp>0){any=1;m.hp-=s.dmg;m.vx=P.d*s.kb;m.fl=.12;if(s.up||s.slam)m.vy=-(s.slam?150:90);
@@ -74,7 +93,7 @@ function step(dt){
  P.buf-=dt;comboT-=dt;if(comboT<=0)combo=0;
  const mv=(key.r?1:0)-(key.l?1:0),air=P.y<0;
  for(const q of TR)q.t+=dt;while(TR.length&&TR[0].t>.15)TR.shift();
- const B=MODE==='bone'&&BONE;
+ const B=RIG();
  if(B&&P.st==='atk'){boneAtk(dt);P.y=0}else if(B&&P.st==='end')boneEnd(dt);
  else if(P.st==='atk'){const s=STEP[P.step],f=s.f[P.i];P.t+=dt;
   const tot=s.f.reduce((a,b)=>a+b[2],0);P.x+=P.d*s.lunge/tot*dt*(P.i<=s.hit?1.6:.4);
@@ -92,19 +111,19 @@ function step(dt){
  D=D.filter(m=>m.hp>0||m.fl>-.25);if(!D.some(m=>m.hp>0)&&!D.length)spawn();
  for(const f of FX){f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=300*dt}for(const n of NUM)n.t+=dt;
  while(FX.length&&FX[0].t>.5)FX.shift();while(NUM.length&&NUM[0].t>.7)NUM.shift();
- shake*=Math.pow(.001,dt);cam+=(P.x+(MODE==='bone'&&P.pose&&P.st==='atk'?P.d*P.pose[10]*BS:0)-W*.35-cam)*Math.min(1,dt*6)}
+ shake*=Math.pow(.001,dt);cam+=(P.x+(MODE!=='frames'&&P.pose&&P.st==='atk'?P.d*dxW():0)-W*.35-cam)*Math.min(1,dt*6)}
 function frameOf(){if(P.st==='atk'){const f=STEP[P.step].f[P.i];return[f[0],f[1],STEP[P.step]]}
  if(P.st==='end')return['combo_1_end',P.i];if(P.st==='run')return['run',Math.floor(P.t*14)%10];
  if(P.st==='jump')return['jump',Math.min(5,2+Math.floor(P.t*10)%4)];if(P.st==='fall')return['fall_loop',Math.floor(P.t*10)%3];return['idle',Math.floor(P.t*9)%10]}
 function draw(){
  const gy=GY(),sx=Math.round((Math.random()-.5)*shake),sy=Math.round((Math.random()-.5)*shake);
- g.fillStyle='#2a3350';g.fillRect(0,0,W,H);g.fillStyle='#343f63';for(let i=-1;i<W/60+2;i++){const x=i*60-((cam*.4)%60);g.fillRect(Math.round(x),gy-50-(i*37%23),28,60)}
+ g.setTransform(Z,0,0,Z,0,0);g.fillStyle='#2a3350';g.fillRect(0,0,W+1,H+1);g.fillStyle='#343f63';for(let i=-1;i<W/60+2;i++){const x=i*60-((cam*.4)%60);g.fillRect(Math.round(x),gy-50-(i*37%23),28,60)}
  g.save();g.translate(sx-Math.round(cam),sy);
  g.fillStyle='#55633f';g.fillRect(Math.round(cam)-8,gy,W+16,H);g.fillStyle='#6f8050';g.fillRect(Math.round(cam)-8,gy,W+16,2);
  for(const m of D){const x=Math.round(m.x),y=Math.round(gy+m.y),dead=m.hp<=0;g.globalAlpha=dead?Math.max(0,1+m.fl*4):1;
   g.fillStyle=m.fl>0?'#fff':'#b5533c';g.fillRect(x-6,y-22,12,22);g.fillStyle=m.fl>0?'#fff':'#e0c9a0';g.fillRect(x-5,y-30,10,9);
   if(!dead){g.fillStyle='#000';g.fillRect(x-8,y-36,16,3);g.fillStyle='#6fe06a';g.fillRect(x-7,y-35,Math.max(0,14*m.hp/60),1)}g.globalAlpha=1}
- if(MODE==='bone'&&BONE)drawBone(Math.round(P.x),Math.round(gy+P.y));else{const [k,i,s]=frameOf(),im=IMG[k];if(im.complete&&im.width){const sc=s&&P.i>=s.hit-0&&k==='combo_1'?s.sc:1,x=Math.round(P.x),y=Math.round(gy+P.y);
+ if(RIG())drawBone(Math.round(P.x),Math.round(gy+P.y));else{const [k,i,s]=frameOf(),im=IMG[k];if(im.complete&&im.width){const sc=s&&P.i>=s.hit-0&&k==='combo_1'?s.sc:1,x=Math.round(P.x),y=Math.round(gy+P.y);
   g.save();g.translate(x,y);g.scale(P.d,1);
   if(sc>1){ // bigger swoosh only: draw the frame scaled around the feet, then the body again at 1x on top
    if(SW){g.save();g.scale(sc,s.up?-sc*.9:sc);if(s.up)g.translate(0,34);g.drawImage(SW,i*128,0,128,128,-63,-80,128,128);g.restore()}}
@@ -120,7 +139,7 @@ onkeydown=e=>{const k=e.key.toLowerCase();if(k==='j'||k==='z'||k==='x'){if(!e.re
 onkeyup=e=>{const k=KM[e.key.toLowerCase()];if(k)key[k]=0};
 for(const [id,k] of [['l','l'],['r','r']]){const b=document.getElementById(id);b.onpointerdown=e=>{key[k]=1;e.preventDefault()};b.onpointerup=b.onpointercancel=b.onpointerleave=()=>key[k]=0}
 document.getElementById('j').onpointerdown=e=>{key.j=1;e.preventDefault()};document.getElementById('a').onpointerdown=e=>{atk();e.preventDefault()};
-const MB=document.getElementById('m');function mlab(){MB.textContent=MODE==='bone'?'🦴 กระดูกของเรา (แตะสลับ)':'🎞 เฟรม Ozzbit (แตะสลับ)'}mlab();
-MB.onpointerdown=e=>{if(P.st==='atk'||P.st==='end')return;MODE=MODE==='bone'?'frames':'bone';localStorage.setItem('cb.mode',MODE);mlab();e.preventDefault()};
+const MB=document.getElementById('m');function mlab(){MB.textContent=(MODE==='hero'?'🗡 นักดาบบนกระดูก':MODE==='bone'?'🦴 หุ่นกระดูก':'🎞 เฟรม Ozzbit')+' (แตะสลับ)'}mlab();
+MB.onpointerdown=e=>{if(P.st==='atk'||P.st==='end')return;MODE=MODE==='hero'?'bone':MODE==='bone'?'frames':'hero';localStorage.setItem('cb.mode2',MODE);mlab();rs();e.preventDefault()};
 window.CB={get MODE(){return MODE},P,atk,step,draw,STEP,get D(){return D}};
 </script></body></html>
