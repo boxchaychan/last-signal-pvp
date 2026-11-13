@@ -9,6 +9,11 @@ P = dict(dagger="a short curved black-steel dagger with a purple gem in the hilt
  apple="a blood-red apple with a dark leaf, glossy, one bite taken", meat="a big roasted meat leg on the bone, steaming", juice="a small blue glowing stamina potion in a square bottle with a cork",
  stone="a grey whetstone block with sparks and scratch marks", glove="a pair of dark leather gauntlets with silver studs", clover="a glowing emerald four-leaf clover charm on a thin chain",
  ember="a faceted fire-red gemstone with flames inside", frost="a faceted ice-blue gemstone covered in frost crystals", heart="an anatomical dark red heart pierced by a small silver fang, dripping",
+ spear="a long dark steel spear with a leaf-shaped blade and a red tassel, diagonal", claw="a pair of curved black iron beast claws strapped to a leather bracer", scythe="a reaper's scythe with a huge curved pale blade and a twisted black wooden shaft, diagonal",
+ shuriken="a four-pointed black steel throwing star with a purple glint", club="a thick wooden club studded with iron nails, diagonal", orb="a crystal ball with crackling yellow lightning inside on a small dark claw stand",
+ icestaff="a pale silver staff topped with a big jagged glowing ice crystal, diagonal", skull="a cursed human skull with glowing green eye sockets and purple smoke", book="a thick forbidden spell book with a dark purple leather cover, a glowing eye emblem and metal clasps",
+ meteor="a rolled parchment scroll with a red wax seal and a burning meteor drawn on it, glowing", plate="a heavy black steel breastplate armour with gold trim and a lion emblem", cloak="a dark hooded shadow cloak with a silver clasp, tattered edges",
+ ring="a golden ring with a glowing green life gem", wine="a round flask of dark red blood wine with a bat-wing stopper", fang="a large curved monster fang on a leather cord necklace", hourglass="an ornate bronze hourglass with glowing blue sand",
  star="a golden falling star charm with a glowing trail and runes", pig="a small bronze piggy bank shaped like a boar with a coin slot and gold coins", crown="a tarnished golden king's crown with red jewels and black spikes")
 out = 'art/incoming/bag/icons/'
 def call(tool, args): return subprocess.run(['python3', 'tools/pl_rpc.py', tool, json.dumps(args)], capture_output=True, text=True).stdout
