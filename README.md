@@ -1,21 +1,11 @@
-# สัญญาณสุดท้าย · Last Signal
+# Last Signal — pixel action game (work in progress)
 
-เกมบนเบราว์เซอร์ มองจากด้านบน ฝั่งคน (ยิง + สกิลแบบ MOBA + ป้อม) ปะทะ ฝั่งผีไทยและซอมบี้ (เล่นเป็นบอสเอง หรือโหมด RTS) เล่นกับบอทได้แล้ว
+- `map.html` — walk test on the pixel map with the new chibi swordsman (`?hero=chibi16`, `chibi64`, `&px=1..4`).
+- `combo.html` — combo / animation test page.
+- `dogcat.html` — dogs-vs-cats tower defense prototype.
+- `vfxlab.html`, `vfxcut.html`, `fx/`, `art/incoming/pfx*`, `fx_*` — skill effects and the tools to cut / layer them.
+- `action.html` — code of the earlier action RPG (skills, effects, monsters). Its hero art was removed on 2026-11-13; it does not run until the new hero is wired in.
+- `docs/action-game.md` — progress notes and the PixelLab job log. `CLAUDE.md`, `AGENTS.md` — notes for the AI helpers.
 
-## เล่นบนคอม
-ภาพโหลดจากโฟลเดอร์ `art/` เลยต้องเปิดผ่านเว็บเซิร์ฟเวอร์เล็กๆ:
-
-```
-python -m http.server 8000
-```
-แล้วเปิด http://localhost:8000
-
-## โครงสร้าง
-- `index.html` ตัวเกมทั้งหมด
-- `art/` ภาพตัวละครและพื้น · `fx/` เอฟเฟกต์ · `vendor/` ใบอนุญาตของโค้ดที่ใช้
-- `docs/prompt-kit.html` ชุดพรอมต์ทำภาพ
-- `tools/` สคริปต์ทดสอบ ตัดวิดีโอเป็นภาพเคลื่อนไหว และสคริปต์ Blender
-- `CLAUDE.md` คู่มือสำหรับ Claude Code
-
-## Credits
-pixelfx (MIT), agent-sprite-forge (MIT), three.js (MIT) — see `vendor/`.
+Open through a small web server (`python -m http.server 8000`), art is loaded by relative path.
+Third-party: `vendor/` (licences), `art/thirdparty/ozzbit_hero/` (free template, personal non-commercial use, credit "Ozzbit Games").
