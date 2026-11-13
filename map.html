@@ -24,8 +24,13 @@
 <script>
 // Map 1 walk test (owner 2026-11-11 "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู"). Assets from tools/art/td_map.py (art/td/map1/):
 // everything is at map size (1 map px = 1 screen px on a landscape phone) and blown up by a whole number K, so pixels stay square.
-const A = 'art/td/map1/', cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-const img = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = A + s; });
+// 2026-11-13: three joined maps (td1 forest -> td2 autumn river -> td3 ruined graveyard, stronger monsters). ?map=td3 starts on a map;
+// walking into an `exits` box of map.json loads the next map and puts the hero on its `entries[<map he came from>]`.
+const MAPS = {td1: {dir: 'art/td/map1/', name: 'ป่าเนินผา'}, td2: {dir: 'art/td/map2/', name: 'ป่าใบไม้แดง'}, td3: {dir: 'art/td/map3/', name: 'สุสานซากหิน'}};
+let MAPID = new URLSearchParams(location.search).get('map'); if (!MAPS[MAPID]) MAPID = 'td1';
+const A = 'art/td/map1/', cv = document.getElementById('cv'), ctx = cv.getContext('2d');   // the hero sheets live in map 1's folder
+const img = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = s; });
+let TRV = null, BAN = 0;                             // travelling to another map (fade), the map-name banner
 let M, GR, PR, HR = {}, MB = {}, MBW = {}, BLK, BW, BH, K = 1, VW = 0, VH = 0;
 const P = {x: 0, y: 0, d: 1, mv: 0, t: 0}, keys = {}, joy = {id: null, x0: 0, y0: 0, x: 0, y: 0};
 let mobs = [], cam = {x: 0, y: 0}, dbg = /dbg/.test(location.search), VIG;
@@ -38,7 +43,8 @@ const CSTEP = [
   {f: CF([[17, .04], [18, .04], [19, .06], [20, .08], [21, .08]]), hit: 2, dmg: 16, lunge: 12, kb: 100, stop: .07, rx: 52, ry: 30},
   {f: CF([[28, .04], [29, .04], [30, .05], [31, .08], [32, .1]]), hit: 3, dmg: 32, lunge: 22, kb: 210, stop: .12, rx: 64, ry: 30, big: 1}];
 const CEND = CF([[33, .06], [35, .06], [36, .06], [38, .06], [40, .06]]);
-const MHP = {wolf: 34, shroom: 22, skeleton: 46, boar_guard: 80, goblin_archer: 30, golem: 130, wisp: 20};
+const MHP0 = {wolf: 34, shroom: 22, skeleton: 46, boar_guard: 80, goblin_archer: 30, golem: 130, wisp: 20};
+let MHP = MHP0;                                     // this map's monster HP (map.json `hpk` makes a zone stronger)
 const NUM = [], FXS = []; let HS = 0, SHK = 0, BUF = 0;
 const ST = {lv: 1, xp: 0, kills: 0, combo: 0, ct: 0, up: 0};
 const need = () => 20 + ST.lv * 15;
@@ -89,18 +95,33 @@ function resize() {
 }
 addEventListener('resize', resize);
 
-async function boot() {
-  M = await fetch(A + 'map.json', {cache: 'no-cache'}).then(r => r.json());
-  const ld = [img('ground.png').then(i => GR = i), img('props.png').then(i => PR = i), img('block.png').then(i => {
-    BW = i.width; BH = i.height; const c = document.createElement('canvas'); c.width = BW; c.height = BH; const g = c.getContext('2d'); g.drawImage(i, 0, 0);
-    const d = g.getImageData(0, 0, BW, BH).data; BLK = new Uint8Array(BW * BH); for (let k = 0; k < BW * BH; k++) BLK[k] = d[k * 4] > 128 ? 1 : 0; }),
+async function loadMap(id, from) {                   // everything of one map is loaded first, then swapped in at once
+  const D = MAPS[id].dir, m = await fetch(D + 'map.json', {cache: 'no-cache'}).then(r => r.json());
+  let gr, pr, blk, bw, bh; const mb = {}, mbw = {};
+  const ld = [img(D + 'ground.png').then(i => gr = i), img(D + 'props.png').then(i => pr = i), img(D + 'block.png').then(i => {
+    bw = i.width; bh = i.height; const c = document.createElement('canvas'); c.width = bw; c.height = bh; const g = c.getContext('2d'); g.drawImage(i, 0, 0);
+    const d = g.getImageData(0, 0, bw, bh).data; blk = new Uint8Array(bw * bh); for (let k = 0; k < bw * bh; k++) blk[k] = d[k * 4] > 128 ? 1 : 0; }),
     ];
-  if (CHB) ld.push(img(CHB.f).then(i => CHB.im = i));
-  if (CHB && CHB.pl) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/chibi_pl.png'; }   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
-  for (const k in M.mobs) ld.push(img('mob_' + k + '.png').then(i => { MB[k] = i; const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); MBW[k] = c; }));
+  for (const k in m.mobs) ld.push(img(D + 'mob_' + k + '.png').then(i => { mb[k] = i; const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); mbw[k] = c; }));
   await Promise.all(ld);
-  P.x = M.start[0]; P.y = M.start[1];
+  M = m; GR = gr; PR = pr; BLK = blk; BW = bw; BH = bh; MB = mb; MBW = mbw; MAPID = id;
+  MHP = {}; for (const k in MHP0) MHP[k] = Math.round(MHP0[k] * (M.hpk || 1));
+  const at = from && M.entries && M.entries[from] || M.start; M.start = at.slice();   // falling here = back at the gate he came in by
+  P.x = at[0]; P.y = at[1]; P.atk = P.act = null; NUM.length = FXS.length = 0;
   mobs = M.spawn.map(([k, x, y], i) => ({hp: MHP[k], vx: 0, vy: 0, fl: 0, k, x, y, hx: x, hy: y, tx: x, ty: y, w: 1 + Math.random() * 2, f: Math.random() > .5 ? 1 : -1, t: Math.random() * 3, mv: 0}));
+  document.title = MAPS[id].name + ' · ลองเดิน'; BAN = 3;
+  if (VW) { cam.x = P.x - VW / 2; cam.y = P.y - VH / 2; }
+}
+function travel(to) {                                // fade out, load, fade in
+  if (TRV || !MAPS[to]) return; const from = MAPID; TRV = {t: 0, ok: 0};
+  loadMap(to, from).then(() => { TRV.ok = 1; }).catch(e => { console.error(e); TRV = null; });
+}
+async function boot() {
+  const ld = [];
+  if (CHB) ld.push(img(A + CHB.f).then(i => CHB.im = i));
+  if (CHB && CHB.pl) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/chibi_pl.png'; }   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
+  ld.push(loadMap(MAPID));
+  await Promise.all(ld);
   document.getElementById('load').remove(); resize(); cam.x = P.x - VW / 2; cam.y = P.y - VH / 2; requestAnimationFrame(frame);
   setTimeout(() => document.getElementById('hint').style.opacity = 0, 6000);
 }
@@ -129,6 +150,8 @@ function step(dt) {
   for (const n of NUM) n.t += dt; while (NUM.length && NUM[0].t > .8) NUM.shift();
   for (const f of FXS) { f.t += dt; if (!f.ring) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 380 * dt; } } while (FXS.length && FXS[0].t > .45) FXS.shift();
   SHK *= Math.pow(.002, dt); ST.ct -= dt; if (ST.ct <= 0) ST.combo = 0; ST.up -= dt; BUF -= dt;
+  BAN -= dt;
+  if (TRV) { TRV.t += dt; if (TRV.ok && TRV.t > .25) { TRV.out = (TRV.out || 0) + dt; if (TRV.out > .3) TRV = null; } return; }   // the world stands still while the next map loads
   if (HS > 0) { HS -= dt; return; }
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
   let iy = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
@@ -166,6 +189,7 @@ function step(dt) {
     if (!P.mv) P.t = 0; P.mv = 1;
   } else { if (P.mv) P.t = 0; P.mv = 0; }
   P.t += dt;
+  if (!P.dead) for (const e of M.exits || []) if (P.x >= e.x0 && P.x < e.x1 && P.y >= e.y0 && P.y < e.y1) { travel(e.to); return; }   // the road leads to the next map
   for (const m of mobs) {                           // wander round home
     if (m.fl > 0) m.fl -= dt; if (m.ag > 0) m.ag -= dt;
     if (m.dead) { m.dead -= dt; if (m.dead <= 0) { m.dead = 0; m.gone = 1; } }
@@ -261,6 +285,7 @@ function frame(t) {
       ctx.fillStyle = g2; ctx.save(); ctx.translate(0, f.y * .55); ctx.scale(1, .45); ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.29); ctx.fill(); ctx.restore(); ctx.globalCompositeOperation = 'source-over'; }
     else { ctx.globalAlpha = Math.max(0, 1 - f.t / .45); ctx.fillStyle = f.c; ctx.fillRect(Math.round(f.x), Math.round(f.y), 2, 2); ctx.globalAlpha = 1; } }
   ctx.textAlign = 'center';
+  for (const e of M.exits || []) { const x = Math.max(70, Math.min(M.w - 70, (e.x0 + e.x1) / 2)), y = e.y0 - 8; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.fillStyle = '#000b'; ctx.fillText(e.label, x + 1, y + 1); ctx.fillStyle = '#ffe9a8'; ctx.fillText(e.label, x, y); }   // where each road leads
   for (const n of NUM) { if (n.t < 0) continue; const y = n.y - n.t * 26; ctx.font = 'bold ' + (n.big ? 13 : n.xp ? 7 : 9) + 'px monospace'; ctx.fillStyle = '#000'; ctx.fillText(n.v, n.x + 1, y + 1); ctx.fillStyle = n.red ? '#ff6a5a' : n.xp ? '#9fe870' : n.big ? '#ffd24a' : '#fff'; ctx.fillText(n.v, n.x, y); }
   if (dbg) {                                         // B: show where you cannot walk
     ctx.fillStyle = 'rgba(255,0,0,.35)';
@@ -274,6 +299,8 @@ function frame(t) {
     ctx.fillStyle = '#000a'; ctx.fillRect(x0, y0 + 6 * d, w, 7 * d); ctx.fillStyle = '#9fe870'; ctx.fillRect(x0 + d, y0 + 7 * d, (w - 2 * d) * ST.xp / need(), 5 * d);
     if (ST.combo > 1) { ctx.textAlign = 'right'; ctx.font = '800 ' + 22 * d + 'px system-ui'; ctx.fillStyle = '#ffd24a'; ctx.fillText(ST.combo + ' HIT', cv.width - 64 * d, 40 * d); }
     if (ST.up > 0) { ctx.textAlign = 'center'; ctx.font = '800 ' + 30 * d + 'px system-ui'; ctx.globalAlpha = Math.min(1, ST.up); ctx.fillStyle = '#ffe27a'; ctx.fillText('LEVEL UP!  Lv ' + ST.lv, cv.width / 2, cv.height * .3); ctx.globalAlpha = 1; } }
+  if (BAN > 0 && !TRV) { const d = devicePixelRatio || 1; ctx.textAlign = 'center'; ctx.font = '800 ' + 24 * d + 'px system-ui'; ctx.globalAlpha = Math.min(1, BAN); ctx.fillStyle = '#000a'; ctx.fillText(MAPS[MAPID].name, cv.width / 2 + 2, cv.height * .18 + 2); ctx.fillStyle = '#f4ecd0'; ctx.fillText(MAPS[MAPID].name, cv.width / 2, cv.height * .18); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
+  if (TRV) { ctx.globalAlpha = TRV.out ? Math.max(0, 1 - TRV.out / .3) : Math.min(1, TRV.t / .25); ctx.fillStyle = '#0a0c08'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.globalAlpha = 1; }
   if (joy.id !== null) {                             // the stick
     const d = devicePixelRatio || 1; ctx.lineWidth = 3 * d; ctx.strokeStyle = 'rgba(244,236,208,.45)'; ctx.fillStyle = 'rgba(244,236,208,.35)';
     ctx.beginPath(); ctx.arc(joy.x0 * d, joy.y0 * d, 46 * d, 0, 6.29); ctx.stroke();
@@ -281,7 +308,7 @@ function frame(t) {
   }
   requestAnimationFrame(frame);
 }
-window.GM = {P, ST, attack, act, CD, hurtHero, step, get mobs() { return mobs; }, frame};
+window.GM = {P, ST, attack, act, CD, hurtHero, step, get mobs() { return mobs; }, frame, travel, get map() { return MAPID; }, get M() { return M; }, get busy() { return !!TRV; }};
 boot().catch(e => { document.getElementById('load').textContent = 'โหลดไม่ได้: ' + e; });
 </script>
 </body>

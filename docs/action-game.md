@@ -1265,3 +1265,10 @@ bag.html attributes (owner 2026-11-13 "คุณสมบัติเกมย�
 - td.html and bag.html stay as they are (not deleted, not continued unless asked).
 - Swordsman swings up and down in map.html: `CV.n` / `CV.s` (2 chained hits each), chosen by `atkV` (stick up / down, or the way he faces when standing still); the lunge, hit box and knock-back turn with the swing. Side combo unchanged.
 - Open question asked to the owner: swordsman as the hero again, or only as the test body until an animal has a full move set (owner said "นักดาบไม่เอา เน้นสัตว์" earlier the same day).
+
+## 2026-11-13: map 3 "สุสานซากหิน" + map.html walks between the three maps (free, no PixelLab)
+- `MAP=td3 python3 tools/art/td_map.py` -> `art/td/map3/` + `art/td/map3_preview.png`: a cold ruined graveyard east of map 2. Only art already in the repo, recoloured in code (grey dirt / dead grass / paved road from the path_pro + cliff tiles, withered edge trees, the dead tree `trees_autumn_3`, ruins, headstones = `ruins_8` in rows, rocks, a murky pool, two plateaus with stairs). Everything inside is hand-placed in the `if T3:` block.
+- Monsters: 24 in 8 packs (skeleton, boar_guard, golem, wisp); `map.json` has `hpk: 1.8` = HP / damage / XP multiplier that `map.html` reads (maps 1-2 have none = 1).
+- Joined: map 2 got an east exit (x 1740-1800, y 850-950, at the end of its south road) -> td3; td3's west road -> td2. Map 2's ground.png / props.png are byte-identical (td.html uses them); only its block.png (the border opened at the exit) and map.json (exits / entries) changed. Map 1 is untouched.
+- `map.html` used to load map 1 only: now `?map=td1|td2|td3` picks the start map, walking into an `exits` box fades to the next map (`entries[<from>]`), the map name shows on arrival, exit labels are drawn on the ground, `GM.travel(id)` / `GM.map` for tests. Hero sheets still come from `art/td/map1/`.
+- Open: map 2's east exit sits under the edge tree's crown (the road was not extended because the ground must not change); td3's level is only the flat `hpk`, no level gate.
