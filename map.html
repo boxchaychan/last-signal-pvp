@@ -19,7 +19,7 @@
 <canvas id="cv"></canvas>
 <div id="hint">เดิน: WASD / ลูกศร · ฟัน: J / Space (กดย้ำ = คอมโบ) · หมุนฟัน: K · กลิ้งหลบ: L / Shift · มือถือ: ลากนิ้วเดิน ปุ่ม ⚔ 🌀 💨</div>
 <button id="fs" title="เต็มจอ">⛶</button>
-<button id="atk" title="ฟัน">⚔</button><button id="spin" title="หมุนฟัน">🌀</button><button id="roll" title="กลิ้งหลบ">💨</button>
+<button id="atk" title="ฟัน">⚔</button><button id="spin" title="หมุนฟัน">🌀</button><button id="roll" title="กลิ้งหลบ">💨</button><button id="sw" title="เปลี่ยนตัวละคร" style="position:fixed;left:10px;bottom:10px;z-index:5;height:38px;padding:0 12px;border-radius:10px;border:2px solid #0008;background:#3a2c58;color:#fff;font:600 13px system-ui">👤 เปลี่ยนตัว</button>
 <div id="load">กำลังโหลดแมพ…</div>
 <script>
 // Map 1 walk test (owner 2026-11-11 "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู"). Assets from tools/art/td_map.py (art/td/map1/):
@@ -50,7 +50,7 @@ const ST = {lv: 1, xp: 0, kills: 0, combo: 0, ct: 0, up: 0};
 const need = () => 20 + ST.lv * 15;
 function attack() { BUF = .3; }
 const HPMAX = () => 100 + (ST.lv - 1) * 15, CD = {spin: 0, roll: 0};
-function act(k) { if (P.dead || P.act || !(CHB && CHB.run)) return; if (CD[k] > 0) return; if (k === 'spin' && P.atk && !P.atk.end) return; P.atk = null; BUF = 0; P.act = {k, t: 0, h: 0}; CD[k] = k === 'spin' ? 5 : 1.1; if (k === 'roll') P.inv = .45; }
+function act(k) { if (P.dead || P.act || !(CHB && CHB.run)) return; if (CD[k] > 0) return; if (k === 'spin' && P.atk && !P.atk.end) return; P.atk = null; BUF = 0; P.act = {k, t: 0, h: 0}; CD[k] = k === 'spin' ? (CHB.dg ? 4 : 5) : (CHB.dg ? .7 : 1.1); if (k === 'roll') P.inv = .45; }
 function spinHit(big) { let any = 0; const dm = Math.round(22 * (1 + (ST.lv - 1) * .12));
   for (const m of mobs) { if (m.dead || m.gone) continue; const dx = m.x - P.x, dy = (m.y - P.y) * 1.6, d = Math.hypot(dx, dy); if (d < 78) { any = 1; m.hp -= dm; m.fl = .12; m.vx = dx / (d || 1) * (big ? 220 : 90); m.vy = dy / (d || 1) * (big ? 130 : 50); m.ag = 6;
     NUM.push({x: m.x, y: m.y - M.mobs[m.k].h, v: dm, t: 0, big}); for (let k = 0; k < 6; k++) FXS.push({x: m.x, y: m.y - M.mobs[m.k].h * .5, vx: (Math.random() - .5) * 200, vy: -Math.random() * 130, t: 0, c: '#bfe9ff'}); if (m.hp <= 0) kill(m); } }
@@ -121,7 +121,7 @@ async function boot() {
   const ld = [];
   if (CHB) ld.push(img(A + CHB.f).then(i => CHB.im = i));
   if (CHB && CHB.pl) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/' + (CHB.sheet || 'chibi_pl.png'); }
-  if (CHB && CHB.dg) fetch('fx/manifest.json').then(r => r.json()).then(m => { for (const k of ['dslash7_n', 'bigcut0_n', 'dslashl7_n', 'dashhit_n']) { SPR[k] = m[k]; SPR[k].im = new Image(); SPR[k].im.src = 'fx/' + k + '.png'; } });   // her neon violet cut effects (owner's pick)   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
+  if (CHB && CHB.dg) fetch('fx/manifest.json').then(r => r.json()).then(m => { for (const k of ['dslash7_n', 'bigcut0_n', 'dslashl7_n', 'dashhit_n', 'dg_tele_n', 'xcut_n']) { SPR[k] = m[k]; SPR[k].im = new Image(); SPR[k].im.src = 'fx/' + k + '.png'; } });   // her neon violet cut effects (owner's pick)   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
   ld.push(loadMap(MAPID));
   await Promise.all(ld);
   document.getElementById('load').remove(); resize(); cam.x = P.x - VW / 2; cam.y = P.y - VH / 2; requestAnimationFrame(frame);
@@ -150,7 +150,7 @@ document.getElementById('fs').onclick = () => {
 const SPD = 150;
 function step(dt) {
   for (const n of NUM) n.t += dt; while (NUM.length && NUM[0].t > .8) NUM.shift();
-  for (const f of FXS) { f.t += dt; if (!f.ring && !f.spr) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 380 * dt; } } while (FXS.length && FXS[0].t > .45) FXS.shift();
+  for (const f of FXS) { f.t += dt; if (!f.ring && !f.spr) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 380 * dt; } } while (FXS.length && FXS[0].t > (FXS[0].spr ? 1 : .45)) FXS.shift();
   SHK *= Math.pow(.002, dt); ST.ct -= dt; if (ST.ct <= 0) ST.combo = 0; ST.up -= dt; BUF -= dt;
   BAN -= dt;
   if (TRV) { TRV.t += dt; if (TRV.ok && TRV.t > .25) { TRV.out = (TRV.out || 0) + dt; if (TRV.out > .3) TRV = null; } return; }   // the world stands still while the next map loads
@@ -166,7 +166,15 @@ function step(dt) {
   if (P.inv > 0) P.inv -= dt; CD.spin -= dt; CD.roll -= dt;
   if (P.dead) { P.dead -= dt; P.mv = 0; if (P.dead <= 0) { P.dead = 0; P.x = M.start[0]; P.y = M.start[1]; P.hp = HPMAX(); P.inv = 2; } ix = iy = 0; BUF = 0; }
   else if (P.act) { const a = P.act; a.t += dt; P.mv = 0;
-    if (a.k === 'roll') { if (!a.d) { const l0 = Math.hypot(ix, iy); a.d = l0 > .2 ? [ix / l0, iy / l0] : [P.face, 0]; if (Math.abs(a.d[0]) > .2) P.face = a.d[0] > 0 ? 1 : -1; } move(P, a.d[0] * 330 * dt * (a.t < .32 ? 1 : .3), a.d[1] * 330 * dt * (a.t < .32 ? 1 : .3), 7); if (a.t >= .44) P.act = null; }
+    if (a.k === 'roll') { if (!a.d) { const l0 = Math.hypot(ix, iy); a.d = l0 > .2 ? [ix / l0, iy / l0] : [P.face, 0]; if (Math.abs(a.d[0]) > .2) P.face = a.d[0] > 0 ? 1 : -1; } const rv = CHB.dg ? (a.t < .16 ? 620 : 60) : 330 * (a.t < .32 ? 1 : .3); move(P, a.d[0] * rv * dt, a.d[1] * rv * dt, 7); if (a.t >= (CHB.dg ? .26 : .44)) P.act = null; }   // dagger girl: a short fast blink instead of a roll
+    else if (a.k === 'spin' && CHB.dg) {               // dagger girl: dash straight through the pack, every monster on the line is cut twice (the neon teleport-strike effect on each)
+      if (!a.d) { a.d = [P.face, 0]; a.x0 = P.x; P.inv = .6; FXS.push({spr: 'dashhit_n', sc: .6, x: P.x, y: P.y - 30, face: P.face, t: 0}); }
+      if (a.t < .2) move(P, P.face * 780 * dt, 0, 7);
+      else if (!a.h) { a.h = 1; const x0 = Math.min(a.x0, P.x) - 24, x1 = Math.max(a.x0, P.x) + 24, dm = Math.round(30 * (1 + (ST.lv - 1) * .12)); let any = 0;
+        for (const m of mobs) { if (m.dead || m.gone || m.x < x0 || m.x > x1 || Math.abs(m.y - P.y) > 36) continue; any = 1; m.hp -= dm; m.fl = .15; m.vx = -P.face * 60; m.vy = 0; m.ag = 6; NUM.push({x: m.x, y: m.y - M.mobs[m.k].h, v: dm, t: 0, big: 1});
+          FXS.push({spr: 'dg_tele_n', sc: .55, x: m.x, y: m.y - M.mobs[m.k].h * .5, face: P.face, t: -.0}); if (m.hp <= 0) kill(m); }
+        if (!any) FXS.push({spr: 'xcut_n', sc: .5, x: (a.x0 + P.x) / 2, y: P.y - 30, face: P.face, t: 0}); else { HS = .1; SHK = 5; ST.combo++; ST.ct = 1.5; } }
+      if (a.t >= .42) P.act = null; }
     else if (a.k === 'spin') { const i = a.t / .05 | 0; if (i >= 6 && a.h < 1) { a.h = 1; spinHit(0); } if (i >= 10 && a.h < 2) { a.h = 2; spinHit(1); } if (a.t >= .8) P.act = null; }
     else if (a.t >= .3) P.act = null;
     ix = iy = 0; BUF = 0; }
@@ -241,6 +249,7 @@ function drawHero() {
     if (CHB.run && (P.dead || P.act || (!P.atk && (P.mv ? (P.d === 6 || P.d === 2) : v === 1)))) {   // PixelLab clips: death / hurt / roll / spin, run up / down, idle (side). Cells in tools/art/pl_combo_sheet.py
       const a = P.act, f = P.dead ? 80 + Math.min(7, (2.4 - P.dead) * 9 | 0) : a ? (a.k === 'roll' ? 90 + Math.min(7, a.t / .055 | 0) : a.k === 'spin' ? 120 + Math.min(15, a.t / .05 | 0) : 70 + Math.min(3, a.t / .075 | 0)) : P.mv ? (P.d === 6 ? 100 : 110) + (P.t * 13 | 0) % 8 : 60 + (P.t * 6 | 0) % 8;
       const side = P.dead || a || !P.mv; shadow(x, y, CHB.s); if (P.inv > 0 && !P.dead && !a && (P.inv * 14 | 0) % 2) ctx.globalAlpha = .55;
+      if (CHB.dg && a && a.d && (a.k === 'roll' || a.k === 'spin')) for (let g = 3; g >= 1; g--) { ctx.save(); ctx.globalAlpha = .1 + .08 * (3 - g); ctx.translate(x - a.d[0] * g * 16, y - a.d[1] * g * 12); ctx.scale(P.face * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); }
       ctx.save(); ctx.translate(x, y); ctx.scale((side ? P.face : 1) * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); ctx.globalAlpha = 1; return; }
     if (CHB.run && P.atk) { const a = P.atk, f = (a.end ? (a.v ? CV[a.v].en : CEND)[a.i] : (a.v ? CV[a.v].st : CSTEP)[a.n].f[a.i]).f; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale((a.v ? 1 : P.face) * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
     if (CHB.run && P.mv && v !== 0 && !(v === 2 && (P.d === 6))) { const f = (P.t * 13 | 0) % 8; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale(fl * .5, .5); ctx.drawImage(CHB.run, f * 204, 0, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
@@ -316,6 +325,8 @@ function frame(t) {
   }
   requestAnimationFrame(frame);
 }
+{ const sw = document.getElementById('sw'), dg = CHB && CHB.dg; sw.textContent = dg ? '👤 นักดาบ' : '👤 สาวมีดคู่'; sw.onclick = () => { const u = new URLSearchParams(location.search); u.set('hero', dg ? 'chibi16' : 'dagger'); if (!u.get('px')) u.set('px', '1'); u.set('map', MAPID); location.search = u.toString(); };
+  if (dg) { document.getElementById('hint').textContent = 'เดิน: WASD / ลูกศร · ฟัน: J / Space (กดย้ำ = 3 จังหวะ) · พุ่งทะลุ: K · แวบหลบ: L / Shift · มือถือ: ลากนิ้วเดิน ปุ่ม ⚔ 🌀 💨'; document.getElementById('spin').title = 'พุ่งทะลุ'; document.getElementById('roll').title = 'แวบหลบ'; } }
 window.GM = {P, ST, attack, act, CD, hurtHero, step, get mobs() { return mobs; }, frame, travel, get map() { return MAPID; }, get M() { return M; }, get busy() { return !!TRV; }};
 boot().catch(e => { document.getElementById('load').textContent = 'โหลดไม่ได้: ' + e; });
 </script>
