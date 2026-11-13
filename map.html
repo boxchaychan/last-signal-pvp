@@ -37,12 +37,12 @@ let mobs = [], cam = {x: 0, y: 0}, dbg = /dbg/.test(location.search), VIG;
 // ---- combat (owner 2026-11-13 "เอาทำลงในเกมให้ครบ"): the chibi swordsman's PixelLab combo (art/poses/combo/chibi_pl.png, cell 10+n = combo frame n)
 // 4 chained hits, same timing table as combo.html; monsters have HP, get knocked back, flash, die, give XP and come back after a while.
 const CF = l => l.map(x => ({f: 10 + x[0], t: x[1]}));
-const CSTEP = [
+let CSTEP = [
   {f: CF([[3, .04], [4, .04], [5, .05], [6, .07], [7, .08]]), hit: 3, dmg: 10, lunge: 16, kb: 70, stop: .05, rx: 58, ry: 26},
   {f: CF([[13, .04], [14, .06], [15, .05], [16, .08]]), hit: 1, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 56, ry: 28},
   {f: CF([[17, .04], [18, .04], [19, .06], [20, .08], [21, .08]]), hit: 2, dmg: 16, lunge: 12, kb: 100, stop: .07, rx: 52, ry: 30},
   {f: CF([[28, .04], [29, .04], [30, .05], [31, .08], [32, .1]]), hit: 3, dmg: 32, lunge: 22, kb: 210, stop: .12, rx: 64, ry: 30, big: 1}];
-const CEND = CF([[33, .06], [35, .06], [36, .06], [38, .06], [40, .06]]);
+let CEND = CF([[33, .06], [35, .06], [36, .06], [38, .06], [40, .06]]);
 const MHP0 = {wolf: 34, shroom: 22, skeleton: 46, boar_guard: 80, goblin_archer: 30, golem: 130, wisp: 20};
 let MHP = MHP0;                                     // this map's monster HP (map.json `hpk` makes a zone stronger)
 const NUM = [], FXS = []; let HS = 0, SHK = 0, BUF = 0;
@@ -63,8 +63,9 @@ const CV = {n: {st: [{f: CG(140, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .0
     {f: CG(140, [[9, .04], [10, .05], [11, .05], [12, .09], [13, .08]]), hit: 3, dmg: 28, lunge: 18, kb: 190, stop: .1, rx: 66, ry: 30, big: 1}], en: CG(140, [[14, .06], [15, .06], [16, .06]])},
   s: {st: [{f: CG(160, [[1, .04], [2, .05], [3, .06], [4, .07], [5, .07]]), hit: 2, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 58, ry: 34},
     {f: CG(160, [[8, .04], [9, .05], [10, .05], [11, .1], [13, .08]]), hit: 3, dmg: 28, lunge: 18, kb: 190, stop: .1, rx: 66, ry: 30, big: 1}], en: CG(160, [[14, .06], [15, .06], [16, .06]])}};
-const atkV = (ix, iy) => !CV ? '' : Math.abs(iy) > .5 && Math.abs(ix) < .35 ? (iy < 0 ? 'n' : 's') : Math.abs(ix) > .2 ? '' : P.d === 6 ? 'n' : P.d === 2 ? 's' : '';   // which way a new swing goes: up / down clips (CV) or the side combo
+const atkV = (ix, iy) => !CV || (CHB && CHB.noV) ? '' : Math.abs(iy) > .5 && Math.abs(ix) < .35 ? (iy < 0 ? 'n' : 's') : Math.abs(ix) > .2 ? '' : P.d === 6 ? 'n' : P.d === 2 ? 's' : '';   // which way a new swing goes: up / down clips (CV) or the side combo
 function doHit(s, v) {
+  if (s.fx && SPR[s.fx[0]]) FXS.push({spr: s.fx[0], sc: s.fx[1], x: P.x + P.face * s.fx[2], y: P.y + s.fx[3], face: P.face, t: 0});
   let any = 0; const dm = Math.round(s.dmg * (1 + (ST.lv - 1) * .12)), vy = v === 'n' ? -1 : 1;
   for (const m of mobs) { if (m.dead) continue; const dx = v ? (m.y - P.y) * vy * 1.5 : (m.x - P.x) * P.face, dy = v ? (m.x - P.x) * .62 : m.y - P.y;   // up / down swings: the same box turned (the ground is seen from above, so depth counts 1.5x)
     if (dx > -14 && dx < s.rx && Math.abs(dy) < s.ry) { any = 1; m.hp -= dm; m.fl = .12; if (v) { m.vx = (m.x - P.x) * 1.5; m.vy = vy * s.kb * .7; } else { m.vx = P.face * s.kb; m.vy = dy * 1.5; } m.ag = 6;
@@ -119,7 +120,8 @@ function travel(to) {                                // fade out, load, fade in
 async function boot() {
   const ld = [];
   if (CHB) ld.push(img(A + CHB.f).then(i => CHB.im = i));
-  if (CHB && CHB.pl) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/chibi_pl.png'; }   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
+  if (CHB && CHB.pl) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/' + (CHB.sheet || 'chibi_pl.png'); }
+  if (CHB && CHB.dg) fetch('fx/manifest.json').then(r => r.json()).then(m => { for (const k of ['dslash7_n', 'bigcut0_n', 'dslashl7_n', 'dashhit_n']) { SPR[k] = m[k]; SPR[k].im = new Image(); SPR[k].im.src = 'fx/' + k + '.png'; } });   // her neon violet cut effects (owner's pick)   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
   ld.push(loadMap(MAPID));
   await Promise.all(ld);
   document.getElementById('load').remove(); resize(); cam.x = P.x - VW / 2; cam.y = P.y - VH / 2; requestAnimationFrame(frame);
@@ -148,7 +150,7 @@ document.getElementById('fs').onclick = () => {
 const SPD = 150;
 function step(dt) {
   for (const n of NUM) n.t += dt; while (NUM.length && NUM[0].t > .8) NUM.shift();
-  for (const f of FXS) { f.t += dt; if (!f.ring) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 380 * dt; } } while (FXS.length && FXS[0].t > .45) FXS.shift();
+  for (const f of FXS) { f.t += dt; if (!f.ring && !f.spr) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 380 * dt; } } while (FXS.length && FXS[0].t > .45) FXS.shift();
   SHK *= Math.pow(.002, dt); ST.ct -= dt; if (ST.ct <= 0) ST.combo = 0; ST.up -= dt; BUF -= dt;
   BAN -= dt;
   if (TRV) { TRV.t += dt; if (TRV.ok && TRV.t > .25) { TRV.out = (TRV.out || 0) + dt; if (TRV.out > .3) TRV = null; } return; }   // the world stands still while the next map loads
@@ -225,10 +227,15 @@ const CHQ = new URLSearchParams(location.search).get('hero') || 'chibi16';   // 
 const CHB = CHQ === 'chibi2' ? {f: 'hero_chibi.png', w: 131, h: 141, fx: 65, fy: 139, s: 18} : CHQ === 'chibi' ? {f: 'hero_chibi_half.png', w: 65, h: 70, fx: 32, fy: 69, s: 11}
   : CHQ === 'chibi128' ? {f: 'hero_chibi256_half.png', w: 104, h: 132, fx: 52, fy: 131, s: 11, z: .5, zoom: 2}   // the 256 sheet halved (body ~125 art px), camera twice as close: one art pixel = half a map pixel
   : CHQ === 'chibi16' ? {f: 'hero_chibi16.png', w: 113, h: 130, fx: 56, fy: 128, s: 11, z: .5, zoom: 2, hp: 1, pl: 1, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // the "16 bit" sheet (PixelLab B 128), 3 views: front / side / back
+  : CHQ === 'dagger' ? {f: 'hero_dagger.png', w: 122, h: 148, fx: 61, fy: 146, s: 11, z: .5, zoom: 2, hp: 1, pl: 1, sheet: 'dagger_pl.png', dg: 1, noV: 1, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // dual-dagger girl (PixelLab character ea60ebea): faster, shorter 3-hit combo, neon violet effects; no up / down swings, roll or spin clips yet (stand-ins)
   : CHQ === 'rabbit' ? {f: 'hero_rabbit.png', w: 137, h: 128, fx: 68, fy: 126, s: 13, z: .5, zoom: 2, hp: 1, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // rabbit brawler B (PixelLab 128 from the big-pixel GPT sheet), stills only: front / side / back, at the same true pixel size as the swordsman
   : CHQ === 'chibi64' ? {f: 'hero_chibi64.png', w: 52, h: 66, fx: 26, fy: 64, s: 11, v: [[1, 1], [1, 1], [0, 1], [1, -1], [1, -1], [2, -1], [2, 1], [2, 1]]}   // 16-bit sheet, PixelLab B at body 64: one art pixel = one map pixel, normal (wide) view
   : CHQ === 'chibi36' ? {f: 'hero_chibi36.png', w: 39, h: 39, fx: 19, fy: 37, s: 6} : CHQ === 'chibi36x2' ? {f: 'hero_chibi36.png', w: 39, h: 39, fx: 19, fy: 37, s: 11, z: 2} : null;   // 36 px test (PixelLab B at body 36); x2 = drawn with double-size pixels
 const CHV = [[2, 1], [1, 1], [0, 1], [1, -1], [2, -1], [3, -1], [3, 1], [3, 1]];
+const SPR = {};
+if (CHB && CHB.dg) { CSTEP = [{f: CF([[1, .035], [2, .05], [3, .05]]), hit: 1, dmg: 7, lunge: 10, kb: 50, stop: .04, rx: 50, ry: 26, fx: ['dslash7_n', .5, 30, -34]},
+  {f: CF([[6, .035], [7, .05], [8, .05]]), hit: 1, dmg: 8, lunge: 10, kb: 60, stop: .04, rx: 54, ry: 26, fx: ['bigcut0_n', .32, 30, -32]},
+  {f: CF([[10, .035], [11, .05], [12, .05], [13, .06], [14, .07]]), hit: 1, dmg: 19, lunge: 20, kb: 170, stop: .1, rx: 62, ry: 30, big: 1, fx: ['dslashl7_n', .5, 34, -36]}]; CEND = CF([[15, .05], [16, .05]]); }
 function drawHero() {
   if (CHB && CHB.im) { const [v, fl] = (CHB.v || CHV)[P.d], x = Math.round(P.x), y = Math.round(P.y), b = P.mv ? Math.round(Math.abs(Math.sin(P.t * 11)) * 2) : 0;
     if (CHB.run && (P.dead || P.act || (!P.atk && (P.mv ? (P.d === 6 || P.d === 2) : v === 1)))) {   // PixelLab clips: death / hurt / roll / spin, run up / down, idle (side). Cells in tools/art/pl_combo_sheet.py
@@ -281,6 +288,7 @@ function frame(t) {
   }
   for (const p of M.props) if (p.o) { const [ax, ay, w, h] = p.a; ctx.drawImage(PR, ax, ay, w, h, Math.round(p.x - w / 2), p.y - h, w, h); }
   for (const f of FXS) {                             // hit sparks + a soft flash on the ground (smooth light over the pixels, like the reference clip)
+    if (f.spr) { const d = SPR[f.spr], n = f.t * d.fps * 1.3 | 0; if (n < d.n && d.im.width) { ctx.save(); ctx.translate(Math.round(f.x), Math.round(f.y)); ctx.scale(f.face * f.sc, f.sc); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(d.im, n % d.cols * d.w, (n / d.cols | 0) * d.h, d.w, d.h, -d.ax, -d.ay, d.w, d.h); ctx.restore(); ctx.globalCompositeOperation = 'source-over'; } continue; }
     if (f.ring) { const k = f.t / .45, r = (f.big ? 46 : 28) * (.4 + k); ctx.globalCompositeOperation = 'lighter'; const g2 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); g2.addColorStop(0, 'rgba(190,230,255,' + (.5 * (1 - k)) + ')'); g2.addColorStop(1, 'rgba(120,190,255,0)');
       ctx.fillStyle = g2; ctx.save(); ctx.translate(0, f.y * .55); ctx.scale(1, .45); ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.29); ctx.fill(); ctx.restore(); ctx.globalCompositeOperation = 'source-over'; }
     else { ctx.globalAlpha = Math.max(0, 1 - f.t / .45); ctx.fillStyle = f.c; ctx.fillRect(Math.round(f.x), Math.round(f.y), 2, 2); ctx.globalAlpha = 1; } }
