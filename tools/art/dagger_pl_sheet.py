@@ -1,6 +1,6 @@
 # The dagger girl's PixelLab clips (character ea60ebea, canvas 204) packed like chibi_pl.png so map.html plays her with the same code.
 #   python3 tools/art/dagger_pl_sheet.py -> art/poses/combo/dagger_pl.png (10 columns of 204 px)
-# cells: run 0-7 · slash 10-26 (cell 10 + frame) · idle 60 · hurt 70 · death 80 · roll 90 (no roll clip yet: the run frames) · run north 100 · run south 110 · spin 120 (no clip yet: slash frames)
+# cells: run 0-7 · slash 10-26 (cell 10 + frame) · idle 60 · hurt 70 · death 80 · roll 90 (no roll clip yet: the run frames) · run north 100 · run south 110 · spin 120 (her K skill is a dash: the run frames)
 # Every frame is shifted by the same amount so her feet stand on x 103 like the swordsman's. Nothing is removed. The magenta trails PixelLab drew are
 # RECOLOURED to the neon violet the owner chose for her effects (hue only; raw frames stay in art/incoming/darkchibi/dagger/pl_char/char).
 import glob, numpy as np
@@ -22,5 +22,5 @@ for i, f in enumerate(fr('hurt', 'east')[1:]): put(70 + i, f)
 for i, f in enumerate(fr('death', 'east')[1:]): put(80 + i, f)
 for i, f in enumerate(fr('run_ns', 'north')[1:]): put(100 + i, f)
 for i, f in enumerate(fr('run_ns', 'south')[1:]): put(110 + i, f)
-for i in range(16): put(120 + i, sl[[10, 11, 12, 13, 14, 6, 7, 8, 10, 11, 12, 13, 14, 14, 15, 16][i]])
+for i in range(16): put(120 + i, run[i % 8])   # the dash-through skill is played with the run frames + ghosts drawn by map.html
 sheet.save('art/poses/combo/dagger_pl.png', optimize=True); print('shift', dx, dy, sheet.size)
