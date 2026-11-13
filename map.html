@@ -9,22 +9,49 @@
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
   #hint { position: fixed; left: 12px; top: 10px; color: #f4ecd0; font: 600 14px/1.4 system-ui, sans-serif; text-shadow: 0 1px 2px #000; pointer-events: none; transition: opacity 1s; }
   #fs { position: fixed; right: 10px; top: 10px; width: 40px; height: 40px; border: 2px solid #f4ecd088; border-radius: 8px; background: #0008; color: #f4ecd0; font-size: 20px; }
+  #atk { position: fixed; right: 22px; bottom: 22px; width: 84px; height: 84px; border-radius: 50%; border: 3px solid #f4ecd0aa; background: #c8402a88; color: #fff; font-size: 34px; }
   #load { position: fixed; inset: 0; display: grid; place-items: center; color: #f4ecd0; font: 600 18px system-ui, sans-serif; }
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
-<div id="hint">เดิน: WASD / ลูกศร · มือถือ: แตะค้างแล้วลากนิ้ว</div>
+<div id="hint">เดิน: WASD / ลูกศร · ฟัน: J หรือ Space (กดย้ำ = คอมโบ 4 ดาบ) · มือถือ: ลากนิ้วเพื่อเดิน ปุ่ม ⚔ เพื่อฟัน</div>
 <button id="fs" title="เต็มจอ">⛶</button>
+<button id="atk" title="ฟัน">⚔</button>
 <div id="load">กำลังโหลดแมพ…</div>
 <script>
 // Map 1 walk test (owner 2026-11-11 "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู"). Assets from tools/art/td_map.py (art/td/map1/):
 // everything is at map size (1 map px = 1 screen px on a landscape phone) and blown up by a whole number K, so pixels stay square.
 const A = 'art/td/map1/', cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const img = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = A + s; });
-let M, GR, PR, HR = {}, MB = {}, BLK, BW, BH, K = 1, VW = 0, VH = 0;
+let M, GR, PR, HR = {}, MB = {}, MBW = {}, BLK, BW, BH, K = 1, VW = 0, VH = 0;
 const P = {x: 0, y: 0, d: 1, mv: 0, t: 0}, keys = {}, joy = {id: null, x0: 0, y0: 0, x: 0, y: 0};
 let mobs = [], cam = {x: 0, y: 0}, dbg = /dbg/.test(location.search), VIG;
+// ---- combat (owner 2026-11-13 "เอาทำลงในเกมให้ครบ"): the chibi swordsman's PixelLab combo (art/poses/combo/chibi_pl.png, cell 10+n = combo frame n)
+// 4 chained hits, same timing table as combo.html; monsters have HP, get knocked back, flash, die, give XP and come back after a while.
+const CF = l => l.map(x => ({f: 10 + x[0], t: x[1]}));
+const CSTEP = [
+  {f: CF([[3, .04], [4, .04], [5, .05], [6, .07], [7, .08]]), hit: 3, dmg: 10, lunge: 16, kb: 70, stop: .05, rx: 58, ry: 26},
+  {f: CF([[13, .04], [14, .06], [15, .05], [16, .08]]), hit: 1, dmg: 12, lunge: 14, kb: 80, stop: .05, rx: 56, ry: 28},
+  {f: CF([[17, .04], [18, .04], [19, .06], [20, .08], [21, .08]]), hit: 2, dmg: 16, lunge: 12, kb: 100, stop: .07, rx: 52, ry: 30},
+  {f: CF([[28, .04], [29, .04], [30, .05], [31, .08], [32, .1]]), hit: 3, dmg: 32, lunge: 22, kb: 210, stop: .12, rx: 64, ry: 30, big: 1}];
+const CEND = CF([[33, .06], [35, .06], [36, .06], [38, .06], [40, .06]]);
+const MHP = {wolf: 34, shroom: 22, skeleton: 46, boar_guard: 80, goblin_archer: 30, golem: 130, wisp: 20};
+const NUM = [], FXS = []; let HS = 0, SHK = 0, BUF = 0;
+const ST = {lv: 1, xp: 0, kills: 0, combo: 0, ct: 0, up: 0};
+const need = () => 20 + ST.lv * 15;
+function attack() { BUF = .3; }
+function startAtk(n) { P.atk = {n, i: 0, t: 0, hit: 0, end: 0}; }
+function doHit(s) {
+  let any = 0; const dm = Math.round(s.dmg * (1 + (ST.lv - 1) * .12));
+  for (const m of mobs) { if (m.dead) continue; const dx = (m.x - P.x) * P.face, dy = m.y - P.y;
+    if (dx > -14 && dx < s.rx && Math.abs(dy) < s.ry) { any = 1; m.hp -= dm; m.fl = .12; m.vx = P.face * s.kb; m.vy = dy * 1.5; m.ag = 6;
+      NUM.push({x: m.x, y: m.y - M.mobs[m.k].h, v: dm, t: 0, big: s.big});
+      for (let k = 0; k < (s.big ? 9 : 5); k++) FXS.push({x: m.x, y: m.y - M.mobs[m.k].h * .5, vx: (Math.random() - .25) * 150 * P.face, vy: -Math.random() * 130, t: 0, c: s.big ? '#ffd24a' : '#eaf6ff'});
+      if (m.hp <= 0) { m.dead = .35; m.re = 6; ST.kills++; ST.xp += Math.ceil(MHP[m.k] / 8); NUM.push({x: m.x, y: m.y - 6, v: '+' + Math.ceil(MHP[m.k] / 8) + ' XP', t: -.15, xp: 1});
+        while (ST.xp >= need()) { ST.xp -= need(); ST.lv++; ST.up = 1.6; } } } }
+  if (any) { HS = s.stop; SHK = s.big ? 5 : 2; ST.combo++; ST.ct = 1.5; FXS.push({ring: 1, x: P.x + P.face * 30, y: P.y, t: 0, big: s.big}); }
+}
 
 function blocked(x, y) {
   if (x < 0 || y < 0 || x >= M.w || y >= M.h) return true;
@@ -55,16 +82,17 @@ async function boot() {
     ];
   if (CHB) ld.push(img(CHB.f).then(i => CHB.im = i));
   if (CHB && CHB.hp) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/chibi_pl.png'; }   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
-  for (const k in M.mobs) ld.push(img('mob_' + k + '.png').then(i => MB[k] = i));
+  for (const k in M.mobs) ld.push(img('mob_' + k + '.png').then(i => { MB[k] = i; const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); MBW[k] = c; }));
   await Promise.all(ld);
   P.x = M.start[0]; P.y = M.start[1];
-  mobs = M.spawn.map(([k, x, y], i) => ({k, x, y, hx: x, hy: y, tx: x, ty: y, w: 1 + Math.random() * 2, f: Math.random() > .5 ? 1 : -1, t: Math.random() * 3, mv: 0}));
+  mobs = M.spawn.map(([k, x, y], i) => ({hp: MHP[k], vx: 0, vy: 0, fl: 0, k, x, y, hx: x, hy: y, tx: x, ty: y, w: 1 + Math.random() * 2, f: Math.random() > .5 ? 1 : -1, t: Math.random() * 3, mv: 0}));
   document.getElementById('load').remove(); resize(); cam.x = P.x - VW / 2; cam.y = P.y - VH / 2; requestAnimationFrame(frame);
   setTimeout(() => document.getElementById('hint').style.opacity = 0, 6000);
 }
 
 // ---- input
-addEventListener('keydown', e => { keys[e.code] = 1; if (e.code === 'KeyB') dbg = !dbg; });
+addEventListener('keydown', e => { keys[e.code] = 1; if (e.code === 'KeyB') dbg = !dbg; if ((e.code === 'KeyJ' || e.code === 'Space' || e.code === 'KeyK') && !e.repeat) { attack(); e.preventDefault(); } });
+document.getElementById('atk').addEventListener('pointerdown', e => { attack(); e.preventDefault(); e.stopPropagation(); });
 addEventListener('keyup', e => { keys[e.code] = 0; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = 0; });
 cv.addEventListener('pointerdown', e => {
@@ -82,6 +110,10 @@ document.getElementById('fs').onclick = () => {
 // ---- update
 const SPD = 150;
 function step(dt) {
+  for (const n of NUM) n.t += dt; while (NUM.length && NUM[0].t > .8) NUM.shift();
+  for (const f of FXS) { f.t += dt; if (!f.ring) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 380 * dt; } } while (FXS.length && FXS[0].t > .45) FXS.shift();
+  SHK *= Math.pow(.002, dt); ST.ct -= dt; if (ST.ct <= 0) ST.combo = 0; ST.up -= dt; BUF -= dt;
+  if (HS > 0) { HS -= dt; return; }
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
   let iy = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
   if (joy.id !== null) {
@@ -89,8 +121,21 @@ function step(dt) {
     if (l > R) { joy.x0 = joy.x - dx / l * R; joy.y0 = joy.y - dy / l * R; }   // the base follows the finger
     if (l > 8) { ix = dx / Math.max(l, R); iy = dy / Math.max(l, R); }
   }
+  if (P.face === undefined) P.face = 1;
+  if (!P.atk && BUF > 0 && CHB && CHB.run) { if (Math.abs(ix) > .2) P.face = ix > 0 ? 1 : -1; startAtk(0); }
+  if (P.atk) {                                       // attacking: no walking, a short lunge, the next press chains
+    const a = P.atk; a.t += dt; P.mv = 0;
+    if (a.end) { if (BUF > 0 && a.n < CSTEP.length - 1) { if (Math.abs(ix) > .2) P.face = ix > 0 ? 1 : -1; startAtk(a.n + 1); }
+      else if (Math.hypot(ix, iy) > .3 && a.i >= 1) P.atk = null;
+      else if (a.t >= CEND[a.i].t) { a.t = 0; if (++a.i >= CEND.length) P.atk = null; } }
+    else { const s = CSTEP[a.n], tot = s.f.reduce((q, b) => q + b.t, 0); move(P, P.face * s.lunge / tot * dt * (a.i <= s.hit ? 1.7 : .3), 0, 7);
+      if (a.i >= s.hit && !a.hit) { a.hit = 1; doHit(s); }
+      if (a.t >= s.f[a.i].t) { a.t = 0; if (++a.i >= s.f.length) { if (BUF > 0 && a.n < CSTEP.length - 1) startAtk(a.n + 1); else { a.end = 1; a.i = 0; } } } }
+    ix = iy = 0;
+  }
   const l = Math.hypot(ix, iy);
   if (l > .1) {
+    if (Math.abs(ix) > .2) P.face = ix > 0 ? 1 : -1;
     const s = Math.min(1, l) / l; ix *= s; iy *= s;
     move(P, ix * SPD * dt, iy * SPD * dt, 7);
     P.d = (Math.round(Math.atan2(iy, ix) / (Math.PI / 4)) + 8) % 8;
@@ -98,6 +143,12 @@ function step(dt) {
   } else { if (P.mv) P.t = 0; P.mv = 0; }
   P.t += dt;
   for (const m of mobs) {                           // wander round home
+    if (m.fl > 0) m.fl -= dt; if (m.ag > 0) m.ag -= dt;
+    if (m.dead) { m.dead -= dt; if (m.dead <= 0) { m.dead = 0; m.gone = 1; } }
+    if (m.gone) { m.re -= dt; if (m.re <= 0 && Math.hypot(m.hx - P.x, m.hy - P.y) > 120) { m.gone = 0; m.x = m.hx; m.y = m.hy; m.hp = MHP[m.k]; m.vx = m.vy = 0; } continue; }
+    if (Math.abs(m.vx) + Math.abs(m.vy) > 4) { move(m, m.vx * dt, m.vy * dt, 6); const k = Math.pow(.004, dt); m.vx *= k; m.vy *= k; }
+    const pd = Math.hypot(P.x - m.x, P.y - m.y);
+    if (!m.dead && (pd < 170 || m.ag > 0) && pd > 30) { const sp = 46; move(m, (P.x - m.x) / pd * sp * dt, (P.y - m.y) / pd * sp * dt, 6); m.f = P.x > m.x ? 1 : -1; m.mv = 1; m.t = .3; m.w += dt; continue; }   // comes at the hero (no damage to him yet)
     m.t -= dt;
     if (m.t <= 0) {
       if (m.mv) { m.mv = 0; m.t = 1 + Math.random() * 2.5; }
@@ -130,6 +181,7 @@ const CHB = CHQ === 'chibi2' ? {f: 'hero_chibi.png', w: 131, h: 141, fx: 65, fy:
 const CHV = [[2, 1], [1, 1], [0, 1], [1, -1], [2, -1], [3, -1], [3, 1], [3, 1]];
 function drawHero() {
   if (CHB && CHB.im) { const [v, fl] = (CHB.v || CHV)[P.d], x = Math.round(P.x), y = Math.round(P.y), b = P.mv ? Math.round(Math.abs(Math.sin(P.t * 11)) * 2) : 0;
+    if (CHB.run && P.atk) { const a = P.atk, f = (a.end ? CEND[a.i] : CSTEP[a.n].f[a.i]).f; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale(P.face * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
     if (CHB.run && P.mv && v !== 0 && !(v === 2 && (P.d === 6))) { const f = (P.t * 13 | 0) % 8; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale(fl * .5, .5); ctx.drawImage(CHB.run, f * 204, 0, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
     shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y - b); ctx.scale(fl * (CHB.z || 1), CHB.z || 1); ctx.drawImage(CHB.im, v * CHB.w, 0, CHB.w, CHB.h, -CHB.fx, -CHB.fy, CHB.w, CHB.h); ctx.restore(); return; }
   const H = M.hero, sh = P.mv ? HR.run : HR.idle, fps = P.mv ? 13 : 7, f = (P.t * fps | 0) % 8;
@@ -138,16 +190,18 @@ function drawHero() {
   ctx.drawImage(sh, f * H.c, P.d * H.c, H.c, H.c, x - H.fx, y - H.fy, H.c, H.c);
 }
 function drawMob(m) {
-  const T = M.mobs[m.k], i = MB[m.k], f = m.mv ? (m.w * 8 | 0) % T.n : 0, x = Math.round(m.x), y = Math.round(m.y);
+  if (m.gone) return;
+  const T = M.mobs[m.k], i = m.fl > 0 ? MBW[m.k] : MB[m.k], f = m.mv ? (m.w * 8 | 0) % T.n : 0, x = Math.round(m.x), y = Math.round(m.y), dk = m.dead ? m.dead / .35 : 1;
   shadow(x, y, T.w * .22);
-  ctx.save(); ctx.translate(x, y); ctx.scale(m.f, 1); ctx.drawImage(i, f * T.w, 0, T.w, T.h, -T.fx, -T.fy, T.w, T.h); ctx.restore();
+  if (!m.dead && m.hp < MHP[m.k]) { ctx.fillStyle = '#000a'; ctx.fillRect(x - 13, y - T.h - 7, 26, 4); ctx.fillStyle = '#e8503a'; ctx.fillRect(x - 12, y - T.h - 6, 24 * Math.max(0, m.hp) / MHP[m.k], 2); }
+  ctx.globalAlpha = dk; ctx.save(); ctx.translate(x, y); ctx.scale(m.f * (m.fl > 0 ? 1.08 : 1), (m.fl > 0 ? .9 : 1) * (.4 + .6 * dk)); ctx.drawImage(i, f * T.w, 0, T.w, T.h, -T.fx, -T.fy, T.w, T.h); ctx.restore(); ctx.globalAlpha = 1;
 }
 function frame(t) {
   const now = t / 1000, dt = Math.min(.05, now - (frame.l || now)); frame.l = now;
   step(dt);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = '#10140c'; ctx.fillRect(0, 0, cv.width, cv.height);
-  const cx = Math.round(cam.x), cy = Math.round(cam.y);
+  const cx = Math.round(cam.x + (Math.random() - .5) * SHK), cy = Math.round(cam.y + (Math.random() - .5) * SHK);
   ctx.setTransform(K, 0, 0, K, -cx * K, -cy * K);
   const sx = Math.max(0, cx), sy = Math.max(0, cy), sw = Math.min(M.w - sx, VW + 1), shh = Math.min(M.h - sy, VH + 1);
   ctx.drawImage(GR, sx, sy, sw, shh, sx, sy, sw, shh);
@@ -172,12 +226,22 @@ function frame(t) {
     ctx.globalAlpha = 1;
   }
   for (const p of M.props) if (p.o) { const [ax, ay, w, h] = p.a; ctx.drawImage(PR, ax, ay, w, h, Math.round(p.x - w / 2), p.y - h, w, h); }
+  for (const f of FXS) {                             // hit sparks + a soft flash on the ground (smooth light over the pixels, like the reference clip)
+    if (f.ring) { const k = f.t / .45, r = (f.big ? 46 : 28) * (.4 + k); ctx.globalCompositeOperation = 'lighter'; const g2 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); g2.addColorStop(0, 'rgba(190,230,255,' + (.5 * (1 - k)) + ')'); g2.addColorStop(1, 'rgba(120,190,255,0)');
+      ctx.fillStyle = g2; ctx.save(); ctx.translate(0, f.y * .55); ctx.scale(1, .45); ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.29); ctx.fill(); ctx.restore(); ctx.globalCompositeOperation = 'source-over'; }
+    else { ctx.globalAlpha = Math.max(0, 1 - f.t / .45); ctx.fillStyle = f.c; ctx.fillRect(Math.round(f.x), Math.round(f.y), 2, 2); ctx.globalAlpha = 1; } }
+  ctx.textAlign = 'center';
+  for (const n of NUM) { if (n.t < 0) continue; const y = n.y - n.t * 26; ctx.font = 'bold ' + (n.big ? 13 : n.xp ? 7 : 9) + 'px monospace'; ctx.fillStyle = '#000'; ctx.fillText(n.v, n.x + 1, y + 1); ctx.fillStyle = n.xp ? '#9fe870' : n.big ? '#ffd24a' : '#fff'; ctx.fillText(n.v, n.x, y); }
   if (dbg) {                                         // B: show where you cannot walk
     ctx.fillStyle = 'rgba(255,0,0,.35)';
     for (let y = Math.max(0, cy / M.bk | 0); y < Math.min(BH, (cy + VH) / M.bk + 1); y++)
       for (let x = Math.max(0, cx / M.bk | 0); x < Math.min(BW, (cx + VW) / M.bk + 1); x++) if (BLK[y * BW + x]) ctx.fillRect(x * M.bk, y * M.bk, M.bk, M.bk);
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(VIG, 0, 0);
+  { const d = devicePixelRatio || 1, x0 = 12 * d, y0 = 40 * d, w = 150 * d; ctx.textAlign = 'left'; ctx.font = '700 ' + 15 * d + 'px system-ui'; ctx.fillStyle = '#000a'; ctx.fillText('Lv ' + ST.lv + '   ล้ม ' + ST.kills, x0 + 1, y0 + 1); ctx.fillStyle = '#f4ecd0'; ctx.fillText('Lv ' + ST.lv + '   ล้ม ' + ST.kills, x0, y0);
+    ctx.fillStyle = '#000a'; ctx.fillRect(x0, y0 + 6 * d, w, 7 * d); ctx.fillStyle = '#9fe870'; ctx.fillRect(x0 + d, y0 + 7 * d, (w - 2 * d) * ST.xp / need(), 5 * d);
+    if (ST.combo > 1) { ctx.textAlign = 'right'; ctx.font = '800 ' + 22 * d + 'px system-ui'; ctx.fillStyle = '#ffd24a'; ctx.fillText(ST.combo + ' HIT', cv.width - 64 * d, 40 * d); }
+    if (ST.up > 0) { ctx.textAlign = 'center'; ctx.font = '800 ' + 30 * d + 'px system-ui'; ctx.globalAlpha = Math.min(1, ST.up); ctx.fillStyle = '#ffe27a'; ctx.fillText('LEVEL UP!  Lv ' + ST.lv, cv.width / 2, cv.height * .3); ctx.globalAlpha = 1; } }
   if (joy.id !== null) {                             // the stick
     const d = devicePixelRatio || 1; ctx.lineWidth = 3 * d; ctx.strokeStyle = 'rgba(244,236,208,.45)'; ctx.fillStyle = 'rgba(244,236,208,.35)';
     ctx.beginPath(); ctx.arc(joy.x0 * d, joy.y0 * d, 46 * d, 0, 6.29); ctx.stroke();
@@ -185,6 +249,7 @@ function frame(t) {
   }
   requestAnimationFrame(frame);
 }
+window.GM = {P, ST, attack, step, get mobs() { return mobs; }, frame};
 boot().catch(e => { document.getElementById('load').textContent = 'โหลดไม่ได้: ' + e; });
 </script>
 </body>

@@ -15,3 +15,10 @@ Recipe that works for the chibi pixel style:
 Moves: shared, not generated per character. Pose sheets: `art/poses/std/` (idle, run, roll, hurt, death, weapon attacks), `art/poses/ref_sketch/` (sketch-based slash combo), `tools/art/pose_guide.py` / `combo_guide.py` for new ones. One move per picture, 8 numbered cells, the character picture attached second. For Codex add a row to `docs/codex/action/SLASH.md`.
 
 Never strip effects or parts a generator drew without asking; keep raw files. Another artist's signed work is reference only and is not stored.
+
+## Smooth attack recipe (proved 2026-11-13 on the chibi swordsman, 9 credits)
+Only when the owner says "เจน"; quote the credits first (character 4, run 1, 40-frame clip 4).
+1. Three true-pixel stills ~128 px: front, a TRUE side view facing right, back; put each on a 160 canvas, feet at y 152. Look at them before paying.
+2. `create_character` mode v3, view "side", reference = front, `direction_images` east / west (mirror) / north → 8 directions, 4 credits, ~20 min.
+3. ONE long clip: `animate_character` mode pixminimax, directions ["east"], frame_count 40, the whole combo described as one continuous action ("the end of one swing is the start of the next", side view kept, arcs wanted or not) → 4 credits. Run: 8 frames, 1 credit.
+4. Download to a scratch folder first, then replace `art/incoming/.../char/`. Pack with `tools/art/pl_combo_sheet.py`; in `combo.html` build steps from the swing frames only (skip holds), wind-up .04 s, hit frame .06-.08, follow-through .08-.1.
