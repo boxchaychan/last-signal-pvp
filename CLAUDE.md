@@ -21,6 +21,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - `docs/dogcat-design.md` + `dogcat.html`: dogs-vs-cats tower defense (playable; shiba / cat / corgi at 61 px).
 - `action.html`: CODE of the earlier level-grinding action RPG (skills, effect playback, monster AI, waves). Its hero art is gone, so it does not run: it is the code base to wire the new chibi hero into (or to lift systems from). Maps `art/td/map1`, `map2` from `tools/art/td_map.py`; walk test `map.html` (default hero = the chibi swordsman 128).
 - Kept on purpose: monsters (`art/action/mobs*`, `art/incoming/mobs/`, `art/td/map*/mob_*.png`), VFX (`fx/`, `art/incoming/pfx`, `pfx_ref`, `fx_video`, `fx_codex`, `fx_raw`, `vfxlab.html`, `vfxcut.html`, `docs/vfx-pack.html`, `docs/fx-prompts.html`), props / ground / map art, the pose library, dogcat (not named by the owner in the cleanup: ask before deleting it).
+- `bag.html`: กระเป๋านักดาบ, a backpack auto-battler made on the owner's order (2026-11-13 "ทำเกมอีกเกม ให้คิดเองหมดเลย แนว backpack ... ขอสนุกๆ"); design + balance notes at the end of `docs/action-game.md`.
 - `combo.html`: combo test page (modes: shiba from a Meta AI sheet / video, the old swordsman's drawn frames, cut-out bones, stick figure, Ozzbit template).
 - `art/poses/`: shared motion library (`std/common`, `std/weapon`), our bone combo (`combo/sword_combo.json`), sketch pose sheets (`ref_sketch/`).
 
