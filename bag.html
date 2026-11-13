@@ -66,7 +66,7 @@ body.bt #arena{position:fixed;inset:0;z-index:5;border:0;border-radius:0}body.bt
 </style></head><body>
 <div id="app"><div id="left"><div id="grid"></div><div id="tray"></div></div>
 <div id="right"><h1>⚔ กระเป๋านักดาบ · ตำนานรัตติกาล</h1><div id="top"></div><div id="shop"></div><div id="arena"><canvas id="cv"></canvas><div id="foe"></div><div id="mybag"></div><div id="fbag"></div></div>
-<div id="info"></div><div id="btns"><button id="rr">🎲 สุ่มใหม่ (1)</button><button id="rot">🔄 หมุน</button><button id="sell">💰 ขาย</button><button id="spd">⏩ x1</button><button id="fs" title="เต็มจอ">⛶ เต็มจอ</button><button id="go">⚔ สู้!</button></div></div></div>
+<div id="info"></div><div id="btns"><button id="hero"></button><button id="rr">🎲 สุ่มใหม่ (1)</button><button id="rot">🔄 หมุน</button><button id="sell">💰 ขาย</button><button id="spd">⏩ x1</button><button id="fs" title="เต็มจอ">⛶ เต็มจอ</button><button id="go">⚔ สู้!</button></div></div></div>
 <div id="ghost"></div><div id="pop"><div></div></div>
 <script>
 // กระเป๋านักดาบ (Bag Brawl): an original backpack auto-battler (owner 2026-11-13: "ทำเกมอีกเกมให้ฉัน ให้คิดเองหมดเลย เกมแนว backpack ... ขอสนุกๆ").
@@ -166,7 +166,7 @@ function draw(){layout();document.body.classList.toggle('bt',!!BT);const g=$('#g
  $('#top').innerHTML=`<span>รอบ ${G.round}${G.round%5===0?' 👹':''}</span><span>${'❤️'.repeat(G.hp)}${'🖤'.repeat(5-G.hp)}</span><span>🪙 ${G.gold}</span><span>🏆 ${G.best}</span>`;
  const sh=$('#shop');sh.innerHTML='';sh.style.display=bt?'none':'grid';$('#arena').style.display=bt?'block':'none';
  G.shop.forEach((s,i)=>{const d=IT[s.id],c=document.createElement('div');c.className='card r'+d.r+(s.sold?' sold':'')+(G.gold<d.c?' no':'');c.dataset.i=i;c.innerHTML=`<span class="lk${s.lock?' on':''}" data-lk="${i}">${s.lock?'🔒':'🔓'}</span><div class="ic">${ico(s.id,40)}</div><div class="nm">${d.n}</div><div class="pr">🪙${d.c} · ${d.sh.length}ช่อง</div>`;sh.appendChild(c)});
- for(const id of['rr','rot','sell','go'])$('#'+id).style.display=bt?'none':'';$('#spd').textContent='⏩ x'+spd;$('#spd').style.display=bt?'':'none';
+ $('#hero').textContent=(HK==='rabbit'?'🐰 ':'🗡 ')+HN();for(const id of['hero','rr','rot','sell','go'])$('#'+id).style.display=bt?'none':'';$('#spd').textContent='⏩ x'+spd;$('#spd').style.display=bt?'':'none';
  if(sel&&!bt)say(desc(sel));else if(!bt&&!$('#info').innerHTML)say('ลากของจากร้านลงกระเป๋า · แตะของเพื่อดูรายละเอียด/หมุน · ของชนิดเดียวกันวางทับกัน = รวมร่าง ★ · ช่องเขียว + คือซื้อช่องกระเป๋าเพิ่ม')}
 function desc(o){const d=IT[o.id],L=LM[o.lv],p=[];if(d.dmg)p.push(`ตี ${Math.round(d.dmg*L)} ทุก ${d.cd} วิ`);if(d.blk)p.push(`โล่ ${Math.round(d.blk*L)}`);if(d.heal)p.push(`ฟื้น ${Math.round(d.heal*L)}`);if(d.hp)p.push(`เลือด +${Math.round(d.hp*L)}`);
  return `<b>${ico(o.id,26)} ${d.n} ${'★'.repeat(o.lv)}</b> — ${d.d}${p.length?' ('+p.join(', ')+')':''}<br><small>ขายได้ ${Math.max(1,Math.floor(d.c*L*.5))} ทอง · สีแดง=อาวุธ ฟ้า=ป้องกัน เขียว=อาหาร ม่วง=ของเสริมคนข้างๆ</small>`}
@@ -193,9 +193,12 @@ addEventListener('pointerup',e=>{if(!drag)return;const d=drag,o=d.o;drag=null;gh
 $('#rot').onclick=()=>{if(!sel)return say('แตะของที่จะหมุนก่อน');const o=sel,r=(o.r+1)%4;if(!o.bag){o.r=r}else if(fits(o,o.x,o.y,r))o.r=r;else{const old=o.r;o.r=r;const f=firstFit(o);if(f){[o.x,o.y,o.r]=f}else{o.r=old;say('หมุนตรงนี้ไม่ได้ ไม่มีที่ว่างพอ')}}draw()};
 $('#sell').onclick=()=>{if(!sel)return say('แตะของที่จะขายก่อน (หรือลากของมาวางที่ปุ่มนี้)');sellIt(sel)};
 $('#rr').onclick=()=>{roll();draw()};$('#spd').onclick=()=>{spd=spd===1?2:spd===2?4:1;localStorage.setItem('bag.spd',spd);draw()};$('#go').onclick=()=>startBattle();
+$('#hero').onclick=()=>{HK=HK==='rabbit'?'sword':'rabbit';localStorage.setItem('bag.hero',HK);draw();say('ตัวละคร: <b>'+HN()+'</b>'+(HK==='rabbit'?' (ยังมีแค่ภาพนิ่ง ยังไม่มีท่าต่อย)':''))};
 $('#fs').onclick=()=>{const d=document.documentElement;if(!document.fullscreenElement&&!document.webkitFullscreenElement){const f=d.requestFullscreen||d.webkitRequestFullscreen;if(!f)return say('เบราว์เซอร์นี้ไม่มีโหมดเต็มจอ (iPhone: กดแชร์ → เพิ่มไปยังหน้าจอโฮม แล้วเปิดจากไอคอน)');Promise.resolve(f.call(d)).then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})).catch(()=>{})}else(document.exitFullscreen||document.webkitExitFullscreen).call(document)};
 for(const ev of['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,()=>{$('#fs').textContent=(document.fullscreenElement||document.webkitFullscreenElement)?'⛶ ออกเต็มจอ':'⛶ เต็มจอ';setTimeout(draw,60)});
 // ---- battle
+// second playable hero: the rabbit brawler (stills only so far: PixelLab 128, art/td/map1/hero_rabbit.png, side view = cell 1 of 137x128, feet 68,126); he moves by code (bob, lunge, squash, fall)
+const RAB=new Image();RAB.src='art/td/map1/hero_rabbit.png';let HK=localStorage.getItem('bag.hero')||'sword';const HN=()=>HK==='rabbit'?'กระต่ายนักสู้':'นักดาบ';
 const HERO=new Image();HERO.src='art/poses/combo/chibi_pl.png';const MIM={};for(const k in MOB){MIM[k]=new Image();MIM[k].src='art/td/map1/mob_'+k+'.png'}
 function startBattle(){const mine=G.items.filter(o=>o.bag);if(!mine.some(o=>IT[o.id].t==='w'))return say('⚠️ ในกระเป๋าไม่มีอาวุธเลย! ใส่อาวุธ (สีแดง) อย่างน้อย 1 ชิ้นก่อน');sel=null;
  BT={A:build(mine,74+G.round*6),B:foe(G.round),T:0,fx:[],pj:[],sh:0,an:null,vf:[],ha:0,ea:0,hh:0,eh:0,done:0};draw();$('#foe').innerHTML='';say('');
@@ -230,9 +233,10 @@ function paint(now){const cv=$('#cv'),r=cv.getBoundingClientRect(),dpr=devicePix
  scene(g,W,H,now,b.B.boss,gy);if(b.sh>0){g.translate(R(-1,1)*b.sh*40,R(-1,1)*b.sh*40)}
  const bar=(x,f,nm)=>{const w=W*.27,p=Math.max(0,f.hp)/f.max;g.fillStyle='#000c';g.fillRect(x-1,H*.1-1,w+2,15);g.strokeStyle='#b8923e';g.lineWidth=1;g.strokeRect(x-1.5,H*.1-1.5,w+3,16);g.fillStyle=p>.4?'#a8261c':'#ff5a3a';g.fillRect(x+2,H*.1+2,(w-4)*p,9);g.fillStyle='#fff3';g.fillRect(x+2,H*.1+2,(w-4)*p,3);g.fillStyle='#f0deb0';g.font='700 12px Georgia,serif';g.textAlign='left';
   g.fillText(`${nm}  ${Math.max(0,Math.ceil(f.hp))}/${f.max}`+(f.blk>0?`  🛡${Math.round(f.blk)}`:'')+(f.poi>0?`  ☠${Math.round(f.poi)}`:'')+(f.burn>0?`  🔥${Math.round(f.burn)}`:'')+(f.stun>0?'  💫':''),x,H*.1-4);g.fillStyle='#000a';g.fillRect(x,H*.1+15,w*.6,5);g.fillStyle='#ffd24a';g.fillRect(x+1,H*.1+16,(w*.6-2)*f.sta/f.stam,3)};
- bar(W*.2,b.A,'นักดาบ');bar(W*.51,b.B,b.B.name);
+ bar(W*.2,b.A,HN());bar(W*.51,b.B,b.B.name);
  const k=Math.max(1,Math.round(H/170));let cell=60+(now*6|0)%8,hx=0;if(b.A.hp<=0)cell=87;else if(b.an){const q=b.an.t/b.an.d;cell=b.an.seq[Math.min(b.an.seq.length-1,q*b.an.seq.length|0)];hx=Math.sin(Math.min(1,q*1.25)*3.14)*W*.27}else if(b.hh>0){cell=71;hx=-W*.03*b.hh/.2}
- if(HERO.width){const s=sI/dpr,x=W*.26+hx;g.drawImage(HERO,cell%10*204,(cell/10|0)*204,204,204,px(x-103*s),px(gy-174*s),204*s,204*s)}
+ if(HK==='rabbit'&&RAB.width){const s=sI/dpr,x=W*.26+hx,dead=b.A.hp<=0,at=b.an?Math.sin(Math.min(1,b.an.t/b.an.d)*3.14):0,bob=dead?0:Math.round(Math.sin(now*4)*1.2);g.save();g.translate(px(x),px(gy));if(dead){g.rotate(-1.45);g.globalAlpha=.75}else if(b.hh>0)g.rotate(-.12);else if(at>0)g.rotate(.14*at);g.scale(s*(1+.06*at),s*(1-.05*at));g.drawImage(RAB,137,0,137,128,-68,-126+bob,137,128);g.restore()}
+ else if(HERO.width){const s=sI/dpr,x=W*.26+hx;g.drawImage(HERO,cell%10*204,(cell/10|0)*204,204,204,px(x-103*s),px(gy-174*s),204*s,204*s)}
  for(const pj of b.pj){const k2=Math.min(1,pj.t/.22),x0=pj.s?W*.74:W*.26,x1=pj.s?W*.3:W*.7,x=x0+(x1-x0)*k2,y=gy-H*.3-Math.sin(k2*3.14)*H*.16;const z=H*.16;g.save();g.translate(x,y);g.rotate((pj.s?-1:1)*k2*5);if(ICON.width)g.drawImage(ICON,pj.i%8*64,(pj.i>>3)*64,64,64,-z/2,-z/2,z,z);g.restore()}
  if(b.B.boss&&b.B.hp>0){const a=g.createRadialGradient(W*.74,gy-H*.2,0,W*.74,gy-H*.2,H*.42);a.addColorStop(0,'rgba(255,60,30,'+(.3+.12*Math.sin(now*5))+')');a.addColorStop(1,'rgba(255,60,30,0)');g.fillStyle=a;g.fillRect(W*.5,0,W*.5,H)}
  const M=MOB[b.B.k],mi=MIM[b.B.k];if(mi.width){const s=sI*(b.B.boss?3:2)/dpr*(b.B.hp<=0?.6:1),f=(now*8|0)%M[2],x=W*.74-(b.ea>0&&b.B.hp>0?Math.sin((1-b.ea/.25)*3.14)*W*.2:0)+(b.eh>0?W*.03*b.eh/.2:0);g.save();g.translate(px(x),px(gy));g.scale(-s,s);g.filter=b.eh>0?'brightness(2.6)':'brightness(.82) contrast(1.15)';g.globalAlpha=b.B.hp<=0?.4:1;g.drawImage(mi,f*M[0],0,M[0],M[1],-M[0]/2,-M[1],M[0],M[1]);g.restore()}
