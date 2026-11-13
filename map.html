@@ -54,6 +54,7 @@ async function boot() {
     const d = g.getImageData(0, 0, BW, BH).data; BLK = new Uint8Array(BW * BH); for (let k = 0; k < BW * BH; k++) BLK[k] = d[k * 4] > 128 ? 1 : 0; }),
     ];
   if (CHB) ld.push(img(CHB.f).then(i => CHB.im = i));
+  if (CHB && CHB.hp) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/chibi_pl.png'; }   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
   for (const k in M.mobs) ld.push(img('mob_' + k + '.png').then(i => MB[k] = i));
   await Promise.all(ld);
   P.x = M.start[0]; P.y = M.start[1];
@@ -129,6 +130,7 @@ const CHB = CHQ === 'chibi2' ? {f: 'hero_chibi.png', w: 131, h: 141, fx: 65, fy:
 const CHV = [[2, 1], [1, 1], [0, 1], [1, -1], [2, -1], [3, -1], [3, 1], [3, 1]];
 function drawHero() {
   if (CHB && CHB.im) { const [v, fl] = (CHB.v || CHV)[P.d], x = Math.round(P.x), y = Math.round(P.y), b = P.mv ? Math.round(Math.abs(Math.sin(P.t * 11)) * 2) : 0;
+    if (CHB.run && P.mv && v !== 0 && !(v === 2 && (P.d === 6))) { const f = (P.t * 13 | 0) % 8; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale(fl * .5, .5); ctx.drawImage(CHB.run, f * 204, 0, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
     shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y - b); ctx.scale(fl * (CHB.z || 1), CHB.z || 1); ctx.drawImage(CHB.im, v * CHB.w, 0, CHB.w, CHB.h, -CHB.fx, -CHB.fy, CHB.w, CHB.h); ctx.restore(); return; }
   const H = M.hero, sh = P.mv ? HR.run : HR.idle, fps = P.mv ? 13 : 7, f = (P.t * fps | 0) % 8;
   const x = Math.round(P.x), y = Math.round(P.y);
