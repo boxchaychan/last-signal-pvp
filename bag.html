@@ -66,7 +66,7 @@ body.bt #arena{position:fixed;inset:0;z-index:5;border:0;border-radius:0}body.bt
 </style></head><body>
 <div id="app"><div id="left"><div id="grid"></div><div id="tray"></div></div>
 <div id="right"><h1>⚔ กระเป๋านักดาบ · ตำนานรัตติกาล</h1><div id="top"></div><div id="shop"></div><div id="arena"><canvas id="cv"></canvas><div id="foe"></div><div id="mybag"></div><div id="fbag"></div></div>
-<div id="info"></div><div id="btns"><button id="rr">🎲 สุ่มใหม่ (1)</button><button id="rot">🔄 หมุน</button><button id="sell">💰 ขาย</button><button id="spd">⏩ x1</button><button id="go">⚔ สู้!</button></div></div></div>
+<div id="info"></div><div id="btns"><button id="rr">🎲 สุ่มใหม่ (1)</button><button id="rot">🔄 หมุน</button><button id="sell">💰 ขาย</button><button id="spd">⏩ x1</button><button id="fs" title="เต็มจอ">⛶ เต็มจอ</button><button id="go">⚔ สู้!</button></div></div></div>
 <div id="ghost"></div><div id="pop"><div></div></div>
 <script>
 // กระเป๋านักดาบ (Bag Brawl): an original backpack auto-battler (owner 2026-11-13: "ทำเกมอีกเกมให้ฉัน ให้คิดเองหมดเลย เกมแนว backpack ... ขอสนุกๆ").
@@ -193,6 +193,8 @@ addEventListener('pointerup',e=>{if(!drag)return;const d=drag,o=d.o;drag=null;gh
 $('#rot').onclick=()=>{if(!sel)return say('แตะของที่จะหมุนก่อน');const o=sel,r=(o.r+1)%4;if(!o.bag){o.r=r}else if(fits(o,o.x,o.y,r))o.r=r;else{const old=o.r;o.r=r;const f=firstFit(o);if(f){[o.x,o.y,o.r]=f}else{o.r=old;say('หมุนตรงนี้ไม่ได้ ไม่มีที่ว่างพอ')}}draw()};
 $('#sell').onclick=()=>{if(!sel)return say('แตะของที่จะขายก่อน (หรือลากของมาวางที่ปุ่มนี้)');sellIt(sel)};
 $('#rr').onclick=()=>{roll();draw()};$('#spd').onclick=()=>{spd=spd===1?2:spd===2?4:1;localStorage.setItem('bag.spd',spd);draw()};$('#go').onclick=()=>startBattle();
+$('#fs').onclick=()=>{const d=document.documentElement;if(!document.fullscreenElement&&!document.webkitFullscreenElement){const f=d.requestFullscreen||d.webkitRequestFullscreen;if(!f)return say('เบราว์เซอร์นี้ไม่มีโหมดเต็มจอ (iPhone: กดแชร์ → เพิ่มไปยังหน้าจอโฮม แล้วเปิดจากไอคอน)');Promise.resolve(f.call(d)).then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})).catch(()=>{})}else(document.exitFullscreen||document.webkitExitFullscreen).call(document)};
+for(const ev of['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,()=>{$('#fs').textContent=(document.fullscreenElement||document.webkitFullscreenElement)?'⛶ ออกเต็มจอ':'⛶ เต็มจอ';setTimeout(draw,60)});
 // ---- battle
 const HERO=new Image();HERO.src='art/poses/combo/chibi_pl.png';const MIM={};for(const k in MOB){MIM[k]=new Image();MIM[k].src='art/td/map1/mob_'+k+'.png'}
 function startBattle(){const mine=G.items.filter(o=>o.bag);if(!mine.some(o=>IT[o.id].t==='w'))return say('⚠️ ในกระเป๋าไม่มีอาวุธเลย! ใส่อาวุธ (สีแดง) อย่างน้อย 1 ชิ้นก่อน');sel=null;
