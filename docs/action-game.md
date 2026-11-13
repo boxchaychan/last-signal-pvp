@@ -1272,3 +1272,7 @@ bag.html attributes (owner 2026-11-13 "คุณสมบัติเกมย�
 - Joined: map 2 got an east exit (x 1740-1800, y 850-950, at the end of its south road) -> td3; td3's west road -> td2. Map 2's ground.png / props.png are byte-identical (td.html uses them); only its block.png (the border opened at the exit) and map.json (exits / entries) changed. Map 1 is untouched.
 - `map.html` used to load map 1 only: now `?map=td1|td2|td3` picks the start map, walking into an `exits` box fades to the next map (`entries[<from>]`), the map name shows on arrival, exit labels are drawn on the ground, `GM.travel(id)` / `GM.map` for tests. Hero sheets still come from `art/td/map1/`.
 - Open: map 2's east exit sits under the edge tree's crown (the road was not extended because the ground must not change); td3's level is only the flat `hpk`, no level gate.
+
+### 2026-11-13 dual-dagger girl (second class in the swordsman's style)
+- Source: the white-ponytail dagger girl of `darkchibi/REF_style_4classes.png` (front crop `dagger/REF_dagger_front.png`; mage and priest crops kept too). Owner made the 16-bit 3-view sheet with GPT: `dagger/gpt_16bit_turn_v1.png` (1536x1024, front / side / back, good: same design in all views, both daggers visible).
+- Plan agreed: GPT makes a GIF of the basic 3-hit attack first as a free preview (`dagger/PROMPT_GPT_attack_gif.txt`: right slash, left slash back, both daggers in an X; 12 frames on green), then PixelLab makes the real thing: B at 128 (1) + character (4) + attack 16 frames (2), each only on the owner's "เจน". Not ordered yet.
