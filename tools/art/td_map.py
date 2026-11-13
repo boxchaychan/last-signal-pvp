@@ -1,7 +1,9 @@
 # Walkable map 1 (owner 2026-11-11 "แมพเอาให้เสร็จก่อน1แมพละฉันจะลองเดินดู"): the mock_map2 look as a full map for map.html.
-# Free (no new PixelLab jobs): ground from the PixelLab tile textures laid by smooth masks with big grass patches, raised
-# plateaus with code-drawn cliffs (rounded boulders on the rim, stone stairs up), a pond, the 4 big rocks (moss added),
-# trees / bushes round the edges, an olive grade like Dimraeth. 1 map px = 1 screen px on a landscape phone (hero 50 px).
+# Free (no new PixelLab jobs): raised plateaus with code-drawn cliffs (boulders on the rim, stone stairs up), a pond, the 4 big
+# rocks (moss added), trees / bushes round the edges (props in an olive grade like Dimraeth).
+# Ground (2026-11-13, owner "ทำแมพให้สวย"): painted flat in code in the look of art/incoming/mapgen/scene1.png, see the
+# "ground painter" section: clean colour areas, crisp road with a dark lip and oval marks, bold shadows, daisies / tufts /
+# stones, blue water with ripples. Geometry, props, block.png and map.json are exactly what they were before that repaint.
 #   python3 tools/art/td_map.py -> art/td/map1/{ground.png, props.png, block.png, hero_*.png, mob_*.png, map.json}
 #   MAP=td2 python3 tools/art/td_map.py -> art/td/map2/ (owner 2026-11-12 "ทำแมพรอไปก่อน": an autumn forest with a river and a
 #   bridge, east of map 1; `exits` / `entries` in map.json join the two maps)
@@ -9,33 +11,27 @@
 #   grey dirt and stone with dead grass, a paved road, two plateaus with stairs, a murky pool, graves, ruins, dead trees.
 #   Only art already in the repo, recoloured in code; td1 / td2 output is unchanged apart from map 2's new east exit)
 import json, math, os, random, sys, numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image
 from scipy import ndimage
 sys.path.insert(0, 'tools/art'); from px_smooth import smooth_up
 random.seed(7); np.random.seed(7)
 W, H = 1800, 1100; DH = 62; HERO = 50
 MAPID = os.environ.get('MAP', 'td1'); T2 = MAPID == 'td2'; T3 = MAPID == 'td3'
-OUT = 'art/td/map3/' if T3 else 'art/td/map2/' if T2 else 'art/td/map1/'; os.makedirs(OUT, exist_ok=True); D = 'art/td/tiles/'
+OUT = 'art/td/map3/' if T3 else 'art/td/map2/' if T2 else 'art/td/map1/'; os.makedirs(OUT, exist_ok=True)
 yy, xx = np.mgrid[0:H, 0:W]
 
-def tex(k, lower):
-    m = json.load(open(D + k + '_meta.json'))['tileset_data']['tiles']; im = Image.open(D + k + '.png').convert('RGB')
-    for t in m:
-        if all((t['corners'][q] == 'lower') == lower for q in t['corners']):
-            b = t['bounding_box']; return im.crop((b['x'], b['y'], b['x'] + 32, b['y'] + 32))
-def tile_fill(t):
-    out = Image.new('RGB', (W, H))
+# The old painter filled the map with 32 px PixelLab tile textures here (tile_fill). The ground is now painted flat by the
+# "ground painter" further down and needs no textures, but the random draws of those fills stay, in the same order, so that
+# every prop placed later lands exactly where it always did (block.png / props.png / map.json must not change).
+def tile_draws():
     for y in range(0, H, 32):
         for x in range(0, W, 32):
-            out.paste(t.transpose(random.choice([Image.FLIP_LEFT_RIGHT, Image.FLIP_TOP_BOTTOM, Image.ROTATE_180])) if random.random() < .5 else t, (x, y))
-    return np.asarray(out).astype(float)
-GRASS = tile_fill(tex('path_pro', False)); DIRT = tile_fill(tex('autumn' if T2 else 'path_pro', True)); LEAF = tile_fill(tex('autumn', False)) if T2 else None; WATER = tile_fill(tex('river', True)); ROCK = tile_fill(tex('cliff', True))
+            if random.random() < .5: random.choice((0, 1, 2))
+for _ in range(5 if T2 else 4): tile_draws()                 # grass, dirt, (map 2: leaves), water, rock
 def noise(cell):
     n = np.random.rand(H // cell + 2, W // cell + 2)
     return np.asarray(Image.fromarray((n * 255).astype(np.uint8)).resize(((W // cell + 2) * cell, (H // cell + 2) * cell), Image.BICUBIC)).astype(float)[:H, :W] / 255
 N8, N40, N90 = noise(8), noise(40), noise(90)
-BAY = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16
-BY = BAY[yy % 4, xx % 4]
 def dil(m, r): return ndimage.binary_dilation(m, iterations=r)
 def edge(m): return m & ~ndimage.binary_erosion(m)
 def band(pts, w):                       # smooth road: distance to a Catmull-Rom curve through pts < w (+ wobble)
@@ -54,25 +50,9 @@ def blob(cx, cy, rx, ry, wob=.16):
     a = np.arctan2(yy - cy, xx - cx); r = np.hypot((xx - cx) / rx, (yy - cy) / ry)
     return r < 1 + wob * np.sin(a * 3 + cx) + wob * .6 * np.sin(a * 5 + cy) + (N8 - .5) * .1
 
-# ---- ground: grass with big light / dark patches (stepped, dithered at the edges), a few bare dirt patches
-img = GRASS.copy()
-if T2:   # map 2: carpets of fallen red / orange leaves over the grass, dithered edges
-    lf = N90 * .6 + N40 * .4 + (BY - .5) * .1; img[lf > .45] = LEAF[lf > .45]; mix = (lf > .38) & (lf <= .45); img[mix] = img[mix] * .5 + LEAF[mix] * .5
-lv = N90 * .7 + N40 * .3 + (BY - .5) * .08
-img[lv < .36] *= .86; img[lv < .28] *= .9                                # darker, cooler patches
-lt = lv > .66; img[lt] = img[lt] * 1.08 + np.array([10, 6, -6])         # sunny, yellowish patches
-bare = (N40 > .86) & (N90 > .5) & (N8 + BY * .5 > .7)
-img[bare] = img[bare] * .55 + DIRT[bare] * .45
-TOP = GRASS; RIMC = np.array([150, 196, 92])                              # plateau tops: texture and sunlit rim colour
-def grey(a, k, tint=(1, 1, 1)): g = a.mean(2, keepdims=True); return (g + (a - g) * k) * np.array(tint)
-if T3:   # map 3: grey-brown dirt, slabs of rocky ground, patches of dead yellow-grey grass (dithered edges)
-    M90, M40 = noise(90), noise(40)
-    DEAD = grey(GRASS, .3, (1.0, .93, .66)) * .82; STONE = grey(DIRT, .15, (.96, 1, 1.06)) * .66; TOP = DEAD * 1.06; RIMC = np.array([176, 170, 120])
-    img = grey(DIRT, .5) * .84
-    st = M90 * .65 + M40 * .35 + (BY - .5) * .1; img[st > .6] = STONE[st > .6]; mix = (st > .55) & (st <= .6); img[mix] = img[mix] * .5 + STONE[mix] * .5
-    lf = N90 * .6 + N40 * .4 + (BY - .5) * .1; img[lf > .56] = DEAD[lf > .56]; mix = (lf > .5) & (lf <= .56); img[mix] = img[mix] * .5 + DEAD[mix] * .5
-    img[lv < .36] *= .86; img[lv < .28] *= .9; img[lt] = img[lt] * 1.07 + np.array([8, 6, 0])
-# ---- road (Catmull-Rom) with a dark grass rim
+# ---- the big light / dark patches (N90 / N40) and, on map 3, the stone / dead-grass patches (M90 / M40) are laid by the painter
+if T3: M90, M40 = noise(90), noise(40)
+# ---- road (Catmull-Rom), water: masks only, the painter draws them
 ROADS = [[(-30, 720), (180, 700), (380, 660), (540, 590), (640, 470), (660, 380)],
          [(540, 600), (760, 650), (980, 720), (1180, 700), (1330, 640), (1400, 600)],
          [(1180, 700), (1420, 780), (1640, 800), (1840, 770)]]
@@ -84,55 +64,25 @@ if T3: ROADS = [[(-30, 610), (200, 600), (420, 560), (640, 590), (880, 640), (11
                 [(1100, 650), (1180, 480), (1330, 330), (1540, 292)]]
 road = np.zeros((H, W), bool)
 for r in ROADS: road |= band(r, 24)
-img[road] = DIRT[road]
-rim = edge(dil(road, 2)) & ~road; img[rim] = img[rim] * .7 + np.array([60, 96, 36]) * .3
-if T3:   # an old paved road: pale worn stone, darker joints, a dark rim
-    PAVE = grey(ROCK, .15, (1.02, 1, .96)) * 1.5 + 14; img[road] = PAVE[road]
-    jo = road & (((xx + (yy // 16) * 9) % 22 == 0) | (yy % 16 == 0)) & (N8 > .3); img[jo] *= .72
-    img[rim] = np.array([52, 48, 46]); worn = road & (N40 > .7) & (N8 > .55); img[worn] = img[worn] * .5 + grey(DIRT, .5)[worn] * .42
-    # ---- a murky pool in the south-east
+if T3:   # a murky pool in the south-east
     pond = blob(1420, 955, 150, 58); bank = dil(pond, 6); river = pond; deck = np.zeros((H, W), bool)
-    img[bank & ~pond] = np.array([78, 70, 60]) + (N8[bank & ~pond, None] - .5) * 24
-    img[pond] = WATER[pond] * np.array([.36, .52, .44]) + np.array([10, 16, 10]); deep = ndimage.binary_erosion(pond, iterations=14); img[deep] *= .78
-    img[edge(pond)] = np.array([150, 176, 150])
-elif not T2:
-    # ---- pond with a muddy bank and foam
-    pond = blob(1080, 950, 190, 80); bank = dil(pond, 6)
-    img[bank & ~pond] = np.array([112, 80, 52]) + (N8[bank & ~pond, None] - .5) * 30
-    img[pond] = WATER[pond]; deep = ndimage.binary_erosion(pond, iterations=14); img[deep] *= .82
-    img[edge(pond)] = np.array([210, 236, 250])
+elif not T2:   # a pond
+    pond = blob(1080, 950, 190, 80); bank = dil(pond, 6); river = pond; deck = np.zeros((H, W), bool)
 else:   # a river from the top to the bottom with a wooden bridge where the road crosses
     river = band([(870, -40), (850, 200), (800, 420), (825, 640), (780, 860), (805, 1140)], 40)
     deck = (xx > 742) & (xx < 892) & (yy > 600) & (yy < 654)
     bank = dil(river, 7); pond = river & ~deck
-    img[bank & ~river] = np.array([118, 86, 56]) + (N8[bank & ~river, None] - .5) * 30
-    img[river] = WATER[river]; deep = ndimage.binary_erosion(river, iterations=12); img[deep] *= .8
-    img[edge(river)] = np.array([206, 230, 240])
-    for x in range(744, 891):                                   # planks across, darker gaps, rails top and bottom
-        for y in range(600, 655):
-            c = np.array([150, 104, 62]) if (x - 744) % 10 else np.array([84, 56, 34])
-            if y < 606 or y > 648: c = np.array([96, 64, 38]) if y in (600, 601, 653, 654) else np.array([132, 92, 54])
-            img[y, x] = c * (0.94 + .06 * ((x * 7 + y * 3) % 5) / 4)
     RAIL = deck & ((yy < 606) | (yy > 648))
 # ---- plateaus: footprint at ground level, top drawn DH higher, cliff face below
-BOULDERS = []; UP = np.zeros((H, W), bool); FACE = np.zeros((H, W), bool); RAMP = np.zeros((H, W), bool)
+BOULDERS = []; UP = np.zeros((H, W), bool); FACE = np.zeros((H, W), bool); RAMP = np.zeros((H, W), bool); FOOT = np.zeros((H, W), bool)
 def shift_up(m, k):
     o = np.zeros_like(m); o[:H - k] = m[k:]; return o
 def plateau(mask, ramps):
-    global UP, FACE
-    up = shift_up(mask, DH); span = np.zeros_like(mask); depth = np.zeros((H, W))
-    for k in range(DH + 1):
-        sh = shift_up(mask, k); depth[sh & ~span] = k; span |= sh
+    global UP, FACE, FOOT
+    up = shift_up(mask, DH); span = np.zeros_like(mask)
+    for k in range(DH + 1): span |= shift_up(mask, k)
     face = span & ~up
-    foot = dil(mask, 5) & ~span; img[foot] *= .7                                   # dark shadow at the foot
-    sh_k = np.clip(.55 + depth / DH * .5, .5, 1.05)[..., None]                      # darker toward the foot
-    img[face] = (ROCK[face] * .62 + np.array([112, 78, 50]) * .38) * sh_k[face]
-    vs = face & ((xx * 7 + (yy // 5) * 3) % 13 == 0) & (N8 > .4); img[vs] *= .72  # vertical cracks
-    st = face & ((yy + (xx // 11) * 4) % 12 == 0); img[st] *= .8                   # strata
-    roots = face & (N8 > .82) & (depth > DH * .55); img[roots] = np.array([70, 52, 34])
-    img[up] = TOP[up] * 1.04 + np.array([4, 4, 0])
-    img[edge(up)] = RIMC                                        # sunlit rim
-    img[edge(span) & ~up] = np.array([38, 26, 20])                                  # dark outline round the face
+    FOOT |= dil(mask, 5) & ~span                                                    # the shadow at the foot
     # rounded boulders along the rim (columns: the first face pixel under the top)
     cols = np.where(face.any(0))[0]; last = -99
     for x in cols:
@@ -155,20 +105,6 @@ elif T3:
 else:
     plateau(yy < 300 + 55 * np.sin(xx / 240) + 26 * np.sin(xx / 93 + 1) + (N40 - .5) * 30, [(632, 690)])
     plateau(blob(1460, 560, 200, 84), [(1380, 1430)])
-# ---- stairs
-for x in range(W):
-    ys = np.nonzero(RAMP[:, x])[0]
-    if not ys.size: continue
-    left = not RAMP[:, x - 1].any(); right = not RAMP[:, min(W - 1, x + 1)].any()
-    for y in ys:
-        i = (y - ys[0]) // 7; c = np.array([150, 132, 108]) * (1 - .025 * i)
-        if (y - ys[0]) % 7 == 0: c = np.array([196, 178, 146])
-        if (x * 5 + i * 17) % 23 == 0: c = c * .7
-        elif (y - ys[0]) % 7 == 6: c = np.array([96, 86, 76])
-        img[y, x] = c
-    if left or right: img[ys, x] = np.array([60, 46, 36])
-img = np.clip(img, 0, 255)
-
 # ---- props (sprites placed by their feet)
 def fit(f, h, flip=False):
     im = Image.open(f).convert('RGBA'); im = im.crop(im.getbbox()); k = h / im.height
@@ -476,45 +412,301 @@ SPR[('crown', 0, 1)] = SPR[('crown', 0, 0)].transpose(Image.FLIP_LEFT_RIGHT)
 for i, x in enumerate(range(-60, W + 100, 330)):
     PROPS.append({'s': ('crown', 0, i % 2), 'x': x + random.randint(-30, 30), 'y': H + 70, 'kind': 'crown', 'over': True})
 
-# ---- prop shadows baked into the ground (to the lower right), collision footprints
-blk = np.zeros((H, W), bool)
-sh = np.ones((H, W))
+# ---- collision footprints of the props, and their shadow shapes (to the lower right) for the ground painter
+blk = np.zeros((H, W), bool); SHAD = np.zeros((H, W), bool)
 for p in PROPS:
     im = SPR[p['s']]; w, h = im.size; x, y = p['x'], p['y']
     if p['kind'] in ('crown', 'flowers', 'flat', 'water'): continue
     if p['kind'] in ('tree', 'stree', 'tree2'):
-        e = ((xx - x - w * .1) / (w * .42)) ** 2 + ((yy - y + 6) / (w * .17)) ** 2 < 1
+        SHAD |= ((xx - x - w * .1) / (w * .42)) ** 2 + ((yy - y + 6) / (w * .17)) ** 2 < 1
     else:
-        e = ((xx - x - w * .06) / (w * .5)) ** 2 + ((yy - y + h * .08) / (h * .16 + 3)) ** 2 < 1
-    sh[e] = np.minimum(sh[e], .7)
+        SHAD |= ((xx - x - w * .06) / (w * .5)) ** 2 + ((yy - y + h * .08) / (h * .16 + 3)) ** 2 < 1
     fp = FP[p['kind']]
     if fp:
         rx = fp[0] * w; ry = fp[1] * h if fp[1] < 1 else fp[1]; oy = fp[2] * h if fp[2] < 1 else fp[2]
         blk |= ((xx - x) / rx) ** 2 + ((yy - y + oy) / ry) ** 2 < 1
-soft = sh < 1; ring = edge(soft) & (BY > .5); sh[ring] = .85
-img *= sh[..., None]
-base = Image.fromarray(img.astype(np.uint8)).convert('RGBA'); dr = ImageDraw.Draw(base)
-for x, y, r in BOULDERS:
-    dr.ellipse((x - r - 1, y - r + 2, x + r + 1, y + r + 4), fill=(40, 28, 22))
-    dr.ellipse((x - r, y - r, x + r, y + r), fill=(118, 80, 52)); dr.ellipse((x - r + 2, y - r + 1, x + r - 3, y + r - 4), fill=(146, 102, 66))
-    dr.ellipse((x - r + 3, y - r + 2, x - 1, y - 2), fill=(172, 128, 84))
-    if random.random() < .5: dr.line((x - r + 2, y - r + 1, x + 2, y - r), fill=(110, 150, 66), width=2)
-# scatter: tufts, leaves, pebbles (not on road / water / faces / stairs)
-okg = ~road & ~bank & ~FACE & ~RAMP & ~blk
-for _ in range(3200):
-    x, y = random.randrange(4, W - 4), random.randrange(8, H - 4)
-    if not okg[y, x]: continue
-    r = random.random()
-    if r < .55:
-        c = random.choice([(46, 108, 40), (118, 176, 70), (72, 144, 52)] if not T3 else [(98, 96, 60), (150, 142, 92), (74, 76, 52)])
-        for dx in (-2, 0, 2): dr.line((x + dx, y, x + dx + random.choice((-1, 0, 1)), y - random.randint(3, 6)), fill=c)
-    elif r < .78: dr.rectangle((x, y, x + 1, y + 1), fill=random.choice([(196, 72, 40), (226, 140, 52), (176, 52, 40), (230, 210, 120)] if not T3 else [(206, 204, 190), (120, 116, 110), (176, 170, 150), (90, 84, 80)]))
-    else: dr.ellipse((x, y, x + 3, y + 2), fill=(146, 140, 130)); dr.point((x + 1, y), fill=(198, 194, 184))
-for _ in range(500):                                       # stones on the road
-    x, y = random.randrange(4, W - 4), random.randrange(4, H - 4)
-    if road[y, x] and random.random() < .5: dr.ellipse((x, y, x + 2, y + 1), fill=(150, 128, 104)); dr.point((x, y), fill=(190, 170, 140))
+MOSSY = [random.random() < .5 for _ in BOULDERS]      # which rim boulders carry moss: the last draws from the seeded generator
 
-# ---- olive grade (Dimraeth): soften saturation, warm, greens toward olive, lifted darks
+# ============================================================================================================================
+# ---- ground painter (owner 2026-11-13 "ทำแมพให้สวย"): the look of art/incoming/mapgen/scene1.png. Flat colour areas in a small
+# palette per material, hard steps, crisp outlined edges, bold shadows, small hand-drawn decals: no texture tiles, no noise
+# speckle, no dithering, no olive grade. Painted at half size and doubled: one art pixel = 2 x 2 map pixels (the grid of
+# block.png), which next to the trees is as chunky as the reference. The geometry comes from the masks above and is not touched
+# (the road edge is only tidied by a 5 px median and grows grass teeth a few pixels long); the big light / dark patches, the
+# leaf carpets of map 2 and the rock / dead-grass patches of map 3 lie where the old map had them (same noise fields).
+# Own random generators (RG / RR): nothing here draws from the seeded `random` / `np.random` that place the props.
+GW, GH = W // 2, H // 2; gy, gx = np.mgrid[0:GH, 0:GW]
+RG = np.random.default_rng(1113); RR = random.Random(1113)
+def lo(m): return np.ascontiguousarray(m[::2, ::2])                         # a map-size mask / field at art size
+def qt(a, q): return float(np.quantile(a, q))
+def mv(m, dy, dx=0):                                                        # the mask moved dy down and dx right
+    o = np.zeros_like(m)
+    o[max(0, dy):GH + min(0, dy), max(0, dx):GW + min(0, dx)] = m[max(0, -dy):GH + min(0, -dy), max(0, -dx):GW + min(0, -dx)]; return o
+def n4(m): return m | mv(m, 1) | mv(m, -1) | mv(m, 0, 1) | mv(m, 0, -1)     # the mask and its 4 neighbours
+def runpos(m):                                                              # 1, 2, 3 ... down every vertical run of the mask
+    c = np.cumsum(m, 0); return (c - np.maximum.accumulate(np.where(m, 0, c), 0)) * m
+def streak(L):                # rows of dashes L px long, shifted row by row: a smooth field + this, thresholded = a brushed edge
+    v = np.repeat(RG.random((GH, GW // L + 3)), L, axis=1); o = RG.integers(0, L, GH)
+    return np.stack([v[y, o[y]:o[y] + GW] for y in range(GH)])
+def wide(cy, cx):             # smooth noise stretched sideways (cells cy x cx): thresholded = flat horizontal blotches
+    n = (RG.random((GH // cy + 3, GW // cx + 3)) * 255).astype(np.uint8)
+    return np.asarray(Image.fromarray(n).resize(((GW // cx + 3) * cx, (GH // cy + 3) * cy), Image.BICUBIC)).astype(float)[:GH, :GW] / 255
+def tones(p, f, qs=(.34, .28, .91), f2=None):   # 4 flat tones: p[0] base, p[1] darker patches, p[2] dark clumps inside them, p[3] sunny patches
+    o = np.empty((GH, GW, 3), np.uint8); o[:] = p[0]; f2 = F2 if f2 is None else f2
+    m1 = f < qt(f, qs[0]); o[m1] = p[1]; o[m1 & (f < qt(f, qs[0] * .8)) & (f2 < qt(f2, qs[1]))] = p[2]; o[f > qt(f, qs[2])] = p[3]; return o
+PAL = dict(   # map 1: the greens, the dirt road and the blue water of the reference
+    soft=[(123, 139, 55), (94, 122, 55), (73, 102, 57), (147, 158, 63)], top=[(131, 147, 59), (102, 130, 57), (81, 110, 59), (155, 166, 67)],
+    tl=(166, 170, 78), td=(60, 84, 56), ts=(78, 104, 60), out=(44, 64, 54), rim=(170, 178, 84),
+    rl=(182, 146, 84), rm=(150, 108, 62), rd=(112, 70, 48), rr=(128, 84, 54),
+    bm=(124, 78, 52), bd=(72, 44, 46), wm=(66, 137, 157), wd=(54, 106, 140), wp=(50, 76, 108), wl=(131, 214, 216),
+    k=[(152, 110, 66), (130, 86, 56), (108, 66, 50), (90, 54, 48)], kj=(64, 38, 46), ko=(48, 30, 40),
+    sl=(204, 188, 152), sm=(166, 148, 118), sd=(112, 96, 84), so=(62, 48, 46),
+    pl=(160, 158, 140), pm=(114, 112, 108), pd=(76, 74, 88), po=(44, 46, 54), moss=(104, 130, 58),
+    shk=(.40, .46, .62), shb=(4, 6, 20))
+if T2: PAL.update(   # map 2: autumn: yellower grass, carpets of orange / red / yellow leaves, a slightly cooler dirt road
+    soft=[(134, 136, 58), (106, 120, 56), (84, 100, 56), (156, 152, 66)], top=[(142, 142, 60), (114, 128, 58), (92, 108, 58), (164, 158, 70)],
+    leaf=[(200, 114, 50), (168, 78, 44), (138, 58, 44), (222, 154, 62)], lout=(98, 48, 42), tl=(176, 170, 80),
+    rl=(178, 142, 90), rm=(146, 106, 68), rd=(106, 68, 50), rr=(122, 82, 58))
+if T3: PAL.update(   # map 3: cold and dark: blue-grey dirt, broken flagstones, grey-green dead grass, a pale paved road, a murky pool
+    soft=[(84, 80, 94), (74, 72, 88), (64, 64, 82), (94, 90, 102)], slab=[(72, 78, 98), (62, 68, 90), (82, 88, 108)], sj=(44, 48, 66),
+    dead=[(82, 96, 88), (72, 84, 82), (62, 74, 78), (98, 110, 94)], top=[(92, 106, 96), (80, 92, 88), (70, 80, 84), (108, 120, 100)],
+    tl=(150, 148, 108), td=(46, 50, 58), ts=(84, 92, 88), out=(34, 36, 50), rim=(140, 146, 114),
+    pave=[(150, 154, 164), (128, 132, 146), (108, 112, 128)], pj=(74, 78, 96),
+    bm=(74, 68, 70), bd=(44, 40, 50), wm=(58, 88, 86), wd=(46, 72, 78), wp=(36, 54, 66), wl=(134, 166, 150),
+    k=[(116, 118, 132), (98, 100, 116), (82, 84, 102), (68, 70, 88)], kj=(48, 48, 64), ko=(32, 32, 46),
+    sl=(170, 174, 184), sm=(134, 138, 152), sd=(92, 94, 110), so=(44, 44, 58),
+    pl=(150, 154, 164), pm=(110, 114, 126), pd=(74, 76, 94), po=(34, 36, 50), moss=(84, 96, 84),
+    shk=(.58, .6, .68), shb=(0, 2, 8))
+PAL = {k_: (np.array(v_, np.uint8) if isinstance(v_[0], int) else [np.array(c_, np.uint8) for c_ in v_]) if k_ not in ('shk', 'shb') else np.array(v_, float) for k_, v_ in PAL.items()}
+def shade(c): return np.clip(c * PAL['shk'] + PAL['shb'], 0, 255).astype(np.uint8)
+
+# -- 1. the cover: big flat patches in the places the old map had its light / dark patches, brushed edges
+lv = lo(N90) * .7 + lo(N40) * .3; lf = lo(N90) * .6 + lo(N40) * .4; F6 = (streak(5) - .5) * .034; F2 = wide(16, 22) + F6 * 2
+g = tones(PAL['soft'], lv + F6)
+cov = np.zeros((GH, GW), np.uint8)             # what lies on the soft ground: 0 grass (map 3: grey dirt), 1 leaves, 2 rock slab, 3 dead grass
+if T2:   # carpets of fallen leaves where the old map had them
+    lm = lf + (streak(4) - .5) * .05 > .45
+    g[lm] = tones(PAL['leaf'], lo(N40) * .6 + wide(10, 18) * .4 + F6, (.30, .22, .88))[lm]; cov[lm] = 1
+    g[lm & ~mv(lm, -1)] = PAL['lout']                                       # the carpet has a little thickness: a dark lower rim
+if T3:   # areas of broken flagstones (a light upper edge, a dark lower edge), then patches of dead grass
+    sm_ = lo(M90) * .65 + lo(M40) * .35 + F6 > .6
+    seeds = np.zeros((GH, GW), bool)                                        # broken flagstones: cells round scattered seeds, dark joints
+    for cy in range(0, GH - 8, 9):
+        for cx in range(0, GW - 14, 15): seeds[cy + RR.randrange(8), cx + RR.randrange(14)] = True
+    _, (iy, ix) = ndimage.distance_transform_edt(~seeds, return_indices=True, sampling=(1.5, 1)); lab = iy * GW + ix
+    g[sm_] = np.array(PAL['slab'])[RG.choice(3, GH * GW, p=(.5, .3, .2))[lab]][sm_]; cov[sm_] = 2
+    g[sm_ & ((lab != np.roll(lab, 1, 0)) | (lab != np.roll(lab, 1, 1)))] = PAL['sj']
+    g[sm_ & ~mv(sm_, 1)] = PAL['slab'][2] + 12; g[sm_ & ~mv(sm_, -1)] = PAL['out']
+    dm = lf + F6 > .56
+    g[dm] = tones(PAL['dead'], lv + F6)[dm]; cov[dm] = 3
+# -- 2. road, bank, water (fills), then the cover grows over their edges
+vroad = ndimage.median_filter(lo(road).astype(np.uint8), size=5) > 0
+water = lo(river); deck_a = lo(deck); bank_a = lo(bank) & ~water; up_a, face_a, ramp_a = lo(UP), lo(FACE), lo(RAMP)
+if T3:   # an old paved road: slabs in running bond, three pale tones, dark joints, dirt showing where it is worn
+    row = gy // 8; off = (row * 5) % 12; col = (gx + off) // 12
+    g[vroad] = np.array(PAL['pave'])[RG.choice(3, (GH // 8 + 2, GW // 12 + 3), p=(.25, .55, .2))[row, col]][vroad]
+    g[vroad & ((gy % 8 == 0) | ((gx + off) % 12 == 0))] = PAL['pj']
+    wn = wide(5, 9); worn = vroad & (lo(N40) > .7) & (wn > .56); g[worn] = PAL['soft'][1]
+else:    # a dirt road: light inside, a darker band along the edges, flat darker blotches
+    din = ndimage.distance_transform_edt(vroad)
+    g[vroad] = PAL['rl']
+    wn = wide(5, 16); g[vroad & (wn > qt(wn, .70))] = PAL['rm']
+    g[vroad & (din < 2.4 + (lo(N8) - .5) * 2)] = PAL['rm']
+if T2: bank_a &= ~(vroad & ndimage.binary_dilation(deck_a, iterations=12))    # the road runs onto the bridge: no bank strip across it
+g[bank_a] = PAL['bm']
+g[water] = PAL['wm']
+wn = wide(6, 22); g[water & (wn > qt(wn, .60))] = PAL['wd']
+g[water & (mv(~water, 1) | mv(~water, 2) | mv(~water, 3))] = PAL['wp']     # the north bank throws a shadow on the water
+soft = ~(vroad | bank_a | water | deck_a | face_a | ramp_a)
+def blades(soil, src, dens, lmax):   # the cover grows over the edge of `soil` from the `src` pixels touching it: blades 1 px wide
+    _, (iy, ix) = ndimage.distance_transform_edt(~soil, return_indices=True); live = soil.copy()
+    by, bx = np.nonzero(src & ~soil & n4(soil)); cl = wide(7, 7)
+    for y, x in zip(by.tolist(), bx.tolist()):
+        if RR.random() > dens * (.3 + 1.4 * cl[y, x]): continue
+        dy, dx = int(np.sign(iy[y, x] - y)), int(np.sign(ix[y, x] - x)); c = g[y, x].copy(); lean = RR.choice((-1, 0, 0, 1)); L = RR.randint(1, lmax)
+        for k in range(1, L + 1):
+            Y, X = y + dy * k + (dx != 0) * lean * (k > 1), x + dx * k + (dy != 0) * lean * (k > 1)
+            if not (0 <= Y < GH and 0 <= X < GW) or not soil[Y, X]: break
+            g[Y, X] = c; live[Y, X] = False; cov[Y, X] = cov[y, x]
+            Y2, X2 = Y + (dx != 0) * (lean or 1), X + (dy != 0) * (lean or 1)                   # a long blade is 2 px wide at its foot
+            if k == 1 and L > 1 and 0 <= Y2 < GH and 0 <= X2 < GW and soil[Y2, X2]: g[Y2, X2] = c; live[Y2, X2] = False; cov[Y2, X2] = cov[y, x]
+    return live
+live = blades(vroad | bank_a, soft, 0 if T3 else .5, 3)
+soft2 = soft | ((vroad | bank_a) & ~live); vroad2 = vroad & live; bank2 = bank_a & live
+oe = soft2 & n4(live); g[oe] = PAL['out']                                   # the dark rim of the cover along road and bank
+if T2: g[oe & (cov == 1)] = PAL['lout']
+if not T3: g[vroad2 & mv(soft2, 1)] = PAL['rd']                             # a dark lip where the cover hangs over the road
+g[bank2 & mv(soft2, 1)] = PAL['bd']; g[bank2 & n4(water)] = PAL['bd']
+g[water & n4(~water)] = PAL['wl']                                           # a light line along the bank
+def ell(cx, cy, rx, ry):             # the pixels of a small ellipse
+    return [(y, x) for y in range(int(cy - ry - 1), int(cy + ry + 2)) for x in range(int(cx - rx - 1), int(cx + rx + 2))
+            if 0 <= y < GH and 0 <= x < GW and ((x - cx) / (rx + .35)) ** 2 + ((y - cy) / (ry + .35)) ** 2 <= 1]
+def ring(px): s_ = set(px); return [(y, x) for y, x in px if not {(y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)} <= s_]
+def spots(mask, n, gap=0):           # up to n random pixels of the mask, at least `gap` apart
+    ys, xs = np.nonzero(mask); out = []
+    for _ in range(n * 8 if len(ys) else 0):
+        if len(out) >= n: break
+        i = RR.randrange(len(ys)); x, y = int(xs[i]), int(ys[i])
+        if gap and any(abs(x - a) < gap and abs(y - b) < gap * .6 for a, b in out): continue
+        out.append((x, y))
+    return out
+if not T3:   # oval marks on the road: a thin darker ring, some filled with the other tone
+    core = ndimage.binary_erosion(vroad2, iterations=4)
+    for x, y in spots(core, int(core.sum()) // 110, 12):
+        rx_ = RR.randint(3, 7); px = ell(x, y, rx_, RR.choice((1.6, 2, 2.4)) + (rx_ > 5) * .6)
+        if not all(core[q] for q in px): continue
+        if RR.random() < .5:
+            f = PAL['rm'] if tuple(g[y, x]) == tuple(PAL['rl']) else PAL['rl']
+            for q in px: g[q] = f
+        for q in ring(px): g[q] = PAL['rr']
+    for x, y in spots(core, int(core.sum()) // 420, 6):                     # a few pebbles
+        g[y, x:x + 2] = PAL['pl']; g[y + 1, x:x + 2] = PAL['rr']; g[y, x + 1 + RR.randint(0, 1)] = PAL['pm']
+inner = ndimage.binary_erosion(water & ~deck_a, iterations=3)               # ripple strokes
+for x, y in spots(inner, int(inner.sum()) // 100, 6):
+    L = RR.randint(3, 8); c = PAL['wl'] if RR.random() < .7 else PAL['wp']; kink = RR.randrange(1, L); d = RR.choice((-1, 1))
+    for k in range(L):
+        X, Y = x + k, y + (d if k >= kink and L > 4 else 0)
+        if X < GW and inner[Y, X]: g[Y, X] = c
+for p in PROPS:   # the lily pads and the boat (props) carry a round patch of grey water: a dark ring and a light ripple arc tie it into the pond
+    if p['kind'] != 'water': continue
+    w_, h_ = SPR[p['s']].size; cx, cy, r_ = p['x'] / 2, (p['y'] - h_ / 2) / 2, w_ / 4
+    for q in ell(cx, cy, r_ + 1.2, r_ + 1.2):
+        if water[q] and not deck_a[q]: g[q] = PAL['wp']
+    for qy, qx in ring(ell(cx, cy + 1.5, r_ + 3.6, r_ + 2.6)):
+        if qy > cy + 2 and water[qy, qx] and not deck_a[qy, qx] and (qx + qy) % 9 > 1: g[qy, qx] = PAL['wl']
+if not T3:   # a few small lily pads away from the big ones (props)
+    far = inner & ndimage.binary_erosion(inner, iterations=4)
+    for p in PROPS:
+        if p['kind'] == 'water': far &= np.hypot(gx - p['x'] / 2, gy - (p['y'] - 20) / 2) > 26
+    for x, y in spots(far, 5 if T2 else 3, 28):
+        px = ell(x, y, 3, 1.7)
+        for q in ell(x, y, 4, 2.7): g[q] = (40, 78, 100)
+        for q in px: g[q] = (112, 146, 74)
+        g[y, x + 1:x + 4] = (40, 78, 100); g[y - 1, x - 2:x + 1] = (146, 172, 88)
+if T2:   # the wooden bridge: planks across with dark gaps, a rail (blocked) along both sides, its shadow on the water
+    dy0, dy1 = np.nonzero(deck_a.any(1))[0][[0, -1]]; dx0, dx1 = np.nonzero(deck_a.any(0))[0][[0, -1]]
+    g[water & ~deck_a & (mv(deck_a, 1) | mv(deck_a, 2) | mv(deck_a, 3))] = PAL['wp']
+    WOOD = [np.array(c_, np.uint8) for c_ in ((168, 118, 70), (150, 102, 62), (134, 90, 56))]
+    for x in range(dx0, dx1 + 1):
+        i = x - dx0; t = WOOD[(i // 5 * 7 + i // 5 // 3) % 3]
+        for y in range(dy0, dy1 + 1):
+            c = t if i % 5 != 4 else np.array((78, 50, 40), np.uint8)
+            if i % 5 != 4 and (i * 7 + y * 13) % 31 == 0: c = WOOD[2] - 14
+            if y - dy0 < 2 or dy1 - y < 2: c = np.array(((186, 136, 82), (96, 62, 44))[(y - dy0) % 2 if y - dy0 < 2 else 1 - (dy1 - y)], np.uint8)
+            g[y, x] = c
+    for x in (dx0, dx0 + 24, dx0 + 49, dx1 - 2):                                   # posts
+        for y0_ in (dy0 - 1, dy1 - 2):
+            g[y0_:y0_ + 3, x:x + 3] = (112, 74, 50); g[y0_, x:x + 3] = (196, 148, 92); g[y0_ + 3, x:x + 3] = (60, 40, 36)
+# -- 3. plateaus: the top in a slightly sunnier set of tones, a wall of rock columns under it, the cover hanging over the wall
+top = tones(PAL['top'], lv + F6); g[up_a] = top[up_a]; cov[up_a] = 3 if T3 else 0
+if T2: g[up_a & lm] = tones(PAL['leaf'], lo(N40) * .6 + wide(10, 18) * .4 + F6, (.30, .22, .88))[up_a & lm]; cov[up_a & lm] = 1
+g[up_a & n4(~up_a)] = PAL['rim']                                            # sunlit rim
+g[~up_a & n4(up_a) & ~face_a & ~ramp_a] = PAL['out']                        # the far edge of the top against the low ground behind
+fd = runpos(face_a)                                                        # 1 on the first wall row under the top, counting down
+cb = np.cumsum(RG.integers(7, 15, GW // 7 + 2)); ci = np.searchsorted(cb, gx[0], side='right')      # rock columns 7-14 px wide
+split = RG.integers(8, 20, ci.max() + 1)[ci][None, :]; jog = RG.integers(-2, 3, ci.max() + 1); lowt = RG.integers(1, 3, ci.max() + 1)[ci][None, :]
+upt = (RG.random(ci.max() + 1) < .3).astype(int)[ci][None, :]
+ki = np.where(fd <= split, upt, lowt); ki = np.where(fd > 26, 3, ki)        # a lighter upper facet, a darker lower one, a dark base
+g[face_a] = np.array(PAL['k'])[ki][face_a]
+g[face_a & (fd == split + 1) & (RG.random(ci.max() + 1) < .6)[ci][None, :]] = PAL['kj']             # the ledge between two facets
+crack = np.zeros((GH, GW), bool)
+for c_ in range(1, ci.max() + 1):                                           # cracks between the columns, jogging at the ledge
+    x0_ = int(cb[c_ - 1]); x1_ = min(GW - 1, max(0, x0_ + int(jog[c_])))
+    if x0_ + 2 < GW: crack[:, x0_] |= fd[:, x0_] <= split[0, x0_]; crack[:, x1_] |= fd[:, x1_] > split[0, x0_]
+g[face_a & crack] = PAL['kj']
+g[face_a & n4(~(face_a | up_a | ramp_a))] = PAL['ko']
+flive = blades(face_a & ~ramp_a, up_a, .6, 3)
+g[flive & mv(~flive & (up_a | face_a), 1) & face_a] = PAL['ko']             # the shadow line under the overhanging cover
+r6 = (runpos(ramp_a) - 1) % 6                                               # stairs, steps 6 px tall: a lit edge, the tread, a darker riser, a shadow line
+g[ramp_a] = PAL['sm']; g[ramp_a & (r6 == 0)] = PAL['sl']; g[ramp_a & (r6 >= 3)] = PAL['sd']; g[ramp_a & (r6 == 5)] = PAL['so']
+g[ramp_a & ~(mv(ramp_a, 0, 1) & mv(ramp_a, 0, -1))] = PAL['so']
+# -- 4. bold flat shadows: under every prop (the same ellipses as before) and at the foot of the walls
+shd = (lo(SHAD) & ~face_a & ~ramp_a & ~deck_a) | lo(FOOT)
+shd |= n4(shd) & (RG.random((GH, GW)) < .22) & ~face_a & ~ramp_a & ~deck_a                # a few teeth on the edge
+g[shd & ~water] = shade(g[shd & ~water]); g[shd & water] = (g[shd & water] * np.array((.7, .74, .82))).astype(np.uint8)
+# -- 5. small life on the soft ground (never on road / water / walls / stairs, not under a blocking prop)
+def stamp(rows, key, x, y, outline=None):     # a tiny hand-drawn sprite; (x, y) = the middle of its bottom row
+    h_, w_ = len(rows), len(rows[0]); x0, y0 = x - w_ // 2, y - h_ + 1
+    full = lambda j, i: 0 <= j < h_ and 0 <= i < w_ and rows[j][i] != '.'
+    for j in range(-1, h_ + 1):
+        for i in range(-1, w_ + 1):
+            if full(j, i): g[y0 + j, x0 + i] = key[rows[j][i]]
+            elif outline is not None and (full(j + 1, i) or full(j - 1, i) or full(j, i + 1) or full(j, i - 1)): g[y0 + j, x0 + i] = outline
+okd = ndimage.binary_erosion(soft2, iterations=3) & ~lo(blk) & (gx > 8) & (gx < GW - 9) & (gy > 14) & (gy < GH - 6)
+TUFTS = (("a..a..a", ".a.a.a.", ".a.a.a."), ("a...a", ".a.a.", ".a.a."), ("..a..", "a.a.a", "a.a.a"), ("...a...", "a..a..a", ".a.a.a.", ".a.a.a."))
+BIGTUFTS = ((".a...a...a.", ".a.a.a.a.a.", "..aa.a.aa..", "..bbabbab.."), ("a...a..a.", "a.a.a.a..", ".aa.aa.a.", ".babbabb."), ("..a...a..", "a.a.a.a.a", ".aababaa.", "..bbbbb.."))
+STONES = ((".LLM.", "LLMMD", "MMMDD"), (".LL.", "LMMD", "MMDD"), ("LLM", "MDD"), (".LL....", "LLMM.LM", "MMMD.MD"))
+SKEY = {'L': PAL['pl'], 'M': PAL['pm'], 'D': PAL['pd']}
+LIGHTER = {}; DARKER = {}
+for p_ in ('soft', 'top', 'dead'):
+    if p_ in PAL:
+        LIGHTER.update({tuple(PAL[p_][0]): PAL[p_][3], tuple(PAL[p_][1]): PAL[p_][0], tuple(PAL[p_][2]): PAL[p_][1], tuple(PAL[p_][3]): PAL['tl']})
+        DARKER.update({tuple(PAL[p_][0]): PAL[p_][1], tuple(PAL[p_][1]): PAL[p_][2], tuple(PAL[p_][3]): PAL[p_][0]})
+grassy = okd & ((cov == 0) | (cov == 3))
+for x, y in spots(grassy & ~shd, int(grassy.sum()) // 1500, 8):             # brushed light dashes, 2-3 stacked
+    c = LIGHTER.get(tuple(g[y, x]))
+    if c is None: continue
+    for j in range(RR.randint(2, 3)):
+        x0 = x + RR.randint(-2, 2); L = RR.randint(3, 5)
+        for i in range(L):
+            if grassy[y - j * 2, x0 + i]: g[y - j * 2, x0 + i] = c
+for x, y in spots(grassy & ~shd & ndimage.binary_erosion(okd, iterations=4), int(grassy.sum()) // 5200, 30):    # darker grass clumps with a spiky top
+    c = DARKER.get(tuple(g[y, x])); w_ = RR.randint(4, 7)
+    if c is None: continue
+    for i in range(-w_, w_ + 1):
+        for j in range(max(1, round((1 - (i / (w_ + .5)) ** 2) ** .5 * w_ * .5) + RR.randint(0, 2) - i % 2)): g[y - j, x + i] = c
+    for i in range(-w_ + 1, w_, 3): g[y - RR.randint(0, 1), x + i] = PAL['td']
+    stamp(RR.choice(TUFTS), {'a': PAL['tl']}, x + RR.randint(-2, 2), y - 2)
+for x, y in spots(grassy, int(grassy.sum()) // 360, 7):                     # tufts: light or dark blades, mid green in the shade
+    c = PAL['ts'] if shd[y, x] else PAL['tl'] if RR.random() < .62 else PAL['td']
+    if RR.random() < .22 and not shd[y, x]: stamp(RR.choice(BIGTUFTS), {'a': PAL['tl'], 'b': PAL['td']}, x, y)
+    else: stamp(RR.choice(TUFTS), {'a': c}, x, y)
+if not T3:   # tufts standing at the lower edge of the road, their blades over it
+    under = oe & mv(vroad2, 1) & (gx > 8) & (gx < GW - 9) & ~shd
+    for x, y in spots(under, int(under.sum()) // 9, 8): stamp(RR.choice(TUFTS), {'a': PAL['tl'] if RR.random() < .7 else PAL['soft'][0]}, x, y)
+if T2:   # fallen leaves (single ones, also out on the grass), a few mushrooms
+    LEAFC = [np.array(c_, np.uint8) for c_ in ((182, 62, 40), (226, 134, 48), (238, 196, 84), (132, 70, 44), (206, 96, 44))]
+    LEAVES = (("ab.", ".aa"), ("a.", "aa", ".b"), (".aa", "ab."), ("ab", "a."), ("aa", ".b"))
+    BIGLEAVES = ((".aa.", "aaab", ".ab."), ("aa..", "aaab", ".aab"), ("..aa", "baaa", "baa."), (".a.", "aaa", "aab", ".b."))
+    LK = {tuple(PAL['leaf'][0]): (PAL['leaf'][3], PAL['leaf'][1]), tuple(PAL['leaf'][1]): (PAL['leaf'][0], PAL['leaf'][2]), tuple(PAL['leaf'][3]): (PAL['leaf'][0], np.array((244, 200, 96), np.uint8))}
+    carpet = okd & (cov == 1)
+    for x, y in spots(carpet, int(carpet.sum()) // 85, 5):                  # leaf shapes in the neighbouring tones: the carpet reads as leaves
+        c = LK.get(tuple(g[y, x]))
+        if c is not None: c = RR.choice(c); stamp(RR.choice(BIGLEAVES + LEAVES), {'a': c, 'b': (c * .8).astype(np.uint8)}, x, y)
+    for x, y in spots(okd & (cov != 1), int((okd & (cov != 1)).sum()) // 300, 4):          # single leaves out on the grass
+        c = RR.choice(LEAFC)
+        if shd[y, x]: c = shade(c.astype(float) * 1.5)
+        stamp(RR.choice(LEAVES), {'a': c, 'b': (c * .72).astype(np.uint8)}, x, y)
+    for x, y in spots(okd & ~shd, 16, 30):
+        stamp((".RRR.", "RWRRR", "RRRWR", ".CC.."), {'R': (196, 60, 44), 'W': (240, 232, 210), 'C': (226, 208, 170)}, x, y, PAL['out'])
+if not T3:   # daisies in small clusters (map 2: fewer, cream)
+    DK = {'W': (243, 242, 223), 'w': (196, 198, 172), 'Y': (236, 172, 62), 's': PAL['out'], 'l': (52, 82, 56)}
+    if T2: DK.update(W=(246, 232, 190), w=(206, 186, 140), Y=(214, 110, 50))
+    BIG = ("..WWW..", "W.WWW.W", "WWYYYWW", "WWYYYWw", ".WW.ww.", ".WW.ww."); MED = ("WW.WW", "WWWWW", ".WYW.", "WWWww", "WW.ww"); SML = (".W.", "WYW", ".w.")
+    for x, y in spots(grassy & ndimage.binary_erosion(okd, iterations=5), 22 if T2 else 76, 24):
+        for k in range(RR.choice((1, 1, 2, 2, 3, 3, 4))):
+            X, Y = x + RR.randint(-9, 9) * (k > 0), y + RR.randint(-5, 5) * (k > 0); d = RR.choice((BIG, MED, MED, SML))
+            if not okd[Y, X]: continue
+            if d is not SML: stamp(("...s...", ".l.s.l.", "lllslll", ".ll.ll.") if d is BIG else ("..s..", "l.s.l", "lllll"), DK, X, Y + (4 if d is BIG else 3))
+            stamp(d, DK, X, Y, PAL['out'])
+for x, y in spots(okd, 70 if T3 else 44, 22): stamp(RR.choice(STONES), SKEY, x, y, PAL['po'])        # small stones
+if T3:   # cracks in the rock slabs and the dry dirt
+    for x, y in spots(okd & (cov != 3), 150, 12):
+        c = PAL['out'] if cov[y, x] == 2 else PAL['soft'][2]
+        for k in range(RR.randint(5, 10)):
+            if 0 < x < GW and 0 < y < GH and okd[y, x] and cov[y, x] != 3: g[y, x] = c
+            x += RR.choice((1, 1, 1, 0)); y += RR.choice((-1, 0, 0, 1, 1))
+# -- 6. the boulders along the rim of the walls: grey stones with a dark outline, some with moss on top
+for (x, y, r), moss in zip(BOULDERS, MOSSY):
+    cx, cy, ra = x // 2, y // 2, max(2, round(r / 2)); px = ell(cx, cy, ra, ra - 1); s_ = set(px)
+    for q in ell(cx, cy, ra + 1, ra): g[q] = PAL['po']
+    for qy, qx in px: g[qy, qx] = PAL['pd'] if qy - cy > ra * .35 or qx - cx > ra * .7 else PAL['pm']
+    for q in ell(cx - 1, cy - 1, ra - 1.6, ra - 2.2):
+        if q in s_: g[q] = PAL['moss'] if moss else PAL['pl']
+ground = Image.fromarray(g).resize((W, H), Image.NEAREST); ground.save(OUT + 'ground.png', optimize=True)
+
+# ---- olive grade (Dimraeth) for the PROPS only: soften saturation, warm, greens toward olive, lifted darks (the ground is
+# painted in its final colours)
 def grade(a, k=1.0):
     a = a.astype(float); c = a[..., :3]; g = c.mean(2, keepdims=True)
     o = g + (c - g) * .68
@@ -523,7 +715,6 @@ def grade(a, k=1.0):
     if T3:   # cold night-ish grade: greyer, blue in the darks, a little darker
         g = o.mean(2, keepdims=True); o = g + (o - g) * .72; o[..., 0] *= .9; o[..., 1] *= .97; o[..., 2] *= 1.16; o = o * .93 + np.array([2, 5, 12])
     a[..., :3] = c + (o - c) * k; return np.clip(a, 0, 255).astype(np.uint8)
-ground = Image.fromarray(grade(np.asarray(base))).convert('RGB'); ground.save(OUT + 'ground.png', optimize=True)
 
 # ---- walk mask: water, cliff faces, the drop round a plateau top (except stairs), props, map border
 drop = dil(UP, 4) & ~UP & ~FACE & ~RAMP
