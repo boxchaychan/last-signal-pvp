@@ -1229,3 +1229,6 @@ bag.html attributes (owner 2026-11-13 "คุณสมบัติเกมย�
 ### 2026-11-13 champion clips in bag.html
 - Rabbit, bear, fox now play PixelLab clips (east only): idle loop 8 frames; attack 16 frames, a slice per hit (`HEROES[k].sq`, cell 9+frame of `art/bag/ch_<k>.png`, 9 cols x 204 px, feet 100,174). Rabbit alternates punch / uppercut, bear = hammer smash; both dash in (`hx`, 0.34 W). Fox (`rg:1`) stays back, plays the cast and every item flies as a projectile. Effects PixelLab drew (swooshes, dust, fire beam) are kept.
 - Hurt / death are still code motion (tilt, fall) on the idle frame: clips for those = 2 credits per champion, only if the owner asks. Credits for champions so far: 12 (characters) + 9 (clips) = 21.
+
+### 2026-11-13 item animation in bag.html (owner: "ให้ธนูอยู่บนหัวตัวละครแล้วยิงลูกธนูออกมา")
+- Code only, no credits. A non-melee item that fires pops up above its owner's head (`BT.wp`: pop, glow, recoil, fade), then its shot leaves from there (`BT.pj`): bow = an arrow drawn in code flying straight, wand = a purple orb with a trail, others = the icon thrown in an arc. Both sides. Melee items of rabbit / bear still use the attack clip; for the fox every item goes this way.
