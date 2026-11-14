@@ -1455,3 +1455,16 @@ Files: `tribe.html`, `art/tribe/` (+ `orig/`), `art/tribe/map1_nodes.json` (`too
 ## Side game: grinding added (owner 2026-11-14 "กลับไปทำเมเปิ้ลต่อ", free)
 `side.html?hero=rabbit` now has monsters to fight: 14 placed on the ground and platforms (`HOMES`: shroom Lv1, wolf 2, goblin 3, skeleton 4, boar guard 6; sheets from `art/action/mobs`, punched copies in `art/sidegame/mobs/`), they patrol their own platform, chase and attack when the hero is close, bump damage, respawn 7 s after dying. The combo's impact frames call `doHit(n)` with a reach per hit (`REACH`: rising slash in front, spin both sides, jump slam wide), damage x1 / 1.3 / 2.3, 18 % crits, knock-back. Maple-style damage numbers (orange, pink crits, violet when hurt), hero HP / EXP bars and level at the bottom (`drawHud`, drawn at full screen size so text is sharp), level up = full HP; dying = respawn at the start, -10 % EXP. The dagger girl no longer stands in the rabbit's map.
 Bot check: 3 minutes of auto-grinding -> Lv 5, never died, no errors. Open: drops (coins / items), skills, more maps, sound.
+
+## HOODFALL: the side game made to look like a game (owner 2026-11-14 "ทำมาดูทำไมไม่เป็นเกมเลย", free)
+New page `hoodfall.html` (side.html stays as the test bench). Built from the map plan `docs/side/map1_plan.md`:
+title screen (HOODFALL, the map panning behind, tap to start), bright golden-hour map "ป่าตะวันรอน" 3200 x 1100 with 5 zones
+(camp / mushroom meadow / wolf hill / ruins / boar den), stepped solid ground (`GROUND`, steps are walls), 12 one-way platforms, 5 climbing
+ropes (up / down, jump off), side-view props (punched copies in `art/sidegame/props/`), parallax mountains, sun + light rays + pollen,
+foreground bushes, code-drawn campfire (heals), chest at the top of the ruins (coins), portals (map 2 "coming soon").
+23 monsters patrolling their own stretch + the boss "ราชาหมูป่า" (boar guard at x2, 2400 HP, red ground warning then slam).
+Hero: rabbit run + the 3-sheet combo + skill "ทุบ" (K / 💥, 6 s cooldown, the slam hit wider and x1.5). Hit flash (white silhouettes), hit-stop,
+death puffs, landing dust, coin drops with magnet, level-up burst. HUD drawn at full size in Kanit: minimap with zone name, status bar
+(portrait, Lv, HP, EXP %, coins), boss bar, damage numbers; pixel-framed buttons (◀ ▶ ▲, ⚔, ⤒, 💥, 🔊). Synth sounds (swing, hit, crit,
+coin, level, hurt, jump, slam, chest, warning) + a soft looping tune. Save (`hoodfall1`): level, EXP, coins, HP. `?new=1` fresh, `?play=1` skips the title.
+Checks: headless title + play + 4-minute bot run (Lv 4, 280+ coins), boss area, no errors. Shots `art/incoming/hood/hoodfall_*.png`.
