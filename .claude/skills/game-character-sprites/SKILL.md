@@ -22,3 +22,6 @@ Only when the owner says "เจน"; quote the credits first (character 4, run 
 2. `create_character` mode v3, view "side", reference = front, `direction_images` east / west (mirror) / north → 8 directions, 4 credits, ~20 min.
 3. ONE long clip: `animate_character` mode pixminimax, directions ["east"], frame_count 40, the whole combo described as one continuous action ("the end of one swing is the start of the next", side view kept, arcs wanted or not) → 4 credits. Run: 8 frames, 1 credit.
 4. Download to a scratch folder first, then replace `art/incoming/.../char/`. Pack with `tools/art/pl_combo_sheet.py`; in `combo.html` build steps from the swing frames only (skip holds), wind-up .04 s, hit frame .06-.08, follow-through .08-.1.
+
+## Colour punch (owner rule 2026-11-14)
+Every pixel sprite that goes into a game: `python3 tools/art/pixel_punch.py orig.png out.png 1.0 24` (32 colours for sheets with effects). Keep the original (e.g. `art/sidegame/orig/`). Before / after example: `art/incoming/hood/punch_compare_map1.png`.
