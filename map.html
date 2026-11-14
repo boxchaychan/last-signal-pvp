@@ -123,6 +123,21 @@ function resize() {
 }
 addEventListener('resize', resize);
 
+// ---- tone (owner 2026-11-14 "ปรับตัวละครให้โทนเดียวกับแมพได้ไหม"): the heroes and monsters are graded to each map's light, once per map:
+// a little less saturation, the map's light colour multiplied in, and the dark pixels pulled toward the map's own shadow colour.
+// Effects are not graded (they glow). `?tone=0` turns it off.
+const TONE = /[?&]tone=0/.test(location.search) ? {} : {
+  td1: {ds: .12, mul: [1.03, 1.0, .86], sh: [30, 42, 18], sa: .38},          // warm sun on green grass
+  td2: {ds: .08, mul: [1.03, .96, .86], sh: [44, 24, 12], sa: .34},           // autumn orange
+  td3: {ds: .25, mul: [.85, .92, 1.02], sh: [16, 24, 40], sa: .42}};           // cold graveyard night
+function toneImg(src, t) {
+  if (!t || !src || !src.width) return src; const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.drawImage(src, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; let r = a[i], gg = a[i + 1], b = a[i + 2]; const l = .3 * r + .59 * gg + .11 * b, dk = Math.max(0, 1 - l / 150) * t.sa;
+    r += (l - r) * t.ds; gg += (l - gg) * t.ds; b += (l - b) * t.ds; r *= t.mul[0]; gg *= t.mul[1]; b *= t.mul[2];
+    a[i] = r + (t.sh[0] - r) * dk; a[i + 1] = gg + (t.sh[1] - gg) * dk; a[i + 2] = b + (t.sh[2] - b) * dk; }
+  g.putImageData(d, 0, 0); return c; }
+function toneHero() { if (!CHB) return; const t = TONE[MAPID]; if (CHB.im0) CHB.im = toneImg(CHB.im0, t); if (CHB.run0) CHB.run = toneImg(CHB.run0, t); }
 async function loadMap(id, from) {                   // everything of one map is loaded first, then swapped in at once
   const D = MAPS[id].dir, m = await fetch(D + 'map.json', {cache: 'no-cache'}).then(r => r.json());
   let gr, pr, blk, bw, bh; const mb = {}, mbw = {};
@@ -130,9 +145,9 @@ async function loadMap(id, from) {                   // everything of one map is
     bw = i.width; bh = i.height; const c = document.createElement('canvas'); c.width = bw; c.height = bh; const g = c.getContext('2d'); g.drawImage(i, 0, 0);
     const d = g.getImageData(0, 0, bw, bh).data; blk = new Uint8Array(bw * bh); for (let k = 0; k < bw * bh; k++) blk[k] = d[k * 4] > 128 ? 1 : 0; }),
     ];
-  for (const k in m.mobs) ld.push(img(D + 'mob_' + k + '.png').then(i => { mb[k] = i; const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); mbw[k] = c; }));
+  for (const k in m.mobs) ld.push(img(D + 'mob_' + k + '.png').then(i => { i = toneImg(i, TONE[id]); mb[k] = i; const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); mbw[k] = c; }));
   await Promise.all(ld);
-  M = m; GR = gr; PR = pr; BLK = blk; BW = bw; BH = bh; MB = mb; MBW = mbw; MAPID = id;
+  M = m; GR = gr; PR = pr; BLK = blk; BW = bw; BH = bh; MB = mb; MBW = mbw; MAPID = id; toneHero();
   MHP = {}; for (const k in MHP0) MHP[k] = Math.round(MHP0[k] * (M.hpk || 1));
   const at = from && M.entries && M.entries[from] || M.start; M.start = at.slice();   // falling here = back at the gate he came in by
   P.x = at[0]; P.y = at[1]; P.atk = P.act = null; NUM.length = FXS.length = 0;
@@ -146,8 +161,8 @@ function travel(to) {                                // fade out, load, fade in
 }
 async function boot() {
   const ld = [];
-  if (CHB) ld.push(img(A + CHB.f).then(i => CHB.im = i));
-  if (CHB && CHB.pl) { const r = new Image(); r.onload = () => CHB.run = r; r.src = 'art/poses/combo/' + (CHB.sheet || 'chibi_pl.png'); }
+  if (CHB) ld.push(img(A + CHB.f).then(i => { CHB.im0 = i; toneHero(); }));
+  if (CHB && CHB.pl) { const r = new Image(); r.onload = () => { CHB.run0 = r; toneHero(); }; r.src = 'art/poses/combo/' + (CHB.sheet || 'chibi_pl.png'); }
   if (CHB && CHB.dg) fetch('fx/manifest.json').then(r => r.json()).then(m => { for (const k of ['dslash7_n', 'bigcut0_n', 'dslashl7_n', 'dashhit_n', 'dg_tele_n', 'xcut_n']) { SPR[k] = m[k]; SPR[k].im = new Image(); SPR[k].im.src = 'fx/' + k + '.png'; } });   // her neon violet cut effects (owner's pick)   // PixelLab run cycle (row 0, 8 frames of 204 px, feet 103,174): used for every moving direction but straight up / down until those are made
   ld.push(loadMap(MAPID));
   await Promise.all(ld);
