@@ -141,4 +141,4 @@ Open: how much the player controls inside a stage (place defences before FIGHT? 
 Answer (owner): "ไม่ต้องรอก็ได้ ให้กดพร้อม เหมือนท้าสู้ แล้วมอนจะวิ่งมาบุกเอง จบเป็นเวฟ": no countdown; the player presses READY (a challenge)
 whenever they like, the stage's monsters run in by themselves wave by wave, the fight plays itself (villagers, champion, defences act on
 their own AI), the stage ends when the waves are cleared or the fire falls. Read as: the battle happens AT the tribe's village
-(its own layout = its defence), stages = harder and harder challenges. Confirm with the owner if a separate battlefield was meant.
+(its own layout = its defence), stages = harder and harder challenges. CONFIRMED by the owner ("สู้หมู่บ้านเรา"): the battle is at our village.
