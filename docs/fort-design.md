@@ -127,3 +127,4 @@ waves of wolves / boars from the first minute, game over when the fire dies, wav
 5 (owner, replaces "race only"): "ยังไงก็ต้องก่อกวนกันอยู่แล้ว" = tribes DO harass each other. Draft ways (to agree later):
    lure / drive a wave toward a neighbour, small raids that steal stored food / wood, the champion ambushing a neighbour's gatherers.
    Monster waves stay the main threat.
+5b (owner): NO trading of resources between tribes, ever. The focus is defending against the monsters; harassing neighbours stays possible.
