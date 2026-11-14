@@ -63,3 +63,18 @@ Enemies: wild beasts (wolves, boars, sabre-tooth, giant birds), rival tribes, an
 Hero: a tribe champion in an animal-pelt hood (the hooded-rabbit idea fits: rabbit-pelt hood, stone / bone weapon).
 Maps: map 1 (green forest) fits as it is; brick walls, arches and the paved road of maps 2-3 do not: those props / roads need a stone-age repaint later.
 Open question to the owner: how much weight on the HERO vs the buildings (see chat).
+
+## Direction change (owner 2026-11-14): long game, management first, smart NPCs, expanding land, rival tribes
+Owner: "อยากให้เป็นเกมเล่นยาวๆ ใช้บริหารมากกว่าการเดินออกไปสู้เอง ให้พวก NPC มีค่าความฉลาดด้วย แล้วก็ขยายดินแดนไปเรื่อยๆ โดยให้มีศัตรูเล่นแบบเดียวกับเราด้วย".
+So it is no longer a hero-defence game: it is a stone-age TRIBE MANAGEMENT game (closest genre references: Northgard = clans claim land
+region by region, assign villagers to jobs, survive winter, rival AI clans do the same; Dawn of Man = stone age settlement).
+Draft (not agreed yet):
+- Map split into REGIONS (forest, river, cave, hills, ...). Claim a neighbouring region with food + scouting; each region has a resource and room for buildings.
+- VILLAGERS are individuals: name, age, traits and stats (intelligence = learns jobs / research faster, strength = gathering / fighting,
+  bravery, hunger); they choose tasks themselves by priorities the player sets (Claude's idea: simple "utility AI": every villager scores
+  the open tasks and picks the best, so they look smart without micro-management).
+- Seasons; winter = food crisis; beasts and raids.
+- DISCOVERIES (fire, spear, pottery, farming, stone walls, ...) from smart villagers.
+- RIVAL TRIBES run by the same rules (claim, gather, build, raid), each with its own animal totem / personality.
+- The hero becomes the tribe's champion: a strong unit, not the whole game.
+Open decisions for the owner: real-time with pause or season turns; map size / session length; how to win (unite all tribes, a great wonder, survive N years).
