@@ -39,6 +39,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 
 ## NEWEST (owner 2026-11-14): side-view MapleStory-style grinder ("จะไปทำแบบเมเปิ้ลด้านข้าง")
 - The game page is `side.html` (started 2026-11-14 with the PixelLab-pro pixel dagger girl, run + jump on platforms); in the end the owner chose detailed chibi pixel art for it (see the last section of `docs/action-game.md`).
+- Hooded rabbit hero (2026-11-14) in `side.html?hero=rabbit`: run (PixelLab, 1 credit) + 3-hit combo from the owner's GPT sheets. RULE (owner): attacks are ordered ONE SHEET PER HIT (12 frames, 4 x 3, flat blue, ground line in each cell; prompt `art/incoming/hood/PROMPT_GPT_move_sheet.txt`), cut with `tools/art/hood_attack_cut.py` + `hood_attack_join.py`. Owner sends sheets pasted inline: ask for them as attached files.
 - Start here when the owner says "เกมด้านข้าง": plan, the art that already fits (both heroes' side clips, 42 side-view monsters, side tiles / background / props in `art/side/`) and what is missing are in the last section of `docs/action-game.md`. Owner: "ไม่เอาพิกเซล": painted / smooth 2D, NOT pixel art, so PixelLab is not the tool for it (GPT / Meta AI make the art, Claude cuts and codes). Genre only: no names, art or maps copied from MapleStory. `map.html` (top-down) stays as it is.
 
 ## Level-grinding game again (owner 2026-11-13 night: "เกมเก็บเลเวลดีกว่า")
