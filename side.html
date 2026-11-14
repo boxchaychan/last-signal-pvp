@@ -27,26 +27,28 @@ const img = s => { const i = new Image(); i.src = s; return i; };
 // ?hero=rabbit = the squat hooded rabbit with its PixelLab run (cells 128 x 96: 0 = stance, 1-8 = the loop; feet x 50, y 92); the dagger girl then stands nearby
 // for size. &dust=1 = the run as PixelLab drew it, with dust puffs at the feet (default = puffs taken out by tools/art/hood_run_clean.py).
 const QS = new URLSearchParams(location.search), RABBIT = QS.get('hero') === 'rabbit';
-const HERO = RABBIT ? {img: img(QS.get('dust') === '1' ? 'art/sidegame/rabbit_run_dust.png' : 'art/sidegame/rabbit_run.png'), cw: 128, ch: 96, feet: [50, 92], loop: 8, fps: 16} : null;
+// sprites: the colour-punched versions (owner 2026-11-14: "pixel = this recipe", tools/art/pixel_punch.py); &punch=0 = the originals in art/sidegame/orig/
+const SG = QS.get('punch') === '0' ? 'art/sidegame/orig/' : 'art/sidegame/';
+const HERO = RABBIT ? {img: img(SG + (QS.get('dust') === '1' ? 'rabbit_run_dust.png' : 'rabbit_run.png')), cw: 128, ch: 96, feet: [50, 92], loop: 8, fps: 16} : null;
 // rabbit attack: 3-hit combo from the owner's second 12-frame sheet (tools/art/hood_attack_cut.py v2: frames lined up by the eyes so the body stays put,
 // effects kept as drawn), cells 155 x 115, feet x 77 y 96. Each hit = 4 frames [ms each]; pressing again during a hit queues the next; the impact frame shakes the view.
 // The first sheet (v1) is kept as art/sidegame/rabbit_attack_v1.png.
 // Default = the fifth sheet (owner "แทรกเฟรมมาเพิ่ม"): the fourth sheet's combo with in-betweens, 24 frames, cells 119 x 122, feet 74,98. &atk=4 = the fourth:
 // the fourth sheet (owner 2026-11-14 "อันนี้จะโอเคกว่า"): 16 frames with a dash, a spin and a jumping ground slam, cells 158 x 112, feet 80,96
 // (frames keep the place the artist drew them in their cell, the drawn ground line is the floor). &atk=3 = the third sheet, &atk=2 = the second.
-const ATK = !RABBIT ? null : QS.get('atk') === '2' ? {img: img('art/sidegame/rabbit_attack.png'), cw: 155, ch: 115, feet: [77, 96],
+const ATK = !RABBIT ? null : QS.get('atk') === '2' ? {img: img(SG + 'rabbit_attack.png'), cw: 155, ch: 115, feet: [77, 96],
   hits: [{f: [0, 1, 2, 3], ms: [50, 80, 100, 130], hit: 2}, {f: [4, 5, 6, 7], ms: [80, 90, 100, 130], hit: 5}, {f: [8, 9, 10, 11], ms: [90, 80, 110, 150], hit: 10}]}
-  : QS.get('atk') === '3' ? {img: img('art/sidegame/rabbit_attack3.png'), cw: 116, ch: 93, feet: [55, 86],
+  : QS.get('atk') === '3' ? {img: img(SG + 'rabbit_attack3.png'), cw: 116, ch: 93, feet: [55, 86],
   hits: [{f: [0, 1, 2, 3], ms: [40, 50, 55, 110], hit: 3}, {f: [4, 5, 6, 7, 8, 9], ms: [50, 60, 60, 60, 60, 70], hit: 5}, {f: [10, 11, 12, 13, 14, 15], ms: [50, 90, 60, 60, 70, 80], hit: 11}]}
   // DEFAULT (owner picked it 2026-11-14): 3 sheets, one per hit, 12 frames each
-  : !['3', '4', '5'].includes(QS.get('atk')) ? {img: img('art/sidegame/rabbit_attack6.png'), cw: 135, ch: 138, feet: [75, 108],
+  : !['3', '4', '5'].includes(QS.get('atk')) ? {img: img(SG + 'rabbit_attack6.png'), cw: 135, ch: 138, feet: [75, 108],
   hits: [{f: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], ms: [45, 45, 45, 45, 45, 45, 45, 100, 45, 45, 45, 45], hit: 7},
          {f: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], ms: [45, 45, 45, 45, 45, 45, 45, 100, 45, 45, 45, 45], hit: 19},
          {f: [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35], ms: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 140, 60], hit: 34}]}
-  : QS.get('atk') === '5' ? {img: img('art/sidegame/rabbit_attack5.png'), cw: 119, ch: 122, feet: [74, 98],
+  : QS.get('atk') === '5' ? {img: img(SG + 'rabbit_attack5.png'), cw: 119, ch: 122, feet: [74, 98],
   hits: [{f: [0, 1, 2, 3, 4, 5, 6, 7], ms: [40, 45, 45, 50, 100, 60, 55, 55], hit: 4}, {f: [8, 9, 10, 11, 12], ms: [50, 55, 100, 60, 60], hit: 10},
          {f: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], ms: [50, 50, 55, 70, 45, 45, 70, 140, 70, 60, 70], hit: 20}]}
-  : {img: img('art/sidegame/rabbit_attack4.png'), cw: 158, ch: 112, feet: [80, 96],
+  : {img: img(SG + 'rabbit_attack4.png'), cw: 158, ch: 112, feet: [80, 96],
   hits: [{f: [0, 1, 2, 3, 4], ms: [40, 60, 100, 80, 70], hit: 2}, {f: [5, 6, 7, 8], ms: [60, 100, 80, 70], hit: 6}, {f: [9, 10, 11, 12, 13, 14, 15], ms: [70, 90, 60, 150, 80, 80, 90], hit: 12}]};
 const A = {on: false, n: 0, t: 0, queued: false, shake: 0, amp: 2};
 // ---- long-range hit effects drawn in code (owner 2026-11-14 "ทำ VFX เพิ่ม ระยะมันสั้นเกิน"): the sheet's own arcs stay, these reach further.
@@ -78,7 +80,7 @@ function fxDraw(g, dt) {
       const rr = 20 + 90 * e; for (let a = 0; a < 6.283; a += 1.5 / rr) { const ox = Math.cos(a) * rr, oy = Math.sin(a) * rr * .18; if (oy < 0 && fade(ox, oy)) put(f.x + ox, f.y + oy, 2); } } }
   for (let c = 3; c >= 0; c--) { g.fillStyle = FXP[c]; const a = B[c]; for (let j = 0; j < a.length; j += 2) g.fillRect(a[j], a[j + 1], 1, 1); } }
 function attack() { if (!ATK) return; if (A.on) { A.queued = true; return; } A.on = true; A.n = 0; A.t = 0; A.queued = false; }
-const RUN = img('art/sidegame/dagger_run.png'), BG = img('art/side/map30/bg.png'), TILES = img('art/side/map30/tiles_wang.png'), TREE = img('art/side/map30/tree.png');
+const RUN = img(SG + 'dagger_run.png'), BG = img('art/side/map30/bg.png'), TILES = img('art/side/map30/tiles_wang.png'), TREE = img('art/side/map30/tree.png');
 const T = 32, CW = 168, CH = 132, FEET = [71, 127];   // run cells are 168 x 132 (room ahead for the daggers), feet at x 71, y 127
 // the world: platforms [x, y, width in tiles, rows]; the first is the ground. One-way: you land on top, jump up through them.
 const WORLD_W = 2400, GROUND = 600, GRASS = 17;   // the top row of a ground tile is empty for 17 px above the grass
