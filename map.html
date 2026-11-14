@@ -317,16 +317,18 @@ function ambience(cx, cy) { const A = AMB[MAPID]; if (!A) return; const T = perf
     ctx.globalAlpha = A.tw ? .2 + .6 * Math.max(0, Math.sin(T * 2 + s)) : .85; ctx.fillStyle = A.c[i % A.c.length];
     if (A.leaf) ctx.fillRect(Math.round(x), Math.round(y), Math.sin(T * 5 + s) > 0 ? 3 : 2, 2); else { ctx.globalCompositeOperation = 'lighter'; const z = i % 4 ? 1 : 2; ctx.fillRect(Math.round(x), Math.round(y), z, z); ctx.globalCompositeOperation = 'source-over'; } }
   ctx.globalAlpha = 1; const vx = cx + VW / 2, vy = cy + VH / 2, vg = ctx.createRadialGradient(vx, vy, VH * .5, vx, vy, VW * .72); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, MAPID === 'td3' ? 'rgba(4,8,20,.42)' : 'rgba(6,14,6,.3)'); ctx.fillStyle = vg; ctx.fillRect(cx - 2, cy - 2, VW + 4, VH + 4); }
+// hero size (owner 2026-11-14 "ย่อตัวละครลงซัก 20 เปอร์"): 0.8 of the sheets' size; ?hsc=1 = the old size
+const HSC = +new URLSearchParams(location.search).get('hsc') || .8, HSZ = .5 * HSC;
 function drawHero() {
   if (CHB && CHB.im) { const [v, fl] = (CHB.v || CHV)[P.d], x = Math.round(P.x), y = Math.round(P.y), b = P.mv ? Math.round(Math.abs(Math.sin(P.t * 11)) * 2) : 0;
     if (CHB.run && (P.dead || P.act || (!P.atk && (P.mv ? (P.d === 6 || P.d === 2) : v === 1)))) {   // PixelLab clips: death / hurt / roll / spin, run up / down, idle (side). Cells in tools/art/pl_combo_sheet.py
       const a = P.act, f = P.dead ? 80 + Math.min(7, (2.4 - P.dead) * 9 | 0) : a ? (a.k === 'roll' ? 90 + Math.min(7, a.t / .055 | 0) : a.k === 'spin' ? 120 + Math.min(15, a.t / .05 | 0) : 70 + Math.min(3, a.t / .075 | 0)) : P.mv ? (P.d === 6 ? 100 : 110) + (P.t * 13 | 0) % 8 : 60 + (P.t * 6 | 0) % 8;
-      const side = P.dead || a || !P.mv; shadow(x, y, CHB.s); if (P.inv > 0 && !P.dead && !a && (P.inv * 14 | 0) % 2) ctx.globalAlpha = .55;
-      if (CHB.dg && a && a.d && (a.k === 'roll' || a.k === 'spin')) for (let g = 3; g >= 1; g--) { ctx.save(); ctx.globalAlpha = .1 + .08 * (3 - g); ctx.translate(x - a.d[0] * g * 16, y - a.d[1] * g * 12); ctx.scale(P.face * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); }
-      ctx.save(); ctx.translate(x, y); ctx.scale((side ? P.face : 1) * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); ctx.globalAlpha = 1; return; }
-    if (CHB.run && P.atk) { const a = P.atk, f = (a.end ? (a.v ? CV[a.v].en : CEND)[a.i] : (a.v ? CV[a.v].st : CSTEP)[a.n].f[a.i]).f; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale((a.v ? 1 : P.face) * .5, .5); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
-    if (CHB.run && P.mv && v !== 0 && !(v === 2 && (P.d === 6))) { const f = (P.t * 13 | 0) % 8; shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y); ctx.scale(fl * .5, .5); ctx.drawImage(CHB.run, f * 204, 0, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
-    shadow(x, y, CHB.s); ctx.save(); ctx.translate(x, y - b); ctx.scale(fl * (CHB.z || 1), CHB.z || 1); ctx.drawImage(CHB.im, v * CHB.w, 0, CHB.w, CHB.h, -CHB.fx, -CHB.fy, CHB.w, CHB.h); ctx.restore(); return; }
+      const side = P.dead || a || !P.mv; shadow(x, y, CHB.s * HSC); if (P.inv > 0 && !P.dead && !a && (P.inv * 14 | 0) % 2) ctx.globalAlpha = .55;
+      if (CHB.dg && a && a.d && (a.k === 'roll' || a.k === 'spin')) for (let g = 3; g >= 1; g--) { ctx.save(); ctx.globalAlpha = .1 + .08 * (3 - g); ctx.translate(x - a.d[0] * g * 16, y - a.d[1] * g * 12); ctx.scale(P.face * HSZ, HSZ); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); }
+      ctx.save(); ctx.translate(x, y); ctx.scale((side ? P.face : 1) * HSZ, HSZ); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); ctx.globalAlpha = 1; return; }
+    if (CHB.run && P.atk) { const a = P.atk, f = (a.end ? (a.v ? CV[a.v].en : CEND)[a.i] : (a.v ? CV[a.v].st : CSTEP)[a.n].f[a.i]).f; shadow(x, y, CHB.s * HSC); ctx.save(); ctx.translate(x, y); ctx.scale((a.v ? 1 : P.face) * HSZ, HSZ); ctx.drawImage(CHB.run, f % 10 * 204, (f / 10 | 0) * 204, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
+    if (CHB.run && P.mv && v !== 0 && !(v === 2 && (P.d === 6))) { const f = (P.t * 13 | 0) % 8; shadow(x, y, CHB.s * HSC); ctx.save(); ctx.translate(x, y); ctx.scale(fl * HSZ, HSZ); ctx.drawImage(CHB.run, f * 204, 0, 204, 204, -103, -174, 204, 204); ctx.restore(); return; }
+    shadow(x, y, CHB.s * HSC); ctx.save(); ctx.translate(x, y - b); ctx.scale(fl * (CHB.z || 1) * HSC, (CHB.z || 1) * HSC); ctx.drawImage(CHB.im, v * CHB.w, 0, CHB.w, CHB.h, -CHB.fx, -CHB.fy, CHB.w, CHB.h); ctx.restore(); return; }
   const H = M.hero, sh = P.mv ? HR.run : HR.idle, fps = P.mv ? 13 : 7, f = (P.t * fps | 0) % 8;
   const x = Math.round(P.x), y = Math.round(P.y);
   shadow(x, y, 13);
