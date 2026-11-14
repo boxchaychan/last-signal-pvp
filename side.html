@@ -24,6 +24,8 @@
 // Everything is drawn in world pixels on a small canvas, then blown up by a whole number K so pixels stay square.
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const img = s => { const i = new Image(); i.src = s; return i; };
+// ?hero=rabbit = the squat hooded rabbit (still picture only, moved by code: hop + lean while running); the dagger girl then stands nearby for size
+const QS = new URLSearchParams(location.search), HERO = QS.get('hero') === 'rabbit' ? img('art/sidegame/rabbit_short.png') : null;
 const RUN = img('art/sidegame/dagger_run.png'), BG = img('art/side/map30/bg.png'), TILES = img('art/side/map30/tiles_wang.png'), TREE = img('art/side/map30/tree.png');
 const T = 32, CW = 168, CH = 132, FEET = [71, 127];   // run cells are 168 x 132 (room ahead for the daggers), feet at x 71, y 127
 // the world: platforms [x, y, width in tiles, rows]; the first is the ground. One-way: you land on top, jump up through them.
@@ -64,7 +66,10 @@ function draw() {
   let c = 0; if (!P.ground) c = P.vy < 0 ? 3 : 6; else if (P.run > 0) { const f = P.run * 14 | 0; c = f < 1 ? 1 : 2 + (f - 1) % 7; }
   const bob = !c && Math.sin(P.t * 3) > .6 ? 1 : 0, hx = Math.round(P.x), hy = Math.round(P.y);
   g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(hx, (P.ground ? hy : hy + 0) + 1, 22, 5, 0, 0, 7); g.fill();
-  if (RUN.width) { g.save(); g.translate(hx, hy + bob); g.scale(P.face, 1); g.drawImage(RUN, c * CW, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }
+  if (HERO && RUN.width) { g.save(); g.translate(230, GROUND); g.drawImage(RUN, 0, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }   // the dagger girl standing, for size
+  if (HERO) { if (HERO.width) { const hop = P.run > 0 ? Math.round(Math.abs(Math.sin(P.run * 16)) * 4) : 0;   // whole pixels only: no turning or squashing, so the pixels stay square
+      g.save(); g.translate(hx, hy - hop + bob); g.scale(P.face, 1); g.drawImage(HERO, -Math.round(HERO.width / 2), -HERO.height); g.restore(); } }
+  else if (RUN.width) { g.save(); g.translate(hx, hy + bob); g.scale(P.face, 1); g.drawImage(RUN, c * CW, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }
   g.restore();
   ctx.imageSmoothingEnabled = false; ctx.drawImage(view, 0, 0, VW * K, VH * K); }
 let last = 0; function frame(now) { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; step(dt); draw(); requestAnimationFrame(frame); }
