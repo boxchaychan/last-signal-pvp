@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Hoodfall · เผ่ายุคหิน (ขั้นแรก)</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #141a12; touch-action: none; user-select: none; -webkit-user-select: none; font: 700 13px system-ui, sans-serif; color: #fff; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  #top { position: fixed; left: 8px; top: 6px; right: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; text-shadow: 0 1px 2px #000; pointer-events: none; }
+  #top b { background: #0008; padding: 4px 8px; border-radius: 8px; }
+  .bar { position: fixed; display: flex; gap: 6px; }
+  #ctl { right: 8px; bottom: 8px; flex-direction: column; align-items: flex-end; }
+  #pri { left: 8px; bottom: 8px; flex-direction: column; gap: 4px; }
+  #pri button { height: 30px; font-size: 12px; padding: 0 10px; text-align: left; }
+  .row { display: flex; gap: 6px; }
+  button { height: 36px; padding: 0 12px; border: 2px solid #0006; border-radius: 10px; background: #4a3a26; color: #ffe9c4; font: 800 13px system-ui; box-shadow: 0 3px 0 #2a1f12; }
+  button.on { background: #b8621f; color: #fff; }
+  #ready { height: 48px; font-size: 16px; background: #c2381f; color: #fff; }
+  #ready:disabled { background: #555; color: #bbb; }
+  #info { position: fixed; left: 50%; top: 44px; transform: translateX(-50%); background: #000c; border: 2px solid #b8621f; border-radius: 10px; padding: 8px 12px; display: none; line-height: 1.5; min-width: 220px; }
+  #msg { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); background: #000d; border: 2px solid #ffcf6a; border-radius: 12px; padding: 14px 18px; display: none; text-align: center; font-size: 15px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="top"></div>
+<div class="bar" id="pri"></div>
+<div class="bar" id="ctl"><div class="row"><button id="pause">หยุด</button><button id="spd">x1</button><button id="cmd">สั่งแชมป์</button></div><button id="ready">พร้อมสู้</button></div>
+<div id="info"></div>
+<div id="msg"></div>
+<script>
+'use strict';
+// Stone-age tribe game, first playable (docs/fort-design.md "DIRECTION v3"): an IDLE village that runs by itself + stages started with
+// READY, where monster waves run at OUR village. Villagers have STR / AGI / INT / VIT and choose their own jobs; the champion is only ordered.
+// Art: PixelLab villager / champion / 5 objects (art/tribe/, colour-punched), map 1 of map.html, its monsters.
+const QS = new URLSearchParams(location.search), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const R = Math.random, rnd = (a, b) => a + R() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const img = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = s; });
+const D = 'art/tribe/', M1 = 'art/td/map1/', SAVE = 'tribe_save1', DIRS = ['south', 'east', 'north', 'west'];
+let SP, NODES, MAP, IM = {}, BLK, BW, BH;
+// ---------------------------------------------------------------- world state
+const G = {food: 60, wood: 40, stone: 10, stage: 1, t: 0, speed: 1, paused: false, wave: null, pri: {food: 2, wood: 2, stone: 2, def: 1}, rate: {food: 0, wood: 0, stone: 0}, birthT: 0, planT: 0, saveT: 0};
+let V = [], MOB = [], B = [], N = [], SPEAR = [], FX = [], JOBS = [], CH = null, FIRE = null, sel = null, cmdMode = false, nextId = 1;
+const NAMES = ['อูก', 'ทากา', 'มุน', 'ริก', 'โอบา', 'คาลู', 'ซิง', 'นาวา', 'ตุ้ม', 'กร๊าก', 'ฮีลา', 'โบ', 'ยาลา', 'ดุก', 'เปา', 'ซาโร', 'มีนา', 'ครู', 'ทุน', 'อาลา'];
+// ---------------------------------------------------------------- walkability (map 1 block.png: 2 world px per cell)
+const walk = (x, y) => { const cx = x >> 1, cy = y >> 1; return cx >= 0 && cy >= 0 && cx < BW && cy < BH && !BLK[cy * BW + cx]; };
+// flow fields on an 8 px grid, cached per target, so units walk around trees and rocks
+const FG = 8, FW = 225, FH = 138, FIELDS = new Map();
+function field(tx, ty) {
+  const key = (tx / FG | 0) + ',' + (ty / FG | 0); if (FIELDS.has(key)) return FIELDS.get(key);
+  const f = new Int32Array(FW * FH).fill(1e9), q = new Int32Array(FW * FH); let h = 0, t = 0;
+  const s = (ty / FG | 0) * FW + (tx / FG | 0); f[s] = 0; q[t++] = s;
+  while (h < t) { const c = q[h++], cx = c % FW, cy = c / FW | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= FW || ny >= FH) continue;
+      const n = ny * FW + nx; if (f[n] <= f[c] + 1 || !walk(nx * FG + 4, ny * FG + 4)) continue; f[n] = f[c] + 1; q[t++] = n; } }
+  FIELDS.set(key, f); return f; }
+// one step toward a target: straight if close and clear, else down the flow field
+function steer(u, tx, ty, spd, dt) {
+  const d = Math.hypot(tx - u.x, ty - u.y); if (d < 2) return true;
+  let dx = (tx - u.x) / d, dy = (ty - u.y) / d;
+  if (d > 40) { const f = field(tx, ty), cx = u.x / FG | 0, cy = u.y / FG | 0, c = f[cy * FW + cx]; let best = c, bx = 0, by = 0;
+    for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const nx = cx + ox, ny = cy + oy; if (nx < 0 || ny < 0 || nx >= FW || ny >= FH) continue; const v = f[ny * FW + nx] + (ox && oy ? .4 : 0); if (v < best) { best = v; bx = ox; by = oy; } }
+    if (best < c) { const l = Math.hypot(bx, by); dx = dx * .3 + bx / l * .7; dy = dy * .3 + by / l * .7; const l2 = Math.hypot(dx, dy); dx /= l2; dy /= l2; } }
+  const nx = u.x + dx * spd * dt, ny = u.y + dy * spd * dt;
+  if (walk(nx, ny)) { u.x = nx; u.y = ny; } else if (walk(nx, u.y)) u.x = nx; else if (walk(u.x, ny)) u.y = ny; else { u.x += rnd(-1, 1); u.y += rnd(-1, 1); }
+  u.vx = dx; u.vy = dy; return false; }
+// ---------------------------------------------------------------- villagers
+function stats(par) { const s = {}; for (const k of ['str', 'agi', 'int', 'vit']) s[k] = clamp(Math.round(par ? (par[0][k] + par[1][k]) / 2 + rnd(-2, 2) : rnd(1, 10.99) - .5), 1, 10); return s; }
+function newVillager(x, y, par, child) { const s = stats(par), v = {id: nextId++, name: NAMES[R() * NAMES.length | 0], x, y, ...s, age: child ? 0 : 999, task: null, carry: null, t: R() * 9, hp: 0, vx: 0, vy: 1, tint: R() * 360 | 0};
+  v.mhp = 30 + v.vit * 6; v.hp = v.mhp; return v; }
+const adult = v => v.age >= 60, speedOf = v => (adult(v) ? 34 : 26) + v.agi * 5, carryOf = v => 4 + v.str * 1.2;
+const retreatAt = v => v.int >= 7 ? .5 : v.int >= 4 ? .3 : .12;   // INT: smart ones walk away in time
+const bleed = v => Math.max(.25, 1.7 - v.str * .14);              // STR: tough ones hold out on the way home
+// job choice: utility = priority x need / distance, blurred by low INT; low INT also takes a random node from the nearest few
+function needOf(k) { const pop = V.length; if (k === 'food') return G.food < pop * 12 ? 2.2 : 1; if (k === 'wood') return 1 + JOBS.filter(j => !j.paid).length * .5 + (G.wood < 30 ? .6 : 0); return (G.stone < 20 ? 1 : .6) + JOBS.filter(j => !j.paid && j.stone > G.stone).length * .8; }
+function pickNode(v, kind) { const list = N.filter(n => n.kind === kind && n.amt > 2).sort((a, b) => dist(a, v) + dist(a, FIRE) * .5 - dist(b, v) - dist(b, FIRE) * .5);
+  if (!list.length) return null; const k = Math.min(list.length, 1 + Math.round((10 - v.int) * .8)); return v.int >= 8 ? list[0] : list[R() * k | 0]; }
+function think(v) {
+  if (!adult(v)) { v.task = {k: 'play', x: FIRE.x + rnd(-70, 70), y: FIRE.y + rnd(-40, 50)}; return; }
+  const near = G.wave && MOB.find(m => dist(m, v) < 150);
+  if (near && v.hp > v.mhp * retreatAt(v) + 4) { v.task = {k: 'fight', m: near}; return; }
+  const crew = j => V.filter(o => o.task && o.task.job === j).length, job = JOBS.find(j => j.paid && crew(j) < 3) || JOBS.find(j => !j.paid && G.wood >= j.wood && G.stone >= j.stone);
+  const opts = [['food', 'berry'], ['wood', 'tree'], ['stone', 'rock']].map(([r, kind]) => { const n = pickNode(v, kind); if (!n) return null;
+    const w = [0, .5, 1, 2][G.pri[r]]; return {k: 'gather', r, n, u: w * needOf(r) / (1 + dist(n, v) / 350) * (1 + R() * (10 - v.int) * .18)}; }).filter(Boolean);
+  if (job) opts.push({k: 'build', job, u: 1.6 * [0.3, .7, 1, 1.6][G.pri.def] / (1 + dist(job, v) / 400) * (1 + R() * (10 - v.int) * .18)});
+  opts.sort((a, b) => b.u - a.u); v.task = opts[0] || {k: 'play', x: FIRE.x + rnd(-60, 60), y: FIRE.y + rnd(-40, 40)};
+  if (v.task.k === 'build') { const j = v.task.job; if (!j.paid) { G.wood -= j.wood; G.stone -= j.stone; j.paid = true; } } }
+function stepVillager(v, dt) {
+  v.t += dt; v.age += dt; v.atk = Math.max(0, (v.atk || 0) - dt);
+  if (v.hp < v.mhp * .35 && v.flee) { v.hp -= bleed(v) * dt; if (v.hp <= 0) return die(v, 'เลือดหมดกลางทาง'); }
+  if (adult(v) && !v.flee && v.hp < v.mhp * retreatAt(v) && v.task && v.task.k === 'fight') { v.flee = true; v.task = null; addFX(v.x, v.y - 60, 'ถอย!', '#ffd27a'); }
+  if (v.flee || (G.wave && !adult(v))) { if (steer(v, FIRE.x + rnd(-20, 20), FIRE.y + 30, speedOf(v) * 1.1, dt) || dist(v, FIRE) < 70) { v.anim = 'idle'; if (dist(v, FIRE) < 80 && v.hp >= v.mhp * .9) v.flee = false; } else v.anim = 'walk'; return; }
+  if (!v.task) think(v);
+  const T = v.task;
+  if (T.k === 'play') { v.anim = steer(v, T.x, T.y, speedOf(v) * .5, dt) ? 'idle' : 'walk'; if (v.t > 4 + R() * 3) { v.t = 0; v.task = null; } return; }
+  if (T.k === 'fight') { const m = T.m; if (!m || m.hp <= 0 || dist(m, v) > 260) { v.task = null; return; }
+    if (dist(m, v) > 26) { steer(v, m.x, m.y, speedOf(v), dt); v.anim = 'walk'; } else { v.anim = 'attack'; v.vx = m.x - v.x; v.vy = m.y - v.y; if (!v.atk) { v.atk = 1.2 - v.agi * .06; hurt(m, 3 + v.str * 1.2, v); } } return; }
+  if (T.k === 'build') { const j = T.job; if (j.done) { v.task = null; return; } if (dist(j, v) > 34) { steer(v, j.x, j.y + 20, speedOf(v), dt); v.anim = 'walk'; return; }
+    v.anim = 'work'; j.prog += (.05 + v.str * .008) * dt; if (j.prog >= 1) finishJob(j); return; }
+  if (T.k === 'gather') { const n = T.n;
+    if (!v.carry || v.carry.n < carryOf(v) && n.amt > 0 && !T.home) { if (dist(n, v) > 16) { steer(v, n.x, n.y, speedOf(v), dt); v.anim = 'walk'; return; }
+      v.anim = 'work'; const rate = T.r === 'food' ? .9 + v.agi * .12 : .5 + v.str * .13; const got = Math.min(rate * dt, n.amt);
+      n.amt -= got; v.carry = {r: T.r, n: (v.carry ? v.carry.n : 0) + got}; if (v.carry.n >= carryOf(v) || n.amt <= 0) T.home = true; return; }
+    const store = FIRE; if (dist(store, v) > 50) { steer(v, store.x, store.y + 26, speedOf(v), dt); v.anim = 'walk'; return; }
+    G[v.carry.r] += v.carry.n; G.rate[v.carry.r] += v.carry.n; addFX(v.x, v.y - 64, '+' + Math.round(v.carry.n), {food: '#ff8f8f', wood: '#e2b27a', stone: '#cfd6e0'}[v.carry.r]); v.carry = null; v.task = null; } }
+function die(v, why) { v.dead = true; addFX(v.x, v.y - 60, v.name + ' ตาย', '#ff6b6b'); log(v.name + (why ? ' ' + why : ' ถูกฆ่า')); if (sel === v) sel = null; }
+// ---------------------------------------------------------------- buildings and the village planner (villagers build by themselves)
+const BDEF = {hut: {hp: 120, wood: 30, stone: 0}, tower: {hp: 150, wood: 35, stone: 10}, fence: {hp: 90, wood: 12, stone: 0}};
+const cap = () => B.filter(b => b.k === 'hut').length * 3;
+function plan() {
+  const pop = V.length, huts = B.filter(b => b.k === 'hut').length, open = JOBS.length;
+  if (open >= 2) return;
+  if (pop >= cap() - 1) return addJob('hut', freeSpot(0));
+  const def = G.pri.def, towers = B.filter(b => b.k === 'tower').length + JOBS.filter(j => j.k === 'tower').length, fences = B.filter(b => b.k === 'fence').length + JOBS.filter(j => j.k === 'fence').length;
+  if (def && towers < Math.ceil(huts / 3) * def) return addJob('tower', freeSpot(1));
+  if (def >= 2 && fences < huts * (def - 1)) return addJob('fence', freeSpot(2));
+  if (G.wood > 120 + huts * 25) return addJob('hut', freeSpot(0)); }   // plenty of wood: the village grows
+function freeSpot(outer) { const used = s => B.some(b => Math.hypot(b.x - s.x, b.y - s.y) < 60) || JOBS.some(j => Math.hypot(j.x - s.x, j.y - s.y) < 60);
+  const far = Math.max(90, ...B.map(b => dist(b, FIRE)));
+  const list = NODES.spots.filter(s => !used(s) && (!outer || s.r >= far - 30)); if (!list.length) return null;
+  if (!outer) return list[0];
+  const sp = NODES.spawns.map(([x, y]) => ({x, y})), score = s => Math.min(...sp.map(p => Math.hypot(p.x - s.x, p.y - s.y)));   // defences face the monster roads
+  return list.slice(0, 24).sort((a, b) => score(a) - score(b))[0]; }
+function addJob(k, s) { if (!s) return; JOBS.push({k, x: s.x, y: s.y, prog: 0, builders: 0, paid: false, wood: BDEF[k].wood, stone: BDEF[k].stone}); }
+function finishJob(j) { j.done = true; JOBS.splice(JOBS.indexOf(j), 1); B.push({k: j.k, x: j.x, y: j.y, hp: BDEF[j.k].hp, mhp: BDEF[j.k].hp, cd: 0}); addFX(j.x, j.y - 70, {hut: 'กระท่อมใหม่', tower: 'หอหอก', fence: 'รั้ว'}[j.k], '#9cff8a'); for (const v of V) if (v.task && v.task.job === j) v.task = null; }
+// ---------------------------------------------------------------- champion (ordered, not driven)
+function newChampion() { return {x: FIRE.x + 40, y: FIRE.y + 40, lv: 1, xp: 0, hp: 160, mhp: 160, dead: 0, order: null, skill: 3, atk: 0, vx: 0, vy: 1, anim: 'idle', t: 0}; }
+function stepChampion(c, dt) {
+  c.t += dt; if (c.dead > 0) { c.dead -= dt; if (c.dead <= 0) { c.hp = c.mhp; c.x = FIRE.x; c.y = FIRE.y + 40; addFX(c.x, c.y - 70, 'แชมป์กลับมาแล้ว!', '#ffd27a'); } return; }
+  c.atk = Math.max(0, c.atk - dt); c.skill = Math.max(0, c.skill - dt); if (!G.wave) c.hp = Math.min(c.mhp, c.hp + 3 * dt);
+  const home = c.order || {x: FIRE.x + 40, y: FIRE.y + 40};
+  const m = MOB.filter(m => dist(m, c) < 200 && dist(m, home) < 320).sort((a, b) => dist(a, c) - dist(b, c))[0];
+  if (m) { if (c.skill <= 0 && MOB.filter(o => dist(o, c) < 80).length >= 2) { c.skill = 7; for (const o of MOB) if (dist(o, c) < 80) hurt(o, 20 + c.lv * 6, c); FX.push({ring: 1, x: c.x, y: c.y, t: 0}); addFX(c.x, c.y - 80, 'ทุบแผ่นดิน!', '#ff9a3a'); }
+    if (dist(m, c) > 30) { steer(c, m.x, m.y, 80, dt); c.anim = 'walk'; } else { c.anim = 'attack'; c.vx = m.x - c.x; c.vy = m.y - c.y; if (!c.atk) { c.atk = .8; hurt(m, 10 + c.lv * 4, c); } } return; }
+  c.anim = steer(c, home.x, home.y, 80, dt) ? 'idle' : 'walk'; }
+function gainXP(c, n) { c.xp += n; while (c.xp >= c.lv * 12) { c.xp -= c.lv * 12; c.lv++; c.mhp += 25; c.hp = c.mhp; addFX(c.x, c.y - 90, 'เลเวล ' + c.lv + '!', '#ffe14a'); } }
+// ---------------------------------------------------------------- monsters, stages, waves
+const MDEF = {wolf: {hp: 26, dmg: 4, spd: 72, r: 14, xp: 1}, boar_guard: {hp: 70, dmg: 9, spd: 48, r: 22, xp: 3, bld: 1}, skeleton: {hp: 45, dmg: 6, spd: 55, r: 16, xp: 2}, golem: {hp: 220, dmg: 16, spd: 30, r: 28, xp: 8, bld: 1}};
+function stagePlan(n) { const waves = []; const nw = 2 + Math.floor(n / 2);
+  for (let w = 0; w < nw; w++) { const L = []; const cnt = 3 + n * 2 + w * 2;
+    for (let i = 0; i < cnt; i++) L.push(n >= 4 && i % 5 === 4 ? 'skeleton' : n >= 2 && i % 4 === 3 ? 'boar_guard' : 'wolf');
+    if (w === nw - 1 && n % 3 === 0) L.push('golem'); waves.push(L); }
+  const roads = Math.min(ROADS.length, 1 + Math.floor((n - 1) / 2)); return {waves, roads}; }
+function startStage() { if (G.wave) return; const p = stagePlan(G.stage); G.wave = {...p, i: 0, queue: [], t: 0, kills: 0}; nextWave(); document.getElementById('ready').disabled = true; log('ด่าน ' + G.stage + ' เริ่ม! มอนกำลังมา'); }
+function nextWave() { const W = G.wave; const L = W.waves[W.i]; W.queue = L.map((k, i) => ({k, at: i * .7, road: ROADS[(i + W.i) % W.roads]})); W.t = 0; addFX(FIRE.x, FIRE.y - 120, 'ระลอก ' + (W.i + 1) + '/' + W.waves.length, '#ff8a6a'); }
+let ROADS = [];   // monster roads that really lead to the fire (checked on the flow field)
+function spawn(k, road) { const d = MDEF[k], s = 1 + (G.stage - 1) * .18; MOB.push({k, x: road[0] + rnd(-12, 12), y: road[1] + rnd(-12, 12), hp: d.hp * s, mhp: d.hp * s, dmg: d.dmg * (1 + (G.stage - 1) * .1), spd: d.spd, r: d.r, t: R() * 9, atk: 0, tgt: null, think: 0, vx: -1, vy: 0}); }
+function stepWave(dt) { const W = G.wave; if (!W) return; W.t += dt;
+  while (W.queue.length && W.queue[0].at <= W.t) { const q = W.queue.shift(); spawn(q.k, q.road); }
+  if (!W.queue.length && !MOB.length) { W.i++; if (W.i >= W.waves.length) return winStage(); nextWave(); } }
+function winStage() { const n = G.stage, rew = {food: 30 + n * 12, wood: 25 + n * 10, stone: 8 + n * 5}; for (const k in rew) G[k] += rew[k];
+  G.wave = null; G.stage++; document.getElementById('ready').disabled = false; show('ชนะด่าน ' + n + '!<br>ได้ อาหาร +' + rew.food + ' · ไม้ +' + rew.wood + ' · หิน +' + rew.stone); save(); }
+function loseStage() { G.wave = null; for (const m of MOB) addFX(m.x, m.y - 40, 'หนี', '#ccc'); MOB = []; FIRE.hp = FIRE.mhp * .3; document.getElementById('ready').disabled = false; show('ไฟดับ! แพ้ด่าน ' + G.stage + '<br>กองไฟจุดใหม่ได้ครึ่งเดียว ลองใหม่เมื่อพร้อม'); save(); }
+function stepMob(m, dt) {
+  m.t += dt; m.atk = Math.max(0, m.atk - dt); m.think -= dt; const d = MDEF[m.k];
+  if (m.think <= 0) { m.think = .5;   // targets: people close by, else the most EXPOSED building (far from the fire), else the fire
+    const ppl = V.filter(v => !v.dead && dist(v, m) < 130).concat(CH && CH.dead <= 0 && dist(CH, m) < 130 ? [CH] : []);
+    if (ppl.length && !d.bld) m.tgt = ppl.sort((a, b) => dist(a, m) - dist(b, m))[0];
+    else { const bs = B.filter(b => b.hp > 0 && dist(b, m) < 260).sort((a, b) => (dist(a, m) - dist(a, FIRE) * .6) - (dist(b, m) - dist(b, FIRE) * .6)); m.tgt = bs[0] || FIRE; } }
+  m.st = (m.st || 0) + dt; if (m.st > 4) { if (Math.hypot(m.x - m.sx, m.y - m.sy) < 8 && m.atk <= 0) { const r = ROADS[R() * ROADS.length | 0]; m.x = r[0]; m.y = r[1]; } m.st = 0; m.sx = m.x; m.sy = m.y; }   // stuck for 4 s: back to a road
+  const t = m.tgt; if (!t || t.dead || t.hp <= 0) { m.tgt = null; m.think = 0; return; }
+  const reach = (t.k ? 34 : t === FIRE ? 46 : 22) + d.r * .3;
+  if (dist(t, m) > reach) { steer(m, t.x, t.y, m.spd, dt); return; }
+  m.vx = t.x - m.x; if (!m.atk) { m.atk = 1.1; hurt(t, m.dmg, m); } }
+function hurt(t, n, from) { t.hp -= n; FX.push({hit: 1, x: t.x + rnd(-6, 6), y: t.y - 24, t: 0});
+  if (t.hp > 0) return;
+  if (MOB.includes(t)) { MOB.splice(MOB.indexOf(t), 1); if (G.wave) G.wave.kills++; if (from === CH) gainXP(CH, MDEF[t.k].xp); else if (CH) gainXP(CH, MDEF[t.k].xp * .25); return; }
+  if (t === FIRE) return loseStage();
+  if (t === CH) { CH.dead = 40 + CH.lv * 6; addFX(CH.x, CH.y - 70, 'แชมป์ล้ม! กลับมาใน ' + Math.round(CH.dead) + ' วิ', '#ff6b6b'); return; }
+  if (V.includes(t)) return die(t);
+  if (B.includes(t)) { B.splice(B.indexOf(t), 1); addFX(t.x, t.y - 60, {hut: 'กระท่อมพัง', tower: 'หอพัง', fence: 'รั้วพัง'}[t.k], '#ff6b6b'); } }
+function stepTowers(dt) { for (const b of B) { if (b.k !== 'tower') continue; b.cd -= dt; if (b.cd > 0) continue;
+  const m = MOB.filter(m => dist(m, b) < 210).sort((a, c) => dist(a, b) - dist(c, b))[0]; if (!m) continue; b.cd = 1.4;
+  const dx = m.x - b.x, dy = m.y - 20 - (b.y - 90), l = Math.hypot(dx, dy); SPEAR.push({x: b.x, y: b.y - 90, vx: dx / l * 420, vy: dy / l * 420, t: 0, m}); } }
+// ---------------------------------------------------------------- effects / messages
+function addFX(x, y, s, c) { FX.push({txt: s, x, y, c, t: 0}); }
+const logs = []; function log(s) { logs.unshift(s); logs.length = Math.min(logs.length, 4); }
+function show(h) { const e = document.getElementById('msg'); e.innerHTML = h + '<br><button onclick="this.parentNode.style.display=\'none\'">ตกลง</button>'; e.style.display = 'block'; }
+// ---------------------------------------------------------------- the loop
+function step(dt) {
+  G.t += dt; G.birthT += dt; G.planT += dt; G.saveT += dt;
+  for (const k of ['food', 'wood', 'stone']) G.rate[k] *= Math.pow(.5, dt / 120);   // recent gathering, for idle gains while away
+  G.food = Math.max(0, G.food - V.length * .035 * dt);
+  if (G.food <= 0) for (const v of V) v.hp -= .4 * dt;
+  if (G.birthT > 24) { G.birthT = 0; const ad = V.filter(adult); if (G.food >= 25 && V.length < cap() && ad.length >= 2) { G.food -= 25; const p = [ad[R() * ad.length | 0], ad[R() * ad.length | 0]]; const c = newVillager(FIRE.x + rnd(-20, 20), FIRE.y + 30, p, true); V.push(c); addFX(c.x, c.y - 50, 'เด็กเกิดใหม่: ' + c.name, '#9cff8a'); log(c.name + ' เกิดแล้ว'); } }
+  if (G.planT > 3) { G.planT = 0; plan(); }
+  for (const n of N) n.amt = Math.min(n.max, n.amt + n.regen * dt);
+  for (const v of V) stepVillager(v, dt); V = V.filter(v => !v.dead && v.hp > 0 || (v.dead = true, false));
+  if (CH) stepChampion(CH, dt);
+  stepWave(dt); for (const m of MOB.slice()) stepMob(m, dt); stepTowers(dt);
+  for (const s of SPEAR) { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; if (s.m.hp > 0 && Math.hypot(s.m.x - s.x, s.m.y - 20 - s.y) < 18) { hurt(s.m, 9 + G.stage, null); s.t = 9; } }
+  SPEAR = SPEAR.filter(s => s.t < 1);
+  if (!G.wave) FIRE.hp = Math.min(FIRE.mhp, FIRE.hp + 2 * dt); for (const v of V) if (dist(v, FIRE) < 90) v.hp = Math.min(v.mhp, v.hp + 4 * dt);
+  for (const f of FX) f.t += dt; FX = FX.filter(f => f.t < (f.txt ? 1.4 : f.ring ? .5 : .25));
+  if (G.saveT > 10) { G.saveT = 0; save(); } }
+// ---------------------------------------------------------------- save / idle gains while away
+function save() { try { localStorage.setItem(SAVE, JSON.stringify({at: Date.now(), G: {food: G.food, wood: G.wood, stone: G.stone, stage: G.stage, pri: G.pri, rate: G.rate},
+  V: V.map(v => ({name: v.name, str: v.str, agi: v.agi, int: v.int, vit: v.vit, age: v.age, tint: v.tint})), B: B.map(b => ({k: b.k, x: b.x, y: b.y})), CH: CH && {lv: CH.lv, xp: CH.xp}})); } catch (e) {} }
+function load() { let s; try { s = JSON.parse(localStorage.getItem(SAVE)); } catch (e) {} if (!s || QS.get('new')) return false;
+  Object.assign(G, s.G); B = s.B.map(b => ({...b, hp: BDEF[b.k].hp, mhp: BDEF[b.k].hp, cd: 0}));
+  V = s.V.map(o => { const v = newVillager(FIRE.x + rnd(-80, 80), FIRE.y + rnd(-40, 60)); Object.assign(v, o); v.mhp = 30 + v.vit * 6; v.hp = v.mhp; return v; });
+  if (s.CH) { CH.lv = s.CH.lv; CH.xp = s.CH.xp; CH.mhp = 160 + (CH.lv - 1) * 25; CH.hp = CH.mhp; }
+  const away = Math.min(8 * 3600, (Date.now() - s.at) / 1000);   // IDLE: the village kept working while the game was closed (half speed, max 8 h)
+  if (away > 60) { const got = {}; for (const k of ['food', 'wood', 'stone']) { got[k] = Math.round((G.rate[k] / 120) * away * .5); G[k] += got[k]; }
+    G.food = Math.max(0, G.food - V.length * .035 * away * .5); for (const v of V) v.age += away;
+    show('ระหว่างที่ไม่อยู่ ' + Math.round(away / 60) + ' นาที เผ่าทำงานต่อ<br>อาหาร +' + got.food + ' · ไม้ +' + got.wood + ' · หิน +' + got.stone + '<br>เด็กๆ โตขึ้นแล้ว'); }
+  return true; }
+// ---------------------------------------------------------------- drawing
+let K = 2, cam = {x: 0, y: 0}, VW = 0, VH = 0;
+function resize() { const dpr = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; K = Math.max(1, Math.round(cv.height / 620)); VW = cv.width / K; VH = cv.height / K; clampCam(); }
+function clampCam() { cam.x = clamp(cam.x, 0, Math.max(0, 1800 - VW)); cam.y = clamp(cam.y, 0, Math.max(0, 1100 - VH)); }
+function drawChar(sheet, sp, u, anim, t, hue) {
+  const a = sp.anims[anim] || sp.anims.idle, dir = Math.abs(u.vx) > Math.abs(u.vy) ? (u.vx > 0 ? 1 : 3) : (u.vy > 0 ? 0 : 2), f = Math.floor(t * (anim === 'attack' ? 10 : 9)) % a.n;
+  ctx.drawImage(sheet, f * sp.cw, (a.row + dir) * sp.ch, sp.cw, sp.ch, Math.round(u.x - sp.feet[0]), Math.round(u.y - sp.feet[1]), sp.cw, sp.ch); }
+function bar(x, y, w, k, c) { ctx.fillStyle = '#000a'; ctx.fillRect(x - w / 2 - 1, y - 1, w + 2, 5); ctx.fillStyle = c; ctx.fillRect(x - w / 2, y, w * clamp(k, 0, 1), 3); }
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#141a12'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.imageSmoothingEnabled = false; ctx.setTransform(K, 0, 0, K, -Math.round(cam.x) * K, -Math.round(cam.y) * K);
+  ctx.drawImage(IM.ground, 0, 0);
+  const L = [];   // everything with a foot line, drawn back to front
+  MAP.props.forEach((p, i) => L.push({y: p.y + p.a[3] * .9, f: () => ctx.drawImage(IM.props, p.a[0], p.a[1], p.a[2], p.a[3], p.x, p.y, p.a[2], p.a[3])}));
+  for (const n of N) if (n.kind === 'berry') L.push({y: n.y, f: () => { ctx.globalAlpha = n.amt > 5 ? 1 : .45; ctx.drawImage(IM.berry, n.x - 24, n.y - SP.berry.base); ctx.globalAlpha = 1; }});
+  for (const b of B) L.push({y: b.y, f: () => { const im = IM[b.k], s = SP[b.k]; ctx.drawImage(im, Math.round(b.x - s.w / 2), Math.round(b.y - s.base)); if (b.hp < b.mhp) bar(b.x, b.y - s.base - 6, 40, b.hp / b.mhp, '#ffb84a'); }});
+  for (const j of JOBS) L.push({y: j.y, f: () => { const s = SP[j.k]; ctx.globalAlpha = .35 + j.prog * .5; ctx.drawImage(IM[j.k], Math.round(j.x - s.w / 2), Math.round(j.y - s.base)); ctx.globalAlpha = 1; bar(j.x, j.y + 6, 36, j.prog, '#9cff8a'); }});
+  L.push({y: FIRE.y, f: () => { const s = SP.fire; ctx.drawImage(IM.fire, FIRE.x - s.w / 2, FIRE.y - s.base); if (FIRE.hp < FIRE.mhp) bar(FIRE.x, FIRE.y - s.base - 6, 60, FIRE.hp / FIRE.mhp, '#ff6a3a'); }});
+  for (const v of V) L.push({y: v.y, f: () => { ctx.save(); if (!adult(v)) { ctx.translate(v.x, v.y); ctx.scale(.5, .5); ctx.translate(-v.x, -v.y); }   // children: half size (whole-number scale of 1/2)
+    drawChar(IM.villager, SP.villager, v, v.anim || 'idle', v.t, v.tint); ctx.restore();
+    if (v.carry) { ctx.fillStyle = {food: '#e04a4a', wood: '#a0683a', stone: '#9aa4b0'}[v.carry.r]; ctx.fillRect(Math.round(v.x) + 8, Math.round(v.y) - 46, 6, 6); }
+    if (v.hp < v.mhp) bar(v.x, v.y - (adult(v) ? 64 : 36), 26, v.hp / v.mhp, v.flee ? '#ff6b6b' : '#7cff6a'); if (v === sel) { ctx.strokeStyle = '#ffd27a'; ctx.strokeRect(Math.round(v.x) - 14, Math.round(v.y) - 4, 28, 8); } }});
+  if (CH && CH.dead <= 0) L.push({y: CH.y, f: () => { drawChar(IM.champion, SP.champion, CH, CH.anim, CH.t); bar(CH.x, CH.y - 70, 34, CH.hp / CH.mhp, '#ffd23f');
+    ctx.fillStyle = '#ffd23f'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Lv' + CH.lv, CH.x, CH.y - 74); }});
+  for (const m of MOB) L.push({y: m.y, f: () => { const s = SP['mob_' + m.k], f = Math.floor(m.t * 8) % s.n; ctx.save(); ctx.translate(Math.round(m.x), Math.round(m.y)); if (m.vx > 0) ctx.scale(-1, 1);
+    ctx.drawImage(IM['mob_' + m.k], f * s.w, 0, s.w, s.h, -s.fx, -s.fy, s.w, s.h); ctx.restore(); bar(m.x, m.y - s.fy - 6, 26, m.hp / m.mhp, '#ff4a4a'); }});
+  L.sort((a, b) => a.y - b.y); for (const o of L) o.f();
+  ctx.strokeStyle = '#ffe2a8'; ctx.lineWidth = 2; for (const s of SPEAR) { ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * .03, s.y - s.vy * .03); ctx.stroke(); }
+  if (CH && CH.order) { ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(CH.order.x, CH.order.y, 22, 9, 0, 0, 7); ctx.stroke(); }
+  ctx.textAlign = 'center'; ctx.font = 'bold 11px system-ui';
+  for (const f of FX) { if (f.txt) { ctx.globalAlpha = 1 - f.t / 1.4; ctx.fillStyle = '#000'; ctx.fillText(f.txt, f.x + 1, f.y - f.t * 20 + 1); ctx.fillStyle = f.c; ctx.fillText(f.txt, f.x, f.y - f.t * 20); }
+    else if (f.ring) { ctx.globalAlpha = 1 - f.t / .5; ctx.strokeStyle = '#ff9a3a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(f.x, f.y, 20 + f.t * 140, 8 + f.t * 56, 0, 0, 7); ctx.stroke(); }
+    else { ctx.globalAlpha = 1 - f.t / .25; ctx.fillStyle = '#fff4c0'; ctx.fillRect(Math.round(f.x) - 3, Math.round(f.y) - 3, 6, 6); } }
+  ctx.globalAlpha = 1;
+  if (G.wave) { ctx.fillStyle = '#ff3a2a'; for (const [x, y] of ROADS.slice(0, G.wave.roads)) { ctx.globalAlpha = .5 + Math.sin(G.t * 6) * .3; ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.fill(); } ctx.globalAlpha = 1; }
+  hud(); }
+function hud() {
+  const W = G.wave, pop = V.length, kids = V.filter(v => !adult(v)).length;
+  document.getElementById('top').innerHTML = `<b>🍖 ${Math.floor(G.food)}</b><b>🪵 ${Math.floor(G.wood)}</b><b>🪨 ${Math.floor(G.stone)}</b><b>👥 ${pop}/${cap()}${kids ? ' (เด็ก ' + kids + ')' : ''}</b><b>🔥 ${Math.ceil(FIRE.hp)}/${FIRE.mhp}</b>` +
+    `<b>${W ? 'ด่าน ' + G.stage + ' · ระลอก ' + Math.min(W.i + 1, W.waves.length) + '/' + W.waves.length + ' · มอน ' + (MOB.length + W.queue.length) : 'ด่านถัดไป: ' + G.stage}</b>` + (CH ? `<b>แชมป์ Lv${CH.lv}${CH.dead > 0 ? ' · ฟื้นใน ' + Math.ceil(CH.dead) + ' วิ' : ''}</b>` : '') + (logs[0] ? `<b style="opacity:.8">${logs[0]}</b>` : '');
+  document.getElementById('ready').textContent = W ? 'กำลังสู้...' : 'พร้อมสู้ ด่าน ' + G.stage;
+  const info = document.getElementById('info');
+  if (sel && !sel.dead) { const v = sel, job = !adult(v) ? 'เด็ก (โตใน ' + Math.ceil(60 - v.age) + ' วิ)' : v.flee ? 'บาดเจ็บ กำลังหนีกลับ' : v.task ? {gather: 'เก็บ' + {food: 'อาหาร', wood: 'ไม้', stone: 'หิน'}[v.task.r], build: 'สร้าง', fight: 'สู้', play: 'พัก'}[v.task.k] : 'คิดอยู่';
+    info.innerHTML = `<b>${v.name}</b> · ${job}<br>STR ${v.str} · AGI ${v.agi} · INT ${v.int} · VIT ${v.vit}<br>HP ${Math.ceil(v.hp)}/${v.mhp} · แบกได้ ${carryOf(v).toFixed(0)} · เร็ว ${speedOf(v)}`; info.style.display = 'block'; }
+  else info.style.display = 'none'; }
+// ---------------------------------------------------------------- input: drag to look around, tap a villager for stats, champion orders
+let drag = null;
+cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if (!drag) return; const dpr = cv.width / innerWidth, dx = (e.clientX - drag.x) * dpr / K, dy = (e.clientY - drag.y) * dpr / K; if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true; cam.x = drag.cx - dx; cam.y = drag.cy - dy; clampCam(); });
+cv.addEventListener('pointerup', e => { const d = drag; drag = null; if (!d || d.moved) return; const dpr = cv.width / innerWidth, wx = e.clientX * dpr / K + cam.x, wy = e.clientY * dpr / K + cam.y;
+  if (cmdMode && CH) { CH.order = Math.hypot(wx - FIRE.x, wy - FIRE.y) < 60 ? null : {x: wx, y: wy}; cmdMode = false; document.getElementById('cmd').classList.remove('on'); addFX(wx, wy - 20, CH.order ? 'ไปเฝ้าตรงนี้' : 'กลับไปเฝ้ากองไฟ', '#ffd23f'); return; }
+  sel = V.filter(v => Math.hypot(v.x - wx, v.y - 24 - wy) < 26).sort((a, b) => Math.hypot(a.x - wx, a.y - wy) - Math.hypot(b.x - wx, b.y - wy))[0] || null; });
+function ui() {
+  const pri = document.getElementById('pri'), lab = {food: 'อาหาร', wood: 'ไม้', stone: 'หิน', def: 'ป้องกัน'}, lv = ['ไม่เอา', 'น้อย', 'ปกติ', 'เน้น'];
+  for (const k of ['food', 'wood', 'stone', 'def']) { const b = document.createElement('button'); const upd = () => { b.textContent = lab[k] + ': ' + lv[G.pri[k]]; b.classList.toggle('on', G.pri[k] === 3); };
+    b.onclick = () => { G.pri[k] = (G.pri[k] + 1) % 4; upd(); for (const v of V) if (v.task && v.task.k === 'gather') v.task = null; }; upd(); pri.append(b); }
+  document.getElementById('pause').onclick = e => { G.paused = !G.paused; e.target.textContent = G.paused ? 'เล่นต่อ' : 'หยุด'; };
+  document.getElementById('spd').onclick = e => { G.speed = G.speed % 3 + 1; e.target.textContent = 'x' + G.speed; };
+  document.getElementById('cmd').onclick = e => { cmdMode = !cmdMode; e.target.classList.toggle('on', cmdMode); if (cmdMode) addFX(FIRE.x, FIRE.y - 110, 'แตะพื้นที่ให้แชมป์ไปเฝ้า', '#ffd23f'); };
+  document.getElementById('ready').onclick = startStage; }
+// ---------------------------------------------------------------- start
+(async () => {
+  [SP, NODES, MAP] = await Promise.all([fetch(D + 'sprites.json').then(r => r.json()), fetch(D + 'map1_nodes.json').then(r => r.json()), fetch(M1 + 'map.json').then(r => r.json())]);
+  const list = {ground: M1 + 'ground.png', props: M1 + 'props.png', block: M1 + 'block.png', villager: D + 'villager.png', champion: D + 'champion.png'};
+  for (const k of ['hut', 'fire', 'fence', 'tower', 'berry', 'mob_wolf', 'mob_boar_guard', 'mob_golem', 'mob_skeleton']) list[k] = D + k + '.png';
+  await Promise.all(Object.entries(list).map(([k, s]) => img(s).then(i => IM[k] = i)));
+  const bc = document.createElement('canvas'); BW = bc.width = IM.block.width; BH = bc.height = IM.block.height; const bg = bc.getContext('2d'); bg.drawImage(IM.block, 0, 0);
+  const bd = bg.getImageData(0, 0, BW, BH).data; BLK = new Uint8Array(BW * BH); for (let i = 0; i < BW * BH; i++) BLK[i] = bd[i * 4] > 128 ? 1 : 0;
+  FIRE = {x: NODES.fire[0], y: NODES.fire[1], hp: 300, mhp: 300, k: null};
+  N = NODES.nodes.map(n => ({...n, amt: n.kind === 'berry' ? 30 : n.kind === 'tree' ? 260 : 320, max: n.kind === 'berry' ? 30 : n.kind === 'tree' ? 260 : 320, regen: n.kind === 'berry' ? .35 : n.kind === 'tree' ? .25 : .05}));
+  { const f = field(FIRE.x, FIRE.y); ROADS = NODES.spawns.filter(([x, y]) => f[(y / FG | 0) * FW + (x / FG | 0)] < 1e9); }
+  CH = newChampion();
+  if (!load()) { B = NODES.spots.slice(0, 2).map(s => ({k: 'hut', x: s.x, y: s.y, hp: BDEF.hut.hp, mhp: BDEF.hut.hp, cd: 0}));
+    for (let i = 0; i < 5; i++) V.push(newVillager(FIRE.x + rnd(-80, 80), FIRE.y + rnd(-30, 60)));
+    show('เผ่าเล็กๆ ของเราเริ่มแล้ว!<br>ชาวบ้านทำงานเองตามค่าพลัง กดชื่อคนดูค่า STR AGI INT<br>ตั้งความสำคัญมุมซ้ายล่าง · พร้อมเมื่อไหร่กด <b>พร้อมสู้</b>'); }
+  ui(); resize(); addEventListener('resize', resize); cam.x = FIRE.x - VW / 2; cam.y = FIRE.y - VH / 2; clampCam();
+  let last = performance.now(); function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; if (!G.paused) { const n = G.speed; for (let i = 0; i < n; i++) step(dt); } draw(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+  window.GM = {G, get V() { return V; }, get MOB() { return MOB; }, get B() { return B; }, get CH() { return CH; }, FIRE, step, startStage, save};
+})();
+</script>
+</body>
+</html>
