@@ -54,3 +54,12 @@ Left thumb: move (virtual stick). Right: attack, skill 1, skill 2; BUILD / UPGRA
 2. Buildings art (on "เจน", ~30 credits) -> real buildings, 3 levels.
 3. Soldiers + rabbit top-down (on "เจน").
 4. Maps 2 and 3, the boss, bonuses, balance tests (headless, like `tools/qa/gem_balance.js`).
+
+## Theme change (owner 2026-11-14 "อยากให้เป็นย้อนยุคเลย ยุคหิน")
+STONE AGE. Heart = the tribe's sacred FIRE (a big bonfire ringed with stones; cracked = the fire dying). Buildings become:
+hut (gold -> food / shells as money), berry patch, sharpened-stake fence, lookout with spear throwers, fire pit (burning area),
+hunters' camp (3 spear warriors), shaman's hut (heals), stone gate. Level-ups go wood -> wood + stone -> big stones and bones.
+Enemies: wild beasts (wolves, boars, sabre-tooth, giant birds), rival tribes, and a mammoth / dinosaur-like beast as the boss.
+Hero: a tribe champion in an animal-pelt hood (the hooded-rabbit idea fits: rabbit-pelt hood, stone / bone weapon).
+Maps: map 1 (green forest) fits as it is; brick walls, arches and the paved road of maps 2-3 do not: those props / roads need a stone-age repaint later.
+Open question to the owner: how much weight on the HERO vs the buildings (see chat).
