@@ -2,8 +2,8 @@
 # The 180 Swordtember swords (TheWiseHedgehog, CC BY 4.0, see vendor/swordtember/NOTICE.md) packed for the games.
 #   python3 tools/art/sword_pack.py   -> art/swords/swords.png (6 x 30 cells of 32x32: sheet n = rows 5n..5n+4, as the packs come)
 #                                        art/swords/swords.json (per sword: cell, grip = the handle end, tip = the blade end, length in px)
-# All swords are drawn the same way, handle at the bottom left and tip at the top right, so the grip is the opaque pixel nearest the
-# bottom-left corner and the tip the one nearest the top-right corner. The pictures are copied unchanged.
+# All swords are drawn the same way, blade up to the LEFT, handle at the bottom right: the grip is the opaque pixel nearest the
+# bottom-right corner and the tip the one nearest the top-left corner. The pictures are copied unchanged.
 import json
 import numpy as np
 from PIL import Image
@@ -14,7 +14,7 @@ for n in range(6):
     for r in range(5):
         for c in range(6):
             cell = a[r * 32:r * 32 + 32, c * 32:c * 32 + 32]; ys, xs = np.nonzero(cell > 40)
-            g = int(np.argmax(ys - xs)); t = int(np.argmax(xs - ys))
+            g = int(np.argmax(ys + xs)); t = int(np.argmin(ys + xs))
             meta.append({'i': len(meta), 'pack': n + 1, 'cell': [c, n * 5 + r], 'grip': [int(xs[g]), int(ys[g])], 'tip': [int(xs[t]), int(ys[t])],
                          'len': round(float(np.hypot(xs[t] - xs[g], ys[t] - ys[g])), 1)})
 out.save('art/swords/swords.png', optimize=True)
