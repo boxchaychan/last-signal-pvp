@@ -128,3 +128,13 @@ waves of wolves / boars from the first minute, game over when the fire dies, wav
    lure / drive a wave toward a neighbour, small raids that steal stored food / wood, the champion ambushing a neighbour's gatherers.
    Monster waves stay the main threat.
 5b (owner): NO trading of resources between tribes, ever. The focus is defending against the monsters; harassing neighbours stays possible.
+
+## DIRECTION v3 (owner 2026-11-14) — newest, overrides the match / multiplayer parts above
+"ทำเมืองเราเป็น idle แล้วบุกตามด่าน โดยกดสู้ มอนจะวิ่งมาตามด่าน":
+- HOME VILLAGE = IDLE: it keeps working when the game is closed (villagers gather, are born, grow up, train; offline gains on return).
+  Villager stats STR / AGI / INT, the ordered champion with levels and a long respawn, organic building all stay.
+- STAGES: a stage map; pick a stage, press FIGHT; monsters run in along that stage's paths in waves; the tribe's fighters + defences hold.
+  Win = stage cleared, rewards (food, wood, stone, rare items, new villagers / champions) go home to grow the village.
+- The village feeds the stages (stronger people, better fences / weapons); the stages feed the village (resources, unlocks).
+- Multiplayer later, async (no need to be online together): leaderboards, raiding sleeping villages; not in the first build.
+Open: how much the player controls inside a stage (place defences before FIGHT? order the champion during the fight?).
