@@ -119,3 +119,5 @@ waves of wolves / boars from the first minute, game over when the fire dies, wav
 3 (owner, replaces the totem idea): NO explicit territory / borders. The player only marks space for housing (where the tribe may grow);
    when the population grows, villagers build huts and other buildings THEMSELVES there. The village grows on its own; the player's job is
    to keep it from being overrun (defence), and to send people out for resources.
+1b (owner correction): the CHAMPION does NOT die for good: when killed it comes back after a LONG respawn time (keeps its level).
+   Villagers still die for good.
