@@ -6,8 +6,9 @@ const {chromium} = require('playwright');
 (async () => { const b = await chromium.launch(); const errs = [];
   const pg = await b.newPage({viewport: {width: 844, height: 390}, deviceScaleFactor: 1});
   pg.on('pageerror', e => errs.push('PAGEERR ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 6).join('\n'))); pg.on('console', m => { if (m.type() === 'error') errs.push('console ' + m.text()); });
-  await pg.goto('http://localhost:8000/gem.html?new=1&seed=' + (process.argv[2] || 77)); await pg.waitForFunction(() => window.GM && document.getElementById('home').classList.contains('show'), null, {timeout: 15000});
-  await pg.mouse.click(5, 380);   // a real click so the audio context starts: sound code runs in this test
+  await pg.goto('http://localhost:8000/gem.html?new=1&seed=' + (process.argv[2] || 77)); await pg.waitForFunction(() => window.GM && GM.ready, null, {timeout: 20000});
+  await pg.mouse.click(5, 380);   // a real click (title -> lobby) so the audio context starts: sound code runs in this test
+  await pg.waitForFunction(() => GM.scr === 'lobby' && !GM.fade, null, {timeout: 8000});
   const res = await pg.evaluate(() => { GM.hold = true; GM.S.snd = 1; GM.S.mus = 1; const out = []; let R = 12345; const rnd = () => { R = (R * 1103515245 + 12345) & 0x7fffffff; return R / 0x7fffffff; };
     for (let run = 0; run < 36; run++) { const g = run % 30; GM.S.lv = 1 + g; GM.S.up = [g >> 1, g >> 1, g >> 1, g >> 1, g >> 1, g >> 1]; GM.startStage(g / 5 | 0, g % 5); let guard = 0, idleN = 0, last = '';
       while (!GM.B.over && guard++ < 40000) { if (GM.phase === 'idle') { idleN++;
