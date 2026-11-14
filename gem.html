@@ -341,7 +341,16 @@ function musTick() { const c = AU.c; if (!c || !S.mus || c.state !== 'running' |
 setInterval(musTick, 60);
 
 // ---------------------------------------------------------------- particles, orbs, popups, lights, timers
-const PART = [], ORB = [], POP = [], LIT = [], FX = [], PROJ = [], TM = [];
+const PART = [], ORB = [], POP = [], LIT = [], FX = [], PROJ = [], TM = [], DFX = [];
+// the owner's Meta AI hit burst (fx/meta_blueburst.png, 13 cells of 617x589, 25 fps): a painted effect, so it is drawn smooth at screen size
+// over the scene (heavy / critical hits) and over the board (bomb gems), not on the pixel scene canvas
+const BURST = {w: 617, h: 589, n: 13, fps: 25};
+function blueBurst(x, y, size, where) { DFX.push({x, y, s: size / BURST.h, t: 0, w: where}); }
+function drawBursts(where) { const im = IMG.burst; if (!im || !im.naturalWidth) return; ctx.imageSmoothingEnabled = true;
+  if (where === 'b') { ctx.save(); ctx.beginPath(); ctx.rect(BX, BY, BW, BH); ctx.clip(); }   // the board keeps it inside its frame
+  for (const d of DFX) { if (d.w !== where) continue; const n = d.t * BURST.fps | 0; if (n >= BURST.n) continue; const w = BURST.w * d.s, h = BURST.h * d.s;
+    ctx.globalAlpha = n <= 4 ? 1 : Math.max(0, .8 * (1 - (n - 5) / 8)); ctx.drawImage(im, n * BURST.w, 0, BURST.w, BURST.h, d.x - w / 2, d.y - h / 2, w, h); }   // the smoke thins out so the gems stay readable
+  ctx.globalAlpha = 1; if (where === 'b') ctx.restore(); ctx.imageSmoothingEnabled = false; }
 let T = 0, RT = 0, HS = 0, SLOW = 0, SHK = 0, BSHK = 0, FLASH = 0, FLCOL = '#fff', BT = 0, DARK = 0, darkA = 0, BAN = null;
 const CMB = {n: 0, t: 9, m: 1};
 const rgba = (h, a) => { const c = hex(h); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; };
@@ -454,7 +463,7 @@ function stoneGems(n, from) { let cnt = 0; const L = []; allGems(g => { if (g.t 
   for (let i = 0; i < n && L.length && cnt < 7; i++, cnt++) { const g = L.splice(ri(L.length), 1)[0]; orb(from[0], from[1], () => gemXY(g), '#b8b0c8', () => { if (g.dying >= 0 || grid[g.r][g.c] !== g) return; g.t = 7; g.sp = 0; g.lock = 0; g.pop = 1; const [x, y] = gemXY(g); burst(x, y, RAMP.s, 8, .6); SFX.land(); }, .5); } }
 function stepBoard(dt) {
   allGems(g => { if (g.sq > 0) g.sq = Math.max(0, g.sq - dt * 7); if (g.pop > 0) g.pop = Math.max(0, g.pop - dt * 3.2); if (g.shk > 0) g.shk = Math.max(0, g.shk - dt); if (g.gl >= 0) { g.gl += dt; if (g.gl > .5) g.gl = -1; } if (g.dying >= 0) g.dying += dt; if (g.lock === -1 && phase === 'idle' && !ORB.length) g.lock = 0; });
-  for (let i = BFX.length - 1; i >= 0; i--) { const b = BFX[i]; if (!b.on && T >= b.t0) { b.on = 1; if (b.k === 'bomb') { SFX.bomb(); vib(30); BSHK = Math.max(BSHK, 6 + b.rad * 3); } else if (b.k === 'prism') SFX.prism(); else { SFX.beam(); BSHK = Math.max(BSHK, 5); } } if (T - b.t0 > .6) BFX.splice(i, 1); }
+  for (let i = BFX.length - 1; i >= 0; i--) { const b = BFX[i]; if (!b.on && T >= b.t0) { b.on = 1; if (b.k === 'bomb') { SFX.bomb(); vib(30); BSHK = Math.max(BSHK, 6 + b.rad * 3); blueBurst(BX + (b.c + .5) * cell, BY + (b.r + .5) * cell, cell * (2 * Math.min(b.rad, 3) + 1) * 1.1, 'b'); } else if (b.k === 'prism') SFX.prism(); else { SFX.beam(); BSHK = Math.max(BSHK, 5); } } if (T - b.t0 > .6) BFX.splice(i, 1); }
   if (phase === 'idle') { idleT += dt; if (!hint && idleT > (S.tut ? 5 : 1.2) && B && !B.over) { const M = findMoves(); if (M.length) hint = M.reduce((p, q) => q.v > p.v ? q : p); }
     glintT -= dt; if (glintT <= 0) { glintT = RR(.15, .5); const g = gemAt(Math.random() * COLS | 0, Math.random() * ROWS | 0); if (g && g.gl < 0 && g.t < 7) g.gl = 0; } }
   else if (phase === 'swap') { SW.t += dt; const q = Math.min(1, SW.t / .13), e = eOut(q), a = SW.a, b = SW.b; a.x = lerp(b.c, a.c, e); a.y = lerp(b.r, a.r, e); b.x = lerp(a.c, b.c, e); b.y = lerp(a.r, b.r, e);
@@ -477,7 +486,7 @@ function startStage(ch, st) {
   SCR = 'battle'; DLG = null; uiDown = null; scrT = 0; const hp = maxHP();
   B = {ch, st, g: ch * 5 + st, waves: stageWaves(ch, st), wi: -1, foes: [], hp, hpMax: hp, hpShow: hp, sh: 0, poi: null, tg: null, moves: 0, gold: 0, kills: 0, over: 0, taken: 0, blocked: 0, dealt: 0, t: 0, wv: 0, turn: 0};
   for (const h of HR) Object.assign(h, {st: 'idle', t: 0, pool: 0, ult: 0, ox: 0, fl: 0, glow: 0, hurt: 0, a: null, rdy: 0, down: 0});
-  PART.length = ORB.length = POP.length = LIT.length = FX.length = PROJ.length = TM.length = 0; BT = 0; HS = SLOW = SHK = BSHK = FLASH = 0; EP = null; CMB.t = 9; DARK = 0; PAUSED = false;
+  PART.length = ORB.length = POP.length = LIT.length = FX.length = PROJ.length = TM.length = DFX.length = 0; BT = 0; HS = SLOW = SHK = BSHK = FLASH = 0; EP = null; CMB.t = 9; DARK = 0; PAUSED = false;
   for (const w of B.waves) for (const k of w) mobImg(k);
   layout(); fillBoard(); nextWave(); MU.mode = B.foes.some(f => f.boss) ? 'boss' : 'battle'; banner('ด่าน ' + (ch + 1) + '-' + (st + 1), '#ffe27a', CH[ch].n, 1.7);
   if (!S.help && !HOLD) { S.help = 1; save(); openDlg('help', {pg: 0}); } }
@@ -509,6 +518,7 @@ function hitFoe(f, dmg, o = {}) {
   if (!B || f.hp <= 0) return; dmg = Math.max(1, Math.round(dmg)); const cx = f.x + f.ox, cy = f.y - f.m[1] * .42;
   if (o.fx) { if (o.ground) fx(o.fx, f.x, f.y + 5, {s: o.fx === 'spike' ? 1.5 : 2}); else if (o.fx === 'fireball') fx('fireball', cx + 6, cy, {s: 2}); else fx(o.fx, cx - 6, cy, {s: o.fx === 'crit' ? 2 : 3}); }
   light(cx, cy, o.heavy ? 120 : 70, o.fx === 'fireball' || o.burnTick ? '#ff9a4a' : '#fff2c8', .24);
+  if ((o.heavy || o.crit) && !o.burn && !o.burnTick && o.fx !== 'fireball') { const q = sd(cx, cy); blueBurst(q[0], q[1], f.m[1] * K * (f.boss ? 1.1 : 1.5), 's'); }   // a big hit bursts blue
   if (f.charge) { f.charge.guard -= dmg; if (f.charge.guard <= 0) breakBoss(f); }
   f.hp -= dmg; f.fl = .13; f.hurt = .36; f.kx = (o.push || 5) * (f.boss ? .4 : 1) * (o.heavy ? 1.8 : 1); B.dealt += dmg;
   const p = sd(cx + RR(-26, 26), cy - 36 + RR(-16, 12)); popup(String(dmg), p[0], p[1], {col: o.crit ? '#ffd24a' : o.burnTick ? '#ff9a5a' : '#ffffff', size: o.crit || o.heavy ? 26 : 18, big: o.crit || o.heavy ? 1 : 0}); if (o.crit) popup('คริติคอล!', p[0], p[1] - 24 * U, {col: '#ffd24a', size: 12, life: .7});
@@ -604,6 +614,7 @@ function step(dt) {
   for (let i = TM.length - 1; i >= 0; i--) { const m = TM[i]; if (!m) continue; m.d -= dt; if (m.d <= 0) { TM.splice(i, 1); if (m.b) BT--; m.fn(); } }
   if (SCR === 'battle') stepBoard(dt); if (B) stepBattle(dt);
   for (let i = FX.length - 1; i >= 0; i--) { const f = FX[i]; f.t += dt; if (f.t > f.d[5] * f.d[6] / 1000) FX.splice(i, 1); }
+  for (let i = DFX.length - 1; i >= 0; i--) { if ((DFX[i].t += dt) * BURST.fps >= BURST.n) DFX.splice(i, 1); }
   for (let i = ORB.length - 1; i >= 0; i--) { const o = ORB[i]; o.t += dt; const q = Math.min(1, o.t / o.dur), e = q * q * (1.6 - .6 * q), tg = o.tgt(), u = 1 - e; o.x = u * u * o.x0 + 2 * u * e * o.cx + e * e * tg[0]; o.y = u * u * o.y0 + 2 * u * e * o.cy + e * e * tg[1];
     if (Math.random() < .8) PART.push({x: o.x, y: o.y, vx: RR(-20, 20) * U, vy: RR(-20, 20) * U, g: 0, t: 0, life: .28, s: GP, c: o.col, add: 1});
     if (q >= 1) { ORB.splice(i, 1); light(tg[0], tg[1], 26 * U, o.col, .25, {dev: 1}); o.cb(); } }
@@ -923,13 +934,14 @@ function draw() {
   drawScene(); const ox = bt && SHK > .4 ? Math.round(RR(-1, 1) * SHK) * K : 0, oy = bt && SHK > .4 ? Math.round(RR(-1, 1) * SHK * .6) * K : 0;
   ctx.save(); ctx.beginPath(); ctx.rect(SR.x, SR.y, SR.w, SR.h); ctx.clip(); ctx.imageSmoothingEnabled = false; ctx.drawImage(SC, SR.x + ox, SR.y + oy, vw * K, vh * K);
   if (bt && B) {
+    drawBursts('s');
     if (!B.over && B.hp < B.hpMax * .28) { if (!draw.dg) { const c = draw.dg = mkCanvas(96, 96), g = c.getContext('2d'), gr = g.createRadialGradient(48, 48, 22, 48, 48, 66); gr.addColorStop(0, 'rgba(210,20,10,0)'); gr.addColorStop(1, 'rgba(210,20,10,.75)'); g.fillStyle = gr; g.fillRect(0, 0, 96, 96); }
       ctx.globalAlpha = .45 + .35 * Math.sin(RT * 6); ctx.imageSmoothingEnabled = true; ctx.drawImage(draw.dg, SR.x, SR.y, SR.w, SR.h - stripH); ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 1; }
     if (land) { const eg = ctx.createLinearGradient(SR.w - 26 * U, 0, SR.w, 0); eg.addColorStop(0, 'rgba(7,6,12,0)'); eg.addColorStop(1, 'rgba(10,8,20,1)'); ctx.fillStyle = eg; ctx.fillRect(SR.w - 26 * U, 0, 26 * U, SR.h); }
     drawHud(); }
   else if (!land) { const eg = ctx.createLinearGradient(0, SR.h - 30 * U, 0, SR.h); eg.addColorStop(0, 'rgba(10,8,20,0)'); eg.addColorStop(1, 'rgba(10,8,20,1)'); ctx.fillStyle = eg; ctx.fillRect(0, SR.h - 30 * U, W, 30 * U); }
   ctx.restore();
-  if (bt && B) drawBoard(); else if (SCR === 'title') drawTitle(); else if (SCR === 'lobby') drawLobby(); else if (SCR === 'map') drawMap();
+  if (bt && B) { drawBoard(); drawBursts('b'); } else if (SCR === 'title') drawTitle(); else if (SCR === 'lobby') drawLobby(); else if (SCR === 'map') drawMap();
   if (BAN && bt) drawBanner();
   if (DLG) drawDlg();
   ctx.globalCompositeOperation = 'lighter';
@@ -964,7 +976,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && SCR
 function lockOri() { try { screen.orientation.lock(S.ori === 'p' ? 'portrait' : 'landscape').catch(() => {}); } catch (e) {} }   // only works in full screen, on phones
 function fullscreen(on) { const d = document.documentElement; if (!document.fullscreenElement) { const p = (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d); if (p && p.then) p.then(lockOri).catch(() => {}); } else if (!on && document.exitFullscreen) document.exitFullscreen(); }
 function go(fn) { if (!FADE) FADE = {t: 0, fn, done: 0}; }  // wipe to black, switch, wipe back
-function setScr(s) { SCR = s; DLG = null; scrT = 0; PAUSED = false; uiDown = null; UIB.length = 0; B = null; phase = 'none'; MU.mode = 'home'; BAN = null; DARK = 0; HS = SLOW = SHK = 0; FX.length = PROJ.length = ORB.length = PART.length = POP.length = TM.length = LIT.length = 0; BT = 0;
+function setScr(s) { SCR = s; DLG = null; scrT = 0; PAUSED = false; uiDown = null; UIB.length = 0; B = null; phase = 'none'; MU.mode = 'home'; BAN = null; DARK = 0; HS = SLOW = SHK = 0; FX.length = PROJ.length = ORB.length = PART.length = POP.length = TM.length = LIT.length = DFX.length = 0; BT = 0;
   for (const h of HR) Object.assign(h, {st: 'idle', ox: 0, pool: 0, ult: 0, down: 0, fl: 0, glow: 0, hurt: 0, a: null, rdy: 0}); layout(); }
 function goTitle() { setScr('title'); }
 function goLobby() { setScr('lobby'); }
@@ -981,7 +993,7 @@ const BOOT = {n: 0, tot: 1}; let GD = -1;
 function frame(ts) { const now = ts / 1000, dt = Math.min(.05, now - (frame.l || now)); frame.l = now; if (!HOLD) { uiTick(dt); if (!PAUSED) step(dt); } draw(); requestAnimationFrame(frame); }
 async function boot() {
   layoutBoot(); requestAnimationFrame(frame);
-  const jobs = [['rabbit', 'art/bag/ch_rabbit.png'], ['bear', 'art/bag/ch_bear.png'], ['fox', 'art/bag/ch_fox.png'], ['sk', 'art/bag/sk_rabbit_gpt.png'], ['icons', 'art/gem/icons.png'], ['emblem', 'art/gem/emblem.png']].concat(Object.keys(ARENA).map(k => ['bg_' + k, ARENA[k].f]));
+  const jobs = [['rabbit', 'art/bag/ch_rabbit.png'], ['bear', 'art/bag/ch_bear.png'], ['fox', 'art/bag/ch_fox.png'], ['sk', 'art/bag/sk_rabbit_gpt.png'], ['icons', 'art/gem/icons.png'], ['burst', 'fx/meta_blueburst.png'], ['emblem', 'art/gem/emblem.png']].concat(Object.keys(ARENA).map(k => ['bg_' + k, ARENA[k].f]));
   BOOT.tot = jobs.length + Object.keys(FXT).length + 1; const tick = () => { BOOT.n++; };
   const fonts = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('800 20px Kanit', 'ศึกA1'), document.fonts.load('600 20px Kanit', 'ศึกA1')]).catch(() => {}) : Promise.resolve();
   await Promise.all([fonts.then(tick), ...jobs.map(([k, s]) => loadImg(s).then(i => { IMG[k] = i; tick(); })), ...Object.keys(FXT).map(k => loadImg('art/pvfx/' + FXT[k][0] + '/sprite-sheet.png').then(i => { FXI[k] = i; tick(); }))]);
