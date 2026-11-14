@@ -32,4 +32,11 @@ for i in (4, 5, 6):
     if sh > 0: eff[:, :sh] = 0
     elif sh < 0: eff[:, sh:] = 0
     out = Image.fromarray(eff); out.alpha_composite(Image.fromarray(body)); a[:, i * CW:(i + 1) * CW] = np.asarray(out)
+# Owner "ขาหาย ต่อขากลับมา": in frames 5 and 6 the original arc covered the legs, so once the arc moved there were none.
+# The legs of frame 7 (index 6, same stance) are laid UNDER those two frames.
+LEGS = a[J['feet'][1] - 24:J['feet'][1] + 2, 6 * CW + FX - 30:6 * CW + FX + 24].copy()
+for i in (4, 5):
+    y0, x0 = J['feet'][1] - 24, i * CW + FX - 30
+    under = Image.fromarray(np.zeros_like(a[:, i * CW:(i + 1) * CW])); under.paste(Image.fromarray(LEGS), (FX - 30, y0))
+    under.alpha_composite(Image.fromarray(a[:, i * CW:(i + 1) * CW].copy())); a[:, i * CW:(i + 1) * CW] = np.asarray(under)
 Image.fromarray(a).save(SRC)
