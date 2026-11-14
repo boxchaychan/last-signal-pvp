@@ -105,6 +105,25 @@ function step(dt) {
 function tile(g, c, r, x, y) { g.drawImage(TILES, c * T, r * T, T, T, x, y, T, T); }
 function platform(g, x, y, n, rows) { for (let r = 0; r < rows; r++) for (let c = 0; c < n; c++) {
   const tc = c === 0 ? 0 : c === n - 1 ? 2 : 1, tr = r === 0 ? 0 : r === rows - 1 ? 2 : 1; if (tr === 1 && tc === 1 && (c + r) % 3 === 0) tile(g, 0, 3, x + c * T, y + r * T); else tile(g, tc, tr, x + c * T, y + r * T); } }
+// ---- mood (owner 2026-11-14 "ฉากปรับให้เข้มกว่านี้ สวยๆ"): a dark dusk over the same art, the heroes stay bright on top.
+// The world is multiplied by a violet-blue gradient after the ground is drawn, then mist, embers and a soft vignette. &mood=day = the old bright look.
+const DUSK = QS.get('mood') !== 'day', EMB = Array.from({length: 80}, (_, i) => ({x: (i * 977) % 2400, y: (i * 613) % 520, s: .4 + (i % 5) * .15, p: i * 1.7}));
+function dusk(g, t) {
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'multiply'; const m = g.createLinearGradient(0, 0, 0, VH); m.addColorStop(0, '#3a3f86'); m.addColorStop(.55, '#6a5c9e'); m.addColorStop(1, '#4b4774');
+  g.fillStyle = m; g.fillRect(0, 0, VW, VH);
+  g.globalCompositeOperation = 'lighter';   // a warm low glow on the horizon behind the hills
+  const hz = GROUND - cam.y - 120, w = g.createLinearGradient(0, hz - 90, 0, hz + 60); w.addColorStop(0, 'rgba(255,120,60,0)'); w.addColorStop(.6, 'rgba(255,110,60,.16)'); w.addColorStop(1, 'rgba(255,120,60,0)');
+  g.fillStyle = w; g.fillRect(0, hz - 90, VW, 150);
+  g.globalCompositeOperation = 'source-over';
+  const fy = GROUND - cam.y - 40, f = g.createLinearGradient(0, fy - 30, 0, fy + 40); f.addColorStop(0, 'rgba(120,110,190,0)'); f.addColorStop(.6, 'rgba(120,110,190,.22)'); f.addColorStop(1, 'rgba(120,110,190,0)');
+  g.fillStyle = f; g.fillRect(0, fy - 30, VW, 70);   // mist along the ground
+  g.restore(); }
+function embers(g, t) {   // slow orange sparks drifting up, in world pixels (whole pixels, square)
+  for (const e of EMB) { const y = ((e.y - t * 14 * e.s) % 520 + 520) % 520, x = e.x + Math.sin(t * .8 + e.p) * 10; const wy = GROUND - 40 - y;
+    const tw = Math.sin(t * 3 + e.p) > -.2; if (!tw) continue; g.fillStyle = e.s > .8 ? '#ffd27a' : '#ff8a3a'; g.fillRect(Math.round(x), Math.round(wy), e.s > .9 ? 2 : 1, e.s > .9 ? 2 : 1); } }
+function vignette(g) { const r = g.createRadialGradient(VW / 2, VH * .55, Math.min(VW, VH) * .35, VW / 2, VH * .55, Math.max(VW, VH) * .75);
+  r.addColorStop(0, 'rgba(10,6,24,0)'); r.addColorStop(1, 'rgba(10,6,24,.55)'); g.fillStyle = r; g.fillRect(0, 0, VW, VH); }
 function draw() {
   const g = view.getContext('2d'); g.imageSmoothingEnabled = false;
   const sky = g.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, '#3a78c8'); sky.addColorStop(1, '#8cc4f0'); g.fillStyle = sky; g.fillRect(0, 0, VW, VH);
@@ -113,6 +132,7 @@ function draw() {
   const sh = A.shake > 0 ? (Math.random() < .5 ? -A.amp : A.amp) : 0; g.save(); g.translate(-Math.round(cam.x) + sh, -Math.round(cam.y));
   if (TREE.width) g.drawImage(TREE, 1100, GROUND - GRASS - TREE.height + 14);
   for (const [x, y, n, r] of PLAT) platform(g, x, y - GRASS, n, r);   // tiles drawn up by GRASS so the visible grass top is the line feet stand on
+  if (DUSK) dusk(g, P.t);
   // the hero: stance when still, first step then the loop when running, a stride frame in the air
   let c = 0; if (!P.ground) c = P.vy < 0 ? 3 : 6; else if (P.run > 0) { const f = P.run * 14 | 0; c = f < 1 ? 1 : 2 + (f - 1) % 7; }
   const bob = !c && Math.sin(P.t * 3) > .6 ? 1 : 0, hx = Math.round(P.x), hy = Math.round(P.y);
@@ -125,7 +145,9 @@ function draw() {
     else if (h.img.width) { g.save(); g.translate(hx, hy + (k ? 0 : bob)); g.scale(P.face, 1); g.drawImage(h.img, k * h.cw, 0, h.cw, h.ch, -h.feet[0], -h.feet[1], h.cw, h.ch); g.restore(); } }
   else if (RUN.width) { g.save(); g.translate(hx, hy + bob); g.scale(P.face, 1); g.drawImage(RUN, c * CW, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }
   fxDraw(g, draw.dt || 0);
+  if (DUSK) embers(g, P.t);
   g.restore();
+  if (DUSK) vignette(g);
   ctx.imageSmoothingEnabled = false; ctx.drawImage(view, 0, 0, VW * K, VH * K); }
 let last = 0; function frame(now) { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; step(dt); draw.dt = dt; draw(); requestAnimationFrame(frame); }
 requestAnimationFrame(frame); window.GM = {P, step, draw, jump, keys, attack, A, FXL, fxSpawn};
