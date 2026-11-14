@@ -24,12 +24,14 @@
 // Everything is drawn in world pixels on a small canvas, then blown up by a whole number K so pixels stay square.
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const img = s => { const i = new Image(); i.src = s; return i; };
-// ?hero=rabbit = the squat hooded rabbit (still picture only, moved by code: hop + lean while running); the dagger girl then stands nearby for size
-const QS = new URLSearchParams(location.search), HERO = QS.get('hero') === 'rabbit' ? img('art/sidegame/rabbit_short.png') : null;
+// ?hero=rabbit = the squat hooded rabbit with its PixelLab run (cells 128 x 96: 0 = stance, 1-8 = the loop; feet x 50, y 92); the dagger girl then stands nearby
+// for size. &dust=1 = the run as PixelLab drew it, with dust puffs at the feet (default = puffs taken out by tools/art/hood_run_clean.py).
+const QS = new URLSearchParams(location.search), RABBIT = QS.get('hero') === 'rabbit';
+const HERO = RABBIT ? {img: img(QS.get('dust') === '1' ? 'art/sidegame/rabbit_run_dust.png' : 'art/sidegame/rabbit_run.png'), cw: 128, ch: 96, feet: [50, 92], loop: 8, fps: 16} : null;
 const RUN = img('art/sidegame/dagger_run.png'), BG = img('art/side/map30/bg.png'), TILES = img('art/side/map30/tiles_wang.png'), TREE = img('art/side/map30/tree.png');
 const T = 32, CW = 168, CH = 132, FEET = [71, 127];   // run cells are 168 x 132 (room ahead for the daggers), feet at x 71, y 127
 // the world: platforms [x, y, width in tiles, rows]; the first is the ground. One-way: you land on top, jump up through them.
-const WORLD_W = 2400, GROUND = 600;
+const WORLD_W = 2400, GROUND = 600, GRASS = 17;   // the top row of a ground tile is empty for 17 px above the grass
 const PLAT = [[-64, GROUND, 80, 4], [260, GROUND - 150, 6, 2], [560, GROUND - 280, 5, 2], [900, GROUND - 170, 7, 2], [1260, GROUND - 320, 6, 2], [1640, GROUND - 200, 6, 2], [1980, GROUND - 330, 5, 2]];
 const P = {x: 120, y: GROUND, vx: 0, vy: 0, face: 1, ground: true, jumps: 0, t: 0, run: 0};
 const keys = {}, touch = {l: 0, r: 0};
@@ -60,15 +62,15 @@ function draw() {
   if (BG.width) { const s = Math.max(2, Math.ceil(VH * .9 / BG.height)), bw = BG.width * s, by = GROUND - cam.y - BG.height * s + 40, off = -((cam.x * .35) % bw);   // the far landscape, slower than the ground
     for (let x = off - bw, i = 0; x < VW; x += bw, i++) { g.save(); if (i & 1) { g.translate(x + bw, 0); g.scale(-1, 1); g.drawImage(BG, 0, by, bw, BG.height * s); } else g.drawImage(BG, x, by, bw, BG.height * s); g.restore(); } }
   g.save(); g.translate(-Math.round(cam.x), -Math.round(cam.y));
-  if (TREE.width) g.drawImage(TREE, 1100, GROUND - TREE.height + 14);
-  for (const [x, y, n, r] of PLAT) platform(g, x, y, n, r);
+  if (TREE.width) g.drawImage(TREE, 1100, GROUND - GRASS - TREE.height + 14);
+  for (const [x, y, n, r] of PLAT) platform(g, x, y - GRASS, n, r);   // tiles drawn up by GRASS so the visible grass top is the line feet stand on
   // the hero: stance when still, first step then the loop when running, a stride frame in the air
   let c = 0; if (!P.ground) c = P.vy < 0 ? 3 : 6; else if (P.run > 0) { const f = P.run * 14 | 0; c = f < 1 ? 1 : 2 + (f - 1) % 7; }
   const bob = !c && Math.sin(P.t * 3) > .6 ? 1 : 0, hx = Math.round(P.x), hy = Math.round(P.y);
-  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(hx, (P.ground ? hy : hy + 0) + 1, 22, 5, 0, 0, 7); g.fill();
-  if (HERO && RUN.width) { g.save(); g.translate(230, GROUND); g.drawImage(RUN, 0, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }   // the dagger girl standing, for size
-  if (HERO) { if (HERO.width) { const hop = P.run > 0 ? Math.round(Math.abs(Math.sin(P.run * 16)) * 4) : 0;   // whole pixels only: no turning or squashing, so the pixels stay square
-      g.save(); g.translate(hx, hy - hop + bob); g.scale(P.face, 1); g.drawImage(HERO, -Math.round(HERO.width / 2), -HERO.height); g.restore(); } }
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(hx, hy, HERO ? 16 : 22, HERO ? 4 : 5, 0, 0, 7); g.fill();
+  if (HERO) { if (RUN.width) { g.save(); g.translate(230, GROUND); g.drawImage(RUN, 0, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }   // the dagger girl standing, for size
+    const h = HERO; let k = 0; if (!P.ground) k = P.vy < 0 ? 2 : 6; else if (P.run > 0) k = 1 + (P.run * h.fps | 0) % h.loop;
+    if (h.img.width) { g.save(); g.translate(hx, hy + (k ? 0 : bob)); g.scale(P.face, 1); g.drawImage(h.img, k * h.cw, 0, h.cw, h.ch, -h.feet[0], -h.feet[1], h.cw, h.ch); g.restore(); } }
   else if (RUN.width) { g.save(); g.translate(hx, hy + bob); g.scale(P.face, 1); g.drawImage(RUN, c * CW, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }
   g.restore();
   ctx.imageSmoothingEnabled = false; ctx.drawImage(view, 0, 0, VW * K, VH * K); }
