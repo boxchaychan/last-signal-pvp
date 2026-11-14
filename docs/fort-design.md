@@ -78,3 +78,12 @@ Draft (not agreed yet):
 - RIVAL TRIBES run by the same rules (claim, gather, build, raid), each with its own animal totem / personality.
 - The hero becomes the tribe's champion: a strong unit, not the whole game.
 Open decisions for the owner: real-time with pause or season turns; map size / session length; how to win (unite all tribes, a great wonder, survive N years).
+
+## Villager stats (owner 2026-11-14, idea from dungeon-game stats)
+"ชาวบ้านมีสเตตัสเหมือนดันเจี้ยน แต่ทำงานได้ไม่เท่ากัน": STR = cuts / carries more per trip, AGI = walks and works faster,
+INT = smarter choices (nearer resource, the one the tribe needs most). Claude's additions (draft): VIT = stamina / works longer, gets sick less;
+LUK = finds rare things (flint, herbs, a lost animal). INT in practice: low = takes the first job seen, walks far, carries what is not needed;
+high = scores every open job by need x distance x danger, drops off at the nearest store, comes home before dark / storms.
+Stats grow with work (chopping raises STR) and with age; traits (lazy, brave, glutton...) bend them. Because AGI and INT only show when you
+WATCH villagers move, time runs in real time with pause and x2 / x3 speed (the player sets priorities, villagers decide themselves,
+so the phone stays calm). Supersedes the turn-based suggestion.
