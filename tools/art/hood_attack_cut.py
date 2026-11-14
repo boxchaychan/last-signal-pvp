@@ -11,9 +11,12 @@ SHEETS = {
          [[(72, 320), (428, 953), (1003, 1402), (1466, 1906)], [(72, 326), (396, 941), (1017, 1429), (1521, 1908)], [(37, 512), (512, 1040), (1040, 1460), (1562, 1821)]], False),
   'v2': ('art/incoming/hood/attack/sheet2_raw.webp', 'art/sidegame/rabbit_attack.png', [(20, 410), (425, 845), (860, 1265)],
          [[(88, 324), (511, 894), (981, 1456), (1532, 1920)], [(31, 414), (462, 904), (991, 1443), (1482, 1901)], [(28, 408), (476, 930), (996, 1504), (1560, 1815)]], True)}
+SHEETS['v3'] = ('art/incoming/hood/attack/sheet3_raw.webp', 'art/sidegame/rabbit_attack3.png', [(10, 250), (262, 510), (520, 765), (795, 1020)],
+         [[(99, 267), (471, 696), (848, 1097), (1230, 1494)], [(81, 353), (468, 739), (852, 1137), (1232, 1518)],
+          [(80, 359), (469, 740), (841, 1121), (1223, 1492)], [(69, 323), (455, 682), (853, 1037), (1241, 1420)]], True)   # 16 in-between frames, owner 2026-11-14
 SRC, OUT, ROWS, CELLS, BY_EYES = SHEETS[V]
 A = np.asarray(Image.open(SRC).convert('RGBA')).astype(float)
-P = 315 / 75
+P = {'v3': 207 / 75}.get(V, 315 / 75)   # the idle frame's height over our sprite's 75 px
 def snap(c):
     H, W = c.shape[:2]; best = None
     for oy in np.arange(0, P, P / 6):

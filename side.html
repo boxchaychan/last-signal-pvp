@@ -31,8 +31,12 @@ const HERO = RABBIT ? {img: img(QS.get('dust') === '1' ? 'art/sidegame/rabbit_ru
 // rabbit attack: 3-hit combo from the owner's second 12-frame sheet (tools/art/hood_attack_cut.py v2: frames lined up by the eyes so the body stays put,
 // effects kept as drawn), cells 155 x 115, feet x 77 y 96. Each hit = 4 frames [ms each]; pressing again during a hit queues the next; the impact frame shakes the view.
 // The first sheet (v1) is kept as art/sidegame/rabbit_attack_v1.png.
-const ATK = RABBIT ? {img: img('art/sidegame/rabbit_attack.png'), cw: 155, ch: 115, feet: [77, 96],
-  hits: [{f: [0, 1, 2, 3], ms: [50, 80, 100, 130], hit: 2}, {f: [4, 5, 6, 7], ms: [80, 90, 100, 130], hit: 5}, {f: [8, 9, 10, 11], ms: [90, 80, 110, 150], hit: 10}]} : null;
+// Default = the third sheet (owner 2026-11-14 "จะดีกว่าเดิมไหม"): 16 in-between frames of one flowing combo, cells 116 x 93, feet 55,86.
+// &atk=2 = the second sheet (4 key poses a hit).
+const ATK = !RABBIT ? null : QS.get('atk') === '2' ? {img: img('art/sidegame/rabbit_attack.png'), cw: 155, ch: 115, feet: [77, 96],
+  hits: [{f: [0, 1, 2, 3], ms: [50, 80, 100, 130], hit: 2}, {f: [4, 5, 6, 7], ms: [80, 90, 100, 130], hit: 5}, {f: [8, 9, 10, 11], ms: [90, 80, 110, 150], hit: 10}]}
+  : {img: img('art/sidegame/rabbit_attack3.png'), cw: 116, ch: 93, feet: [55, 86],
+  hits: [{f: [0, 1, 2, 3], ms: [40, 50, 55, 110], hit: 3}, {f: [4, 5, 6, 7, 8, 9], ms: [50, 60, 60, 60, 60, 70], hit: 5}, {f: [10, 11, 12, 13, 14, 15], ms: [50, 90, 60, 60, 70, 80], hit: 11}]};
 const A = {on: false, n: 0, t: 0, queued: false, shake: 0};
 function attack() { if (!ATK) return; if (A.on) { A.queued = true; return; } A.on = true; A.n = 0; A.t = 0; A.queued = false; }
 const RUN = img('art/sidegame/dagger_run.png'), BG = img('art/side/map30/bg.png'), TILES = img('art/side/map30/tiles_wang.png'), TREE = img('art/side/map30/tree.png');
@@ -81,7 +85,7 @@ function draw() {
   g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(hx, hy, HERO ? 16 : 22, HERO ? 4 : 5, 0, 0, 7); g.fill();
   if (HERO) { if (RUN.width) { g.save(); g.translate(230, GROUND); g.drawImage(RUN, 0, 0, CW, CH, -FEET[0], -FEET[1], CW, CH); g.restore(); }   // the dagger girl standing, for size
     const h = HERO; let k = 0; if (!P.ground) k = P.vy < 0 ? 2 : 6; else if (P.run > 0) k = 1 + (P.run * h.fps | 0) % h.loop;
-    if (A.on && ATK.img.width) { const H = ATK.hits[A.n]; let t = A.t, i = 0; while (i < 3 && t >= H.ms[i]) t -= H.ms[i++]; const fr = H.f[i];
+    if (A.on && ATK.img.width) { const H = ATK.hits[A.n]; let t = A.t, i = 0; while (i < H.f.length - 1 && t >= H.ms[i]) t -= H.ms[i++]; const fr = H.f[i];
       if (fr === H.hit && !A.hitDone) { A.shake = .09; A.hitDone = true; } if (fr !== H.hit) A.hitDone = false;
       g.save(); g.translate(hx, hy); g.scale(P.face, 1); g.drawImage(ATK.img, fr * ATK.cw, 0, ATK.cw, ATK.ch, -ATK.feet[0], -ATK.feet[1], ATK.cw, ATK.ch); g.restore(); }
     else if (h.img.width) { g.save(); g.translate(hx, hy + (k ? 0 : bob)); g.scale(P.face, 1); g.drawImage(h.img, k * h.cw, 0, h.cw, h.ch, -h.feet[0], -h.feet[1], h.cw, h.ch); g.restore(); } }
