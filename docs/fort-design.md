@@ -138,3 +138,7 @@ waves of wolves / boars from the first minute, game over when the fire dies, wav
 - The village feeds the stages (stronger people, better fences / weapons); the stages feed the village (resources, unlocks).
 - Multiplayer later, async (no need to be online together): leaderboards, raiding sleeping villages; not in the first build.
 Open: how much the player controls inside a stage (place defences before FIGHT? order the champion during the fight?).
+Answer (owner): "ไม่ต้องรอก็ได้ ให้กดพร้อม เหมือนท้าสู้ แล้วมอนจะวิ่งมาบุกเอง จบเป็นเวฟ": no countdown; the player presses READY (a challenge)
+whenever they like, the stage's monsters run in by themselves wave by wave, the fight plays itself (villagers, champion, defences act on
+their own AI), the stage ends when the waves are cleared or the fire falls. Read as: the battle happens AT the tribe's village
+(its own layout = its defence), stages = harder and harder challenges. Confirm with the owner if a separate battlefield was meant.
