@@ -116,3 +116,6 @@ waves of wolves / boars from the first minute, game over when the fire dies, wav
 3-7 not answered -> Claude's suggestions stand: expand by planting TOTEM poles (a ring of land each); 20-30 min a match, solo save;
    tribes only race to survive (no trading / sabotage at first); top-down pixel, units ~32-48 px, punch recipe, map-1 look;
    light unlocks after a match (new tribes with their own strengths, e.g. wolf tribe fights better, rabbit tribe gathers faster).
+3 (owner, replaces the totem idea): NO explicit territory / borders. The player only marks space for housing (where the tribe may grow);
+   when the population grows, villagers build huts and other buildings THEMSELVES there. The village grows on its own; the player's job is
+   to keep it from being overrun (defence), and to send people out for resources.
