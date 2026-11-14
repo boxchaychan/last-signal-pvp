@@ -121,3 +121,5 @@ waves of wolves / boars from the first minute, game over when the fire dies, wav
    to keep it from being overrun (defence), and to send people out for resources.
 1b (owner correction): the CHAMPION does NOT die for good: when killed it comes back after a LONG respawn time (keeps its level).
    Villagers still die for good.
+3b (owner): building can spread anywhere, no limit, no totems. The only limit is the monsters: they go for whatever is outside the
+   defended area, so a tribe that grows wider than it can guard loses huts and people. Monster AI should prefer the weakest, most exposed spot.
