@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ต่อตัวละคร · Rig</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #232a3b; font: 600 13px system-ui, sans-serif; color: #eef; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #pn { position: fixed; right: 0; top: 0; bottom: 0; width: 250px; background: #161b28ee; border-left: 2px solid #4a557a; padding: 8px; box-sizing: border-box; overflow-y: auto; touch-action: pan-y; }
+  #pn.hide { transform: translateX(100%); }
+  #tg { position: fixed; right: 254px; top: 8px; z-index: 5; }
+  #pn.hide + #tg { right: 8px; }
+  button, select { font: 700 13px system-ui; color: #fff; background: #3a4766; border: 0; border-radius: 8px; height: 34px; padding: 0 10px; margin: 2px 0; }
+  button.on { background: #7a4ad8; } button.g { background: #2f8a4a; } button.r { background: #a8362c; }
+  .row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin: 4px 0; }
+  .row > * { flex: 1; }
+  label { display: block; margin-top: 6px; color: #aab; font-size: 12px; }
+  input[type=range] { width: 100%; }
+  h3 { margin: 8px 0 4px; font-size: 14px; color: #ffd24a; }
+  #sel { font-size: 15px; color: #fff; }
+  #hint { position: fixed; left: 8px; bottom: 8px; right: 260px; color: #ccd; font-size: 12px; pointer-events: none; text-shadow: 0 1px 2px #000; }
+  textarea { width: 100%; height: 70px; font: 11px monospace; background: #0d1018; color: #9fe; border: 1px solid #4a557a; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="pn">
+  <div class="row"><button id="mA" class="on">จัดวาง</button><button id="mP">หมุนท่า</button></div>
+  <div class="row"><button data-play="idle">ยืน</button><button data-play="walk">เดิน</button><button data-play="run">วิ่ง</button><button data-play="">หยุด</button></div>
+  <h3>ชิ้นที่เลือก: <span id="sel">-</span></h3>
+  <select id="pick" style="width:100%"></select>
+  <label>ขนาด <span id="vs"></span></label><input id="sc" type="range" min="0.15" max="1.6" step="0.01">
+  <label>มุมตั้งต้น <span id="vr"></span></label><input id="rt" type="range" min="-180" max="180" step="1">
+  <label>ต่อกับ (ชิ้นแม่)</label><select id="par" style="width:100%"></select>
+  <div class="row"><button id="up">ชั้นขึ้น ▲</button><button id="dn">ชั้นลง ▼</button></div>
+  <div class="row"><button id="flip">พลิกซ้าย-ขวา</button></div>
+  <h3>ภาพต้นแบบ</h3>
+  <label>ความชัดของภาพต้นแบบ</label><input id="ro" type="range" min="0" max="1" step="0.05" value="0.35">
+  <div class="row"><button id="zin">ซูม +</button><button id="zout">ซูม −</button></div>
+  <h3>บันทึก</h3>
+  <div class="row"><button id="cp" class="g">คัดลอกส่ง Claude</button></div>
+  <div class="row"><button id="dl">ดาวน์โหลดไฟล์</button><button id="rs" class="r">เริ่มใหม่</button></div>
+  <textarea id="tx" placeholder="วางข้อมูลที่บันทึกไว้ตรงนี้ แล้วกด 'โหลด'"></textarea>
+  <div class="row"><button id="ld">โหลด</button></div>
+</div>
+<button id="tg">☰</button>
+<div id="hint"></div>
+<script>
+'use strict';
+// Rig tool (owner 2026-11-14 "เอาทูลมา ฉันต่อเอง"): put a painted character's parts together by hand, set where each part turns,
+// which part it hangs from, and try moves. Parts: art/side2d/<char>/ (cut by tools/art/side2d_cut.py). Saves itself in the browser;
+// "คัดลอกส่ง Claude" copies the rig as text to paste in the chat. ?char=dagger (folder name).
+const CHAR = new URLSearchParams(location.search).get('char') || 'dagger', DIR = 'art/side2d/' + CHAR + '/', KEY = 'rig2d_' + CHAR;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d'), $ = s => document.querySelector(s);
+const NAMES = {torso: 'ลำตัว', head: 'หัว', ponytail: 'หางม้า', cape: 'ผ้าคลุม', uarm_f: 'แขนบน หน้า', farm_f: 'แขนล่าง หน้า', dagger_1: 'มีด หน้า', uarm_b: 'แขนบน หลัง', farm_b: 'แขนล่าง หลัง', dagger_2: 'มีด หลัง',
+  thigh_f: 'ต้นขา หน้า', shin_f: 'แข้ง หน้า', thigh_b: 'ต้นขา หลัง', shin_b: 'แข้ง หลัง'};
+// starting guess (Claude 2026-11-14), on the GPT reference picture (full.png, 446 x 591): pivot in the part's pixels, where that pivot sits on the reference, size, angle, parent, layer
+const START = {
+  dagger_2: {pv: [52, 44], at: [150, 405], s: .45, r: 0, p: 'farm_b'}, farm_b: {pv: [34, 50], at: [215, 380], s: .4, r: 160, p: 'uarm_b'}, uarm_b: {pv: [56, 30], at: [225, 335], s: .42, r: 30, p: 'torso'},
+  cape: {pv: [232, 48], at: [262, 272], s: .9, r: 0, p: 'torso'}, thigh_b: {pv: [50, 26], at: [215, 432], s: .45, r: 18, p: 'torso'}, shin_b: {pv: [58, 28], at: [190, 488], s: .45, r: 8, p: 'thigh_b'},
+  ponytail: {pv: [168, 40], at: [180, 48], s: 1, r: 0, p: 'head'}, torso: {pv: [76, 214], at: [245, 428], s: .76, r: 0, p: ''},
+  thigh_f: {pv: [52, 26], at: [262, 432], s: .45, r: -14, p: 'torso'}, shin_f: {pv: [56, 28], at: [282, 488], s: .45, r: -6, p: 'thigh_f'},
+  head: {pv: [152, 236], at: [262, 262], s: .95, r: 0, p: 'torso'}, uarm_f: {pv: [60, 30], at: [282, 338], s: .42, r: -10, p: 'torso'}, farm_f: {pv: [34, 50], at: [300, 385], s: .4, r: -10, p: 'uarm_f'},
+  dagger_1: {pv: [52, 44], at: [345, 405], s: .5, r: 0, p: 'farm_f'}};
+let R = null;                                   // the rig: {parts: {name: {pv, at, s, r, p, fx}}, order: [names back to front]}
+const IMG = {}, ALPHA = {}; let N = 0;
+const names = Object.keys(START);
+for (const k of names.concat(['full'])) { const i = new Image(); i.onload = () => { if (k !== 'full') { const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); ALPHA[k] = {w: i.width, d: g.getImageData(0, 0, i.width, i.height).data}; } if (++N === names.length + 1) boot(); }; i.src = DIR + k + '.png'; IMG[k] = i; }
+function fresh() { const p = {}; for (const k of names) p[k] = JSON.parse(JSON.stringify(START[k])); return {parts: p, order: names.slice()}; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(R)); } catch (e) {} }
+function load(txt) { const o = JSON.parse(txt); if (!o.parts || !o.order) throw 'bad'; for (const k of names) if (!o.parts[k]) o.parts[k] = JSON.parse(JSON.stringify(START[k])); for (const k of names) if (!o.order.includes(k)) o.order.push(k); R = o; }
+
+// ---- transforms: a part's bind matrix puts its pivot at `at`, turned by r, sized by s; children keep their bind offset from the parent
+const D2R = Math.PI / 180;
+const bindM = k => { const q = R.parts[k]; return new DOMMatrix().translate(q.at[0], q.at[1]).rotate(q.r).scale(q.s * (q.fx ? -1 : 1), q.s); };
+let POSE = {}, BODY = {x: 0, y: 0};
+function worldM(k, memo) { if (memo[k]) return memo[k]; const q = R.parts[k]; let m;
+  if (q.p && R.parts[q.p] && q.p !== k) { const rel = bindM(q.p).inverse().multiply(bindM(k)); m = worldM(q.p, memo).multiply(rel); }
+  else m = new DOMMatrix().translate(BODY.x, BODY.y).multiply(bindM(k));
+  const a = POSE[k] || 0; if (a) m = m.rotate(a * (q.fx ? -1 : 1));
+  return memo[k] = m; }
+
+// ---- view
+let DPR = 1, W = 0, H = 0, ZOOM = 1, PAN = [0, 0], MODE = 'A', SEL = 'torso', PLAY = '', T0 = 0;
+function view() { const s = Math.min(W / 446, H / 591) * .82 * ZOOM; return new DOMMatrix().translate(W * .42 + PAN[0], H * .52 + PAN[1]).scale(s).translate(-223, -296); }
+function resize() { DPR = Math.min(3, devicePixelRatio || 1); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; }
+addEventListener('resize', resize);
+const S = Math.sin, TAU = Math.PI * 2;
+const MOVES = {
+  idle(t) { const b = S(t * 2.4); return {_y: b * 3, torso: 2, head: -b, ponytail: 6 + S(t * 2.4 - .6) * 4, cape: 4 + S(t * 2.4 - .4) * 3, uarm_f: b * 3, uarm_b: b * 3}; },
+  walk(t) { const p = t / .9 * TAU, s = S(p), c = Math.cos(p); return {_y: -Math.abs(c) * 6, torso: 4, head: -3, ponytail: 12 + S(p * 2) * 4, cape: 10 + S(p * 2 + 1) * 4,
+    uarm_f: 20 * s, uarm_b: -20 * s, farm_f: -10, farm_b: -10, thigh_f: -26 * s, thigh_b: 26 * s, shin_f: 26 * Math.max(0, -s), shin_b: 26 * Math.max(0, s)}; },
+  run(t) { const p = t / .5 * TAU, s = S(p), c = Math.cos(p); return {_y: -Math.abs(c) * 14 + 4, torso: 12, head: -10, ponytail: 36 + S(p * 2) * 8, cape: 28 + S(p * 2 + 1) * 8,
+    uarm_f: 44 * s, uarm_b: -44 * s, farm_f: -30 - 20 * Math.max(0, -s), farm_b: -30 - 20 * Math.max(0, s), thigh_f: -46 * s - 6, thigh_b: 46 * s - 6,
+    shin_f: 10 + 70 * Math.max(0, S(p + .9)), shin_b: 10 + 70 * Math.max(0, -S(p + .9))}; }};
+function draw(now) {
+  if (PLAY) { const m = MOVES[PLAY]((now - T0) / 1000); BODY.y = m._y || 0; POSE = {}; for (const k in m) if (k[0] !== '_') POSE[k] = m[k]; }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#2b3348'; ctx.fillRect(0, 0, W, H);
+  const V = view(); ctx.setTransform(V); ctx.fillStyle = '#3a4560'; ctx.fillRect(-2000, 590, 4446, 600);
+  const ro = +$('#ro').value; if (ro > 0) { ctx.globalAlpha = ro; ctx.drawImage(IMG.full, 0, 0); ctx.globalAlpha = 1; }
+  const memo = {}; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  for (const k of R.order) { const q = R.parts[k], M = V.multiply(worldM(k, memo)); ctx.setTransform(M); ctx.drawImage(IMG[k], -q.pv[0], -q.pv[1]);
+    if (k === SEL && !PLAY) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 3 / q.s / (V.a); ctx.strokeRect(-q.pv[0], -q.pv[1], IMG[k].width, IMG[k].height); } }
+  if (!PLAY) { const q = R.parts[SEL], M = V.multiply(worldM(SEL, memo)), p = M.transformPoint(new DOMPoint(0, 0)); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#ff3a6a'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * DPR; ctx.beginPath(); ctx.arc(p.x, p.y, 9 * DPR, 0, TAU); ctx.fill(); ctx.stroke();
+    if (q.p) { const pp = V.multiply(worldM(q.p, memo)).transformPoint(new DOMPoint(0, 0)); ctx.strokeStyle = '#ff3a6a88'; ctx.setLineDash([6 * DPR, 6 * DPR]); ctx.beginPath(); ctx.moveTo(pp.x, pp.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.setLineDash([]); } }
+  requestAnimationFrame(draw); }
+
+// ---- input: tap a part to pick it; drag it to move (จัดวาง) or turn it (หมุนท่า); drag the red dot to move the turning point
+let DRAG = null;
+function hit(x, y) { const V = view(), memo = {};
+  for (let i = R.order.length - 1; i >= 0; i--) { const k = R.order[i], q = R.parts[k], M = V.multiply(worldM(k, memo)), l = M.inverse().transformPoint(new DOMPoint(x, y)), px = Math.round(l.x + q.pv[0]), py = Math.round(l.y + q.pv[1]), a = ALPHA[k];
+    if (px >= 0 && py >= 0 && px < a.w && py < IMG[k].height && a.d[(py * a.w + px) * 4 + 3] > 40) return k; } return null; }
+cv.addEventListener('pointerdown', e => { const x = e.clientX * DPR, y = e.clientY * DPR, V = view(), memo = {}; cv.setPointerCapture(e.pointerId); PLAY = '';
+  const M = V.multiply(worldM(SEL, memo)), p = M.transformPoint(new DOMPoint(0, 0));
+  if (Math.hypot(x - p.x, y - p.y) < 16 * DPR) { DRAG = {k: 'pivot', x, y}; return; }
+  const k = hit(x, y); if (!k) { DRAG = {k: 'pan', x, y, p0: PAN.slice()}; return; } select(k);
+  const q = R.parts[k], M2 = V.multiply(worldM(k, memo)), c = M2.transformPoint(new DOMPoint(0, 0));
+  DRAG = MODE === 'A' ? {k: 'move', x, y, at0: q.at.slice()} : {k: 'turn', a0: Math.atan2(y - c.y, x - c.x), p0: POSE[k] || 0, c}; });
+cv.addEventListener('pointermove', e => { if (!DRAG) return; const x = e.clientX * DPR, y = e.clientY * DPR, V = view(), sc = V.a;
+  if (DRAG.k === 'pan') { PAN = [DRAG.p0[0] + x - DRAG.x, DRAG.p0[1] + y - DRAG.y]; return; }
+  const q = R.parts[SEL];
+  if (DRAG.k === 'move') { q.at = [DRAG.at0[0] + (x - DRAG.x) / sc, DRAG.at0[1] + (y - DRAG.y) / sc]; }
+  else if (DRAG.k === 'turn') { const a = Math.atan2(y - DRAG.c.y, x - DRAG.c.x); POSE[SEL] = DRAG.p0 + (a - DRAG.a0) / D2R; }
+  else if (DRAG.k === 'pivot') {   // move the turning point inside the part, keep the picture where it is
+    const memo = {}, M = V.multiply(worldM(SEL, memo)), l = M.inverse().transformPoint(new DOMPoint(x, y)), np = [q.pv[0] + l.x, q.pv[1] + l.y];
+    const bw = bindM(SEL).transformPoint(new DOMPoint(np[0] - q.pv[0], np[1] - q.pv[1])); q.pv = [Math.round(np[0]), Math.round(np[1])]; q.at = [bw.x, bw.y]; } });
+const up = () => { if (DRAG && DRAG.k !== 'pan') save(); DRAG = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('wheel', e => { ZOOM *= e.deltaY < 0 ? 1.1 : .9; e.preventDefault(); }, {passive: false});
+
+// ---- panel
+function select(k) { SEL = k; const q = R.parts[k]; $('#sel').textContent = NAMES[k] || k; $('#pick').value = k; $('#sc').value = q.s; $('#vs').textContent = q.s.toFixed(2); $('#rt').value = q.r; $('#vr').textContent = q.r + '°'; $('#par').value = q.p || ''; }
+function boot() {
+  try { const s = localStorage.getItem(KEY); if (s) load(s); else R = fresh(); } catch (e) { R = fresh(); }
+  for (const k of names) { const o = document.createElement('option'); o.value = k; o.textContent = NAMES[k] || k; $('#pick').append(o); }
+  const o0 = document.createElement('option'); o0.value = ''; o0.textContent = '(ไม่มี: ชิ้นหลัก)'; $('#par').append(o0);
+  for (const k of names) { const o = document.createElement('option'); o.value = k; o.textContent = NAMES[k] || k; $('#par').append(o); }
+  $('#pick').onchange = e => select(e.target.value);
+  $('#sc').oninput = e => { R.parts[SEL].s = +e.target.value; $('#vs').textContent = (+e.target.value).toFixed(2); save(); };
+  $('#rt').oninput = e => { R.parts[SEL].r = +e.target.value; $('#vr').textContent = e.target.value + '°'; save(); };
+  $('#par').onchange = e => { const v = e.target.value; let p = v; while (p) { if (p === SEL) { alert('ต่อวนกันไม่ได้'); $('#par').value = R.parts[SEL].p || ''; return; } p = R.parts[p].p; } R.parts[SEL].p = v; save(); };
+  $('#up').onclick = () => { const i = R.order.indexOf(SEL); if (i < R.order.length - 1) { R.order.splice(i, 1); R.order.splice(i + 1, 0, SEL); save(); } };
+  $('#dn').onclick = () => { const i = R.order.indexOf(SEL); if (i > 0) { R.order.splice(i, 1); R.order.splice(i - 1, 0, SEL); save(); } };
+  $('#flip').onclick = () => { R.parts[SEL].fx = !R.parts[SEL].fx; save(); };
+  $('#mA').onclick = () => { MODE = 'A'; POSE = {}; BODY = {x: 0, y: 0}; PLAY = ''; $('#mA').classList.add('on'); $('#mP').classList.remove('on'); hint(); };
+  $('#mP').onclick = () => { MODE = 'P'; $('#mP').classList.add('on'); $('#mA').classList.remove('on'); hint(); };
+  for (const b of document.querySelectorAll('[data-play]')) b.onclick = () => { PLAY = b.dataset.play; T0 = performance.now(); if (!PLAY) { POSE = {}; BODY = {x: 0, y: 0}; } };
+  $('#zin').onclick = () => ZOOM *= 1.2; $('#zout').onclick = () => ZOOM /= 1.2;
+  $('#cp').onclick = () => { const s = JSON.stringify(R); $('#tx').value = s; (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(() => alert('คัดลอกแล้ว: วางในแชตส่งให้ Claude ได้เลย'), () => { $('#tx').select(); alert('กดค้างที่กล่องข้อความแล้วคัดลอกเอง'); }); };
+  $('#dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(R, null, 1)], {type: 'application/json'})); a.download = 'rig_' + CHAR + '.json'; a.click(); };
+  $('#rs').onclick = () => { if (confirm('เริ่มใหม่จากตำแหน่งตั้งต้น?')) { R = fresh(); POSE = {}; save(); select(SEL); } };
+  $('#ld').onclick = () => { try { load($('#tx').value); save(); select(SEL); alert('โหลดแล้ว'); } catch (e) { alert('ข้อมูลไม่ถูกต้อง'); } };
+  $('#tg').onclick = () => $('#pn').classList.toggle('hide');
+  resize(); select('torso'); hint(); requestAnimationFrame(draw); window.RIG = {get R() { return R; }, select, set play(v) { PLAY = v; T0 = performance.now(); }}; }
+function hint() { $('#hint').textContent = MODE === 'A' ? 'จัดวาง: แตะชิ้นเพื่อเลือก · ลากเพื่อย้าย · ลากจุดแดง = จุดหมุน (วางที่ข้อต่อ) · ลากที่ว่าง = เลื่อนจอ · ปรับขนาด / มุม / ชิ้นแม่ / ชั้น ในแถบขวา'
+  : 'หมุนท่า: ลากชิ้นเพื่อหมุนรอบจุดแดง ชิ้นลูกหมุนตาม (ไว้ทดสอบว่าต่อถูก) · กด ยืน / เดิน / วิ่ง เพื่อดูท่า'; }
+</script>
+</body>
+</html>
