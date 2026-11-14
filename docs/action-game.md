@@ -1468,3 +1468,4 @@ death puffs, landing dust, coin drops with magnet, level-up burst. HUD drawn at 
 (portrait, Lv, HP, EXP %, coins), boss bar, damage numbers; pixel-framed buttons (◀ ▶ ▲, ⚔, ⤒, 💥, 🔊). Synth sounds (swing, hit, crit,
 coin, level, hurt, jump, slam, chest, warning) + a soft looping tune. Save (`hoodfall1`): level, EXP, coins, HP. `?new=1` fresh, `?play=1` skips the title.
 Checks: headless title + play + 4-minute bot run (Lv 4, 280+ coins), boss area, no errors. Shots `art/incoming/hood/hoodfall_*.png`.
+- Owner 2026-11-14: "ไม่ทำพิกเซลแล้ว ทำเป็น 2D สวยๆ" (painted 2D from now on for the side game), hero not chosen yet, the fighting should feel at least as good as the rabbit's. Step 1: a GPT line-up of 6 painted chibi heroes to choose from: `art/incoming/painted/PROMPT_GPT_hero_lineup.txt`. Game code (`hoodfall.html`) stays: painted sprites drop in (smooth scaling instead of whole-number pixels, no colour punch).
