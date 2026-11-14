@@ -98,3 +98,12 @@ First build step (free): a small village on map 1 with 6 villagers of different 
 3. LATER: online with many players. Not possible on GitHub Pages alone (static files): needs a game server or a hosted realtime service.
    Prepare now, for free: every tribe (player or bot) is the same kind of "seat" that only sends ORDERS (priorities, build, attack),
    the simulation never reads the screen; later a human seat over the network replaces a bot seat.
+
+## Core rule (owner 2026-11-14) — this overrides the "rival tribes raid you" idea above
+"เล่น 5 คนพร้อมกันได้ แต่ตอนทดลองเล่นคนเดียวก่อน ให้มีเวฟมาเลย เน้นต่อให้เล่นหลายคนก็เน้นมอนศัตรูที่มาโจมตี ใครแตกก่อนแพ้":
+- Up to 5 tribes on one map (later online players; now 1 player + bot tribes, or the player alone for tests).
+- The enemy is the MONSTER WAVES, coming from the very start and growing. Tribes do not mainly fight each other: it is a survival race.
+- The tribe whose heart fire goes out is OUT; the last tribe standing wins (solo test: survive as many waves as possible, score = waves).
+- So every tribe gets the same waves at the same time; land, villagers and buildings are how you outlast the others.
+First playable (free): solo, map 1, a heart fire, 6 villagers with STR / AGI / INT, gather wood / food, build stake fences + a spear lookout,
+waves of wolves / boars from the first minute, game over when the fire dies, wave counter as the score.
