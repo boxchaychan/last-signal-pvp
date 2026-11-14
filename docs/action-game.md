@@ -1442,3 +1442,4 @@ Theme after the owner's references: an animal HOOD shows the animal, body inside
 
 ## Fort game plan (owner 2026-11-14, genre of Thronefall: build by day, defend by night)
 Plan only, nothing built: `docs/fort-design.md` (loop, 3 existing maps, 8 buildings x 3 levels, hero, monsters, phone controls, art + credit estimate ~50-100, build order starting with a FREE prototype on map 1).
+- Fort plan turned into a long stone-age TRIBE MANAGEMENT game (owner: management over fighting, smart NPCs with stats, endless land expansion, rival tribes playing by the same rules): draft + open decisions at the end of `docs/fort-design.md`.
