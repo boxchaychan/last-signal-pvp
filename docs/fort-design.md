@@ -107,3 +107,12 @@ First build step (free): a small village on map 1 with 6 villagers of different 
 - So every tribe gets the same waves at the same time; land, villagers and buildings are how you outlast the others.
 First playable (free): solo, map 1, a heart fire, 6 villagers with STR / AGI / INT, gather wood / food, build stake fences + a spear lookout,
 waves of wolves / boars from the first minute, game over when the fire dies, wave counter as the score.
+
+## Answers (owner 2026-11-14)
+1. CHAMPION: not controlled, only ORDERED (go defend / clear a spot). Stronger than villagers, has skills and LEVELS. Dies = gone for good.
+2. VILLAGERS die for good; new ones are BORN in the village as CHILDREN (grow up into workers; Claude's idea: stats partly from the parents).
+   Badly hurt villagers may FLEE: INT decides when they retreat in time; STR (strength / toughness) decides whether they hold out
+   (bleeding) until they reach home, where they heal.
+3-7 not answered -> Claude's suggestions stand: expand by planting TOTEM poles (a ring of land each); 20-30 min a match, solo save;
+   tribes only race to survive (no trading / sabotage at first); top-down pixel, units ~32-48 px, punch recipe, map-1 look;
+   light unlocks after a match (new tribes with their own strengths, e.g. wolf tribe fights better, rabbit tribe gathers faster).
