@@ -38,6 +38,9 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Per champion: GPT big-pixel 3-view sheet (free) → PixelLab redraw B at body 128 (1 credit; say the cost, the owner's "เทส" / "เจน" is the go-ahead) → for the bag game only the SIDE view is used, so clips are ordered east only: character 4 + idle 1 + attack combo 4 + hurt 1 + death 1 ≈ 12 credits, only on "เจน".
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
+## NEWEST (owner 2026-11-14 night): stone-age tribe game `tribe.html`
+- Idle village + stage waves at our own village; villagers with STR / AGI / INT / VIT decide themselves; champion only ordered. Plan + every owner decision: `docs/fort-design.md` (read the LAST sections: v3, answers). First playable built with 27 of the 100 credits the owner gave; notes at the end of `docs/action-game.md`. Start here when the owner says "เกมเผ่า".
+
 ## NEWEST (owner 2026-11-14): side-view MapleStory-style grinder ("จะไปทำแบบเมเปิ้ลด้านข้าง")
 - The game page is `side.html` (started 2026-11-14 with the PixelLab-pro pixel dagger girl, run + jump on platforms); in the end the owner chose detailed chibi pixel art for it (see the last section of `docs/action-game.md`).
 - Hooded rabbit hero (2026-11-14) in `side.html?hero=rabbit`: run (PixelLab, 1 credit) + 3-hit combo from the owner's GPT sheets. RULE (owner): attacks are ordered ONE SHEET PER HIT (12 frames, 4 x 3, flat blue, ground line in each cell; prompt `art/incoming/hood/PROMPT_GPT_move_sheet.txt`), cut with `tools/art/hood_attack_cut.py` + `hood_attack_join.py`. Owner sends sheets pasted inline: ask for them as attached files.
