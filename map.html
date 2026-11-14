@@ -130,14 +130,15 @@ const TONE = /[?&]tone=0/.test(location.search) ? {} : {
   td1: {ds: .12, mul: [1.03, 1.0, .86], sh: [30, 42, 18], sa: .38},          // warm sun on green grass
   td2: {ds: .08, mul: [1.03, .96, .86], sh: [44, 24, 12], sa: .34},           // autumn orange
   td3: {ds: .25, mul: [.85, .92, 1.02], sh: [16, 24, 40], sa: .42}};           // cold graveyard night
-function toneImg(src, t) {
+function toneImg(src, t, keep) {   // keep: strongly coloured pixels (the heroes' capes / cloaks) keep their own colour
   if (!t || !src || !src.width) return src; const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.drawImage(src, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
-  for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; let r = a[i], gg = a[i + 1], b = a[i + 2]; const l = .3 * r + .59 * gg + .11 * b, dk = Math.max(0, 1 - l / 150) * t.sa;
+  for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; let r = a[i], gg = a[i + 1], b = a[i + 2]; const l = .3 * r + .59 * gg + .11 * b, dk = Math.max(0, 1 - l / 150) * t.sa, r0 = r, g0 = gg, b0 = b;
+    const mx = Math.max(r, gg, b), kw = keep && mx > 40 ? Math.min(1, Math.max(0, ((mx - Math.min(r, gg, b)) / mx - .35) / .2)) : 0;
     r += (l - r) * t.ds; gg += (l - gg) * t.ds; b += (l - b) * t.ds; r *= t.mul[0]; gg *= t.mul[1]; b *= t.mul[2];
-    a[i] = r + (t.sh[0] - r) * dk; a[i + 1] = gg + (t.sh[1] - gg) * dk; a[i + 2] = b + (t.sh[2] - b) * dk; }
+    r += (t.sh[0] - r) * dk; gg += (t.sh[1] - gg) * dk; b += (t.sh[2] - b) * dk; a[i] = r + (r0 - r) * kw; a[i + 1] = gg + (g0 - gg) * kw; a[i + 2] = b + (b0 - b) * kw; }
   g.putImageData(d, 0, 0); return c; }
-function toneHero() { if (!CHB) return; const t = TONE[MAPID]; if (CHB.im0) CHB.im = toneImg(CHB.im0, t); if (CHB.run0) CHB.run = toneImg(CHB.run0, t); }
+function toneHero() { if (!CHB) return; const t = TONE[MAPID]; if (CHB.im0) CHB.im = toneImg(CHB.im0, t, 1); if (CHB.run0) CHB.run = toneImg(CHB.run0, t, 1); }
 async function loadMap(id, from) {                   // everything of one map is loaded first, then swapped in at once
   const D = MAPS[id].dir, m = await fetch(D + 'map.json', {cache: 'no-cache'}).then(r => r.json());
   let gr, pr, blk, bw, bh; const mb = {}, mbw = {};
