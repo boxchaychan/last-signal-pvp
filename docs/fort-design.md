@@ -87,3 +87,5 @@ high = scores every open job by need x distance x danger, drops off at the neare
 Stats grow with work (chopping raises STR) and with age; traits (lazy, brave, glutton...) bend them. Because AGI and INT only show when you
 WATCH villagers move, time runs in real time with pause and x2 / x3 speed (the player sets priorities, villagers decide themselves,
 so the phone stays calm). Supersedes the turn-based suggestion.
+DECIDED (owner 2026-11-14 "ใช้แบบ A"): REAL TIME (pause + x2 / x3 speed). Still open: session length / saves, how to win.
+First build step (free): a small village on map 1 with 6 villagers of different STR / AGI / INT who gather wood and food on their own, to see that smart and dull villagers really work differently.
