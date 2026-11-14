@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>เกมด้านข้าง · ทดสอบ</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #10141f; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  .pad { position: fixed; bottom: 18px; width: 74px; height: 74px; border-radius: 50%; border: 3px solid #ffffffaa; background: #ffffff22; color: #fff; font: 800 28px system-ui; display: grid; place-items: center; }
+  #bl { left: 18px; } #br { left: 104px; } #bj { right: 22px; width: 88px; height: 88px; background: #5ad06a44; }
+  #hint { position: fixed; left: 12px; top: 10px; color: #fff; font: 700 13px system-ui, sans-serif; text-shadow: 0 1px 3px #000; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="pad" id="bl">◀</div><div class="pad" id="br">▶</div><div class="pad" id="bj">⤒</div>
+<div id="hint">เดิน: A/D หรือ ◀ ▶ · กระโดด: Space / W / ⤒ (กดสองครั้ง = กระโดดสองชั้น)</div>
+<script>
+'use strict';
+// Side-view platformer test (owner 2026-11-14: "จะไปทำแบบเมเปิ้ลด้านข้าง", "สไตล์เมเปิ้ลนะ ไม่ใช้อันเก่า").
+// Hero = the pro pixel dagger girl (art/incoming/side2d/pro/), her PixelLab run (8 frames, art/sidegame/dagger_run.png: cell 0 = stance,
+// 1 = first step, 2-8 = the loop). Ground, platforms, background and tree = the side-view tests of 2026-11-11 (art/side/map30/).
+// Everything is drawn in world pixels on a small canvas, then blown up by a whole number K so pixels stay square.
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const img = s => { const i = new Image(); i.src = s; return i; };
+const RUN = img('art/sidegame/dagger_run.png'), BG = img('art/side/map30/bg.png'), TILES = img('art/side/map30/tiles_wang.png'), TREE = img('art/side/map30/tree.png');
+const T = 32, FEET = [76, 127];                    // run cells are 132 x 132, feet at x 76, y 127
+// the world: platforms [x, y, width in tiles, rows]; the first is the ground. One-way: you land on top, jump up through them.
+const WORLD_W = 2400, GROUND = 600;
+const PLAT = [[-64, GROUND, 80, 4], [260, GROUND - 150, 6, 2], [560, GROUND - 280, 5, 2], [900, GROUND - 170, 7, 2], [1260, GROUND - 320, 6, 2], [1640, GROUND - 200, 6, 2], [1980, GROUND - 330, 5, 2]];
+const P = {x: 120, y: GROUND, vx: 0, vy: 0, face: 1, ground: true, jumps: 0, t: 0, run: 0};
+const keys = {}, touch = {l: 0, r: 0};
+let K = 2, VW = 0, VH = 0, cam = {x: 0, y: 0}, DPR = 1, view = null;
+// the view is about 400 world px tall, so the hero (~110 px) is a quarter of the screen
+function resize() { DPR = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * DPR; cv.height = innerHeight * DPR; K = Math.max(1, Math.round(cv.height / 400)); VW = Math.ceil(cv.width / K); VH = Math.ceil(cv.height / K);
+  view = document.createElement('canvas'); view.width = VW; view.height = VH; }
+addEventListener('resize', resize); resize();
+addEventListener('keydown', e => { keys[e.code] = 1; if ((e.code === 'Space' || e.code === 'KeyW' || e.code === 'ArrowUp') && !e.repeat) jump(); });
+addEventListener('keyup', e => { keys[e.code] = 0; });
+const hold = (id, k) => { const el = document.getElementById(id); el.addEventListener('pointerdown', e => { touch[k] = 1; el.setPointerCapture(e.pointerId); e.preventDefault(); }); const up = () => touch[k] = 0; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); };
+hold('bl', 'l'); hold('br', 'r'); document.getElementById('bj').addEventListener('pointerdown', e => { jump(); e.preventDefault(); });
+function jump() { if (P.ground || P.jumps < 2) { P.vy = P.ground ? -560 : -480; P.ground = false; P.jumps++; } }
+function step(dt) {
+  const dir = (keys.KeyD || keys.ArrowRight || touch.r ? 1 : 0) - (keys.KeyA || keys.ArrowLeft || touch.l ? 1 : 0), MAX = 230;
+  P.vx += (dir * MAX - P.vx) * Math.min(1, dt * (P.ground ? 14 : 6)); if (dir) P.face = dir;
+  P.vy = Math.min(900, P.vy + 1500 * dt); const oy = P.y; P.x = Math.max(20, Math.min(WORLD_W - 20, P.x + P.vx * dt)); P.y += P.vy * dt; P.ground = false;
+  if (P.vy >= 0) for (const [px, py, n] of PLAT) if (P.x > px + 4 && P.x < px + n * T - 4 && oy <= py + 1 && P.y >= py) { P.y = py; P.vy = 0; P.ground = true; P.jumps = 0; }
+  P.run = P.ground && Math.abs(P.vx) > 30 ? P.run + dt : 0; P.t += dt;
+  const tx = P.x - VW / 2, ty = P.y - VH * .62; cam.x += (tx - cam.x) * Math.min(1, dt * 6); cam.y += (ty - cam.y) * Math.min(1, dt * 4);
+  cam.x = Math.max(0, Math.min(WORLD_W - VW, cam.x)); cam.y = Math.min(GROUND + 4 * T - VH, cam.y); }
+function tile(g, c, r, x, y) { g.drawImage(TILES, c * T, r * T, T, T, x, y, T, T); }
+function platform(g, x, y, n, rows) { for (let r = 0; r < rows; r++) for (let c = 0; c < n; c++) {
+  const tc = c === 0 ? 0 : c === n - 1 ? 2 : 1, tr = r === 0 ? 0 : r === rows - 1 ? 2 : 1; if (tr === 1 && tc === 1 && (c + r) % 3 === 0) tile(g, 0, 3, x + c * T, y + r * T); else tile(g, tc, tr, x + c * T, y + r * T); } }
+function draw() {
+  const g = view.getContext('2d'); g.imageSmoothingEnabled = false;
+  const sky = g.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, '#3a78c8'); sky.addColorStop(1, '#8cc4f0'); g.fillStyle = sky; g.fillRect(0, 0, VW, VH);
+  if (BG.width) { const s = Math.max(2, Math.ceil(VH * .9 / BG.height)), bw = BG.width * s, by = GROUND - cam.y - BG.height * s + 40, off = -((cam.x * .35) % bw);   // the far landscape, slower than the ground
+    for (let x = off - bw, i = 0; x < VW; x += bw, i++) { g.save(); if (i & 1) { g.translate(x + bw, 0); g.scale(-1, 1); g.drawImage(BG, 0, by, bw, BG.height * s); } else g.drawImage(BG, x, by, bw, BG.height * s); g.restore(); } }
+  g.save(); g.translate(-Math.round(cam.x), -Math.round(cam.y));
+  if (TREE.width) g.drawImage(TREE, 1100, GROUND - TREE.height + 14);
+  for (const [x, y, n, r] of PLAT) platform(g, x, y, n, r);
+  // the hero: stance when still, first step then the loop when running, a stride frame in the air
+  let c = 0; if (!P.ground) c = P.vy < 0 ? 3 : 6; else if (P.run > 0) { const f = P.run * 14 | 0; c = f < 1 ? 1 : 2 + (f - 1) % 7; }
+  const bob = !c && Math.sin(P.t * 3) > .6 ? 1 : 0, hx = Math.round(P.x), hy = Math.round(P.y);
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(hx, (P.ground ? hy : hy + 0) + 1, 22, 5, 0, 0, 7); g.fill();
+  if (RUN.width) { g.save(); g.translate(hx, hy + bob); g.scale(P.face, 1); g.drawImage(RUN, c * 132, 0, 132, 132, -FEET[0], -FEET[1], 132, 132); g.restore(); }
+  g.restore();
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(view, 0, 0, VW * K, VH * K); }
+let last = 0; function frame(now) { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; step(dt); draw(); requestAnimationFrame(frame); }
+requestAnimationFrame(frame); window.GM = {P, step, draw, jump, keys};
+setTimeout(() => document.getElementById('hint').style.opacity = 0, 7000);
+</script>
+</body>
+</html>
