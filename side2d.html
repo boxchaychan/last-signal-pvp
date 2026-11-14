@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ทดสอบท่า · ภาพวาด 2D</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1b2233; touch-action: none; user-select: none; -webkit-user-select: none; font: 600 14px system-ui, sans-serif; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #ui { position: fixed; left: 8px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  #ui button { height: 38px; padding: 0 14px; border: 0; border-radius: 10px; background: #3a4766; color: #fff; font: 700 14px system-ui; box-shadow: 0 3px 0 #1c2438; }
+  #ui button.on { background: #7a4ad8; box-shadow: 0 3px 0 #3c1f7a; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ui"></div>
+<script>
+'use strict';
+// Painted 2D side-view test (owner 2026-11-14: "ไม่เอาพิกเซล" + "เอาวิ่งก่อนเลย"): the chibi dagger girl from a GPT parts sheet
+// (art/side2d/dagger/, cut by tools/art/side2d_cut.py), put together on bones and moved by code at the screen's frame rate.
+// Each part: the picture, its pivot (the joint it turns about, in the part's own pixels) and where its child joints sit.
+// Angles in degrees, positive = clockwise on screen; the character faces right. `?ref=1` shows the GPT reference next to her.
+const QS = new URLSearchParams(location.search), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const PART = {
+  torso:   {pv: [76, 214]},
+  head:    {pv: [152, 236]},
+  ponytail:{pv: [168, 40]},
+  cape:    {pv: [232, 48]},
+  uarm_f:  {pv: [60, 30]},  uarm_b: {pv: [56, 30]},
+  farm_f:  {pv: [34, 50]},  farm_b: {pv: [34, 50]},
+  thigh_f: {pv: [52, 26]},  thigh_b: {pv: [50, 26]},
+  shin_f:  {pv: [56, 28]},  shin_b: {pv: [58, 28]},
+  dagger_1:{pv: [52, 44]},  dagger_2: {pv: [52, 44]}};
+const J = {                        // child joints in the parent part's pixels
+  neck: [80, 18], shoulder_f: [84, 58], shoulder_b: [64, 58], hip_f: [86, 200], hip_b: [64, 200], cape: [60, 22],
+  ponytail: [62, 46], elbow: [56, 130], hand: [168, 62], knee: [52, 148]};
+const IMG = {}; let ready = 0;
+for (const k of Object.keys(PART).concat(['full'])) { const i = new Image(); i.onload = () => { if (++ready === Object.keys(PART).length + 1) start(); }; i.src = 'art/side2d/dagger/' + k + '.png'; IMG[k] = i; }
+
+// ---- moves: each returns the angles (and the body offset) for a time t in seconds
+const S = Math.sin, TAU = Math.PI * 2;
+const MOVES = {
+  idle(t) { const b = S(t * 2.4); return {y: b * 3, lean: 2, head: -b, tail: 6 + S(t * 2.4 - .6) * 4, cape: 4 + S(t * 2.4 - .4) * 3,
+    uf: -4 + b * 2, ub: 6 + b * 2, ff: -6, fb: -10, df: -8, db: -12, tf: -6, tb: 6, sf: 4, sb: 4}; },
+  walk(t) { const p = t / .9 * TAU, s = S(p), c = Math.cos(p); return {y: -Math.abs(c) * 6, lean: 4, head: -2, tail: 12 + S(p * 2) * 4, cape: 10 + S(p * 2 + 1) * 4,
+    uf: 18 * s, ub: -18 * s, ff: -14, fb: -14, df: -10, db: -10, tf: -24 * s, tb: 24 * s, sf: 8 + 26 * Math.max(0, -s), sb: 8 + 26 * Math.max(0, s)}; },
+  run(t) { const p = t / .5 * TAU, s = S(p), c = Math.cos(p);   // one stride = 0.5 s; knees fold on the leg that swings back up
+    return {y: -Math.abs(c) * 16 + 6, lean: 14, head: -8, tail: 38 + S(p * 2) * 8, cape: 30 + S(p * 2 + 1) * 8, capeX: 1.08,
+      uf: 42 * s, ub: -42 * s, ff: -36 - 18 * Math.max(0, -s), fb: -36 - 18 * Math.max(0, s), df: 18, db: 18,
+      tf: -46 * s + 8, tb: 46 * s + 8, sf: 18 + 70 * Math.max(0, S(p + .9)), sb: 18 + 70 * Math.max(0, -S(p + .9))}; }};
+
+// ---- drawing: a small transform stack over the parts, back to front
+function part(k, ang, fn) { ctx.save(); ctx.rotate(ang * Math.PI / 180); const pv = PART[k].pv; ctx.drawImage(IMG[k], -pv[0], -pv[1]); if (fn) fn(pv); ctx.restore(); }
+function at(pv, j, fn) { ctx.save(); ctx.translate(J[j][0] - pv[0], J[j][1] - pv[1]); fn(); ctx.restore(); }
+function drawGirl(x, y, sc, m) {
+  ctx.save(); ctx.translate(x, y + m.y * sc); ctx.scale(sc, sc);
+  const arm = (side, ua, fa, da) => part('uarm_' + side, ua, pv => at(pv, 'elbow', () => part('farm_' + side, fa, pv2 => at(pv2, 'hand', () => part(side === 'f' ? 'dagger_1' : 'dagger_2', da)))));
+  const leg = (side, ta, sa) => part('thigh_' + side, ta, pv => at(pv, 'knee', () => part('shin_' + side, sa)));
+  ctx.save(); ctx.rotate(m.lean * Math.PI / 180); const tp = PART.torso.pv;   // the hip is the root: legs hang from it, the torso leans over it
+  ctx.save(); ctx.translate(J.shoulder_b[0] - tp[0], J.shoulder_b[1] - tp[1]); arm('b', m.ub, m.fb, m.db); ctx.restore();
+  ctx.restore();
+  ctx.save(); ctx.translate(J.hip_b[0] - tp[0], J.hip_b[1] - tp[1]); leg('b', m.tb, m.sb); ctx.restore();
+  ctx.save(); ctx.rotate(m.lean * Math.PI / 180);
+  ctx.save(); ctx.translate(J.cape[0] - tp[0], J.cape[1] - tp[1]); ctx.rotate(m.cape * Math.PI / 180); ctx.scale(m.capeX || 1, 1); const cp = PART.cape.pv; ctx.drawImage(IMG.cape, -cp[0], -cp[1]); ctx.restore();
+  ctx.restore();
+  ctx.save(); ctx.translate(J.hip_f[0] - tp[0], J.hip_f[1] - tp[1]); leg('f', m.tf, m.sf); ctx.restore();
+  ctx.save(); ctx.rotate(m.lean * Math.PI / 180);
+  ctx.drawImage(IMG.torso, -tp[0], -tp[1]);
+  ctx.save(); ctx.translate(J.neck[0] - tp[0], J.neck[1] - tp[1]); ctx.rotate(m.head * Math.PI / 180); const hp = PART.head.pv;
+    ctx.save(); ctx.translate(J.ponytail[0] - hp[0], J.ponytail[1] - hp[1]); part('ponytail', m.tail); ctx.restore();
+    ctx.drawImage(IMG.head, -hp[0], -hp[1]); ctx.restore();
+  ctx.save(); ctx.translate(J.shoulder_f[0] - tp[0], J.shoulder_f[1] - tp[1]); arm('f', m.uf, m.ff, m.df); ctx.restore();
+  ctx.restore(); ctx.restore(); }
+
+// ---- the test page: a ground line, buttons, the move playing
+let MOVE = QS.get('move') || 'run', W = 0, H = 0, DPR = 1, t0 = 0, scroll = 0;
+const ui = document.getElementById('ui');
+for (const [k, n] of [['idle', 'ยืน'], ['walk', 'เดิน'], ['run', 'วิ่ง']]) { const b = document.createElement('button'); b.textContent = n; b.dataset.k = k; b.onclick = () => { MOVE = k; t0 = performance.now(); for (const x of ui.children) x.classList.toggle('on', x.dataset.k === MOVE); }; ui.append(b); }
+for (const x of ui.children) x.classList.toggle('on', x.dataset.k === MOVE);
+function resize() { DPR = Math.min(3, devicePixelRatio || 1); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; }
+addEventListener('resize', resize);
+function frame(now) {
+  const t = (now - t0) / 1000, gy = H * .8, sc = H * .55 / 591;
+  const sk = ctx.createLinearGradient(0, 0, 0, gy); sk.addColorStop(0, '#7fb6ff'); sk.addColorStop(1, '#cfe6ff'); ctx.fillStyle = sk; ctx.fillRect(0, 0, W, gy);
+  const speed = MOVE === 'run' ? 900 : MOVE === 'walk' ? 260 : 0; scroll += speed * sc * (frame.dt || 0);
+  ctx.fillStyle = '#5aa04a'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#3f7a34'; ctx.fillRect(0, gy, W, 10 * DPR);
+  ctx.fillStyle = '#48882f'; for (let i = -1; i < W / (120 * DPR) + 2; i++) { const x = ((i * 120 * DPR - scroll) % (W + 240 * DPR) + W + 240 * DPR) % (W + 240 * DPR) - 120 * DPR; ctx.fillRect(x, gy + 30 * DPR, 50 * DPR, 8 * DPR); }
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(W * .42, gy + 4, 70 * sc * 2.2, 16 * sc * 2.2, 0, 0, TAU); ctx.fill();
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  drawGirl(W * .42, gy - LEG * sc, sc, MOVES[MOVE](t));
+  if (QS.get('ref')) { const r = IMG.full, s2 = sc; ctx.drawImage(r, W * .78 - r.width * s2 / 2, gy - r.height * s2, r.width * s2, r.height * s2); }
+  frame.dt = Math.min(.05, (now - (frame.l || now)) / 1000); frame.l = now; if (!window.HOLD) requestAnimationFrame(frame); }
+let LEG = 0;
+function start() { LEG = (J.knee[1] - PART.thigh_f.pv[1]) + (IMG.shin_f.height - PART.shin_f.pv[1]) + (PART.torso.pv[1] - J.hip_f[1]); resize(); t0 = performance.now(); requestAnimationFrame(frame); window.GM = {ready: 1, frame, set move(v) { MOVE = v; }}; }
+</script>
+</body>
+</html>
