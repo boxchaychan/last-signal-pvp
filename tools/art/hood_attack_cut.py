@@ -19,11 +19,15 @@ SHEETS['v3'] = ('art/incoming/hood/attack/sheet3_raw.webp', 'art/sidegame/rabbit
 SHEETS['v4'] = ('art/incoming/hood/attack/sheet4_raw.webp', 'art/sidegame/rabbit_attack4.png', [(r * 256, r * 256 + 256) for r in range(4)],
          [[(c * 384, c * 384 + 384) for c in range(4)] for r in range(4)], True)
 GROUND4 = [233, 473, 736, 989]
+# v5 (owner "แทรกเฟรมมาเพิ่ม"): the same combo redrawn with in-between frames, 24 frames on blue, 6 x 4 grid of 256 x 256
+SHEETS['v5'] = ('art/incoming/hood/attack/sheet5_raw.webp', 'art/sidegame/rabbit_attack5.png', [(r * 256, r * 256 + 256) for r in range(4)],
+         [[(c * 256, c * 256 + 256) for c in range(6)] for r in range(4)], True)
+if V == 'v5': GROUND4 = [213, 460, 720, 973]
 SRC, OUT, ROWS, CELLS, BY_EYES = SHEETS[V]
 A = np.asarray(Image.open(SRC).convert('RGBA')).astype(float)
-if V == 'v4':   # key out the blue: strongly blue pixels -> transparent
+if V in ('v4', 'v5'):   # key out the blue: strongly blue pixels -> transparent
     r_, g_, b_ = A[..., 0], A[..., 1], A[..., 2]; A[..., 3] = np.where((b_ > 120) & (b_ - r_ > 70) & (b_ - g_ > 40), 0, 255)
-P = {'v3': 207 / 75, 'v4': 184 / 75}.get(V, 315 / 75)   # the idle frame's height over our sprite's 75 px
+P = {'v3': 207 / 75, 'v4': 184 / 75, 'v5': 164 / 75}.get(V, 315 / 75)   # the idle frame's height over our sprite's 75 px
 def snap(c):
     H, W = c.shape[:2]; best = None
     for oy in np.arange(0, P, P / 6):
@@ -48,12 +52,12 @@ frames = []
 for r, (y0, y1) in enumerate(ROWS):
     for (x0, x1) in CELLS[r]:
         o = snap(A[y0:y1, x0:x1]); fx, fy = feet(o)
-        if V == 'v4':   # floor = the drawn ground line; then wipe that line (dark pixels with nothing above them, on the line rows)
+        if V in ('v4', 'v5'):   # floor = the drawn ground line; then wipe that line (dark pixels with nothing above them, on the line rows)
             fy = int(round((GROUND4[r] - y0 - snap.oy - P / 2) / P))
             for yy in range(max(0, fy - 2), min(o.shape[0], fy + 2)):
                 for xx in range(o.shape[1]):
                     if o[yy, xx, 3] and o[yy, xx, :3].max() < 70 and (yy == 0 or not o[yy - 1, xx, 3]): o[yy, xx, 3] = 0
-        if V == 'v4':   # the artist kept one grid and moved the rabbit inside it (lunges, jumps): keep every frame where it sits in its cell
+        if V in ('v4', 'v5'):   # the artist kept one grid and moved the rabbit inside it (lunges, jumps): keep every frame where it sits in its cell
             if not frames: FX0 = fx if not eyes(o) else eyes(o)[0] - (eyes(run0)[0] - RX)
             fx = FX0 + (0 if not frames else 0)
         elif BY_EYES:   # keep the feet row, but put the eyes where the run's stance has them (x only: the head may dip in a swing)
