@@ -38,6 +38,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
 ## NEWEST (owner 2026-11-14): side-view MapleStory-style grinder ("จะไปทำแบบเมเปิ้ลด้านข้าง")
+- The game page is `side.html` (started 2026-11-14 with the PixelLab-pro pixel dagger girl, run + jump on platforms); in the end the owner chose detailed chibi pixel art for it (see the last section of `docs/action-game.md`).
 - Start here when the owner says "เกมด้านข้าง": plan, the art that already fits (both heroes' side clips, 42 side-view monsters, side tiles / background / props in `art/side/`) and what is missing are in the last section of `docs/action-game.md`. Owner: "ไม่เอาพิกเซล": painted / smooth 2D, NOT pixel art, so PixelLab is not the tool for it (GPT / Meta AI make the art, Claude cuts and codes). Genre only: no names, art or maps copied from MapleStory. `map.html` (top-down) stays as it is.
 
 ## Level-grinding game again (owner 2026-11-13 night: "เกมเก็บเลเวลดีกว่า")
