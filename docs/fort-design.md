@@ -123,3 +123,7 @@ waves of wolves / boars from the first minute, game over when the fire dies, wav
    Villagers still die for good.
 3b (owner): building can spread anywhere, no limit, no totems. The only limit is the monsters: they go for whatever is outside the
    defended area, so a tribe that grows wider than it can guard loses huts and people. Monster AI should prefer the weakest, most exposed spot.
+4 (owner): a match lasts 15-20 min, up to ~30, as long as the tribes hold: waves keep getting stronger so a match always ends.
+5 (owner, replaces "race only"): "ยังไงก็ต้องก่อกวนกันอยู่แล้ว" = tribes DO harass each other. Draft ways (to agree later):
+   lure / drive a wave toward a neighbour, small raids that steal stored food / wood, the champion ambushing a neighbour's gatherers.
+   Monster waves stay the main threat.
