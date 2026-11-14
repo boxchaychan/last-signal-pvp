@@ -89,3 +89,12 @@ WATCH villagers move, time runs in real time with pause and x2 / x3 speed (the p
 so the phone stays calm). Supersedes the turn-based suggestion.
 DECIDED (owner 2026-11-14 "ใช้แบบ A"): REAL TIME (pause + x2 / x3 speed). Still open: session length / saves, how to win.
 First build step (free): a small village on map 1 with 6 villagers of different STR / AGI / INT who gather wood and food on their own, to see that smart and dull villagers really work differently.
+
+## Priorities (owner 2026-11-14)
+"ต่อไปจะมีผู้เล่นเยอะเวลาเล่นออนไลน์ แต่พอยต์คือมีศัตรูที่เป็นบอทอยู่แล้ว ยังไงก็ต้องเน้นสู้เอาตัวรอดก่อน":
+1. FIRST: SURVIVAL + FIGHTING. Threats from day one (beasts at night, raids by the bot tribes, winter); gathering / building exists to survive and fight.
+   Villagers also fight (STR = damage, AGI = dodge / flee, INT = when to retreat, group up, hide in huts); the champion leads.
+2. Bot tribes play by the same rules as the player.
+3. LATER: online with many players. Not possible on GitHub Pages alone (static files): needs a game server or a hosted realtime service.
+   Prepare now, for free: every tribe (player or bot) is the same kind of "seat" that only sends ORDERS (priorities, build, attack),
+   the simulation never reads the screen; later a human seat over the network replaces a bot seat.
