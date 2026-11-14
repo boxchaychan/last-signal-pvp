@@ -14,9 +14,16 @@ SHEETS = {
 SHEETS['v3'] = ('art/incoming/hood/attack/sheet3_raw.webp', 'art/sidegame/rabbit_attack3.png', [(10, 250), (262, 510), (520, 765), (795, 1020)],
          [[(99, 267), (471, 696), (848, 1097), (1230, 1494)], [(81, 353), (468, 739), (852, 1137), (1232, 1518)],
           [(80, 359), (469, 740), (841, 1121), (1223, 1492)], [(69, 323), (455, 682), (853, 1037), (1241, 1420)]], True)   # 16 in-between frames, owner 2026-11-14
+# v4 (owner 2026-11-14 "อันนี้จะโอเคกว่า"): 16 frames on a flat BLUE background, 4 x 4 grid of 384 x 256, jumps and a ground slam;
+# every cell has a thin dark ground line (row y in GROUND4), used as the floor so jumps keep their height; the line itself is removed.
+SHEETS['v4'] = ('art/incoming/hood/attack/sheet4_raw.webp', 'art/sidegame/rabbit_attack4.png', [(r * 256, r * 256 + 256) for r in range(4)],
+         [[(c * 384, c * 384 + 384) for c in range(4)] for r in range(4)], True)
+GROUND4 = [233, 473, 736, 989]
 SRC, OUT, ROWS, CELLS, BY_EYES = SHEETS[V]
 A = np.asarray(Image.open(SRC).convert('RGBA')).astype(float)
-P = {'v3': 207 / 75}.get(V, 315 / 75)   # the idle frame's height over our sprite's 75 px
+if V == 'v4':   # key out the blue: strongly blue pixels -> transparent
+    r_, g_, b_ = A[..., 0], A[..., 1], A[..., 2]; A[..., 3] = np.where((b_ > 120) & (b_ - r_ > 70) & (b_ - g_ > 40), 0, 255)
+P = {'v3': 207 / 75, 'v4': 184 / 75}.get(V, 315 / 75)   # the idle frame's height over our sprite's 75 px
 def snap(c):
     H, W = c.shape[:2]; best = None
     for oy in np.arange(0, P, P / 6):
@@ -26,8 +33,8 @@ def snap(c):
             for dy, dx in ((-P * .3, 0), (P * .3, 0), (0, -P * .3), (0, P * .3)):
                 a = c[np.clip((Y + dy).round().astype(int), 0, H - 1), np.clip((X + dx).round().astype(int), 0, W - 1)]
                 b = c[Y.round().astype(int), X.round().astype(int)]; cost += np.abs(a - b).sum()
-            if best is None or cost < best[0]: best = (cost, Y.round().astype(int), X.round().astype(int))
-    o = c[best[1], best[2]].copy(); o[..., 3] = np.where(o[..., 3] > 110, 255, 0); return o.astype(np.uint8)
+            if best is None or cost < best[0]: best = (cost, Y.round().astype(int), X.round().astype(int), oy)
+    o = c[best[1], best[2]].copy(); o[..., 3] = np.where(o[..., 3] > 110, 255, 0); snap.oy = best[3]; return o.astype(np.uint8)
 def feet(o):   # anchor = mean x of the dark (boot / body) pixels in the lowest 4 rows that have any, and that lowest row
     dark = (o[..., 3] > 0) & (o[..., :3].max(2) < 110); ys = np.where(dark.any(1))[0]; yb = ys[-1]
     return float(np.where(dark[yb - 3:yb + 1].any(0))[0].mean()), int(yb)
@@ -41,7 +48,15 @@ frames = []
 for r, (y0, y1) in enumerate(ROWS):
     for (x0, x1) in CELLS[r]:
         o = snap(A[y0:y1, x0:x1]); fx, fy = feet(o)
-        if BY_EYES:   # keep the feet row, but put the eyes where the run's stance has them (x only: the head may dip in a swing)
+        if V == 'v4':   # floor = the drawn ground line; then wipe that line (dark pixels with nothing above them, on the line rows)
+            fy = int(round((GROUND4[r] - y0 - snap.oy - P / 2) / P))
+            for yy in range(max(0, fy - 2), min(o.shape[0], fy + 2)):
+                for xx in range(o.shape[1]):
+                    if o[yy, xx, 3] and o[yy, xx, :3].max() < 70 and (yy == 0 or not o[yy - 1, xx, 3]): o[yy, xx, 3] = 0
+        if V == 'v4':   # the artist kept one grid and moved the rabbit inside it (lunges, jumps): keep every frame where it sits in its cell
+            if not frames: FX0 = fx if not eyes(o) else eyes(o)[0] - (eyes(run0)[0] - RX)
+            fx = FX0 + (0 if not frames else 0)
+        elif BY_EYES:   # keep the feet row, but put the eyes where the run's stance has them (x only: the head may dip in a swing)
             e, er = eyes(o), eyes(run0)
             if e and er: fx = e[0] - (er[0] - RX)
         frames.append((o, fx, fy))
