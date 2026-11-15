@@ -38,6 +38,9 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Per champion: GPT big-pixel 3-view sheet (free) → PixelLab redraw B at body 128 (1 credit; say the cost, the owner's "เทส" / "เจน" is the go-ahead) → for the bag game only the SIDE view is used, so clips are ordered east only: character 4 + idle 1 + attack combo 4 + hurt 1 + death 1 ≈ 12 credits, only on "เจน".
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
+## NEWEST (owner 2026-11-15): stone-age kingdom builder `kingdom.html`
+- Big isometric map (code-generated) + PixelLab starter art in `art/kingdom/` (original colours: the owner prefers them for the city look, no punch). Target look `art/incoming/citytest/scene3_stoneage.png`. Owner's long-term goal: a big city builder. Notes at the end of `docs/action-game.md`.
+
 ## NEWEST (owner 2026-11-14 night): stone-age tribe game `tribe.html`
 - Idle village + stage waves at our own village; villagers with STR / AGI / INT / VIT decide themselves; champion only ordered. Plan + every owner decision: `docs/fort-design.md` (read the LAST sections: v3, answers). First playable built with 27 of the 100 credits the owner gave; notes at the end of `docs/action-game.md`. Start here when the owner says "เกมเผ่า".
 

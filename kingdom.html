@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>อาณาจักรยุคหิน · แผนที่</title>
+<style>
+  @font-face { font-family: Kanit; font-weight: 600; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+  @font-face { font-family: Kanit; font-weight: 600; src: url(art/gem/font/kanit-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #e8a86a; touch-action: none; user-select: none; -webkit-user-select: none; font: 600 13px Kanit, system-ui; color: #fff; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  #top { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; pointer-events: none; }
+  #top b { background: #2a1d14d8; border: 2px solid #f2c46b; border-radius: 8px; padding: 3px 10px; text-shadow: 0 1px 0 #000; white-space: nowrap; }
+  #bar { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  #zoom { position: fixed; right: 8px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; }
+  button { border: 2px solid #f2c46b; border-radius: 8px; background: #2a1d14e0; color: #ffe9b8; font: 600 12px Kanit, system-ui; padding: 4px 10px; box-shadow: 0 3px 0 #000a; line-height: 1.25; }
+  button small { display: block; font-size: 10px; opacity: .8; }
+  button.on { background: #b8621f; color: #fff; }
+  #zoom button { width: 40px; height: 40px; font-size: 20px; padding: 0; }
+  #msg { position: fixed; top: 46px; left: 50%; transform: translateX(-50%); background: #000b; border-radius: 8px; padding: 4px 12px; display: none; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="top"></div>
+<div id="bar"></div>
+<div id="zoom"><button id="zi">+</button><button id="zo">−</button></div>
+<div id="msg"></div>
+<script>
+'use strict';
+// Stone-age kingdom map, first playable (owner 2026-11-15: "แผนที่ใหญ่ๆ สำหรับสร้างอาณาจักร", starter set of PixelLab art in art/kingdom/,
+// look = art/incoming/citytest/scene3_stoneage.png, original colours as the owner prefers for the city look).
+// An 80 x 80 isometric map made in code (value noise: hills of stacked tiles, lakes, a river, sand shores, stone, forests), a village in
+// the middle, villagers who gather wood / stone / food on their own (grid BFS paths), and building by tapping: pick a building, tap a tile.
+// Drag = pan, + / − or the mouse wheel = zoom (whole-number steps, square pixels), tap the minimap to jump.
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d'), QS = new URLSearchParams(location.search);
+const D = 'art/kingdom/', N = 80, LIFT = 16, R = Math.random;
+const img = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = s; });
+let SP, IM = {};
+// ---------------------------------------------------------------- map generation (seeded)
+let seed = +(QS.get('seed') || 7); const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function noise(sc, oct) { const g = []; const G = Math.ceil(N / sc) + 2; for (let i = 0; i < G * G; i++) g.push(rnd());
+  const s = t => t * t * (3 - 2 * t); return (x, y) => { let v = 0, a = 1, tot = 0, f = 1; for (let o = 0; o < oct; o++) { const X = x / sc * f, Y = y / sc * f, xi = Math.floor(X) % (G - 1), yi = Math.floor(Y) % (G - 1), fx = s(X - Math.floor(X)), fy = s(Y - Math.floor(Y));
+    const q = (i, j) => g[((yi + j) % G) * G + (xi + i) % G]; v += a * ((q(0, 0) * (1 - fx) + q(1, 0) * fx) * (1 - fy) + (q(0, 1) * (1 - fx) + q(1, 1) * fx) * fy); tot += a; a *= .5; f *= 2.03; } return v / tot; }; }
+const T = [], H = [], OBJ = new Array(N * N).fill(null), OCC = new Array(N * N).fill(null);   // terrain, height, object anchored here, cell occupied by
+const C = 40, at = (q, r) => r * N + q, inside = (q, r) => q >= 0 && r >= 0 && q < N && r < N;
+function genMap() {
+  const E = noise(16, 3), M = noise(11, 2), K = noise(6, 2);
+  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
+    const dc = Math.hypot(q - C, r - C), edge = Math.min(q, r, N - 1 - q, N - 1 - r);
+    let e = E(q, r); if (dc < 9) e = .5 + (e - .5) * .2;   // the village ground is flat
+    const rx = C + 19 + Math.sin(r / 8) * 5 + Math.sin(r / 3.1) * 1.5, river = Math.abs(q - rx);   // a river east of the village
+    let t = 'grass', h = e > .7 ? 2 : e > .62 ? 1 : 0;
+    if (e < .3 || river < 1.6) { t = 'water'; h = 0; } else if (e < .35 || river < 2.8) { t = 'sand'; h = 0; }
+    else if (h === 2 || (h === 1 && K(q, r) > .62)) t = 'stone'; else if (M(q, r) < .3 && K(q, r) < .5) t = 'dirt';
+    if (edge < 2 && t !== 'water') h = 0;
+    T.push(t); H.push(h); }
+  // the village (fixed layout around the totem in the middle)
+  for (let r = C - 8; r <= C + 8; r++) for (let q = C - 8; q <= C + 8; q++) if (Math.hypot(q - C, r - C) < 8) { T[at(q, r)] = Math.hypot(q - C, r - C) < 3.2 ? 'dirt' : 'grass'; H[at(q, r)] = 0; }
+  const V = [['cave', C - 5, C - 6], ['bone_hut', C + 2, C - 5], ['bone_hut', C - 6, C + 1], ['bone_hut', C + 3, C + 2], ['leaf_hut', C - 2, C + 4], ['totem', C, C], ['hide_rack', C + 2, C - 1], ['hide_rack', C - 3, C - 2]];
+  for (const [k, q, r] of V) place(k, q, r, true);
+  // nature: forests, bushes, rocks
+  const M2 = noise(9, 2);
+  for (let r = 1; r < N - 2; r++) for (let q = 1; q < N - 2; q++) { const i = at(q, r); if (OCC[i] || T[i] === 'water' || Math.hypot(q - C, r - C) < 9) continue;
+    const m = M2(q, r), x = rnd();
+    if (T[i] === 'stone' && x < .12) place('rock', q, r, true);
+    else if ((T[i] === 'grass' || T[i] === 'dirt') && m > .58 && x < .5) place(x < .3 ? 'tree' : 'bush', q, r, true);
+    else if (T[i] === 'grass' && x < .025) place(x < .012 ? 'rock' : 'bush', q, r, true); } }
+// ---------------------------------------------------------------- objects
+const ODEF = {bone_hut: {fp: 2, base: 'none', pop: 3, name: 'กระท่อมกระดูก', cost: {wood: 30, stone: 10}}, leaf_hut: {fp: 2, base: 'tile', pop: 2, name: 'เพิงใบไม้', cost: {wood: 15}},
+  cave: {fp: 2, base: 'tile', pop: 4}, totem: {fp: 1, base: 'none', name: 'โทเท็ม', cost: {wood: 20, stone: 10}}, hide_rack: {fp: 1, base: 'none', name: 'ราวตากหนัง', cost: {wood: 10}},
+  tree: {fp: 2, base: 'tile', res: 'wood', amt: 60}, bush: {fp: 1, base: 'tile', res: 'food', amt: 25}, rock: {fp: 1, base: 'tile', res: 'stone', amt: 40}};
+function canPlace(k, q, r) { const fp = ODEF[k].fp, h0 = H[at(q, r)];
+  for (let j = 0; j < fp; j++) for (let i = 0; i < fp; i++) { if (!inside(q + i, r + j)) return false; const c = at(q + i, r + j); if (OCC[c] || T[c] === 'water' || H[c] !== h0) return false; } return true; }
+function place(k, q, r, quiet) { if (!canPlace(k, q, r)) return null; const d = ODEF[k], fp = d.fp, o = {k, q, r, fp, amt: d.amt || 0};
+  for (let j = 0; j < fp; j++) for (let i = 0; i < fp; i++) OCC[at(q + i, r + j)] = o;
+  OBJ[at(q + fp - 1, r + fp - 1)] = o; if (d.pop) G.cap += d.pop; return o; }
+function remove(o) { for (let j = 0; j < o.fp; j++) for (let i = 0; i < o.fp; i++) OCC[at(o.q + i, o.r + j)] = null; OBJ[at(o.q + o.fp - 1, o.r + o.fp - 1)] = null; }
+// ---------------------------------------------------------------- villagers
+const G = {wood: 40, stone: 20, food: 40, cap: 0, t: 0, build: null};
+const VILL = [];
+const walkable = c => T[c] !== 'water' && !OCC[c];
+function bfs(q0, r0, goal, maxN = 4000) {   // path over the grid to the first cell where goal(cell) is true; steps up / down one level at most
+  const prev = new Int32Array(N * N).fill(-1), s = at(q0, r0), Q = [s]; prev[s] = s; let h = 0;
+  while (h < Q.length && h < maxN) { const c = Q[h++]; if (goal(c) && c !== s) { const p = []; for (let x = c; x !== s; x = prev[x]) p.push(x); return p.reverse(); }
+    const q = c % N, r = c / N | 0; for (const [dq, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nq = q + dq, nr = r + dr; if (!inside(nq, nr)) continue; const n = at(nq, nr);
+      if (prev[n] !== -1 || Math.abs(H[n] - H[c]) > 1) continue; if (!walkable(n) && !goal(n)) continue; prev[n] = c; Q.push(n); } } return null; }
+function newVillager() { const home = [...new Set(OCC)].filter(o => o && ODEF[o.k].pop); const o = home[R() * home.length | 0] || {q: C, r: C};
+  let p = bfs(o.q, o.r, c => walkable(c), 400); const c = p ? p[0] : at(C + 1, C + 1); VILL.push({x: c % N + .5, y: (c / N | 0) + .5, path: null, task: 'idle', t: R() * 2, carry: null, dir: 0, anim: 0}); }
+function stepVill(v, dt) {
+  v.t -= dt; const q = Math.floor(v.x), r = Math.floor(v.y);
+  if (v.path && v.path.length) { const c = v.path[0], tx = c % N + .5, ty = (c / N | 0) + .5, dx = tx - v.x, dy = ty - v.y, d = Math.hypot(dx, dy), sp = 1.7 * dt;
+    if (v.path.length === 1 && OCC[c]) { v.path = null; arrive(v); return; }   // the goal cell itself is an object: stop next to it
+    if (d <= sp) { v.x = tx; v.y = ty; v.path.shift(); if (!v.path.length) { v.path = null; arrive(v); } } else { v.x += dx / d * sp; v.y += dy / d * sp; }
+    const sx = dx - dy, sy = dx + dy; v.dir = sy > 0 ? (sx > 0 ? 0 : 1) : (sx > 0 ? 2 : 3); v.anim += dt; return; }
+  v.anim = 0; if (v.t > 0) return;
+  if (v.task === 'work') { const o = v.node; const got = Math.min(o.amt, 10); o.amt -= got; v.carry = {r: ODEF[o.k].res, n: got}; if (o.amt <= 0) remove(o);
+    v.task = 'home'; v.path = bfs(q, r, c => OCC[c] && ODEF[OCC[c].k].pop); if (!v.path) { v.task = 'idle'; v.t = 1; } return; }
+  // choose a job: what the tribe has least of, nearest first
+  const want = ['food', 'wood', 'stone'].sort((a, b) => G[a] - G[b])[R() < .7 ? 0 : 1];
+  v.path = bfs(q, r, c => OCC[c] && ODEF[OCC[c].k].res === want && OCC[c].amt > 0); v.task = 'go'; if (!v.path) { v.task = 'idle'; v.t = 2; } }
+function arrive(v) { const q = Math.floor(v.x), r = Math.floor(v.y);
+  if (v.task === 'go') { const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => inside(q + a, r + b) && OCC[at(q + a, r + b)]).find(o => o && ODEF[o.k].res);
+    if (near) { v.node = near; v.task = 'work'; v.t = 2.2; } else { v.task = 'idle'; v.t = .5; } }
+  else if (v.task === 'home') { if (v.carry) { G[v.carry.r] += v.carry.n; pop(v.x, v.y, '+' + v.carry.n + ' ' + {wood: 'ไม้', stone: 'หิน', food: 'อาหาร'}[v.carry.r]); v.carry = null; } v.task = 'idle'; v.t = .8 + R(); } }
+const POPS = []; function pop(x, y, s) { POPS.push({x, y, s, t: 0}); }
+// ---------------------------------------------------------------- camera / drawing
+let Z = 2, cam = {x: 0, y: 0}, DPR = 1;
+const iso = (q, r, h = 0) => [(q - r) * 32, (q + r) * 16 - h * LIFT];   // top vertex of a cell's top face, world pixels
+function resize() { DPR = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * DPR; cv.height = innerHeight * DPR; Z = clampZ(Z); }
+const clampZ = z => Math.max(1, Math.min(5, z));
+function toWorld(sx, sy) { return [(sx * DPR - cv.width / 2) / Z + cam.x, (sy * DPR - cv.height / 2) / Z + cam.y]; }
+function cellAt(wx, wy) { for (let h = 2; h >= 0; h--) { const y = wy + h * LIFT - 16, a = wx / 32, b = y / 16, q = Math.floor((a + b) / 2), r = Math.floor((b - a) / 2); if (inside(q, r) && H[at(q, r)] === h) return [q, r]; } return null; }
+function drawObj(o) { const s = SP.obj[o.k], d = ODEF[o.k], h = H[at(o.q, o.r)], [x, y] = iso(o.q, o.r, h), bottom = y + (d.base === 'tile' ? 32 * o.fp : o.fp === 2 ? 58 : 26);
+  ctx.drawImage(IM[o.k], Math.round(x - (s.bb[0] + s.bb[2]) / 2), Math.round(bottom - s.bb[3])); }
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); const sky = ctx.createLinearGradient(0, 0, 0, cv.height); sky.addColorStop(0, '#f2b880'); sky.addColorStop(1, '#c97a4a'); ctx.fillStyle = sky; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.imageSmoothingEnabled = false; ctx.setTransform(Z, 0, 0, Z, Math.round(cv.width / 2 - cam.x * Z), Math.round(cv.height / 2 - cam.y * Z));
+  const hw = cv.width / 2 / Z + 80, hh = cv.height / 2 / Z + 140, vs = [];
+  for (const v of VILL) vs.push(v); vs.sort((a, b) => (a.x + a.y) - (b.x + b.y)); let vi = 0;
+  const hover = G.build && G.hover;
+  for (let s = 0; s < 2 * N - 1; s++) {
+    for (let q = Math.max(0, s - N + 1); q <= Math.min(N - 1, s); q++) { const r = s - q, c = at(q, r), h = H[c], [x, y] = iso(q, r, 0);
+      if (x < cam.x - hw || x > cam.x + hw || y < cam.y - hh - 60 || y > cam.y + hh) continue;
+      const t = T[c], top = SP.tiles[t].top;
+      for (let k = 0; k <= h; k++) { const tt = k < h ? (t === 'stone' ? 'stone' : 'dirt') : t; ctx.drawImage(IM['t_' + tt], x - 32, y - k * LIFT - SP.tiles[tt].top + (tt === 'water' ? 3 : 0)); }
+      if (t === 'water' && ((q * 7 + r * 13 + (G.t * 2 | 0)) % 9) === 0) { ctx.fillStyle = '#ffffffaa'; ctx.fillRect(x - 6 + ((G.t * 6) % 8), y + 14, 4, 1); }
+      if (hover && hover[0] <= q && q < hover[0] + ODEF[G.build].fp && hover[1] <= r && r < hover[1] + ODEF[G.build].fp) { ctx.globalAlpha = .45; ctx.fillStyle = canPlace(G.build, hover[0], hover[1]) ? '#7cff6a' : '#ff4a3a';
+        const yy = y - h * LIFT; ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x + 32, yy + 16); ctx.lineTo(x, yy + 32); ctx.lineTo(x - 32, yy + 16); ctx.fill(); ctx.globalAlpha = 1; }
+      if (OBJ[c]) drawObj(OBJ[c]);
+      if (q === C && r === C) fire(x, y + 16);
+    }
+    while (vi < vs.length && vs[vi].x + vs[vi].y < s + 2) { const v = vs[vi++], vs_ = SP.villager, h = H[at(Math.floor(v.x), Math.floor(v.y))], X = (v.x - v.y) * 32, Y = (v.x + v.y) * 16 - h * LIFT;
+      const f = v.path ? 1 + Math.floor(v.anim * 9) % (vs_.n - 1) : 0; ctx.drawImage(IM.villager, f * vs_.cw, v.dir * vs_.ch, vs_.cw, vs_.ch, Math.round(X - vs_.feet[0] * .7), Math.round(Y - vs_.feet[1] * .7), vs_.cw * .7, vs_.ch * .7);
+      if (v.carry) { ctx.fillStyle = {wood: '#a0683a', stone: '#aab0b8', food: '#e04a4a'}[v.carry.r]; ctx.fillRect(Math.round(X + 4), Math.round(Y - 40), 5, 5); } }
+  }
+  ctx.font = '600 9px Kanit, system-ui'; ctx.textAlign = 'center';
+  for (const p of POPS) { const X = (p.x - p.y) * 32, Y = (p.x + p.y) * 16 - 44 - p.t * 18; ctx.globalAlpha = 1 - p.t / 1.4; ctx.fillStyle = '#000'; ctx.fillText(p.s, X + 1, Y + 1); ctx.fillStyle = '#fff6c0'; ctx.fillText(p.s, X, Y); } ctx.globalAlpha = 1;
+  minimap(); hud(); }
+function fire(x, y) { for (let i = 0; i < 10; i++) { const k = (i * 37 + G.t * 60) % 22, X = x + Math.sin(i * 2.1 + G.t * 7) * (6 - k * .2), Y = y - 4 - k; ctx.fillStyle = k < 6 ? '#fff3a0' : k < 14 ? '#ffb43a' : '#e0502a'; ctx.fillRect(Math.round(X) - 2, Math.round(Y) - 2, 3, 3); }
+  ctx.fillStyle = '#8a8a90'; for (let a = 0; a < 6.28; a += .9) ctx.fillRect(Math.round(x + Math.cos(a) * 9) - 2, Math.round(y + Math.sin(a) * 4) - 1, 4, 3); }
+let MM = null;
+function minimap() { const s = Math.round(1.6 * DPR), w = N * s; if (!MM) { MM = document.createElement('canvas'); MM.width = N; MM.height = N; }
+  const g = MM.getContext('2d'); for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) { const c = at(q, r), o = OCC[c];
+    g.fillStyle = o ? (ODEF[o.k].pop || o.k === 'totem' || o.k === 'hide_rack' ? '#ffd23f' : o.k === 'tree' ? '#2f6a2a' : o.k === 'rock' ? '#777' : '#4a8a3a') : {grass: H[c] ? '#7aa83a' : '#8cc040', dirt: '#b08458', sand: '#e8c890', water: '#3ab8d0', stone: '#8a8a96'}[T[c]]; g.fillRect(q, r, 1, 1); }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; const X = 10 * DPR, Y = 10 * DPR;
+  ctx.fillStyle = '#2a1d14d8'; ctx.fillRect(X - 3 * DPR, Y - 3 * DPR, w + 6 * DPR, w + 6 * DPR); ctx.drawImage(MM, X, Y, w, w);
+  const a = cam.x / 32, b = cam.y / 16, cq = (a + b) / 2, cr = (b - a) / 2; ctx.strokeStyle = '#fff'; ctx.lineWidth = DPR; ctx.strokeRect(X + (cq - 7) * s, Y + (cr - 7) * s, 14 * s, 14 * s);
+  for (const v of VILL) { ctx.fillStyle = '#fff'; ctx.fillRect(X + v.x * s - DPR, Y + v.y * s - DPR, 2 * DPR, 2 * DPR); }
+  minimap.box = [X / DPR, Y / DPR, w / DPR, s / DPR]; }
+function hud() { document.getElementById('top').innerHTML = `<b>🪵 ${G.wood}</b><b>🪨 ${G.stone}</b><b>🍖 ${G.food}</b><b>👥 ${VILL.length}/${G.cap}</b>`; }
+function msg(s) { const e = document.getElementById('msg'); e.textContent = s; e.style.display = 'block'; clearTimeout(msg.t); msg.t = setTimeout(() => e.style.display = 'none', 1800); }
+// ---------------------------------------------------------------- input
+let drag = null, pinch = null; const ptrs = new Map();
+cv.addEventListener('pointerdown', e => { ptrs.set(e.pointerId, [e.clientX, e.clientY]); cv.setPointerCapture(e.pointerId);
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = {d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: Z}; drag = null; } else drag = {x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false}; });
+cv.addEventListener('pointermove', e => { if (!ptrs.has(e.pointerId)) { if (G.build) G.hover = cellAt(...toWorld(e.clientX, e.clientY)); return; } ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); Z = clampZ(Math.round(pinch.z * d / pinch.d)); return; }
+  if (!drag) return; const dx = (e.clientX - drag.x) * DPR / Z, dy = (e.clientY - drag.y) * DPR / Z; if (Math.abs(dx) + Math.abs(dy) > 6 / Z) drag.moved = true; cam.x = drag.cx - dx; cam.y = drag.cy - dy; clampCam();
+  if (G.build) G.hover = cellAt(...toWorld(e.clientX, e.clientY)); });
+cv.addEventListener('pointerup', e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; const d = drag; drag = null; if (!d || d.moved) return;
+  const mb = minimap.box; if (mb && e.clientX >= mb[0] && e.clientX <= mb[0] + mb[2] && e.clientY >= mb[1] && e.clientY <= mb[1] + mb[2]) { const q = (e.clientX - mb[0]) / mb[3], r = (e.clientY - mb[1]) / mb[3]; [cam.x, cam.y] = iso(q, r); clampCam(); return; }
+  const cell = cellAt(...toWorld(e.clientX, e.clientY)); if (!cell || !G.build) return; G.hover = cell; build(G.build, cell[0], cell[1]); });
+cv.addEventListener('wheel', e => { Z = clampZ(Z + (e.deltaY < 0 ? 1 : -1)); e.preventDefault(); }, {passive: false});
+document.getElementById('zi').onclick = () => Z = clampZ(Z + 1); document.getElementById('zo').onclick = () => Z = clampZ(Z - 1);
+function clampCam() { cam.x = Math.max(-N * 32, Math.min(N * 32, cam.x)); cam.y = Math.max(-40, Math.min(N * 32, cam.y)); }
+function build(k, q, r) { const d = ODEF[k]; for (const [res, n] of Object.entries(d.cost)) if (G[res] < n) return msg('ไม่พอ: ต้องใช้ ' + Object.entries(d.cost).map(([a, b]) => b + ' ' + {wood: 'ไม้', stone: 'หิน'}[a]).join(' + '));
+  if (!canPlace(k, q, r)) return msg('วางตรงนี้ไม่ได้');
+  for (const [res, n] of Object.entries(d.cost)) G[res] -= n; place(k, q, r); msg('สร้าง' + d.name + 'แล้ว'); for (let i = 0; i < (d.pop || 0); i++) if (VILL.length < G.cap) newVillager(); }
+function ui() { const bar = document.getElementById('bar');
+  for (const k of ['bone_hut', 'leaf_hut', 'totem', 'hide_rack']) { const d = ODEF[k], b = document.createElement('button'); b.innerHTML = d.name + '<small>' + Object.entries(d.cost).map(([a, n]) => n + ({wood: '🪵', stone: '🪨'}[a])).join(' ') + '</small>';
+    b.onclick = () => { G.build = G.build === k ? null : k; for (const x of bar.children) x.classList.toggle('on', x === b && G.build); if (G.build) msg('แตะพื้นเพื่อวาง' + d.name); }; bar.append(b); } }
+// ---------------------------------------------------------------- loop
+function step(dt) { G.t += dt; for (const v of VILL) stepVill(v, dt); for (const p of POPS) p.t += dt; for (let i = POPS.length - 1; i >= 0; i--) if (POPS[i].t > 1.4) POPS.splice(i, 1);
+  if ((step.food = (step.food || 0) + dt) > 10) { step.food = 0; G.food = Math.max(0, G.food - Math.ceil(VILL.length / 3)); if (G.food > 20 && VILL.length < G.cap) newVillager(); } }
+(async () => {
+  SP = await fetch(D + 'sprites.json').then(r => r.json());
+  const L = ['villager']; for (const t in SP.tiles) L.push('t_' + t); for (const o in SP.obj) L.push(o);
+  await Promise.all(L.map(k => img(D + (k.startsWith('t_') || k === 'villager' ? k : 'o_' + k) + '.png').then(i => IM[k] = i)));
+  genMap(); for (let i = 0; i < 8; i++) newVillager();
+  [cam.x, cam.y] = iso(C, C); resize(); Z = clampZ(Math.round(cv.height / 380)); addEventListener('resize', resize); ui();
+  let last = performance.now(); (function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; step(dt); draw(); requestAnimationFrame(frame); })(last);
+  window.GM = {G, VILL, step, build, T, H, OCC, cam, get Z() { return Z; }, set Z(v) { Z = v; }};
+})();
+</script>
+</body>
+</html>
