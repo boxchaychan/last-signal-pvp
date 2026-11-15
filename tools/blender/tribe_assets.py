@@ -325,5 +325,75 @@ def mammoth():
     _, f = tube(m, [(0, 2.55, 3.7), (0, 2.95, 3.1), (0, 3.0, 2.5)], [.14, .1, .06], 5); m.paint(f, lambda f: jit(FUR2, .05))
     return m
 
-for mk in [lambda: tree_broad(0), lambda: tree_broad(1), lambda: tree_broad(2), lambda: tree_pine(0), lambda: tree_pine(1), lambda: rock(0), lambda: rock(1), lambda: rock(2), hut_cone, hut_bone, campfire, hut_dome, longhouse, totem, watchtower, rack, woodpile, stonepile, palisade_log, cave_mouth, mammoth]:
+
+SKIN, HAIR, FURT, FURT2, STRAP = hexc('#d9a074'), hexc('#3a2418'), hexc('#8a5a34'), hexc('#6e4426'), hexc('#c9b07a')
+def caveman(pose):
+    random.seed(1700); m = Model('caveman_' + pose)
+    step = {'stand': 0, 'step': 1, 'thrust': 0}[pose]
+    for sx in (-1, 1):                                                       # legs + wrapped feet
+        fy = .32 * sx * step
+        _, f = rod(m, (sx * .22, 0, 1.0), (sx * .24, fy, .12), .19, 6); m.paint(f, lambda f: jit(SKIN, .05))
+        _, f = box(m, .3, .42, .2, (sx * .24, fy - .06, .1)); m.paint(f, lambda f: jit(FURT2, .05))
+    v, f = cone(m, .64, .44, 1.0, .8, 8); ragged(v, .8, .18)                  # fur tunic with a ragged hem
+    m.paint(f, lambda f: jit(FURT if random.random() < .7 else FURT2, .07))
+    _, f = box(m, .14, .5, .9, (.18, 0, 1.45), Matrix.Rotation(.5, 4, 'Y')); m.paint(f, lambda f: jit(STRAP, .04))
+    _, f = cone(m, .3, .36, .25, 1.75, 8); m.paint(f, lambda f: jit(SKIN, .04))   # neck / shoulders
+    v, f = ico(m, .36, (0, 0, 2.15), 1); m.paint(f, lambda f: jit(SKIN, .04))
+    _, f = scaled_ico(m, .4, (0, .1, 2.32), (1.05, 1.0, .7), 1, .06, 3); m.paint(f, lambda f: jit(HAIR, .06))   # hair
+    _, f = scaled_ico(m, .22, (0, -.24, 1.98), (1.3, .7, .9), 1); m.paint(f, lambda f: jit(HAIR, .05))           # beard
+    for sx in (-1, 1): _, f = box(m, .08, .05, .08, (sx * .13, -.33, 2.2)); m.paint(f, lambda f: hexc('#140c08'))
+    if pose == 'thrust':
+        _, f = rod(m, (-.5, 0, 1.65), (-.45, .2, 1.1), .1, 5); m.paint(f, lambda f: jit(SKIN, .04))
+        _, f = rod(m, (.5, 0, 1.65), (.3, -.75, 1.45), .1, 5); m.paint(f, lambda f: jit(SKIN, .04))
+        _, f = rod(m, (.3, .9, 1.4), (.3, -2.1, 1.5), .05, 5); m.paint(f, lambda f: jit(WOOD, .04))
+        _, f = cone(m, .12, .01, .45, 0, 5); f2 = f
+        tip = [x for x in m.bm.verts if x in set(v2 for fc in f2 for v2 in fc.verts)]
+        bmesh.ops.transform(m.bm, matrix=Matrix.Translation((.3, -2.1, 1.5)) @ Matrix.Rotation(math.pi / 2, 4, 'X'), verts=tip); m.paint(f2, lambda f: jit(STONE, .05))
+    else:
+        sw = .3 * step
+        _, f = rod(m, (-.5, 0, 1.65), (-.55, sw, 1.05), .1, 5); m.paint(f, lambda f: jit(SKIN, .04))
+        _, f = rod(m, (.5, 0, 1.65), (.58, -sw - .1, 1.1), .1, 5); m.paint(f, lambda f: jit(SKIN, .04))
+        _, f = rod(m, (.6, .25 - sw, .2), (.6, -.25 - sw, 2.9), .05, 5); m.paint(f, lambda f: jit(WOOD, .04))
+        _, f = cone(m, .12, .01, .45, 2.9, 5, .6, -.25 - sw); m.paint(f, lambda f: jit(STONE, .05))
+    return m
+
+def berry_bush():
+    random.seed(1800); m = Model('berry_bush')
+    for k, (c, r) in enumerate((((0, 0, .7), .85), ((.6, .3, .6), .6), ((-.55, -.2, .55), .6), ((.1, -.5, .95), .5))):
+        v, f = ico(m, r, c, 1); lumpy(v, Vector(c), .12, 2, k); m.paint(f, shade_by_normal(hexc('#3f8a3a'), 1.2, .7, .07))
+    for k in range(14):
+        a, z = random.random() * math.tau, .45 + random.random() * .8; r = .78 - abs(z - .8) * .4
+        _, f = ico(m, .11, (math.cos(a) * r, math.sin(a) * r, z), 1); m.paint(f, lambda f: jit(hexc('#d8283c') if k % 3 else hexc('#7a3ad0'), .08))
+    return m
+
+def bird_body():   # boss: giant prehistoric bird (wings are a separate model so the game can flap them)
+    random.seed(1900); m = Model('bird_body')
+    FE, FE2, BEAK = hexc('#3a3f5a'), hexc('#5a4a8a'), hexc('#e8b040')
+    fn = lambda f: jit(FE2 if f.normal.z > .5 else FE, .07)
+    _, f = scaled_ico(m, 1, (0, .2, 0), (1.3, 2.6, 1.2), 2, .08, 1); m.paint(f, fn)
+    _, f = tube(m, [(0, -2.0, .4), (0, -3.0, 1.2), (0, -3.6, 1.6)], [.6, .45, .4], 7); m.paint(f, fn)
+    _, f = scaled_ico(m, .7, (0, -3.9, 1.75), (.9, 1.1, .85), 1); m.paint(f, lambda f: jit(FE2, .05))
+    _, f = tube(m, [(0, -4.4, 1.75), (0, -5.4, 1.55), (0, -6.0, 1.2)], [.32, .22, .05], 6); m.paint(f, lambda f: jit(BEAK, .05))
+    _, f = cone(m, .5, .02, 1.4, 0, 5); [x for x in f]                       # crest
+    crest = list({v for fc in f for v in fc.verts}); bmesh.ops.transform(m.bm, matrix=Matrix.Translation((0, -3.6, 2.3)) @ Matrix.Rotation(.6, 4, 'X'), verts=crest); m.paint(f, lambda f: jit(hexc('#d84a4a'), .05))
+    for sx in (-1, 1): _, f = box(m, .14, .1, .14, (sx * .45, -4.4, 1.95)); m.paint(f, lambda f: hexc('#ffd84a'))
+    for k in (-1, 0, 1):                                                       # tail feathers
+        _, f = box(m, .5, 2.2, .12, (k * .5, 3.2, .1), Matrix.Rotation(k * .35, 4, 'Z')); m.paint(f, lambda f: jit(FE2, .06))
+    for sx in (-1, 1):                                                         # tucked talons
+        _, f = rod(m, (sx * .5, .3, -.8), (sx * .5, .9, -1.6), .14, 5); m.paint(f, lambda f: jit(BEAK, .05))
+    return m
+
+def bird_wing():   # right wing, shoulder at the origin, spread along +X
+    random.seed(2000); m = Model('bird_wing')
+    FE, FE2 = hexc('#3a3f5a'), hexc('#5a4a8a')
+    for k in range(5):
+        x0 = .2 + k * 1.15; ln = 2.8 - k * .35
+        v, f = box(m, 1.3, ln, .14, (x0 + .55, .2 + k * .18, -k * .05))
+        for q in v:
+            if q.co.y > .2 + k * .18: q.co.y += random.uniform(0, .4)
+        m.paint(f, lambda f, k=k: jit(FE2 if k % 2 else FE, .06))
+    _, f = rod(m, (0, -.6, 0), (5.8, -.3, -.1), .22, 6); m.paint(f, lambda f: jit(FE, .05))
+    return m
+
+for mk in [lambda: tree_broad(0), lambda: tree_broad(1), lambda: tree_broad(2), lambda: tree_pine(0), lambda: tree_pine(1), lambda: rock(0), lambda: rock(1), lambda: rock(2), hut_cone, hut_bone, campfire, hut_dome, longhouse, totem, watchtower, rack, woodpile, stonepile, palisade_log, cave_mouth, mammoth, lambda: caveman('stand'), lambda: caveman('step'), lambda: caveman('thrust'), berry_bush, bird_body, bird_wing]:
     mk().export()
