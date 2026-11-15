@@ -14,7 +14,7 @@
   sea + beach in the south), forests, rocks, grass tufts, a village (cone / dome / mammoth-bone huts, longhouse, campfire, totem,
   palisade with a gate, watchtowers, racks, piles, garden plots, dock, cave in the cliff with torches), blocky placeholder villagers.
   Camera LOCKED to 4 angles (button / C), drag or WASD to pan, wheel / pinch / Q E to zoom, day / sunset / night (button / N).
-  URL: ?cam=0..3, ?seed=N, ?t=0..2 time of day, ?ol=0 no outlines. QA hooks: window.TB (ready, hold, step, draw, info()).
+  URL: ?cam=0..3, ?seed=N, ?t=0..2 time of day, ?ol=0 no outlines, ?px=0 smooth (full-resolution) look, ?blender=0 code shapes. QA hooks: window.TB (ready, hold, step, draw, info()).
 -->
 <style>
   @font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
@@ -52,6 +52,7 @@
     <button id="bZo" class="ib" title="ซูมออก"><svg viewBox="0 0 24 24"><path d="M10 2.5a7.5 7.5 0 0 1 6 12l5 5-1.8 1.8-5-5A7.5 7.5 0 1 1 10 2.5zm0 2.3a5.2 5.2 0 1 0 0 10.4 5.2 5.2 0 0 0 0-10.4z"/><path d="M6.8 8.9h6.4v2.2H6.8z"/></svg></button>
     <button id="bZi" class="ib" title="ซูมเข้า"><svg viewBox="0 0 24 24"><path d="M10 2.5a7.5 7.5 0 0 1 6 12l5 5-1.8 1.8-5-5A7.5 7.5 0 1 1 10 2.5zm0 2.3a5.2 5.2 0 1 0 0 10.4 5.2 5.2 0 0 0 0-10.4z"/><path d="M8.9 6.8h2.2v2.1h2.1v2.2h-2.1v2.1H8.9v-2.1H6.8V8.9h2.1z"/></svg></button>
     <button id="bTime" class="ib" title="เวลา"><svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/><path d="M11 1.5h2v3h-2zM11 19.5h2v3h-2zM1.5 11h3v2h-3zM19.5 11h3v2h-3zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4zM16.3 17.7l1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 6.3l2.1-2.1 1.4 1.4-2.1 2.1z"/></svg><em id="timeL">กลางวัน</em></button>
+    <button id="bPix" class="ib" title="พิกเซล"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 13h8v8h-8z"/><path d="M13 3h8v8h-8zM3 13h8v8H3z" opacity=".45"/></svg><em id="pixL">พิกเซล</em></button>
     <button id="bOl" class="ib" title="เส้นขอบ"><svg viewBox="0 0 24 24"><path d="M3.5 3.5h17v17h-17zm2.5 2.5v12h12V6z"/><path d="M9 9h6v6H9z" opacity=".55"/></svg></button>
   </div>
   <div id="hint">ลากเพื่อเลื่อนแมพ · ล้อเมาส์ / บีบนิ้ว ซูม · WASD เลื่อน · C มุมกล้อง · N เวลา</div>
@@ -116,21 +117,27 @@ const postM = new THREE.ShaderMaterial({
     }`, depthTest: false, depthWrite: false });
 postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postM));
 let S = 2, zS = 0, rw = 2, rh = 2, rt = null, pitch = 0, yaw = 0;
+let PIXEL = Q.get('px') !== '0', RS = 2, Ue = U;   // RS = device px per render px (= S in pixel mode, ~1 in smooth mode); Ue = world units per render px
 const R = new V3(), F = new V3(), UPV = new V3(), TOC = new V3();
 function layout() {
   const dpr = window.devicePixelRatio || 1, dw = Math.round(innerWidth * dpr), dh = Math.round(innerHeight * dpr);
   S = zS || 2;
   const fit = () => { rh = Math.ceil(dh / S); rh += rh & 1; rw = Math.ceil(dw / S); rw += rw & 1; };
   fit(); while (rw * rh > 1400000 && S < 6) { S = SSTEP[Math.min(SSTEP.length - 1, SSTEP.indexOf(S) + 1)]; fit(); }
-  zS = S;
+  zS = S; RS = S;
+  if (!PIXEL) {   // smooth: full screen resolution, same view as pixel mode at this zoom
+    RS = 1; const fit2 = () => { rh = Math.ceil(dh / RS); rh += rh & 1; rw = Math.ceil(dw / RS); rw += rw & 1; };
+    fit2(); while (rw * rh > 3400000 && RS < S) { RS += .5; fit2(); }
+  }
+  Ue = U * RS / S;
   renderer.setSize(rw, rh, false);
-  const cw = rw * S / dpr, ch = rh * S / dpr;
+  const cw = rw * RS / dpr, ch = rh * RS / dpr;
   Object.assign(cv.style, { width: cw + 'px', height: ch + 'px', left: ((innerWidth - cw) / 2) + 'px', top: ((innerHeight - ch) / 2) + 'px' });
   if (rt) { rt.depthTexture.dispose(); rt.dispose(); }
   rt = new THREE.WebGLRenderTarget(rw, rh, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
   rt.texture.generateMipmaps = false; rt.depthTexture = new THREE.DepthTexture(rw, rh); rt.depthTexture.type = THREE.UnsignedIntType;
   postM.uniforms.tC.value = rt.texture; postM.uniforms.tD.value = rt.depthTexture; postM.uniforms.res.value.set(rw, rh);
-  cam.left = -rw / 2 * U; cam.right = rw / 2 * U; cam.top = rh / 2 * U; cam.bottom = -rh / 2 * U; cam.updateProjectionMatrix();
+  cam.left = -rw / 2 * Ue; cam.right = rw / 2 * Ue; cam.top = rh / 2 * Ue; cam.bottom = -rh / 2 * Ue; cam.updateProjectionMatrix();
   postM.uniforms.nf.value.set(cam.near, cam.far);
 }
 function setCam(i) {
@@ -552,6 +559,7 @@ function updParticles(dt) {
     else { const g = timeI === 2 ? .35 : .78; pCol[i * 3] = g; pCol[i * 3 + 1] = g; pCol[i * 3 + 2] = g * 1.04; pSize[i] = pS0[i] * (1 + k * 1.5); pAl[i] = (1 - k) * .55; }
     if (pLife[i] <= 0) pAl[i] = 0;
   }
+  if (RS !== S) for (let i = 0; i < MAXP; i++) pSize[i] *= S / RS;   // particles keep their size on screen in smooth mode
   for (const n of ['position', 'pcol', 'psize', 'palpha']) pGeo.attributes[n].needsUpdate = true;
 }
 
@@ -577,7 +585,7 @@ let wheelT = 0; addEventListener('wheel', e => { const n = performance.now(); if
 addEventListener('keydown', e => { const k = e.key.toLowerCase(); keys[k] = true; if (k === 'c') setCam(camI + 1); if (k === 'n') setTime(timeI + 1); if (k === 'q' || k === '-') zoomBy(-1); if (k === 'e' || k === '=' || k === '+') zoomBy(1); if (k === 'o') toggleOl(); if (k.startsWith('arrow')) e.preventDefault(); });
 addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 function btn(id, f) { const b = $(id); b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); f(); }); const up = () => b.classList.remove('on'); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up); }
-btn('bCam', () => setCam(camI + 1)); btn('bZi', () => zoomBy(1)); btn('bZo', () => zoomBy(-1)); btn('bTime', () => setTime(timeI + 1)); btn('bOl', () => toggleOl());
+btn('bCam', () => setCam(camI + 1)); btn('bZi', () => zoomBy(1)); btn('bZo', () => zoomBy(-1)); btn('bTime', () => setTime(timeI + 1)); btn('bOl', () => toggleOl()); btn('bPix', () => { PIXEL = !PIXEL; $('pixL').textContent = PIXEL ? 'พิกเซล' : 'เรียบ'; layout(); say(PIXEL ? 'ลุคพิกเซล' : 'ลุค 3D เรียบ (ความละเอียดเต็มจอ)', 1300); });
 function toggleOl() { OUTL = !OUTL; postM.uniforms.ol.value = OUTL ? 1 : 0; $('bOl').classList.toggle('off', !OUTL); }
 addEventListener('resize', () => { if (TB.ready) { zS = 0; layout(); } });
 let msgT = 0; function say(html, ms) { const m = $('msg'); m.innerHTML = html; m.style.opacity = 1; clearTimeout(msgT); msgT = setTimeout(() => { m.style.opacity = 0; }, ms); }
@@ -593,7 +601,7 @@ function step(dt) {
 function draw() {
   CT.set(camT.x, groundY(camT.x, camT.z) * .5, camT.z);
   const tr = CT.dot(R), tu = CT.dot(UPV);
-  CT.addScaledVector(R, Math.round(tr / U) * U - tr).addScaledVector(UPV, Math.round(tu / U) * U - tu);
+  CT.addScaledVector(R, Math.round(tr / Ue) * Ue - tr).addScaledVector(UPV, Math.round(tu / Ue) * Ue - tu);
   cam.position.copy(CT).addScaledVector(TOC, 500); cam.lookAt(CT);
   // the sun's shadow box follows the view, moved in whole shadow texels so shadows do not crawl
   const tx = 200 / 2048, sx = Math.round(CT.x / tx) * tx, sz = Math.round(CT.z / tx) * tx;
@@ -612,7 +620,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
     genTerrain(); buildTerrain(); const st = buildNature(); buildVillage(); buildAnimals(); buildParticles();
     TB.stats = { ...st, buildMs: Math.round(performance.now() - t0), villagers: villagers.length, mammoths: MAMMOTHS.length, models: Object.keys(MODELS).length };
     setCam(camI); setTime(timeI); layout();
-    $('bOl').classList.toggle('off', !OUTL); postM.uniforms.ol.value = OUTL ? 1 : 0;
+    $('bOl').classList.toggle('off', !OUTL); postM.uniforms.ol.value = OUTL ? 1 : 0; $('pixL').textContent = PIXEL ? 'พิกเซล' : 'เรียบ';
     $('load').remove(); TB.ready = true;
     say(matchMedia('(pointer: coarse)').matches ? 'ลากนิ้วเพื่อเลื่อนแมพ<small>บีบนิ้วซูม · ปุ่มบนขวา: มุมกล้อง / ซูม / เวลา</small>' : 'ลากเมาส์หรือ WASD เพื่อเลื่อนแมพ<small>ล้อเมาส์ซูม · C มุมกล้อง · N เวลา</small>', 4500);
     requestAnimationFrame(frame);
