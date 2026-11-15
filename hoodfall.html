@@ -16,15 +16,19 @@
   .pad small { position: absolute; bottom: 2px; font-size: 10px; font-weight: 600; opacity: .85; }
   .pad.cd { filter: grayscale(.8) brightness(.7); }
   #bl { left: 14px; bottom: 14px; } #br { left: 84px; bottom: 14px; } #bu { left: 49px; bottom: 84px; width: 48px; height: 40px; font-size: 18px; }
-  /* action buttons (owner 2026-11-15 "วางสกิล ui"): big round attack, jump beside it, 6 skills on two arcs round the attack button */
+  /* action buttons: big round attack, jump beside it */
   #ba { right: 22px; bottom: 22px; width: 88px; height: 88px; border-radius: 50%; font-size: 30px; }
-  #bj { right: 136px; bottom: 30px; width: 60px; height: 60px; border-radius: 50%; } #bs { display: none !important; }
-  .sk { position: fixed; display: none; width: 54px; height: 54px; border-radius: 50%; border: 3px solid #8fd8ff; background: radial-gradient(circle at 50% 35%, #2c5a86, #10233c);
+  #bj { right: 36px; bottom: 122px; width: 60px; height: 60px; border-radius: 50%; } #bs { display: none !important; }
+  /* skill shortcut bar along the bottom (owner "สกิลไว้ข้างล่างตรงช็อตคัท"), above the status bar, keys 1-6 */
+  #skills { position: fixed; left: 50%; bottom: 6px; display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: #1a120cc8; border: 2px solid #f2c46b; }
+  #skills:empty, #skills.off { display: none; }
+  .sk { position: relative; display: grid; width: 42px; height: 42px; border-radius: 8px; border: 2px solid #8fd8ff; background: radial-gradient(circle at 50% 35%, #2c5a86, #10233c);
     box-shadow: inset 0 -4px 0 #0007, 0 3px 0 #000a; place-items: center; overflow: hidden; }
-  .sk svg { width: 34px; height: 34px; } .sk.ult { width: 64px; height: 64px; border-color: #ffd36a; background: radial-gradient(circle at 50% 35%, #6a4a1a, #2a1608); box-shadow: 0 0 12px #ffd36aaa, inset 0 -4px 0 #0007; }
-  .sk::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#000b calc(var(--p, 0) * 1turn), transparent 0); }
+  .sk svg { width: 28px; height: 28px; margin-top: -6px; } .sk.ult { border-color: #ffd36a; background: radial-gradient(circle at 50% 35%, #6a4a1a, #2a1608); box-shadow: 0 0 12px #ffd36aaa, inset 0 -4px 0 #0007; }
+  .sk::after { content: ''; position: absolute; inset: 0; border-radius: 6px; background: conic-gradient(#000b calc(var(--p, 0) * 1turn), transparent 0); }
   .sk b { position: absolute; z-index: 2; font: 800 16px Kanit, system-ui; color: #fff; text-shadow: 0 2px 0 #000; display: none; }
   .sk i { position: absolute; z-index: 2; bottom: -1px; font: 600 9px Kanit, system-ui; font-style: normal; color: #e8f6ff; text-shadow: 0 1px 0 #000, 0 0 3px #000; white-space: nowrap; }
+  .sk u { position: absolute; z-index: 2; left: 3px; top: 1px; font: 800 10px Kanit, system-ui; text-decoration: none; color: #ffe9b8; text-shadow: 0 1px 0 #000; }
   .sk.cd b { display: block; } .sk.cd svg { opacity: .45; }
   #snd { position: fixed; right: 10px; top: 10px; display: none; width: 40px; height: 40px; font-size: 18px; }
 </style>
@@ -34,7 +38,7 @@
 <div class="pad" id="bl">◀</div><div class="pad" id="br">▶</div><div class="pad" id="bu">▲</div>
 <div class="pad" id="ba">⚔<small>ตี</small></div><div class="pad" id="bj">⤒<small>กระโดด</small></div><div class="pad" id="bs">💥<small id="bst">ทุบ</small></div>
 <div class="pad" id="snd">🔊</div>
-<div id="skills"></div>
+<div id="skills" class="off"></div>
 <script>
 'use strict';
 // HOODFALL, the side-view grinder made to look and feel like a real game (owner 2026-11-14 "ทำมาดูทำไมไม่เป็นเกมเลย"; map plan docs/side/map1_plan.md):
@@ -126,19 +130,16 @@ const SK = [
   {id: 'frost', name: 'ดอกน้ำแข็ง', short: 'น้ำแข็ง', cd: 10, key: 'Digit4', ic: '<path d="M16 4v24M5.6 10l20.8 12M5.6 22l20.8-12M13 6l3 3 3-3M13 26l3-3 3 3" stroke="#d8f6ff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'},
   {id: 'flip', name: 'ตีลังกา', cd: 5, key: 'Digit5', ic: '<path d="M22 10a9 9 0 1 0 1 10" stroke="#6fd3ff" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M22 4v7h-7" stroke="#6fd3ff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 16h16M24 13l4 3-4 3" stroke="#bff0ff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'},
   {id: 'wolf', name: 'วิญญาณหมาป่า', short: 'หมาป่า', cd: 30, key: 'Digit6', ult: true, ic: '<path d="M6 6l6 7h8l6-7-1 11-4 6-5 3-5-3-4-6z" fill="#ffe7a8" stroke="#ffb02a" stroke-width="1.6" stroke-linejoin="round"/><path d="M11 17l3 1M21 17l-3 1" stroke="#1a6aa8" stroke-width="2.4" stroke-linecap="round"/><path d="M14 23l2 1.5 2-1.5" stroke="#7a4a10" stroke-width="1.6" fill="none"/>'}];
-// two arcs round the attack button (dx left, dy up, from the attack button's centre)
-const SKPOS = [[-87, 50], [-42, 91], [17, 98], [-158, 58], [-112, 125], [-40, 168]];
 const SKCD = SK.map(() => 0);
 SK.forEach((k, i) => { const el = document.createElement('div'); el.className = 'sk' + (k.ult ? ' ult' : ''); el.id = 'sk' + i;
-  const r = k.ult ? 32 : 27, [dx, dy] = SKPOS[i]; el.style.right = (66 - dx - r) + 'px'; el.style.bottom = (66 + dy - r) + 'px';
-  el.innerHTML = `<svg viewBox="0 0 32 32">${k.ic}</svg><b></b><i>${k.short || k.name}</i>`; document.getElementById('skills').append(el);
+  el.innerHTML = `<svg viewBox="0 0 32 32">${k.ic}</svg><u>${i + 1}</u><b></b><i>${k.short || k.name}</i>`; document.getElementById('skills').append(el);
   el.addEventListener('pointerdown', e => { e.preventDefault(); useSkill(i); }); });
 addEventListener('keydown', e => { const i = SK.findIndex(k => k.key === e.code); if (i >= 0 && !e.repeat) useSkill(i); });
 function useSkill(i) { if (state !== 'play' || SKCD[i] > 0 || P.rope) return; SKCD[i] = SK[i].cd;
   num(P.x, P.y - 96, SK[i].name, 'lvl'); A.on = true; A.n = 2; A.t = 0; A.queued = false; A.skill = true; SFX.swing(); }
 function skillBar(dt) { SK.forEach((k, i) => { SKCD[i] = Math.max(0, SKCD[i] - dt); const el = document.getElementById('sk' + i), c = SKCD[i];
   el.classList.toggle('cd', c > 0); el.style.setProperty('--p', (c / k.cd).toFixed(3)); el.querySelector('b').textContent = c > 0 ? Math.ceil(c) : ''; }); }
-function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'snd']) pad(id).style.display = 'grid'; for (const el of document.querySelectorAll('.sk')) el.style.display = 'grid'; }
+function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'snd']) pad(id).style.display = 'grid'; document.getElementById('skills').classList.remove('off'); }
 function jump() { if (state !== 'play') return; if (P.rope) { P.rope = null; P.vy = -380; P.vx = P.face * 160; return; } if (P.ground || P.jumps < 2) { P.vy = P.ground ? -560 : -480; P.ground = false; P.jumps++; SFX.jump(); } }
 function attack() { if (state !== 'play' || P.rope) return; if (A.on) { A.queued = true; return; } A.on = true; A.n = 0; A.t = 0; A.queued = false; SFX.swing(); }
 function skill() { if (state !== 'play' || H.skill > 0 || P.rope) return; H.skill = 6; A.on = true; A.n = 2; A.t = 0; A.queued = false; A.skill = true; SFX.swing(); }
@@ -295,7 +296,8 @@ function hud() {
   ctx.fillStyle = Math.sin(P.t * 8) > 0 ? '#fff27a' : '#ffffff'; ctx.fillRect(zx + P.x * sxm - U(2), Y(P.y) - U(5), U(4), U(4));
   const zone = ZONES.find(z => P.x >= z[0] && P.x < z[1]); if (zone) text(zone[2], mx + mw - U(10), my + U(19), 10, '#cfe8ff', 600, 'right');
   // status bar (bottom middle): portrait, level, HP, EXP, coins
-  const bw = Math.min(cv.width - U(330), U(420)), bh = U(54), bx = (cv.width - bw) / 2, by = cv.height - bh - U(6); panel(bx, by, bw, bh);
+  const hotW = U(6 * 42 + 5 * 4 + 12), bw = Math.min(cv.width - U(330) - hotW - U(6), U(230)), bh = U(54), bx = (cv.width - bw - hotW - U(6)) / 2 - U(14), by = cv.height - bh - U(6); panel(bx, by, bw, bh);
+  document.getElementById('skills').style.left = Math.round((bx + bw) / DPR + 6) + 'px';   // the skill shortcut bar sits right of the status bar
   ctx.fillStyle = '#3a2a3a'; ctx.fillRect(bx + U(8), by + U(8), U(38), U(38)); if (RUN.width) { ctx.imageSmoothingEnabled = false; ctx.drawImage(RUN, 30, 2, 50, 50, bx + U(8), by + U(8), U(38), U(38)); }
   text('Lv.' + H.lv, bx + U(52), by + U(22), 13, '#fff27a'); text('กระต่ายฮู้ด', bx + U(52), by + U(42), 9, '#ffe9b8', 600);
   const gx = bx + U(116), gw = bw - U(124); bar(gx, by + U(11), gw, U(11), H.hp / H.mhp, '#ff4a5a', '#5a1018'); text(`HP ${H.hp} / ${H.mhp}`, gx + U(4), by + U(20), 8, '#fff', 600);
