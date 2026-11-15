@@ -188,6 +188,8 @@ const A = {on: false, n: 0, t: 0, queued: false, hitDone: false};
 // ---- Sky Huntress: painted 2D archer from Codex's 14 sheets (art/incoming/archer/, cut by tools/art/archer_cut.py into art/sidegame/archer.webp,
 // stored 3x and drawn on the full-res canvas so she stays sharp). Default hero; ?hero=rabbit = the hooded rabbit.
 const ARCHER = (QS.get('hero') || 'archer') === 'archer';
+// her size on screen (owner "ตัวใหญ่ ย่อได้ไหม"): the sheet is cut at 80 world px tall, drawn at HS of that (~52 px = about 1/8 of the view), &hs= to try others
+const HS = +QS.get('hs') || .65, BH = 80 * HS;
 const ARC = img(SG + 'archer.webp'), VFXR = img('art/incoming/archer/vfx_rain_sheet.webp'); let AJ = null; fetch(SG + 'archer.json').then(r => r.json()).then(j => AJ = j);
 // per move: ms per frame, frames where arrows leave the bow, frames held longer (the big pull before a heavy shot)
 // shot3 (owner "เอาฮิต 3 ที่มันกระโดดแล้วย่อ เปลี่ยนเป็นย่อตัวยิงก็พอ"): only the frames on the ground are played (seq), the jump frames 2-5 and 9 are left out;
@@ -339,14 +341,14 @@ const mobH = m => (MS[m.k] ? MS[m.k].fy : 50) * (m.boss ? 2 : 1);
 function hitMob(m, mult, kb) { const crit = R() < .18, dmg = Math.round(heroAtk() * mult * (crit ? 1.6 : 1) * (.9 + R() * .2));
   m.hp -= dmg; m.flash = .1; num(m.x, m.y - mobH(m) - 6 - NUMS.filter(o => Math.abs(o.x - m.x) < 4 && o.t < .2).length * 14, dmg, crit ? 'crit' : 'hit');
   if (m.hp <= 0) kill(m); else if (!m.boss && !(m.frozen > 0)) { m.st = 'hurt'; m.t = 0; m.kb = kb; } (crit ? SFX.crit : SFX.hit)(); return crit; }
-function arrow(o) { ARROWS.push(Object.assign({x: P.x + P.face * 26, y: P.y - 42, vx: P.face * 760, vy: 0, dmg: 1, kb: P.face * 160, pierce: 0, life: .6, big: 0, t: 0, hit: new Set()}, o)); }
+function arrow(o) { ARROWS.push(Object.assign({x: P.x + P.face * 26 * HS, y: P.y - BH * .52, vx: P.face * 760, vy: 0, dmg: 1, kb: P.face * 160, pierce: 0, life: .6, big: 0, t: 0, hit: new Set()}, o)); }
 const SFXA = {bow: () => { tone(900, .06, 'triangle', .05, .5); noise(.08, .05, 5000); }, big: () => { tone(220, .3, 'sawtooth', .07, .3); noise(.3, .12, 2500); },
   ice: () => { [1568, 2093, 2637].forEach((f, i) => tone(f, .25, 'triangle', .05, 1, i * .04)); noise(.25, .08, 6000); }, howl: () => { tone(330, .7, 'sawtooth', .06, 1.8); tone(165, .8, 'triangle', .08, 1.5); noise(.6, .1, 1500); }};
 function fire(k, n) { const f = P.face;
   if (k === 'shot1') { arrow({}); SFXA.bow(); }
-  else if (k === 'shot2') { arrow({dmg: .85, y: P.y - 42 + (n ? 4 : -2)}); SFXA.bow(); }
+  else if (k === 'shot2') { arrow({dmg: .85, y: P.y - BH * .52 + (n ? 3 : -2)}); SFXA.bow(); }
   else if (k === 'shot3' && n === 0) { SFX.swing(); noise(.25, .06, 2500, .08); }   // the spin (owner "ฮิตท้ายหมุนตัวยิงได้ไหม")
-  else if (k === 'shot3') { arrow({dmg: 2.2, big: 1, pierce: 3, vx: f * 900, kb: f * 300, life: .7, y: P.y - 36}); SFXA.big(); shake = .12; shakeAmp = 2; }
+  else if (k === 'shot3') { arrow({dmg: 2.2, big: 1, pierce: 3, vx: f * 900, kb: f * 300, life: .7, y: P.y - BH * .45}); SFXA.big(); shake = .12; shakeAmp = 2; }
   else if (k === 'skill_rain') { FX.push({k: 'rain', x: P.x + f * 190, y: P.y, t: 0, life: 3.1, tick: .7}); SFXA.bow(); }
   else if (k === 'skill_gale') { arrow({dmg: 2.8, big: 2, pierce: 99, vx: f * 820, kb: f * 380, life: .8}); SFXA.big(); shake = .22; shakeAmp = 3; P.vx = -f * 200; }
   else if (k === 'skill_fan') { for (let i = -2; i <= 2; i++) arrow({vy: i * 150, vx: f * (760 - Math.abs(i) * 30), dmg: .95, kb: f * 200, life: .55}); SFXA.bow(); SFXA.big(); shake = .1; }
@@ -397,13 +399,13 @@ function drawArcher() { if (!AJ || !ARC.width) return; if (H.inv && H.inv < .65 
   else if (P.rope) { k = 'jump'; f = 6; } else if (!P.ground) { k = 'jump'; f = P.vy < -250 ? 3 : P.vy < 0 ? 5 : P.vy < 300 ? 6 : 8; } else if (P.run > 0) { k = 'run'; f = Math.floor(P.run * 15) % 12; }
   if (k !== DRW.k) { DRW.bl = {row: DRW.row, f: DRW.f, t: now}; if (k === 'idle') DRW.idle0 = now; DRW.k = k; }
   if (k === 'idle') f = Math.floor((now - DRW.idle0) * 8) % 12;
-  const r = AJ.rows[k]; f = clamp(f, 0, r.n - 1); DRW.row = r.row; DRW.f = f; const sc = K / AJ.k;
+  const r = AJ.rows[k]; f = clamp(f, 0, r.n - 1); DRW.row = r.row; DRW.f = f; const sc = K / AJ.k * HS;
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.translate((Math.round(P.x) - Math.round(cam.x) + SH) * K, (Math.round(P.y) - Math.round(cam.y)) * K);
   // spin before the finisher: one full turn done by squashing the picture through its mirror (cos), with a wind ring round her
   let spx = 1; if (A.on && MV[A.mv] && MV[A.mv].spin) { const [s0, s1] = MV[A.mv].spin; let t0 = 0, t1 = 0; for (let i = 0; i < s1; i++) { if (i < s0) t0 += mvLen(A.mv, i); t1 += mvLen(A.mv, i); }
     const p = (A.t - t0) / (t1 - t0); if (p > 0 && p < 1) { const c = Math.cos(p * Math.PI * 2); spx = Math.sign(c || 1) * Math.max(.12, Math.abs(c));
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 3; i++) { ctx.strokeStyle = `rgba(140,220,255,${.5 - i * .14})`; ctx.lineWidth = K * (2.5 - i * .6); ctx.beginPath();
-        ctx.ellipse(0, -40 * K, (30 + i * 6) * K, (11 + i * 2) * K, 0, p * 9 + i, p * 9 + i + 4.2); ctx.stroke(); } ctx.restore(); } }
+        ctx.ellipse(0, -BH * .5 * K, (30 + i * 6) * HS * K, (11 + i * 2) * HS * K, 0, p * 9 + i, p * 9 + i + 4.2); ctx.stroke(); } ctx.restore(); } }
   ctx.scale(P.face * sc * spx, sc); const b = DRW.bl, bk = b ? (now - b.t) / .11 : 1;
   if (b && bk < 1) { ctx.globalAlpha = 1 - bk; ctx.drawImage(ARC, b.f * AJ.w, b.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.globalAlpha = Math.min(1, .35 + bk); } else DRW.bl = null;
   ctx.drawImage(ARC, f * AJ.w, r.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.restore(); }
