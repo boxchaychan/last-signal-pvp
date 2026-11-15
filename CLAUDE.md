@@ -40,6 +40,8 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 
 ## NEWEST (owner 2026-11-15, latest): kaiju city-smasher game: 3D-pixel test `kaiju.html` (box city in three.js, locked camera with 4 angle presets, stomp / breath, buildings collapse); kaiju = the owner's GPT 4-view pixel sheet (`art/kaiju/k16_*`; PixelLab re-angles looked like another monster). Notes + open questions in the last section of `docs/action-game.md`; start there on "เกมถล่มเมือง".
 
+## NEWEST (owner 2026-11-15, latest of all): stone-age tribe in 3D pixel `tribe3d.html` (wide code-made terraced map, village, day / night; engine of `kaiju.html`); notes in the last section of `docs/action-game.md`; start there on "เกมเผ่า 3D".
+
 ## NEWEST (owner 2026-11-15): stone-age kingdom builder `kingdom.html`
 - Big isometric map (code-generated) + PixelLab starter art (40 credits) in `art/kingdom/` (original colours: the owner prefers them for the city look, no punch). Target look `art/incoming/citytest/scene3_stoneage.png`. Owner's long-term goal: a big city builder. Notes at the end of `docs/action-game.md`.
 
