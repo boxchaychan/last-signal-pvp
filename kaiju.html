@@ -666,9 +666,7 @@ function updRings(dt) { for (const g of RINGS) { if (!g.m.visible) continue; g.t
 // ---------- kaiju (upright cut-out facing the camera)
 const SPR = {}; let kMesh = null, kSil = null, kBlob = null, kMat = null, kSilMat = null;
 const K = { hp: 100, en: 100, x: roadC(2), z: roadC(2), fx: 0, fz: 1, flip: false, left: false, sprN: KS === '8' ? 'south' : 'front', walk: 0, hopPx: 0, stompT: 0, hit: false, sq: 0, moving: false, breath: false };
-async function loadKaiju() {
-  for (const n of VIEWS) {
-    const im = await loadImg(KS === '8' ? `art/kaiju/k8/${n}.png` : `art/kaiju/k${KS}_${n}.png`);
+function sprFrom(im, mouth) {
     const c = mkC(im.width, im.height), x = c.getContext('2d'); x.drawImage(im, 0, 0);
     const d = x.getImageData(0, 0, c.width, c.height).data; let top = c.height, bot = -1; const flame = [];
     for (let y = 0; y < c.height; y++) for (let xx = 0; xx < c.width; xx++) {
@@ -677,7 +675,17 @@ async function loadKaiju() {
       if (d[o + 2] > 170 && d[o] > 120 && d[o + 1] < 140 && d[o + 2] - d[o + 1] > 90) flame.push(xx, y);   // the drawn purple flames
     }
     const t = new THREE.Texture(im); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true;
-    SPR[n] = { tex: t, w: im.width, h: im.height, pad: im.height - 1 - bot, body: bot - top + 1, mouth: MOUTH[KS][n], flame };
+    return { tex: t, w: im.width, h: im.height, pad: im.height - 1 - bot, body: bot - top + 1, mouth, flame };
+}
+async function loadKaiju() {
+  for (const n of VIEWS) SPR[n] = sprFrom(await loadImg(KS === '8' ? `art/kaiju/k8/${n}.png` : `art/kaiju/k${KS}_${n}.png`), MOUTH[KS][n]);
+  if (KS === '8' && Q.get('walk') === '1') {   // TEST: PixelLab walking clips listed in art/kaiju/k8/walk_test.json as { direction: frame count } (only east so far)
+    let man = {}; try { const r = await fetch('art/kaiju/k8/walk_test.json'); if (r.ok) man = await r.json(); } catch (_) {}
+    for (const [d, n] of Object.entries(man)) {
+      const fr = []; for (let i = 0; i < n; i++) fr.push(sprFrom(await loadImg(`art/kaiju/k8/walk/${d}_${i}.png`), null));
+      fr.forEach(f => { f.pad = fr[0].pad; });   // one ground line for the whole clip, so its own up-down stays
+      if (SPR[d]) SPR[d].walk = fr;
+    }
   }
   SPR.side = SPR.side || SPR.east; SPR.front = SPR.front || SPR.south;   // size + first picture come from the side / front view
   U = KH / SPR.side.body; T = 1 / U;
@@ -707,11 +715,13 @@ function pickSprite() {
   if (want !== K.sprN) { K.sprN = want; kMat.map = SPR[want].tex; kSilMat.map = SPR[want].tex; }
 }
 const KP = new V3();
+function curSpr() { const s = SPR[K.sprN]; return K.moving && s.walk ? s.walk[Math.floor(K.walk / (Math.PI * 2) * s.walk.length) % s.walk.length] : s; }
 function placeKaiju() {
-  const sp = SPR[K.sprN], cp = Math.cos(pitch);
+  const sp = curSpr(), cp = Math.cos(pitch);
+  if (kMat.map !== sp.tex) { kMat.map = sp.tex; kSilMat.map = sp.tex; }
   KP.set(K.x, 0, K.z); const pr = KP.dot(R), pu = KP.dot(UPV);
   KP.addScaledVector(R, Math.round(pr / U) * U - pr).addScaledVector(UPV, Math.round(pu / U) * U - pu);
-  const bob = K.moving && K.stompT <= 0 ? Math.round(Math.abs(Math.sin(K.walk)) * Math.max(1, Math.round(SPR.side.body * .015))) : 0;
+  const bob = K.moving && K.stompT <= 0 && !SPR[K.sprN].walk ? Math.round(Math.abs(Math.sin(K.walk)) * Math.max(1, Math.round(SPR.side.body * .015))) : 0;
   kMesh.position.set(KP.x, KP.y + (K.hopPx + bob - sp.pad) * U / cp, KP.z);
   const sq = K.sq > 0 ? K.sq / .14 : 0;
   kMesh.scale.set(sp.w * U * (K.flip ? -1 : 1) * (1 + .07 * sq), sp.h * U / cp * (1 - .1 * sq), 1);
@@ -723,7 +733,7 @@ function placeKaiju() {
 }
 let emberT = 0;
 function embers(dt) {
-  const sp = SPR[K.sprN], f = sp.flame; if (!f.length) return;
+  const sp = curSpr(), f = sp.flame; if (!f.length) return;
   placeKaiju();   // sprite position of this frame
   emberT += dt * (K.breath ? 60 : 26);
   const cp = Math.cos(pitch), sx = K.flip ? -1 : 1;
@@ -735,10 +745,10 @@ function embers(dt) {
     spawnP(x, y, z, (Math.random() - .5) * 2, 3 + Math.random() * 5, (Math.random() - .5) * 2, .5 + Math.random() * .6, 1.6 + Math.random() * 1.6, FIRE_RAMP[0], 1, -3, .8);
   }
 }
-function mouthPos(out) {
-  const sp = SPR[K.sprN], m = sp.mouth;
-  out.copy(kMesh.position).addScaledVector(R, (m[0] - .5) * sp.w * U * (K.flip ? -1 : 1));
-  out.y += sp.h * (1 - m[1]) * U / Math.cos(pitch);
+function mouthPos(out) {   // mouth of the standing picture, measured up from the feet
+  const rs = SPR[K.sprN], cs = curSpr(), m = rs.mouth, cp = Math.cos(pitch);
+  out.copy(kMesh.position).addScaledVector(R, (m[0] - .5) * rs.w * U * (K.flip ? -1 : 1));
+  out.y += (cs.pad + rs.h * (1 - m[1]) - rs.pad) * U / cp;
   return out;
 }
 
