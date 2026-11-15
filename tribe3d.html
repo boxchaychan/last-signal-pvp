@@ -163,6 +163,7 @@ const TIMES = [
 ];
 const FIRES = [];   // {x, y, z, light, big}
 function setTime(i) {
+  if (window.GAME && GAME.on) return;
   timeI = (i + TIMES.length) % TIMES.length; const t = TIMES[timeI];
   hemi.color.set(t.sky); hemi.groundColor.set(t.gnd); hemi.intensity = t.hi; sun.color.set(t.sc); sun.intensity = t.si;
   scene.background = new THREE.Color(t.bg);
@@ -312,7 +313,8 @@ function buildTerrain() {
 // ---------- models made in Blender (tools/blender/tribe_assets.py -> art/tribe3d/models/*.glb); code shapes stay as the fallback
 const MODELS = {};
 const MODEL_NAMES = ['tree_broad_0', 'tree_broad_1', 'tree_broad_2', 'tree_pine_0', 'tree_pine_1', 'rock_0', 'rock_1', 'rock_2', 'hut_cone', 'hut_bone', 'campfire',
-  'hut_dome', 'longhouse', 'totem', 'watchtower', 'rack', 'woodpile', 'stonepile', 'palisade_log', 'cave_mouth', 'mammoth'];
+  'hut_dome', 'longhouse', 'totem', 'watchtower', 'rack', 'woodpile', 'stonepile', 'palisade_log', 'cave_mouth', 'mammoth',
+  'caveman_stand', 'caveman_step', 'caveman_thrust', 'berry_bush', 'bird_body', 'bird_wing'];
 async function loadModels() {
   if (!THREE.GLTFLoader || Q.get('blender') === '0') return;
   const ld = new THREE.GLTFLoader();
@@ -402,6 +404,7 @@ function buildNature() {
     else if (kind === 2 && vill && r() < .5) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8, f: r() });
   }
   for (const o of broad.concat(pine)) TREE_T[tIdx(Math.floor((o.x + HM) / TS), Math.floor((o.z + HM) / TS))] = 1;
+  TREE_LIST = broad.concat(pine); ROCK_LIST = rocks;
   const trunk = new THREE.CylinderGeometry(.3, .42, 2.6, 6).translate(0, 1.3, 0), bA = new THREE.IcosahedronGeometry(1.95, 0).translate(0, 3.6, 0), bB = new THREE.IcosahedronGeometry(1.35, 0).translate(.95, 4.8, .45), bC = new THREE.IcosahedronGeometry(1.15, 0).translate(-.9, 4.3, -.6);
   const pTr = new THREE.CylinderGeometry(.25, .35, 1.8, 6).translate(0, .9, 0), pA = new THREE.ConeGeometry(2.3, 2.8, 7).translate(0, 2.6, 0), pB = new THREE.ConeGeometry(1.75, 2.5, 7).translate(0, 4.1, 0), pC = new THREE.ConeGeometry(1.15, 2.2, 7).translate(0, 5.5, 0);
   if (MODELS.tree_broad_0 && MODELS.tree_pine_0 && MODELS.rock_0) {
@@ -427,7 +430,7 @@ function buildNature() {
 
 // ---------- village (all shapes in code)
 let villagers = [];
-const TREE_T = new Uint8Array(NT * NT);   // tiles that hold a tree (herds look for open meadows)
+const TREE_T = new Uint8Array(NT * NT); let TREE_LIST = [], ROCK_LIST = [];   // tiles that hold a tree (herds look for open meadows)
 function face(o, x, z) { o.rotation.y = Math.atan2(VX - x, VZ - z); }   // front (+z) turned toward the campfire
 function stripeTex(a, b, n) { const c = mkC(8, n * 4), x = c.getContext('2d'); for (let i = 0; i < n; i++) { x.fillStyle = i % 2 ? a : b; x.fillRect(0, i * 4, 8, 4); } for (let i = 0; i < 14; i++) { x.fillStyle = '#00000022'; x.fillRect(Math.random() * 8 | 0, Math.random() * n * 4 | 0, 1, 2); } const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; return t; }
 function addMesh(g, geo, mat, x, y, z) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; g.add(m); return m; }
@@ -565,7 +568,7 @@ function buildVillage() {
   }
   // blocky placeholder villagers (real ones = PixelLab 8-direction sprites later)
   const skin = [0xe0a878, 0xc88a5a, 0xa86e44], fur = [0x8a5a32, 0x6b4a2e, 0xb08050, 0x9a6a3a];
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < (window.GAME ? 0 : 16); i++) {
     const g = new THREE.Group(), a = r() * 6.28, d = 6 + r() * 26, x = VX + Math.cos(a) * d, z = VZ + Math.sin(a) * d;
     addMesh(g, new THREE.BoxGeometry(.9, 1.2, .6), L(fur[i % 4]), 0, 1.1, 0);
     addMesh(g, new THREE.BoxGeometry(.7, .7, .7), L(skin[i % 3]), 0, 2.05, 0);
@@ -602,6 +605,7 @@ function updAnimals(dt) {
   }
 }
 // ---------- Quaternius animated animals (CC0, vendor/quaternius): herds that graze, walk and gallop (loaded after the map shows)
+const ANIM_SRC = {};   // name -> { src, clips, sc } so the game can clone animals as enemies
 const HERDS = [], HERD_DEF = {
   Deer: { h: 3.1, herds: 3, size: [3, 5], walk: 2.4, run: 9, shy: true },        // heights a bit larger than life so they read on screen
   Stag: { h: 3.9, herds: 2, size: [1, 2], walk: 2.4, run: 9, shy: true },
@@ -633,6 +637,7 @@ async function loadAnimals() {
     const src = g.scene;
     src.traverse(o => { if (o.isMesh) { const conv = m => new THREE.MeshLambertMaterial({ color: m.color }); o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); o.castShadow = o.receiveShadow = true; } });
     src.updateMatrixWorld(true); const sz = new THREE.Box3().setFromObject(src).getSize(new V3()), sc = d.h / Math.max(.01, sz.y);
+    ANIM_SRC[name] = { src, clips: g.animations, sc, h: d.h };
     for (let hI = 0; hI < d.herds; hI++) {
       const c = findSpot(r); if (!c) continue;
       const n = d.size[0] + (r() * (d.size[1] - d.size[0] + 1) | 0), y0 = groundY(c.x, c.z);
@@ -650,6 +655,7 @@ async function loadAnimals() {
 function updHerds(dt) {
   for (const a of HERDS) {
     a.mixer.update(dt);
+    if (a.dead) continue;
     const y = groundY(a.x, a.z);
     if (a.st === 'idle') {
       a.t -= dt; if (a.t > 0) continue;
@@ -746,6 +752,7 @@ function step(dt) {
   let kx = 0, ky = 0; if (keys.a || keys.arrowleft) kx--; if (keys.d || keys.arrowright) kx++; if (keys.w || keys.arrowup) ky--; if (keys.s || keys.arrowdown) ky++;
   if (kx || ky) pan(-kx * 420 * dt, -ky * 420 * dt);
   if (waterM) waterM.uniforms.t.value += dt; CLOUD.t.value += dt;
+  if (window.GAME && GAME.on) dt = GAME.step(dt);
   updVillagers(dt); updAnimals(dt); updHerds(dt); updParticles(dt);
 }
 function draw() {
@@ -756,6 +763,7 @@ function draw() {
   // the sun's shadow box follows the view, moved in whole shadow texels so shadows do not crawl
   const tx = 156 / 2048, sx = Math.round(CT.x / tx) * tx, sz = Math.round(CT.z / tx) * tx;
   sun.target.position.set(sx, 0, sz); sun.position.set(sx + SUNDIR.x * 250, SUNDIR.y * 250, sz + SUNDIR.z * 250);
+  if (window.GAME && GAME.on) GAME.draw();
   if ((frameN++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
   renderer.setRenderTarget(rt); renderer.render(scene, cam);
   renderer.setRenderTarget(null); renderer.render(postScene, postCam);
@@ -777,8 +785,592 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
     say(matchMedia('(pointer: coarse)').matches ? 'ลากนิ้วเพื่อเลื่อนแมพ<small>บีบนิ้วซูม · ปุ่มบนขวา: มุมกล้อง / ซูม / เวลา</small>' : 'ลากเมาส์หรือ WASD เพื่อเลื่อนแมพ<small>ล้อเมาส์ซูม · C มุมกล้อง · N เวลา</small>', 4500);
     requestAnimationFrame(frame);
     loadAnimals().then(() => { TB.stats.animals = HERDS.length; TB.animalsReady = true; });
+    if (window.GAME) GAME.init();
   } catch (err) { $('load').textContent = 'โหลดไม่สำเร็จ: ' + err.message; console.error(err); }
 })();
 </script>
+<script>
+'use strict';
+// =====================================================================================================================
+// THE GAME (owner's concept 2026-11-15): build the village by day, defend it at night, expand with outposts (colonies)
+// for more resources, enemies stronger every night, a boss every 5th night. Everything here is free (code + Blender +
+// CC0 packs). QA hooks: window.GAME (G = state, step, draw, cheat...).
+// =====================================================================================================================
+const GAME = window.GAME = (function () {
+  const DAY = 110, DUSK = 10, NIGHT = 65, DAWN = 8, CYCLE = DAY + DUSK + NIGHT + DAWN;
+  const G = { on: false, res: { wood: 110, stone: 60, food: 90 }, popCap: 0, day: 1, t: 0, speed: 1, over: false, best: 0,
+    buildings: [], vill: [], enemies: [], shots: [], nodes: [], terr: [], floats: [], mode: null, ghost: null, ghostOk: false, ghostAt: null, killed: 0, raid: null, birthT: 0, eatT: 0 };
+  const SAVE = 'tribe3d_v1', BEST = 'tribe3d_best';
+  const RES_N = { wood: 'ไม้', stone: 'หิน', food: 'อาหาร' };
+  const BT = {   // building types
+    hall:    { n: 'โถงหัวหน้าเผ่า', hp: 500, r: 6, store: true },
+    hut:     { n: 'กระท่อม', cost: { wood: 30 }, hp: 120, r: 3.4, pop: 4, d: 'ที่อยู่ +4 คน' },
+    store:   { n: 'ลานเก็บของ', cost: { wood: 25 }, hp: 100, r: 2.6, store: true, d: 'จุดส่งของใกล้งาน' },
+    farm:    { n: 'แปลงผัก', cost: { wood: 25 }, hp: 70, r: 4.2, food: .5, d: 'อาหารเพิ่มเองตอนกลางวัน' },
+    tower:   { n: 'หอพุ่งหอก', cost: { wood: 40, stone: 25 }, hp: 170, r: 2.4, range: 30, rate: 1.25, dmg: 15, d: 'ยิงหอกใส่ศัตรู' },
+    wall:    { n: 'รั้วไม้แหลม', cost: { wood: 12 }, hp: 160, r: 2.8, wall: true, d: 'ขวางทางศัตรู' },
+    fire:    { n: 'กองไฟ', cost: { wood: 15, stone: 5 }, hp: 60, r: 1.8, heal: 3, d: 'ส่องสว่าง รักษาชาวเผ่า' },
+    outpost: { n: 'ด่านหน้า', cost: { wood: 60, stone: 40, food: 20 }, hp: 220, r: 3, terr: 34, store: true, d: 'ขยายดินแดน (อาณานิคม)' },
+  };
+  const BUILD_ORDER = ['hut', 'farm', 'tower', 'wall', 'fire', 'store', 'outpost'];
+  const EN = {   // enemy types (Quaternius animals; boss = Blender bird / mammoth)
+    wolf: { a: 'Wolf', hp: 28, dmg: 5, spd: 6.4, r: 1.2, food: 4, n: 'หมาป่า' },
+    fox:  { a: 'Fox', hp: 18, dmg: 4, spd: 7.6, r: 1, food: 2, n: 'จิ้งจอก' },
+    bull: { a: 'Bull', hp: 110, dmg: 14, spd: 4.4, r: 2, food: 12, n: 'กระทิงคลั่ง' },
+    stag: { a: 'Stag', hp: 60, dmg: 9, spd: 6, r: 1.6, food: 8, n: 'กวางเขาคลั่ง' },
+    alpha:{ a: 'Wolf', hp: 380, dmg: 18, spd: 6.8, r: 2.2, food: 20, n: 'จ่าฝูงหมาป่า', boss: true, scale: 1.9, tint: 0x8a2a2a },
+    bird: { hp: 520, dmg: 26, spd: 11, r: 3, food: 30, n: 'นกยักษ์', boss: true, fly: true },
+    mammoth: { hp: 900, dmg: 34, spd: 3.6, r: 3.5, food: 60, n: 'แมมมอธคลั่ง', boss: true },
+  };
+  const V = new V3(), V2 = new V3(), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let ov, ox, hudEl = {}, VMAT = [], ghostMat, terrLines = [];
+  const rnd = Math.random;
+
+  // ---------- helpers
+  const d2 = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  function inTerr(x, z, pad) { for (const t of G.terr) if (Math.hypot(x - t.x, z - t.z) < t.r + (pad || 0)) return true; return false; }
+  function canPay(c) { for (const k in c) if (G.res[k] < c[k]) return false; return true; }
+  function pay(c) { for (const k in c) G.res[k] -= c[k]; }
+  function costTxt(c) { return Object.entries(c).map(([k, v]) => `${RES_N[k]} ${v}`).join(' · '); }
+  function float(x, y, z, text, col) { G.floats.push({ x, y, z, text, col: col || '#fff', t: 0 }); }
+  function nightK() {   // 0 day .. 1 night
+    const t = G.t; if (t < DAY) return 0; if (t < DAY + DUSK) return (t - DAY) / DUSK; if (t < DAY + DUSK + NIGHT) return 1; return 1 - (t - DAY - DUSK - NIGHT) / DAWN;
+  }
+  const isNight = () => G.t >= DAY + DUSK && G.t < DAY + DUSK + NIGHT;
+  function mkMesh(name, x, z, ry, s) { if (!MODELS[name]) return null; const m = new THREE.Mesh(MODELS[name], VCOL); m.position.set(x, groundY(x, z), z); m.rotation.y = ry || 0; m.scale.setScalar(s || 1); m.castShadow = m.receiveShadow = true; scene.add(m); return m; }
+
+  // ---------- sky: smooth day -> sunset -> night -> dawn using the TIMES presets
+  const C1 = new THREE.Color(), C2 = new THREE.Color();
+  function lerpT(a, b, k) {
+    hemi.color.copy(C1.set(a.sky)).lerp(C2.set(b.sky), k); hemi.groundColor.copy(C1.set(a.gnd)).lerp(C2.set(b.gnd), k); hemi.intensity = a.hi + (b.hi - a.hi) * k;
+    sun.color.copy(C1.set(a.sc)).lerp(C2.set(b.sc), k); sun.intensity = a.si + (b.si - a.si) * k;
+    const u = postM.uniforms, L = (p, q) => p + (q - p) * k;
+    u.haze.value = L(a.haze, b.haze); u.hazeC.value.setRGB(L(a.hz[0], b.hz[0]), L(a.hz[1], b.hz[1]), L(a.hz[2], b.hz[2])); u.sat.value = L(a.sat, b.sat);
+    u.cool.value.setRGB(L(a.cool[0], b.cool[0]), L(a.cool[1], b.cool[1]), L(a.cool[2], b.cool[2])); u.warm.value.setRGB(L(a.warm[0], b.warm[0]), L(a.warm[1], b.warm[1]), L(a.warm[2], b.warm[2]));
+    CLOUD.k.value = L(a.cloud, b.cloud); if (waterM) waterM.uniforms.k.value = L(a.water, b.water);
+    const f = L(a.fire, b.fire); for (const fr of FIRES) if (fr.light) fr.light.intensity = f * (fr.big ? 1.6 : 1);
+    TIMES.cur = f;
+  }
+  function sky() {
+    const k = nightK(), A = TIMES[0], S = TIMES[1], N = TIMES[2];
+    if (k < .5) lerpT(A, S, k * 2); else lerpT(S, N, (k - .5) * 2);
+    timeI = k > .75 ? 2 : k > .25 ? 1 : 0;
+    const a = k * Math.PI; SUNDIR.set(-50 + 90 * k, 100 - 40 * Math.sin(a), 70 - 130 * k).normalize();
+    for (const b of G.buildings) if (b.light) b.light.intensity = (k > .3 ? 1.4 * k : 0) * (.85 + rnd() * .3);
+  }
+
+  // ---------- territory rings
+  function drawTerr() {
+    for (const l of terrLines) scene.remove(l); terrLines = [];
+    for (const t of G.terr) {
+      const pts = []; for (let i = 0; i <= 96; i++) { const a = i / 96 * Math.PI * 2, x = t.x + Math.cos(a) * t.r, z = t.z + Math.sin(a) * t.r; pts.push(new V3(x, Math.max(groundY(x, z), -.3) + .25, z)); }
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffe08a, transparent: true, opacity: .55 }));
+      scene.add(l); terrLines.push(l);
+    }
+  }
+
+  // ---------- buildings
+  function buildMesh(type, x, z, ry) {
+    const g = new THREE.Group(); g.position.set(x, groundY(x, z), z); g.rotation.y = ry || 0; scene.add(g);
+    const add = (n, ox, oz, s, r2) => { if (!MODELS[n]) return; const m = new THREE.Mesh(MODELS[n], VCOL); m.position.set(ox || 0, 0, oz || 0); m.scale.setScalar(s || 1); m.rotation.y = r2 || 0; m.castShadow = m.receiveShadow = true; g.add(m); };
+    if (type === 'hut') add(['hut_cone', 'hut_dome', 'hut_bone'][Math.random() * 3 | 0], 0, 0, .95);
+    else if (type === 'store') { add('woodpile', -1.2, 0, 1); add('stonepile', 1.3, .3, 1); }
+    else if (type === 'farm') { const rows = new THREE.Mesh(new THREE.BoxGeometry(7, .5, 6), new THREE.MeshLambertMaterial({ color: 0x8a5a32 })); rows.position.y = .25; rows.receiveShadow = true; g.add(rows);
+      for (let i = 0; i < 4; i++) for (let k = 0; k < 5; k++) { const p = new THREE.Mesh(new THREE.BoxGeometry(.6, .8, .6), new THREE.MeshLambertMaterial({ color: new THREE.Color().setHSL(.27 + rnd() * .06, .55, .34 + rnd() * .1) })); p.position.set(-2.6 + k * 1.3, .85, -2.2 + i * 1.45); p.castShadow = true; g.add(p); } }
+    else if (type === 'tower') add('watchtower', 0, 0, .8);
+    else if (type === 'wall') { for (let i = -2; i <= 2; i++) add('palisade_log', i * .95, 0, 1.1, rnd() * 3); }
+    else if (type === 'fire') add('campfire', 0, 0, .8);
+    else if (type === 'outpost') { add('totem', 0, -1.5, .8); add('campfire', 0, 2.2, .6); add('woodpile', 2.6, 1, .7); }
+    return g;
+  }
+  function adopt(x, z, r) {   // meshes of the hand-made village standing at x, z become this building's visuals
+    const g = new THREE.Group(); scene.add(g);
+    for (const o of scene.children.slice()) if ((o.isMesh || o.isGroup) && !o.isInstancedMesh && o !== g && Math.hypot(o.position.x - x, o.position.z - z) < r) g.attach(o);
+    return g;
+  }
+  function addBuilding(type, x, z, ry, hp, pre) {
+    const T = BT[type], b = { type, x, z, ry: ry || 0, hp: hp == null ? T.hp : hp, max: T.hp, r: T.r, g: pre ? adopt(x, z, pre) : buildMesh(type, x, z, ry), cd: rnd(), rise: pre ? 1 : 0, pre: !!pre };
+    if (T.pop) G.popCap += T.pop;
+    if (T.terr) { G.terr.push({ x, z, r: T.terr, b }); drawTerr(); seedNodes(x, z, T.terr + 10); }
+    if (type === 'fire' || type === 'outpost') { b.light = new THREE.PointLight(0xff9a3c, 0, 30, 1.4); b.light.position.set(x, groundY(x, z) + 3, z); scene.add(b.light); b.fireRef = { x, y: groundY(x, z) + .6, z: z + (type === 'outpost' ? 2.2 : 0), light: null, big: false }; FIRES.push(b.fireRef); }
+    G.buildings.push(b); return b;
+  }
+  function removeBuilding(b) {
+    b.dead = true; scene.remove(b.g); if (b.light) scene.remove(b.light); if (b.fireRef) { const i = FIRES.indexOf(b.fireRef); if (i >= 0) FIRES.splice(i, 1); }
+    const T = BT[b.type]; if (T.pop) G.popCap -= T.pop;
+    if (T.terr) { G.terr = G.terr.filter(t => t.b !== b); drawTerr(); }
+    for (let i = 0; i < 30; i++) spawnP(b.x + (rnd() - .5) * b.r * 2, groundY(b.x, b.z) + rnd() * 3, b.z + (rnd() - .5) * b.r * 2, (rnd() - .5) * 6, 3 + rnd() * 5, (rnd() - .5) * 6, 1 + rnd(), 6 + rnd() * 5, 0);
+    G.buildings = G.buildings.filter(x => x !== b);
+    if (b.type === 'hall') gameOver();
+  }
+  function stores() { return G.buildings.filter(b => BT[b.type].store); }
+  function nearestStore(x, z) { let best = null, bd = 1e9; for (const b of stores()) { const d = Math.hypot(b.x - x, b.z - z); if (d < bd) { bd = d; best = b; } } return best; }
+
+  // ---------- resource nodes: trees (wood), rocks (stone), berry bushes (food); only those near our land are worked
+  function seedNodes(cx, cz, rad) {
+    for (const o of TREE_LIST) if (Math.hypot(o.x - cx, o.z - cz) < rad && !G.nodes.some(n => n.o === o)) G.nodes.push({ o, type: 'wood', x: o.x, z: o.z, amt: 40, max: 40, w: 0 });
+    for (const o of ROCK_LIST) if (Math.hypot(o.x - cx, o.z - cz) < rad && (o.s || 1) > .7 && !G.nodes.some(n => n.o === o)) G.nodes.push({ o, type: 'stone', x: o.x, z: o.z, amt: 60, max: 60, w: 0 });
+    let made = 0;
+    for (let i = 0; i < 600 && made < 10; i++) {
+      const a = rnd() * 6.28, d = rad * (.35 + rnd() * .55), x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
+      if (kindAt(x, z) !== 2 || Math.hypot(x - VX, z - VZ) < VR - 2 || G.nodes.some(n => Math.hypot(n.x - x, n.z - z) < 4)) continue;
+      const m = mkMesh('berry_bush', x, z, rnd() * 6, 1.2); if (!m) break;
+      G.nodes.push({ type: 'food', x, z, amt: 40, max: 40, w: 0, m, regrow: true }); made++;
+    }
+    // a few extra rocks near outposts so stone does not run out
+    if (MODELS.rock_0) for (let i = 0; i < 3; i++) { const a = rnd() * 6.28, x = cx + Math.cos(a) * rad * .6, z = cz + Math.sin(a) * rad * .6; if (kindAt(x, z) === 2) { const m = mkMesh('rock_' + (i % 3), x, z, rnd() * 6, 1.3); G.nodes.push({ type: 'stone', x, z, amt: 60, max: 60, w: 0, m }); } }
+  }
+
+  // ---------- villagers
+  function addVillager(x, z) {
+    const g = new THREE.Group(); g.position.set(x, groundY(x, z), z); scene.add(g);
+    const tint = new THREE.Color().setHSL(.07 + rnd() * .05, .3 + rnd() * .3, .78 + rnd() * .22);
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, color: tint });
+    const poses = {}; for (const p of ['stand', 'step', 'thrust']) { if (!MODELS['caveman_' + p]) continue; const m = new THREE.Mesh(MODELS['caveman_' + p], mat); m.castShadow = true; m.visible = p === 'stand'; m.scale.setScalar(.95); g.add(m); poses[p] = m; }
+    const v = { g, poses, x, z, hp: 30, st: 'idle', t: rnd(), job: null, carry: null, ph: rnd() * 6, ang: rnd() * 6.28, pose: 'stand', atk: 0 };
+    G.vill.push(v); return v;
+  }
+  function setPose(v, p) { if (v.pose === p || !v.poses[p]) return; v.poses[v.pose].visible = false; v.poses[p].visible = true; v.pose = p; }
+  function moveTo(o, tx, tz, spd, dt) {
+    const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d < .05) return true;
+    const st = Math.min(d, spd * dt);
+    let ux = dx / d, uz = dz / d;
+    if (!o.fly && kindAt(o.x + ux * (st + .8), o.z + uz * (st + .8)) === 0) {   // water ahead: slide along the shore
+      let ok = false;
+      for (const a of [.6, -.6, 1.2, -1.2, 1.8, -1.8]) { const c = Math.cos(a), s2 = Math.sin(a), rx = ux * c - uz * s2, rz = ux * s2 + uz * c; if (kindAt(o.x + rx * (st + .8), o.z + rz * (st + .8)) !== 0) { ux = rx; uz = rz; ok = true; break; } }
+      if (!ok) return true;
+    }
+    o.x += ux * st; o.z += uz * st; return d - st < .3;
+  }
+  function pickJob(v) {
+    const pop = G.vill.length, share = { food: G.res.food < pop * 4 ? .55 : .35, wood: .4, stone: .25 }, cnt = { food: 0, wood: 0, stone: 0 };
+    for (const o of G.vill) { const ty = o.carry ? o.carry.type : o.job ? (o.job.hunt ? 'food' : o.job.type) : null; if (ty) cnt[ty]++; }
+    const order = Object.keys(share).sort((a, b) => (cnt[a] / pop - share[a]) - (cnt[b] / pop - share[b]));
+    for (const type of order) {
+      let best = null, bd = 1e9;
+      for (const n of G.nodes) { if (n.type !== type || n.amt < 5 || n.w >= 3 || !inTerr(n.x, n.z, 14)) continue; const d = Math.hypot(n.x - v.x, n.z - v.z); if (d < bd) { bd = d; best = n; } }
+      if (type === 'food' && (!best || bd > 45)) {   // hunt a grazing animal close to our land
+        let prey = null, pd = 1e9; for (const a of HERDS) { if (a.dead || !inTerr(a.x, a.z, 40)) continue; const d = Math.hypot(a.x - v.x, a.z - v.z); if (d < pd) { pd = d; prey = a; } }
+        if (prey && pd < 90) { v.job = { hunt: prey }; v.st = 'hunt'; return; }
+      }
+      if (best) { v.job = best; best.w++; v.st = 'go'; return; }
+    }
+    v.st = 'idle'; v.t = 2;
+  }
+  function vStep(v, dt) {
+    const night = isNight() && G.enemies.length;
+    if (v.hp < 30 && !night) v.hp = Math.min(30, v.hp + dt * 1.5);
+    for (const b of G.buildings) if (b.type === 'fire' && Math.hypot(b.x - v.x, b.z - v.z) < 10) v.hp = Math.min(30, v.hp + BT.fire.heal * dt);
+    let moving = false;
+    if (night) {   // defend: fight the nearest enemy close to us or to the village, else gather at the hall
+      if (v.job && v.job.w) v.job.w--; v.job = null; v.carry = null; v.st = 'idle'; v.t = 1;
+      let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.def.fly && x.y > 4) continue; const d = Math.hypot(x.x - v.x, x.z - v.z); if (d < ed) { ed = d; e = x; } }
+      if (e && ed < 26) {
+        if (ed > e.def.r + 1.4) { moveTo(v, e.x, e.z, 5.2, dt); moving = true; v.face = Math.atan2(e.x - v.x, e.z - v.z); }
+        else { v.atk -= dt; v.face = Math.atan2(e.x - v.x, e.z - v.z); if (v.atk <= 0) { v.atk = 1; hurtEnemy(e, 6, v); setPose(v, 'thrust'); v.tp = .3; } }
+      } else { const h = G.hall; if (h && Math.hypot(h.x - v.x, h.z - v.z) > 9) { moveTo(v, h.x + Math.cos(v.ang) * 7, h.z + Math.sin(v.ang) * 7, 4.5, dt); moving = true; v.face = Math.atan2(h.x - v.x, h.z - v.z); } }
+    } else if (v.st === 'idle') { v.t -= dt; if (v.t <= 0) pickJob(v); }
+    else if (v.st === 'go') {
+      const n = v.job; if (!n || n.amt < 1) { if (n) n.w--; v.st = 'idle'; v.t = .5; }
+      else { const off = n.type === 'wood' ? 1.6 : 1.4; if (moveTo(v, n.x + Math.sin(v.ang) * off, n.z + Math.cos(v.ang) * off, 5.2, dt)) { v.st = 'work'; v.t = 2.4; } moving = true; v.face = Math.atan2(n.x - v.x, n.z - v.z); }
+    } else if (v.st === 'work') {
+      v.t -= dt; v.tp = (v.tp || 0) - dt; if (v.tp <= 0) { setPose(v, v.pose === 'thrust' ? 'stand' : 'thrust'); v.tp = .35; }
+      if (!v.job) { v.st = 'idle'; v.t = .5; }
+      else if (v.t <= 0) { const n = v.job, got = Math.min(8, n.amt); n.amt -= got; n.w--; v.carry = { type: n.type, n: got }; v.job = null; v.st = 'back'; setPose(v, 'stand'); }
+    } else if (v.st === 'hunt') {
+      const a = v.job && v.job.hunt; if (!a || a.dead) { v.st = 'idle'; v.t = .5; v.job = null; }
+      else { if (Math.hypot(a.x - v.x, a.z - v.z) > 2.6) { moveTo(v, a.x, a.z, 5, dt); moving = true; v.face = Math.atan2(a.x - v.x, a.z - v.z); }
+        else { killHerd(a); v.carry = { type: 'food', n: 14 }; v.job = null; v.st = 'back'; setPose(v, 'thrust'); v.tp = .4; } }
+    } else if (v.st === 'back') {
+      const s = nearestStore(v.x, v.z); if (!s) { v.st = 'idle'; v.t = 1; }
+      else { if (moveTo(v, s.x + Math.cos(v.ang) * (s.r + 1), s.z + Math.sin(v.ang) * (s.r + 1), 5.2, dt)) { if (v.carry) { G.res[v.carry.type] += v.carry.n; float(s.x, groundY(s.x, s.z) + 5, s.z, `+${v.carry.n} ${RES_N[v.carry.type]}`, v.carry.type === 'food' ? '#ffd27a' : v.carry.type === 'wood' ? '#e8c08a' : '#d8dde8'); } v.carry = null; v.st = 'idle'; v.t = .3; } moving = true; v.face = Math.atan2(s.x - v.x, s.z - v.z); }
+    }
+    if (v.tp > 0 && v.st !== 'work') { v.tp -= dt; if (v.tp <= 0) setPose(v, 'stand'); }
+    if (moving) { v.ph += dt * 9; if (v.pose !== 'thrust') setPose(v, Math.sin(v.ph) > 0 ? 'step' : 'stand'); }
+    else if (v.pose === 'step') setPose(v, 'stand');
+    v.g.position.set(v.x, groundY(v.x, v.z) + (moving ? Math.abs(Math.sin(v.ph)) * .12 : 0), v.z);
+    if (v.face != null) { let dr = v.face - v.g.rotation.y; while (dr > Math.PI) dr -= 6.283; while (dr < -Math.PI) dr += 6.283; v.g.rotation.y += dr * Math.min(1, dt * 8); }
+    if (v.carry && !v.load) { v.load = new THREE.Mesh(new THREE.BoxGeometry(.7, .5, .7), new THREE.MeshLambertMaterial({ color: 0xffffff })); v.load.position.set(0, 2.9, .1); v.load.castShadow = true; v.g.add(v.load); }
+    if (v.load) { v.load.visible = !!v.carry; if (v.carry) v.load.material.color.set(v.carry.type === 'wood' ? 0x8a5a32 : v.carry.type === 'stone' ? 0x9a9690 : 0xd84a4a); }
+  }
+  function killHerd(a) {
+    a.dead = true; a.st = 'dead'; play(a, 'Death');
+    setTimeout(() => { scene.remove(a.root); const i = HERDS.indexOf(a); if (i >= 0) HERDS.splice(i, 1); }, 2500);
+  }
+  function hurtVillager(v, dmg) {
+    v.hp -= dmg; for (let i = 0; i < 5; i++) spawnP(v.x, groundY(v.x, v.z) + 1.6, v.z, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .5, 3, 0);
+    if (v.hp <= 0 && !v.dead) { v.dead = true; if (v.job && v.job.w) v.job.w--; v.g.rotation.x = -Math.PI / 2; v.g.position.y += .4; setTimeout(() => scene.remove(v.g), 2500); G.vill = G.vill.filter(x => x !== v); say('ชาวเผ่าเสียชีวิต 1 คน', 1500); }
+  }
+
+  // ---------- enemies
+  function spawnEnemy(kind, x, z) {
+    const def = EN[kind], k = 1 + .17 * (G.day - 1), e = { kind, def, x, z, y: 0, hp: def.hp * k, max: def.hp * k, dmg: def.dmg * (1 + .1 * (G.day - 1)), atk: 0, wp: [], target: null };
+    if (def.fly) {   // giant bird: body + two flapping wings
+      const g = new THREE.Group(); const body = new THREE.Mesh(MODELS.bird_body, VCOL); body.castShadow = true; g.add(body);
+      for (const sx of [1, -1]) { const w = new THREE.Mesh(MODELS.bird_wing, VCOL); w.position.set(sx * .9, .5, .2); w.scale.set(sx, 1, 1); w.castShadow = true; g.add(w); (e.wings = e.wings || []).push(w); }
+      g.scale.setScalar(1.6); e.root = g; e.y = 16; e.fly = true; scene.add(g);
+    } else if (kind === 'mammoth') { e.root = new THREE.Group(); const m = new THREE.Mesh(MODELS.mammoth, VCOL); m.castShadow = true; m.scale.setScalar(1.5); e.root.add(m); scene.add(e.root); }
+    else {
+      const src = ANIM_SRC[def.a]; if (!src) return null;
+      const root = THREE.SkeletonUtils.clone(src.src); root.scale.setScalar(src.sc * (def.scale || 1) * (kind === 'bull' ? 1.1 : 1)); scene.add(root);
+      if (def.tint) root.traverse(o => { if (o.isMesh) { const mm = Array.isArray(o.material) ? o.material : [o.material]; o.material = mm.map(q => { const c = q.clone(); c.color.multiply(new THREE.Color(def.tint)).multiplyScalar(1.6); return c; }); if (o.material.length === 1) o.material = o.material[0]; } });
+      e.root = root; e.mixer = new THREE.AnimationMixer(root); e.acts = {}; for (const c of src.clips) e.acts[c.name] = e.mixer.clipAction(c);
+      play(e, 'Gallop');
+    }
+    e.ring = new THREE.Mesh(new THREE.RingGeometry(def.r * .9, def.r * 1.15, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: def.boss ? 0xff3030 : 0xff6a3a, transparent: true, opacity: .7, depthWrite: false })); scene.add(e.ring);
+    e.root.traverse(o => { if (o.isMesh && o.material && o.material.emissive) { const mm = Array.isArray(o.material) ? o.material : [o.material]; o.material = mm.map(q => q.clone()); if (o.material.length === 1) o.material = o.material[0]; } });
+    G.enemies.push(e); return e;
+  }
+  function flash(e) { e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(.8, .15, .1); } }); e.fl = .12; }
+  function hurtEnemy(e, dmg, by) {
+    if (e.dead) return; e.hp -= dmg; flash(e); float(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 3.5, e.z, '-' + Math.round(dmg), '#ff8a6a');
+    for (let i = 0; i < 6; i++) spawnP(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 1.2, e.z, (rnd() - .5) * 5, 2 + rnd() * 4, (rnd() - .5) * 5, .45, 3, 0);
+    if (e.hp <= 0) {
+      e.dead = true; G.killed++; scene.remove(e.ring); if (e.mixer) play(e, 'Death');
+      G.res.food += e.def.food; float(e.x, groundY(e.x, e.z) + 4, e.z, `+${e.def.food} อาหาร`, '#ffd27a');
+      if (e.def.boss) say(`ล้ม${e.def.n}สำเร็จ!`, 2500);
+      e.dieT = e.fly ? 3 : 2.2;
+    }
+  }
+  function enemyTarget(e) {
+    let best = null, bd = 1e9;
+    for (const b of G.buildings) { const d = Math.hypot(b.x - e.x, b.z - e.z) - b.r * 1.5; if (d < bd) { bd = d; best = b; } }
+    for (const v of G.vill) { const d = Math.hypot(v.x - e.x, v.z - e.z) + 6; if (d < bd) { bd = d; best = v; } }
+    return best;
+  }
+  function blocker(e, nx, nz) { for (const b of G.buildings) if (b.type === 'wall' && Math.hypot(b.x - nx, b.z - nz) < b.r + e.def.r * .6) return b; return null; }
+  function eStep(e, dt) {
+    if (e.mixer) e.mixer.update(dt);
+    if (e.fl > 0) { e.fl -= dt; if (e.fl <= 0) e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(0, 0, 0); } }); }
+    if (e.dead) { e.dieT -= dt; if (e.fly) { e.y = Math.max(groundY(e.x, e.z), e.y - dt * 12); e.root.rotation.z += dt * 2; } if (e.dieT <= 0) { scene.remove(e.root); e.gone = true; } place(e); return; }
+    if (e.flee) { const a = Math.atan2(e.z - VZ, e.x - VX); moveTo(e, e.x + Math.cos(a) * 30, e.z + Math.sin(a) * 30, e.def.spd * 1.2, dt); e.face = a; e.fleeT -= dt; if (e.fleeT <= 0) { scene.remove(e.root); scene.remove(e.ring); e.gone = true; } place(e); return; }
+    e.retarget = (e.retarget || 0) - dt;
+    if (!e.target || e.target.dead || e.retarget <= 0) { e.target = enemyTarget(e); e.retarget = 1.5; e.wp = []; }
+    const t = e.target; if (!t) { place(e); return; }
+    const tr = (t.r || .6) + e.def.r + .6, d = Math.hypot(t.x - e.x, t.z - e.z);
+    if (e.fly) {   // circle high, then dive onto the target
+      e.ph = (e.ph || 0) + dt; e.wings.forEach((w, i) => { w.rotation.z = Math.sin(e.ph * 7) * .7 * (i ? -1 : 1); });
+      if (d > tr + 2) { moveTo(e, t.x, t.z, e.def.spd, dt); e.y += ((groundY(e.x, e.z) + 16) - e.y) * Math.min(1, dt * 2); e.face = Math.atan2(t.x - e.x, t.z - e.z); }
+      else { e.y += ((groundY(e.x, e.z) + 3) - e.y) * Math.min(1, dt * 3); e.atk -= dt; if (e.atk <= 0 && e.y < groundY(e.x, e.z) + 5) { e.atk = 2.2; hitTarget(e, t); } }
+      place(e); return;
+    }
+    // walk round the palisade to a gate when the target is inside the ring
+    const inside = p => Math.hypot(p.x - VX, p.z - VZ) < VR - 2;
+    let gx = t.x, gz = t.z;
+    if (inside(t) && !inside(e)) {   // outside the palisade: go to the nearest gate, then through it
+      if (!e.gate) { let best = 0, bd = 1e9; for (const ga of [0, 270]) { const dd = Math.hypot(VX + Math.cos(ga * D2R) * (VR + 3) - e.x, VZ + Math.sin(ga * D2R) * (VR + 3) - e.z); if (dd < bd) { bd = dd; best = ga; } } e.gate = { ga: best, st: 0 }; }
+      const c = Math.cos(e.gate.ga * D2R), sn = Math.sin(e.gate.ga * D2R);
+      if (e.gate.st === 0) { gx = VX + c * (VR + 3); gz = VZ + sn * (VR + 3); if (Math.hypot(gx - e.x, gz - e.z) < 2) e.gate.st = 1; }
+      else { gx = VX + c * (VR - 9); gz = VZ + sn * (VR - 9); }
+    } else e.gate = null;
+    if (gx === t.x && d <= tr) {   // attack
+      if (e.mixer) play(e, e.acts.Attack ? 'Attack' : e.acts.Attack_Headbutt ? 'Attack_Headbutt' : 'Idle');
+      e.face = Math.atan2(t.x - e.x, t.z - e.z); e.atk -= dt; if (e.atk <= 0) { e.atk = 1.3; hitTarget(e, t); }
+    } else {
+      const ox2 = e.x, oz2 = e.z; moveTo(e, gx, gz, e.def.spd, dt); e.face = Math.atan2(gx - ox2, gz - oz2);
+      const bl = blocker(e, e.x, e.z); if (bl) { e.x = ox2; e.z = oz2; e.target = bl; e.retarget = 4; }
+      if (e.mixer) play(e, 'Gallop');
+    }
+    place(e);
+  }
+  function hitTarget(e, t) {
+    if (t.g && t.type) { t.hp -= e.dmg; float(t.x, groundY(t.x, t.z) + 6, t.z, '-' + Math.round(e.dmg), '#ff5a4a'); for (let i = 0; i < 8; i++) spawnP(t.x + (rnd() - .5) * t.r, groundY(t.x, t.z) + 1 + rnd() * 3, t.z + (rnd() - .5) * t.r, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .8, 4, 0); if (t.hp <= 0 && !t.dead) { say(`${BT[t.type].n}ถูกทำลาย!`, 1800); removeBuilding(t); } }
+    else hurtVillager(t, e.dmg);
+    sfx('hit');
+  }
+  function place(e) {
+    const gy = groundY(e.x, e.z), y = e.fly ? e.y : Math.max(gy, -.4);
+    e.root.position.set(e.x, y, e.z);
+    if (e.face != null) { let dr = e.face - e.root.rotation.y; while (dr > Math.PI) dr -= 6.283; while (dr < -Math.PI) dr += 6.283; e.root.rotation.y += dr * .2; }
+    if (e.ring) e.ring.position.set(e.x, Math.max(gy, -.3) + .15, e.z);
+  }
+
+  // ---------- night raids
+  function planRaid() {
+    const n = G.day, list = [], cnt = 2 + n * 2 + Math.floor(n * n / 6);
+    for (let i = 0; i < cnt; i++) list.push(n >= 4 && i % 5 === 4 ? 'bull' : n >= 3 && i % 3 === 2 ? 'fox' : n >= 6 && i % 7 === 3 ? 'stag' : 'wolf');
+    if (n % 5 === 0) list.push(n % 15 === 0 ? 'alpha' : n % 10 === 0 ? 'mammoth' : 'bird');
+    G.raid = { list, t: 0, i: 0 };
+    say(n % 5 === 0 ? `คืนที่ ${n}: บอส${EN[list[list.length - 1]].n}กำลังมา!` : `คืนที่ ${n}: ฝูงศัตรู ${list.length} ตัวกำลังมา!`, 3500);
+    sfx('horn');
+  }
+  function raidStep(dt) {
+    const r = G.raid; if (!r) return; r.t += dt;
+    while (r.i < r.list.length && r.t > r.i * 2.6) {
+      const kind = r.list[r.i++];
+      let maxR = 0; for (const t of G.terr) maxR = Math.max(maxR, Math.hypot(t.x - VX, t.z - VZ) + t.r);
+      for (let k = 0; k < 60; k++) { const a = rnd() * 6.28, d = maxR + 35 + rnd() * 20, x = VX + Math.cos(a) * d, z = VZ + Math.sin(a) * d;
+        if (Math.abs(x) > HM - 6 || Math.abs(z) > HM - 6 || (!EN[kind].fly && (kindAt(x, z) === 0 || kindAt(x, z) === 5))) continue; spawnEnemy(kind, x, z); break; }
+    }
+  }
+
+  // ---------- towers and spears
+  function towers() { return G.buildings.filter(b => b.type === 'tower'); }
+  function shoot(b, e) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.12, .12, 2.4), new THREE.MeshLambertMaterial({ color: 0x8a6238 }));
+    const y0 = groundY(b.x, b.z) + 7.5; m.position.set(b.x, y0, b.z); scene.add(m);
+    G.shots.push({ m, x0: b.x, y0, z0: b.z, e, t: 0, dur: Math.max(.25, Math.hypot(e.x - b.x, e.z - b.z) / 45), dmg: BT.tower.dmg * (1 + .05 * (G.day - 1)) });
+    sfx('throw');
+  }
+  function shotStep(dt) {
+    for (const s of G.shots) {
+      s.t += dt; const k = Math.min(1, s.t / s.dur), e = s.e, ty = (e.fly ? e.y : groundY(e.x, e.z)) + 1.2;
+      const x = s.x0 + (e.x - s.x0) * k, z = s.z0 + (e.z - s.z0) * k, y = s.y0 + (ty - s.y0) * k + Math.sin(k * Math.PI) * 3;
+      s.m.position.set(x, y, z); s.m.lookAt(e.x, ty, e.z);
+      if (k >= 1) { s.done = true; scene.remove(s.m); if (!e.dead) hurtEnemy(e, s.dmg); }
+    }
+    G.shots = G.shots.filter(s => !s.done);
+  }
+
+  // ---------- sounds (WebAudio, made in code)
+  let AC = null, NB = null;
+  function au() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; } } if (AC.state === 'suspended') AC.resume(); }
+  function sfx(k) {
+    if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.connect(g).connect(AC.destination);
+    if (k === 'horn') { o.type = 'sawtooth'; o.frequency.setValueAtTime(140, t); o.frequency.linearRampToValueAtTime(110, t + 1.2); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.12, t + .2); g.gain.exponentialRampToValueAtTime(.001, t + 1.4); o.start(t); o.stop(t + 1.5); }
+    else if (k === 'build') { o.type = 'square'; o.frequency.setValueAtTime(320, t); o.frequency.setValueAtTime(480, t + .08); g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); o.start(t); o.stop(t + .26); }
+    else if (k === 'throw') { o.type = 'triangle'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(200, t + .15); g.gain.setValueAtTime(.03, t); g.gain.exponentialRampToValueAtTime(.001, t + .16); o.start(t); o.stop(t + .17); }
+    else if (k === 'hit') { o.type = 'square'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(60, t + .1); g.gain.setValueAtTime(.05, t); g.gain.exponentialRampToValueAtTime(.001, t + .12); o.start(t); o.stop(t + .13); }
+    else if (k === 'dawn') { o.type = 'sine'; o.frequency.setValueAtTime(520, t); o.frequency.setValueAtTime(660, t + .15); o.frequency.setValueAtTime(780, t + .3); g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.001, t + .7); o.start(t); o.stop(t + .72); }
+  }
+
+  // ---------- HUD (HTML on top of the canvas; drawn icons, no emoji)
+  const ICON = {
+    wood: '<svg viewBox="0 0 24 24"><path d="M3 9.5 17 4l2.5 6.5L5.5 16z" fill="#b07a44"/><ellipse cx="18.3" cy="7.2" rx="2.2" ry="3.4" transform="rotate(-21 18.3 7.2)" fill="#e8c890"/><path d="M5 15 19 20l-1 2L4 17z" fill="#8a5a32"/></svg>',
+    stone: '<svg viewBox="0 0 24 24"><path d="M4 16 7 8l6-3 6 4 2 7-5 4H8z" fill="#9a9690"/><path d="M7 8l6-3 6 4-6 2z" fill="#c8c4bc"/></svg>',
+    food: '<svg viewBox="0 0 24 24"><circle cx="9" cy="14" r="4.2" fill="#d8283c"/><circle cx="15" cy="15" r="3.6" fill="#b01e30"/><circle cx="12.5" cy="9.5" r="3.3" fill="#e84a5a"/><path d="M12 6c1-3 4-4 6-3-1 2-3 3-6 3z" fill="#4a9a3a"/></svg>',
+    pop: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.6" fill="#f0c9a0"/><path d="M5 21c0-5 3-8 7-8s7 3 7 8z" fill="#a8743e"/></svg>',
+    build: '<svg viewBox="0 0 24 24"><path d="M3 20l8-8 2 2-8 8z" fill="#c9a368"/><path d="M11 4h7l3 3-3 3-2-2-4 4-3-3 4-4-2-1z" fill="#d8d4cc"/></svg>',
+  };
+  function css() {
+    const st = document.createElement('style'); st.textContent = `
+      #gRes { left: calc(8px + env(safe-area-inset-left)); top: 8px; padding: 6px 12px; display: flex; gap: 12px; align-items: center; }
+      #gRes .r { display: flex; align-items: center; gap: 4px; font-weight: 800; font-size: 15px; text-shadow: var(--ol); min-width: 42px; }
+      #gRes svg { width: 22px; height: 22px; filter: drop-shadow(0 2px 0 #0008); }
+      #gClock { left: 50%; top: 8px; transform: translateX(-50%); padding: 5px 14px 7px; text-align: center; min-width: 190px; }
+      #gClock .d { font-weight: 800; font-size: 15px; text-shadow: var(--ol); }
+      #gClock .p { font-size: 12px; font-weight: 600; color: #ffe7b8; }
+      #gClock .bar { height: 7px; margin-top: 4px; border-radius: 4px; background: #140c06; overflow: hidden; border: 1px solid #000; }
+      #gClock .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffd27a, #ff8a3a); }
+      #gClock.night .bar i { background: linear-gradient(90deg, #7a8aff, #c44aff); }
+      #gBuildBtn { position: fixed; right: calc(14px + env(safe-area-inset-right)); bottom: 14px; width: 78px; height: 78px; border-radius: 50%; border: 3px solid var(--ink); font: 800 14px Kanit, sans-serif; color: #fff; text-shadow: var(--ol); cursor: pointer;
+        background: radial-gradient(circle at 50% 30%, #f0b860, #b06a1e 60%, #6a3a0e); box-shadow: 0 0 0 3px var(--gold), 0 0 0 5px var(--ink), 0 6px 0 5px var(--ink), inset 0 5px 0 #ffffff55; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
+      #gBuildBtn svg { width: 34px; height: 34px; }
+      #gBar { left: calc(8px + env(safe-area-inset-left)); bottom: 10px; padding: 7px; display: none; gap: 6px; max-width: calc(100vw - 124px); overflow-x: auto; }
+      #gBar.open { display: flex; }
+      .gCard { flex: none; width: 84px; padding: 4px 4px 5px; border-radius: 10px; border: 2px solid var(--ink); background: linear-gradient(#7a5530, #4a2f14); color: #fff; font: 600 11px Kanit, sans-serif; cursor: pointer; text-align: center; box-shadow: inset 0 2px 0 #ffe7b833; }
+      .gCard img { width: 60px; height: 52px; image-rendering: pixelated; display: block; margin: 0 auto 2px; }
+      .gCard b { display: block; font-size: 12px; font-weight: 800; text-shadow: var(--ol); }
+      .gCard.no { filter: saturate(.3) brightness(.7); }
+      .gCard.sel { outline: 3px solid var(--gold); }
+      #gConfirm { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%); display: none; gap: 10px; }
+      #gConfirm.open { display: flex; }
+      #gConfirm button { font: 800 15px Kanit, sans-serif; color: #fff; padding: 7px 16px; border-radius: 12px; border: 2px solid var(--ink); cursor: pointer; text-shadow: var(--ol); }
+      #gOk { background: linear-gradient(#5ac85a, #2a8a2a); } #gNo { background: linear-gradient(#c85a4a, #8a2a1a); }
+      #gTip { left: 50%; bottom: 168px; transform: translateX(-50%); font-size: 12px; font-weight: 600; padding: 4px 10px; display: none; white-space: nowrap; }
+      #gOv { position: fixed; inset: 0; pointer-events: none; }
+      .gScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #3a2a14cc, #0a0604ee); z-index: 5; pointer-events: auto; }
+      .gScreen .box { text-align: center; padding: 18px 26px; max-width: 560px; }
+      .gScreen h1 { margin: 0; font: 800 34px Kanit, sans-serif; color: #ffd27a; text-shadow: var(--ol), 0 0 18px #ff9a3c; }
+      .gScreen p { margin: 8px 0; font: 600 13px Kanit, sans-serif; color: #f3dcb0; line-height: 1.5; }
+      .gScreen button { font: 800 17px Kanit, sans-serif; color: #fff; padding: 9px 24px; margin: 6px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#f0b860, #b06a1e); box-shadow: 0 4px 0 var(--ink); }
+      .gScreen button.alt { background: linear-gradient(#7a6a5a, #4a3a2a); }
+      @media (max-height: 420px) { .gScreen h1 { font-size: 26px; } .gScreen p { font-size: 12px; margin: 4px 0; } }
+    `; document.head.appendChild(st);
+  }
+  function hud() {
+    css();
+    $('card').remove(); $('hint').textContent = 'ลากเลื่อนแมพ · บีบนิ้ว/ล้อเมาส์ ซูม · กด สร้าง เพื่อวางสิ่งก่อสร้าง';
+    const H = $('hud'), mk = (tag, id, cls, html) => { const e = document.createElement(tag); if (id) e.id = id; if (cls) e.className = cls; if (html) e.innerHTML = html; H.appendChild(e); return e; };
+    hudEl.res = mk('div', 'gRes', 'pnl', ['wood', 'stone', 'food', 'pop'].map(k => `<div class="r">${ICON[k]}<span id="gR_${k}">0</span></div>`).join(''));
+    hudEl.clock = mk('div', 'gClock', 'pnl', '<div class="d" id="gDay">วันที่ 1</div><div class="p" id="gPh">กลางวัน</div><div class="bar"><i id="gBarI"></i></div>');
+    hudEl.btn = mk('button', 'gBuildBtn', '', ICON.build + '<span>สร้าง</span>');
+    hudEl.bar = mk('div', 'gBar', 'pnl', '');
+    hudEl.conf = mk('div', 'gConfirm', '', '<button id="gOk">สร้างตรงนี้</button><button id="gNo">ยกเลิก</button>');
+    hudEl.tip = mk('div', 'gTip', 'pnl', '');
+    ov = document.createElement('canvas'); ov.id = 'gOv'; document.body.insertBefore(ov, $('hud')); ox = ov.getContext('2d');
+    const fit = () => { const d = window.devicePixelRatio || 1; ov.width = innerWidth * d; ov.height = innerHeight * d; ov.style.width = innerWidth + 'px'; ov.style.height = innerHeight + 'px'; };
+    fit(); addEventListener('resize', fit);
+    const stop = e => { e.stopPropagation(); };
+    for (const el of [hudEl.btn, hudEl.bar, hudEl.conf]) el.addEventListener('pointerdown', stop);
+    hudEl.btn.addEventListener('pointerdown', () => { au(); hudEl.bar.classList.toggle('open'); if (!hudEl.bar.classList.contains('open')) cancelBuild(); });
+    $('gOk').addEventListener('pointerdown', e => { e.stopPropagation(); confirmBuild(); });
+    $('gNo').addEventListener('pointerdown', e => { e.stopPropagation(); cancelBuild(); });
+    for (const t of BUILD_ORDER) {
+      const c = document.createElement('div'); c.className = 'gCard'; c.dataset.t = t;
+      c.innerHTML = `<img alt="" src="${thumb(t)}"><b>${BT[t].n}</b>${costTxt(BT[t].cost)}`;
+      c.addEventListener('pointerdown', e => { e.stopPropagation(); au(); startBuild(t); }); hudEl.bar.appendChild(c);
+    }
+    // the time button becomes the game speed button
+    const tb = $('bTime'), nb = tb.cloneNode(true); tb.replaceWith(nb);
+    nb.addEventListener('pointerdown', e => { e.stopPropagation(); G.speed = G.speed >= 3 ? 1 : G.speed + 1; $('timeL').textContent = 'x' + G.speed; say('ความเร็ว x' + G.speed, 800); });
+    $('timeL').textContent = 'x1';
+  }
+  function thumb(t) {   // a small 3D picture of each building for its card (rendered once with the game's own look)
+    try {
+      const W = 60, Hh = 52, rtT = new THREE.WebGLRenderTarget(W, Hh);
+      const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xb8d4ff, 0x7a6a58, .7)); const dl = new THREE.DirectionalLight(0xffe6bc, .8); dl.position.set(-5, 10, 7); sc.add(dl);
+      const g = buildMesh(t, 0, 0, 0); scene.remove(g); g.position.set(0, 0, 0); sc.add(g);
+      const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new V3()), s = box.getSize(new V3()), m = Math.max(s.x, s.y * 1.2, s.z) * .62;
+      const oc = new THREE.OrthographicCamera(-m, m, m * Hh / W, -m * Hh / W, .1, 200); oc.position.set(c.x + 20, c.y + 18, c.z + 20); oc.lookAt(c);
+      const cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
+      renderer.setRenderTarget(rtT); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, oc);
+      const px = new Uint8Array(W * Hh * 4); renderer.readRenderTargetPixels(rtT, 0, 0, W, Hh, px); renderer.setRenderTarget(null); renderer.setClearColor(cc, ca); rtT.dispose();
+      const c2 = document.createElement('canvas'); c2.width = W; c2.height = Hh; const x2 = c2.getContext('2d'), id = x2.createImageData(W, Hh);
+      for (let y = 0; y < Hh; y++) id.data.set(px.subarray((Hh - 1 - y) * W * 4, (Hh - y) * W * 4), y * W * 4);
+      x2.putImageData(id, 0, 0); return c2.toDataURL();
+    } catch (e) { return ''; }
+  }
+  function updHud() {
+    for (const k of ['wood', 'stone', 'food']) $('gR_' + k).textContent = Math.floor(G.res[k]);
+    $('gR_pop').textContent = `${G.vill.length}/${G.popCap}`;
+    const night = isNight(), t = G.t; $('gDay').textContent = `วันที่ ${G.day}`;
+    hudEl.clock.classList.toggle('night', t >= DAY);
+    let txt, k;
+    if (t < DAY) { txt = `กลางวัน · อีก ${Math.ceil(DAY - t)} วิ จะค่ำ`; k = t / DAY; }
+    else if (!night && t < DAY + DUSK) { txt = 'พลบค่ำ · เตรียมป้องกัน!'; k = 1; }
+    else if (night) { const left = G.enemies.filter(e => !e.dead && !e.flee).length + (G.raid ? G.raid.list.length - G.raid.i : 0); txt = `กลางคืน · ศัตรูเหลือ ${left}`; k = (t - DAY - DUSK) / NIGHT; }
+    else { txt = 'รุ่งเช้า'; k = 1; }
+    $('gPh').textContent = txt; $('gBarI').style.width = (k * 100).toFixed(1) + '%';
+    for (const c of hudEl.bar.children) c.classList.toggle('no', !canPay(BT[c.dataset.t].cost));
+  }
+
+  // ---------- building placement
+  function startBuild(t) {
+    cancelBuild(true); G.mode = t; for (const c of hudEl.bar.children) c.classList.toggle('sel', c.dataset.t === t);
+    G.ghost = buildMesh(t, camT.x, camT.z, 0); G.ghost.traverse(o => { if (o.isMesh) { o.material = ghostMat; o.castShadow = false; } });
+    G.ghostAt = { x: camT.x, z: camT.z }; checkGhost(); hudEl.conf.classList.add('open');
+    hudEl.tip.style.display = 'block'; hudEl.tip.textContent = `${BT[t].n}: ${BT[t].d} · แตะพื้นเพื่อเลือกที่วาง`;
+  }
+  function cancelBuild(keepBar) { if (G.ghost) scene.remove(G.ghost); G.ghost = null; G.mode = null; hudEl.conf.classList.remove('open'); hudEl.tip.style.display = 'none'; for (const c of hudEl.bar.children) c.classList.remove('sel'); if (!keepBar) hudEl.bar.classList.remove('open'); }
+  function placeOk(t, x, z) {
+    const k = kindAt(x, z); if (k === 0 || k === 4 || k === 5) return 'ที่ตรงนี้สร้างไม่ได้';
+    const T = BT[t], y = groundY(x, z);
+    for (const a of [0, 1.57, 3.14, 4.71]) if (Math.abs(groundY(x + Math.cos(a) * T.r, z + Math.sin(a) * T.r) - y) > .1) return 'พื้นไม่เรียบ';
+    if (t === 'outpost') { if (!inTerr(x, z, 12) || inTerr(x, z, -18)) return 'ด่านหน้าต้องตั้งที่ขอบดินแดน'; }
+    else if (!inTerr(x, z)) return 'ต้องสร้างในดินแดนของเผ่า';
+    for (const b of G.buildings) if (Math.hypot(b.x - x, b.z - z) < b.r + T.r + .5) return 'ชิดสิ่งก่อสร้างอื่นเกินไป';
+    if (Math.hypot(x - VX, z - VZ) < 14) return 'ชิดลานกลางเกินไป';
+    if (!canPay(T.cost)) return 'ทรัพยากรไม่พอ';
+    return null;
+  }
+  function checkGhost() {
+    if (!G.ghost) return; const { x, z } = G.ghostAt; const why = placeOk(G.mode, x, z); G.ghostOk = !why;
+    ghostMat.color.set(why ? 0xff5a4a : 0x6aff7a); G.ghost.position.set(x, groundY(x, z), z);
+    if (G.mode === 'wall') { const a = Math.atan2(x - VX, z - VZ); G.ghost.rotation.y = a + Math.PI / 2; }
+    hudEl.tip.textContent = why ? `${BT[G.mode].n}: ${why}` : `${BT[G.mode].n} · ${costTxt(BT[G.mode].cost)} · กด "สร้างตรงนี้"`;
+    $('gOk').style.opacity = why ? .45 : 1;
+  }
+  function confirmBuild() {
+    if (!G.mode || !G.ghostOk) return; const t = G.mode, { x, z } = G.ghostAt;
+    pay(BT[t].cost); const ry = G.ghost.rotation.y; scene.remove(G.ghost); G.ghost = null;
+    const b = addBuilding(t, x, z, ry); b.g.scale.set(1, .05, 1); b.rise = 0; sfx('build');
+    float(x, groundY(x, z) + 5, z, BT[t].n + '!', '#ffe08a'); save();
+    const keep = t; G.mode = null; startBuild(keep);   // keep building the same thing
+  }
+  function tap(cx, cy) {
+    if (!G.mode) return;
+    const rc = cv.getBoundingClientRect(); ndc.set((cx - rc.left) / rc.width * 2 - 1, -((cy - rc.top) / rc.height) * 2 + 1);
+    ray.setFromCamera(ndc, cam); const hit = ray.intersectObjects(TERRAIN, false)[0]; if (!hit) return;
+    G.ghostAt = { x: hit.point.x, z: hit.point.z }; checkGhost();
+  }
+
+  // ---------- overlay: HP bars + floating numbers
+  function proj(x, y, z) { V.set(x, y, z).project(cam); const rc = cv.getBoundingClientRect(); return [(V.x + 1) / 2 * rc.width + rc.left, (1 - V.y) / 2 * rc.height + rc.top, V.z]; }
+  function draw2d(dt) {
+    const d = window.devicePixelRatio || 1; ox.setTransform(d, 0, 0, d, 0, 0); ox.clearRect(0, 0, innerWidth, innerHeight);
+    const bar = (x, y, z, k, col, w) => { const [sx, sy] = proj(x, y, z); if (sx < -40 || sy < -40 || sx > innerWidth + 40 || sy > innerHeight + 40) return; w = w || 34; ox.fillStyle = '#140c06'; ox.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 6); ox.fillStyle = col; ox.fillRect(sx - w / 2, sy, w * Math.max(0, k), 4); };
+    for (const b of G.buildings) if (b.hp < b.max) bar(b.x, groundY(b.x, b.z) + 7, b.z, b.hp / b.max, b.type === 'hall' ? '#ffd27a' : '#7aff8a', b.type === 'hall' ? 60 : 34);
+    for (const e of G.enemies) if (!e.dead && !e.gone) bar(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + (e.def.boss ? 9 : 4), e.z, e.hp / e.max, '#ff5a4a', e.def.boss ? 70 : 26);
+    for (const v of G.vill) if (v.hp < 30) bar(v.x, groundY(v.x, v.z) + 3.6, v.z, v.hp / 30, '#8adfff', 18);
+    ox.textAlign = 'center'; ox.font = '800 13px Kanit, sans-serif'; ox.lineWidth = 3; ox.strokeStyle = '#140c06';
+    for (const f of G.floats) { f.t += dt; const [sx, sy] = proj(f.x, f.y + f.t * 2, f.z); ox.globalAlpha = Math.max(0, 1 - f.t / 1.4); ox.strokeText(f.text, sx, sy); ox.fillStyle = f.col; ox.fillText(f.text, sx, sy); }
+    ox.globalAlpha = 1; G.floats = G.floats.filter(f => f.t < 1.4);
+  }
+
+  // ---------- save / load / screens
+  function save() {
+    try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp)]) })); } catch (_) {}
+  }
+  function load() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch (_) { return null; } }
+  function screen(html, buttons) {
+    const s = document.createElement('div'); s.className = 'gScreen'; s.innerHTML = `<div class="box">${html}<div class="btns"></div></div>`;
+    for (const [label, f, alt] of buttons) { const b = document.createElement('button'); b.textContent = label; if (alt) b.className = 'alt'; b.addEventListener('pointerdown', e => { e.stopPropagation(); au(); s.remove(); f(); }); s.querySelector('.btns').appendChild(b); }
+    document.body.appendChild(s); return s;
+  }
+  function gameOver() {
+    if (G.over) return; G.over = true; G.on = false; const n = G.day - 1;
+    try { G.best = Math.max(+localStorage.getItem(BEST) || 0, n); localStorage.setItem(BEST, G.best); localStorage.removeItem(SAVE); } catch (_) {}
+    screen(`<h1>โถงหัวหน้าเผ่าถูกทำลาย</h1><p>เผ่าของคุณรอดมาได้ <b>${n}</b> คืน · ล้มศัตรู ${G.killed} ตัว<br>สถิติดีที่สุด ${G.best} คืน</p>`, [['เริ่มใหม่', () => location.reload()]]);
+  }
+
+  // ---------- start
+  function setup(saved) {
+    // the existing village becomes the starting colony
+    G.hall = addBuilding('hall', VX - 17, VZ + 4, 0, null, 1.5);
+    for (const [a, dd] of HUTS) { const b = addBuilding('hut', VX + Math.cos(a * D2R) * dd, VZ + Math.sin(a * D2R) * dd, 0, null, 1.2); b.max = b.hp = 140; }
+    G.popCap = HUTS.length * 2;   // the old huts are crowded: 2 each
+    for (const ga of [14, -14]) addBuilding('tower', VX + Math.cos(ga * D2R) * (VR - 3), VZ + Math.sin(ga * D2R) * (VR - 3), 0, null, 1.2);
+    addBuilding('tower', VX - VR + 4, VZ + 20, 0, null, 1.2);
+    G.terr.push({ x: VX, z: VZ, r: 60 }); drawTerr(); seedNodes(VX, VZ, 72);
+    const n0 = saved ? Math.max(4, saved.vill) : 8;
+    for (let i = 0; i < n0; i++) { const a = rnd() * 6.28, r = 6 + rnd() * 10; addVillager(VX + Math.cos(a) * r, VZ + Math.sin(a) * r); }
+    if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp] of saved.b) addBuilding(t, x, z, ry, hp); }
+    G.on = true; sky(); updHud(); save();
+    say(saved ? `กลับมาที่เผ่า · วันที่ ${G.day}` : 'วันที่ 1 · สร้างบ้านและเตรียมป้องกันก่อนค่ำ!', 3500);
+  }
+  function init() {
+    ghostMat = new THREE.MeshLambertMaterial({ color: 0x6aff7a, transparent: true, opacity: .55, depthWrite: false });
+    hud();
+    // tap = short press without dragging
+    let down = null;
+    addEventListener('pointerdown', e => { if (e.target.closest && (e.target.closest('button') || e.target.closest('.pnl') || e.target.closest('.gScreen'))) { down = null; return; } down = { x: e.clientX, y: e.clientY, t: performance.now() }; au(); });
+    addEventListener('pointerup', e => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 9 && performance.now() - down.t < 450) tap(e.clientX, e.clientY); down = null; });
+    addEventListener('keydown', e => { if (e.key === 'b' || e.key === 'B') { hudEl.bar.classList.toggle('open'); } if (e.key === 'Escape') cancelBuild(); if (e.key === 'Enter') confirmBuild(); });
+    const sv = load(); try { G.best = +localStorage.getItem(BEST) || 0; } catch (_) {}
+    const how = `<p>กลางวัน: ชาวเผ่าตัดไม้ ขุดหิน เก็บเบอร์รี่ และล่าสัตว์เอง · กด <b>สร้าง</b> เพื่อวางกระท่อม แปลงผัก หอพุ่งหอก รั้ว กองไฟ<br>กลางคืน: ฝูงสัตว์ร้ายบุก หอกับชาวเผ่าช่วยกันป้องกัน · ทุก 5 คืนมีบอส<br><b>ด่านหน้า</b> ขยายดินแดนออกไป ได้ทรัพยากรมากขึ้น · ถ้า <b>โถงหัวหน้าเผ่า</b> พัง = แพ้</p>`;
+    if (Q.get('autostart') === '1') { setup(null); return; }
+    const btns = sv ? [['เล่นต่อ (วันที่ ' + sv.day + ')', () => setup(sv)], ['เริ่มใหม่', () => { try { localStorage.removeItem(SAVE); } catch (_) {} setup(null); }, true]] : [['เริ่มเกม', () => setup(null)]];
+    screen(`<h1>เผ่าดึกดำบรรพ์</h1>${how}<p>สถิติดีที่สุด: ${G.best} คืน</p>`, btns);
+  }
+  let hudT = 0;
+  function step(dt0) {
+    if (!G.on) return dt0;
+    const dt = Math.min(dt0, .05) * G.speed;
+    const wasNight = isNight(); G.t += dt;
+    if (G.t >= CYCLE) { G.t -= CYCLE; G.day++; }
+    const night = isNight();
+    if (night && !wasNight) planRaid();
+    if (!night && wasNight) {   // dawn: survivors flee, reward
+      for (const e of G.enemies) if (!e.dead) { e.flee = true; e.fleeT = 6; if (e.mixer) play(e, 'Gallop'); if (e.ring) scene.remove(e.ring); }
+      G.raid = null; const bonus = 10 + G.day * 5; G.res.food += bonus; say(`รอดคืนที่ ${G.day} แล้ว! ได้อาหาร +${bonus}`, 3000); sfx('dawn'); save();
+    }
+    if (night) raidStep(dt);
+    sky();
+    // economy
+    for (const b of G.buildings) {
+      if (b.rise < 1) { b.rise = Math.min(1, b.rise + dt * 1.5); b.g.scale.set(1, .05 + .95 * b.rise, 1); }
+      if (b.type === 'farm' && !night) G.res.food += BT.farm.food * dt;
+      if (b.type === 'tower') { b.cd -= dt; if (b.cd <= 0) { let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.flee) continue; const d = Math.hypot(x.x - b.x, x.z - b.z); if (d < ed) { ed = d; e = x; } } if (e && ed < BT.tower.range) { shoot(b, e); b.cd = BT.tower.rate; } else b.cd = .3; } }
+    }
+    for (const n of G.nodes) if (n.regrow && n.amt < n.max) n.amt = Math.min(n.max, n.amt + dt * .25);
+    G.eatT += dt; if (G.eatT > 20) { G.eatT = 0; const eat = Math.ceil(G.vill.length / 3); G.res.food = Math.max(0, G.res.food - eat); if (G.res.food <= 0 && G.vill.length > 3) { const v = G.vill[G.vill.length - 1]; hurtVillager(v, 99); say('อาหารหมด! ชาวเผ่าอดตาย', 2000); } }
+    G.birthT += dt; if (!night && G.birthT > 22) { G.birthT = 0; if (G.vill.length < G.popCap && G.res.food >= 45) { G.res.food -= 25; const h = G.hall; addVillager(h.x + 3, h.z + 3); say('ชาวเผ่าเพิ่ม 1 คน', 1200); } }
+    for (const v of G.vill.slice()) vStep(v, dt);
+    for (const e of G.enemies) eStep(e, dt); G.enemies = G.enemies.filter(e => !e.gone);
+    shotStep(dt);
+    hudT -= dt0; if (hudT <= 0) { hudT = .2; updHud(); }
+    return dt;
+  }
+  function draw() { if (ox) draw2d(1 / 60); }
+  function spot(t) {   // QA / helper: a free valid spot for building type t near the village
+    for (let r = 42; r < 70; r += 3) for (let a = 0; a < 360; a += 9) { const x = VX + Math.cos(a * D2R) * r, z = VZ + Math.sin(a * D2R) * r; if (!placeOk(t, x, z)) return { x, z }; }
+    return null;
+  }
+  return { G, BT, EN, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, get on() { return G.on; },
+    cheat: { res(n) { G.res.wood = G.res.stone = G.res.food = n; }, night() { G.t = DAY + DUSK - .1; }, day(d) { G.day = d; } } };
+})();
+</script>
+
 </body>
 </html>
