@@ -197,7 +197,7 @@ const ARC = img(SG + 'archer.webp'), VFXR = img('art/incoming/archer/vfx_rain_sh
 // per move: ms per frame, frames where arrows leave the bow, frames held longer (the big pull before a heavy shot)
 // shot3 (owner "เอาฮิต 3 ที่มันกระโดดแล้วย่อ เปลี่ยนเป็นย่อตัวยิงก็พอ"): only the frames on the ground are played (seq), the jump frames 2-5 and 9 are left out;
 // shot1 -> shot2 spaced out a little more (owner "ฮิต 1 2 ติดกันเกินไปไหม"): a short aim hold before shot2's first arrow, its two arrows further apart
-const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [5, 8], hold: {4: 100, 7: 70}}, shot3: {ms: 50, seq: [0, 1, 1, 1, 6, 7, 8, 10, 11], fire: [1, 6], hold: {1: 80, 2: 80, 3: 80, 5: 150, 6: 110}, spin: [1, 4]},
+const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [5, 8], hold: {4: 100, 7: 70}}, shot3: {ms: 50, seq: [0, 1, 1, 1, 6, 7, 8, 10, 11], fire: [1, 6], hold: {1: 130, 2: 130, 3: 130, 5: 150, 6: 110}, spin: [1, 4]},
   skill_rain: {ms: 52, fire: [6], hold: {5: 120}}, skill_gale: {ms: 50, fire: [6], hold: {5: 200}}, skill_fan: {ms: 48, fire: [7], hold: {6: 120}},
   skill_frost: {ms: 52, fire: [5]}, skill_flip: {ms: 50, fire: [6]}, skill_wolf: {ms: 58, fire: [8], hold: {7: 320}}};
 const mvLen = (k, i) => (MV[k].hold && MV[k].hold[i]) || MV[k].ms, mvN = k => MV[k] && MV[k].seq ? MV[k].seq.length : AJ ? AJ.rows[k].n : 12;
@@ -232,7 +232,7 @@ addEventListener('keyup', e => { keys[e.code] = 0; });
 cv.addEventListener('pointerdown', () => { if (state === 'title') start(); });
 const pad = id => document.getElementById(id);
 const hold = (id, k, tap) => { const el = pad(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); if (k) touch[k] = 1; if (tap) tap(); }); const up = () => { if (k) touch[k] = 0; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); };
-hold('bl', 'l'); hold('br', 'r'); hold('bu', 'u', () => { if (!nearRope()) { if (near(CHEST, 50)) openChest(); else if (nearWarp()) portal(); } }); hold('bj', null, () => jump()); hold('ba', null, () => attack()); hold('bs', null, () => skill());
+hold('bl', 'l'); hold('br', 'r'); hold('bu', 'u', () => { if (!nearRope()) { if (near(CHEST, 50)) openChest(); else if (nearWarp()) portal(); } }); hold('bj', null, () => jump()); hold('ba', 'a', () => attack()); hold('bs', null, () => skill());
 pad('zm').onclick = () => setHS(HS < .72 ? .8 : .65, true); setHS(HS);
 pad('snd').onclick = () => { soundOn = !soundOn; pad('snd').textContent = soundOn ? '🔊' : '🔈'; };
 const near = (o, r) => Math.abs(o.x - P.x) < r && Math.abs(o.y - P.y) < 60;
@@ -271,6 +271,8 @@ function step(dt) {
   if (stop > 0) { stop -= dt; return; }   // hit-stop: the world freezes for a blink on a hard hit
   P.t += dt; skillBar(dt); H.inv = Math.max(0, H.inv - dt); H.skill = Math.max(0, H.skill - dt); shake = Math.max(0, shake - dt);
   const dir = (keys.KeyD || keys.ArrowRight || touch.r ? 1 : 0) - (keys.KeyA || keys.ArrowLeft || touch.l ? 1 : 0), up = keys.KeyW || keys.ArrowUp || touch.u, down = keys.KeyS || keys.ArrowDown;
+  // hold the attack button / J = keep shooting the combo (owner "ยังไม่หมุน": the spin finisher only came on a quick third tap)
+  if (ARCHER && (keys.KeyJ || touch.a) && !P.rope) { if (!A.on) startMove('shot1'); else if (/^shot/.test(A.mv)) A.queued = true; }
   if (ARCHER && A.on) { A.t += dt * 1000; const i = mvFrame(A.mv, A.t);
     for (let f = A.fired + 1; f <= i; f++) if (MV[A.mv].fire.includes(f)) fire(A.mv, MV[A.mv].fire.indexOf(f)); A.fired = i;
     if (A.t >= mvDur(A.mv)) { const nx = {shot1: 'shot2', shot2: 'shot3'}[A.mv]; if (A.queued && nx) startMove(nx); else A.on = false; } }
