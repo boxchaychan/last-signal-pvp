@@ -31,13 +31,14 @@
   .sk u { position: absolute; z-index: 2; left: 3px; top: 1px; font: 800 10px Kanit, system-ui; text-decoration: none; color: #ffe9b8; text-shadow: 0 1px 0 #000; }
   .sk.cd b { display: block; } .sk.cd svg { opacity: .45; }
   #snd { position: fixed; right: 10px; top: 10px; display: none; width: 40px; height: 40px; font-size: 18px; }
+  #zm { position: fixed; right: 58px; top: 10px; display: none; width: 56px; height: 40px; font-size: 15px; }
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
 <div class="pad" id="bl">◀</div><div class="pad" id="br">▶</div><div class="pad" id="bu">▲</div>
 <div class="pad" id="ba">⚔<small>ตี</small></div><div class="pad" id="bj">⤒<small>กระโดด</small></div><div class="pad" id="bs">💥<small id="bst">ทุบ</small></div>
-<div class="pad" id="snd">🔊</div>
+<div class="pad" id="snd">🔊</div><div class="pad" id="zm">65%</div>
 <div id="skills" class="off"></div>
 <script>
 'use strict';
@@ -189,7 +190,9 @@ const A = {on: false, n: 0, t: 0, queued: false, hitDone: false};
 // stored 3x and drawn on the full-res canvas so she stays sharp). Default hero; ?hero=rabbit = the hooded rabbit.
 const ARCHER = (QS.get('hero') || 'archer') === 'archer';
 // her size on screen (owner "ตัวใหญ่ ย่อได้ไหม"): the sheet is cut at 80 world px tall, drawn at HS of that (~52 px = about 1/8 of the view), &hs= to try others
-const HS = +QS.get('hs') || .65, BH = 80 * HS;
+let HS = +QS.get('hs') || (() => { try { return +localStorage.getItem('hoodfall_hs'); } catch (e) { return 0; } })() || (matchMedia('(pointer: coarse)').matches ? .8 : .65), BH = 80 * HS;   // default: PC 65 %, phone 80 % (owner "pc 65 ได้ แต่โทรศัพท์อาจจะต้อง 80")
+// in-game size switch (owner "ให้มีซูม แบบเลือกเลย 65 80"): the button top right cycles 65 % / 80 %, remembered in the browser
+function setHS(v, keep) { HS = v; BH = 80 * HS; if (keep) try { localStorage.setItem('hoodfall_hs', v); } catch (e) {} const el = document.getElementById('zm'); if (el) el.textContent = Math.round(v * 100) + '%'; }
 const ARC = img(SG + 'archer.webp'), VFXR = img('art/incoming/archer/vfx_rain_sheet.webp'); let AJ = null; fetch(SG + 'archer.json').then(r => r.json()).then(j => AJ = j);
 // per move: ms per frame, frames where arrows leave the bow, frames held longer (the big pull before a heavy shot)
 // shot3 (owner "เอาฮิต 3 ที่มันกระโดดแล้วย่อ เปลี่ยนเป็นย่อตัวยิงก็พอ"): only the frames on the ground are played (seq), the jump frames 2-5 and 9 are left out;
@@ -230,6 +233,7 @@ cv.addEventListener('pointerdown', () => { if (state === 'title') start(); });
 const pad = id => document.getElementById(id);
 const hold = (id, k, tap) => { const el = pad(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); if (k) touch[k] = 1; if (tap) tap(); }); const up = () => { if (k) touch[k] = 0; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); };
 hold('bl', 'l'); hold('br', 'r'); hold('bu', 'u', () => { if (!nearRope()) { if (near(CHEST, 50)) openChest(); else if (nearWarp()) portal(); } }); hold('bj', null, () => jump()); hold('ba', null, () => attack()); hold('bs', null, () => skill());
+pad('zm').onclick = () => setHS(HS < .72 ? .8 : .65, true); setHS(HS);
 pad('snd').onclick = () => { soundOn = !soundOn; pad('snd').textContent = soundOn ? '🔊' : '🔈'; };
 const near = (o, r) => Math.abs(o.x - P.x) < r && Math.abs(o.y - P.y) < 60;
 const nearRope = () => ROPES.find(r => Math.abs(r[0] - P.x) < 14 && P.y >= r[1] - 2 && P.y <= r[2] + 2);
@@ -252,7 +256,7 @@ function useSkill(i) { if (state !== 'play' || SKCD[i] > 0 || P.rope) return; SK
   A.on = true; A.n = 2; A.t = 0; A.queued = false; A.skill = true; SFX.swing(); }
 function skillBar(dt) { SK.forEach((k, i) => { SKCD[i] = Math.max(0, SKCD[i] - dt); const el = document.getElementById('sk' + i), c = SKCD[i];
   el.classList.toggle('cd', c > 0); el.style.setProperty('--p', (c / k.cd).toFixed(3)); el.querySelector('b').textContent = c > 0 ? Math.ceil(c) : ''; }); }
-function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'snd']) pad(id).style.display = 'grid'; document.getElementById('skills').classList.remove('off'); }
+function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'snd'].concat(ARCHER ? ['zm'] : [])) pad(id).style.display = 'grid'; document.getElementById('skills').classList.remove('off'); }
 function jump() { if (state !== 'play') return; if (P.rope) { P.rope = null; P.vy = -380; P.vx = P.face * 160; return; } if (P.ground || P.jumps < 2) { P.vy = P.ground ? -560 : -480; P.ground = false; P.jumps++; SFX.jump(); } }
 function attack() { if (state !== 'play' || P.rope) return;
   if (ARCHER) { if (A.on) { if (/^shot/.test(A.mv)) A.queued = true; return; } startMove('shot1'); return; }
