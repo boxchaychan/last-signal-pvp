@@ -76,105 +76,123 @@ const HC = {cw: 128, ch: 96, feet: [50, 92]}, AC = {cw: 135, ch: 138, feet: [75,
 // 3 floors in long bands (Ghost Online style grinding map). Floor 1 = flat ground the whole width between two high rock walls; floor 2 = three long
 // bands joined to the walls, standing on rock pillars; floor 3 = four short bands at the top, each with a warp portal, on pillars. Ropes join floors.
 const T = 32, WW = 4800, WH = 1340, GY = 1240, F2 = 1000, F3 = 760;
-const GROUND = [[0, 128, F2], [128, 4672, GY], [4672, 4800, F2]];   // solid [x0, x1, top]: floor 1 between the two walls
-const PLAT = [[128, F2, 44], [1664, F2, 46], [3264, F2, 44], [400, F3, 16], [1552, F3, 16], [2704, F3, 16], [3856, F3, 16]];   // bands you stand on [x, top, tiles]
-const ROPES = [[300, F2], [1100, F2], [1900, F2], [2700, F2], [3500, F2], [4300, F2], ...PLAT.filter(p => p[1] === F3).map(([x]) => [x + 40, F3])];   // [x, top, bottom]
-// Owner 2026-11-15 "เกมด้านข้าง ธีมไทย": map 1 of the Thai world tour (5-6 Thai maps ending with the boss นางตะเคียน) is the default;
-// ?map=forest = the old forest look. Thai look drawn in code for now (temple skyline, palms, spirit houses, khom loi lanterns, fireflies).
-const THAI = QS.get('map') === 'thai';   // opt-in until the owner approves a painted overview of the Thai map (owner: "ก่อนทำแมพทำภาพรวมมาให้ดูก่อน")
+// Thai map 1 (owner 2026-11-15 "เกมด้านข้าง ธีมไทย", opt-in ?map=thai), rebuilt the same day ("ต่อแมพไทย") like Lego from Codex's kit
+// (art/incoming/thai/kit -> tools/art/thai_kit_cut.py -> art/sidegame/thai/) after the Meta overview (art/incoming/thai/overview_meta_v1_onegate.jpg):
+// 5 full-width laterite terraces (owner "ชั้นเต็มจอปกติก็ได้"): rice field + sala + camp at the bottom, ruined temple summit with ONE warp gate
+// (owner "เหลือแค่อันเดียว"), rope ladders and stone stairs between floors, a few gaps to drop through, monsters stronger floor by floor.
+const THAI = QS.get('map') === 'thai';
+const FT = [GY, 1070, 900, 730, 560];   // Thai floor tops: 0 = rice field ... 4 = summit
+const HOLES = [[1, 2304, 2432], [2, 3200, 3328], [3, 1088, 1216]];   // [floor, x0, x1]: gaps you drop through
+const STW = 236, STH = 198;   // world size of one stone stair flight (one floor up)
+const TLAD = [[1250, 1], [3900, 2], [600, 3], [4300, 4]], TSTAIR = [[2950, 1, 1], [1500, 2, -1], [2600, 3, 1], [1900, 4, -1]];   // ladders [x, floor it reaches], stairs [x at the top, floor, +1 = climbs up to the right]
+const GROUND = THAI ? [[0, WW, GY]] : [[0, 128, F2], [128, 4672, GY], [4672, 4800, F2]];   // solid [x0, x1, top]: floor 1 between the two walls
+const PLAT = THAI ? (() => { const o = []; for (let f = 1; f < 5; f++) { let x = 0; for (const [hf, a, b] of HOLES) if (hf === f) { o.push([x, FT[f], (a - x) / T]); x = b; } o.push([x, FT[f], (WW - x) / T]); } return o; })()
+  : [[128, F2, 44], [1664, F2, 46], [3264, F2, 44], [400, F3, 16], [1552, F3, 16], [2704, F3, 16], [3856, F3, 16]];   // bands you stand on [x, top, tiles]
+const ROPES = THAI ? [...TLAD.map(([x, f]) => [x, FT[f]]), ...TSTAIR.map(([x, f, d]) => [x, FT[f], FT[f - 1], -d * (STW - 44)])]   // [x, top, bottom, dx = stairs: x offset at the bottom]
+  : [[300, F2], [1100, F2], [1900, F2], [2700, F2], [3500, F2], [4300, F2], ...PLAT.filter(p => p[1] === F3).map(([x]) => [x + 40, F3])];
 const MAPNAME = THAI ? 'ทุ่งนาวัดร้าง' : 'ป่าตะวันรอน', BOSSNAME = THAI ? 'ชาละวัน' : 'ราชาหมูป่า', BOSSK = THAI ? 'croc_guard' : 'boar_guard';
+const TZN = ['ทุ่งนาศาลาท่าน้ำ', 'สวนมะพร้าว', 'ลานศาลเก่า', 'ป่าช้าศิลาจารึก', 'ยอดวัดร้าง'];   // Thai floors 0-4
 const ZONES = THAI ? [[0, 800, 'ศาลาท่าน้ำ'], [800, 1600, 'ทุ่งนา'], [1600, 2400, 'สวนมะพร้าว'], [2400, 3200, 'วัดร้าง'], [3200, 4000, 'ป่าช้า'], [4000, 4800, 'บึงชาละวัน']]
   : [[0, 800, 'แคมป์'], [800, 1600, 'ทุ่งเห็ด'], [1600, 2400, 'เนินหมาป่า'], [2400, 3200, 'ซากหิน'], [3200, 4000, 'หุบโครงกระดูก'], [4000, 4800, 'ถ้ำหมูป่า']];
 const groundAt = x => { for (const g of GROUND) if (x >= g[0] && x < g[1]) return g[2]; return GY; };
 function surfaceBelow(x, y) { let best = groundAt(x); for (const [px, py, n] of PLAT) if (x > px && x < px + n * T && py >= y - 1 && py < best) best = py; return best; }
-for (const r of ROPES) r[2] = surfaceBelow(r[0], r[1] + 8);
-// rock pillars under every band (both ends and every ~520 px), down to the floor below: drawn, not solid
-const PILLARS = []; for (const [x, y, n] of PLAT) { const x1 = x + n * T, below = surfaceBelow(x + n * T / 2, y + 8); for (let px = x + 56; px < x1 - 40; px += 520) PILLARS.push([px, y, below]); PILLARS.push([x1 - 56, y, below]); }
+for (const r of ROPES) if (r[2] == null) r[2] = surfaceBelow(r[0], r[1] + 8);
+const ropeX = (r, y) => r[0] + (r[3] || 0) * (y - r[1]) / (r[2] - r[1]);   // stairs are slanted "ropes": x moves with height
+// rock pillars under every band (both ends and every ~520 px), down to the floor below: drawn, not solid (forest map only)
+const PILLARS = []; if (!THAI) for (const [x, y, n] of PLAT) { const x1 = x + n * T, below = surfaceBelow(x + n * T / 2, y + 8); for (let px = x + 56; px < x1 - 40; px += 520) PILLARS.push([px, y, below]); PILLARS.push([x1 - 56, y, below]); }
 const DECO = [];   // [prop, x, layer: 0 behind everything, 1 ground decor, 2 foreground]
 { const TREES = ['tree', 'small_tree'], PROPS = ['bush', 'flowers', 'rocks', 'flowers', 'bush', 'rocks'];
   for (let x = 250, i = 0; x < WW - 200; x += 330 + (i * 97) % 140, i++) DECO.push([TREES[i % 2], x, 0]);
   for (let x = 190, i = 0; x < WW - 160; x += 210 + (i * 61) % 120, i++) DECO.push([PROPS[i % PROPS.length], x, 1]);
-  DECO.push(['sign', 420, 1], ['fence', 520, 1]); for (let x = 700; x < WW - 200; x += 900) DECO.push(['bush', x, 2]); }
-if (THAI) { DECO.length = 0;   // Thai props (drawn in code below, thaiProps()): palms / sugar palms behind, ruined chedis in the temple zone,
-  // spirit houses, banana plants, water jars, lantern poles, flowers on the ground line, banana leaves in front
-  for (let x = 240, i = 0; x < WW - 200; x += 300 + (i * 97) % 140, i++) DECO.push([x > 2400 && x < 3200 ? (i % 2 ? 'chedi' : 'sugarpalm') : x > 3200 && x < 4000 ? (i % 3 ? 'raintree' : 'sugarpalm') : ['palm', 'sugarpalm', 'palm', 'banana'][i % 4], x, 0]);
-  const G = ['banana', 'jar', 'flowers', 'lantern', 'bush', 'jar', 'flowers', 'banana'];
-  for (let x = 190, i = 0; x < WW - 160; x += 200 + (i * 61) % 120, i++) DECO.push([G[i % G.length], x, 1]);
-  DECO.push(['sala', 600, 0], ['lantern', 250, 1], ['jar', 440, 1]);   // no spirit houses (owner "ไม่เอาศาลภูมินะ")
-  for (let x = 760; x < WW - 200; x += 860) DECO.push(['leaf', x, 2]); }
-// ---- Thai props + background layers, drawn in code once into small canvases (placeholders until painted art comes from GPT)
-const mk = (k, w, h, fn) => { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); if (k) { PR[k] = c; PB[k] = h - 1; } return c; };
-const poly = (g, c, pts) => { g.fillStyle = c; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
-function chedi(g, x, b, s, c, c2) {   // bell-shaped stupa: stepped base, bell, rings, spire
-  for (let i = 0; i < 3; i++) { g.fillStyle = i % 2 ? c2 : c; const w = (34 - i * 6) * s; g.fillRect(x - w / 2, b - (i + 1) * 6 * s, w, 6 * s); }
-  const by = b - 18 * s; g.fillStyle = c; g.beginPath(); g.moveTo(x - 15 * s, by); g.quadraticCurveTo(x - 15 * s, by - 26 * s, x, by - 28 * s); g.quadraticCurveTo(x + 15 * s, by - 26 * s, x + 15 * s, by); g.fill();
-  g.fillStyle = c2; g.fillRect(x - 5 * s, by - 34 * s, 10 * s, 6 * s); poly(g, c, [[x - 5 * s, by - 34 * s], [x + 5 * s, by - 34 * s], [x + .6 * s, by - 74 * s], [x - .6 * s, by - 74 * s]]);
-  g.fillStyle = c2; for (let i = 1; i < 6; i++) g.fillRect(x - (5 - i * .8) * s, by - (34 + i * 6) * s, (10 - i * 1.6) * s, 1.2 * s); }
-function prang(g, x, b, s, c, c2) {   // corn-cob tower
-  g.fillStyle = c; g.fillRect(x - 13 * s, b - 14 * s, 26 * s, 14 * s); g.beginPath(); g.moveTo(x - 11 * s, b - 14 * s); g.bezierCurveTo(x - 12 * s, b - 50 * s, x - 4 * s, b - 64 * s, x, b - 66 * s);
-  g.bezierCurveTo(x + 4 * s, b - 64 * s, x + 12 * s, b - 50 * s, x + 11 * s, b - 14 * s); g.fill(); g.fillStyle = c2; for (let i = 0; i < 6; i++) g.fillRect(x - (11 - i * 1.4) * s, b - (20 + i * 8) * s, (22 - i * 2.8) * s, 1.5 * s);
-  g.fillStyle = c; g.fillRect(x - .8 * s, b - 80 * s, 1.6 * s, 16 * s); }
-function templeRoof(g, x, b, s, c, c2, gold) {   // ubosot side view: tiered steep roofs with chofa horns at the ends
-  g.fillStyle = c2; g.fillRect(x - 40 * s, b - 22 * s, 80 * s, 22 * s); g.fillStyle = c; for (let i = 0; i < 5; i++) g.fillRect(x - 36 * s + i * 17 * s, b - 20 * s, 3 * s, 20 * s);
-  for (let t = 0; t < 3; t++) { const w = (52 - t * 9) * s, y0 = b - (22 + t * 12) * s; poly(g, t % 2 ? c2 : c, [[x - w, y0], [x + w, y0], [x + w - 12 * s, y0 - 13 * s], [x - w + 12 * s, y0 - 13 * s]]);
-    g.fillStyle = gold || c; for (const sd of [-1, 1]) { g.fillRect(x + sd * w - (sd > 0 ? 2 * s : 0), y0 - 5 * s, 2 * s, 5 * s); } }
-  const top = b - 22 * s - 3 * 12 * s - 1 * s; g.fillStyle = gold || c; for (const sd of [-1, 1]) { const ex = x + sd * (52 - 2 * 9 - 12) * s; g.fillRect(ex - s, top - 9 * s, 2 * s, 9 * s); g.fillRect(ex + (sd > 0 ? 0 : -3 * s), top - 10 * s, 4 * s, 2 * s); } }
-function palmTree(g, x, b, h, lean, cT, cL, cL2) { const tx = x + lean, ty = b - h; g.strokeStyle = cT; g.lineCap = 'round';
-  for (let i = 0; i < 12; i++) { const k0 = i / 12, k1 = (i + 1) / 12; g.lineWidth = 7 - k0 * 3; g.beginPath(); g.moveTo(x + lean * k0 * k0, b - h * k0); g.lineTo(x + lean * k1 * k1, b - h * k1); g.stroke(); }
-  for (let i = 0; i < 8; i++) { const a = -Math.PI + i * Math.PI / 7 + (i % 2) * .1, len = 34 + (i % 3) * 6, ex = tx + Math.cos(a) * len, ey = ty + Math.sin(a) * len * .5 + Math.abs(Math.cos(a)) * 16;
-    g.strokeStyle = cL; g.lineWidth = 6; g.beginPath(); g.moveTo(tx, ty); g.quadraticCurveTo(tx + Math.cos(a) * len * .5, ty - 10 + Math.sin(a) * 8, ex, ey); g.stroke();
-    if (cL2) { g.strokeStyle = cL2; g.lineWidth = 1.5; g.beginPath(); g.moveTo(tx, ty - 1); g.quadraticCurveTo(tx + Math.cos(a) * len * .5, ty - 11 + Math.sin(a) * 8, ex, ey - 1); g.stroke(); } } }
-function sugarPalm(g, x, b, h, cT, cL, cL2, cDead) { g.fillStyle = cT; g.fillRect(x - 3, b - h, 6, h); const cy = b - h - 4;
-  if (cDead) for (let i = 0; i < 5; i++) poly(g, cDead, [[x - 10 + i * 5, cy + 4], [x - 14 + i * 7, cy + 22], [x - 8 + i * 5, cy + 6]]);
-  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r = 22 + (i % 3) * 4; poly(g, i % 2 && cL2 ? cL2 : cL, [[x, cy], [x + Math.cos(a - .2) * r, cy + Math.sin(a - .2) * r * .8], [x + Math.cos(a) * (r + 6), cy + Math.sin(a) * (r + 6) * .8], [x + Math.cos(a + .2) * r, cy + Math.sin(a + .2) * r * .8]]); }
-  g.fillStyle = cL; g.beginPath(); g.arc(x, cy, 14, 0, 7); g.fill(); }
-let FAR = null, MID = null;
-if (THAI) {
-  mk('palm', 120, 170, (g, w, h) => { palmTree(g, 50, h, 140, 18, '#8a6a4a', '#3f8a3a', '#7cc85a'); g.fillStyle = '#6a4a20'; for (const o of [-4, 3, -1]) { g.beginPath(); g.arc(68 + o, h - 135 + Math.abs(o), 4, 0, 7); g.fill(); } });
-  mk('sugarpalm', 90, 190, (g, w, h) => sugarPalm(g, 45, h, 150, '#5a4030', '#2f6a34', '#4f9a44', '#8a6a3a'));
-  mk('raintree', 200, 150, (g, w, h) => { g.fillStyle = '#4a3424'; g.fillRect(94, 60, 12, 90); g.fillRect(70, 60, 30, 6); g.fillRect(104, 52, 30, 6);
-    for (const [x, y, r, c] of [[100, 50, 60, '#2c5a2e'], [50, 58, 34, '#2c5a2e'], [150, 58, 34, '#2c5a2e'], [90, 38, 40, '#3e7a3a'], [130, 44, 30, '#3e7a3a'], [60, 46, 26, '#3e7a3a'], [100, 30, 22, '#5a9a48']]) { g.fillStyle = c; g.beginPath(); g.ellipse(x, y, r, r * .5, 0, 0, 7); g.fill(); } });
-  mk('banana', 90, 80, (g, w, h) => { g.fillStyle = '#7aa04a'; g.fillRect(42, 30, 7, 50); g.fillStyle = '#5a8034'; g.fillRect(42, 30, 2, 50);
-    for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + (i - 2.5) * .55; g.save(); g.translate(45, 34); g.rotate(a); g.fillStyle = i % 2 ? '#5cb04a' : '#4a9a3e'; g.beginPath(); g.ellipse(22, 0, 24, 8, 0, 0, 7); g.fill(); g.fillStyle = '#9fd870'; g.fillRect(0, -.5, 44, 1); g.restore(); } });
-  mk('chedi', 100, 180, (g, w, h) => { chedi(g, 50, h, 2.2, '#b8b0a2', '#8a8278'); g.fillStyle = '#4a6a3a'; for (let i = 0; i < 14; i++) g.fillRect(16 + (i * 29) % 68, h - 8 - (i * 17) % 60, 4 + i % 3, 3); poly(g, '#00000000', []); g.clearRect(48, 0, 6, 26); });
-  mk('sala', 210, 120, (g, w, h) => { g.fillStyle = '#7a4a2a'; g.fillRect(10, h - 14, 190, 8); g.fillStyle = '#5a3420'; g.fillRect(10, h - 6, 190, 6);
-    g.fillStyle = '#8a2a1e'; for (const x of [22, 72, 132, 182]) g.fillRect(x, 58, 7, h - 72); templeRoof(g, 105, 62, 1.85, '#c8452c', '#2f7a4a', '#f2c44a'); });
-  mk('spirit', 50, 92, (g, w, h) => { g.fillStyle = '#e8e0d0'; g.fillRect(22, 44, 6, h - 44); g.fillStyle = '#c8bca8'; g.fillRect(26, 44, 2, h - 44); g.fillStyle = '#e8e0d0'; g.fillRect(8, 42, 34, 4);
-    g.fillStyle = '#f2d27a'; g.fillRect(13, 26, 24, 16); g.fillStyle = '#7a2a1e'; g.fillRect(21, 30, 8, 12); templeRoof(g, 25, 28, .42, '#c8452c', '#2f7a4a', '#f2c44a');
-    g.fillStyle = '#ff9a2a'; for (let i = 0; i < 9; i++) g.fillRect(9 + i * 3.6, 46 + (i % 2) * 2, 3, 3); g.fillStyle = '#ffd0e0'; g.fillRect(10, 38, 3, 4); g.fillRect(37, 38, 3, 4); });
-  mk('jar', 30, 30, (g, w, h) => { g.fillStyle = '#5a2e1a'; g.beginPath(); g.ellipse(15, 17, 13, 12, 0, 0, 7); g.fill(); g.fillStyle = '#7a4226'; g.beginPath(); g.ellipse(11, 14, 6, 7, 0, 0, 7); g.fill();
-    g.fillStyle = '#4a2414'; g.fillRect(8, 3, 14, 4); g.strokeStyle = '#e8b84a'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(5, 18); g.bezierCurveTo(10, 12, 16, 24, 25, 16); g.stroke(); g.fillStyle = '#3a1a0c'; g.fillRect(4, h - 2, 22, 2); });
-  mk('lantern', 46, 96, (g, w, h) => { g.fillStyle = '#a8844a'; g.fillRect(8, 6, 4, h - 6); g.fillRect(8, 6, 32, 3);
-    for (const [x, y, c] of [[22, 12, '#e8402a'], [36, 12, '#ffb02a']]) { g.fillStyle = '#5a3a20'; g.fillRect(x, 9, 1, y - 8); g.fillStyle = c; g.beginPath(); g.ellipse(x, y + 10, 6, 9, 0, 0, 7); g.fill(); g.fillStyle = '#fff2a0'; g.fillRect(x - 1, y + 4, 2, 12); g.fillStyle = '#7a2a10'; g.fillRect(x - 3, y, 6, 2); g.fillRect(x - 3, y + 18, 6, 2); } });
-  mk('leaf', 140, 70, (g, w, h) => { for (let i = 0; i < 4; i++) { g.save(); g.translate(30 + i * 28, h); g.rotate(-Math.PI / 2 + (i - 1.5) * .5); g.fillStyle = i % 2 ? '#1e3a22' : '#26482a'; g.beginPath(); g.ellipse(34, 0, 36, 11, 0, 0, 7); g.fill(); g.restore(); } });
-  // far layer: hazy temple skyline (chedis, prangs, ubosot roofs) in sunset violet; mid layer: palm silhouettes, stilt houses
-  FAR = mk(null, 1200, 230, (g, w, h) => { const c = '#9a5f8f', c2 = '#8a5282';
-    g.fillStyle = c2; g.beginPath(); g.moveTo(0, h); for (let x = 0; x <= w; x += 20) g.lineTo(x, h - 40 - Math.sin(x * .011) * 14 - Math.sin(x * .031) * 6); g.lineTo(w, h); g.fill();
-    chedi(g, 140, h - 40, 1.6, c, c2); prang(g, 300, h - 46, 1.9, c, c2); prang(g, 345, h - 44, 1.3, c, c2); prang(g, 255, h - 44, 1.3, c, c2); templeRoof(g, 520, h - 44, 1.3, c, c2); chedi(g, 700, h - 40, 2.3, c, c2);
-    chedi(g, 640, h - 40, 1, c, c2); chedi(g, 760, h - 40, 1, c, c2); templeRoof(g, 930, h - 46, 1.1, c, c2); prang(g, 1100, h - 42, 1.5, c, c2);
-    for (let x = 40; x < w; x += 70 + (x * 7) % 50) sugarPalm(g, x, h - 36, 40 + (x % 30), c2, c2); });
-  MID = mk(null, 900, 220, (g, w, h) => { const c = '#3e2a4e', c2 = '#4c3460';
-    g.fillStyle = c; g.fillRect(0, h - 40, w, 40); g.fillStyle = '#ffb0806a'; for (let x = 0; x < w; x += 60) g.fillRect(x + 10, h - 30, 36, 1);   // paddy water glints
-    for (let x = 30, i = 0; x < w; x += 90 + (i * 37) % 60, i++) i % 3 === 2 ? sugarPalm(g, x, h - 38, 90 + (i * 13) % 40, c, c) : palmTree(g, x, h - 38, 100 + (i * 17) % 40, (i % 2 ? 14 : -12), c, c);
-    for (const x of [200, 610]) { g.fillStyle = c; for (const px of [-28, -10, 10, 28]) g.fillRect(x + px, h - 70, 3, 34); g.fillRect(x - 34, h - 72, 68, 6); g.fillStyle = c2; g.fillRect(x - 30, h - 100, 60, 28); poly(g, c, [[x - 42, h - 98], [x + 42, h - 98], [x + 14, h - 130], [x - 14, h - 130]]); } }); }
+  DECO.push(['sign', 420, 1], ['fence', 520, 1]); for (let x = 700; x < WW - 200; x += 900) DECO.push(['bush', x, 2]); if (THAI) DECO.length = 0; }
+// ---- Thai kit pieces (painted, stored at 3 sheet px = 1 world px; the Thai map is drawn on the full-res canvas so they stay sharp)
+const TK = {}, TKN = ['cap_l', 'cap_m', 'cap_r', 'wall', 'ladder_mid', 'ladder_bot', 'stairs_ur', 'stairs_ul', 'vines', 'gate', 'prang', 'chedi', 'ruin_wall', 'sala', 'jars',
+  'coconut', 'sugarpalm', 'banana', 'campfire', 'lotus', 'stele1', 'stele2', 'stele3', 'raintree', 'plinth', 'rootwall', 'grass', 'fl_white', 'fl_red', 'fl_violet', 'fl_yellow', 'wisp', 'bg_mount', 'bg_forest', 'bg_sky'];
+if (THAI) for (const k of TKN) TK[k] = img(SG + 'thai/' + k + '.webp?t1');
+const CAPY = 15, CAPW = 143, TWW = 328 / 3 * .72, TWH = 305 / 3 * .72;   // cap: walk line 15 px below its top; wall tile size (smaller bricks than the ledges = further back)
+// props [piece, x, floor, scale, flip, layer]: layer 0 = in front of the walls (behind monsters), 2 = foreground, 3 = hangs down from the ledge
+const TDECO = [];
+if (THAI) { const D = (k, x, f, s = 1, fl = 0, l = 0) => TDECO.push([k, x, f, s, fl, l]);
+  // floor 0, the rice field: sala + camp fire at the start, palms, banana, a big rain tree
+  D('sala', 520, 0, .95); D('jars', 700, 0, .55); D('coconut', 120, 0, 1.05); D('banana', 860, 0, .75); D('coconut', 1620, 0, 1, 1); D('sugarpalm', 2050, 0, .95);
+  D('banana', 2560, 0, .7, 1); D('raintree', 3350, 0, 1.15); D('coconut', 3900, 0, .95); D('sugarpalm', 4350, 0, 1, 1); D('banana', 4620, 0, .7);
+  // floor 1: palm grove
+  D('coconut', 300, 1, .9, 1); D('banana', 820, 1, .65); D('sugarpalm', 1800, 1, .9); D('coconut', 2700, 1, .95); D('jars', 3450, 1, .5); D('banana', 3650, 1, .7, 1); D('coconut', 4600, 1, .9, 1);
+  // floor 2: old shrine terrace
+  D('plinth', 900, 2, .7); D('banana', 2150, 2, .65); D('rootwall', 2900, 2, .7); D('sugarpalm', 3700, 2, .85, 1); D('stele2', 4500, 2, .55);
+  // floor 3: graveyard of steles under a rain tree
+  D('stele1', 300, 3, .6); D('stele3', 420, 3, .55, 1); D('raintree', 1650, 3, .95, 1); D('stele2', 2350, 3, .55); D('stele1', 2950, 3, .6, 1); D('stele3', 3500, 3, .55); D('rootwall', 3950, 3, .65, 1);
+  // floor 4, the summit: ruined temple
+  D('raintree', 380, 4, 1.05); D('ruin_wall', 1150, 4, .75); D('chedi', 1500, 4, .8); D('prang', 2450, 4, 1.05); D('chedi', 3250, 4, .75, 1); D('ruin_wall', 3800, 4, .7, 1); D('plinth', 4150, 4, .55); D('gate', 4600, 4, 1.25);
+  // vines hanging over the ledges
+  for (let f = 1; f < 5; f++) for (let x = 420 + f * 170, i = 0; x < WW - 100; x += 760 + (i * 131) % 300, i++) if (!HOLES.some(([hf, a, b]) => hf === f && x > a - 120 && x < b + 120)) D('vines', x, f, .6 + (i % 3) * .08, i % 2, 3);
+  // grass and flowers along every ledge, in front
+  const FL = ['grass', 'fl_white', 'fl_red', 'grass', 'fl_violet', 'fl_yellow'];
+  for (let f = 0; f < 5; f++) for (let x = 90 + f * 37, i = 0; x < WW - 40; x += 230 + (i * 89) % 180, i++) if (!HOLES.some(([hf, a, b]) => hf === f && x > a - 30 && x < b + 30)) D(FL[(i + f) % FL.length], x, f, .5 + (i % 3) * .07, i % 2, 2);
+  for (let x = 260, i = 0; x < WW; x += 620 + (i * 173) % 260, i++) D('lotus', x, -1, .8 + (i % 2) * .15, i % 2, 2); }
+const WISPS = Array.from({length: 9}, (_, i) => ({x: 300 + i * 520 + (i * 97) % 200, f: 2 + (i % 3), p: i * 1.9}));
+function tp(g, k, x, y, s = 1, fl = 0) { const im = TK[k]; if (!im || !im.width) return; const w = im.width / 3 * s, h = im.height / 3 * s;
+  if (fl) { g.save(); g.translate(x, 0); g.scale(-1, 1); g.drawImage(im, -w / 2, y - h, w, h); g.restore(); } else g.drawImage(im, x - w / 2, y - h, w, h); }
 const LANT = Array.from({length: 22}, (_, i) => ({x: (i * 457) % 1600, y: (i * 233) % 400, s: .6 + (i % 4) * .2, p: i * 2.3, v: 6 + (i % 5) * 3}));
-function thaiSky(g) { const t = P.t + titleT;
-  const sky = g.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, '#26306a'); sky.addColorStop(.38, '#6e4f9e'); sky.addColorStop(.7, '#e2789a'); sky.addColorStop(1, '#ffc27a'); g.fillStyle = sky; g.fillRect(0, 0, VW, VH);
-  for (let i = 0; i < 40; i++) { const x = (i * 263) % VW, y = (i * 131) % (VH * .35); if (Math.sin(t * 2 + i) > -.2) { g.fillStyle = '#ffffff' + (i % 3 ? '88' : 'cc'); g.fillRect(x, y, 1, 1); } }
-  const bot = (WH - VH) - cam.y, farY = VH - 120 + bot * .25, midY = VH - 70 + bot * .45;
-  const sx = VW * .66 - cam.x * .03, sy = farY - 60; const glow = g.createRadialGradient(sx, sy, 6, sx, sy, 170); glow.addColorStop(0, '#fff2c0'); glow.addColorStop(.25, '#ffcf8a99'); glow.addColorStop(1, '#ffb07a00'); g.fillStyle = glow; g.fillRect(0, 0, VW, VH);
-  g.fillStyle = '#ffe6a8'; g.beginPath(); g.arc(sx, sy, 34, 0, 7); g.fill(); g.fillStyle = '#f0a07a'; for (let i = 0; i < 4; i++) g.fillRect(sx - 40, sy + 8 + i * 7, 80, 2 + i);
+// sky: painted dusk strip (kit sheet 6) over a gradient, hazy mountains with temple spires, a palm / temple-roof forest; the horizon follows the summit
+function thaiSky(g) { const t = P.t + titleT, hy = Math.round((FT[4] - cam.y) * .82 + 46);
+  const SW = Math.max(VW * 1.25, 720), SHh = TK.bg_sky.width ? SW * TK.bg_sky.height / TK.bg_sky.width : 120, SY = hy - SHh + 18;
+  const sky = g.createLinearGradient(0, 0, 0, Math.max(40, SY)); sky.addColorStop(0, '#232a62'); sky.addColorStop(.6, '#55559e'); sky.addColorStop(1, '#6a68b2'); g.fillStyle = sky; g.fillRect(0, 0, VW, VH);
+  for (let i = 0; i < 40; i++) { const x = (i * 263) % VW, y = (i * 131) % Math.max(1, hy * .5); if (Math.sin(t * 2 + i) > -.2) { g.fillStyle = '#ffffff' + (i % 3 ? '88' : 'cc'); g.fillRect(x, y, 1, 1); } }
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  const pan = cam.x / Math.max(1, WW - VW);
+  { const im = TK.bg_sky; if (im.width) { const w = SW, h = SHh, x = (VW - w) / 2 - (pan - .5) * (w - VW), y = SY;
+    g.drawImage(im, x, y, w, h); const fade = g.createLinearGradient(0, y, 0, y + h * .35); fade.addColorStop(0, '#6a68b2'); fade.addColorStop(1, '#6a68b200'); g.fillStyle = fade; g.fillRect(0, y - 1, VW, h * .35 + 1); } }
   g.save(); g.globalCompositeOperation = 'lighter';   // khom loi lanterns drifting up into the dusk
-  for (const l of LANT) { const x = ((l.x - cam.x * .12) % 1600 + 1600) % 1600 - 100, y = ((l.y - t * l.v) % 420 + 420) % 420 - 20; if (x > VW + 20) continue;
-    const fl = .7 + .3 * Math.sin(t * 6 + l.p); g.fillStyle = `rgba(255,150,60,${.18 * fl})`; g.beginPath(); g.arc(x, y, 6 * l.s + 3, 0, 7); g.fill(); g.fillStyle = `rgba(255,${190 + 40 * fl | 0},120,.95)`; g.fillRect(Math.round(x - 2 * l.s), Math.round(y - 3 * l.s), Math.ceil(4 * l.s), Math.ceil(5 * l.s)); }
+  for (const l of LANT) { const x = ((l.x - cam.x * .12) % 1600 + 1600) % 1600 - 100, y = ((l.y - t * l.v) % 420 + 420) % 420 - 20 + Math.min(0, hy - 300); if (x > VW + 20 || y > hy - 20) continue;
+    const fl = .7 + .3 * Math.sin(t * 6 + l.p); g.fillStyle = `rgba(255,150,60,${.18 * fl})`; g.beginPath(); g.arc(x, y, 6 * l.s + 3, 0, 7); g.fill(); g.fillStyle = `rgba(255,${190 + 40 * fl | 0},120,.95)`; g.fillRect(x - 2 * l.s, y - 3 * l.s, 4 * l.s, 5 * l.s); }
   g.restore();
-  if (FAR) for (let x = -((cam.x * .15) % FAR.width) - FAR.width; x < VW; x += FAR.width) g.drawImage(FAR, Math.round(x), Math.round(farY - FAR.height + 40));
-  g.fillStyle = 'rgba(255,190,150,.18)'; g.fillRect(0, farY + 30, VW, 40);
-  if (MID) for (let x = -((cam.x * .35) % MID.width) - MID.width; x < VW; x += MID.width) g.drawImage(MID, Math.round(x), Math.round(midY - MID.height + 40));
-  g.fillStyle = '#3e2a4e'; g.fillRect(0, Math.round(midY + 39), VW, VH); }
+  const strip = (im, div, par, bot) => { if (!im.width) return; const w = im.width / div, h = im.height / div; let x = -((cam.x * par) % (2 * w)) - 2 * w;
+    for (let i = 0; x < VW; x += w, i++) { if (i & 1) { g.save(); g.translate(x + w, 0); g.scale(-1, 1); g.drawImage(im, 0, bot - h, w + .5, h); g.restore(); } else g.drawImage(im, x, bot - h, w + .5, h); } };
+  strip(TK.bg_mount, 1.5, .1, hy + 6); g.fillStyle = 'rgba(255,190,170,.12)'; g.fillRect(0, hy - 30, VW, 40);
+  strip(TK.bg_forest, 1.7, .28, hy + 40); g.fillStyle = '#1c2a1e'; g.fillRect(0, hy + 39, VW, VH);
+  g.imageSmoothingEnabled = false; }
+// terraces: walls (the face of the terrace above, set back in depth), ledges of cap pieces, stairs, ladders, props; then the moat at the bottom
+function thaiBack(g) { if (!TK.wall.width) return; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  const cx0 = cam.x - 4, cx1 = cam.x + VW + 4, cy0 = cam.y, cy1 = cam.y + VH;
+  for (let i = -1; i < 4; i++) { const top = i < 0 ? GY + 20 : FT[i + 1] + 20, bot = i < 0 ? WH : FT[i] + 20; if (bot < cy0 || top > cy1) continue;
+    g.save(); g.beginPath(); g.rect(cx0, top, cx1 - cx0, bot - top); g.clip();
+    const off = (i + 1) * 47 % TWW; for (let y = top - 6; y < bot; y += TWH - .5) for (let x = Math.floor((cx0 - off) / TWW) * TWW + off; x < cx1; x += TWW - .5) g.drawImage(TK.wall, x, y, TWW, TWH);
+    if (i >= 0) { g.fillStyle = `rgba(40,20,58,${.24 + i * .03})`; g.fillRect(cx0, top, cx1 - cx0, bot - top);   // set back in depth
+      let gr = g.createLinearGradient(0, top + 24, 0, top + 74); gr.addColorStop(0, 'rgba(18,6,16,.62)'); gr.addColorStop(1, 'rgba(18,6,16,0)'); g.fillStyle = gr; g.fillRect(cx0, top + 24, cx1 - cx0, 50);   // shade under the ledge
+      gr = g.createLinearGradient(0, bot - 70, 0, bot); gr.addColorStop(0, 'rgba(230,200,235,0)'); gr.addColorStop(1, `rgba(230,200,235,${i ? .2 : .34})`); g.fillStyle = gr; g.fillRect(cx0, bot - 70, cx1 - cx0, 70); }   // mist at the foot
+    g.restore(); }
+  // the moat in front of the rice field
+  { const y = WH - 40, gr = g.createLinearGradient(0, y, 0, WH); gr.addColorStop(0, '#5a4f8e'); gr.addColorStop(1, '#262850'); g.fillStyle = gr; g.fillRect(cx0, y, cx1 - cx0, 40);
+    const t = P.t + titleT; g.fillStyle = 'rgba(255,200,170,.35)'; for (let x = Math.floor(cx0 / 70) * 70; x < cx1; x += 70) g.fillRect(x + (Math.sin(t + x) * 8), y + 8 + (x / 70 % 4) * 7, 26, 1); }
+  for (const [k, x, f, s, fl, l] of TDECO) if (l === 3 && x > cx0 - 120 && x < cx1 + 120) tp(g, k, x, FT[f] + 8 + TK[k].height / 3 * s, s, fl);
+  for (const [k, x, f, s, fl, l] of TDECO) if (l === 0 && x > cx0 - 300 && x < cx1 + 300) tp(g, k, x, FT[f] + 3, s, fl);
+  // ledges: cap pieces along each floor, end caps at the gaps
+  const segs = [[0, WW, GY], ...PLAT.map(([x, y, n]) => [x, x + n * T, y])];
+  for (const [a, b, y] of segs) { if (y - CAPY > cy1 || y + 60 < cy0 || b < cx0 || a > cx1) continue; const ty = y - CAPY, ch = TK.cap_m.height / 3;
+    g.save(); g.beginPath(); g.rect(a + (a > 0 ? 20 : -4), ty - 30, b - a - (a > 0 ? 20 : -4) - (b < WW ? 20 : -4), ch + 40); g.clip();
+    for (let x = a + Math.floor((Math.max(a, cx0) - a) / (CAPW - 1)) * (CAPW - 1) - (CAPW - 1); x < Math.min(b, cx1); x += CAPW - 1) g.drawImage(TK.cap_m, x, ty, CAPW, ch); g.restore();
+    if (a > 0) g.drawImage(TK.cap_l, a - 14, ty - 2, TK.cap_l.width / 3, TK.cap_l.height / 3); if (b < WW) g.drawImage(TK.cap_r, b - TK.cap_r.width / 3 + 14, ty - 2, TK.cap_r.width / 3, TK.cap_r.height / 3); }
+  // stairs (over the ledge lip, the top step at the walk line)
+  for (const [x, f, d] of TSTAIR) { const bx = x - d * (STW - 44), l = Math.min(x, bx) - (d > 0 ? 22 : 22); if (l > cx1 || l + STW < cx0) continue;
+    const im = TK[d > 0 ? 'stairs_ur' : 'stairs_ul']; if (im.width) g.drawImage(im, d > 0 ? bx - 22 : x - 22, FT[f - 1] + 6 - STH, STW, STH); }
+  // rope ladders
+  for (const [x, f] of TLAD) { if (x < cx0 - 40 || x > cx1 + 40) continue; const r = ROPES.find(q => q[0] === x && q[1] === FT[f]), lw = 46, lh = lw * TK.ladder_mid.height / TK.ladder_mid.width, bh = lw * TK.ladder_bot.height / TK.ladder_bot.width;
+    let y = r[1] - 12; for (; y < r[2] - bh - 4; y += lh - 2) g.drawImage(TK.ladder_mid, x - lw / 2, y, lw, Math.min(lh, r[2] - bh - y + 6)); g.drawImage(TK.ladder_bot, x - lw / 2, r[2] - bh + 6, lw, bh);
+    g.fillStyle = '#c9963a'; g.fillRect(x - 17, r[1] - 10, 5, 8); g.fillRect(x + 12, r[1] - 10, 5, 8); }
+  // the warp gate glows; the camp fire flickers
+  { const t = P.t + titleT; g.save(); g.globalCompositeOperation = 'lighter';
+    for (const p of PORTALS) { const gr = g.createRadialGradient(p.x, p.y - 50, 4, p.x, p.y - 50, 70); gr.addColorStop(0, `rgba(140,150,255,${.35 + .12 * Math.sin(t * 3)})`); gr.addColorStop(1, 'rgba(120,120,255,0)'); g.fillStyle = gr; g.fillRect(p.x - 70, p.y - 120, 140, 130); }
+    const f = CAMPFIRE, gr = g.createRadialGradient(f.x, f.y - 14, 2, f.x, f.y - 14, 80); gr.addColorStop(0, `rgba(255,170,80,${.4 + .1 * Math.sin(t * 13) + .06 * Math.sin(t * 29)})`); gr.addColorStop(1, 'rgba(255,120,40,0)'); g.fillStyle = gr; g.fillRect(f.x - 80, f.y - 94, 160, 100);
+    g.restore(); tp(g, 'campfire', f.x, f.y + 3, .42); }
+  g.imageSmoothingEnabled = false; }
+function thaiFront(g) { g.imageSmoothingEnabled = true; const cx0 = cam.x - 80, cx1 = cam.x + VW + 80, t = P.t + titleT;
+  for (const [k, x, f, s, fl, l] of TDECO) if (l === 2 && x > cx0 && x < cx1) tp(g, k, x, f < 0 ? WH + 6 : FT[f] + 9, s, fl);
+  g.save(); g.globalCompositeOperation = 'lighter'; for (const w of WISPS) { const x = w.x + Math.sin(t * .6 + w.p) * 40, y = FT[w.f] - 40 + Math.sin(t * 1.3 + w.p) * 12; if (x < cx0 || x > cx1) continue; g.globalAlpha = .55 + .3 * Math.sin(t * 4 + w.p); tp(g, 'wisp', x, y, .3); }
+  g.restore(); g.imageSmoothingEnabled = false; }
 const WARPS = THAI ? ['ตลาดน้ำ', 'ป่าหิมพานต์', 'อยุธยาร้าง', 'ต้นตะเคียน'] : ['ป่าลึก', 'ทะเลทราย', 'ภูเขาหิมะ', 'ดันเจี้ยน'];
-const CAMPFIRE = {x: 330, y: GY}, CHEST = {x: 2704 + 256, y: F3, open: false},
-  PORTALS = [{x: 170, y: GY, to: null}, ...PLAT.filter(p => p[1] === F3).map(([x, y, n], i) => ({x: x + n * T / 2, y, to: WARPS[i]}))];
+const CAMPFIRE = {x: 330, y: GY}, CHEST = THAI ? {x: 240, y: FT[4], open: false} : {x: 2704 + 256, y: F3, open: false},
+  PORTALS = THAI ? [{x: 4600, y: FT[4], to: WARPS[0]}] : [{x: 170, y: GY, to: null}, ...PLAT.filter(p => p[1] === F3).map(([x, y, n], i) => ({x: x + n * T / 2, y, to: WARPS[i]}))];   // Thai: one gate on the summit
 // ---------------------------------------------------------------- monsters
 // Thai ghosts (pixel sheets from the old top-down game, punched copies in art/sidegame/mobs/, originals in orig/): โขมด (fire wisp) Lv1, ลิงผี 2,
 // กระหัง 3, ไพร่ผี 4, เปรต 6, ทหารจระเข้ 6; the boss ชาละวัน = the crocodile guard at x2 until its own picture is drawn
@@ -185,14 +203,17 @@ const MDEF = THAI ? {khamot: {hp: 30, atk: 6, exp: 6, spd: 30, gold: [1, 3]}, mo
 const MS = {}, MI = {}, MW = {}; for (const k in MDEF) { MI[k] = img(SG + 'mobs/' + k + '.png'); fetch(SG + 'mobs/' + k + '.json').then(r => r.json()).then(j => MS[k] = j); }
 // homes: [kind, x0, x1, surface y] = where it patrols (it never leaves that stretch)
 const HOMES = [];
-{ const kind = THAI ? (x, k) => x < 1600 ? (k % 4 === 3 ? 'monkey' : 'khamot') : x < 2400 ? (k % 3 ? 'monkey' : 'krahang') : x < 3200 ? (k % 2 ? 'phrai' : 'krahang') : x < 4000 ? (k % 2 ? 'pret' : 'phrai') : 'croc_guard'
+if (THAI) { const KIND = [k => k % 4 === 3 ? 'monkey' : 'khamot', k => k % 3 ? 'monkey' : 'krahang', k => k % 2 ? 'phrai' : 'krahang', k => k % 2 ? 'pret' : 'phrai', k => k % 3 ? 'pret' : 'croc_guard'];   // floor by floor, stronger going up
+  let k = 0; const strip = (f, a, b) => { const n = Math.max(1, Math.round((b - a) / 460)), w = (b - a) / n; for (let i = 0; i < n; i++) HOMES.push([KIND[f](k++), Math.round(a + i * w), Math.round(a + (i + 1) * w), FT[f]]); };
+  strip(0, 760, WW - 60); for (const [x, y, n] of PLAT) { const f = FT.indexOf(y); strip(f, x + 30, Math.min(x + n * T - 30, f === 4 ? 3300 : WW - 30)); } }   // summit right of 3300 = the boss
+else { const kind = THAI ? (x, k) => x < 1600 ? (k % 4 === 3 ? 'monkey' : 'khamot') : x < 2400 ? (k % 3 ? 'monkey' : 'krahang') : x < 3200 ? (k % 2 ? 'phrai' : 'krahang') : x < 4000 ? (k % 2 ? 'pret' : 'phrai') : 'croc_guard'
     : (x, k) => x < 1600 ? 'shroom' : x < 2400 ? (k % 3 ? 'wolf' : 'goblin_archer') : x < 3200 ? 'skeleton' : x < 4000 ? (k % 2 ? 'skeleton' : 'goblin_archer') : 'boar_guard';
   let k = 0; const strip = (a, b, top, per) => { const n = Math.max(1, Math.round((b - a) / per)), w = (b - a) / n; for (let i = 0; i < n; i++) { const s0 = a + i * w, s1 = s0 + w; HOMES.push([kind((s0 + s1) / 2, k++), Math.round(s0), Math.round(s1), top]); } };   // each monster patrols its own stretch, kind by where it is
   for (const [x0, x1, top] of GROUND) { if (x1 <= 520 || x1 - x0 < 200) continue; strip(Math.max(x0, 520) + 16, x1 - 16, top, 260); }
   for (const [x, y, n] of PLAT) if (y === F2) strip(x + 16, x + n * T - 16, y, 300); }
 let MOBS = [], BOSS = null, COINS = [], PUFF = [], NUMS = [], WARN = [];
 function spawnMob(h) { const [k, x0, x1, y] = h, d = MDEF[k]; return {k, h, x0, x1, x: x0 + R() * (x1 - x0), y, dir: R() < .5 ? -1 : 1, hp: d.hp, mhp: d.hp, st: 'walk', t: R() * 3, turn: 2 + R() * 3, kb: 0, cd: 0, flash: 0, born: .6}; }
-function newBoss() { return {k: BOSSK, boss: true, x0: 4250, x1: 4640, x: 4500, y: GY, dir: -1, hp: 2400, mhp: 2400, st: 'walk', t: 0, turn: 3, kb: 0, cd: 0, flash: 0, slam: 3, born: 0}; }
+function newBoss() { return {k: BOSSK, boss: true, x0: THAI ? 3500 : 4250, x1: THAI ? 4400 : 4640, x: THAI ? 4000 : 4500, y: THAI ? FT[4] : GY, dir: -1, hp: 2400, mhp: 2400, st: 'walk', t: 0, turn: 3, kb: 0, cd: 0, flash: 0, slam: 3, born: 0}; }
 // ---------------------------------------------------------------- hero
 const P = {x: 260, y: GY, vx: 0, vy: 0, face: 1, ground: true, jumps: 0, t: 0, run: 0, rope: null};
 const H = {lv: 1, hp: 120, mhp: 120, exp: 0, gold: 0, inv: 0, skill: 0, pts: 0, st: {dex: 0, agi: 0, luk: 0, vit: 0}, bag: [], eq: [], rid: 1};
@@ -268,7 +289,7 @@ hold('bl', 'l'); hold('br', 'r'); hold('bu', 'u', () => { if (!nearRope()) { if 
 pad('zm').onclick = () => setHS(HS < .72 ? .8 : .65, true); setHS(HS);
 pad('snd').onclick = () => { soundOn = !soundOn; pad('snd').textContent = soundOn ? '🔊' : '🔈'; };
 const near = (o, r) => Math.abs(o.x - P.x) < r && Math.abs(o.y - P.y) < 60;
-const nearRope = () => ROPES.find(r => Math.abs(r[0] - P.x) < 14 && P.y >= r[1] - 2 && P.y <= r[2] + 2);
+const nearRope = () => ROPES.find(r => Math.abs(ropeX(r, clamp(P.y, r[1], r[2])) - P.x) < (r[3] ? 22 : 14) && P.y >= r[1] - 2 && P.y <= r[2] + 2);
 // ---- skill bar: the archer's 6 skills (docs/codex/action/ARCHER.md). Until her sheets come in, a skill plays the rabbit's slam and shows its name.
 const SK = [
   {id: 'rain', name: 'ฝนธนู', cd: 8, key: 'Digit1', ic: '<path d="M16 26V6M11 11l5-5 5 5" stroke="#bff0ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 14v8M26 14v8M6 22l-2-3M6 22l2-3M26 22l-2-3M26 22l2-3" stroke="#6fd3ff" stroke-width="2" fill="none" stroke-linecap="round"/>'},
@@ -314,8 +335,8 @@ function step(dt) {
     if (h.f[i] === h.hit && !A.hitDone) { A.hitDone = true; doHit(A.n); } if (h.f[i] !== h.hit) A.hitDone = false;
     if (A.t >= h.ms.reduce((a, b) => a + b, 0)) { if (A.queued && A.n < 2 && !A.skill) { A.n++; A.t = 0; A.queued = false; SFX.swing(); } else { A.on = false; A.skill = false; } } }
   // ropes: up / down at a rope to climb; jump to leave it
-  const rope = nearRope(); if (!P.rope && rope && (up || (down && P.ground && Math.abs(P.y - rope[1]) < 3))) { P.rope = rope; P.x = rope[0]; P.vx = 0; P.vy = 0; A.on = false; }
-  if (P.rope) { const r = P.rope, v = (down ? 1 : 0) - (up ? 1 : 0); P.y = clamp(P.y + v * 150 * dt, r[1], r[2]); P.climb = v ? P.climb + dt : P.climb || 0;
+  const rope = nearRope(); if (!P.rope && rope && (up || (down && P.ground && Math.abs(P.y - rope[1]) < 3))) { P.rope = rope; P.x = ropeX(rope, clamp(P.y, rope[1], rope[2])); P.vx = 0; P.vy = 0; A.on = false; }
+  if (P.rope) { const r = P.rope, v = (down ? 1 : 0) - (up ? 1 : 0); P.y = clamp(P.y + v * (r[3] ? 120 : 150) * dt, r[1], r[2]); P.x = ropeX(r, P.y); if (r[3] && v) P.face = Math.sign(-r[3] * v) || P.face; P.climb = v ? P.climb + dt : P.climb || 0;
     if (P.y <= r[1] && up) { P.rope = null; P.ground = true; P.y = r[1]; if (surfaceBelow(P.x, P.y) > P.y + 1) P.x += surfaceBelow(P.x + 20, P.y) <= P.y + 1 ? 20 : -20; } else if (P.y >= r[2] && down) { P.rope = null; P.ground = true; P.y = r[2]; } }
   else {
     const slow = A.on && P.ground && A.mv !== 'skill_flip' ? .15 : 1, MAX = 230 * (1 + H.st.agi * .004);
@@ -327,7 +348,7 @@ function step(dt) {
   P.run = P.ground && Math.abs(P.vx) > 30 ? P.run + dt : 0;
   if (CAMPFIRE && Math.abs(P.x - CAMPFIRE.x) < 90 && Math.abs(P.y - CAMPFIRE.y) < 20) H.hp = Math.min(H.mhp, H.hp + 15 * dt);   // the camp heals
   if (!MOBS.length) MOBS = HOMES.map(spawnMob);
-  for (const m of MOBS) stepMob(m, dt); if (BOSS) stepMob(BOSS, dt); else if (!BOSS && P.x > 4150 && !stepMob.bossDown) BOSS = newBoss();
+  for (const m of MOBS) stepMob(m, dt); if (BOSS) stepMob(BOSS, dt); else if (!BOSS && (THAI ? P.x > 3300 && P.y <= FT[4] + 4 : P.x > 4150) && !stepMob.bossDown) BOSS = newBoss();
   for (const c of COINS) { c.t += dt; if (!c.land) { c.vy += 1200 * dt; c.x += c.vx * dt; c.y += c.vy * dt; const s = surfaceBelow(c.x, c.y - c.vy * dt - 1); if (c.vy > 0 && c.y >= s) { c.y = s; c.land = true; } }
     const d = Math.hypot(P.x - c.x, P.y - 20 - c.y); if (c.t > .4 && d < 90) { c.x += (P.x - c.x) * Math.min(1, dt * 8); c.y += (P.y - 20 - c.y) * Math.min(1, dt * 8); } if (c.t > .4 && d < 18) { c.got = true; if (c.rune) gotRune(c.rune); else { H.gold += Math.round(c.v * goldMul()); SFX.coin(); } } }
   COINS = COINS.filter(c => !c.got && (c.t < 30 || c.rune && c.t < 90));
@@ -436,7 +457,7 @@ const DRW = {k: 'idle', row: 0, f: 0, idle0: 0, bl: null};
 function drawArcher() { if (!AJ || !ARC.width) return; if (H.inv && H.inv < .65 && Math.floor(P.t * 14) % 2) return;
   const now = performance.now() / 1000; let k = 'idle', f = 0;
   if (A.on) { k = A.mv; f = mvPic(k, mvFrame(k, A.t)); } else if (H.inv > .65) { k = 'hurt'; f = Math.floor((1 - H.inv) / .35 * 12); }
-  else if (P.rope) { k = 'jump'; f = 6; } else if (!P.ground) { k = 'jump'; f = P.vy < -250 ? 3 : P.vy < 0 ? 5 : P.vy < 300 ? 6 : 8; } else if (P.run > 0) { k = 'run'; f = Math.floor(P.run * 15) % 12; }
+  else if (P.rope && P.rope[3]) { k = 'run'; f = Math.floor((P.climb || 0) * 12) % 12; } else if (P.rope) { k = 'jump'; f = 6; }   // stairs: walk up them else if (!P.ground) { k = 'jump'; f = P.vy < -250 ? 3 : P.vy < 0 ? 5 : P.vy < 300 ? 6 : 8; } else if (P.run > 0) { k = 'run'; f = Math.floor(P.run * 15) % 12; }
   if (k !== DRW.k) { DRW.bl = {row: DRW.row, f: DRW.f, t: now}; if (k === 'idle') DRW.idle0 = now; DRW.k = k; }
   if (k === 'idle') f = Math.floor((now - DRW.idle0) * 8) % 12;
   const r = AJ.rows[k]; f = clamp(f, 0, r.n - 1); DRW.row = r.row; DRW.f = f; const sc = K / AJ.k * HS;
@@ -520,17 +541,18 @@ function drawWorld(g) {
   for (const [k, x, l] of DECO) if (l === 0 && PR[k].width) { g.globalAlpha = .92; g.drawImage(PR[k], Math.round(x - PR[k].width / 2), groundAt(x) - PB[k]); g.globalAlpha = 1; }
   for (const [x, top, bot] of PILLARS) { g.fillStyle = '#4a3324'; g.fillRect(x - 20, top + 40, 40, bot - top - 40); g.fillStyle = '#5e4330'; g.fillRect(x - 20, top + 40, 10, bot - top - 40);   // rock pillars under the bands
     g.fillStyle = '#35241a'; g.fillRect(x + 12, top + 40, 8, bot - top - 40); for (let y = top + 70; y < bot - 10; y += 46) { g.fillStyle = '#3a281c'; g.fillRect(x - 20, y, 40, 3); } g.fillStyle = '#6a4c36'; g.fillRect(x - 26, bot - 10, 52, 10); }
+  if (THAI) thaiBack(g); else {   // Thai map: kit-built terraces (thaiBack); forest map: tiles
   g.fillStyle = '#56371f'; for (const [x0, x1, top] of GROUND) g.fillRect(x0 + 6, top + 10, x1 - x0 - 12, WH - top);   // solid dirt under the tiles: no sky through the edge tiles' margins
   GROUND.forEach(([x0, x1, top], i) => block(g, x0, top - GRASS, (x1 - x0) / T, Math.ceil((WH - top + GRASS) / T) + 1, i === 0, i === GROUND.length - 1));   // steps meet edge to edge: no rounded edge tiles between them
   for (const [x, y, n] of PLAT) { g.fillStyle = '#56371f'; g.fillRect(x + 6, y + 10, n * T - 12, 2 * T + 6); block(g, x, y - GRASS, n, 3, x > 128, x + n * T < 4672); }   // the bands, 3 tiles thick, joined to the walls
-  for (const [x, top, bot] of ROPES) { g.fillStyle = '#7a5530'; g.fillRect(x - 2, top - 6, 4, bot - top + 6); g.fillStyle = '#c8a06a'; for (let y = top - 6; y < bot; y += 6) g.fillRect(x - 2, y, 2, 3); g.fillStyle = '#5a3a20'; g.fillRect(x - 5, top - 8, 10, 4); }
+  for (const [x, top, bot] of ROPES) { g.fillStyle = '#7a5530'; g.fillRect(x - 2, top - 6, 4, bot - top + 6); g.fillStyle = '#c8a06a'; for (let y = top - 6; y < bot; y += 6) g.fillRect(x - 2, y, 2, 3); g.fillStyle = '#5a3a20'; g.fillRect(x - 5, top - 8, 10, 4); } }
   for (const [k, x, l] of DECO) if (l === 1 && PR[k].width) g.drawImage(PR[k], Math.round(x - PR[k].width / 2), groundAt(x) - PB[k]);
   // camp fire (code-drawn, animated), the chest, the portals
-  { const f = CAMPFIRE, t = P.t + titleT; g.fillStyle = '#5a3a20'; g.fillRect(f.x - 14, f.y - 5, 28, 5); g.fillStyle = '#8a6a50'; for (const o of [-16, -8, 8, 16]) g.fillRect(f.x + o - 3, f.y - 4, 6, 4);
+  if (!THAI) { const f = CAMPFIRE, t = P.t + titleT; g.fillStyle = '#5a3a20'; g.fillRect(f.x - 14, f.y - 5, 28, 5); g.fillStyle = '#8a6a50'; for (const o of [-16, -8, 8, 16]) g.fillRect(f.x + o - 3, f.y - 4, 6, 4);
     for (let i = 0; i < 12; i++) { const k = (i * 37 + t * 60) % 30, x = f.x + Math.sin(i * 2.1 + t * 7) * (8 - k * .2), y = f.y - 6 - k; g.fillStyle = k < 8 ? '#fff3a0' : k < 18 ? '#ffb43a' : '#e0502a'; g.fillRect(Math.round(x) - 2, Math.round(y) - 2, k < 18 ? 4 : 3, k < 18 ? 4 : 3); } }
   { const c = CHEST; g.fillStyle = '#5a3418'; g.fillRect(c.x - 12, c.y - 16, 24, 16); g.fillStyle = '#8a5428'; g.fillRect(c.x - 11, c.y - 15, 22, 6); g.fillStyle = '#f2c46b'; g.fillRect(c.x - 12, c.y - 10, 24, 2); g.fillRect(c.x - 2, c.y - 12, 4, 5);
     if (c.open) { g.fillStyle = '#3a2210'; g.fillRect(c.x - 12, c.y - 22, 24, 6); } else if (Math.sin((P.t + titleT) * 5) > 0) { g.fillStyle = '#fff6c0'; g.fillRect(c.x + 8, c.y - 24, 2, 2); } }
-  for (const p of PORTALS) { const t = P.t + titleT; for (let i = 0; i < 3; i++) { g.strokeStyle = ['#9be8ff', '#5ab8ff', '#e0f8ff'][i]; g.globalAlpha = .6 + Math.sin(t * 4 + i) * .3; g.lineWidth = 2; g.beginPath(); g.ellipse(p.x, p.y - 34, 16 - i * 4 + Math.sin(t * 3 + i) * 2, 34 - i * 7, 0, 0, 7); g.stroke(); } g.globalAlpha = 1; }
+  if (!THAI) for (const p of PORTALS) { const t = P.t + titleT; for (let i = 0; i < 3; i++) { g.strokeStyle = ['#9be8ff', '#5ab8ff', '#e0f8ff'][i]; g.globalAlpha = .6 + Math.sin(t * 4 + i) * .3; g.lineWidth = 2; g.beginPath(); g.ellipse(p.x, p.y - 34, 16 - i * 4 + Math.sin(t * 3 + i) * 2, 34 - i * 7, 0, 0, 7); g.stroke(); } g.globalAlpha = 1; }
   for (const w of WARN) { const k = Math.min(1, w.t / w.d); g.globalAlpha = .25 + .35 * k; g.fillStyle = '#ff2a1a'; g.beginPath(); g.ellipse(w.x, w.y, w.r * k, 10 * k, 0, 0, 7); g.fill(); g.globalAlpha = 1; }
   for (const m of MOBS) drawMob(g, m); if (BOSS) drawMob(g, BOSS);
   for (const c of COINS) { if (c.rune) { const k = RT[c.rune.t], x = Math.round(c.x), y = Math.round(c.y) - 10 - Math.round(Math.sin(c.t * 4) * 2); g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = .35 + .2 * Math.sin(c.t * 6);
@@ -540,6 +562,7 @@ function drawWorld(g) {
   drawHero(g); drawShots(g);
   for (const p of PUFF) { g.globalAlpha = 1 - p.t / .6; g.fillStyle = p.c; g.fillRect(Math.round(p.x), Math.round(p.y), 3, 3); } g.globalAlpha = 1;
   for (const [k, x, l] of DECO) if (l === 2 && PR[k].width) { g.filter = 'none'; g.globalAlpha = 1; g.save(); g.translate(0, 18); g.drawImage(PR[k], Math.round(x - PR[k].width / 2), groundAt(x) - PB[k]); g.restore(); }
+  if (THAI) thaiFront(g);
   for (const m of MOTES) { const x = m.x + Math.sin((P.t + titleT) * .7 + m.p) * 14, y = m.y + Math.sin((P.t + titleT) * .5 + m.p) * 10; if (Math.sin((P.t + titleT) * 2 + m.p) < -.3) continue; g.fillStyle = m.s > .9 ? '#fff6c0' : '#ffe08a'; g.fillRect(Math.round(x), Math.round(y), m.s > 1 ? 2 : 1, m.s > 1 ? 2 : 1); }
   g.restore();
   // light: warm rays from the sun, very light
@@ -574,7 +597,8 @@ function hud() {
   ctx.fillStyle = '#ff5a4a'; for (const m of MOBS) if (m.st !== 'dead') ctx.fillRect(zx + m.x * sxm - U(1), Y(m.y) - U(3), U(2), U(2));
   if (BOSS && BOSS.st !== 'dead') { ctx.fillRect(zx + BOSS.x * sxm - U(3), Y(BOSS.y) - U(6), U(6), U(5)); }
   ctx.fillStyle = Math.sin(P.t * 8) > 0 ? '#fff27a' : '#ffffff'; ctx.fillRect(zx + P.x * sxm - U(2), Y(P.y) - U(5), U(4), U(4));
-  const zone = ZONES.find(z => P.x >= z[0] && P.x < z[1]); if (zone) text(zone[2], mx + mw - U(10), my + U(19), 10, '#cfe8ff', 600, 'right');
+  const zone = THAI ? [0, 0, TZN[Math.max(0, FT.findIndex(y => P.y >= y - 4))] || TZN[4]] : ZONES.find(z => P.x >= z[0] && P.x < z[1]);   // Thai: zone = the floor
+  if (zone) text(zone[2], mx + mw - U(10), my + U(19), 10, '#cfe8ff', 600, 'right');
   // status bar (bottom middle): portrait, level, HP, EXP, coins
   const hotW = U(6 * 42 + 5 * 4 + 12), bw = Math.min(cv.width - U(330) - hotW - U(6), U(230)), bh = U(54), bx = (cv.width - bw - hotW - U(6)) / 2 - U(14), by = cv.height - bh - U(6); panel(bx, by, bw, bh);
   document.getElementById('skills').style.left = Math.round((bx + bw) / DPR + 6) + 'px';   // the skill shortcut bar sits right of the status bar
@@ -597,7 +621,10 @@ function title() {
 function draw() {
   const g = view.getContext('2d'); g.imageSmoothingEnabled = false;
   if (state === 'title') { cam.x = 300 + (Math.sin(titleT * .08) * .5 + .5) * (WW - VW - 600); cam.y = GY - VH * .7; clampCam(); }
-  drawWorld(g); ctx.imageSmoothingEnabled = false; ctx.drawImage(view, 0, 0, VW * K, VH * K); if (ARCHER) drawArcher();
+  // the Thai map is painted art: drawn straight onto the full-res canvas (scaled by K) so it stays sharp; the forest map: small canvas blown up
+  if (THAI) { ctx.setTransform(K, 0, 0, K, 0, 0); ctx.imageSmoothingEnabled = false; drawWorld(ctx); ctx.setTransform(1, 0, 0, 1, 0, 0); }
+  else { drawWorld(g); ctx.imageSmoothingEnabled = false; ctx.drawImage(view, 0, 0, VW * K, VH * K); }
+  if (ARCHER) drawArcher();
   if (state === 'title') title(); else hud(); }
 let last = 0; function frame(now) { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; step(dt); draw(); requestAnimationFrame(frame); }
 MOBS = HOMES.map(spawnMob); requestAnimationFrame(frame);
