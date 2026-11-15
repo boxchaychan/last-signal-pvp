@@ -1170,8 +1170,10 @@ const GAME = window.GAME = (function () {
       #gOk { background: linear-gradient(#5ac85a, #2a8a2a); } #gNo { background: linear-gradient(#c85a4a, #8a2a1a); }
       #gTip { left: 50%; bottom: 168px; transform: translateX(-50%); font-size: 12px; font-weight: 600; padding: 4px 10px; display: none; white-space: nowrap; }
       #gOv { position: fixed; inset: 0; pointer-events: none; }
-      .gScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #3a2a14cc, #0a0604ee); z-index: 5; pointer-events: auto; }
-      .gScreen .box { text-align: center; padding: 18px 26px; max-width: 560px; }
+      .gScreen { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: linear-gradient(#0000 35%, #0a0604dd 78%), url(art/tribe3d/ui/title.png) center / cover; image-rendering: pixelated; z-index: 5; pointer-events: auto; }
+      .gScreen.dark { align-items: center; background: radial-gradient(circle at 50% 40%, #3a2a14dd, #0a0604f2); }
+      .gScreen .box { image-rendering: auto; }
+      .gScreen .box { text-align: center; padding: 10px 26px 16px; max-width: 640px; }
       .gScreen h1 { margin: 0; font: 800 34px Kanit, sans-serif; color: #ffd27a; text-shadow: var(--ol), 0 0 18px #ff9a3c; }
       .gScreen p { margin: 8px 0; font: 600 13px Kanit, sans-serif; color: #f3dcb0; line-height: 1.5; }
       .gScreen button { font: 800 17px Kanit, sans-serif; color: #fff; padding: 9px 24px; margin: 6px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#f0b860, #b06a1e); box-shadow: 0 4px 0 var(--ink); }
@@ -1288,6 +1290,18 @@ const GAME = window.GAME = (function () {
     for (const f of G.floats) { f.t += dt; const [sx, sy] = proj(f.x, f.y + f.t * 2, f.z); ox.globalAlpha = Math.max(0, 1 - f.t / 1.4); ox.strokeText(f.text, sx, sy); ox.fillStyle = f.col; ox.fillText(f.text, sx, sy); }
     ox.globalAlpha = 1; G.floats = G.floats.filter(f => f.t < 1.4);
     siteLabels();
+    // arrows on the screen edge toward enemies that are off screen
+    const cx = innerWidth / 2, cy = innerHeight / 2, mxg = 34, myg = 70; let n = 0;
+    for (const e of G.enemies) {
+      if (e.dead || e.flee || n > 14) continue; const [sx, sy] = proj(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 1, e.z);
+      if (sx > mxg && sx < innerWidth - mxg && sy > myg && sy < innerHeight - mxg) continue;
+      const a = Math.atan2(sy - cy, sx - cx), kx = (cx - mxg) / Math.abs(Math.cos(a) || 1e-6), ky = (cy - myg) / Math.abs(Math.sin(a) || 1e-6), k = Math.min(kx, ky);
+      const ax = cx + Math.cos(a) * k, ay = cy + Math.sin(a) * k, big = e.def.boss ? 1.7 : 1;
+      ox.save(); ox.translate(ax, ay); ox.rotate(a); ox.beginPath(); ox.moveTo(12 * big, 0); ox.lineTo(-6 * big, -8 * big); ox.lineTo(-6 * big, 8 * big); ox.closePath();
+      ox.fillStyle = e.def.boss ? '#ff2a2a' : '#ff7a4a'; ox.strokeStyle = '#140c06'; ox.lineWidth = 2; ox.fill(); ox.stroke(); ox.restore();
+      if (e.def.boss) { ox.font = '800 12px Kanit, sans-serif'; ox.strokeText(e.def.n, ax, ay - 16); ox.fillStyle = '#ffb0a0'; ox.fillText(e.def.n, ax, ay - 16); }
+      n++;
+    }
   }
 
   // ---------- save / load / screens
@@ -1295,15 +1309,15 @@ const GAME = window.GAME = (function () {
     try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp)]) })); } catch (_) {}
   }
   function load() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch (_) { return null; } }
-  function screen(html, buttons) {
-    const s = document.createElement('div'); s.className = 'gScreen'; s.innerHTML = `<div class="box">${html}<div class="btns"></div></div>`;
+  function screen(html, buttons, dark) {
+    const s = document.createElement('div'); s.className = 'gScreen' + (dark ? ' dark' : ''); s.innerHTML = `<div class="box">${html}<div class="btns"></div></div>`;
     for (const [label, f, alt] of buttons) { const b = document.createElement('button'); b.textContent = label; if (alt) b.className = 'alt'; b.addEventListener('pointerdown', e => { e.stopPropagation(); au(); s.remove(); f(); }); s.querySelector('.btns').appendChild(b); }
     document.body.appendChild(s); return s;
   }
   function gameOver() {
     if (G.over) return; G.over = true; G.on = false; const n = G.day - 1;
     try { G.best = Math.max(+localStorage.getItem(BEST) || 0, n); localStorage.setItem(BEST, G.best); localStorage.removeItem(SAVE); } catch (_) {}
-    screen(`<h1>โถงหัวหน้าเผ่าถูกทำลาย</h1><p>เผ่าของคุณรอดมาได้ <b>${n}</b> คืน · ล้มศัตรู ${G.killed} ตัว<br>สถิติดีที่สุด ${G.best} คืน</p>`, [['เริ่มใหม่', () => location.reload()]]);
+    screen(`<h1>โถงหัวหน้าเผ่าถูกทำลาย</h1><p>เผ่าของคุณรอดมาได้ <b>${n}</b> คืน · ล้มศัตรู ${G.killed} ตัว<br>สถิติดีที่สุด ${G.best} คืน</p>`, [['เริ่มใหม่', () => location.reload()]], true);
   }
 
   // ---------- start
