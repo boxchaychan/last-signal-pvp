@@ -193,11 +193,13 @@ const ARCHER = (QS.get('hero') || 'archer') === 'archer';
 let HS = +QS.get('hs') || (() => { try { return +localStorage.getItem('hoodfall_hs'); } catch (e) { return 0; } })() || (matchMedia('(pointer: coarse)').matches ? .8 : .65), BH = 80 * HS;   // default: PC 65 %, phone 80 % (owner "pc 65 ได้ แต่โทรศัพท์อาจจะต้อง 80")
 // in-game size switch (owner "ให้มีซูม แบบเลือกเลย 65 80"): the button top right cycles 65 % / 80 %, remembered in the browser
 function setHS(v, keep) { HS = v; BH = 80 * HS; if (keep) try { localStorage.setItem('hoodfall_hs', v); } catch (e) {} const el = document.getElementById('zm'); if (el) el.textContent = Math.round(v * 100) + '%'; }
-const ARC = img(SG + 'archer.webp'), VFXR = img('art/incoming/archer/vfx_rain_sheet.webp'); let AJ = null; fetch(SG + 'archer.json').then(r => r.json()).then(j => AJ = j);
+// AV = version of the archer sheet: bump it every time archer.webp / .json change, or phones keep the old cached sheet (owner saw the old 2-turn spin)
+const AV = '?a6';
+const ARC = img(SG + 'archer.webp' + AV), VFXR = img('art/incoming/archer/vfx_rain_sheet.webp'); let AJ = null; fetch(SG + 'archer.json' + AV).then(r => r.json()).then(j => AJ = j);
 // per move: ms per frame, frames where arrows leave the bow, frames held longer (the big pull before a heavy shot)
 // shot3 (owner "เอาฮิต 3 ที่มันกระโดดแล้วย่อ เปลี่ยนเป็นย่อตัวยิงก็พอ"): only the frames on the ground are played (seq), the jump frames 2-5 and 9 are left out;
 // shot1 -> shot2 spaced out a little more (owner "ฮิต 1 2 ติดกันเกินไปไหม"): a short aim hold before shot2's first arrow, its two arrows further apart
-const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [7, 10], hold: {5: 100, 9: 70}}, shot3: {ms: 50, seq: [0, 1, 1, 1, 6, 7, 8, 10, 11], fire: [1, 6], hold: {1: 150, 2: 150, 3: 150, 5: 150, 6: 110}, spin: [1, 4], turns: 2},
+const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [7, 10], hold: {5: 100, 9: 70}}, shot3: {ms: 50, seq: [0, 1, 1, 1, 6, 7, 8, 10, 11], fire: [1, 6], hold: {1: 150, 2: 150, 3: 150, 5: 150, 6: 110}, spin: [1, 4], turns: .5},
   // the real spin finisher from Codex (shot3_spin.png): a HALF turn (owner picked "ครึ่งรอบ" from half / 1 / 2 turns): turn away, back, then the big shot
   shot3_spin: {ms: 55, seq: [0, 1, 2, 3, 6, 7, 8, 9, 10, 11], fire: [2, 5], hold: {1: 90, 4: 150, 5: 110}},
   skill_rain: {ms: 52, fire: [6], hold: {5: 120}}, skill_gale: {ms: 50, fire: [6], hold: {5: 200}}, skill_fan: {ms: 48, fire: [7], hold: {6: 120}},
