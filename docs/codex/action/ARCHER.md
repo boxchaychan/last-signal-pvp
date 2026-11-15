@@ -23,6 +23,8 @@ Layout, follow exactly:
 - In every cell a thin dark ground line at the same height near the bottom of the cell; her feet stand on it (when jumping, the line stays and she is drawn higher).
 - She is the same size in every frame, TRUE SIDE VIEW FACING RIGHT, and stays in the middle of her cell.
 - Smooth, detailed animation: many small in-between steps, no big jumps between frames; braids, scarf and fur skirt follow the motion.
+- ALL frames are DIFFERENT, consecutive poses of ONE motion (frame 1 -> 12 in order). Do NOT draw a short cycle and repeat it in every row: each row continues the motion of the row above.
+- Keep the character pixel-identical in design between frames (same hood, bow, colours); only the pose changes.
 - The bow is held in her LEFT hand (front hand toward the right), arrows drawn from the quiver on her back with the right hand.
 - Effects (arrow trails, glowing string, sparks, wind, dust) bright and clear, mostly in FRONT of her, inside her own cell.
 - No text, no numbers, no frame labels, no watermark.
@@ -31,8 +33,8 @@ Layout, follow exactly:
 ## Rows
 | # | file | frames / grid | move ([MOVE]) | status |
 |---|------|---------------|---------------|--------|
-| 1 | `run.png` | 12 / 4 x 3 | Run cycle: light, fast run, bow held low in the left hand, braids and scarf bouncing; seamless loop (frame 12 flows into frame 1). | todo |
-| 2 | `idle.png` | 12 / 4 x 3 | Idle: stand ready, slow breathing, braids and scarf swaying a little, a small bow adjust, seamless loop. | todo |
+| 1 | `run.png` (v1 done 2026-11-15: only 4 poses repeated in 3 rows; redo with 12 different poses) | 12 / 4 x 3 | Run cycle: light, fast run, bow held low in the left hand, braids and scarf bouncing; seamless loop (frame 12 flows into frame 1). | todo |
+| 2 | `idle.png` (v1 done: 4 poses repeated, the bow jumps; redo) | 12 / 4 x 3 | Idle: stand ready, slow breathing, braids and scarf swaying a little, a small bow adjust, seamless loop. | todo |
 | 3 | `shot1.png` | 12 / 4 x 3 | Hit 1 of a 3-hit combo: quick shot. From the ready stance, raise the bow, draw an arrow fast, release a glowing light-blue arrow to the right (the arrow leaves the cell), small recoil, end ready to flow into hit 2. | todo |
 | 4 | `shot2.png` | 12 / 4 x 3 | Hit 2 of a 3-hit combo: double shot. First frame continues from the last frame of `shot1.png` (attach it); spin half a turn on the spot and fire two arrows in a row to the right; end ready to flow into hit 3. | todo |
 | 5 | `shot3.png` | 12 / 4 x 3 | Hit 3, the finisher: first frame continues from `shot2.png` (attach it); jump back a little, draw the bow fully with a strong light-blue glow, fire one big piercing arrow with a spiral wind trail, land and return to the ready stance. | todo |
