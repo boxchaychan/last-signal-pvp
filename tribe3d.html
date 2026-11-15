@@ -71,7 +71,7 @@ const CAMS = [ { n: 'A · ต่ำ 30°', p: 30, y: 45 }, { n: 'B · 45°', p: 
 let camI = qi('cam', 0, 3, 1), timeI = qi('t', 0, 2, 0), OUTL = Q.get('ol') !== '0';
 const SEED = qi('seed', 1, 1e9, 11);
 const U = .125, T = 1 / U;                 // world units per render pixel (8 px per unit)
-const TS = 2, NT = 180, MAPW = NT * TS, HM = MAPW / 2, LH = 2.2;   // 2-unit tiles, 360 x 360 units, 2.2 units per terrace
+const TS = 2, NT = 240, MAPW = NT * TS, HM = MAPW / 2, LH = 2.2;   // 2-unit tiles, 480 x 480 units, 2.2 units per terrace
 const VX = 0, VZ = 10, VR = 40;            // village centre and its flat radius
 const SSTEP = [1, 1.5, 2, 3, 4, 5, 6];
 
@@ -90,7 +90,7 @@ function mkC(w, h) { const c = document.createElement('canvas'); c.width = w; c.
 // ---------- renderer + outline pass (same as kaiju.html)
 const cv = $('cv');
 const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.BasicShadowMap;
+renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.BasicShadowMap; renderer.shadowMap.autoUpdate = false;   // shadows redrawn every 2nd frame (draw())
 const scene = new THREE.Scene();
 const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 1200);
 const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -153,7 +153,7 @@ function setCam(i) {
 // ---------- lights + time of day
 const hemi = new THREE.HemisphereLight(0xb8d4ff, 0x7a6a58, .56); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff1dc, .52); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -100, right: 100, top: 100, bottom: -100, near: 1, far: 500 }); sun.shadow.bias = -.0005; sun.shadow.normalBias = .05;
+Object.assign(sun.shadow.camera, { left: -78, right: 78, top: 78, bottom: -78, near: 1, far: 500 }); sun.shadow.bias = -.0005; sun.shadow.normalBias = .05;
 scene.add(sun); scene.add(sun.target);
 const SUNDIR = new V3(-50, 100, 70).normalize();
 const TIMES = [
@@ -218,7 +218,7 @@ function genTerrain() {
 }
 const TOPC = [[86, 120, 110], [230, 208, 152], [108, 172, 74], [80, 146, 60], [138, 132, 128], [238, 242, 250], [176, 134, 90]];
 const WALLC = [[110, 96, 80], [208, 184, 132], [152, 110, 74], [140, 100, 66], [116, 110, 108], [150, 146, 150], [152, 110, 74]];
-let waterM = null;
+let waterM = null; const TERRAIN = [];
 const CLOUD = { t: { value: 0 }, k: { value: .2 } };
 function cloudPatch(mat) {   // blotchy cloud shadows that drift across the land (hard edges = pixel look)
   mat.onBeforeCompile = sh => {
@@ -235,7 +235,8 @@ function cloudPatch(mat) {   // blotchy cloud shadows that drift across the land
   return mat;
 }
 function buildTerrain() {
-  const pos = [], nor = [], col = [], uv = [];
+  const CHK = 24, CN = Math.ceil(NT / CHK), bins = Array.from({ length: CN * CN }, () => ({ pos: [], nor: [], col: [], uv: [] }));   // terrain in chunks: off-screen chunks are culled
+  let pos, nor, col, uv;
   const K = 255 / 236;   // the detail texture is ~236 grey: brighten vertex colours to match
   const quad = (a, b, c, d, n, rgb, wall) => {
     const pts = [a, b, c, a, c, d];
@@ -245,6 +246,7 @@ function buildTerrain() {
     }
   };
   for (let j = 0; j < NT; j++) for (let i = 0; i < NT; i++) {
+    ({ pos, nor, col, uv } = bins[Math.floor(j / CHK) * CN + Math.floor(i / CHK)]);
     const k = tIdx(i, j), y = tileY(i, j), kind = KIND[k], x0 = -HM + i * TS, x1 = x0 + TS, z0 = -HM + j * TS, z1 = z0 + TS;
     const v = .93 + .12 * hash2(i, j), base = TOPC[kind];
     let tc = [base[0] * v, base[1] * v, base[2] * v];
@@ -266,15 +268,18 @@ function buildTerrain() {
     if ((ny = tileY(i, j + 1)) < y) wall(ny, (t, b, c, n) => quad([x0, t, z1], [x0, b, z1], [x1, b, z1], [x1, t, z1], n, c, true), [0, 0, 1]);
     if ((ny = tileY(i, j - 1)) < y) wall(ny, (t, b, c, n) => quad([x1, t, z0], [x1, b, z0], [x0, b, z0], [x0, t, z0], n, c, true), [0, 0, -1]);
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   const dc = mkC(64, 64), dx = dc.getContext('2d'), r = rng(SEED + 99);
   dx.fillStyle = 'rgb(236,236,236)'; dx.fillRect(0, 0, 64, 64);
   for (let i = 0; i < 64 * 64 * .14; i++) { const q = r(); dx.fillStyle = q < .55 ? 'rgb(212,212,212)' : q < .85 ? 'rgb(250,250,250)' : 'rgb(196,196,196)'; dx.fillRect(r() * 64 | 0, r() * 64 | 0, 1, 1); }
   const dt = new THREE.CanvasTexture(dc); dt.magFilter = dt.minFilter = THREE.NearestFilter; dt.generateMipmaps = false; dt.wrapS = dt.wrapT = THREE.RepeatWrapping;
-  const m = new THREE.Mesh(g, cloudPatch(new THREE.MeshLambertMaterial({ vertexColors: true, map: dt })));
-  m.receiveShadow = m.castShadow = true; scene.add(m);
+  const tmat = cloudPatch(new THREE.MeshLambertMaterial({ vertexColors: true, map: dt }));
+  for (const b of bins) {
+    if (!b.pos.length) continue;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.nor, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2));
+    const m = new THREE.Mesh(g, tmat); m.receiveShadow = m.castShadow = true; scene.add(m); TERRAIN.push(m);
+  }
   // water surface over water tiles; dist = tiles to the nearest land (foam / shallow / deep)
   const dist = new Uint8Array(NT * NT).fill(9);
   for (let j = 0; j < NT; j++) for (let i = 0; i < NT; i++) if (LV[tIdx(i, j)] >= 0) dist[tIdx(i, j)] = 0;
@@ -362,11 +367,22 @@ function kPlace(n, x, z, ry, target, flat) {   // target = height, or the longes
 
 // ---------- instanced helpers
 const dummy = new THREE.Object3D(), tmpC = new THREE.Color();
+const ICH = 60;   // instanced things are split into 60-unit chunks, each with its own bounding sphere, so off-screen chunks are culled
 function inst(geo, mat, list, shadow, colOf) {
-  const m = new THREE.InstancedMesh(geo, mat, Math.max(1, list.length)); m.frustumCulled = false; m.castShadow = !!shadow; m.receiveShadow = true;
-  list.forEach((o, i) => { dummy.position.set(o.x, o.y, o.z); dummy.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0); dummy.scale.set(o.sx || o.s || 1, o.sy || o.s || 1, o.sz || o.s || 1); dummy.updateMatrix(); m.setMatrixAt(i, dummy.matrix); if (colOf) m.setColorAt(i, colOf(o)); });
-  if (!list.length) { dummy.scale.set(0, 0, 0); dummy.updateMatrix(); m.setMatrixAt(0, dummy.matrix); }
-  scene.add(m); return m;
+  const groups = new Map();
+  for (const o of list) { const k = Math.floor((o.x + HM) / ICH) * 1000 + Math.floor((o.z + HM) / ICH); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(o); }
+  if (!geo.boundingSphere) geo.computeBoundingSphere();
+  const gr = geo.boundingSphere.radius + geo.boundingSphere.center.length(), out = [];
+  for (const items of groups.values()) {
+    const g2 = new THREE.BufferGeometry(); for (const a in geo.attributes) g2.setAttribute(a, geo.attributes[a]); g2.index = geo.index;
+    let a0 = 1e9, a1 = -1e9, b0 = 1e9, b1 = -1e9, c0 = 1e9, c1 = -1e9, sm = 1;
+    for (const o of items) { a0 = Math.min(a0, o.x); a1 = Math.max(a1, o.x); b0 = Math.min(b0, o.y); b1 = Math.max(b1, o.y); c0 = Math.min(c0, o.z); c1 = Math.max(c1, o.z); sm = Math.max(sm, o.sx || o.s || 1, o.sy || o.s || 1, o.sz || o.s || 1); }
+    g2.boundingSphere = new THREE.Sphere(new V3((a0 + a1) / 2, (b0 + b1) / 2, (c0 + c1) / 2), Math.hypot(a1 - a0, b1 - b0, c1 - c0) / 2 + gr * sm);
+    const m = new THREE.InstancedMesh(g2, mat, items.length); m.castShadow = !!shadow; m.receiveShadow = true;
+    items.forEach((o, i) => { dummy.position.set(o.x, o.y, o.z); dummy.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0); dummy.scale.set(o.sx || o.s || 1, o.sy || o.s || 1, o.sz || o.s || 1); dummy.updateMatrix(); m.setMatrixAt(i, dummy.matrix); if (colOf) m.setColorAt(i, colOf(o)); });
+    scene.add(m); out.push(m);
+  }
+  return out;
 }
 const L = (c) => new THREE.MeshLambertMaterial({ color: c });
 
@@ -382,7 +398,7 @@ function buildNature() {
     else if (kind === 2 && !vill && r() < (lv >= 3 ? .1 : .035)) (lv >= 3 || r() < .3 ? pine : broad).push({ x, y, z, s: .8 + r() * .5, ry: r() * 6, g: r() });
     else if (kind === 4 && r() < .07) rocks.push({ x, y, z, s: .6 + r() * 1.3, ry: r() * 6, rx: r(), c: .7 + r() * .25 });
     else if (kind === 5 && r() < .03) rocks.push({ x, y, z, s: .8 + r(), ry: r() * 6, c: .9 });
-    if ((kind === 2 || kind === 3) && !vill) { const n = r() * 3.2 | 0; for (let q = 0; q < n; q++) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8 + r() * .6, f: r() }); }
+    if ((kind === 2 || kind === 3) && !vill) { const n = r() * 1.9 | 0; for (let q = 0; q < n; q++) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8 + r() * .6, f: r() }); }
     else if (kind === 2 && vill && r() < .5) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8, f: r() });
   }
   for (const o of broad.concat(pine)) TREE_T[tIdx(Math.floor((o.x + HM) / TS), Math.floor((o.z + HM) / TS))] = 1;
@@ -615,7 +631,7 @@ async function loadAnimals() {
   for (const [name, d] of Object.entries(HERD_DEF)) {
     let g; try { g = await ld.loadAsync(`art/tribe3d/animals/${name}.glb`); } catch (e) { console.warn('animal', name, e.message); continue; }
     const src = g.scene;
-    src.traverse(o => { if (o.isMesh) { const conv = m => new THREE.MeshLambertMaterial({ color: m.color }); o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
+    src.traverse(o => { if (o.isMesh) { const conv = m => new THREE.MeshLambertMaterial({ color: m.color }); o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); o.castShadow = o.receiveShadow = true; } });
     src.updateMatrixWorld(true); const sz = new THREE.Box3().setFromObject(src).getSize(new V3()), sc = d.h / Math.max(.01, sz.y);
     for (let hI = 0; hI < d.herds; hI++) {
       const c = findSpot(r); if (!c) continue;
@@ -738,12 +754,14 @@ function draw() {
   CT.addScaledVector(R, Math.round(tr / Ue) * Ue - tr).addScaledVector(UPV, Math.round(tu / Ue) * Ue - tu);
   cam.position.copy(CT).addScaledVector(TOC, 500); cam.lookAt(CT);
   // the sun's shadow box follows the view, moved in whole shadow texels so shadows do not crawl
-  const tx = 200 / 2048, sx = Math.round(CT.x / tx) * tx, sz = Math.round(CT.z / tx) * tx;
+  const tx = 156 / 2048, sx = Math.round(CT.x / tx) * tx, sz = Math.round(CT.z / tx) * tx;
   sun.target.position.set(sx, 0, sz); sun.position.set(sx + SUNDIR.x * 250, SUNDIR.y * 250, sz + SUNDIR.z * 250);
+  if ((frameN++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
   renderer.setRenderTarget(rt); renderer.render(scene, cam);
   renderer.setRenderTarget(null); renderer.render(postScene, postCam);
 }
-const TB = window.TB = { ready: false, hold: false, step, draw, setCam, setTime, zoomBy, camT, MAMMOTHS, HERDS, info: () => ({ rw, rh, S, cam: camI, time: timeI, ...TB.stats }) };
+let frameN = 0;
+const TB = window.TB = { renderer, scene, ready: false, hold: false, step, draw, setCam, setTime, zoomBy, camT, MAMMOTHS, HERDS, info: () => ({ rw, rh, S, cam: camI, time: timeI, ...TB.stats }) };
 let last = performance.now();
 function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; if (!TB.hold) { step(dt); draw(); } requestAnimationFrame(frame); }
 (async function init() {

@@ -1629,3 +1629,4 @@ Open: redo campfire / fence / firewood / fern tree (4 credits) or clean them (ow
   - Lose: the chief's longhouse destroyed. Score = nights survived (best kept in localStorage). Save of the colony in localStorage.
   - UI: resources + population + day / night dial + night counter on top; build bar at the bottom (cards with icon + cost); messages; PixelLab pixel icons for resources / buildings if they fit (1 credit each, standard).
 - Progress (update as batches ship): see the lines below this one.
+- Batch 1 (map + speed): map 480 x 480 units (240 x 240 tiles); terrain in 24-tile chunks and every instanced kind in 60-unit chunks with their own bounding spheres (off-screen ones are culled); broadleaf crowns 20-face blobs (96-116 faces a tree); fewer tufts; shadow box +-78 units, shadows redrawn every 2nd frame. One frame: ~700 draw calls / ~1.1 M triangles (was 1371 / 3.6 M).
