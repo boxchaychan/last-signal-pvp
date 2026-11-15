@@ -10,6 +10,7 @@ Owner 2026-11-15: "แก้ทำละเจนท่าที่ต้อง�
 - Branch `codex/archer-moves`, pictures into `art/incoming/archer/` as `<file>` below (full-size PNG), plus `REPORT_TH.txt`.
 - ONE SHEET PER MOVE (attacks: one sheet per hit). Do the next 2 `todo` rows each time, then stop and open the PR.
 - Owner phrase: "ทำท่านักธนู" = the next 2 `todo` rows.
+- Owner phrase: "ทำท่านักธนูทั้งหมด" = ALL rows that are not done yet, one sheet each, in table order, in one go (owner 2026-11-15 "สั่งทีละเยอะๆ"). Commit after every 2 sheets so nothing is lost; report at the end.
 
 ## Sheet format (the same for every row)
 Paste this, with the character picture attached, and put the row's move text in place of [MOVE] and its frame count / grid:
@@ -35,8 +36,8 @@ Layout, follow exactly:
 |---|------|---------------|---------------|--------|
 | 1 | `run.png` (v1 done 2026-11-15: only 4 poses repeated in 3 rows; redo with 12 different poses) | 12 / 4 x 3 | Run cycle: light, fast run, bow held low in the left hand, braids and scarf bouncing; seamless loop (frame 12 flows into frame 1). | todo |
 | 2 | `idle.png` (v1 done: 4 poses repeated, the bow jumps; redo) | 12 / 4 x 3 | Idle: stand ready, slow breathing, braids and scarf swaying a little, a small bow adjust, seamless loop. | todo |
-| 3 | `shot1.png` | 12 / 4 x 3 | Hit 1 of a 3-hit combo: quick shot. From the ready stance, raise the bow, draw an arrow fast, release a glowing light-blue arrow to the right (the arrow leaves the cell), small recoil, end ready to flow into hit 2. | todo |
-| 4 | `shot2.png` | 12 / 4 x 3 | Hit 2 of a 3-hit combo: double shot. First frame continues from the last frame of `shot1.png` (attach it); spin half a turn on the spot and fire two arrows in a row to the right; end ready to flow into hit 3. | todo |
+| 3 | `shot1.png` (done 2026-11-15, good) | 12 / 4 x 3 | Hit 1 of a 3-hit combo: quick shot. From the ready stance, raise the bow, draw an arrow fast, release a glowing light-blue arrow to the right (the arrow leaves the cell), small recoil, end ready to flow into hit 2. | todo |
+| 4 | `shot2.png` (done 2026-11-15, good) | 12 / 4 x 3 | Hit 2 of a 3-hit combo: double shot. First frame continues from the last frame of `shot1.png` (attach it); spin half a turn on the spot and fire two arrows in a row to the right; end ready to flow into hit 3. | todo |
 | 5 | `shot3.png` | 12 / 4 x 3 | Hit 3, the finisher: first frame continues from `shot2.png` (attach it); jump back a little, draw the bow fully with a strong light-blue glow, fire one big piercing arrow with a spiral wind trail, land and return to the ready stance. | todo |
 | 6 | `skill_rain.png` | 12 / 4 x 3 | Skill 1 pose "arrow rain" (strong, dynamic): 1-3 sink low into a deep crouch, back knee almost on the ground, pull an arrow from the quiver; 4-6 lean far back and aim straight up at the sky, bow drawn to full with the string bending, braids and scarf blown back; 7 explosive release, the whole body snaps up, small light-blue flash at the bow; 8-10 hold the follow-through pose looking up, bow arm still raised, scarf fluttering down; 11-12 spin the bow once and land back in the ready stance. (Small effects only: the big effect comes from Meta.) | todo |
 | 7 | `jump.png` | 12 / 4 x 3 | Jump: crouch, leap up, tuck in the air with the braids flying, fall and land softly back in the ready stance. | todo |
