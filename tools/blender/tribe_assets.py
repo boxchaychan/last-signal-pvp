@@ -91,7 +91,7 @@ def tree_broad(i):
     rv, rf = rod(m, (0, 0, 2.0), (.8, .3, 2.9), .12, 5); m.paint(rf, lambda f: jit(BARK, .08))
     blobs = [((0, 0, 3.9), 1.9), ((.95, .45, 4.8), 1.35), ((-.9, -.55, 4.4), 1.25), ((.2, -.85, 3.5), 1.15), ((-.4, .8, 3.6), 1.05)]
     for k, (c, r) in enumerate(blobs[:4 + i % 2]):
-        v, f = ico(m, r, c, 2); lumpy(v, Vector(c), .3 * r, 1.1, i * 7 + k)
+        v, f = ico(m, r, c, 1); lumpy(v, Vector(c), .22 * r, 1.1, i * 7 + k)   # 20 faces a blob: chunky + light for phones
         m.paint(f, shade_by_normal(mix(LEAF, hexc('#7cbf4a'), random.random() * .5), 1.22, .66, .07))
     return m
 
