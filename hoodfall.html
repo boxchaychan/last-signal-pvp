@@ -31,6 +31,18 @@
   .sk u { position: absolute; z-index: 2; left: 3px; top: 1px; font: 800 10px Kanit, system-ui; text-decoration: none; color: #ffe9b8; text-shadow: 0 1px 0 #000; }
   .sk.cd b { display: block; } .sk.cd svg { opacity: .45; }
   #snd { position: fixed; right: 10px; top: 10px; display: none; width: 40px; height: 40px; font-size: 18px; }
+  #bst2 { position: fixed; right: 122px; top: 10px; display: none; width: 78px; height: 40px; font-size: 14px; }
+  #bdg { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: #ff4a5a; color: #fff; font: 800 11px Kanit, system-ui; display: none; place-items: center; padding: 0 3px; }
+  #menu { position: fixed; inset: 0; display: none; place-items: center; background: #0008; z-index: 20; font-family: Kanit, system-ui; color: #ffe9b8; }
+  #menu .box { width: min(560px, 94vw); max-height: 92vh; overflow: auto; border: 3px solid #f2c46b; border-radius: 10px; background: #21161cf2; box-shadow: 0 6px 0 #000a; padding: 10px 12px; }
+  #menu .tabs { display: flex; gap: 6px; margin-bottom: 8px; } #menu .tab, #menu button { font: 800 14px Kanit, system-ui; color: #ffe9b8; background: #3a2618; border: 2px solid #8a6a3a; border-radius: 7px; padding: 4px 10px; }
+  #menu .tab.on { background: #6b4424; border-color: #f2c46b; } #menu .x { margin-left: auto; } #menu button:disabled { opacity: .4; }
+  #menu .row { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #ffffff14; font-size: 14px; } #menu .row b { width: 74px; } #menu .row i { flex: 1; font-style: normal; font-size: 12px; color: #cfc0a8; } #menu .row u { text-decoration: none; width: 30px; text-align: right; font-weight: 800; color: #fff; }
+  #menu .sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 8px 0; font-size: 12px; } #menu .sum span { background: #0004; border-radius: 6px; padding: 3px 6px; }
+  #menu .slots, #menu .bag { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; } #menu .rn { position: relative; width: 44px; height: 44px; border-radius: 8px; border: 2px solid; background: #0006; display: grid; place-items: center; font-size: 10px; }
+  #menu .rn.sel { outline: 3px solid #fff; } #menu .rn.lock { border-color: #555; color: #888; } #menu .rn em { position: absolute; left: 2px; top: 0; font-style: normal; font-size: 10px; color: #7cffc2; }
+  #menu .gem { width: 18px; height: 18px; transform: rotate(45deg); border-radius: 3px; box-shadow: 0 0 8px currentColor; } #menu .info { min-height: 52px; font-size: 13px; padding: 6px; background: #0004; border-radius: 6px; }
+  @media (max-height: 460px) { #menu .box { padding: 6px 8px; } #menu .row { padding: 2px 4px; font-size: 13px; } #menu .sum { margin: 4px 0; } #menu .rn { width: 38px; height: 38px; } #menu .tab, #menu button { padding: 2px 8px; font-size: 13px; } }
   #zm { position: fixed; right: 58px; top: 10px; display: none; width: 56px; height: 40px; font-size: 15px; }
 </style>
 </head>
@@ -40,6 +52,8 @@
 <div class="pad" id="ba">⚔<small>ตี</small></div><div class="pad" id="bj">⤒<small>กระโดด</small></div><div class="pad" id="bs">💥<small id="bst">ทุบ</small></div>
 <div class="pad" id="snd">🔊</div><div class="pad" id="zm">65%</div>
 <div id="skills" class="off"></div>
+<div class="pad" id="bst2">สเตตัส<b id="bdg"></b></div>
+<div id="menu"></div>
 <script>
 'use strict';
 // HOODFALL, the side-view grinder made to look and feel like a real game (owner 2026-11-14 "ทำมาดูทำไมไม่เป็นเกมเลย"; map plan docs/side/map1_plan.md):
@@ -181,10 +195,24 @@ function spawnMob(h) { const [k, x0, x1, y] = h, d = MDEF[k]; return {k, h, x0, 
 function newBoss() { return {k: BOSSK, boss: true, x0: 4250, x1: 4640, x: 4500, y: GY, dir: -1, hp: 2400, mhp: 2400, st: 'walk', t: 0, turn: 3, kb: 0, cd: 0, flash: 0, slam: 3, born: 0}; }
 // ---------------------------------------------------------------- hero
 const P = {x: 260, y: GY, vx: 0, vy: 0, face: 1, ground: true, jumps: 0, t: 0, run: 0, rope: null};
-const H = {lv: 1, hp: 120, mhp: 120, exp: 0, gold: 0, inv: 0, skill: 0};
-try { const s = JSON.parse(localStorage.getItem('hoodfall1')); if (s && !QS.get('new')) Object.assign(H, s, {inv: 0, skill: 0}); } catch (e) {}
-const save = () => { try { localStorage.setItem('hoodfall1', JSON.stringify({lv: H.lv, exp: H.exp, gold: H.gold, mhp: H.mhp, hp: H.hp})); } catch (e) {} };
-const expNeed = lv => Math.round(30 * Math.pow(lv, 1.6)), heroAtk = () => 12 + H.lv * 4;
+const H = {lv: 1, hp: 120, mhp: 120, exp: 0, gold: 0, inv: 0, skill: 0, pts: 0, st: {dex: 0, agi: 0, luk: 0, vit: 0}, bag: [], eq: [], rid: 1};
+try { const s = JSON.parse(localStorage.getItem('hoodfall1')); if (s && !QS.get('new')) { Object.assign(H, s, {inv: 0, skill: 0}); if (!s.st) H.pts = (H.lv - 1) * 3; } } catch (e) {}   // old saves: points for the levels already earned
+const save = () => { try { localStorage.setItem('hoodfall1', JSON.stringify({lv: H.lv, exp: H.exp, gold: H.gold, hp: H.hp, pts: H.pts, st: H.st, bag: H.bag, eq: H.eq, rid: H.rid})); } catch (e) {} };
+// ---- STATS + RUNES (owner 2026-11-15 "ทำระบบ สเตตัส รูน"). Stats: 3 points a level into
+//   แม่นธนู DEX +2 attack each · ว่องไว AGI +1% attack speed, +0.4% move · โชค LUK +0.5% crit, +1% coins · อึด VIT +12 max HP.
+// Runes drop from monsters (7%, the boss always drops a rare+), 3 rarities, go into rune slots (1 slot, +1 at Lv 5 / 10 / 15);
+// 3 of the same rune and rarity fuse into the next rarity; spare runes sell for coins.
+const RT = {fire: {n: 'รูนเพลิง', c: '#ff6a3a', s: 'atk', v: [6, 12, 20], d: v => `พลังโจมตี +${v}%`}, wind: {n: 'รูนวายุ', c: '#6affc0', s: 'spd', v: [5, 9, 15], d: v => `ความเร็วโจมตี +${v}%`},
+  sky: {n: 'รูนอสนี', c: '#ffe25a', s: 'crit', v: [4, 7, 12], d: v => `โอกาสคริติคอล +${v}%`}, earth: {n: 'รูนปฐพี', c: '#d0965a', s: 'hp', v: [30, 70, 140], d: v => `HP สูงสุด +${v}`},
+  moon: {n: 'รูนจันทรา', c: '#b8a8ff', s: 'cd', v: [5, 9, 15], d: v => `คูลดาวน์สกิล -${v}%`}, gold: {n: 'รูนทอง', c: '#ffc23a', s: 'gold', v: [10, 20, 35], d: v => `เหรียญ +${v}%`}};
+const RRN = ['ธรรมดา', 'หายาก', 'ตำนาน'], RRC = ['#cfd6e0', '#5ab8ff', '#ffb02a'], RSELL = [20, 80, 300];
+const slotsAt = lv => lv >= 15 ? 4 : lv >= 10 ? 3 : lv >= 5 ? 2 : 1;
+function rb(stat) { let s = 0; for (const id of H.eq) { const r = H.bag.find(b => b.id === id); if (r && RT[r.t].s === stat) s += RT[r.t].v[r.r]; } return s; }
+const expNeed = lv => Math.round(30 * Math.pow(lv, 1.6)), heroAtk = () => Math.round((12 + H.lv * 4 + H.st.dex * 2) * (1 + rb('atk') / 100));
+const critC = () => Math.min(.6, .15 + H.st.luk * .005 + rb('crit') / 100), spdMul = () => Math.min(1.6, 1 + H.st.agi * .01 + rb('spd') / 100);
+const cdMul = () => Math.max(.5, 1 - rb('cd') / 100), goldMul = () => 1 + H.st.luk * .01 + rb('gold') / 100;
+function recalc() { H.mhp = 120 + 25 * (H.lv - 1) + H.st.vit * 12 + rb('hp'); H.hp = Math.min(H.hp, H.mhp); }
+recalc();
 const A = {on: false, n: 0, t: 0, queued: false, hitDone: false};
 // ---- Sky Huntress: painted 2D archer from Codex's 14 sheets (art/incoming/archer/, cut by tools/art/archer_cut.py into art/sidegame/archer.webp,
 // stored 3x and drawn on the full-res canvas so she stays sharp). Default hero; ?hero=rabbit = the hooded rabbit.
@@ -254,13 +282,13 @@ SK.forEach((k, i) => { const el = document.createElement('div'); el.className = 
   el.innerHTML = `<svg viewBox="0 0 32 32">${k.ic}</svg><u>${i + 1}</u><b></b><i>${k.short || k.name}</i>`; document.getElementById('skills').append(el);
   el.addEventListener('pointerdown', e => { e.preventDefault(); useSkill(i); }); });
 addEventListener('keydown', e => { const i = SK.findIndex(k => k.key === e.code); if (i >= 0 && !e.repeat) useSkill(i); });
-function useSkill(i) { if (state !== 'play' || SKCD[i] > 0 || P.rope) return; SKCD[i] = SK[i].cd;
+function useSkill(i) { if (state !== 'play' || SKCD[i] > 0 || P.rope) return; SKCD[i] = SK[i].cd * cdMul();
   num(P.x, P.y - 96, SK[i].name, 'lvl');
   if (ARCHER) { startMove('skill_' + SK[i].id); if (SK[i].id === 'flip') { P.vy = -640; P.vx = -P.face * 240; P.ground = false; /* higher: owner "สกิลพวกกระโดดให้มันสูงหน่อย" */ } return; }
   A.on = true; A.n = 2; A.t = 0; A.queued = false; A.skill = true; SFX.swing(); }
 function skillBar(dt) { SK.forEach((k, i) => { SKCD[i] = Math.max(0, SKCD[i] - dt); const el = document.getElementById('sk' + i), c = SKCD[i];
   el.classList.toggle('cd', c > 0); el.style.setProperty('--p', (c / k.cd).toFixed(3)); el.querySelector('b').textContent = c > 0 ? Math.ceil(c) : ''; }); }
-function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'snd'].concat(ARCHER ? ['zm'] : [])) pad(id).style.display = 'grid'; document.getElementById('skills').classList.remove('off'); }
+function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'snd', 'bst2'].concat(ARCHER ? ['zm'] : [])) pad(id).style.display = 'grid'; document.getElementById('skills').classList.remove('off'); }
 function jump() { if (state !== 'play') return; if (P.rope) { P.rope = null; P.vy = -380; P.vx = P.face * 160; return; } if (P.ground || P.jumps < 2) { P.vy = P.ground ? -560 : -480; P.ground = false; P.jumps++; SFX.jump(); } }
 function attack() { if (state !== 'play' || P.rope) return;
   if (ARCHER) { if (A.on) { if (/^shot/.test(A.mv)) A.queued = true; return; } startMove('shot1'); return; }
@@ -272,12 +300,13 @@ function portal() { const w = nearWarp(); if (w) num(P.x, P.y - 110, 'วาร�
 // ---------------------------------------------------------------- simulation
 function step(dt) {
   if (state === 'title') { titleT += dt; for (const m of MOBS) stepMob(m, dt, true); return; }
+  if (state === 'menu') return;   // stats / runes window open: the world waits
   if (stop > 0) { stop -= dt; return; }   // hit-stop: the world freezes for a blink on a hard hit
   P.t += dt; skillBar(dt); H.inv = Math.max(0, H.inv - dt); H.skill = Math.max(0, H.skill - dt); shake = Math.max(0, shake - dt);
   const dir = (keys.KeyD || keys.ArrowRight || touch.r ? 1 : 0) - (keys.KeyA || keys.ArrowLeft || touch.l ? 1 : 0), up = keys.KeyW || keys.ArrowUp || touch.u, down = keys.KeyS || keys.ArrowDown;
   // hold the attack button / J = keep shooting the combo (owner "ยังไม่หมุน": the spin finisher only came on a quick third tap)
   if (ARCHER && (keys.KeyJ || touch.a) && !P.rope) { if (!A.on) startMove('shot1'); else if (/^shot/.test(A.mv)) A.queued = true; }
-  if (ARCHER && A.on) { A.t += dt * 1000; const i = mvFrame(A.mv, A.t);
+  if (ARCHER && A.on) { A.t += dt * 1000 * spdMul(); const i = mvFrame(A.mv, A.t);
     for (let f = A.fired + 1; f <= i; f++) if (MV[A.mv].fire.includes(f)) fire(A.mv, MV[A.mv].fire.indexOf(f)); A.fired = i;
     if (A.t >= mvDur(A.mv)) { const nx = {shot1: 'shot2', shot2: AJ && AJ.rows.shot3_spin ? 'shot3_spin' : 'shot3'}[A.mv]; if (A.queued && nx) startMove(nx); else A.on = false; } }
   stepShots(dt);
@@ -289,7 +318,7 @@ function step(dt) {
   if (P.rope) { const r = P.rope, v = (down ? 1 : 0) - (up ? 1 : 0); P.y = clamp(P.y + v * 150 * dt, r[1], r[2]); P.climb = v ? P.climb + dt : P.climb || 0;
     if (P.y <= r[1] && up) { P.rope = null; P.ground = true; P.y = r[1]; if (surfaceBelow(P.x, P.y) > P.y + 1) P.x += surfaceBelow(P.x + 20, P.y) <= P.y + 1 ? 20 : -20; } else if (P.y >= r[2] && down) { P.rope = null; P.ground = true; P.y = r[2]; } }
   else {
-    const slow = A.on && P.ground && A.mv !== 'skill_flip' ? .15 : 1, MAX = 230;
+    const slow = A.on && P.ground && A.mv !== 'skill_flip' ? .15 : 1, MAX = 230 * (1 + H.st.agi * .004);
     P.vx += (dir * MAX * slow - P.vx) * Math.min(1, dt * (P.ground ? 14 : 6)); if (dir && !A.on) P.face = dir;
     P.vy = Math.min(900, P.vy + 1500 * dt); const ox = P.x, oy = P.y; P.x = clamp(P.x + P.vx * dt, 16, WW - 16); P.y += P.vy * dt; P.ground = false;
     for (const [x0, x1, top] of GROUND) if (P.y > top + 3 && P.x > x0 - 10 && P.x < x1 + 10) { if (ox <= x0 - 10) P.x = x0 - 10; else if (ox >= x1 + 10) P.x = x1 + 10; }   // steps are walls
@@ -300,8 +329,8 @@ function step(dt) {
   if (!MOBS.length) MOBS = HOMES.map(spawnMob);
   for (const m of MOBS) stepMob(m, dt); if (BOSS) stepMob(BOSS, dt); else if (!BOSS && P.x > 4150 && !stepMob.bossDown) BOSS = newBoss();
   for (const c of COINS) { c.t += dt; if (!c.land) { c.vy += 1200 * dt; c.x += c.vx * dt; c.y += c.vy * dt; const s = surfaceBelow(c.x, c.y - c.vy * dt - 1); if (c.vy > 0 && c.y >= s) { c.y = s; c.land = true; } }
-    const d = Math.hypot(P.x - c.x, P.y - 20 - c.y); if (c.t > .4 && d < 90) { c.x += (P.x - c.x) * Math.min(1, dt * 8); c.y += (P.y - 20 - c.y) * Math.min(1, dt * 8); } if (c.t > .4 && d < 18) { c.got = true; H.gold += c.v; SFX.coin(); } }
-  COINS = COINS.filter(c => !c.got && c.t < 30);
+    const d = Math.hypot(P.x - c.x, P.y - 20 - c.y); if (c.t > .4 && d < 90) { c.x += (P.x - c.x) * Math.min(1, dt * 8); c.y += (P.y - 20 - c.y) * Math.min(1, dt * 8); } if (c.t > .4 && d < 18) { c.got = true; if (c.rune) gotRune(c.rune); else { H.gold += Math.round(c.v * goldMul()); SFX.coin(); } } }
+  COINS = COINS.filter(c => !c.got && (c.t < 30 || c.rune && c.t < 90));
   for (const p of PUFF) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 60 * dt; } PUFF = PUFF.filter(p => p.t < .6);
   for (const n of NUMS) n.t += dt; NUMS = NUMS.filter(n => n.t < 1.1);
   for (const w of WARN) w.t += dt; WARN = WARN.filter(w => w.t < w.d + .3);
@@ -334,21 +363,22 @@ function doHit(n) { const [a, b, hgt] = REACH[n], sk = A.skill; let any = false,
   if (n === 2) { SFX.slam(); for (let i = 0; i < 10; i++) PUFF.push({x: P.x + (R() - .5) * 160, y: P.y - 3, vx: (R() - .5) * 100, vy: -R() * 90, t: 0, c: R() < .5 ? '#ffd27a' : '#e8d8b0'}); }
   for (const m of MOBS.concat(BOSS ? [BOSS] : [])) { if (m.st === 'dead' || m.born) continue; const rx = (m.x - P.x) * P.face, dy = P.y - m.y, wide = sk ? 70 : 0;
     if (rx < a - wide || rx > b + wide || dy < -30 || dy > hgt) continue; any = true;
-    const crit = R() < .18, dmg = Math.round(heroAtk() * MULT[n] * (sk ? 1.5 : 1) * (crit ? 1.6 : 1) * (.9 + R() * .2)); crit0 = crit0 || crit;
+    const crit = R() < critC(), dmg = Math.round(heroAtk() * MULT[n] * (sk ? 1.5 : 1) * (crit ? 1.6 : 1) * (.9 + R() * .2)); crit0 = crit0 || crit;
     m.hp -= dmg; m.flash = .1; num(m.x, m.y - (MS[m.k] ? MS[m.k].fy * (m.boss ? 2 : 1) : 60) - 6 - NUMS.filter(o => Math.abs(o.x - m.x) < 4 && o.t < .2).length * 14, dmg, crit ? 'crit' : 'hit');
     if (m.hp <= 0) kill(m); else if (!m.boss) { m.st = 'hurt'; m.t = 0; m.kb = Math.sign(m.x - P.x || P.face) * (n === 2 ? 320 : 180); } }
   if (any) { stop = n === 2 ? .09 : .05; (crit0 ? SFX.crit : SFX.hit)(); } }
 function kill(m) { m.st = 'dead'; m.t = 0; m.dt = 0; SFX.die(); const d = MDEF[m.k];
   for (let i = 0; i < (m.boss ? 30 : 10); i++) PUFF.push({x: m.x + (R() - .5) * 30, y: m.y - 20 - R() * 30, vx: (R() - .5) * 120, vy: -R() * 120, t: 0, c: R() < .5 ? '#ffffff' : '#c8c0d8'});
+  if (m.boss || R() < .07) dropRune(m.x, m.y - 20, m.boss);
   const nC = m.boss ? 25 : 1 + (R() * 3 | 0); for (let i = 0; i < nC; i++) dropCoin(m.x, m.y - 20, d.gold[0] + (R() * (d.gold[1] - d.gold[0] + 1) | 0));
   gainExp(m.boss ? 600 : d.exp); if (m.boss) { stepMob.bossDown = true; num(m.x, m.y - 150, 'ล้มบอสได้!', 'lvl'); SFX.chest(); } }
 function gainExp(e) { H.exp += e; num(P.x, P.y - 100, '+' + e + ' EXP', 'exp');
-  while (H.exp >= expNeed(H.lv)) { H.exp -= expNeed(H.lv); H.lv++; H.mhp += 25; H.hp = H.mhp; num(P.x, P.y - 125, 'LEVEL UP!  Lv ' + H.lv, 'lvl'); SFX.lvl(); shake = .25; shakeAmp = 2;
+  while (H.exp >= expNeed(H.lv)) { H.exp -= expNeed(H.lv); H.lv++; H.pts += 3; recalc(); H.hp = H.mhp; menuBadge(); num(P.x, P.y - 125, 'LEVEL UP!  Lv ' + H.lv, 'lvl'); SFX.lvl(); shake = .25; shakeAmp = 2;
     for (let i = 0; i < 24; i++) PUFF.push({x: P.x + (R() - .5) * 40, y: P.y - R() * 80, vx: (R() - .5) * 40, vy: -40 - R() * 80, t: 0, c: R() < .5 ? '#7cffc2' : '#fff27a'}); } save(); }
 // ---- the archer's shots and skills (owner 2026-11-15: PVP direction, skills must feel heavy, effects are the selling point)
 const foes = () => MOBS.concat(BOSS ? [BOSS] : []).filter(m => m.st !== 'dead' && !m.born);
 const mobH = m => (MS[m.k] ? MS[m.k].fy : 50) * (m.boss ? 2 : 1);
-function hitMob(m, mult, kb) { const crit = R() < .18, dmg = Math.round(heroAtk() * mult * (crit ? 1.6 : 1) * (.9 + R() * .2));
+function hitMob(m, mult, kb) { const crit = R() < critC(), dmg = Math.round(heroAtk() * mult * (crit ? 1.6 : 1) * (.9 + R() * .2));
   m.hp -= dmg; m.flash = .1; num(m.x, m.y - mobH(m) - 6 - NUMS.filter(o => Math.abs(o.x - m.x) < 4 && o.t < .2).length * 14, dmg, crit ? 'crit' : 'hit');
   if (m.hp <= 0) kill(m); else if (!m.boss && !(m.frozen > 0)) { m.st = 'hurt'; m.t = 0; m.kb = kb; } (crit ? SFX.crit : SFX.hit)(); return crit; }
 function arrow(o) { ARROWS.push(Object.assign({x: P.x + P.face * 26 * HS, y: P.y - BH * .52, vx: P.face * 760, vy: 0, dmg: 1, kb: P.face * 160, pierce: 0, life: .6, big: 0, t: 0, hit: new Set()}, o)); }
@@ -419,6 +449,42 @@ function drawArcher() { if (!AJ || !ARC.width) return; if (H.inv && H.inv < .65 
   ctx.scale(P.face * sc * spx, sc); const b = DRW.bl, bk = b ? (now - b.t) / .11 : 1;
   if (b && bk < 1) { ctx.globalAlpha = 1 - bk; ctx.drawImage(ARC, b.f * AJ.w, b.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.globalAlpha = Math.min(1, .35 + bk); } else DRW.bl = null;
   ctx.drawImage(ARC, f * AJ.w, r.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.restore(); }
+// ---- rune drops + the stats / runes window
+function dropRune(x, y, boss) { const q = R(), r = boss ? (q < .3 ? 2 : 1) : q < .02 ? 2 : q < .2 ? 1 : 0, ks = Object.keys(RT);
+  COINS.push({x, y, vx: (R() - .5) * 160, vy: -330, v: 0, t: 0, rune: {t: ks[R() * ks.length | 0], r}}); }
+function gotRune(r) { const k = RT[r.t]; if (H.bag.length >= 40) { H.gold += RSELL[r.r]; num(P.x, P.y - 110, 'กระเป๋าเต็ม ขาย ' + k.n + ' +' + RSELL[r.r], 'info'); return; }
+  H.bag.push({id: H.rid++, t: r.t, r: r.r}); num(P.x, P.y - 110, k.n + ' (' + RRN[r.r] + ')', r.r ? 'lvl' : 'exp'); SFX.chest(); menuBadge(); save(); }
+const MENU = {tab: 'st', sel: null}, mel = () => document.getElementById('menu');
+function menuBadge() { const b = document.getElementById('bdg'); if (!b) return; const n = H.pts; b.textContent = n; b.style.display = n ? 'grid' : 'none'; }
+function openMenu(tab) { if (state === 'title') return; if (state === 'menu') return closeMenu(); state = 'menu'; if (tab) MENU.tab = tab; mel().style.display = 'grid'; drawMenu(); }
+function closeMenu() { state = 'play'; mel().style.display = 'none'; save(); }
+const STN = {dex: ['แม่นธนู', 'พลังโจมตี +2 ต่อแต้ม'], agi: ['ว่องไว', 'ยิงเร็วขึ้น 1% เดินเร็วขึ้นนิด'], luk: ['โชค', 'คริ +0.5% เหรียญ +1%'], vit: ['อึด', 'HP สูงสุด +12']};
+const rtile = r => `<div class="rn ${MENU.sel === r.id ? 'sel' : ''}" data-r="${r.id}" style="border-color:${RRC[r.r]};color:${RT[r.t].c}"><div class="gem" style="background:${RT[r.t].c}"></div>${H.eq.includes(r.id) ? '<em>●</em>' : ''}</div>`;
+function drawMenu() { const el = mel(), tab = MENU.tab; let h = `<div class="box"><div class="tabs"><span class="tab ${tab === 'st' ? 'on' : ''}" data-tab="st">สเตตัส</span><span class="tab ${tab === 'rn' ? 'on' : ''}" data-tab="rn">รูน</span><button class="x" data-x>ปิด ✕</button></div>`;
+  const sum = `<div class="sum"><span>Lv ${H.lv}</span><span>โจมตี ${heroAtk()}</span><span>HP ${H.mhp}</span><span>คริ ${Math.round(critC() * 100)}%</span><span>ความเร็ว ${Math.round(spdMul() * 100)}%</span><span>เหรียญ ${Math.round(goldMul() * 100)}%</span></div>`;
+  if (tab === 'st') { h += `<div>แต้มเหลือ <b style="color:#7cffc2">${H.pts}</b> (ขึ้นเลเวลได้ 3 แต้ม)</div>` + sum;
+    for (const k in STN) h += `<div class="row"><b>${STN[k][0]}</b><i>${STN[k][1]}</i><u>${H.st[k]}</u><button data-add="${k}" ${H.pts ? '' : 'disabled'}>+1</button><button data-add5="${k}" ${H.pts >= 5 ? '' : 'disabled'}>+5</button></div>`; }
+  else { const ns = slotsAt(H.lv); h += sum + `<div>ช่องรูน (${H.eq.length}/${ns}) — เพิ่มช่องที่ Lv 5 / 10 / 15</div><div class="slots">`;
+    for (let i = 0; i < 4; i++) { const r = H.bag.find(b => b.id === H.eq[i]); h += i >= ns ? `<div class="rn lock">Lv ${[1, 5, 10, 15][i]}</div>` : r ? rtile(r) : `<div class="rn" style="border-color:#6b4424;color:#8a6a3a">ว่าง</div>`; }
+    h += `</div><div>กระเป๋า (${H.bag.length}/40)</div><div class="bag">` + H.bag.filter(b => !H.eq.includes(b.id)).map(rtile).join('') + `</div>`;
+    const s = H.bag.find(b => b.id === MENU.sel);
+    if (s) { const k = RT[s.t], on = H.eq.includes(s.id), same = H.bag.filter(b => b.t === s.t && b.r === s.r && !H.eq.includes(b.id));
+      h += `<div class="info"><b style="color:${RRC[s.r]}">${k.n} · ${RRN[s.r]}</b><br>${k.d(k.v[s.r])}<br>` +
+        `<button data-eq>${on ? 'ถอด' : 'ใส่'}</button> <button data-fuse ${!on && s.r < 2 && same.length >= 3 ? '' : 'disabled'}>รวม 3 อัน → ${RRN[Math.min(2, s.r + 1)]} (${same.length}/3)</button> <button data-sell ${on ? 'disabled' : ''}>ขาย +${RSELL[s.r]}</button></div>`; }
+    else h += `<div class="info">แตะรูนเพื่อดู / ใส่ / รวม / ขาย · มอนดรอปรูน 7% บอสดรอปทุกครั้ง</div>`; }
+  el.innerHTML = h + '</div>'; }
+document.getElementById('menu').addEventListener('pointerdown', e => { const d = e.target.closest('[data-tab],[data-x],[data-add],[data-add5],[data-r],[data-eq],[data-fuse],[data-sell]'); if (!d) { if (e.target.id === 'menu') closeMenu(); return; }
+  e.preventDefault(); const s = H.bag.find(b => b.id === MENU.sel);
+  if (d.dataset.tab) MENU.tab = d.dataset.tab; else if (d.hasAttribute('data-x')) return closeMenu();
+  else if (d.dataset.add || d.dataset.add5) { const k = d.dataset.add || d.dataset.add5, n = Math.min(H.pts, d.dataset.add5 ? 5 : 1); H.st[k] += n; H.pts -= n; const old = H.mhp; recalc(); H.hp += H.mhp - old; SFX.coin(); }
+  else if (d.dataset.r) MENU.sel = MENU.sel === +d.dataset.r ? null : +d.dataset.r;
+  else if (d.hasAttribute('data-eq') && s) { if (H.eq.includes(s.id)) H.eq = H.eq.filter(i => i !== s.id); else if (H.eq.length < slotsAt(H.lv)) H.eq.push(s.id); else H.eq[H.eq.length - 1] = s.id; recalc(); SFX.coin(); }
+  else if (d.hasAttribute('data-fuse') && s) { const same = H.bag.filter(b => b.t === s.t && b.r === s.r && !H.eq.includes(b.id)).slice(0, 3); if (same.length === 3 && s.r < 2) { H.bag = H.bag.filter(b => !same.includes(b)); const nr = {id: H.rid++, t: s.t, r: s.r + 1}; H.bag.push(nr); MENU.sel = nr.id; SFX.lvl(); } }
+  else if (d.hasAttribute('data-sell') && s && !H.eq.includes(s.id)) { H.bag = H.bag.filter(b => b !== s); H.gold += RSELL[s.r]; MENU.sel = null; SFX.coin(); }
+  menuBadge(); save(); drawMenu(); });
+pad('bst2').addEventListener('pointerdown', e => { e.preventDefault(); openMenu(); });
+addEventListener('keydown', e => { if (e.repeat) return; if (e.code === 'KeyI' || e.code === 'KeyC') openMenu(e.code === 'KeyI' ? 'rn' : 'st'); else if (e.code === 'Escape' && state === 'menu') closeMenu(); });
+menuBadge();
 // ---------------------------------------------------------------- drawing
 let K = 2, VW = 0, VH = 0, DPR = 1, view = null, cam = {x: 0, y: 600};
 function resize() { DPR = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * DPR; cv.height = innerHeight * DPR; K = Math.max(1, Math.round(cv.height / 420)); VW = Math.ceil(cv.width / K); VH = Math.ceil(cv.height / K);
@@ -467,7 +533,10 @@ function drawWorld(g) {
   for (const p of PORTALS) { const t = P.t + titleT; for (let i = 0; i < 3; i++) { g.strokeStyle = ['#9be8ff', '#5ab8ff', '#e0f8ff'][i]; g.globalAlpha = .6 + Math.sin(t * 4 + i) * .3; g.lineWidth = 2; g.beginPath(); g.ellipse(p.x, p.y - 34, 16 - i * 4 + Math.sin(t * 3 + i) * 2, 34 - i * 7, 0, 0, 7); g.stroke(); } g.globalAlpha = 1; }
   for (const w of WARN) { const k = Math.min(1, w.t / w.d); g.globalAlpha = .25 + .35 * k; g.fillStyle = '#ff2a1a'; g.beginPath(); g.ellipse(w.x, w.y, w.r * k, 10 * k, 0, 0, 7); g.fill(); g.globalAlpha = 1; }
   for (const m of MOBS) drawMob(g, m); if (BOSS) drawMob(g, BOSS);
-  for (const c of COINS) { const w = Math.max(1, Math.round(Math.abs(Math.cos(c.t * 8)) * 5)); g.fillStyle = '#a86a10'; g.fillRect(Math.round(c.x) - w, Math.round(c.y) - 10, w * 2, 8); g.fillStyle = '#ffd23f'; g.fillRect(Math.round(c.x) - w + 1, Math.round(c.y) - 9, Math.max(1, w * 2 - 2), 6); }
+  for (const c of COINS) { if (c.rune) { const k = RT[c.rune.t], x = Math.round(c.x), y = Math.round(c.y) - 10 - Math.round(Math.sin(c.t * 4) * 2); g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = .35 + .2 * Math.sin(c.t * 6);
+    g.fillStyle = RRC[c.rune.r]; g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill(); g.restore(); g.fillStyle = '#1a0e14'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 6, y); g.lineTo(x, y + 7); g.lineTo(x - 6, y); g.fill();
+    g.fillStyle = k.c; g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + 5, y); g.lineTo(x, y + 6); g.lineTo(x - 5, y); g.fill(); g.fillStyle = '#ffffffcc'; g.fillRect(x - 1, y - 4, 2, 3); continue; }
+    const w = Math.max(1, Math.round(Math.abs(Math.cos(c.t * 8)) * 5)); g.fillStyle = '#a86a10'; g.fillRect(Math.round(c.x) - w, Math.round(c.y) - 10, w * 2, 8); g.fillStyle = '#ffd23f'; g.fillRect(Math.round(c.x) - w + 1, Math.round(c.y) - 9, Math.max(1, w * 2 - 2), 6); }
   drawHero(g); drawShots(g);
   for (const p of PUFF) { g.globalAlpha = 1 - p.t / .6; g.fillStyle = p.c; g.fillRect(Math.round(p.x), Math.round(p.y), 3, 3); } g.globalAlpha = 1;
   for (const [k, x, l] of DECO) if (l === 2 && PR[k].width) { g.filter = 'none'; g.globalAlpha = 1; g.save(); g.translate(0, 18); g.drawImage(PR[k], Math.round(x - PR[k].width / 2), groundAt(x) - PB[k]); g.restore(); }
