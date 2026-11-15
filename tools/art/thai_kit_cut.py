@@ -1,6 +1,7 @@
 # Thai map 1 kit for hoodfall.html?map=thai: cut Codex's 6 kit sheets (art/incoming/thai/kit/map1_kit_0N_*.png, 1536x1024,
 # painted 2D on flat green #00B140) into single pieces -> art/sidegame/thai/<name>.webp + thai.json (sizes).
 #   python3 tools/art/thai_kit_cut.py            (python3 tools/art/thai_kit_cut.py --boxes = only print the boxes found)
+#   python3 tools/art/thai_kit_cut.py --toon     = Codex's toon set (*_toon.png: black lines, cel shading, to match Sky Huntress) -> art/sidegame/thai_toon/
 # - green keyed by colour distance to the key (the plants are green too, so no global despill: only edge pixels are cleaned)
 # - pieces found as blobs on a coarse grid (parts closer than ~24 px join), named in reading order per sheet (NAMES)
 # - kept at the sheet's own resolution: the game treats 3 sheet px = 1 world px and draws them on the full-res canvas
@@ -8,7 +9,8 @@
 import json, os, sys
 import numpy as np
 from PIL import Image
-SRC, DST = 'art/incoming/thai/kit', 'art/sidegame/thai'
+TOON = '--toon' in sys.argv
+SRC, DST, SUF = 'art/incoming/thai/kit', 'art/sidegame/thai' + ('_toon' if TOON else ''), '_toon' if TOON else ''
 SHEETS = {
     'map1_kit_01_platforms': ['cap_l', 'cap_m', 'cap_r', 'wall', 'wall_root', 'corner'],
     'map1_kit_02_access': ['ladder_top', 'ladder_mid', 'ladder_bot', 'stairs_ur', 'stairs_ul', 'vines'],
@@ -17,7 +19,7 @@ SHEETS = {
     'map1_kit_05_upper_props': ['stele1', 'stele2', 'stele3', 'raintree', 'plinth', 'rootwall', 'grass', 'fl_white', 'fl_red', 'fl_violet', 'fl_yellow', 'wisp'],
     'map1_kit_06_backgrounds': ['bg_mount', 'bg_forest', 'bg_sky'],
 }
-SPLIT = {'map1_kit_05_upper_props': (1, 505)}   # [blob index, x]: two steles touching on grass, cut apart at x
+SPLIT = {'map1_kit_05_upper_props': (0, [275, 505]) if TOON else (1, [505])}   # [blob index, x cuts]: steles touching on grass, cut apart
 SKIP = {'spirit_house'}   # owner "ไม่เอาศาลภูมินะ": not exported
 KEY = np.array([0, 177, 64], float)
 
@@ -55,9 +57,10 @@ def trim(rgba):
     al = rgba[..., 3]; ys, xs = np.where(al > 8)
     return rgba[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
 
-def seamless(rgba, f=0.18):
+def seamless(rgba, f=0.18, axes=(1, 0)):
     im = rgba.astype(float); h, w = im.shape[:2]
     for axis, n in ((1, w), (0, h)):
+        if axis not in axes: continue
         k = int(n * f); im = np.moveaxis(im, axis, 0)
         a, b = im[:k].copy(), im[-k:].copy(); t = np.linspace(0, 1, k)[:, None, None]
         im[-k:] = b * (1 - t) + a * t                 # the end fades into the start
@@ -67,11 +70,11 @@ def seamless(rgba, f=0.18):
 def main():
     os.makedirs(DST, exist_ok=True); meta = {}
     for sheet, names in SHEETS.items():
-        src = np.array(Image.open(f'{SRC}/{sheet}.png').convert('RGB')).astype(float)
+        src = np.array(Image.open(f'{SRC}/{sheet}{SUF}.png').convert('RGB')).astype(float)
         rgb, a = key(src)
         bx = blobs(a)
         if sheet in SPLIT:
-            i, sx = SPLIT[sheet]; b = bx[i]; bx[i:i + 1] = [[b[0], b[1], sx, b[3]], [sx, b[1], b[2], b[3]]]
+            i, xs = SPLIT[sheet]; b = bx[i]; e = [b[0]] + xs + [b[2]]; bx[i:i + 1] = [[e[j], b[1], e[j + 1], b[3]] for j in range(len(e) - 1)]
         print(sheet, len(bx), 'pieces', bx)
         if '--boxes' in sys.argv: continue
         if len(bx) != len(names): sys.exit(f'{sheet}: found {len(bx)} pieces, expected {len(names)}')
@@ -82,6 +85,8 @@ def main():
             pc = trim(pc)
             if name == 'wall':
                 pc = pc[8:-8, 8:-8]; pc[..., 3] = 255; pc = seamless(pc)
+            if name == 'cap_m' and TOON:   # the toon middle ledge has black outlines at both ends: cut them off, cross-fade left/right so it tiles
+                pc = seamless(pc[:, 30:-30], .2, (1,))
             if name.startswith('bg_'):
                 pc = pc[2:-2, 4:-4]
             Image.fromarray(pc, 'RGBA').save(f'{DST}/{name}.webp', quality=88, method=6)
