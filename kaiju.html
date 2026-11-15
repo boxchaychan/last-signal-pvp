@@ -57,7 +57,7 @@
 <canvas id="cv"></canvas>
 <div id="hud">
   <div id="tl" class="pn"><div class="t">อสูรถล่มเมือง<small>เทส 3D พิกเซล</small></div><div id="bar"><i></i></div><div id="pct">ถล่ม 0%</div></div>
-  <div id="tr"><button id="bCam" class="b">มุมกล้อง</button><button id="bZo" class="b sq">−</button><button id="bZi" class="b sq">+</button><button id="bK" class="b">อสูร</button><button id="bOl" class="b">เส้นขอบ</button></div>
+  <div id="tr"><button id="bCam" class="b">มุมกล้อง</button><button id="bZo" class="b sq">−</button><button id="bZi" class="b sq">+</button><button id="bOl" class="b">เส้นขอบ</button></div>
   <div id="joyB"><div id="joyK"></div></div>
   <button id="bFire" class="r">พ่นไฟ</button>
   <button id="bStomp" class="r">เหยียบ</button>
@@ -78,11 +78,13 @@ const CAMS = [ { n: 'A · ต่ำ 30°', p: 30, y: 45 }, { n: 'B · 45°', p: 
 let camI = qi('cam', 0, 3, 1);
 const ZOOMS = [38, 50, 64, 84];          // world units visible top to bottom
 let zoomI = qi('z', 0, 3, 2);
-const KS = ['96', '16', '128'].includes(Q.get('k')) ? Q.get('k') : '128';   // 128 = default (owner "เอา 128"), 16 = the big 204 px set, 96 = oldest
+const KS = ['96', '16', '128', '8'].includes(Q.get('k')) ? Q.get('k') : '8';   // 8 = PixelLab 8-direction kaiju at 128 (default), 128 = its 4 views, 16 = the big 204 px set, 96 = oldest
 const M4 = { side: [.93, .38], sideL: [.07, .38], front: [.49, .47], back: [.88, .3] };
 const MOUTH = { '16': M4, '128': { side: [.94, .36], sideL: [.06, .36], front: [.5, .42], back: [.9, .3] }, '96': { side: [.92, .35], front: [.5, .47] } };
-const VIEWS = KS === '96' ? ['side', 'front'] : ['side', 'sideL', 'front', 'back'];
-const KLABEL = { '128': 'อสูร 128', '16': 'อสูร 204', '96': 'อสูร 96' };
+const DIR8 = ['east', 'north-east', 'north', 'north-west', 'west', 'south-west', 'south', 'south-east'];   // screen angle 0, 45, 90 ... (north = walking away from the camera)
+MOUTH['8'] = { east: [.94, .36], 'north-east': [.9, .3], north: [.5, .28], 'north-west': [.1, .3], west: [.06, .36], 'south-west': [.25, .4], south: [.5, .42], 'south-east': [.75, .4] };
+const VIEWS = KS === '8' ? DIR8 : KS === '96' ? ['side', 'front'] : ['side', 'sideL', 'front', 'back'];
+
 let OUTL = Q.get('ol') !== '0';
 const KH = 24;                           // kaiju height in world units (buildings: 3 per floor)
 const BAY = 2.5, FH = 3;                 // window bay width / floor height
@@ -511,10 +513,10 @@ function updRings(dt) { for (const g of RINGS) { if (!g.m.visible) continue; g.t
 
 // ---------- kaiju (upright cut-out facing the camera)
 const SPR = {}; let kMesh = null, kSil = null, kBlob = null, kMat = null, kSilMat = null;
-const K = { x: roadC(2), z: roadC(2), fx: 0, fz: 1, flip: false, left: false, sprN: 'front', walk: 0, hopPx: 0, stompT: 0, hit: false, sq: 0, moving: false, breath: false };
+const K = { x: roadC(2), z: roadC(2), fx: 0, fz: 1, flip: false, left: false, sprN: KS === '8' ? 'south' : 'front', walk: 0, hopPx: 0, stompT: 0, hit: false, sq: 0, moving: false, breath: false };
 async function loadKaiju() {
   for (const n of VIEWS) {
-    const im = await loadImg(`art/kaiju/k${KS}_${n}.png`);
+    const im = await loadImg(KS === '8' ? `art/kaiju/k8/${n}.png` : `art/kaiju/k${KS}_${n}.png`);
     const c = mkC(im.width, im.height), x = c.getContext('2d'); x.drawImage(im, 0, 0);
     const d = x.getImageData(0, 0, c.width, c.height).data; let top = c.height, bot = -1; const flame = [];
     for (let y = 0; y < c.height; y++) for (let xx = 0; xx < c.width; xx++) {
@@ -525,6 +527,7 @@ async function loadKaiju() {
     const t = new THREE.Texture(im); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true;
     SPR[n] = { tex: t, w: im.width, h: im.height, pad: im.height - 1 - bot, body: bot - top + 1, mouth: MOUTH[KS][n], flame };
   }
+  SPR.side = SPR.side || SPR.east; SPR.front = SPR.front || SPR.south;   // size + first picture come from the side / front view
   U = KH / SPR.side.body; T = 1 / U;
 }
 function buildKaiju() {
@@ -539,6 +542,12 @@ function buildKaiju() {
 }
 function pickSprite() {
   const sx = K.fx * R.x + K.fz * R.z, sz = K.fx * F.x + K.fz * F.z;
+  if (SPR.east) {   // 8 directions: pick by the facing angle on screen, never mirrored
+    const a = Math.atan2(sz, sx), want = DIR8[(Math.round(a / (Math.PI / 4)) + 8) % 8];
+    K.flip = false;
+    if (want !== K.sprN) { K.sprN = want; kMat.map = SPR[want].tex; kSilMat.map = SPR[want].tex; }
+    return;
+  }
   if (Math.abs(sx) > .08) K.left = sx < 0;
   let want = sz < -.6 ? 'front' : sz > .6 && SPR.back ? 'back' : 'side';
   K.flip = K.left;
@@ -558,7 +567,7 @@ function placeKaiju() {
   kSil.position.copy(kMesh.position); kSil.scale.copy(kMesh.scale); kSil.rotation.y = yaw;
   kBlob.position.set(K.x, .05, K.z); kBlob.rotation.y = yaw;
   const hs = 1 - Math.min(.4, K.hopPx * U * .08);
-  kBlob.scale.set(sp.w * U * (K.sprN.startsWith('side') ? .34 : .36) * hs, 1, 4.2 * hs);
+  kBlob.scale.set(sp.w * U * .35 * hs, 1, 4.2 * hs);
 }
 let emberT = 0;
 function embers(dt) {
@@ -697,9 +706,8 @@ hold($('bCam'), () => setCam(camI + 1));
 hold($('bZi'), () => zoomBy(1));
 hold($('bZo'), () => zoomBy(-1));
 hold($('bOl'), () => toggleOl());
-hold($('bK'), () => switchKaiju());
 function zoomBy(d) { zS = SSTEP[Math.max(0, Math.min(SSTEP.length - 1, SSTEP.indexOf(S) + d))]; layout(); }   // + = bigger pixels (closer), − = smaller pixels (see more); at most ~1.4M render pixels
-function switchKaiju() { const q = new URLSearchParams(location.search); q.set('k', KS === '128' ? '16' : '128'); q.set('cam', camI); q.set('z', zoomI); location.search = q.toString(); }
+function switchKaiju() { const q = new URLSearchParams(location.search); q.set('k', KS === '8' ? '16' : '8'); q.set('cam', camI); q.set('z', zoomI); location.search = q.toString(); }
 function toggleOl() { OUTL = !OUTL; postM.uniforms.ol.value = OUTL ? 1 : 0; $('bOl').textContent = OUTL ? 'เส้นขอบ เปิด' : 'เส้นขอบ ปิด'; }
 addEventListener('resize', () => { if (KJ.ready) { zS = 0; layout(); } });
 
@@ -862,7 +870,6 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
     buildKaiju();
     setCam(camI); layout();
     camT.set(K.x, 0, K.z);
-    $('bK').textContent = KLABEL[KS];
     $('bOl').textContent = OUTL ? 'เส้นขอบ เปิด' : 'เส้นขอบ ปิด'; postM.uniforms.ol.value = OUTL ? 1 : 0;
     updPct();
     $('load').remove();
