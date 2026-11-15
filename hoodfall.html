@@ -108,8 +108,10 @@ const DECO = [];   // [prop, x, layer: 0 behind everything, 1 ground decor, 2 fo
 // ---- Thai kit pieces (painted, stored at 3 sheet px = 1 world px; the Thai map is drawn on the full-res canvas so they stay sharp)
 const TK = {}, TKN = ['cap_l', 'cap_m', 'cap_r', 'wall', 'ladder_mid', 'ladder_bot', 'stairs_ur', 'stairs_ul', 'vines', 'gate', 'prang', 'chedi', 'ruin_wall', 'sala', 'jars',
   'coconut', 'sugarpalm', 'banana', 'campfire', 'lotus', 'stele1', 'stele2', 'stele3', 'raintree', 'plinth', 'rootwall', 'grass', 'fl_white', 'fl_red', 'fl_violet', 'fl_yellow', 'wisp', 'bg_mount', 'bg_forest', 'bg_sky'];
-if (THAI) for (const k of TKN) TK[k] = img(SG + 'thai/' + k + '.webp?t1');
-const CAPY = 15, CAPW = 143, TWW = 328 / 3 * .72, TWH = 305 / 3 * .72;   // cap: walk line 15 px below its top; wall tile size (smaller bricks than the ledges = further back)
+// &kit=toon = Codex's toon set (black lines, cel shading, to match the archer); default = the first painted set
+const TKIT = QS.get('kit') === 'toon' ? 'thai_toon/' : 'thai/';
+if (THAI) for (const k of TKN) TK[k] = img(SG + TKIT + k + '.webp?t1');
+const CAPY = 15, TWW = 328 / 3 * .72, TWH = 305 / 3 * .72;   // cap: walk line 15 px below its top; wall tile size (smaller bricks than the ledges = further back)
 // props [piece, x, floor, scale, flip, layer]: layer 0 = in front of the walls (behind monsters), 2 = foreground, 3 = hangs down from the ledge
 const TDECO = [];
 if (THAI) { const D = (k, x, f, s = 1, fl = 0, l = 0) => TDECO.push([k, x, f, s, fl, l]);
@@ -168,6 +170,7 @@ function thaiBack(g) { if (!TK.wall.width) return; g.imageSmoothingEnabled = tru
   for (const [k, x, f, s, fl, l] of TDECO) if (l === 3 && x > cx0 - 120 && x < cx1 + 120) tp(g, k, x, FT[f] + 8 + TK[k].height / 3 * s, s, fl);
   for (const [k, x, f, s, fl, l] of TDECO) if (l === 0 && x > cx0 - 300 && x < cx1 + 300) tp(g, k, x, FT[f] + 3, s, fl);
   // ledges: cap pieces along each floor, end caps at the gaps
+  const CAPW = TK.cap_m.width / 3;   // middle ledge width (the toon one is trimmed narrower)
   const segs = [[0, WW, GY], ...PLAT.map(([x, y, n]) => [x, x + n * T, y])];
   for (const [a, b, y] of segs) { if (y - CAPY > cy1 || y + 60 < cy0 || b < cx0 || a > cx1) continue; const ty = y - CAPY, ch = TK.cap_m.height / 3;
     g.save(); g.beginPath(); g.rect(a + (a > 0 ? 20 : -4), ty - 30, b - a - (a > 0 ? 20 : -4) - (b < WW ? 20 : -4), ch + 40); g.clip();
