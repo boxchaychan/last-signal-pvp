@@ -14,7 +14,7 @@
   sea + beach in the south), forests, rocks, grass tufts, a village (cone / dome / mammoth-bone huts, longhouse, campfire, totem,
   palisade with a gate, watchtowers, racks, piles, garden plots, dock, cave in the cliff with torches), blocky placeholder villagers.
   Camera LOCKED to 4 angles (button / C), drag or WASD to pan, wheel / pinch / Q E to zoom, day / sunset / night (button / N).
-  URL: ?cam=0..3, ?seed=N, ?t=0..2 time of day, ?ol=0 no outlines, ?px=0 smooth (full-resolution) look, ?blender=0 code shapes. QA hooks: window.TB (ready, hold, step, draw, info()).
+  URL: ?cam=0..3, ?seed=N, ?t=0..2 time of day, ?ol=0 no outlines, ?px=0 smooth (full-resolution) look, ?blender=0 code shapes, ?animals=0 no Quaternius herds. QA hooks: window.TB (ready, hold, step, draw, info()).
 -->
 <style>
   @font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
@@ -61,6 +61,7 @@
 <div id="load">กำลังสร้างแผ่นดิน…</div>
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
+<script src="vendor/threejs/SkeletonUtils.js"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search);
@@ -350,6 +351,7 @@ function buildNature() {
     if ((kind === 2 || kind === 3) && !vill) { const n = r() * 3.2 | 0; for (let q = 0; q < n; q++) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8 + r() * .6, f: r() }); }
     else if (kind === 2 && vill && r() < .5) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8, f: r() });
   }
+  for (const o of broad.concat(pine)) TREE_T[tIdx(Math.floor((o.x + HM) / TS), Math.floor((o.z + HM) / TS))] = 1;
   const trunk = new THREE.CylinderGeometry(.3, .42, 2.6, 6).translate(0, 1.3, 0), bA = new THREE.IcosahedronGeometry(1.95, 0).translate(0, 3.6, 0), bB = new THREE.IcosahedronGeometry(1.35, 0).translate(.95, 4.8, .45), bC = new THREE.IcosahedronGeometry(1.15, 0).translate(-.9, 4.3, -.6);
   const pTr = new THREE.CylinderGeometry(.25, .35, 1.8, 6).translate(0, .9, 0), pA = new THREE.ConeGeometry(2.3, 2.8, 7).translate(0, 2.6, 0), pB = new THREE.ConeGeometry(1.75, 2.5, 7).translate(0, 4.1, 0), pC = new THREE.ConeGeometry(1.15, 2.2, 7).translate(0, 5.5, 0);
   if (MODELS.tree_broad_0 && MODELS.tree_pine_0 && MODELS.rock_0) {
@@ -369,6 +371,7 @@ function buildNature() {
 
 // ---------- village (all shapes in code)
 let villagers = [];
+const TREE_T = new Uint8Array(NT * NT);   // tiles that hold a tree (herds look for open meadows)
 function face(o, x, z) { o.rotation.y = Math.atan2(VX - x, VZ - z); }   // front (+z) turned toward the campfire
 function stripeTex(a, b, n) { const c = mkC(8, n * 4), x = c.getContext('2d'); for (let i = 0; i < n; i++) { x.fillStyle = i % 2 ? a : b; x.fillRect(0, i * 4, 8, 4); } for (let i = 0; i < 14; i++) { x.fillStyle = '#00000022'; x.fillRect(Math.random() * 8 | 0, Math.random() * n * 4 | 0, 1, 2); } const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; return t; }
 function addMesh(g, geo, mat, x, y, z) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; g.add(m); return m; }
@@ -516,6 +519,71 @@ function updAnimals(dt) {
     a.m.rotation.y += dr * Math.min(1, dt * 3); a.m.rotation.z = Math.sin(a.ph) * .03;
   }
 }
+// ---------- Quaternius animated animals (CC0, vendor/quaternius): herds that graze, walk and gallop (loaded after the map shows)
+const HERDS = [], HERD_DEF = {
+  Deer: { h: 3.1, herds: 3, size: [3, 5], walk: 2.4, run: 9, shy: true },        // heights a bit larger than life so they read on screen
+  Stag: { h: 3.9, herds: 2, size: [1, 2], walk: 2.4, run: 9, shy: true },
+  Horse: { h: 4.0, herds: 2, size: [3, 4], walk: 2.6, run: 10 },
+  Horse_White: { h: 4.0, herds: 1, size: [2, 3], walk: 2.6, run: 10 },
+  Bull: { h: 3.6, herds: 1, size: [2, 3], walk: 2, run: 7 },
+  Cow: { h: 3.3, herds: 1, size: [3, 4], walk: 1.8, run: 6 },
+  Wolf: { h: 2.2, herds: 3, size: [3, 4], walk: 2.8, run: 10 },
+  Fox: { h: 1.5, herds: 3, size: [1, 1], walk: 2.4, run: 8 },
+};
+function openAround(x, z, rT) {   // no tree tile within rT tiles
+  const i0 = Math.floor((x + HM) / TS), j0 = Math.floor((z + HM) / TS);
+  for (let j = j0 - rT; j <= j0 + rT; j++) for (let i = i0 - rT; i <= i0 + rT; i++) if (i < 0 || j < 0 || i >= NT || j >= NT || TREE_T[tIdx(i, j)]) return false;
+  return true;
+}
+function findSpot(r) {   // open grass meadow, away from the village, not too high
+  for (let i = 0; i < 3000; i++) { const x = -HM + 20 + r() * (MAPW - 40), z = -HM + 20 + r() * (MAPW - 40);
+    if (kindAt(x, z) === 2 && Math.hypot(x - VX, z - VZ) > VR + 15 && groundY(x, z) <= LH * 3 && openAround(x, z, 4)) return { x, z }; }
+  return null;
+}
+function okGround(x, z, y) { const k = kindAt(x, z); return (k === 2 || k === 3) && Math.abs(groundY(x, z) - y) < .1 && Math.hypot(x - VX, z - VZ) > VR + 4; }
+function play(a, n) { if (!n || a.cur === n || !a.acts[n]) return; a.acts[n].reset().fadeIn(.3).play(); if (a.cur && a.acts[a.cur]) a.acts[a.cur].fadeOut(.3); a.cur = n; }
+function pickIdle(a) { const o = ['Eating', 'Idle', 'Idle_2', 'Eating', 'Idle_2_HeadLow', 'Idle_Headlow']; for (let i = 0; i < 8; i++) { const n = o[Math.random() * o.length | 0]; if (a.acts[n]) return n; } return 'Idle'; }
+async function loadAnimals() {
+  if (!THREE.GLTFLoader || !THREE.SkeletonUtils || Q.get('animals') === '0') return;
+  const ld = new THREE.GLTFLoader(), r = rng(SEED + 555);
+  for (const [name, d] of Object.entries(HERD_DEF)) {
+    let g; try { g = await ld.loadAsync(`art/tribe3d/animals/${name}.glb`); } catch (e) { console.warn('animal', name, e.message); continue; }
+    const src = g.scene;
+    src.traverse(o => { if (o.isMesh) { const conv = m => new THREE.MeshLambertMaterial({ color: m.color }); o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
+    src.updateMatrixWorld(true); const sz = new THREE.Box3().setFromObject(src).getSize(new V3()), sc = d.h / Math.max(.01, sz.y);
+    for (let hI = 0; hI < d.herds; hI++) {
+      const c = findSpot(r); if (!c) continue;
+      const n = d.size[0] + (r() * (d.size[1] - d.size[0] + 1) | 0), y0 = groundY(c.x, c.z);
+      for (let k = 0; k < n; k++) {
+        const x = c.x + (r() - .5) * 8, z = c.z + (r() - .5) * 8; if (!okGround(x, z, y0)) continue;
+        const root = THREE.SkeletonUtils.clone(src); root.scale.setScalar(sc); root.position.set(x, y0, z); root.rotation.y = r() * 6.28; scene.add(root);
+        const mixer = new THREE.AnimationMixer(root), acts = {};
+        for (const clip of g.animations) acts[clip.name] = mixer.clipAction(clip);
+        const a = { name, root, mixer, acts, d, x, z, tx: x, tz: z, hx: c.x, hz: c.z, st: 'idle', t: r() * 4, cur: null, sp: 0 };
+        play(a, pickIdle(a)); a.mixer.update(r() * 3); HERDS.push(a);
+      }
+    }
+  }
+}
+function updHerds(dt) {
+  for (const a of HERDS) {
+    a.mixer.update(dt);
+    const y = groundY(a.x, a.z);
+    if (a.st === 'idle') {
+      a.t -= dt; if (a.t > 0) continue;
+      const run = Math.random() < (a.d.shy ? .22 : .1), ang = Math.random() * 6.28, rr = run ? 16 + Math.random() * 18 : 4 + Math.random() * 10;
+      let tx = a.x + Math.cos(ang) * rr, tz = a.z + Math.sin(ang) * rr;
+      if (Math.hypot(tx - a.hx, tz - a.hz) > 28) { tx = a.hx + (Math.random() - .5) * 14; tz = a.hz + (Math.random() - .5) * 14; }   // stay round the herd's home
+      a.tx = tx; a.tz = tz; a.st = run ? 'run' : 'walk'; a.sp = run ? a.d.run : a.d.walk; play(a, run ? 'Gallop' : 'Walk'); continue;
+    }
+    const dx = a.tx - a.x, dz = a.tz - a.z, dd = Math.hypot(dx, dz);
+    if (dd < .4) { a.st = 'idle'; a.t = 2 + Math.random() * 6; play(a, pickIdle(a)); continue; }
+    const nx = a.x + dx / dd * a.sp * dt, nz = a.z + dz / dd * a.sp * dt;
+    if (!okGround(nx, nz, y)) { a.st = 'idle'; a.t = .5 + Math.random(); play(a, pickIdle(a)); continue; }
+    a.x = nx; a.z = nz; a.root.position.set(a.x, y, a.z);
+    const want = Math.atan2(dx, dz); let dr = want - a.root.rotation.y; while (dr > Math.PI) dr -= 6.283; while (dr < -Math.PI) dr += 6.283; a.root.rotation.y += dr * Math.min(1, dt * 5);
+  }
+}
 function updVillagers(dt) {
   for (const v of villagers) {
     if (v.wait > 0) { v.wait -= dt; continue; }
@@ -596,7 +664,7 @@ function step(dt) {
   let kx = 0, ky = 0; if (keys.a || keys.arrowleft) kx--; if (keys.d || keys.arrowright) kx++; if (keys.w || keys.arrowup) ky--; if (keys.s || keys.arrowdown) ky++;
   if (kx || ky) pan(-kx * 420 * dt, -ky * 420 * dt);
   if (waterM) waterM.uniforms.t.value += dt; CLOUD.t.value += dt;
-  updVillagers(dt); updAnimals(dt); updParticles(dt);
+  updVillagers(dt); updAnimals(dt); updHerds(dt); updParticles(dt);
 }
 function draw() {
   CT.set(camT.x, groundY(camT.x, camT.z) * .5, camT.z);
@@ -609,7 +677,7 @@ function draw() {
   renderer.setRenderTarget(rt); renderer.render(scene, cam);
   renderer.setRenderTarget(null); renderer.render(postScene, postCam);
 }
-const TB = window.TB = { ready: false, hold: false, step, draw, setCam, setTime, zoomBy, camT, MAMMOTHS, info: () => ({ rw, rh, S, cam: camI, time: timeI, ...TB.stats }) };
+const TB = window.TB = { ready: false, hold: false, step, draw, setCam, setTime, zoomBy, camT, MAMMOTHS, HERDS, info: () => ({ rw, rh, S, cam: camI, time: timeI, ...TB.stats }) };
 let last = performance.now();
 function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; if (!TB.hold) { step(dt); draw(); } requestAnimationFrame(frame); }
 (async function init() {
@@ -624,6 +692,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
     $('load').remove(); TB.ready = true;
     say(matchMedia('(pointer: coarse)').matches ? 'ลากนิ้วเพื่อเลื่อนแมพ<small>บีบนิ้วซูม · ปุ่มบนขวา: มุมกล้อง / ซูม / เวลา</small>' : 'ลากเมาส์หรือ WASD เพื่อเลื่อนแมพ<small>ล้อเมาส์ซูม · C มุมกล้อง · N เวลา</small>', 4500);
     requestAnimationFrame(frame);
+    loadAnimals().then(() => { TB.stats.animals = HERDS.length; TB.animalsReady = true; });
   } catch (err) { $('load').textContent = 'โหลดไม่สำเร็จ: ' + err.message; console.error(err); }
 })();
 </script>
