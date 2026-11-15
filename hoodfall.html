@@ -57,38 +57,42 @@ const HC = {cw: 128, ch: 96, feet: [50, 92]}, AC = {cw: 135, ch: 138, feet: [75,
          {f: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], ms: [40, 40, 40, 40, 40, 40, 40, 90, 40, 40, 40, 40], hit: 19},
          {f: [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35], ms: [45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 130, 55], hit: 34}]};
 // ---------------------------------------------------------------- the map (docs/side/map1_plan.md)
-// Owner 2026-11-15 "แมพขอกว้างๆ แถวที่ยืนเป็นชั้นขึ้นไป ไม่ใช่ดินลอยเฉยๆ": a wide map (4800) whose ground climbs in terraces (cliffs too tall to jump
-// have ropes), and the upper ledges are drawn as hill terraces with their earth reaching down behind the ground, not floating slabs.
-const T = 32, WW = 4800, WH = 1100;
-const GROUND = [[0, 1280, 1000], [1280, 1472, 940], [1472, 1664, 880], [1664, 2176, 720], [2176, 2368, 660], [2368, 2944, 600], [2944, 3136, 700], [3136, 3776, 860], [3776, 3968, 800], [3968, 4800, 960]];   // solid steps [x0, x1, top]
-const PLAT = [[560, 860, 6], [800, 740, 5], [1040, 860, 5], [1760, 580, 6], [1990, 600, 5], [2440, 470, 6], [2700, 460, 5], [3220, 720, 6], [3480, 620, 6], [4100, 820, 6], [4420, 820, 6]];   // terraces you can stand on [x, top, tiles]
-const ROPES = PLAT.map(([x, y]) => [x + 24, y]);   // [x, top, bottom]; the bottom is whatever surface is under it
-const ZONES = [[0, 640, 'แคมป์'], [640, 1280, 'ทุ่งเห็ด'], [1280, 2176, 'เนินหมาป่า'], [2176, 3136, 'ยอดซากหิน'], [3136, 3968, 'หุบโครงกระดูก'], [3968, 4800, 'ถ้ำหมูป่า']];
-const groundAt = x => { for (const g of GROUND) if (x >= g[0] && x < g[1]) return g[2]; return 1000; };
+// Owner 2026-11-15 "พื้นที่สำหรับเก็บเวล ... คนอาจจะเยอะ ให้ชั้น 2 เป็นแถบแบบโกส ให้มี 3-4 วาปอยู่บนสุด ไม่อยากให้เป็นแท่นอยู่ๆ ก็ลอย":
+// 3 floors in long bands (Ghost Online style grinding map). Floor 1 = flat ground the whole width between two high rock walls; floor 2 = three long
+// bands joined to the walls, standing on rock pillars; floor 3 = four short bands at the top, each with a warp portal, on pillars. Ropes join floors.
+const T = 32, WW = 4800, WH = 1340, GY = 1240, F2 = 1000, F3 = 760;
+const GROUND = [[0, 128, F2], [128, 4672, GY], [4672, 4800, F2]];   // solid [x0, x1, top]: floor 1 between the two walls
+const PLAT = [[128, F2, 44], [1664, F2, 46], [3264, F2, 44], [400, F3, 16], [1552, F3, 16], [2704, F3, 16], [3856, F3, 16]];   // bands you stand on [x, top, tiles]
+const ROPES = [[300, F2], [1100, F2], [1900, F2], [2700, F2], [3500, F2], [4300, F2], ...PLAT.filter(p => p[1] === F3).map(([x]) => [x + 40, F3])];   // [x, top, bottom]
+const ZONES = [[0, 800, 'แคมป์'], [800, 1600, 'ทุ่งเห็ด'], [1600, 2400, 'เนินหมาป่า'], [2400, 3200, 'ซากหิน'], [3200, 4000, 'หุบโครงกระดูก'], [4000, 4800, 'ถ้ำหมูป่า']];
+const groundAt = x => { for (const g of GROUND) if (x >= g[0] && x < g[1]) return g[2]; return GY; };
 function surfaceBelow(x, y) { let best = groundAt(x); for (const [px, py, n] of PLAT) if (x > px && x < px + n * T && py >= y - 1 && py < best) best = py; return best; }
 for (const r of ROPES) r[2] = surfaceBelow(r[0], r[1] + 8);
-for (let i = 1; i < GROUND.length; i++) { const a = GROUND[i - 1], b = GROUND[i], d = a[2] - b[2], bx = b[0];   // a rope on every cliff too tall to jump
-  if (Math.abs(d) >= 100) ROPES.push(d > 0 ? [bx - 8, b[2], a[2]] : [bx + 8, a[2], b[2]]); }
+// rock pillars under every band (both ends and every ~520 px), down to the floor below: drawn, not solid
+const PILLARS = []; for (const [x, y, n] of PLAT) { const x1 = x + n * T, below = surfaceBelow(x + n * T / 2, y + 8); for (let px = x + 56; px < x1 - 40; px += 520) PILLARS.push([px, y, below]); PILLARS.push([x1 - 56, y, below]); }
 const DECO = [];   // [prop, x, layer: 0 behind everything, 1 ground decor, 2 foreground]
 { const TREES = ['tree', 'small_tree'], PROPS = ['bush', 'flowers', 'rocks', 'flowers', 'bush', 'rocks'];
-  for (let x = 150, i = 0; x < WW - 100; x += 330 + (i * 97) % 140, i++) DECO.push([TREES[i % 2], x, 0]);
-  for (let x = 90, i = 0; x < WW - 60; x += 210 + (i * 61) % 120, i++) DECO.push([PROPS[i % PROPS.length], x, 1]);
-  DECO.push(['sign', 260, 1], ['fence', 360, 1]); for (let x = 600; x < WW; x += 900) DECO.push(['bush', x, 2]); }
-const CAMPFIRE = {x: 330, y: 1000}, CHEST = {x: 2440 + 96, y: 470, open: false}, PORTALS = [{x: 40, y: 1000, to: null}, {x: 4760, y: 960, to: 'map2'}];
+  for (let x = 250, i = 0; x < WW - 200; x += 330 + (i * 97) % 140, i++) DECO.push([TREES[i % 2], x, 0]);
+  for (let x = 190, i = 0; x < WW - 160; x += 210 + (i * 61) % 120, i++) DECO.push([PROPS[i % PROPS.length], x, 1]);
+  DECO.push(['sign', 420, 1], ['fence', 520, 1]); for (let x = 700; x < WW - 200; x += 900) DECO.push(['bush', x, 2]); }
+const WARPS = ['ป่าลึก', 'ทะเลทราย', 'ภูเขาหิมะ', 'ดันเจี้ยน'];
+const CAMPFIRE = {x: 330, y: GY}, CHEST = {x: 2704 + 256, y: F3, open: false},
+  PORTALS = [{x: 170, y: GY, to: null}, ...PLAT.filter(p => p[1] === F3).map(([x, y, n], i) => ({x: x + n * T / 2, y, to: WARPS[i]}))];
 // ---------------------------------------------------------------- monsters
 const MDEF = {shroom: {hp: 30, atk: 6, exp: 6, spd: 26, gold: [1, 3]}, wolf: {hp: 55, atk: 9, exp: 11, spd: 60, gold: [2, 5]}, goblin_archer: {hp: 75, atk: 11, exp: 15, spd: 40, gold: [3, 6]},
   skeleton: {hp: 120, atk: 14, exp: 24, spd: 36, gold: [4, 9]}, boar_guard: {hp: 240, atk: 20, exp: 48, spd: 30, gold: [8, 15]}};
 const MS = {}, MI = {}, MW = {}; for (const k in MDEF) { MI[k] = img(SG + 'mobs/' + k + '.png'); fetch(SG + 'mobs/' + k + '.json').then(r => r.json()).then(j => MS[k] = j); }
 // homes: [kind, x0, x1, surface y] = where it patrols (it never leaves that stretch)
 const HOMES = [];
-{ const kind = (x, k) => x < 1280 ? 'shroom' : x < 2176 ? (k % 3 ? 'wolf' : 'goblin_archer') : x < 3136 ? 'skeleton' : x < 3968 ? (k % 2 ? 'skeleton' : 'goblin_archer') : 'boar_guard';
-  let k = 0; for (const [x0, x1, top] of GROUND) { if (x1 <= 480) continue; const a = Math.max(x0, 480) + 16, b = x1 - 16, n = Math.max(1, Math.round((b - a) / 260)); for (let i = 0; i < n; i++) HOMES.push([kind((a + b) / 2, k++), a, b, top]); }
-  for (const [x, y, n] of PLAT) HOMES.push([kind(x, k++), x + 16, x + n * T - 16, y]); }
+{ const kind = (x, k) => x < 1600 ? 'shroom' : x < 2400 ? (k % 3 ? 'wolf' : 'goblin_archer') : x < 3200 ? 'skeleton' : x < 4000 ? (k % 2 ? 'skeleton' : 'goblin_archer') : 'boar_guard';
+  let k = 0; const strip = (a, b, top, per) => { const n = Math.max(1, Math.round((b - a) / per)), w = (b - a) / n; for (let i = 0; i < n; i++) { const s0 = a + i * w, s1 = s0 + w; HOMES.push([kind((s0 + s1) / 2, k++), Math.round(s0), Math.round(s1), top]); } };   // each monster patrols its own stretch, kind by where it is
+  for (const [x0, x1, top] of GROUND) { if (x1 <= 520 || x1 - x0 < 200) continue; strip(Math.max(x0, 520) + 16, x1 - 16, top, 260); }
+  for (const [x, y, n] of PLAT) if (y === F2) strip(x + 16, x + n * T - 16, y, 300); }
 let MOBS = [], BOSS = null, COINS = [], PUFF = [], NUMS = [], WARN = [];
 function spawnMob(h) { const [k, x0, x1, y] = h, d = MDEF[k]; return {k, h, x0, x1, x: x0 + R() * (x1 - x0), y, dir: R() < .5 ? -1 : 1, hp: d.hp, mhp: d.hp, st: 'walk', t: R() * 3, turn: 2 + R() * 3, kb: 0, cd: 0, flash: 0, born: .6}; }
-function newBoss() { return {k: 'boar_guard', boss: true, x0: 4300, x1: 4740, x: 4600, y: 960, dir: -1, hp: 2400, mhp: 2400, st: 'walk', t: 0, turn: 3, kb: 0, cd: 0, flash: 0, slam: 3, born: 0}; }
+function newBoss() { return {k: 'boar_guard', boss: true, x0: 4250, x1: 4640, x: 4500, y: GY, dir: -1, hp: 2400, mhp: 2400, st: 'walk', t: 0, turn: 3, kb: 0, cd: 0, flash: 0, slam: 3, born: 0}; }
 // ---------------------------------------------------------------- hero
-const P = {x: 200, y: 1000, vx: 0, vy: 0, face: 1, ground: true, jumps: 0, t: 0, run: 0, rope: null};
+const P = {x: 260, y: GY, vx: 0, vy: 0, face: 1, ground: true, jumps: 0, t: 0, run: 0, rope: null};
 const H = {lv: 1, hp: 120, mhp: 120, exp: 0, gold: 0, inv: 0, skill: 0};
 try { const s = JSON.parse(localStorage.getItem('hoodfall1')); if (s && !QS.get('new')) Object.assign(H, s, {inv: 0, skill: 0}); } catch (e) {}
 const save = () => { try { localStorage.setItem('hoodfall1', JSON.stringify({lv: H.lv, exp: H.exp, gold: H.gold, mhp: H.mhp, hp: H.hp})); } catch (e) {} };
@@ -115,12 +119,12 @@ function music() {   // a soft looping forest tune: pentatonic plucks over a slo
 // ---------------------------------------------------------------- input
 const keys = {}, touch = {l: 0, r: 0, u: 0};
 addEventListener('keydown', e => { keys[e.code] = 1; if (state === 'title') return start(); if (e.repeat) return;
-  if (e.code === 'Space') jump(); if (e.code === 'KeyJ') attack(); if (e.code === 'KeyK') useSkill(0); if ((e.code === 'KeyW' || e.code === 'ArrowUp') && !nearRope()) { if (near(CHEST, 50)) openChest(); else if (near(PORTALS[1], 50)) portal(); else jump(); } });
+  if (e.code === 'Space') jump(); if (e.code === 'KeyJ') attack(); if (e.code === 'KeyK') useSkill(0); if ((e.code === 'KeyW' || e.code === 'ArrowUp') && !nearRope()) { if (near(CHEST, 50)) openChest(); else if (nearWarp()) portal(); else jump(); } });
 addEventListener('keyup', e => { keys[e.code] = 0; });
 cv.addEventListener('pointerdown', () => { if (state === 'title') start(); });
 const pad = id => document.getElementById(id);
 const hold = (id, k, tap) => { const el = pad(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); if (k) touch[k] = 1; if (tap) tap(); }); const up = () => { if (k) touch[k] = 0; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); };
-hold('bl', 'l'); hold('br', 'r'); hold('bu', 'u', () => { if (!nearRope()) { if (near(CHEST, 50)) openChest(); else if (near(PORTALS[1], 50)) portal(); } }); hold('bj', null, () => jump()); hold('ba', null, () => attack()); hold('bs', null, () => skill());
+hold('bl', 'l'); hold('br', 'r'); hold('bu', 'u', () => { if (!nearRope()) { if (near(CHEST, 50)) openChest(); else if (nearWarp()) portal(); } }); hold('bj', null, () => jump()); hold('ba', null, () => attack()); hold('bs', null, () => skill());
 pad('snd').onclick = () => { soundOn = !soundOn; pad('snd').textContent = soundOn ? '🔊' : '🔈'; };
 const near = (o, r) => Math.abs(o.x - P.x) < r && Math.abs(o.y - P.y) < 60;
 const nearRope = () => ROPES.find(r => Math.abs(r[0] - P.x) < 14 && P.y >= r[1] - 2 && P.y <= r[2] + 2);
@@ -146,7 +150,8 @@ function jump() { if (state !== 'play') return; if (P.rope) { P.rope = null; P.v
 function attack() { if (state !== 'play' || P.rope) return; if (A.on) { A.queued = true; return; } A.on = true; A.n = 0; A.t = 0; A.queued = false; SFX.swing(); }
 function skill() { if (state !== 'play' || H.skill > 0 || P.rope) return; H.skill = 6; A.on = true; A.n = 2; A.t = 0; A.queued = false; A.skill = true; SFX.swing(); }
 function openChest() { if (CHEST.open) return; CHEST.open = true; SFX.chest(); for (let i = 0; i < 18; i++) dropCoin(CHEST.x, CHEST.y - 20, 3 + (R() * 6 | 0)); num(CHEST.x, CHEST.y - 60, 'หีบสมบัติ!', 'lvl'); }
-function portal() { num(P.x, P.y - 110, 'แมพ 2 เร็วๆ นี้', 'info'); }
+const nearWarp = () => PORTALS.find(p => p.to && near(p, 50));
+function portal() { const w = nearWarp(); if (w) num(P.x, P.y - 110, 'วาร์ป ' + w.to + ' เร็วๆ นี้', 'info'); }
 // ---------------------------------------------------------------- simulation
 function step(dt) {
   if (state === 'title') { titleT += dt; for (const m of MOBS) stepMob(m, dt, true); return; }
@@ -198,7 +203,7 @@ function stepMob(m, dt, idle) {
 function num(x, y, v, c) { NUMS.push({x, y, v, c, t: 0}); }
 function dropCoin(x, y, v) { COINS.push({x, y, vx: (R() - .5) * 220, vy: -250 - R() * 200, v, t: 0}); }
 function hurtHero(n, from) { if (H.inv) return; n = Math.round(n); H.hp = Math.max(0, H.hp - n); H.inv = 1; num(P.x, P.y - 90, n, 'hurt'); SFX.hurt(); P.rope = null; P.vx = from * 260; P.vy = -260; P.ground = false;
-  if (H.hp <= 0) { H.hp = H.mhp; H.exp = Math.floor(H.exp * .9); P.x = 200; P.y = 1000; num(P.x, P.y - 110, 'ฟื้นที่แคมป์ (EXP -10%)', 'info'); } }
+  if (H.hp <= 0) { H.hp = H.mhp; H.exp = Math.floor(H.exp * .9); P.x = 260; P.y = GY; num(P.x, P.y - 110, 'ฟื้นที่แคมป์ (EXP -10%)', 'info'); } }
 // what each hit reaches [behind, in front, height]; the 3rd (jump slam, also the skill) hits wide on both sides
 const REACH = [[-10, 100, 110], [-80, 90, 90], [-130, 130, 70]], MULT = [1, 1.3, 2.3];
 function doHit(n) { const [a, b, hgt] = REACH[n], sk = A.skill; let any = false, crit0 = false; shake = n === 2 ? .2 : .09; shakeAmp = n === 2 ? 3 : 2;
@@ -242,14 +247,15 @@ function drawWorld(g) {
   // sky: bright golden hour (blue at the top, peach at the horizon) + a sun
   const sky = g.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, '#5aa2ea'); sky.addColorStop(.6, '#a8d4f2'); sky.addColorStop(1, '#ffe2b8'); g.fillStyle = sky; g.fillRect(0, 0, VW, VH);
   const sx = VW * .78 - cam.x * .05, sy = 70 - cam.y * .05; const sun = g.createRadialGradient(sx, sy, 4, sx, sy, 120); sun.addColorStop(0, '#fffbe8'); sun.addColorStop(.12, '#fff2b8cc'); sun.addColorStop(1, '#fff2b800'); g.fillStyle = sun; g.fillRect(0, 0, VW, VH);
-  if (BG.width) { const s = 4, bw = BG.width * s, by = 1000 - 150 - cam.y * .55 - BG.height * s + 300, off = -((cam.x * .3) % bw);
+  if (BG.width) { const s = 4, bw = BG.width * s, by = GY - 150 - cam.y * .55 - BG.height * s + 300, off = -((cam.x * .3) % bw);
     for (let x = off - bw, i = 0; x < VW; x += bw, i++) { g.save(); if (i & 1) { g.translate(x + bw, 0); g.scale(-1, 1); g.drawImage(BG, 0, by, bw, BG.height * s); } else g.drawImage(BG, x, by, bw, BG.height * s); g.restore(); } }
   g.save(); const sh = shake > 0 ? (R() < .5 ? -shakeAmp : shakeAmp) : 0; g.translate(-Math.round(cam.x) + sh, -Math.round(cam.y));
   for (const [k, x, l] of DECO) if (l === 0 && PR[k].width) { g.globalAlpha = .92; g.drawImage(PR[k], Math.round(x - PR[k].width / 2), groundAt(x) - PB[k]); g.globalAlpha = 1; }
-  for (const [x, y, n] of PLAT) { g.fillStyle = '#56371f'; g.fillRect(x + 14, y + 10, n * T - 28, WH - y); block(g, x, y - GRASS, n, Math.ceil((WH - y + GRASS) / T) + 1);
-    g.fillStyle = 'rgba(30,16,40,.34)'; g.fillRect(x + 14, y + 12, n * T - 28, WH - y); }   // terraces: earth down behind the ground, a little darker
+  for (const [x, top, bot] of PILLARS) { g.fillStyle = '#4a3324'; g.fillRect(x - 20, top + 40, 40, bot - top - 40); g.fillStyle = '#5e4330'; g.fillRect(x - 20, top + 40, 10, bot - top - 40);   // rock pillars under the bands
+    g.fillStyle = '#35241a'; g.fillRect(x + 12, top + 40, 8, bot - top - 40); for (let y = top + 70; y < bot - 10; y += 46) { g.fillStyle = '#3a281c'; g.fillRect(x - 20, y, 40, 3); } g.fillStyle = '#6a4c36'; g.fillRect(x - 26, bot - 10, 52, 10); }
   g.fillStyle = '#56371f'; for (const [x0, x1, top] of GROUND) g.fillRect(x0 + 6, top + 10, x1 - x0 - 12, WH - top);   // solid dirt under the tiles: no sky through the edge tiles' margins
   GROUND.forEach(([x0, x1, top], i) => block(g, x0, top - GRASS, (x1 - x0) / T, Math.ceil((WH - top + GRASS) / T) + 1, i === 0, i === GROUND.length - 1));   // steps meet edge to edge: no rounded edge tiles between them
+  for (const [x, y, n] of PLAT) { g.fillStyle = '#56371f'; g.fillRect(x + 6, y + 10, n * T - 12, 2 * T + 6); block(g, x, y - GRASS, n, 3, x > 128, x + n * T < 4672); }   // the bands, 3 tiles thick, joined to the walls
   for (const [x, top, bot] of ROPES) { g.fillStyle = '#7a5530'; g.fillRect(x - 2, top - 6, 4, bot - top + 6); g.fillStyle = '#c8a06a'; for (let y = top - 6; y < bot; y += 6) g.fillRect(x - 2, y, 2, 3); g.fillStyle = '#5a3a20'; g.fillRect(x - 5, top - 8, 10, 4); }
   for (const [k, x, l] of DECO) if (l === 1 && PR[k].width) g.drawImage(PR[k], Math.round(x - PR[k].width / 2), groundAt(x) - PB[k]);
   // camp fire (code-drawn, animated), the chest, the portals
@@ -318,7 +324,7 @@ function title() {
   text('ลูกศร/A D เดิน · Space กระโดด · W ปีนเชือก/เปิดหีบ · J ตี · K สกิล', cx, cv.height - U(14), 9, '#d8c8e8', 600, 'center'); }
 function draw() {
   const g = view.getContext('2d'); g.imageSmoothingEnabled = false;
-  if (state === 'title') { cam.x = 300 + (Math.sin(titleT * .08) * .5 + .5) * (WW - VW - 600); cam.y = 1000 - VH * .7; clampCam(); }
+  if (state === 'title') { cam.x = 300 + (Math.sin(titleT * .08) * .5 + .5) * (WW - VW - 600); cam.y = GY - VH * .7; clampCam(); }
   drawWorld(g); ctx.imageSmoothingEnabled = false; ctx.drawImage(view, 0, 0, VW * K, VH * K);
   if (state === 'title') title(); else hud(); }
 let last = 0; function frame(now) { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; step(dt); draw(); requestAnimationFrame(frame); }
