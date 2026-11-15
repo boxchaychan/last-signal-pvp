@@ -16,7 +16,16 @@
   .pad small { position: absolute; bottom: 2px; font-size: 10px; font-weight: 600; opacity: .85; }
   .pad.cd { filter: grayscale(.8) brightness(.7); }
   #bl { left: 14px; bottom: 14px; } #br { left: 84px; bottom: 14px; } #bu { left: 49px; bottom: 84px; width: 48px; height: 40px; font-size: 18px; }
-  #bj { right: 14px; bottom: 14px; width: 70px; height: 70px; } #ba { right: 92px; bottom: 14px; width: 70px; height: 70px; } #bs { right: 52px; bottom: 92px; }
+  /* action buttons (owner 2026-11-15 "วางสกิล ui"): big round attack, jump beside it, 6 skills on two arcs round the attack button */
+  #ba { right: 22px; bottom: 22px; width: 88px; height: 88px; border-radius: 50%; font-size: 30px; }
+  #bj { right: 136px; bottom: 30px; width: 60px; height: 60px; border-radius: 50%; } #bs { display: none !important; }
+  .sk { position: fixed; display: none; width: 54px; height: 54px; border-radius: 50%; border: 3px solid #8fd8ff; background: radial-gradient(circle at 50% 35%, #2c5a86, #10233c);
+    box-shadow: inset 0 -4px 0 #0007, 0 3px 0 #000a; place-items: center; overflow: hidden; }
+  .sk svg { width: 34px; height: 34px; } .sk.ult { width: 64px; height: 64px; border-color: #ffd36a; background: radial-gradient(circle at 50% 35%, #6a4a1a, #2a1608); box-shadow: 0 0 12px #ffd36aaa, inset 0 -4px 0 #0007; }
+  .sk::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#000b calc(var(--p, 0) * 1turn), transparent 0); }
+  .sk b { position: absolute; z-index: 2; font: 800 16px Kanit, system-ui; color: #fff; text-shadow: 0 2px 0 #000; display: none; }
+  .sk i { position: absolute; z-index: 2; bottom: -1px; font: 600 9px Kanit, system-ui; font-style: normal; color: #e8f6ff; text-shadow: 0 1px 0 #000, 0 0 3px #000; white-space: nowrap; }
+  .sk.cd b { display: block; } .sk.cd svg { opacity: .45; }
   #snd { position: fixed; right: 10px; top: 10px; display: none; width: 40px; height: 40px; font-size: 18px; }
 </style>
 </head>
@@ -25,6 +34,7 @@
 <div class="pad" id="bl">◀</div><div class="pad" id="br">▶</div><div class="pad" id="bu">▲</div>
 <div class="pad" id="ba">⚔<small>ตี</small></div><div class="pad" id="bj">⤒<small>กระโดด</small></div><div class="pad" id="bs">💥<small id="bst">ทุบ</small></div>
 <div class="pad" id="snd">🔊</div>
+<div id="skills"></div>
 <script>
 'use strict';
 // HOODFALL, the side-view grinder made to look and feel like a real game (owner 2026-11-14 "ทำมาดูทำไมไม่เป็นเกมเลย"; map plan docs/side/map1_plan.md):
@@ -99,7 +109,7 @@ function music() {   // a soft looping forest tune: pentatonic plucks over a slo
 // ---------------------------------------------------------------- input
 const keys = {}, touch = {l: 0, r: 0, u: 0};
 addEventListener('keydown', e => { keys[e.code] = 1; if (state === 'title') return start(); if (e.repeat) return;
-  if (e.code === 'Space') jump(); if (e.code === 'KeyJ') attack(); if (e.code === 'KeyK') skill(); if ((e.code === 'KeyW' || e.code === 'ArrowUp') && !nearRope()) { if (near(CHEST, 50)) openChest(); else if (near(PORTALS[1], 50)) portal(); else jump(); } });
+  if (e.code === 'Space') jump(); if (e.code === 'KeyJ') attack(); if (e.code === 'KeyK') useSkill(0); if ((e.code === 'KeyW' || e.code === 'ArrowUp') && !nearRope()) { if (near(CHEST, 50)) openChest(); else if (near(PORTALS[1], 50)) portal(); else jump(); } });
 addEventListener('keyup', e => { keys[e.code] = 0; });
 cv.addEventListener('pointerdown', () => { if (state === 'title') start(); });
 const pad = id => document.getElementById(id);
@@ -108,7 +118,27 @@ hold('bl', 'l'); hold('br', 'r'); hold('bu', 'u', () => { if (!nearRope()) { if 
 pad('snd').onclick = () => { soundOn = !soundOn; pad('snd').textContent = soundOn ? '🔊' : '🔈'; };
 const near = (o, r) => Math.abs(o.x - P.x) < r && Math.abs(o.y - P.y) < 60;
 const nearRope = () => ROPES.find(r => Math.abs(r[0] - P.x) < 14 && P.y >= r[1] - 2 && P.y <= r[2] + 2);
-function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'bs', 'snd']) pad(id).style.display = 'grid'; }
+// ---- skill bar: the archer's 6 skills (docs/codex/action/ARCHER.md). Until her sheets come in, a skill plays the rabbit's slam and shows its name.
+const SK = [
+  {id: 'rain', name: 'ฝนธนู', cd: 8, key: 'Digit1', ic: '<path d="M16 26V6M11 11l5-5 5 5" stroke="#bff0ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 14v8M26 14v8M6 22l-2-3M6 22l2-3M26 22l-2-3M26 22l2-3" stroke="#6fd3ff" stroke-width="2" fill="none" stroke-linecap="round"/>'},
+  {id: 'gale', name: 'ธนูพายุ', short: 'พายุ', cd: 6, key: 'Digit2', ic: '<path d="M4 16h22M21 11l5 5-5 5" stroke="#bff0ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 9c4-3 9 0 6 3M8 23c4 3 9 0 6-3" stroke="#6fd3ff" stroke-width="2" fill="none" stroke-linecap="round"/>'},
+  {id: 'fan', name: 'ธนูพัด', cd: 4, key: 'Digit3', ic: '<path d="M6 16h20M6 16l18-9M6 16l18 9M22 14l4 2-4 2" stroke="#bff0ff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="16" r="2.5" fill="#6fd3ff"/>'},
+  {id: 'frost', name: 'ดอกน้ำแข็ง', short: 'น้ำแข็ง', cd: 10, key: 'Digit4', ic: '<path d="M16 4v24M5.6 10l20.8 12M5.6 22l20.8-12M13 6l3 3 3-3M13 26l3-3 3 3" stroke="#d8f6ff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'},
+  {id: 'flip', name: 'ตีลังกา', cd: 5, key: 'Digit5', ic: '<path d="M22 10a9 9 0 1 0 1 10" stroke="#6fd3ff" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M22 4v7h-7" stroke="#6fd3ff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 16h16M24 13l4 3-4 3" stroke="#bff0ff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'},
+  {id: 'wolf', name: 'วิญญาณหมาป่า', short: 'หมาป่า', cd: 30, key: 'Digit6', ult: true, ic: '<path d="M6 6l6 7h8l6-7-1 11-4 6-5 3-5-3-4-6z" fill="#ffe7a8" stroke="#ffb02a" stroke-width="1.6" stroke-linejoin="round"/><path d="M11 17l3 1M21 17l-3 1" stroke="#1a6aa8" stroke-width="2.4" stroke-linecap="round"/><path d="M14 23l2 1.5 2-1.5" stroke="#7a4a10" stroke-width="1.6" fill="none"/>'}];
+// two arcs round the attack button (dx left, dy up, from the attack button's centre)
+const SKPOS = [[-87, 50], [-42, 91], [17, 98], [-158, 58], [-112, 125], [-40, 168]];
+const SKCD = SK.map(() => 0);
+SK.forEach((k, i) => { const el = document.createElement('div'); el.className = 'sk' + (k.ult ? ' ult' : ''); el.id = 'sk' + i;
+  const r = k.ult ? 32 : 27, [dx, dy] = SKPOS[i]; el.style.right = (66 - dx - r) + 'px'; el.style.bottom = (66 + dy - r) + 'px';
+  el.innerHTML = `<svg viewBox="0 0 32 32">${k.ic}</svg><b></b><i>${k.short || k.name}</i>`; document.getElementById('skills').append(el);
+  el.addEventListener('pointerdown', e => { e.preventDefault(); useSkill(i); }); });
+addEventListener('keydown', e => { const i = SK.findIndex(k => k.key === e.code); if (i >= 0 && !e.repeat) useSkill(i); });
+function useSkill(i) { if (state !== 'play' || SKCD[i] > 0 || P.rope) return; SKCD[i] = SK[i].cd;
+  num(P.x, P.y - 96, SK[i].name, 'lvl'); A.on = true; A.n = 2; A.t = 0; A.queued = false; A.skill = true; SFX.swing(); }
+function skillBar(dt) { SK.forEach((k, i) => { SKCD[i] = Math.max(0, SKCD[i] - dt); const el = document.getElementById('sk' + i), c = SKCD[i];
+  el.classList.toggle('cd', c > 0); el.style.setProperty('--p', (c / k.cd).toFixed(3)); el.querySelector('b').textContent = c > 0 ? Math.ceil(c) : ''; }); }
+function start() { state = 'play'; audio(); for (const id of ['bl', 'br', 'bu', 'ba', 'bj', 'snd']) pad(id).style.display = 'grid'; for (const el of document.querySelectorAll('.sk')) el.style.display = 'grid'; }
 function jump() { if (state !== 'play') return; if (P.rope) { P.rope = null; P.vy = -380; P.vx = P.face * 160; return; } if (P.ground || P.jumps < 2) { P.vy = P.ground ? -560 : -480; P.ground = false; P.jumps++; SFX.jump(); } }
 function attack() { if (state !== 'play' || P.rope) return; if (A.on) { A.queued = true; return; } A.on = true; A.n = 0; A.t = 0; A.queued = false; SFX.swing(); }
 function skill() { if (state !== 'play' || H.skill > 0 || P.rope) return; H.skill = 6; A.on = true; A.n = 2; A.t = 0; A.queued = false; A.skill = true; SFX.swing(); }
@@ -118,7 +148,7 @@ function portal() { num(P.x, P.y - 110, 'แมพ 2 เร็วๆ นี้',
 function step(dt) {
   if (state === 'title') { titleT += dt; for (const m of MOBS) stepMob(m, dt, true); return; }
   if (stop > 0) { stop -= dt; return; }   // hit-stop: the world freezes for a blink on a hard hit
-  P.t += dt; H.inv = Math.max(0, H.inv - dt); H.skill = Math.max(0, H.skill - dt); shake = Math.max(0, shake - dt);
+  P.t += dt; skillBar(dt); H.inv = Math.max(0, H.inv - dt); H.skill = Math.max(0, H.skill - dt); shake = Math.max(0, shake - dt);
   const dir = (keys.KeyD || keys.ArrowRight || touch.r ? 1 : 0) - (keys.KeyA || keys.ArrowLeft || touch.l ? 1 : 0), up = keys.KeyW || keys.ArrowUp || touch.u, down = keys.KeyS || keys.ArrowDown;
   if (A.on) { const h = AC.hits[A.n]; A.t += dt * 1000; let t = A.t, i = 0; while (i < h.f.length - 1 && t >= h.ms[i]) t -= h.ms[i++];
     if (h.f[i] === h.hit && !A.hitDone) { A.hitDone = true; doHit(A.n); } if (h.f[i] !== h.hit) A.hitDone = false;
