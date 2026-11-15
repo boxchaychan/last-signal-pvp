@@ -192,7 +192,7 @@ const ARC = img(SG + 'archer.webp'), VFXR = img('art/incoming/archer/vfx_rain_sh
 // per move: ms per frame, frames where arrows leave the bow, frames held longer (the big pull before a heavy shot)
 // shot3 (owner "เอาฮิต 3 ที่มันกระโดดแล้วย่อ เปลี่ยนเป็นย่อตัวยิงก็พอ"): only the frames on the ground are played (seq), the jump frames 2-5 and 9 are left out;
 // shot1 -> shot2 spaced out a little more (owner "ฮิต 1 2 ติดกันเกินไปไหม"): a short aim hold before shot2's first arrow, its two arrows further apart
-const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [5, 8], hold: {4: 100, 7: 70}}, shot3: {ms: 50, seq: [0, 1, 6, 7, 8, 10, 11], fire: [4], hold: {1: 90, 3: 150, 4: 110}},
+const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [5, 8], hold: {4: 100, 7: 70}}, shot3: {ms: 50, seq: [0, 1, 1, 1, 6, 7, 8, 10, 11], fire: [1, 6], hold: {1: 80, 2: 80, 3: 80, 5: 150, 6: 110}, spin: [1, 4]},
   skill_rain: {ms: 52, fire: [6], hold: {5: 120}}, skill_gale: {ms: 50, fire: [6], hold: {5: 200}}, skill_fan: {ms: 48, fire: [7], hold: {6: 120}},
   skill_frost: {ms: 52, fire: [5]}, skill_flip: {ms: 50, fire: [6]}, skill_wolf: {ms: 58, fire: [8], hold: {7: 320}}};
 const mvLen = (k, i) => (MV[k].hold && MV[k].hold[i]) || MV[k].ms, mvN = k => MV[k] && MV[k].seq ? MV[k].seq.length : AJ ? AJ.rows[k].n : 12;
@@ -345,6 +345,7 @@ const SFXA = {bow: () => { tone(900, .06, 'triangle', .05, .5); noise(.08, .05, 
 function fire(k, n) { const f = P.face;
   if (k === 'shot1') { arrow({}); SFXA.bow(); }
   else if (k === 'shot2') { arrow({dmg: .85, y: P.y - 42 + (n ? 4 : -2)}); SFXA.bow(); }
+  else if (k === 'shot3' && n === 0) { SFX.swing(); noise(.25, .06, 2500, .08); }   // the spin (owner "ฮิตท้ายหมุนตัวยิงได้ไหม")
   else if (k === 'shot3') { arrow({dmg: 2.2, big: 1, pierce: 3, vx: f * 900, kb: f * 300, life: .7, y: P.y - 36}); SFXA.big(); shake = .12; shakeAmp = 2; }
   else if (k === 'skill_rain') { FX.push({k: 'rain', x: P.x + f * 190, y: P.y, t: 0, life: 3.1, tick: .7}); SFXA.bow(); }
   else if (k === 'skill_gale') { arrow({dmg: 2.8, big: 2, pierce: 99, vx: f * 820, kb: f * 380, life: .8}); SFXA.big(); shake = .22; shakeAmp = 3; P.vx = -f * 200; }
@@ -398,7 +399,12 @@ function drawArcher() { if (!AJ || !ARC.width) return; if (H.inv && H.inv < .65 
   if (k === 'idle') f = Math.floor((now - DRW.idle0) * 8) % 12;
   const r = AJ.rows[k]; f = clamp(f, 0, r.n - 1); DRW.row = r.row; DRW.f = f; const sc = K / AJ.k;
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.translate((Math.round(P.x) - Math.round(cam.x) + SH) * K, (Math.round(P.y) - Math.round(cam.y)) * K);
-  ctx.scale(P.face * sc, sc); const b = DRW.bl, bk = b ? (now - b.t) / .11 : 1;
+  // spin before the finisher: one full turn done by squashing the picture through its mirror (cos), with a wind ring round her
+  let spx = 1; if (A.on && MV[A.mv] && MV[A.mv].spin) { const [s0, s1] = MV[A.mv].spin; let t0 = 0, t1 = 0; for (let i = 0; i < s1; i++) { if (i < s0) t0 += mvLen(A.mv, i); t1 += mvLen(A.mv, i); }
+    const p = (A.t - t0) / (t1 - t0); if (p > 0 && p < 1) { const c = Math.cos(p * Math.PI * 2); spx = Math.sign(c || 1) * Math.max(.12, Math.abs(c));
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 3; i++) { ctx.strokeStyle = `rgba(140,220,255,${.5 - i * .14})`; ctx.lineWidth = K * (2.5 - i * .6); ctx.beginPath();
+        ctx.ellipse(0, -40 * K, (30 + i * 6) * K, (11 + i * 2) * K, 0, p * 9 + i, p * 9 + i + 4.2); ctx.stroke(); } ctx.restore(); } }
+  ctx.scale(P.face * sc * spx, sc); const b = DRW.bl, bk = b ? (now - b.t) / .11 : 1;
   if (b && bk < 1) { ctx.globalAlpha = 1 - bk; ctx.drawImage(ARC, b.f * AJ.w, b.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.globalAlpha = Math.min(1, .35 + bk); } else DRW.bl = null;
   ctx.drawImage(ARC, f * AJ.w, r.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.restore(); }
 // ---------------------------------------------------------------- drawing
