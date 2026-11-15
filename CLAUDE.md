@@ -38,7 +38,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Per champion: GPT big-pixel 3-view sheet (free) → PixelLab redraw B at body 128 (1 credit; say the cost, the owner's "เทส" / "เจน" is the go-ahead) → for the bag game only the SIDE view is used, so clips are ordered east only: character 4 + idle 1 + attack combo 4 + hurt 1 + death 1 ≈ 12 credits, only on "เจน".
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
-## NEWEST (owner 2026-11-15, latest): kaiju city-smasher game, idea only: the owner's purple kaiju `art/incoming/thai/mobs/owner_kaiju_purple.webp` is its hero; notes + open questions in the last section of `docs/action-game.md`; start there on "เกมถล่มเมือง".
+## NEWEST (owner 2026-11-15, latest): kaiju city-smasher game: 3D-pixel test `kaiju.html` (box city in three.js, locked camera with 4 angle presets, stomp / breath, buildings collapse); kaiju = the owner's GPT 4-view pixel sheet (`art/kaiju/k16_*`; PixelLab re-angles looked like another monster). Notes + open questions in the last section of `docs/action-game.md`; start there on "เกมถล่มเมือง".
 
 ## NEWEST (owner 2026-11-15): stone-age kingdom builder `kingdom.html`
 - Big isometric map (code-generated) + PixelLab starter art (40 credits) in `art/kingdom/` (original colours: the owner prefers them for the city look, no punch). Target look `art/incoming/citytest/scene3_stoneage.png`. Owner's long-term goal: a big city builder. Notes at the end of `docs/action-game.md`.
