@@ -197,7 +197,9 @@ const ARC = img(SG + 'archer.webp'), VFXR = img('art/incoming/archer/vfx_rain_sh
 // per move: ms per frame, frames where arrows leave the bow, frames held longer (the big pull before a heavy shot)
 // shot3 (owner "เอาฮิต 3 ที่มันกระโดดแล้วย่อ เปลี่ยนเป็นย่อตัวยิงก็พอ"): only the frames on the ground are played (seq), the jump frames 2-5 and 9 are left out;
 // shot1 -> shot2 spaced out a little more (owner "ฮิต 1 2 ติดกันเกินไปไหม"): a short aim hold before shot2's first arrow, its two arrows further apart
-const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [5, 8], hold: {4: 100, 7: 70}}, shot3: {ms: 50, seq: [0, 1, 1, 1, 6, 7, 8, 10, 11], fire: [1, 6], hold: {1: 150, 2: 150, 3: 150, 5: 150, 6: 110}, spin: [1, 4], turns: 2},
+const MV = {shot1: {ms: 42, fire: [8]}, shot2: {ms: 46, fire: [7, 10], hold: {5: 100, 9: 70}}, shot3: {ms: 50, seq: [0, 1, 1, 1, 6, 7, 8, 10, 11], fire: [1, 6], hold: {1: 150, 2: 150, 3: 150, 5: 150, 6: 110}, spin: [1, 4], turns: 2},
+  // the real spin finisher from Codex (shot3_spin.png): its 4 turning frames played twice = 2 turns (owner "2 รอบ")
+  shot3_spin: {ms: 55, seq: [0, 1, 2, 3, 4, 5, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], fire: [2, 11], hold: {1: 90, 10: 150, 11: 110}},
   skill_rain: {ms: 52, fire: [6], hold: {5: 120}}, skill_gale: {ms: 50, fire: [6], hold: {5: 200}}, skill_fan: {ms: 48, fire: [7], hold: {6: 120}},
   skill_frost: {ms: 52, fire: [5]}, skill_flip: {ms: 50, fire: [6]}, skill_wolf: {ms: 58, fire: [8], hold: {7: 320}}};
 const mvLen = (k, i) => (MV[k].hold && MV[k].hold[i]) || MV[k].ms, mvN = k => MV[k] && MV[k].seq ? MV[k].seq.length : AJ ? AJ.rows[k].n : 12;
@@ -275,7 +277,7 @@ function step(dt) {
   if (ARCHER && (keys.KeyJ || touch.a) && !P.rope) { if (!A.on) startMove('shot1'); else if (/^shot/.test(A.mv)) A.queued = true; }
   if (ARCHER && A.on) { A.t += dt * 1000; const i = mvFrame(A.mv, A.t);
     for (let f = A.fired + 1; f <= i; f++) if (MV[A.mv].fire.includes(f)) fire(A.mv, MV[A.mv].fire.indexOf(f)); A.fired = i;
-    if (A.t >= mvDur(A.mv)) { const nx = {shot1: 'shot2', shot2: 'shot3'}[A.mv]; if (A.queued && nx) startMove(nx); else A.on = false; } }
+    if (A.t >= mvDur(A.mv)) { const nx = {shot1: 'shot2', shot2: AJ && AJ.rows.shot3_spin ? 'shot3_spin' : 'shot3'}[A.mv]; if (A.queued && nx) startMove(nx); else A.on = false; } }
   stepShots(dt);
   if (!ARCHER && A.on) { const h = AC.hits[A.n]; A.t += dt * 1000; let t = A.t, i = 0; while (i < h.f.length - 1 && t >= h.ms[i]) t -= h.ms[i++];
     if (h.f[i] === h.hit && !A.hitDone) { A.hitDone = true; doHit(A.n); } if (h.f[i] !== h.hit) A.hitDone = false;
@@ -353,8 +355,8 @@ const SFXA = {bow: () => { tone(900, .06, 'triangle', .05, .5); noise(.08, .05, 
 function fire(k, n) { const f = P.face;
   if (k === 'shot1') { arrow({}); SFXA.bow(); }
   else if (k === 'shot2') { arrow({dmg: .85, y: P.y - BH * .52 + (n ? 3 : -2)}); SFXA.bow(); }
-  else if (k === 'shot3' && n === 0) { SFX.swing(); noise(.25, .06, 2500, .08); }   // the spin (owner "ฮิตท้ายหมุนตัวยิงได้ไหม")
-  else if (k === 'shot3') { arrow({dmg: 2.2, big: 1, pierce: 3, vx: f * 900, kb: f * 300, life: .7, y: P.y - BH * .45}); SFXA.big(); shake = .12; shakeAmp = 2; }
+  else if ((k === 'shot3' || k === 'shot3_spin') && n === 0) { SFX.swing(); noise(.25, .06, 2500, .08); }   // the spin (owner "ฮิตท้ายหมุนตัวยิงได้ไหม")
+  else if (k === 'shot3' || k === 'shot3_spin') { arrow({dmg: 2.2, big: 1, pierce: 3, vx: f * 900, kb: f * 300, life: .7, y: P.y - BH * .45}); SFXA.big(); shake = .12; shakeAmp = 2; }
   else if (k === 'skill_rain') { FX.push({k: 'rain', x: P.x + f * 190, y: P.y, t: 0, life: 3.1, tick: .7}); SFXA.bow(); }
   else if (k === 'skill_gale') { arrow({dmg: 2.8, big: 2, pierce: 99, vx: f * 820, kb: f * 380, life: .8}); SFXA.big(); shake = .22; shakeAmp = 3; P.vx = -f * 200; }
   else if (k === 'skill_fan') { for (let i = -2; i <= 2; i++) arrow({vy: i * 150, vx: f * (760 - Math.abs(i) * 30), dmg: .95, kb: f * 200, life: .55}); SFXA.bow(); SFXA.big(); shake = .1; }

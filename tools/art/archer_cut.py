@@ -9,8 +9,8 @@ import json, os, sys
 import numpy as np
 from PIL import Image
 SRC, DST = 'art/incoming/archer', 'art/sidegame'
-MOVES = ['idle', 'run', 'shot1', 'shot2', 'shot3', 'jump', 'hurt', 'death', 'skill_rain', 'skill_gale', 'skill_fan', 'skill_frost', 'skill_flip', 'skill_wolf']
-SKIP = {'shot2': [2, 3]} if not os.environ.get('NOSKIP') else {}
+MOVES = ['idle', 'run', 'shot1', 'shot2', 'shot3', 'shot3_spin', 'jump', 'hurt', 'death', 'skill_rain', 'skill_gale', 'skill_fan', 'skill_frost', 'skill_flip', 'skill_wolf']
+SKIP = {}   # shot2 frames 2-3 were redrawn by Codex in side view (2026-11-15)
 BODY, OUT_K = 80, 3          # world px tall (the rabbit is ~75), stored 3x
 def key(rgb):
     r, g, b = [rgb[..., i].astype(float) for i in range(3)]
