@@ -125,13 +125,14 @@ const postM = new THREE.ShaderMaterial({
   depthTest: false, depthWrite: false });
 postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postM));
 
-const SSTEP = [1, 1.5, 2, 3, 4, 5, 6];   // device pixels per game pixel (1.5 only matters on sharp phone screens)
+const SSTEP = [1, 1.5, 2, 3, 4, 5, 6];
+const BASE_U = 24 / 204;   // the 204 px set: its default zoom decides the screen pixel size for all sets   // device pixels per game pixel (1.5 only matters on sharp phone screens)
 let U = .125, T = 8, rw = 2, rh = 2, S = 2, zS = 0, rt = null, pitch = 0, yaw = 0;
 const R = new V3(), F = new V3(), UPV = new V3(), TOC = new V3();
 
 function layout() {
   const dpr = window.devicePixelRatio || 1, dw = Math.round(innerWidth * dpr), dh = Math.round(innerHeight * dpr);
-  const want = ZOOMS[zoomI] / U;
+  const want = ZOOMS[zoomI] / BASE_U;   // pixel size on screen is the same for every kaiju set (owner "ไม่ต้องขยาย": the 128 kaiju is not blown up)
   S = zS || SSTEP.reduce((a, v) => Math.abs(v - dh / want) < Math.abs(a - dh / want) ? v : a, 2);
   const fit = () => { rh = Math.ceil(dh / S); rh += rh & 1; rw = Math.ceil(dw / S); rw += rw & 1; };
   fit(); while (rw * rh > 1400000) { S = SSTEP[Math.min(SSTEP.length - 1, SSTEP.indexOf(S) + 1)]; fit(); if (S === SSTEP[SSTEP.length - 1]) break; }
