@@ -1114,7 +1114,7 @@ const GAME = window.GAME = (function () {
   function shoot(b, e) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(.12, .12, 2.4), new THREE.MeshLambertMaterial({ color: 0x8a6238 }));
     const y0 = groundY(b.x, b.z) + 7.5; m.position.set(b.x, y0, b.z); scene.add(m);
-    G.shots.push({ m, x0: b.x, y0, z0: b.z, e, t: 0, dur: Math.max(.25, Math.hypot(e.x - b.x, e.z - b.z) / 45), dmg: BT.tower.dmg * (1 + .05 * (G.day - 1)) });
+    G.shots.push({ m, x0: b.x, y0, z0: b.z, e, t: 0, dur: Math.max(.25, Math.hypot(e.x - b.x, e.z - b.z) / 45), dmg: BT.tower.dmg * (1 + .05 * (G.day - 1)) * (1 + ((b.lv || 1) - 1) * .5) });
     sfx('throw');
   }
   function shotStep(dt) {
@@ -1202,6 +1202,7 @@ const GAME = window.GAME = (function () {
     for (const el of [hudEl.btn, hudEl.bar, hudEl.conf]) el.addEventListener('pointerdown', stop);
     hudEl.btn.addEventListener('pointerdown', () => { au(); hudEl.bar.classList.toggle('open'); if (!hudEl.bar.classList.contains('open')) cancelBuild(); });
     $('gOk').addEventListener('pointerdown', e => { e.stopPropagation(); confirmBuild(); });
+    const sst = document.createElement('style'); sst.textContent = '#gSel { left: 50%; bottom: 100px; transform: translateX(-50%); display: none; padding: 6px 12px 8px; font: 600 12px Kanit, sans-serif; text-align: center; max-width: 90vw; } #gSel b { font-weight: 800; font-size: 14px; text-shadow: var(--ol); } #gSel button { margin-top: 5px; font: 800 12px Kanit, sans-serif; color: #fff; padding: 5px 10px; border-radius: 10px; border: 2px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#5ac85a, #2a8a2a); } #gSel #gRep { background: linear-gradient(#c8a04a, #8a6a1a); }'; document.head.appendChild(sst);
     $('gNo').addEventListener('pointerdown', e => { e.stopPropagation(); cancelBuild(); });
     for (const t of BUILD_ORDER) {
       const c = document.createElement('div'); c.className = 'gCard'; c.dataset.t = t;
@@ -1276,10 +1277,32 @@ const GAME = window.GAME = (function () {
     const keep = t; G.mode = null; startBuild(keep);   // keep building the same thing
   }
   function tap(cx, cy) {
-    if (!G.mode) return;
     const rc = cv.getBoundingClientRect(); ndc.set((cx - rc.left) / rc.width * 2 - 1, -((cy - rc.top) / rc.height) * 2 + 1);
     ray.setFromCamera(ndc, cam); const hit = ray.intersectObjects(TERRAIN, false)[0]; if (!hit) return;
-    G.ghostAt = { x: hit.point.x, z: hit.point.z }; checkGhost();
+    if (G.mode) { G.ghostAt = { x: hit.point.x, z: hit.point.z }; checkGhost(); return; }
+    let best = null, bd = 1e9; for (const b of G.buildings) { const d = Math.hypot(b.x - hit.point.x, b.z - hit.point.z); if (d < b.r + 2.5 && d < bd) { bd = d; best = b; } }
+    select(best);
+  }
+  // ---------- tap a building: level, HP, upgrade, repair
+  const UPG = { tower: 'แรงขึ้น ยิงไกลขึ้น เร็วขึ้น', hut: 'รับคนเพิ่ม +3', wall: 'ทนขึ้น +60%', fire: 'รักษาเร็วขึ้น', farm: 'อาหารเพิ่ม +60%', hall: 'ทนขึ้น +250 · ดินแดนกว้างขึ้น', store: 'ทนขึ้น', outpost: 'ดินแดนกว้างขึ้น +10' };
+  function upCost(b) { const l = b.lv || 1; return { wood: 40 * l, stone: 30 * l }; }
+  function select(b) {
+    G.sel = b; if (!hudEl.sel) { hudEl.sel = document.createElement('div'); hudEl.sel.id = 'gSel'; hudEl.sel.className = 'pnl'; $('hud').appendChild(hudEl.sel); hudEl.sel.addEventListener('pointerdown', e => e.stopPropagation()); }
+    if (!b) { hudEl.sel.style.display = 'none'; return; }
+    const l = b.lv || 1, uc = upCost(b), rep2 = Math.ceil((b.max - b.hp) / 8);
+    hudEl.sel.style.display = 'block';
+    hudEl.sel.innerHTML = `<b>${BT[b.type].n}</b> ขั้น ${l} · HP ${Math.round(b.hp)}/${b.max}<br>` + (l < 3 && UPG[b.type] ? `<button id="gUp">อัปเกรด: ${UPG[b.type]} (${costTxt(uc)})</button>` : '<i>ขั้นสูงสุด</i>') + (b.hp < b.max ? ` <button id="gRep">ซ่อม (ไม้ ${rep2})</button>` : '');
+    const up = $('gUp'), rp = $('gRep');
+    if (up) up.addEventListener('pointerdown', e => { e.stopPropagation(); if (!canPay(uc)) { say('ทรัพยากรไม่พอ', 900); return; } pay(uc); upgrade(b); select(b); save(); });
+    if (rp) rp.addEventListener('pointerdown', e => { e.stopPropagation(); if (G.res.wood < rep2) { say('ไม้ไม่พอ', 900); return; } G.res.wood -= rep2; b.hp = b.max; select(b); });
+  }
+  function upgrade(b) {
+    b.lv = (b.lv || 1) + 1; const k = 1.6; sfx('build'); float(b.x, groundY(b.x, b.z) + 7, b.z, 'อัปเกรด!', '#9aff8a');
+    if (b.type === 'hut') G.popCap += 3;
+    else if (b.type === 'hall') { b.max += 250; b.hp += 250; G.terr[0].r += 8; drawTerr(); }
+    else if (b.type === 'outpost') { const t = G.terr.find(t => t.b === b); if (t) { t.r += 10; drawTerr(); } }
+    else { b.max = Math.round(b.max * (b.type === 'wall' ? 1.6 : 1.25)); b.hp = b.max; }
+    b.g.scale.multiplyScalar(1.08);
   }
 
   // ---------- overlay: HP bars + floating numbers
@@ -1310,7 +1333,7 @@ const GAME = window.GAME = (function () {
 
   // ---------- save / load / screens
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp)]) })); } catch (_) {}
+    try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp), b.lv || 1]) })); } catch (_) {}
   }
   function load() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch (_) { return null; } }
   function screen(html, buttons, dark) {
@@ -1335,9 +1358,10 @@ const GAME = window.GAME = (function () {
     G.terr.push({ x: VX, z: VZ, r: 60 }); drawTerr(); seedNodes(VX, VZ, 72);
     const n0 = saved ? Math.max(4, saved.vill) : 8;
     for (let i = 0; i < n0; i++) { const a = rnd() * 6.28, r = 6 + rnd() * 10; addVillager(VX + Math.cos(a) * r, VZ + Math.sin(a) * r); }
-    if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp] of saved.b) addBuilding(t, x, z, ry, hp); }
+    if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp, lv] of saved.b) { const b = addBuilding(t, x, z, ry); for (let i = 1; i < (lv || 1); i++) upgrade(b); b.hp = Math.min(b.max, hp); } }
     makeSites(); makeMinimap(); G.on = true; sky(); updHud(); save();
     say(saved ? `กลับมาที่เผ่า · วันที่ ${G.day}` : 'วันที่ 1 · สร้างบ้านและเตรียมป้องกันก่อนค่ำ!', 3500);
+    G.tut = saved ? 99 : 0;
   }
   function init() {
     ghostMat = new THREE.MeshLambertMaterial({ color: 0x6aff7a, transparent: true, opacity: .55, depthWrite: false });
@@ -1413,13 +1437,17 @@ const GAME = window.GAME = (function () {
       G.raid = null; const bonus = 10 + G.day * 5; G.res.food += bonus; say(`รอดคืนที่ ${G.day} แล้ว! ได้อาหาร +${bonus}`, 3000); sfx('dawn'); save();
     }
     if (night) raidStep(dt);
+    if (G.tut < 99) {   // first-day tips, one at a time
+      const T2 = [[4, 'กด สร้าง (มุมขวาล่าง) แล้วเลือก หอพุ่งหอก · วางใกล้ประตูรั้ว'], [30, 'ชาวเผ่าตัดไม้ ขุดหิน เก็บเบอร์รี่ ล่าสัตว์เอง · สร้าง กระท่อม เพื่อเพิ่มคน'], [60, 'แตะสิ่งก่อสร้างเพื่อ อัปเกรด หรือ ซ่อม'], [90, 'แผนที่ย่อมุมซ้ายบน: จุดขาว/ชมพู = เหมืองหิน/ดงเบอร์รี่ · ตั้ง ด่านหน้า เพื่อขยายไปถึง'], [DAY + 2, 'ค่ำแล้ว! ศัตรูมาจากนอกดินแดน · ลูกศรแดงขอบจอชี้ทางศัตรู']];
+      if (G.day === 1 && G.tut < T2.length && G.t > T2[G.tut][0]) { say(T2[G.tut][1], 5500); G.tut++; }
+    }
     sky();
     // economy
     for (const b of G.buildings) {
       if (b.rise < 1) { b.rise = Math.min(1, b.rise + dt * 1.5); b.g.scale.set(1, .05 + .95 * b.rise, 1); }
-      if (b.type === 'farm' && !night) G.res.food += BT.farm.food * dt;
+      if (b.type === 'farm' && !night) G.res.food += BT.farm.food * (1 + ((b.lv || 1) - 1) * .6) * dt;
       if (!night && b.hp < b.max) b.hp = Math.min(b.max, b.hp + b.max * .012 * dt);   // villagers patch things up by day
-      if (b.type === 'tower') { b.cd -= dt; if (b.cd <= 0) { let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.flee) continue; const d = Math.hypot(x.x - b.x, x.z - b.z); if (d < ed) { ed = d; e = x; } } if (e && ed < BT.tower.range) { shoot(b, e); b.cd = BT.tower.rate; } else b.cd = .3; } }
+      if (b.type === 'tower') { const lv = b.lv || 1; b.cd -= dt; if (b.cd <= 0) { let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.flee) continue; const d = Math.hypot(x.x - b.x, x.z - b.z); if (d < ed) { ed = d; e = x; } } if (e && ed < BT.tower.range + (lv - 1) * 5) { shoot(b, e); b.cd = BT.tower.rate / (1 + (lv - 1) * .25); } else b.cd = .3; } }
     }
     for (const n of G.nodes) if (n.regrow && n.amt < n.max) n.amt = Math.min(n.max, n.amt + dt * .25);
     G.eatT += dt; if (G.eatT > 20) { G.eatT = 0; const eat = Math.ceil(G.vill.length / 2); G.res.food = Math.max(0, G.res.food - eat); if (G.res.food <= 0 && G.vill.length > 3) { const v = G.vill[G.vill.length - 1]; hurtVillager(v, 99); say('อาหารหมด! ชาวเผ่าอดตาย', 2000); } }
