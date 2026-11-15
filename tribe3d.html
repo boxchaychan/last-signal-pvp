@@ -711,6 +711,7 @@ function updParticles(dt) {
     pLife[i] -= dt; const k = 1 - pLife[i] / pMax[i];
     pPos[i * 3] += pV[i * 3] * dt; pPos[i * 3 + 1] += pV[i * 3 + 1] * dt; pPos[i * 3 + 2] += pV[i * 3 + 2] * dt;
     if (pKind[i] === 1) { const c = FR[Math.min(3, k * 4.2 | 0)]; pCol[i * 3] = c[0]; pCol[i * 3 + 1] = c[1]; pCol[i * 3 + 2] = c[2]; pSize[i] = pS0[i] * (1 - k * .5); pAl[i] = 1 - k * k; }
+    else if (pKind[i] === 3) { pCol[i * 3] = 1; pCol[i * 3 + 1] = .95 - k * .3; pCol[i * 3 + 2] = .7 - k * .55; pSize[i] = pS0[i] * (1 - k * .6); pAl[i] = 1 - k; pV[i * 3 + 1] -= dt * 6; }   // gold sparks (skills)
     else if (pKind[i] === 2) { pCol[i * 3] = .85; pCol[i * 3 + 1] = 1; pCol[i * 3 + 2] = .45; pSize[i] = pS0[i]; pAl[i] = Math.sin(k * Math.PI) * (.6 + .4 * Math.sin(pLife[i] * 9 + i)); }
     else { const g = timeI === 2 ? .35 : .78; pCol[i * 3] = g; pCol[i * 3 + 1] = g; pCol[i * 3 + 2] = g * 1.04; pSize[i] = pS0[i] * (1 + k * 1.5); pAl[i] = (1 - k) * .55; }
     if (pLife[i] <= 0) pAl[i] = 0;
@@ -799,7 +800,8 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
 const GAME = window.GAME = (function () {
   const DAY = 110, DUSK = 10, NIGHT = 65, DAWN = 8, CYCLE = DAY + DUSK + NIGHT + DAWN;
   const G = { on: false, res: { wood: 110, stone: 60, food: 90 }, popCap: 0, day: 1, t: 0, speed: 1, over: false, best: 0,
-    buildings: [], vill: [], enemies: [], shots: [], nodes: [], terr: [], floats: [], mode: null, ghost: null, ghostOk: false, ghostAt: null, killed: 0, raid: null, birthT: 0, eatT: 0 };
+    buildings: [], vill: [], enemies: [], shots: [], nodes: [], terr: [], floats: [], mode: null, ghost: null, ghostOk: false, ghostAt: null, killed: 0, raid: null, birthT: 0, eatT: 0,
+    cd: { spear: 0, pot: 0, drum: 0 }, aim: null, buff: 0, zones: [], later: [], spears: [], rings: [], shake: 0 };
   const SAVE = 'tribe3d_v1', BEST = 'tribe3d_best';
   const RES_N = { wood: 'ไม้', stone: 'หิน', food: 'อาหาร' };
   const BT = {   // building types
@@ -968,8 +970,8 @@ const GAME = window.GAME = (function () {
       if (v.job && v.job.w) v.job.w--; v.job = null; v.carry = null; v.st = 'idle'; v.t = 1;
       let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.def.fly && x.y > 4) continue; const d = Math.hypot(x.x - v.x, x.z - v.z); if (d < ed) { ed = d; e = x; } }
       if (e && ed < 26) {
-        if (ed > e.def.r + 1.4) { moveTo(v, e.x, e.z, 5.2, dt); moving = true; v.face = Math.atan2(e.x - v.x, e.z - v.z); }
-        else { v.atk -= dt; v.face = Math.atan2(e.x - v.x, e.z - v.z); if (v.atk <= 0) { v.atk = 1; hurtEnemy(e, 6, v); setPose(v, 'thrust'); v.tp = .3; } }
+        if (ed > e.def.r + 1.4) { moveTo(v, e.x, e.z, G.buff > 0 ? 7.4 : 5.2, dt); moving = true; v.face = Math.atan2(e.x - v.x, e.z - v.z); }
+        else { v.atk -= dt; v.face = Math.atan2(e.x - v.x, e.z - v.z); if (v.atk <= 0) { v.atk = G.buff > 0 ? .6 : 1; hurtEnemy(e, G.buff > 0 ? 15 : 6, v); setPose(v, 'thrust'); v.tp = .3; } }
       } else { const h = G.hall; if (h && Math.hypot(h.x - v.x, h.z - v.z) > 9) { moveTo(v, h.x + Math.cos(v.ang) * 7, h.z + Math.sin(v.ang) * 7, 4.5, dt); moving = true; v.face = Math.atan2(h.x - v.x, h.z - v.z); } }
     } else if (v.st === 'idle') { v.t -= dt; if (v.t <= 0) pickJob(v); }
     else if (v.st === 'go') {
@@ -1026,7 +1028,7 @@ const GAME = window.GAME = (function () {
   function setEm(e, r, g, b) { e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(r, g, b); } }); }
   function flash(e) { setEm(e, .8, .15, .1); e.fl = .12; }
   function hurtEnemy(e, dmg, by) {
-    if (e.dead) return; e.hp -= dmg; flash(e); float(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 3.5, e.z, '-' + Math.round(dmg), '#ff8a6a');
+    if (e.dead) return; e.hp -= dmg; flash(e); if (FXA.length < 60) fx('spark', e.x + (rnd() - .5), (e.fly ? e.y : groundY(e.x, e.z)) + 1 + rnd(), e.z + (rnd() - .5), { k: .5 }); float(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 3.5, e.z, '-' + Math.round(dmg), '#ff8a6a');
     for (let i = 0; i < 6; i++) spawnP(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 1.2, e.z, (rnd() - .5) * 5, 2 + rnd() * 4, (rnd() - .5) * 5, .45, 3, 0);
     if (e.hp <= 0) {
       e.dead = true; G.killed++; scene.remove(e.ring); if (e.mixer) play(e, 'Death');
@@ -1047,13 +1049,13 @@ const GAME = window.GAME = (function () {
     if (e.fl > 0) { e.fl -= dt; if (e.fl <= 0) setEm(e, .16, .03, .02); }
     if (e.dead) { e.dieT -= dt; if (e.fly) { e.y = Math.max(groundY(e.x, e.z), e.y - dt * 12); e.root.rotation.z += dt * 2; } if (e.dieT <= 0) { scene.remove(e.root); e.gone = true; } place(e); return; }
     if (e.flee) { const a = Math.atan2(e.z - VZ, e.x - VX); moveTo(e, e.x + Math.cos(a) * 30, e.z + Math.sin(a) * 30, e.def.spd * 1.2, dt); e.face = a; e.fleeT -= dt; if (e.fleeT <= 0) { scene.remove(e.root); scene.remove(e.ring); e.gone = true; } place(e); return; }
-    e.retarget = (e.retarget || 0) - dt;
+    e.retarget = (e.retarget || 0) - dt; if (e.slow > 0) e.slow -= dt;
     if (!e.target || e.target.dead || e.retarget <= 0) { e.target = enemyTarget(e); e.retarget = 1.5; e.wp = []; }
     const t = e.target; if (!t) { place(e); return; }
     const tr = (t.r || .6) + e.def.r + .6, d = Math.hypot(t.x - e.x, t.z - e.z);
     if (e.fly) {   // circle high, then dive onto the target
       e.ph = (e.ph || 0) + dt; e.wings.forEach((w, i) => { w.rotation.z = Math.sin(e.ph * 7) * .7 * (i ? -1 : 1); });
-      if (d > tr + 2) { moveTo(e, t.x, t.z, e.def.spd, dt); e.y += ((groundY(e.x, e.z) + 16) - e.y) * Math.min(1, dt * 2); e.face = Math.atan2(t.x - e.x, t.z - e.z); }
+      if (d > tr + 2) { moveTo(e, t.x, t.z, e.def.spd * (e.slow > 0 ? .55 : 1), dt); e.y += ((groundY(e.x, e.z) + 16) - e.y) * Math.min(1, dt * 2); e.face = Math.atan2(t.x - e.x, t.z - e.z); }
       else { e.y += ((groundY(e.x, e.z) + 3) - e.y) * Math.min(1, dt * 3); e.atk -= dt; if (e.atk <= 0 && e.y < groundY(e.x, e.z) + 5) { e.atk = 2.2; hitTarget(e, t); } }
       place(e); return;
     }
@@ -1070,7 +1072,7 @@ const GAME = window.GAME = (function () {
       if (e.mixer) play(e, e.acts.Attack ? 'Attack' : e.acts.Attack_Headbutt ? 'Attack_Headbutt' : 'Idle');
       e.face = Math.atan2(t.x - e.x, t.z - e.z); e.atk -= dt; if (e.atk <= 0) { e.atk = 1.3; hitTarget(e, t); }
     } else {
-      const ox2 = e.x, oz2 = e.z; moveTo(e, gx, gz, e.def.spd, dt); e.face = Math.atan2(gx - ox2, gz - oz2);
+      const ox2 = e.x, oz2 = e.z; moveTo(e, gx, gz, e.def.spd * (e.slow > 0 ? .55 : 1), dt); e.face = Math.atan2(gx - ox2, gz - oz2);
       const bl = blocker(e, e.x, e.z); if (bl) { e.x = ox2; e.z = oz2; e.target = bl; e.retarget = 4; }
       if (e.mixer) play(e, 'Gallop');
     }
@@ -1127,11 +1129,200 @@ const GAME = window.GAME = (function () {
     G.shots = G.shots.filter(s => !s.done);
   }
 
+  // ---------- sprite effects: CC0 PVFX Foundry sheets (art/pvfx/), drawn 1:1 at 8 px per unit like the world.
+  // One texture per effect; every frame has its own small quad geometry (shared), so sprites never copy textures.
+  const FXS = {}, FXA = [], FXL = { slam: 'impacts/ground-slam', boom: 'explosions/big-explosion', nova: 'explosions/fire-nova', flames: 'fire/ground-flames', dust: 'smoke/dust-puff', spark: 'impacts/hit-spark', aura: 'status/power-up-aura' };
+  function loadFx() {
+    const tl = new THREE.TextureLoader();
+    return Promise.all(Object.entries(FXL).map(([k, p]) => fetch(`art/pvfx/${p}/manifest.json`).then(r => r.json()).then(m => tl.loadAsync(`art/pvfx/${p}/sprite-sheet.png`).then(tex => {
+      tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
+      const W = tex.image.width, H = tex.image.height, sw = m.source_size[0], sh = m.source_size[1];
+      const F = { tex, sw, sh, px: m.pivot[0] / sw, py: 1 - m.pivot[1] / sh, loop: m.loop_mode === 'loop', fr: [], cum: [], tot: 0 };
+      for (const f of m.frames) {
+        const g = new THREE.BufferGeometry(), u0 = f.sheet.x / W, u1 = (f.sheet.x + sw) / W, v1 = 1 - f.sheet.y / H, v0 = 1 - (f.sheet.y + sh) / H;
+        g.setAttribute('position', new THREE.Float32BufferAttribute([-.5, -.5, 0, .5, -.5, 0, .5, .5, 0, -.5, .5, 0], 3));
+        g.setAttribute('uv', new THREE.Float32BufferAttribute([u0, v0, u1, v0, u1, v1, u0, v1], 2)); g.setIndex([0, 1, 2, 0, 2, 3]);
+        F.tot += f.duration.numerator_ms / (f.duration.denominator || 1) / 1000; F.fr.push(g); F.cum.push(F.tot);
+      }
+      FXS[k] = F;
+    })).catch(() => {})));
+  }
+  function fx(k, x, y, z, o) {   // o: k = size factor (1 = sheet pixels 1:1), life = seconds for looping sheets, fol = object to follow, rate, col
+    const F = FXS[k]; if (!F || FXA.length > 110) return null; o = o || {};
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: F.tex, transparent: true, depthWrite: false, fog: false, color: o.col || 0xffffff }));
+    s.geometry = F.fr[0]; s.center.set(F.px, F.py); const sc = (o.k || 1) * U; s.scale.set(F.sw * sc, F.sh * sc, 1); s.renderOrder = 7; scene.add(s);
+    const a = { s, F, x, y, z, tt: 0, age: 0, life: o.life || 0, fol: o.fol, dy: o.dy || 0, rate: o.rate || 1 };
+    FXA.push(a); fxPos(a); return a;
+  }
+  function fxPos(a) { if (a.fol) { a.x = a.fol.x; a.z = a.fol.z; a.y = groundY(a.x, a.z) + a.dy; } a.s.position.set(a.x + TOC.x * 7, a.y + TOC.y * 7, a.z + TOC.z * 7); }   // nudged toward the camera so the ground does not cut it
+  function fxStep(dt) {
+    for (const a of FXA) {
+      a.tt += dt * a.rate; a.age += dt; const F = a.F;
+      if (a.fol && (a.fol.dead || a.fol.gone)) a.done = true;
+      if (a.life) { if (a.age >= a.life) a.done = true; a.s.material.opacity = Math.min(1, (a.life - a.age) / .4); }
+      else if (a.tt >= F.tot) a.done = true;
+      if (a.done) { scene.remove(a.s); a.s.material.dispose(); continue; }
+      const t = a.tt % F.tot; let fi = 0; while (fi < F.cum.length - 1 && F.cum[fi] <= t) fi++;
+      a.s.geometry = F.fr[fi]; fxPos(a);
+    }
+    for (let i = FXA.length - 1; i >= 0; i--) if (FXA[i].done) FXA.splice(i, 1);
+  }
+
+  // ---------- chief's skills (owner's taste: big bright effects aimed at a spot on the ground). Tap a skill, tap the ground.
+  const SK = {
+    spear: { n: 'ฝนหอก', cd: 16, r: 8, day: 1, col: 0xffd27a, d: 'แตะพื้น: หอกนับสิบตกใส่ศัตรูในวง' },
+    pot:   { n: 'หม้อไฟ', cd: 26, r: 7, day: 2, col: 0xff7a2a, d: 'แตะพื้น: ระเบิด แล้วไฟลุกเผา 6 วิ (ศัตรูช้าลง)' },
+    drum:  { n: 'กลองศึก', cd: 50, day: 3, col: 0xffe08a, d: 'ชาวเผ่าฟื้นเลือด ตีแรง x2.5 · หอยิงเร็ว x2 นาน 12 วิ' },
+  };
+  const SK_ORDER = ['spear', 'pot', 'drum'];
+  const pw = () => 1 + .22 * (G.day - 1);   // skills grow with the nights, like the enemies
+  const later = (sec, f) => G.later.push({ t: sec, f });
+  let aimM = null, flashL = null, hoverAt = null;
+  const SPG = { shaft: new THREE.BoxGeometry(.3, .3, 3.6), tip: new THREE.ConeGeometry(.42, 1.2, 4).rotateX(Math.PI / 2).translate(0, 0, 2.3) };
+  const SPM = { shaft: new THREE.MeshLambertMaterial({ color: 0x9a6a3a }), tip: new THREE.MeshLambertMaterial({ color: 0xfff4d0, emissive: 0x806020 }) };
+  function groundRing(x, z, r, col, op, w) {   // flat ring + faint disc, drawn over everything (it is a marker)
+    const g = new THREE.Group(), y = Math.max(groundY(x, z), -.3) + .2;
+    const m1 = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, depthTest: false, depthWrite: false });
+    const m2 = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op * .22, depthTest: false, depthWrite: false });
+    g.add(new THREE.Mesh(new THREE.RingGeometry(Math.max(.1, r - (w || .5)), r, 56).rotateX(-Math.PI / 2), m1), new THREE.Mesh(new THREE.CircleGeometry(r, 56).rotateX(-Math.PI / 2), m2));
+    g.children.forEach(c => { c.renderOrder = 9; }); g.position.set(x, y, z); scene.add(g); g.userData.op = op; return g;
+  }
+  function ringFx(x, z, r0, r1, col, life) { const g = groundRing(x, z, 1, col, .9, .12); g.scale.setScalar(r0); G.rings.push({ g, r0, r1, t: 0, life }); }
+  function dmgArea(x, z, r, dmg, air) {
+    let n = 0;
+    for (const e of G.enemies) { if (e.dead || e.flee || (e.fly && !air && e.y > groundY(e.x, e.z) + 6)) continue; if (Math.hypot(e.x - x, e.z - z) < r + e.def.r * .5) { hurtEnemy(e, dmg); n++; } }
+    return n;
+  }
+  function burst(x, y, z, n, spd, kind, size) { for (let i = 0; i < n; i++) { const a = rnd() * 6.28, v = spd * (.4 + rnd() * .6); spawnP(x, y, z, Math.cos(a) * v, 2 + rnd() * spd * .8, Math.sin(a) * v, .5 + rnd() * .6, size || 4, kind || 0); } }
+  function flashAt(x, z, k) { if (!flashL) return; flashL.position.set(x, groundY(x, z) + 6, z); flashL.intensity = k; }
+  function canCast(k) { return G.on && G.day >= SK[k].day && G.cd[k] <= 0; }
+  function aimSkill(k) {
+    if (!SK[k]) return;
+    if (G.aim === k) { endAim(); return; }
+    if (G.day < SK[k].day) { say(`${SK[k].n} ปลดล็อกวันที่ ${SK[k].day}`, 1200); return; }
+    if (G.cd[k] > 0) { say(`${SK[k].n} รออีก ${Math.ceil(G.cd[k])} วิ`, 900); return; }
+    cancelBuild(); select(null);
+    if (k === 'drum') { cast(k); return; }
+    endAim(); G.aim = k; aimM = groundRing(camT.x, camT.z, SK[k].r, SK[k].col, .95, .8); hoverAt = null;
+    hudEl.tip.style.display = 'block'; hudEl.tip.textContent = `${SK[k].n}: ${SK[k].d} · แตะปุ่มอีกครั้ง = ยกเลิก`;
+    updSkills();
+  }
+  function endAim() { if (aimM) scene.remove(aimM); aimM = null; if (G.aim) { G.aim = null; hudEl.tip.style.display = 'none'; } updSkills(); }
+  function cast(k, x, z) {
+    if (!canCast(k)) return false;
+    G.cd[k] = SK[k].cd; endAim(); au();
+    if (k === 'spear') castSpear(x, z); else if (k === 'pot') castPot(x, z); else castDrum();
+    updSkills(); return true;
+  }
+  function castSpear(x, z) {
+    const r = SK.spear.r, k = pw(), h = G.hall || { x: VX, z: VZ }, w = groundRing(x, z, r, 0xffd27a, .9, .35);
+    G.rings.push({ g: w, t: 0, life: 1.45, warn: true });
+    sfx('whoosh');
+    const foes = G.enemies.filter(e => !e.dead && Math.hypot(e.x - x, e.z - z) < r);
+    for (let i = 0; i < 18; i++) later(.2 + i * .05, () => {
+      let px, pz; const e = foes[i % Math.max(1, foes.length)];
+      if (e && !e.dead && i % 2 === 0 && Math.hypot(e.x - x, e.z - z) < r) { px = e.x + (rnd() - .5) * 1.5; pz = e.z + (rnd() - .5) * 1.5; }   // half of them seek a beast in the ring
+      else { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * r * .92; px = x + Math.cos(a) * d; pz = z + Math.sin(a) * d; }
+      const g = new THREE.Group(); g.add(new THREE.Mesh(SPG.shaft, SPM.shaft), new THREE.Mesh(SPG.tip, SPM.tip)); g.children.forEach(c => { c.castShadow = true; }); scene.add(g);
+      const dx = h.x - px, dz = h.z - pz, dd = Math.hypot(dx, dz) || 1, y1 = Math.max(groundY(px, pz), -.3);
+      G.spears.push({ g, x0: px + dx / dd * 9, y0: y1 + 30, z0: pz + dz / dd * 9, x1: px, y1: y1 + .6, z1: pz, t: 0, dur: .38, k });
+    });
+    later(1.35, () => {
+      const gy = Math.max(groundY(x, z), -.3); fx('slam', x, gy, z); fx('dust', x - 4, gy, z + 2); fx('dust', x + 4, gy, z - 2);
+      const n = dmgArea(x, z, r, 34 * k, true); G.shake = 1; flashAt(x, z, 2.2); sfx('boom'); burst(x, gy + .5, z, 26, 9, 0, 6); burst(x, gy + 1, z, 22, 7, 3, 3);
+      if (n) float(x, gy + 8, z, `ฝนหอกโดน ${n} ตัว!`, '#ffe08a');
+    });
+  }
+  function castPot(x, z) {
+    const h = G.hall || { x: VX, z: VZ }, k = pw(), r = SK.pot.r, w = groundRing(x, z, r, 0xff7a2a, .9, .35);
+    G.rings.push({ g: w, t: 0, life: 1, warn: true });
+    const m = new THREE.Mesh(new THREE.SphereGeometry(.85, 8, 6), new THREE.MeshLambertMaterial({ color: 0xb0643a, emissive: 0x401808 })); m.castShadow = true; scene.add(m);
+    const d = Math.hypot(x - h.x, z - h.z), y0 = groundY(h.x, h.z) + 9;
+    G.spears.push({ g: m, x0: h.x, y0, z0: h.z, x1: x, y1: Math.max(groundY(x, z), -.3) + .5, z1: z, t: 0, dur: Math.max(.6, Math.min(1.2, d / 45)), arc: 12 + d * .12, pot: { x, z, r, k } });
+    sfx('throw');
+  }
+  function potLand(p) {
+    const { x, z, r, k } = p, gy = Math.max(groundY(x, z), -.3);
+    fx('boom', x, gy, z); fx('nova', x, gy, z, { k: 1.5 }); flashAt(x, z, 3); G.shake = 1.2; sfx('boom');
+    burst(x, gy + 1, z, 30, 10, 1, 6); burst(x, gy + 1, z, 20, 8, 0, 7);
+    const n = dmgArea(x, z, r, 26 * k, true); if (n) float(x, gy + 9, z, `ระเบิดโดน ${n} ตัว!`, '#ffb070');
+    const sc = new THREE.Mesh(new THREE.CircleGeometry(r * .95, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x1a0a04, transparent: true, opacity: .45, depthWrite: false }));
+    sc.position.set(x, gy + .12, z); sc.renderOrder = 2; scene.add(sc);
+    const fl = []; for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28 + rnd() * .5, dd = i ? r * (.35 + rnd() * .45) : 0, fxp = x + Math.cos(a) * dd, fzp = z + Math.sin(a) * dd; later(.15 + i * .06, () => fl.push(fx('flames', fxp, Math.max(groundY(fxp, fzp), -.3), fzp, { life: 6 - i * .06, rate: .8 + rnd() * .4 }))); }
+    G.zones.push({ x, z, r, t: 6.2, dps: 13 * k, tick: .5, sc });
+  }
+  function castDrum() {
+    const h = G.hall || { x: VX, z: VZ }; G.buff = 12;
+    say('กลองศึก! ชาวเผ่าฮึกเหิม', 1800); for (const t of [0, .28, .56, 1.1]) setTimeout(() => sfx('drum'), t * 1000);
+    for (const v of G.vill) { v.hp = 30; fx('aura', v.x, groundY(v.x, v.z), v.z, { fol: v, life: 12, k: .75 }); const m = Object.values(v.poses)[0]; if (m) m.material.emissive.setRGB(.35, .24, .05); }
+    for (let i = 0; i < 12; i++) later(i * .9, () => { if (G.hall) ringFx(h.x, h.z, 3, 46, 0xffd27a, 1.1); });
+    burst(h.x, groundY(h.x, h.z) + 3, h.z, 30, 8, 3, 4);
+  }
+  function skillStep(dt) {
+    for (const k of SK_ORDER) if (G.cd[k] > 0) G.cd[k] = Math.max(0, G.cd[k] - dt);
+    if (G.buff > 0) { G.buff -= dt; if (G.buff <= 0) for (const v of G.vill) { const m = Object.values(v.poses)[0]; if (m) m.material.emissive.setRGB(0, 0, 0); } }
+    for (const l of G.later) { l.t -= dt; if (l.t <= 0) { l.done = true; l.f(); } }
+    G.later = G.later.filter(l => !l.done);
+    for (const s of G.spears) {
+      if (s.stuck != null) { s.stuck -= dt; if (s.stuck <= 0) { s.done = true; scene.remove(s.g); } else if (s.stuck < .4) s.g.position.y -= dt * 3; continue; }
+      s.t += dt; const q = Math.min(1, s.t / s.dur), x = s.x0 + (s.x1 - s.x0) * q, z = s.z0 + (s.z1 - s.z0) * q, y = s.y0 + (s.y1 - s.y0) * q * q + (s.arc ? Math.sin(q * Math.PI) * s.arc : 0);
+      const nx = s.x0 + (s.x1 - s.x0) * Math.min(1, q + .05), nz = s.z0 + (s.z1 - s.z0) * Math.min(1, q + .05), q2 = Math.min(1, q + .05), ny = s.y0 + (s.y1 - s.y0) * q2 * q2 + (s.arc ? Math.sin(q2 * Math.PI) * s.arc : 0);
+      s.g.position.set(x, y, z); if (!s.pot) s.g.lookAt(nx, ny - .001, nz); else s.g.rotation.x += dt * 9;
+      if (rnd() < .7) spawnP(x, y, z, 0, 0, 0, .35, s.pot ? 4 : 2.5, s.pot ? 1 : 3);
+      if (q >= 1) {
+        if (s.pot) { s.done = true; scene.remove(s.g); potLand(s.pot); continue; }
+        s.stuck = 1.4; fx('dust', s.x1, s.y1 - .6, s.z1, { k: .5 }); burst(s.x1, s.y1, s.z1, 4, 4, 3, 2.5); dmgArea(s.x1, s.z1, 2.6, 8 * s.k, true);
+        if (rnd() < .35) sfx('hit');
+      }
+    }
+    G.spears = G.spears.filter(s => !s.done);
+    for (const zn of G.zones) {
+      zn.t -= dt; zn.tick -= dt;
+      if (rnd() < dt * 26) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * zn.r, px = zn.x + Math.cos(a) * d, pz = zn.z + Math.sin(a) * d; spawnP(px, Math.max(groundY(px, pz), -.3) + .3, pz, (rnd() - .5), 3 + rnd() * 3, (rnd() - .5), .7, 4 + rnd() * 2, 1); }
+      if (zn.tick <= 0) { zn.tick = .5; for (const e of G.enemies) if (!e.dead && !e.flee && !(e.fly && e.y > groundY(e.x, e.z) + 6) && Math.hypot(e.x - zn.x, e.z - zn.z) < zn.r + e.def.r * .5) { hurtEnemy(e, zn.dps * .5); e.slow = .7; } }
+      if (zn.t < 1) zn.sc.material.opacity = .45 * Math.max(0, zn.t);
+      if (zn.t <= 0) { zn.done = true; scene.remove(zn.sc); }
+    }
+    G.zones = G.zones.filter(z => !z.done);
+    for (const r of G.rings) {
+      r.t += dt; const q = r.t / r.life;
+      if (r.warn) { const op = (1 - q * .4) * (.6 + .4 * Math.sin(r.t * 22)); r.g.children[0].material.opacity = .9 * op; r.g.children[1].material.opacity = .2 * op; }
+      else { r.g.scale.setScalar(r.r0 + (r.r1 - r.r0) * (1 - (1 - q) * (1 - q))); r.g.children[0].material.opacity = .9 * (1 - q); r.g.children[1].material.opacity = .12 * (1 - q); }
+      if (q >= 1) { r.done = true; scene.remove(r.g); }
+    }
+    G.rings = G.rings.filter(r => !r.done);
+    if (flashL && flashL.intensity > 0) flashL.intensity = Math.max(0, flashL.intensity - dt * 5);
+    fxStep(dt);
+  }
+  function skillDraw() {   // the aiming ring follows the mouse, or sits in the middle of the view on touch screens
+    if (aimM) { const p = hoverAt || camT; aimM.position.set(p.x, Math.max(groundY(p.x, p.z), -.3) + .2, p.z); const o = .7 + .3 * Math.sin(performance.now() / 120); aimM.children[0].material.opacity = o; aimM.children[1].material.opacity = .14 + .08 * o; }
+    if (G.shake > .02) { const a = G.shake; cam.position.addScaledVector(R, Math.round((rnd() - .5) * 2 * a * 3) * Ue).addScaledVector(UPV, Math.round((rnd() - .5) * 2 * a * 3) * Ue); G.shake *= .86; } else G.shake = 0;
+  }
+  function autoCast() {   // QA / balance helper: a player who throws each ready skill at the thickest pack
+    const live = G.enemies.filter(e => !e.dead && !e.flee); if (!live.length) return null;
+    let best = null, bn = 0; for (const e of live) { const n = live.filter(o => Math.hypot(o.x - e.x, o.z - e.z) < 8).length; if (n > bn) { bn = n; best = e; } }
+    const used = [];
+    for (const k of SK_ORDER) if (canCast(k) && (k === 'drum' ? live.length >= 6 : bn >= 2 || best.def.boss)) { cast(k, best.x, best.z); used.push(k); }
+    return used.length ? used.join('+') : null;
+  }
+
   // ---------- sounds (WebAudio, made in code)
   let AC = null, NB = null;
   function au() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; } } if (AC.state === 'suspended') AC.resume(); }
+  function noiseSrc() { if (!NB) { NB = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = NB.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } const s = AC.createBufferSource(); s.buffer = NB; return s; }
   function sfx(k) {
-    if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.connect(g).connect(AC.destination);
+    if (!AC) return;
+    if (k === 'whoosh' || k === 'boom' || k === 'drum') {
+      const t = AC.currentTime, n = noiseSrc(), f = AC.createBiquadFilter(), g = AC.createGain(); n.connect(f).connect(g).connect(AC.destination);
+      if (k === 'whoosh') { f.type = 'bandpass'; f.Q.value = 1.4; f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(300, t + 1.2); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.16, t + .5); g.gain.exponentialRampToValueAtTime(.001, t + 1.3); n.start(t); n.stop(t + 1.35); return; }
+      f.type = 'lowpass'; f.frequency.setValueAtTime(k === 'boom' ? 900 : 500, t); f.frequency.exponentialRampToValueAtTime(80, t + (k === 'boom' ? .8 : .25));
+      g.gain.setValueAtTime(k === 'boom' ? .35 : .18, t); g.gain.exponentialRampToValueAtTime(.001, t + (k === 'boom' ? 1 : .3)); n.start(t); n.stop(t + 1.05);
+      const o2 = AC.createOscillator(), g2 = AC.createGain(); o2.connect(g2).connect(AC.destination); o2.type = 'sine';
+      o2.frequency.setValueAtTime(k === 'boom' ? 75 : 110, t); o2.frequency.exponentialRampToValueAtTime(k === 'boom' ? 30 : 48, t + (k === 'boom' ? .7 : .25));
+      g2.gain.setValueAtTime(k === 'boom' ? .4 : .32, t); g2.gain.exponentialRampToValueAtTime(.001, t + (k === 'boom' ? .9 : .32)); o2.start(t); o2.stop(t + 1);
+      return;
+    }
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.connect(g).connect(AC.destination);
     if (k === 'horn') { o.type = 'sawtooth'; o.frequency.setValueAtTime(140, t); o.frequency.linearRampToValueAtTime(110, t + 1.2); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.12, t + .2); g.gain.exponentialRampToValueAtTime(.001, t + 1.4); o.start(t); o.stop(t + 1.5); }
     else if (k === 'build') { o.type = 'square'; o.frequency.setValueAtTime(320, t); o.frequency.setValueAtTime(480, t + .08); g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); o.start(t); o.stop(t + .26); }
     else if (k === 'throw') { o.type = 'triangle'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(200, t + .15); g.gain.setValueAtTime(.03, t); g.gain.exponentialRampToValueAtTime(.001, t + .16); o.start(t); o.stop(t + .17); }
@@ -1146,6 +1337,9 @@ const GAME = window.GAME = (function () {
     food: '<svg viewBox="0 0 24 24"><circle cx="9" cy="14" r="4.2" fill="#d8283c"/><circle cx="15" cy="15" r="3.6" fill="#b01e30"/><circle cx="12.5" cy="9.5" r="3.3" fill="#e84a5a"/><path d="M12 6c1-3 4-4 6-3-1 2-3 3-6 3z" fill="#4a9a3a"/></svg>',
     pop: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.6" fill="#f0c9a0"/><path d="M5 21c0-5 3-8 7-8s7 3 7 8z" fill="#a8743e"/></svg>',
     build: '<svg viewBox="0 0 24 24"><path d="M3 20l8-8 2 2-8 8z" fill="#c9a368"/><path d="M11 4h7l3 3-3 3-2-2-4 4-3-3 4-4-2-1z" fill="#d8d4cc"/></svg>',
+    spear: '<svg viewBox="0 0 24 24"><path d="M2.5 0v4M9.5 2v4M16.5 0v3" stroke="#ffe08a" stroke-width="1.4" opacity=".8"/><g fill="#c9a368"><rect x="4.2" y="1" width="1.7" height="12.5"/><rect x="11.2" y="3" width="1.7" height="12.5"/><rect x="18.2" y="0" width="1.7" height="12.5"/></g><g fill="#eeeae2" stroke="#3a2a1a" stroke-width=".6"><path d="M3 13.2h4.1L5.05 19z"/><path d="M10 15.2h4.1L12.05 21z"/><path d="M17 12.2h4.1L19.05 18z"/></g><path d="M1.5 22.5h21" stroke="#ffd27a" stroke-width="1.8"/></svg>',
+    pot: '<svg viewBox="0 0 24 24"><path d="M12 .5c2.4 2.6 3.9 4.4 1.7 7.2 0-1.6-1-2.4-1.7-2.8-.7.4-1.7 1.2-1.7 2.8C8.1 4.9 9.6 3.1 12 .5z" fill="#ffb03a"/><path d="M12 3.5c1 1.2 1.6 2.2.6 3.7 0-.8-.3-1.1-.6-1.3-.3.2-.6.5-.6 1.3-1-1.5-.4-2.5.6-3.7z" fill="#fff0a0"/><path d="M7.5 9.5h9l1.6 3c1.1 4.4-1.6 9.5-6.1 9.5S4.8 16.9 5.9 12.5z" fill="#b0643a" stroke="#3a1a08" stroke-width=".8"/><path d="M8 7.8h8v2H8z" fill="#7a3e1e"/><path d="M6.8 14h10.4" stroke="#ffd27a" stroke-width="1.4"/><path d="M8 17.5h8" stroke="#7a3e1e" stroke-width="1"/></svg>',
+    drum: '<svg viewBox="0 0 24 24"><path d="M15.5 1.5l-3.3 6.3M21 2.6l-5.6 5.4" stroke="#e8c890" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10v7.5c0 1.7 3.6 3.2 8 3.2s8-1.5 8-3.2V10z" fill="#a0582a" stroke="#3a1a08" stroke-width=".8"/><ellipse cx="12" cy="10" rx="8" ry="3" fill="#ecd6a8" stroke="#3a1a08" stroke-width=".8"/><path d="M4.5 12.5l3.5 7M19.5 12.5l-3.5 7M12 13.2v7.4" stroke="#ffd27a" stroke-width="1.1"/></svg>',
   };
   function css() {
     const st = document.createElement('style'); st.textContent = `
@@ -1172,7 +1366,7 @@ const GAME = window.GAME = (function () {
       #gConfirm.open { display: flex; }
       #gConfirm button { font: 800 15px Kanit, sans-serif; color: #fff; padding: 7px 16px; border-radius: 12px; border: 2px solid var(--ink); cursor: pointer; text-shadow: var(--ol); }
       #gOk { background: linear-gradient(#5ac85a, #2a8a2a); } #gNo { background: linear-gradient(#c85a4a, #8a2a1a); }
-      #gTip { left: 50%; bottom: 168px; transform: translateX(-50%); font-size: 12px; font-weight: 600; padding: 4px 10px; display: none; white-space: nowrap; }
+      #gTip { left: 50%; bottom: 168px; transform: translateX(-50%); font-size: 12px; font-weight: 600; padding: 4px 10px; display: none; white-space: nowrap; pointer-events: none; }
       #gOv { position: fixed; inset: 0; pointer-events: none; }
       .gScreen { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: linear-gradient(#0000 35%, #0a0604dd 78%), url(art/tribe3d/ui/title.png) center / cover; image-rendering: pixelated; z-index: 5; pointer-events: auto; }
       .gScreen.dark { align-items: center; background: radial-gradient(circle at 50% 40%, #3a2a14dd, #0a0604f2); }
@@ -1183,6 +1377,16 @@ const GAME = window.GAME = (function () {
       .gScreen button { font: 800 17px Kanit, sans-serif; color: #fff; padding: 9px 24px; margin: 6px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#f0b860, #b06a1e); box-shadow: 0 4px 0 var(--ink); }
       .gScreen button.alt { background: linear-gradient(#7a6a5a, #4a3a2a); }
       @media (max-height: 420px) { .gScreen h1 { font-size: 26px; } .gScreen p { font-size: 12px; margin: 4px 0; } }
+      #gSk { position: fixed; right: calc(27px + env(safe-area-inset-right)); bottom: 106px; display: flex; flex-direction: column-reverse; gap: 15px; }
+      .sk { position: relative; width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--ink); padding: 0; cursor: pointer; background: radial-gradient(circle at 50% 32%, #8a6236, #43290f 75%); box-shadow: 0 0 0 2px #c9a368, 0 4px 0 2px var(--ink), inset 0 3px 0 #ffe7b844; }
+      .sk svg { width: 36px; height: 36px; display: block; margin: auto; filter: drop-shadow(0 2px 0 #0008); }
+      .sk b { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); font: 800 11px Kanit, sans-serif; color: #fff; text-shadow: var(--ol); white-space: nowrap; pointer-events: none; }
+      .sk .cdv { position: absolute; inset: -1px; border-radius: 50%; background: conic-gradient(#000b calc(var(--k, 0) * 360deg), #0000 0); pointer-events: none; display: flex; align-items: center; justify-content: center; font: 800 15px Kanit, sans-serif; color: #fff; text-shadow: var(--ol); }
+      .sk.aim { box-shadow: 0 0 0 3px #fff, 0 0 16px 5px #ffd27a, 0 4px 0 2px var(--ink); transform: scale(1.1); }
+      .sk.lock svg { filter: grayscale(1) brightness(.5); } .sk.lock .cdv { font-size: 11px; background: #0007; }
+      .sk.hot { animation: skHot 1.1s ease-in-out infinite; }
+      @keyframes skHot { 50% { box-shadow: 0 0 0 2px #ffe08a, 0 0 14px 4px #ff9a3c, 0 4px 0 2px var(--ink); } }
+      @media (max-height: 340px) { #gSk { bottom: 98px; gap: 12px; } .sk { width: 46px; height: 46px; } .sk svg { width: 30px; height: 30px; } }
     `; document.head.appendChild(st);
   }
   function hud() {
@@ -1195,12 +1399,14 @@ const GAME = window.GAME = (function () {
     hudEl.bar = mk('div', 'gBar', 'pnl', '');
     hudEl.conf = mk('div', 'gConfirm', '', '<button id="gOk">สร้างตรงนี้</button><button id="gNo">ยกเลิก</button>');
     hudEl.tip = mk('div', 'gTip', 'pnl', '');
+    hudEl.sk = mk('div', 'gSk', '', SK_ORDER.map(k => `<button class="sk" data-k="${k}" title="${SK[k].n} (${SK_ORDER.indexOf(k) + 1})">${ICON[k]}<span class="cdv"></span><b>${SK[k].n}</b></button>`).join(''));
+    for (const b of hudEl.sk.children) b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); aimSkill(b.dataset.k); });
     ov = document.createElement('canvas'); ov.id = 'gOv'; document.body.insertBefore(ov, $('hud')); ox = ov.getContext('2d');
     const fit = () => { const d = window.devicePixelRatio || 1; ov.width = innerWidth * d; ov.height = innerHeight * d; ov.style.width = innerWidth + 'px'; ov.style.height = innerHeight + 'px'; };
     fit(); addEventListener('resize', fit);
     const stop = e => { e.stopPropagation(); };
     for (const el of [hudEl.btn, hudEl.bar, hudEl.conf]) el.addEventListener('pointerdown', stop);
-    hudEl.btn.addEventListener('pointerdown', () => { au(); hudEl.bar.classList.toggle('open'); if (!hudEl.bar.classList.contains('open')) cancelBuild(); });
+    hudEl.btn.addEventListener('pointerdown', () => { au(); endAim(); hudEl.bar.classList.toggle('open'); if (!hudEl.bar.classList.contains('open')) cancelBuild(); });
     $('gOk').addEventListener('pointerdown', e => { e.stopPropagation(); confirmBuild(); });
     const sst = document.createElement('style'); sst.textContent = '#gSel { left: 50%; bottom: 100px; transform: translateX(-50%); display: none; padding: 6px 12px 8px; font: 600 12px Kanit, sans-serif; text-align: center; max-width: 90vw; } #gSel b { font-weight: 800; font-size: 14px; text-shadow: var(--ol); } #gSel button { margin-top: 5px; font: 800 12px Kanit, sans-serif; color: #fff; padding: 5px 10px; border-radius: 10px; border: 2px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#5ac85a, #2a8a2a); } #gSel #gRep { background: linear-gradient(#c8a04a, #8a6a1a); }'; document.head.appendChild(sst);
     $('gNo').addEventListener('pointerdown', e => { e.stopPropagation(); cancelBuild(); });
@@ -1240,12 +1446,22 @@ const GAME = window.GAME = (function () {
     else if (night) { const left = G.enemies.filter(e => !e.dead && !e.flee).length + (G.raid ? G.raid.list.length - G.raid.i : 0); txt = `กลางคืน · ศัตรูเหลือ ${left}`; k = (t - DAY - DUSK) / NIGHT; }
     else { txt = 'รุ่งเช้า'; k = 1; }
     $('gPh').textContent = txt; $('gBarI').style.width = (k * 100).toFixed(1) + '%';
+    updSkills();
     for (const c of hudEl.bar.children) { const cs = costOf(c.dataset.t); c.classList.toggle('no', !canPay(cs)); const el = c.querySelector('.cs'); const tx = costTxt(cs); if (el.textContent !== tx) el.textContent = tx; }
+  }
+
+  function updSkills() {
+    if (!hudEl.sk) return; const foes = isNight() && G.enemies.some(e => !e.dead && !e.flee);
+    for (const b of hudEl.sk.children) {
+      const k = b.dataset.k, S2 = SK[k], lock = G.day < S2.day, cd = G.cd[k], el = b.firstElementChild.nextElementSibling;
+      b.classList.toggle('lock', lock); b.classList.toggle('aim', G.aim === k); b.classList.toggle('hot', !lock && cd <= 0 && foes && G.aim !== k);
+      el.style.setProperty('--k', lock ? 0 : (cd / S2.cd).toFixed(3)); const tx = lock ? `วัน ${S2.day}` : cd > 0 ? Math.ceil(cd) : ''; if (el.textContent !== String(tx)) el.textContent = tx;
+    }
   }
 
   // ---------- building placement
   function startBuild(t) {
-    cancelBuild(true); G.mode = t; for (const c of hudEl.bar.children) c.classList.toggle('sel', c.dataset.t === t);
+    endAim(); cancelBuild(true); G.mode = t; for (const c of hudEl.bar.children) c.classList.toggle('sel', c.dataset.t === t);
     G.ghost = buildMesh(t, camT.x, camT.z, 0); G.ghost.traverse(o => { if (o.isMesh) { o.material = ghostMat; o.castShadow = false; } });
     G.ghostAt = { x: camT.x, z: camT.z }; checkGhost(); hudEl.conf.classList.add('open');
     hudEl.tip.style.display = 'block'; hudEl.tip.textContent = `${BT[t].n}: ${BT[t].d} · แตะพื้นเพื่อเลือกที่วาง`;
@@ -1279,6 +1495,7 @@ const GAME = window.GAME = (function () {
   function tap(cx, cy) {
     const rc = cv.getBoundingClientRect(); ndc.set((cx - rc.left) / rc.width * 2 - 1, -((cy - rc.top) / rc.height) * 2 + 1);
     ray.setFromCamera(ndc, cam); const hit = ray.intersectObjects(TERRAIN, false)[0]; if (!hit) return;
+    if (G.aim) { cast(G.aim, hit.point.x, hit.point.z); return; }
     if (G.mode) { G.ghostAt = { x: hit.point.x, z: hit.point.z }; checkGhost(); return; }
     let best = null, bd = 1e9; for (const b of G.buildings) { const d = Math.hypot(b.x - hit.point.x, b.z - hit.point.z); if (d < b.r + 2.5 && d < bd) { bd = d; best = b; } }
     select(best);
@@ -1370,7 +1587,13 @@ const GAME = window.GAME = (function () {
     let down = null;
     addEventListener('pointerdown', e => { if (e.target.closest && (e.target.closest('button') || e.target.closest('.pnl') || e.target.closest('.gScreen'))) { down = null; return; } down = { x: e.clientX, y: e.clientY, t: performance.now() }; au(); });
     addEventListener('pointerup', e => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 9 && performance.now() - down.t < 450) tap(e.clientX, e.clientY); down = null; });
-    addEventListener('keydown', e => { if (e.key === 'b' || e.key === 'B') { hudEl.bar.classList.toggle('open'); } if (e.key === 'Escape') cancelBuild(); if (e.key === 'Enter') confirmBuild(); });
+    addEventListener('keydown', e => { if (e.key === 'b' || e.key === 'B') { hudEl.bar.classList.toggle('open'); } if (e.key === 'Escape') { cancelBuild(); endAim(); } if (e.key === 'Enter') confirmBuild(); if (G.on && '123'.includes(e.key) && e.key.length === 1) aimSkill(SK_ORDER[+e.key - 1]); });
+    addEventListener('pointermove', e => {   // mouse: the aiming ring follows the pointer
+      if (!G.aim || e.pointerType !== 'mouse' || e.buttons) return;
+      const rc = cv.getBoundingClientRect(); ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
+      ray.setFromCamera(ndc, cam); const hit = ray.intersectObjects(TERRAIN, false)[0]; if (hit) hoverAt = { x: hit.point.x, z: hit.point.z };
+    });
+    loadFx(); flashL = new THREE.PointLight(0xffa040, 0, 40, 1.6); scene.add(flashL);
     const sv = load(); try { G.best = +localStorage.getItem(BEST) || 0; } catch (_) {}
     const how = `<p>กลางวัน: ชาวเผ่าตัดไม้ ขุดหิน เก็บเบอร์รี่ และล่าสัตว์เอง · กด <b>สร้าง</b> เพื่อวางกระท่อม แปลงผัก หอพุ่งหอก รั้ว กองไฟ<br>กลางคืน: ฝูงสัตว์ร้ายบุก หอกับชาวเผ่าช่วยกันป้องกัน · ทุก 5 คืนมีบอส<br><b>ด่านหน้า</b> ขยายดินแดนออกไป ได้ทรัพยากรมากขึ้น · ถ้า <b>โถงหัวหน้าเผ่า</b> พัง = แพ้</p>`;
     if (Q.get('autostart') === '1') { setup(null); return; }
@@ -1429,7 +1652,7 @@ const GAME = window.GAME = (function () {
     if (!G.on) return dt0;
     const dt = Math.min(dt0, .05) * G.speed;
     const wasNight = isNight(); G.t += dt;
-    if (G.t >= CYCLE) { G.t -= CYCLE; G.day++; }
+    if (G.t >= CYCLE) { G.t -= CYCLE; G.day++; for (const k of SK_ORDER) if (SK[k].day === G.day) say(`ปลดล็อกทักษะใหม่: ${SK[k].n}! · ${SK[k].d}`, 4500); }
     const night = isNight();
     if (night && !wasNight) planRaid();
     if (!night && wasNight) {   // dawn: survivors flee, reward
@@ -1438,7 +1661,7 @@ const GAME = window.GAME = (function () {
     }
     if (night) raidStep(dt);
     if (G.tut < 99) {   // first-day tips, one at a time
-      const T2 = [[4, 'กด สร้าง (มุมขวาล่าง) แล้วเลือก หอพุ่งหอก · วางใกล้ประตูรั้ว'], [30, 'ชาวเผ่าตัดไม้ ขุดหิน เก็บเบอร์รี่ ล่าสัตว์เอง · สร้าง กระท่อม เพื่อเพิ่มคน'], [60, 'แตะสิ่งก่อสร้างเพื่อ อัปเกรด หรือ ซ่อม'], [90, 'แผนที่ย่อมุมซ้ายบน: จุดขาว/ชมพู = เหมืองหิน/ดงเบอร์รี่ · ตั้ง ด่านหน้า เพื่อขยายไปถึง'], [DAY + 2, 'ค่ำแล้ว! ศัตรูมาจากนอกดินแดน · ลูกศรแดงขอบจอชี้ทางศัตรู']];
+      const T2 = [[4, 'กด สร้าง (มุมขวาล่าง) แล้วเลือก หอพุ่งหอก · วางใกล้ประตูรั้ว'], [30, 'ชาวเผ่าตัดไม้ ขุดหิน เก็บเบอร์รี่ ล่าสัตว์เอง · สร้าง กระท่อม เพื่อเพิ่มคน'], [60, 'แตะสิ่งก่อสร้างเพื่อ อัปเกรด หรือ ซ่อม'], [90, 'แผนที่ย่อมุมซ้ายบน: จุดขาว/ชมพู = เหมืองหิน/ดงเบอร์รี่ · ตั้ง ด่านหน้า เพื่อขยายไปถึง'], [DAY + 2, 'ค่ำแล้ว! ศัตรูมาจากนอกดินแดน · ลูกศรแดงขอบจอชี้ทางศัตรู'], [DAY + DUSK + 9, 'กดปุ่ม ฝนหอก (ขวามือ) แล้วแตะพื้นตรงฝูงศัตรู!']];
       if (G.day === 1 && G.tut < T2.length && G.t > T2[G.tut][0]) { say(T2[G.tut][1], 5500); G.tut++; }
     }
     sky();
@@ -1447,23 +1670,23 @@ const GAME = window.GAME = (function () {
       if (b.rise < 1) { b.rise = Math.min(1, b.rise + dt * 1.5); b.g.scale.set(1, .05 + .95 * b.rise, 1); }
       if (b.type === 'farm' && !night) G.res.food += BT.farm.food * (1 + ((b.lv || 1) - 1) * .6) * dt;
       if (!night && b.hp < b.max) b.hp = Math.min(b.max, b.hp + b.max * .012 * dt);   // villagers patch things up by day
-      if (b.type === 'tower') { const lv = b.lv || 1; b.cd -= dt; if (b.cd <= 0) { let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.flee) continue; const d = Math.hypot(x.x - b.x, x.z - b.z); if (d < ed) { ed = d; e = x; } } if (e && ed < BT.tower.range + (lv - 1) * 5) { shoot(b, e); b.cd = BT.tower.rate / (1 + (lv - 1) * .25); } else b.cd = .3; } }
+      if (b.type === 'tower') { const lv = b.lv || 1; b.cd -= dt; if (b.cd <= 0) { let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.flee) continue; const d = Math.hypot(x.x - b.x, x.z - b.z); if (d < ed) { ed = d; e = x; } } if (e && ed < BT.tower.range + (lv - 1) * 5) { shoot(b, e); b.cd = BT.tower.rate / (1 + (lv - 1) * .25) / (G.buff > 0 ? 2 : 1); } else b.cd = .3; } }
     }
     for (const n of G.nodes) if (n.regrow && n.amt < n.max) n.amt = Math.min(n.max, n.amt + dt * .25);
     G.eatT += dt; if (G.eatT > 20) { G.eatT = 0; const eat = Math.ceil(G.vill.length / 2); G.res.food = Math.max(0, G.res.food - eat); if (G.res.food <= 0 && G.vill.length > 3) { const v = G.vill[G.vill.length - 1]; hurtVillager(v, 99); say('อาหารหมด! ชาวเผ่าอดตาย', 2000); } }
     G.birthT += dt; if (!night && G.birthT > 22) { G.birthT = 0; if (G.vill.length < Math.min(G.popCap, MAX_POP) && G.res.food >= 45) { G.res.food -= 25; const h = G.hall; addVillager(h.x + 3, h.z + 3); say('ชาวเผ่าเพิ่ม 1 คน', 1200); } }
     for (const v of G.vill.slice()) vStep(v, dt);
     for (const e of G.enemies) eStep(e, dt); G.enemies = G.enemies.filter(e => !e.gone);
-    shotStep(dt);
+    shotStep(dt); skillStep(dt);
     hudT -= dt0; if (hudT <= 0) { hudT = .2; updHud(); drawMinimap(); }
     return dt;
   }
-  function draw() { if (ox) draw2d(1 / 60); }
+  function draw() { skillDraw(); if (ox) draw2d(1 / 60); }
   function spot(t) {   // QA / helper: a free valid spot for building type t near the village
     for (let r = 42; r < 70; r += 3) for (let a = 0; a < 360; a += 9) { const x = VX + Math.cos(a * D2R) * r, z = VZ + Math.sin(a * D2R) * r; if (!placeOk(t, x, z)) return { x, z }; }
     return null;
   }
-  return { G, BT, EN, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, get on() { return G.on; },
+  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, get fxCount() { return FXA.length; }, get on() { return G.on; },
     cheat: { res(n) { G.res.wood = G.res.stone = G.res.food = n; }, night() { G.t = DAY + DUSK - .1; }, day(d) { G.day = d; } } };
 })();
 </script>
