@@ -57,6 +57,15 @@ FIX = {}
 for mv, (h, tx) in first.items():
     r = float(np.clip(first['idle'][0] / h, .9, 1.12)) if mv not in ('death',) else 1.0
     FIX[mv] = (r, first['idle'][1] - tx * r)    # scale, then shift so the torso lines up with idle's (raw px at idle scale)
+# run's first frame is a leaning stride, not the ready stance (owner "วิ่งละหยุดตัวละครไม่เท่ากัน"): give it the same fix as the other sheets
+oth = [v for k, v in FIX.items() if k not in ('idle', 'run', 'death')]
+FIX['run'] = (float(np.median([v[0] for v in oth])), float(np.median([v[1] for v in oth])))
+# ...and run is also drawn a bit bigger in its cells: size it by the hood width (same in every pose) against idle
+def hood(a):
+    c = a > .5; ys = np.where(c.sum(1) > 3)[0]; t = ys.min(); xs = np.where(c[int(t + 15 / S):int(t + 60 / S)].sum(0) > 8 / S)[0]; return xs.max() - xs.min()
+hw = {}
+for mv, k, rgb, a, gy, cx in cells: hw.setdefault(mv, []).append(hood(a))
+FIX['run'] = (float(np.median(hw['idle']) / np.median(hw['run'])), FIX['run'][1])
 print({k: (round(v[0], 3), round(v[1], 1)) for k, v in FIX.items()})
 # common box around the anchor (feet), over all frames
 L = T = Rr = 0
