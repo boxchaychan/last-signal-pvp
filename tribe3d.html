@@ -159,7 +159,7 @@ const SUNDIR = new V3(-50, 100, 70).normalize();
 const TIMES = [
   { n: 'กลางวัน', sky: 0xb8d4ff, gnd: 0x7a6a58, hi: .56, sc: 0xffe6bc, si: .66, bg: 0x6aa84f, fire: .0, water: 1, haze: .22, hz: [.8, .88, .98], sat: 1.15, cool: [.88, .95, 1.12], warm: [1.07, 1.0, .9], cloud: .2 },
   { n: 'เย็น', sky: 0xffb890, gnd: 0x5a3a5a, hi: .5, sc: 0xffa050, si: .62, bg: 0x6a7a4a, fire: .6, water: .85, haze: .3, hz: [1, .7, .55], sat: 1.12, cool: [.86, .86, 1.12], warm: [1.12, .98, .82], cloud: .16 },
-  { n: 'กลางคืน', sky: 0x4a5a9a, gnd: 0x20203a, hi: .34, sc: 0x9ab0ff, si: .16, bg: 0x1a2a3a, fire: 2.2, water: .5, haze: .35, hz: [.08, .1, .2], sat: .95, cool: [.85, .92, 1.2], warm: [1.12, 1.0, .85], cloud: 0 },
+  { n: 'กลางคืน', sky: 0x5a6ab0, gnd: 0x2a2a48, hi: .5, sc: 0xa8bcff, si: .34, bg: 0x1a2a3a, fire: 2.2, water: .62, haze: .22, hz: [.12, .15, .3], sat: .95, cool: [.88, .95, 1.18], warm: [1.12, 1.0, .85], cloud: 0 },
 ];
 const FIRES = [];   // {x, y, z, light, big}
 function setTime(i) {
@@ -810,7 +810,7 @@ const GAME = window.GAME = (function () {
     tower:   { n: 'หอพุ่งหอก', cost: { wood: 40, stone: 25 }, hp: 170, r: 2.4, range: 30, rate: 1.25, dmg: 15, d: 'ยิงหอกใส่ศัตรู' },
     wall:    { n: 'รั้วไม้แหลม', cost: { wood: 12 }, hp: 160, r: 2.8, wall: true, d: 'ขวางทางศัตรู' },
     fire:    { n: 'กองไฟ', cost: { wood: 15, stone: 5 }, hp: 60, r: 1.8, heal: 3, d: 'ส่องสว่าง รักษาชาวเผ่า' },
-    outpost: { n: 'ด่านหน้า', cost: { wood: 60, stone: 40, food: 20 }, hp: 220, r: 3, terr: 34, store: true, d: 'ขยายดินแดน (อาณานิคม)' },
+    outpost: { n: 'ด่านหน้า', cost: { wood: 60, stone: 40, food: 20 }, hp: 220, r: 3, terr: 40, store: true, d: 'ขยายดินแดน (อาณานิคม)' },
   };
   const BUILD_ORDER = ['hut', 'farm', 'tower', 'wall', 'fire', 'store', 'outpost'];
   const EN = {   // enemy types (Quaternius animals; boss = Blender bird / mammoth)
@@ -1019,9 +1019,10 @@ const GAME = window.GAME = (function () {
     }
     e.ring = new THREE.Mesh(new THREE.RingGeometry(def.r * .9, def.r * 1.15, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: def.boss ? 0xff3030 : 0xff6a3a, transparent: true, opacity: .7, depthWrite: false })); scene.add(e.ring);
     e.root.traverse(o => { if (o.isMesh && o.material && o.material.emissive) { const mm = Array.isArray(o.material) ? o.material : [o.material]; o.material = mm.map(q => q.clone()); if (o.material.length === 1) o.material = o.material[0]; } });
-    G.enemies.push(e); return e;
+    setEm(e, .16, .03, .02); G.enemies.push(e); return e;
   }
-  function flash(e) { e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(.8, .15, .1); } }); e.fl = .12; }
+  function setEm(e, r, g, b) { e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(r, g, b); } }); }
+  function flash(e) { setEm(e, .8, .15, .1); e.fl = .12; }
   function hurtEnemy(e, dmg, by) {
     if (e.dead) return; e.hp -= dmg; flash(e); float(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 3.5, e.z, '-' + Math.round(dmg), '#ff8a6a');
     for (let i = 0; i < 6; i++) spawnP(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 1.2, e.z, (rnd() - .5) * 5, 2 + rnd() * 4, (rnd() - .5) * 5, .45, 3, 0);
@@ -1041,7 +1042,7 @@ const GAME = window.GAME = (function () {
   function blocker(e, nx, nz) { for (const b of G.buildings) if (b.type === 'wall' && Math.hypot(b.x - nx, b.z - nz) < b.r + e.def.r * .6) return b; return null; }
   function eStep(e, dt) {
     if (e.mixer) e.mixer.update(dt);
-    if (e.fl > 0) { e.fl -= dt; if (e.fl <= 0) e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(0, 0, 0); } }); }
+    if (e.fl > 0) { e.fl -= dt; if (e.fl <= 0) setEm(e, .16, .03, .02); }
     if (e.dead) { e.dieT -= dt; if (e.fly) { e.y = Math.max(groundY(e.x, e.z), e.y - dt * 12); e.root.rotation.z += dt * 2; } if (e.dieT <= 0) { scene.remove(e.root); e.gone = true; } place(e); return; }
     if (e.flee) { const a = Math.atan2(e.z - VZ, e.x - VX); moveTo(e, e.x + Math.cos(a) * 30, e.z + Math.sin(a) * 30, e.def.spd * 1.2, dt); e.face = a; e.fleeT -= dt; if (e.fleeT <= 0) { scene.remove(e.root); scene.remove(e.ring); e.gone = true; } place(e); return; }
     e.retarget = (e.retarget || 0) - dt;
@@ -1247,7 +1248,7 @@ const GAME = window.GAME = (function () {
     const k = kindAt(x, z); if (k === 0 || k === 4 || k === 5) return 'ที่ตรงนี้สร้างไม่ได้';
     const T = BT[t], y = groundY(x, z);
     for (const a of [0, 1.57, 3.14, 4.71]) if (Math.abs(groundY(x + Math.cos(a) * T.r, z + Math.sin(a) * T.r) - y) > .1) return 'พื้นไม่เรียบ';
-    if (t === 'outpost') { if (!inTerr(x, z, 12) || inTerr(x, z, -18)) return 'ด่านหน้าต้องตั้งที่ขอบดินแดน'; }
+    if (t === 'outpost') { if (!inTerr(x, z, 16) || inTerr(x, z, -16)) return 'ด่านหน้าต้องตั้งที่ขอบดินแดน'; }
     else if (!inTerr(x, z)) return 'ต้องสร้างในดินแดนของเผ่า';
     for (const b of G.buildings) if (Math.hypot(b.x - x, b.z - z) < b.r + T.r + .5) return 'ชิดสิ่งก่อสร้างอื่นเกินไป';
     if (Math.hypot(x - VX, z - VZ) < 14) return 'ชิดลานกลางเกินไป';
@@ -1286,6 +1287,7 @@ const GAME = window.GAME = (function () {
     ox.textAlign = 'center'; ox.font = '800 13px Kanit, sans-serif'; ox.lineWidth = 3; ox.strokeStyle = '#140c06';
     for (const f of G.floats) { f.t += dt; const [sx, sy] = proj(f.x, f.y + f.t * 2, f.z); ox.globalAlpha = Math.max(0, 1 - f.t / 1.4); ox.strokeText(f.text, sx, sy); ox.fillStyle = f.col; ox.fillText(f.text, sx, sy); }
     ox.globalAlpha = 1; G.floats = G.floats.filter(f => f.t < 1.4);
+    siteLabels();
   }
 
   // ---------- save / load / screens
@@ -1316,7 +1318,7 @@ const GAME = window.GAME = (function () {
     const n0 = saved ? Math.max(4, saved.vill) : 8;
     for (let i = 0; i < n0; i++) { const a = rnd() * 6.28, r = 6 + rnd() * 10; addVillager(VX + Math.cos(a) * r, VZ + Math.sin(a) * r); }
     if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp] of saved.b) addBuilding(t, x, z, ry, hp); }
-    G.on = true; sky(); updHud(); save();
+    makeSites(); makeMinimap(); G.on = true; sky(); updHud(); save();
     say(saved ? `กลับมาที่เผ่า · วันที่ ${G.day}` : 'วันที่ 1 · สร้างบ้านและเตรียมป้องกันก่อนค่ำ!', 3500);
   }
   function init() {
@@ -1332,6 +1334,53 @@ const GAME = window.GAME = (function () {
     if (Q.get('autostart') === '1') { setup(null); return; }
     const btns = sv ? [['เล่นต่อ (วันที่ ' + sv.day + ')', () => setup(sv)], ['เริ่มใหม่', () => { try { localStorage.removeItem(SAVE); } catch (_) {} setup(null); }, true]] : [['เริ่มเกม', () => setup(null)]];
     screen(`<h1>เผ่าดึกดำบรรพ์</h1>${how}<p>สถิติดีที่สุด: ${G.best} คืน</p>`, btns);
+  }
+  // ---------- resource sites: rich spots out in the wild; worked only once an outpost's land covers them (= reason to expand)
+  const SITES = [];
+  function makeSites() {
+    const types = [['quarry', 'เหมืองหิน'], ['grove', 'ดงเบอร์รี่'], ['quarry', 'เหมืองหิน'], ['grove', 'ดงเบอร์รี่'], ['quarry', 'เหมืองหินใหญ่']];
+    let k = 0;
+    for (let i = 0; i < 4000 && k < types.length; i++) {
+      const a = rnd() * 6.28, d = 95 + rnd() * 90, x = VX + Math.cos(a) * d, z = VZ + Math.sin(a) * d;
+      if (Math.abs(x) > HM - 25 || Math.abs(z) > HM - 25 || kindAt(x, z) !== 2 || SITES.some(s2 => Math.hypot(s2.x - x, s2.z - z) < 70)) continue;
+      const y0 = groundY(x, z); let flat = true; for (let q = 0; q < 8; q++) { const qa = q / 8 * 6.28; if (Math.abs(groundY(x + Math.cos(qa) * 9, z + Math.sin(qa) * 9) - y0) > .1) flat = false; } if (!flat) continue;
+      const [type, n] = types[k++], st = { type, n, x, z };
+      for (let q = 0; q < 6; q++) {
+        const qa = q / 6 * 6.28 + rnd(), qr = 3 + rnd() * 5, px = x + Math.cos(qa) * qr, pz = z + Math.sin(qa) * qr;
+        if (type === 'quarry') { const m = mkMesh('rock_' + (q % 3), px, pz, rnd() * 6, 1.8 + rnd() * .8); G.nodes.push({ type: 'stone', x: px, z: pz, amt: 160, max: 160, w: 0, m, site: st }); }
+        else { const m = mkMesh('berry_bush', px, pz, rnd() * 6, 1.4); G.nodes.push({ type: 'food', x: px, z: pz, amt: 70, max: 70, w: 0, m, regrow: true, site: st }); }
+      }
+      SITES.push(st);
+    }
+  }
+  // ---------- minimap (top-left): land, our territory, buildings, sites, enemies, the view; tap to jump there
+  let mm, mx, mmBase, mmT = 0;
+  function makeMinimap() {
+    mm = document.createElement('canvas'); mm.id = 'gMini'; mm.className = 'pnl'; $('hud').appendChild(mm);
+    const S2 = 120; mm.width = S2; mm.height = S2; mx = mm.getContext('2d');
+    mmBase = document.createElement('canvas'); mmBase.width = S2; mmBase.height = S2; const bx = mmBase.getContext('2d'), id = bx.createImageData(S2, S2);
+    const COL = [[52, 110, 180], [222, 200, 146], [98, 162, 70], [66, 128, 54], [130, 124, 120], [236, 240, 248], [168, 128, 86]];
+    for (let j = 0; j < S2; j++) for (let i = 0; i < S2; i++) {
+      const ti = Math.floor(i / S2 * NT), tj = Math.floor(j / S2 * NT), k = KIND[tIdx(ti, tj)], l = Math.max(0, LV[tIdx(ti, tj)]), c = COL[k], sh = .85 + l * .05, o = (j * S2 + i) * 4;
+      id.data[o] = Math.min(255, c[0] * sh); id.data[o + 1] = Math.min(255, c[1] * sh); id.data[o + 2] = Math.min(255, c[2] * sh); id.data[o + 3] = 255;
+    }
+    bx.putImageData(id, 0, 0);
+    const st = document.createElement('style'); st.textContent = '#gMini { left: calc(8px + env(safe-area-inset-left)); top: 58px; width: 104px; height: 104px; padding: 0; image-rendering: pixelated; cursor: pointer; border-radius: 10px; }'; document.head.appendChild(st);
+    mm.addEventListener('pointerdown', e => { e.stopPropagation(); const r = mm.getBoundingClientRect(); TB.camT.set(((e.clientX - r.left) / r.width) * MAPW - HM, 0, ((e.clientY - r.top) / r.height) * MAPW - HM); });
+  }
+  function drawMinimap() {
+    if (!mx) return; const S2 = mm.width, w = p => (p + HM) / MAPW * S2;
+    mx.drawImage(mmBase, 0, 0);
+    mx.strokeStyle = '#ffd27a'; mx.lineWidth = 1; for (const t of G.terr) { mx.beginPath(); mx.arc(w(t.x), w(t.z), t.r / MAPW * S2, 0, 6.29); mx.stroke(); }
+    for (const st of SITES) { mx.fillStyle = st.type === 'quarry' ? '#e8e4dc' : '#ff5a8a'; mx.fillRect(w(st.x) - 2, w(st.z) - 2, 4, 4); mx.strokeStyle = '#140c06'; mx.strokeRect(w(st.x) - 2.5, w(st.z) - 2.5, 5, 5); }
+    mx.fillStyle = '#ffffff'; for (const b of G.buildings) mx.fillRect(w(b.x) - 1, w(b.z) - 1, 2, 2);
+    mx.fillStyle = '#ff3a2a'; for (const e of G.enemies) if (!e.dead) mx.fillRect(w(e.x) - 1.5, w(e.z) - 1.5, e.def.boss ? 4 : 3, e.def.boss ? 4 : 3);
+    const vw = rw * Ue, vh = rh * Ue / Math.sin(pitch); mx.strokeStyle = '#ffffffcc'; mx.strokeRect(w(TB.camT.x) - vw / MAPW * S2 / 2, w(TB.camT.z) - vh / MAPW * S2 / 2, vw / MAPW * S2, vh / MAPW * S2);
+  }
+  function siteLabels() {
+    ox.font = '800 12px Kanit, sans-serif'; ox.textAlign = 'center';
+    for (const st of SITES) { const [sx, sy, sz] = proj(st.x, groundY(st.x, st.z) + 7, st.z); if (sz > 1 || sx < -50 || sx > innerWidth + 50 || sy < -20 || sy > innerHeight + 20) continue;
+      const own = inTerr(st.x, st.z, 6); ox.lineWidth = 3; ox.strokeStyle = '#140c06'; ox.fillStyle = own ? '#9aff8a' : '#ffd27a'; const t = st.n + (own ? '' : ' · ตั้งด่านหน้าใกล้ๆ'); ox.strokeText(t, sx, sy); ox.fillText(t, sx, sy); }
   }
   let hudT = 0;
   function step(dt0) {
@@ -1359,7 +1408,7 @@ const GAME = window.GAME = (function () {
     for (const v of G.vill.slice()) vStep(v, dt);
     for (const e of G.enemies) eStep(e, dt); G.enemies = G.enemies.filter(e => !e.gone);
     shotStep(dt);
-    hudT -= dt0; if (hudT <= 0) { hudT = .2; updHud(); }
+    hudT -= dt0; if (hudT <= 0) { hudT = .2; updHud(); drawMinimap(); }
     return dt;
   }
   function draw() { if (ox) draw2d(1 / 60); }
