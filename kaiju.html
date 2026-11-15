@@ -13,8 +13,9 @@
   Camera is LOCKED (no rotation): 4 preset angles to pick the one PixelLab should draw the 8-direction kaiju for; zoom only.
   Kaiju = 2D cut-out standing upright, always facing the camera: the owner's GPT 4-view sheet (right, left, front, back three-quarter),
   picked by the walking direction on screen; 8 directions later from PixelLab. Everything else (buildings, windows, roads, trees, cars, dust, fire) is code.
-  URL: ?cam=0..3 (A 30 / B 45 / C 60 / D straight 40), ?z=0..3 zoom, ?k=96 (older 96 px kaiju), ?ol=0 no outlines, ?seed=N city.
-  Keys: WASD / arrows walk, J or Space stomp, K hold breath, C camera, Q / E zoom, V kaiju set, O outlines.
+  URL: ?cam=0..3 (A 30 / B 45 / C 60 / D straight 40), ?z=0..3 zoom, ?k=128 (default, ~128 px kaiju) | 16 (the 204 px set) | 96 (oldest),
+  ?ol=0 no outlines, ?seed=N city.
+  Keys: WASD / arrows walk, J or Space stomp, K hold breath, C camera, Q / E zoom, V kaiju 128 <-> 204, O outlines.
   QA hooks: window.KJ (ready, hold, step(dt), draw(), K, B, stomp(), fire(on), setCam(i), zoom(i), info()).
   three.js r147 (MIT) is vendored in vendor/threejs/. Font: Kanit (SIL OFL, vendor/kanit).
 -->
@@ -56,7 +57,7 @@
 <canvas id="cv"></canvas>
 <div id="hud">
   <div id="tl" class="pn"><div class="t">อสูรถล่มเมือง<small>เทส 3D พิกเซล</small></div><div id="bar"><i></i></div><div id="pct">ถล่ม 0%</div></div>
-  <div id="tr"><button id="bCam" class="b">มุมกล้อง</button><button id="bZo" class="b sq">−</button><button id="bZi" class="b sq">+</button><button id="bOl" class="b">เส้นขอบ</button></div>
+  <div id="tr"><button id="bCam" class="b">มุมกล้อง</button><button id="bZo" class="b sq">−</button><button id="bZi" class="b sq">+</button><button id="bK" class="b">อสูร</button><button id="bOl" class="b">เส้นขอบ</button></div>
   <div id="joyB"><div id="joyK"></div></div>
   <button id="bFire" class="r">พ่นไฟ</button>
   <button id="bStomp" class="r">เหยียบ</button>
@@ -77,9 +78,11 @@ const CAMS = [ { n: 'A · ต่ำ 30°', p: 30, y: 45 }, { n: 'B · 45°', p: 
 let camI = qi('cam', 0, 3, 1);
 const ZOOMS = [38, 50, 64, 84];          // world units visible top to bottom
 let zoomI = qi('z', 0, 3, 2);
-const KS = Q.get('k') === '96' ? '96' : '16';
-const MOUTH = { '16': { side: [.93, .38], sideL: [.07, .38], front: [.49, .47], back: [.88, .3] }, '96': { side: [.92, .35], front: [.5, .47] } };
-const VIEWS = KS === '16' ? ['side', 'sideL', 'front', 'back'] : ['side', 'front'];
+const KS = ['96', '16', '128'].includes(Q.get('k')) ? Q.get('k') : '128';   // 128 = default (owner "เอา 128"), 16 = the big 204 px set, 96 = oldest
+const M4 = { side: [.93, .38], sideL: [.07, .38], front: [.49, .47], back: [.88, .3] };
+const MOUTH = { '16': M4, '128': M4, '96': { side: [.92, .35], front: [.5, .47] } };
+const VIEWS = KS === '96' ? ['side', 'front'] : ['side', 'sideL', 'front', 'back'];
+const KLABEL = { '128': 'อสูร 128', '16': 'อสูร 204', '96': 'อสูร 96' };
 let OUTL = Q.get('ol') !== '0';
 const KH = 24;                           // kaiju height in world units (buildings: 3 per floor)
 const BAY = 2.5, FH = 3;                 // window bay width / floor height
@@ -311,7 +314,7 @@ function addBuilding(cx, cz, w, d, floors, si, r) {
   const sty = STY[si], h = floors * FH;
   const geo = new THREE.BoxGeometry(w, h, d); scaleUV(geo, w, h, d);
   const wallM = new THREE.MeshLambertMaterial({ map: styleTex[si] });
-  const roofM = new THREE.MeshLambertMaterial({ map: roofTex(w, d, sty, r) });
+  const roofM = new THREE.MeshLambertMaterial({ map: roofTex(w, d, sty, rng(SEED + B.length * 977)) });   // own random: same city for every kaiju size
   const body = new THREE.Mesh(geo, [wallM, wallM, roofM, wallM, wallM, wallM]);
   body.position.y = h / 2; body.castShadow = body.receiveShadow = true;
   const g = new THREE.Group(); g.position.set(cx, 0, cz); g.add(body);
@@ -484,7 +487,7 @@ const FIRE_RAMP = [[.97, .93, 1], [.9, .45, 1], [.62, .24, 1], [.29, .11, .48]];
 function spawnFire(x, y, z, vx, vy, vz, life, big) { spawnP(x, y, z, vx, vy, vz, life, (big ? 6 : 3) + Math.random() * 4, FIRE_RAMP[0], 1, -2, .6); }
 function dust(x, y, z, vx, vy, vz, life, col) { spawnP(x, y, z, vx, vy, vz, life, 5 + Math.random() * 6, col || [.83, .78, .7], 0, -1, 1.6); }
 function updParticles(dt) {
-  const px = U < .2 ? 1 : .6;   // sizes in render pixels; finer pixels on the 16-bit set
+  const px = Math.min(1, .118 / U);   // sizes in render pixels: the big set has finer pixels
   for (let i = 0; i < MAXP; i++) {
     if (pLife[i] <= 0) { pAl[i] = 0; continue; }
     pLife[i] -= dt; const k = 1 - pLife[i] / pMax[i];
@@ -512,10 +515,14 @@ async function loadKaiju() {
   for (const n of VIEWS) {
     const im = await loadImg(`art/kaiju/k${KS}_${n}.png`);
     const c = mkC(im.width, im.height), x = c.getContext('2d'); x.drawImage(im, 0, 0);
-    const d = x.getImageData(0, 0, c.width, c.height).data; let top = c.height, bot = -1;
-    for (let y = 0; y < c.height; y++) for (let xx = 0; xx < c.width; xx++) if (d[(y * c.width + xx) * 4 + 3] > 128) { if (y < top) top = y; if (y > bot) bot = y; }
+    const d = x.getImageData(0, 0, c.width, c.height).data; let top = c.height, bot = -1; const flame = [];
+    for (let y = 0; y < c.height; y++) for (let xx = 0; xx < c.width; xx++) {
+      const o = (y * c.width + xx) * 4; if (d[o + 3] <= 128) continue;
+      if (y < top) top = y; if (y > bot) bot = y;
+      if (d[o + 2] > 170 && d[o] > 120 && d[o + 1] < 140 && d[o + 2] - d[o + 1] > 90) flame.push(xx, y);   // the drawn purple flames
+    }
     const t = new THREE.Texture(im); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true;
-    SPR[n] = { tex: t, w: im.width, h: im.height, pad: im.height - 1 - bot, body: bot - top + 1, mouth: MOUTH[KS][n] };
+    SPR[n] = { tex: t, w: im.width, h: im.height, pad: im.height - 1 - bot, body: bot - top + 1, mouth: MOUTH[KS][n], flame };
   }
   U = KH / SPR.side.body; T = 1 / U;
 }
@@ -542,7 +549,7 @@ function placeKaiju() {
   const sp = SPR[K.sprN], cp = Math.cos(pitch);
   KP.set(K.x, 0, K.z); const pr = KP.dot(R), pu = KP.dot(UPV);
   KP.addScaledVector(R, Math.round(pr / U) * U - pr).addScaledVector(UPV, Math.round(pu / U) * U - pu);
-  const bob = K.moving && K.stompT <= 0 ? Math.round(Math.abs(Math.sin(K.walk)) * (KS === '16' ? 3 : 1)) : 0;
+  const bob = K.moving && K.stompT <= 0 ? Math.round(Math.abs(Math.sin(K.walk)) * Math.max(1, Math.round(SPR.side.body * .015))) : 0;
   kMesh.position.set(KP.x, KP.y + (K.hopPx + bob - sp.pad) * U / cp, KP.z);
   const sq = K.sq > 0 ? K.sq / .14 : 0;
   kMesh.scale.set(sp.w * U * (K.flip ? -1 : 1) * (1 + .07 * sq), sp.h * U / cp * (1 - .1 * sq), 1);
@@ -551,6 +558,20 @@ function placeKaiju() {
   kBlob.position.set(K.x, .05, K.z); kBlob.rotation.y = yaw;
   const hs = 1 - Math.min(.4, K.hopPx * U * .08);
   kBlob.scale.set(sp.w * U * (K.sprN.startsWith('side') ? .34 : .36) * hs, 1, 4.2 * hs);
+}
+let emberT = 0;
+function embers(dt) {
+  const sp = SPR[K.sprN], f = sp.flame; if (!f.length) return;
+  placeKaiju();   // sprite position of this frame
+  emberT += dt * (K.breath ? 60 : 26);
+  const cp = Math.cos(pitch), sx = K.flip ? -1 : 1;
+  while (emberT > 1) {
+    emberT--;
+    const i = (Math.random() * f.length / 2 | 0) * 2, px = f[i], py = f[i + 1];
+    const x = kMesh.position.x + R.x * ((px + .5) / sp.w - .5) * sp.w * U * sx, z = kMesh.position.z + R.z * ((px + .5) / sp.w - .5) * sp.w * U * sx;
+    const y = kMesh.position.y + (sp.h - py - .5) * U / cp;
+    spawnP(x, y, z, (Math.random() - .5) * 2, 3 + Math.random() * 5, (Math.random() - .5) * 2, .5 + Math.random() * .6, 1.6 + Math.random() * 1.6, FIRE_RAMP[0], 1, -3, .8);
+  }
 }
 function mouthPos(out) {
   const sp = SPR[K.sprN], m = sp.mouth;
@@ -582,7 +603,7 @@ function hurt(b, dmg, sx, sz, kind) {
 function collapse(b, sx, sz) {
   b.alive = false; b.st = 1; b.t = 0; destroyedVol += b.vol; updPct();
   const now = performance.now(); if (now - lastCrash > 120) { sfx('crash'); lastCrash = now; }
-  shake(.35, KS === '16' ? 3 : 2);
+  shake(.35, Math.max(2, Math.round(SPR.side.body / 68)));
   const n = 10 + Math.min(18, b.vol / 220 | 0);
   for (let i = 0; i < n; i++) {
     const px = b.x + (Math.random() - .5) * b.w, pz = b.z + (Math.random() - .5) * b.d; let dx = px - sx, dz = pz - sz; const l = Math.hypot(dx, dz) || 1;
@@ -602,7 +623,7 @@ let shakeT = 0, shakeA = 0, hitstop = 0, fireHeld = false, fireOn = false;
 function shake(t, a) { shakeT = Math.max(shakeT, t); shakeA = Math.max(shakeA, a); }
 function stomp() { if (!KJ.ready || K.stompT > 0) return; K.stompT = STOMP; K.hit = false; au(); sfx('jump'); }
 function impact() {
-  shake(.32, KS === '16' ? 6 : 3); hitstop = .07; sfx('boom'); K.sq = .14;
+  shake(.32, Math.max(3, Math.round(SPR.side.body / 34))); hitstop = .07; sfx('boom'); K.sq = .14;
   ring(K.x, K.z, SR + 3, 0xc77dff, .45); ring(K.x, K.z, SR - 2, 0xffffff, .3);
   for (let i = 0; i < 44; i++) { const a = Math.random() * Math.PI * 2, s = 9 + Math.random() * 14; dust(K.x + Math.cos(a) * 4, .5, K.z + Math.sin(a) * 3, Math.cos(a) * s, 1 + Math.random() * 3, Math.sin(a) * s, .6 + Math.random() * .7); }
   for (let i = 0; i < 26; i++) { const a = Math.random() * Math.PI * 2, s = 3 + Math.random() * 6; spawnFire(K.x + Math.cos(a) * 5, .5, K.z + Math.sin(a) * 4, Math.cos(a) * s, 10 + Math.random() * 14, Math.sin(a) * s, .45 + Math.random() * .4, 1); }
@@ -675,8 +696,9 @@ hold($('bCam'), () => setCam(camI + 1));
 hold($('bZi'), () => zoomBy(1));
 hold($('bZo'), () => zoomBy(-1));
 hold($('bOl'), () => toggleOl());
+hold($('bK'), () => switchKaiju());
 function zoomBy(d) { zS = SSTEP[Math.max(0, Math.min(SSTEP.length - 1, SSTEP.indexOf(S) + d))]; layout(); }   // + = bigger pixels (closer), − = smaller pixels (see more); at most ~1.4M render pixels
-function switchKaiju() { const q = new URLSearchParams(location.search); q.set('k', KS === '16' ? '96' : '16'); q.set('cam', camI); q.set('z', zoomI); location.search = q.toString(); }
+function switchKaiju() { const q = new URLSearchParams(location.search); q.set('k', KS === '128' ? '16' : '128'); q.set('cam', camI); q.set('z', zoomI); location.search = q.toString(); }
 function toggleOl() { OUTL = !OUTL; postM.uniforms.ol.value = OUTL ? 1 : 0; $('bOl').textContent = OUTL ? 'เส้นขอบ เปิด' : 'เส้นขอบ ปิด'; }
 addEventListener('resize', () => { if (KJ.ready) { zS = 0; layout(); } });
 
@@ -751,7 +773,8 @@ function step(dt) {
   }
   if (K.sq > 0) K.sq = Math.max(0, K.sq - dt);
   // breath
-  const breathing = fireHeld && K.stompT <= 0;
+  K.breath = fireHeld && K.stompT <= 0; if (kMesh) embers(dt);
+  const breathing = K.breath;
   if (breathing) { breath(dt); if (!fireOn) { fireOn = true; au(); fireSnd(true); } } else if (fireOn) { fireOn = false; fireSnd(false); }
   pickSprite();
   // buildings
@@ -838,6 +861,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
     buildKaiju();
     setCam(camI); layout();
     camT.set(K.x, 0, K.z);
+    $('bK').textContent = KLABEL[KS];
     $('bOl').textContent = OUTL ? 'เส้นขอบ เปิด' : 'เส้นขอบ ปิด'; postM.uniforms.ol.value = OUTL ? 1 : 0;
     updPct();
     $('load').remove();
