@@ -46,10 +46,22 @@ hs = []
 for mv, k, rgb, a, gy, cx in cells:
     if mv == 'idle': ys = np.where(a.max(1) > .5)[0]; hs.append(gy - ys.min())
 S = BODY * OUT_K / np.median(hs)
+# Codex drew every sheet at a slightly different size and spot (owner: "ตอนยิงจบมันแปลกๆ", the body jumped when a shot ended):
+# match each sheet's FIRST frame (always the ready stance) to idle frame 0 in height and torso centre; the whole sheet gets that fix
+def stance(a, gy, cx):
+    b = (a > .5).sum(1) > 3; ys = np.where(b)[0]; top = ys.min(); h = gy - top
+    band = a[int(top + h * .35):int(top + h * .7)] > .5; xs = np.where(band)[1]; return h, np.median(xs) - cx
+first = {}
+for mv, k, rgb, a, gy, cx in cells: first.setdefault(mv, stance(a, gy, cx))
+FIX = {}
+for mv, (h, tx) in first.items():
+    r = float(np.clip(first['idle'][0] / h, .9, 1.12)) if mv not in ('death',) else 1.0
+    FIX[mv] = (r, first['idle'][1] - tx * r)    # scale, then shift so the torso lines up with idle's (raw px at idle scale)
+print({k: (round(v[0], 3), round(v[1], 1)) for k, v in FIX.items()})
 # common box around the anchor (feet), over all frames
 L = T = Rr = 0
 for mv, k, rgb, a, gy, cx in cells:
-    ys, xs = np.where(a > .1); L = min(L, xs.min() - cx); Rr = max(Rr, xs.max() - cx); T = min(T, ys.min() - gy)
+    r, dx = FIX[mv]; ys, xs = np.where(a > .1); L = min(L, (xs.min() - cx) * r + dx); Rr = max(Rr, (xs.max() - cx) * r + dx); T = min(T, (ys.min() - gy) * r)
 B = 6 / S
 fw, fh = int(np.ceil((Rr - L) * S)) + 4, int(np.ceil((-T + B) * S)) + 4
 fx, fy = int(np.ceil(-L * S)) + 2, int(np.ceil(-T * S)) + 2
@@ -63,12 +75,13 @@ for ri, mv in enumerate(MOVES):
         rgba = np.dstack([rgb, a * 255]).clip(0, 255).astype(np.uint8)
         im = Image.fromarray(rgba, 'RGBA')
         # premultiplied resize so keyed edges do not pick up green / dark fringes
-        sw, sh = max(1, round(im.width * S)), max(1, round(im.height * S))
+        r, dx = FIX[mv]; Sm = S * r
+        sw, sh = max(1, round(im.width * Sm)), max(1, round(im.height * Sm))
         pm = np.asarray(im).astype(float); pm[..., :3] *= pm[..., 3:4] / 255
         rs = np.asarray(Image.fromarray(pm.clip(0, 255).astype(np.uint8), 'RGBA').resize((sw, sh), Image.LANCZOS)).astype(float)
         al = rs[..., 3:4]; rs[..., :3] = np.where(al > 0, rs[..., :3] * 255 / np.maximum(al, 1), 0)
         im = Image.fromarray(rs.clip(0, 255).astype(np.uint8), 'RGBA')
-        px, py = round(fx - cx * S), round(fy - gy * S)
+        px, py = round(fx - cx * Sm + dx * S), round(fy - gy * Sm)
         frame = Image.new('RGBA', (fw, fh), (0, 0, 0, 0)); frame.paste(im, (px, py), im)
         sheet.alpha_composite(frame, (ci * fw, ri * fh))
 sheet.save(f'{DST}/archer.webp', quality=90, method=6)

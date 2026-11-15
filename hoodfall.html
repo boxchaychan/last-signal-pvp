@@ -384,13 +384,20 @@ function drawShots(g) { const t = P.t + titleT;
     const tr = g.createLinearGradient(-L * 3, 0, 0, 0); tr.addColorStop(0, 'rgba(60,170,255,0)'); tr.addColorStop(1, 'rgba(120,210,255,.75)'); g.fillStyle = tr; g.fillRect(-L * 3, -wd, L * 3, wd * 2);
     if (a.big === 2) for (let i = 0; i < 3; i++) { g.strokeStyle = 'rgba(190,240,255,.55)'; g.lineWidth = 1.5; g.beginPath(); g.ellipse(-12 - i * 26 - (t * 200 % 26), 0, 5, 12 - i * 2, 0, 0, 7); g.stroke(); }
     g.fillStyle = '#e8fbff'; g.fillRect(-L, -1, L, 2); g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(5 + a.big * 2, 0); g.lineTo(-3, -3 - a.big); g.lineTo(-3, 3 + a.big); g.fill(); g.restore(); } }
+// when the move changes (a shot ends, run -> idle ...) the last drawn frame fades out over 110 ms instead of snapping (owner "ตอนยิงจบมันแปลกๆ"),
+// and idle restarts at its frame 0 (the ready stance the shot sheets end on)
+const DRW = {k: 'idle', row: 0, f: 0, idle0: 0, bl: null};
 function drawArcher() { if (!AJ || !ARC.width) return; if (H.inv && H.inv < .65 && Math.floor(P.t * 14) % 2) return;
-  let k = 'idle', f = Math.floor((P.t + titleT) * 8) % 12;
+  const now = performance.now() / 1000; let k = 'idle', f = 0;
   if (A.on) { k = A.mv; f = mvFrame(k, A.t); } else if (H.inv > .65) { k = 'hurt'; f = Math.floor((1 - H.inv) / .35 * 12); }
   else if (P.rope) { k = 'jump'; f = 6; } else if (!P.ground) { k = 'jump'; f = P.vy < -250 ? 3 : P.vy < 0 ? 5 : P.vy < 300 ? 6 : 8; } else if (P.run > 0) { k = 'run'; f = Math.floor(P.run * 15) % 12; }
-  const r = AJ.rows[k]; f = clamp(f, 0, r.n - 1); const sc = K / AJ.k;
+  if (k !== DRW.k) { DRW.bl = {row: DRW.row, f: DRW.f, t: now}; if (k === 'idle') DRW.idle0 = now; DRW.k = k; }
+  if (k === 'idle') f = Math.floor((now - DRW.idle0) * 8) % 12;
+  const r = AJ.rows[k]; f = clamp(f, 0, r.n - 1); DRW.row = r.row; DRW.f = f; const sc = K / AJ.k;
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.translate((Math.round(P.x) - Math.round(cam.x) + SH) * K, (Math.round(P.y) - Math.round(cam.y)) * K);
-  ctx.scale(P.face * sc, sc); ctx.drawImage(ARC, f * AJ.w, r.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.restore(); }
+  ctx.scale(P.face * sc, sc); const b = DRW.bl, bk = b ? (now - b.t) / .11 : 1;
+  if (b && bk < 1) { ctx.globalAlpha = 1 - bk; ctx.drawImage(ARC, b.f * AJ.w, b.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.globalAlpha = Math.min(1, .35 + bk); } else DRW.bl = null;
+  ctx.drawImage(ARC, f * AJ.w, r.row * AJ.h, AJ.w, AJ.h, -AJ.fx, -AJ.fy, AJ.w, AJ.h); ctx.restore(); }
 // ---------------------------------------------------------------- drawing
 let K = 2, VW = 0, VH = 0, DPR = 1, view = null, cam = {x: 0, y: 600};
 function resize() { DPR = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * DPR; cv.height = innerHeight * DPR; K = Math.max(1, Math.round(cv.height / 420)); VW = Math.ceil(cv.width / K); VH = Math.ceil(cv.height / K);
