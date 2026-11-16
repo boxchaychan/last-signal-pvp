@@ -1678,6 +1678,13 @@ Open: redo campfire / fence / firewood / fern tree (4 credits) or clean them (ow
   - Night panic button "ซ่อมด่วนทั้งหมด (ไม้ N)" (same spot as the call-early button, shown at night when something is damaged): mends the most damaged buildings first, 1 wood per 8 HP, until the wood runs out.
   - Quests 18: + "ไล่ยักษ์ป่ากลับป่า" (after night 1), + "อัปเกรดรั้วเป็นกำแพงหิน 4 ช่วง" (tap the quest = select a wall).
   - Balance sim (no skills): survives 16+ nights; the giant is driven off 7 times, reaches Lv 12 by night 16 and starts winning (walls / soldiers fall) = the race. Night-2 giant at 300 HP x2.5 killed the sim's hall, so it starts on night 3, softer. Check `node tools/qa/tribe3d_giant.js <shots>`.
+- ASSET WISHLIST v2 (owner "ขาดอะไรฉันจะไปโหลด", 2026-11-16; checked on quaternius.com from the cloud; Google Drive / kenney.nl / itch.io refuse the cloud, so the owner downloads, then attaches the zip here or pushes it into `art/incoming/<pack>/`):
+  1. Quaternius "Ultimate Fantasy RTS" (quaternius.com/packs/ultimatefantasyrts.html, Aug 2022, 128 models, glTF, CC0): buildings in several evolution stages + nature -> hall / huts / towers / fort that visibly change per level.
+  2. Quaternius "Ultimate Monsters" (/packs/ultimatemonsters.html, Oct 2022, 50 animated monsters, glTF, CC0) -> more night enemies and bosses.
+  3. Kenney audio (kenney.nl/assets: "Impact Sounds", "RPG Audio", "Interface Sounds", "Music Jingles", CC0) -> real hits / steps / clicks / dawn and defeat stings instead of the code beeps.
+  4. Music: OpenGameArt.org with licence CC0 (search "tribal drums", "battle loop"): one calm day loop + one night battle loop, .ogg / .mp3.
+  5. Optional: Quaternius "Animated Dinosaur Pack" (/packs/animateddinosaurs.html, 6 dinos, FBX / Blend only -> convert with Blender in the cloud) for bosses.
+  KayKit packs are on GitHub: Claude fetches those itself (no download needed).
 
 ## 2026-11-16: map 1 of the grinding game as a 3D-pixel test (`map3d.html`, free, no PixelLab)
 Owner (consulting about `map.html`, the map Fable 5.2 repainted on 2026-11-13): "หากจะทำแมพให้เป็น 3D พิกเซลละ" -> "ตัวละครจะมีปัญหาไหม" -> "ลองทำดู1แมพ".
