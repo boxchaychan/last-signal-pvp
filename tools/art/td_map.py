@@ -10,12 +10,15 @@
 #   MAP=td3 python3 tools/art/td_map.py -> art/td/map3/ (2026-11-13: a cold ruined graveyard east of map 2 for stronger monsters:
 #   grey dirt and stone with dead grass, a paved road, two plateaus with stairs, a murky pool, graves, ruins, dead trees.
 #   Only art already in the repo, recoloured in code; td1 / td2 output is unchanged apart from map 2's new east exit)
+#   EXPORT3D=<folder> python3 tools/art/td_map.py -> <folder>/paint.npz + props.json for tools/art/map3d_build.py (map3d.html);
+#   writes nothing else (the ground there is painted without the tree / bush shadows: the 3D page casts real ones)
 import json, math, os, random, sys, numpy as np
 from PIL import Image
 from scipy import ndimage
 sys.path.insert(0, 'tools/art'); from px_smooth import smooth_up
 random.seed(7); np.random.seed(7)
 W, H = 1800, 1100; DH = 62; HERO = 50
+E3D = os.environ.get('EXPORT3D')   # a folder: write the 3D export there instead of the map (see the end of the ground painter)
 MAPID = os.environ.get('MAP', 'td1'); T2 = MAPID == 'td2'; T3 = MAPID == 'td3'
 OUT = 'art/td/map3/' if T3 else 'art/td/map2/' if T2 else 'art/td/map1/'; os.makedirs(OUT, exist_ok=True)
 yy, xx = np.mgrid[0:H, 0:W]
@@ -74,11 +77,13 @@ else:   # a river from the top to the bottom with a wooden bridge where the road
     bank = dil(river, 7); pond = river & ~deck
     RAIL = deck & ((yy < 606) | (yy > 648))
 # ---- plateaus: footprint at ground level, top drawn DH higher, cliff face below
+FPRINT = np.zeros((H, W), bool)   # the plateaus' footprints at ground level (used by the 3D export only)
 BOULDERS = []; UP = np.zeros((H, W), bool); FACE = np.zeros((H, W), bool); RAMP = np.zeros((H, W), bool); FOOT = np.zeros((H, W), bool)
 def shift_up(m, k):
     o = np.zeros_like(m); o[:H - k] = m[k:]; return o
 def plateau(mask, ramps):
-    global UP, FACE, FOOT
+    global UP, FACE, FOOT, FPRINT
+    FPRINT |= mask
     up = shift_up(mask, DH); span = np.zeros_like(mask)
     for k in range(DH + 1): span |= shift_up(mask, k)
     face = span & ~up
@@ -413,14 +418,15 @@ for i, x in enumerate(range(-60, W + 100, 330)):
     PROPS.append({'s': ('crown', 0, i % 2), 'x': x + random.randint(-30, 30), 'y': H + 70, 'kind': 'crown', 'over': True})
 
 # ---- collision footprints of the props, and their shadow shapes (to the lower right) for the ground painter
-blk = np.zeros((H, W), bool); SHAD = np.zeros((H, W), bool)
+blk = np.zeros((H, W), bool); SHAD = np.zeros((H, W), bool); SHAD3 = np.zeros((H, W), bool)   # SHAD3: without the trees / bushes that the 3D page swaps for 3D models
 for p in PROPS:
     im = SPR[p['s']]; w, h = im.size; x, y = p['x'], p['y']
     if p['kind'] in ('crown', 'flowers', 'flat', 'water'): continue
     if p['kind'] in ('tree', 'stree', 'tree2'):
         SHAD |= ((xx - x - w * .1) / (w * .42)) ** 2 + ((yy - y + 6) / (w * .17)) ** 2 < 1
     else:
-        SHAD |= ((xx - x - w * .06) / (w * .5)) ** 2 + ((yy - y + h * .08) / (h * .16 + 3)) ** 2 < 1
+        sh_ = ((xx - x - w * .06) / (w * .5)) ** 2 + ((yy - y + h * .08) / (h * .16 + 3)) ** 2 < 1; SHAD |= sh_
+        if E3D and p['kind'] != 'bush': SHAD3 |= sh_
     fp = FP[p['kind']]
     if fp:
         rx = fp[0] * w; ry = fp[1] * h if fp[1] < 1 else fp[1]; oy = fp[2] * h if fp[2] < 1 else fp[2]
@@ -621,7 +627,7 @@ r6 = (runpos(ramp_a) - 1) % 6                                               # st
 g[ramp_a] = PAL['sm']; g[ramp_a & (r6 == 0)] = PAL['sl']; g[ramp_a & (r6 >= 3)] = PAL['sd']; g[ramp_a & (r6 == 5)] = PAL['so']
 g[ramp_a & ~(mv(ramp_a, 0, 1) & mv(ramp_a, 0, -1))] = PAL['so']
 # -- 4. bold flat shadows: under every prop (the same ellipses as before) and at the foot of the walls
-shd = (lo(SHAD) & ~face_a & ~ramp_a & ~deck_a) | lo(FOOT)
+shd = (lo(SHAD3 if E3D else SHAD) & ~face_a & ~ramp_a & ~deck_a) | lo(FOOT)
 shd |= n4(shd) & (RG.random((GH, GW)) < .22) & ~face_a & ~ramp_a & ~deck_a                # a few teeth on the edge
 g[shd & ~water] = shade(g[shd & ~water]); g[shd & water] = (g[shd & water] * np.array((.7, .74, .82))).astype(np.uint8)
 # -- 5. small life on the soft ground (never on road / water / walls / stairs, not under a blocking prop)
@@ -703,6 +709,11 @@ for (x, y, r), moss in zip(BOULDERS, MOSSY):
     for qy, qx in px: g[qy, qx] = PAL['pd'] if qy - cy > ra * .35 or qx - cx > ra * .7 else PAL['pm']
     for q in ell(cx - 1, cy - 1, ra - 1.6, ra - 2.2):
         if q in s_: g[q] = PAL['moss'] if moss else PAL['pl']
+if E3D:   # 3D export (map3d.html): the ground painted without the tree / bush shadows + the masks, then stop (no normal output is written)
+    os.makedirs(E3D, exist_ok=True)
+    np.savez_compressed(E3D + '/paint.npz', g=g, fprint=lo(FPRINT), up=up_a, face=face_a, ramp=ramp_a, water=water)
+    json.dump({'dh': DH, 'props': [{'s': [str(v) for v in p['s']], 'x': p['x'], 'y': p['y'], 'kind': p['kind'], 'over': p['over']} for p in PROPS]}, open(E3D + '/props.json', 'w'))
+    print('3D export ->', E3D); sys.exit()
 ground = Image.fromarray(g).resize((W, H), Image.NEAREST); ground.save(OUT + 'ground.png', optimize=True)
 
 # ---- olive grade (Dimraeth) for the PROPS only: soften saturation, warm, greens toward olive, lifted darks (the ground is
