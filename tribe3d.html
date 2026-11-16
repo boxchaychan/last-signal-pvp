@@ -53,6 +53,7 @@
     <button id="bZi" class="ib" title="ซูมเข้า"><svg viewBox="0 0 24 24"><path d="M10 2.5a7.5 7.5 0 0 1 6 12l5 5-1.8 1.8-5-5A7.5 7.5 0 1 1 10 2.5zm0 2.3a5.2 5.2 0 1 0 0 10.4 5.2 5.2 0 0 0 0-10.4z"/><path d="M8.9 6.8h2.2v2.1h2.1v2.2h-2.1v2.1H8.9v-2.1H6.8V8.9h2.1z"/></svg></button>
     <button id="bTime" class="ib" title="เวลา"><svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/><path d="M11 1.5h2v3h-2zM11 19.5h2v3h-2zM1.5 11h3v2h-3zM19.5 11h3v2h-3zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4zM16.3 17.7l1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 6.3l2.1-2.1 1.4 1.4-2.1 2.1z"/></svg><em id="timeL">กลางวัน</em></button>
     <button id="bPix" class="ib" title="พิกเซล"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 13h8v8h-8z"/><path d="M13 3h8v8h-8zM3 13h8v8H3z" opacity=".45"/></svg><em id="pixL">พิกเซล</em></button>
+    <button id="bSnd" class="ib" title="เสียง"><svg viewBox="0 0 24 24"><path d="M3 9h4l5-4.5v15L7 15H3z"/><path id="sndW" d="M15 8.5a5 5 0 0 1 0 7M17.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><em id="sndL">เสียง</em></button>
     <button id="bOl" class="ib" title="เส้นขอบ"><svg viewBox="0 0 24 24"><path d="M3.5 3.5h17v17h-17zm2.5 2.5v12h12V6z"/><path d="M9 9h6v6H9z" opacity=".55"/></svg></button>
   </div>
   <div id="hint">ลากเพื่อเลื่อนแมพ · ล้อเมาส์ / บีบนิ้ว ซูม · WASD เลื่อน · C มุมกล้อง · N เวลา</div>
@@ -1364,6 +1365,7 @@ const GAME = window.GAME = (function () {
     }
     e.ring = new THREE.Mesh(new THREE.RingGeometry(def.r * .9, def.r * 1.15, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: def.boss ? 0xff3030 : 0xff6a3a, transparent: true, opacity: .7, depthWrite: false })); scene.add(e.ring);
     e.root.traverse(o => { if (o.isMesh && o.material && o.material.emissive) { const mm = Array.isArray(o.material) ? o.material : [o.material]; o.material = mm.map(q => q.clone()); if (o.material.length === 1) o.material = o.material[0]; } });
+    if (def.boss && !def.giant) sfx('boss');
     setEm(e, .16, .03, .02); G.enemies.push(e); return e;
   }
   function setEm(e, r, g, b) { e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(r, g, b); } }); }
@@ -1424,9 +1426,8 @@ const GAME = window.GAME = (function () {
     place(e);
   }
   function hitTarget(e, t) {
-    if (t.g && t.type) { const dm = e.dmg * (e.def.bldK || 1); t.hp -= dm; float(t.x, groundY(t.x, t.z) + 6, t.z, '-' + Math.round(dm), '#ff5a4a'); if (t.hp <= 0 && !t.dead && e.def.giant) { G.giantLv += .25; say(`ยักษ์ป่าทุบ${BT[t.type].n}พัง! มันโตขึ้นอีก`, 2000); } for (let i = 0; i < 8; i++) spawnP(t.x + (rnd() - .5) * t.r, groundY(t.x, t.z) + 1 + rnd() * 3, t.z + (rnd() - .5) * t.r, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .8, 4, 0); if (t.hp <= 0 && !t.dead) { say(`${BT[t.type].n}ถูกทำลาย!`, 1800); removeBuilding(t); } }
-    else hurtVillager(t, e.dmg);
-    sfx('hit');
+    if (t.g && t.type) { const dm = e.dmg * (e.def.bldK || 1); t.hp -= dm; float(t.x, groundY(t.x, t.z) + 6, t.z, '-' + Math.round(dm), '#ff5a4a'); if (t.hp <= 0 && !t.dead && e.def.giant) { G.giantLv += .25; say(`ยักษ์ป่าทุบ${BT[t.type].n}พัง! มันโตขึ้นอีก`, 2000); } for (let i = 0; i < 8; i++) spawnP(t.x + (rnd() - .5) * t.r, groundY(t.x, t.z) + 1 + rnd() * 3, t.z + (rnd() - .5) * t.r, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .8, 4, 0); if (t.hp <= 0 && !t.dead) { say(`${BT[t.type].n}ถูกทำลาย!`, 1800); removeBuilding(t); } sfx('bhit'); }
+    else { hurtVillager(t, e.dmg); sfx('hit'); }
   }
   function place(e) {
     const gy = groundY(e.x, e.z), y = e.fly ? e.y : Math.max(gy, -.4);
@@ -1571,7 +1572,7 @@ const GAME = window.GAME = (function () {
       s.t += dt; const k = Math.min(1, s.t / s.dur), e = s.e, ty = (e.fly ? e.y : groundY(e.x, e.z)) + 1.2;
       const x = s.x0 + (e.x - s.x0) * k, z = s.z0 + (e.z - s.z0) * k, y = s.y0 + (ty - s.y0) * k + Math.sin(k * Math.PI) * 3;
       s.m.position.set(x, y, z); s.m.lookAt(e.x, ty, e.z);
-      if (k >= 1) { s.done = true; scene.remove(s.m); if (!e.dead) hurtEnemy(e, s.dmg); }
+      if (k >= 1) { s.done = true; scene.remove(s.m); if (!e.dead) { hurtEnemy(e, s.dmg); sfx('shot'); } }
     }
     G.shots = G.shots.filter(s => !s.done);
   }
@@ -1757,10 +1758,64 @@ const GAME = window.GAME = (function () {
 
   // ---------- sounds (WebAudio, made in code)
   let AC = null, NB = null;
-  function au() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; } } if (AC.state === 'suspended') AC.resume(); }
-  function noiseSrc() { if (!NB) { NB = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = NB.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } const s = AC.createBufferSource(); s.buffer = NB; return s; }
+  function au() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; } loadSnd(); } if (AC.state === 'suspended') AC.resume(); }
+  // ---------- real sounds (owner 2026-11-16 "เสียง Kenney + เพลง แทนเสียงบี๊บ"): Kenney Impact Sounds / RPG Audio / Interface Sounds /
+  // Music Jingles (CC0, vendor/kenney-audio) in art/tribe3d/sfx, music loops (OpenGameArt CC0) in art/tribe3d/music.
+  // Code beeps stay as the fallback while a sound is still loading. Sound on / off: speaker button top right (saved), ?snd=0.
+  const v5 = n => [0, 1, 2, 3, 4].map(i => `${n}_00${i}`);
+  const SFX = {   // key -> files (one picked at random), volume, minimum gap between two plays (seconds)
+    hit:   { f: v5('impactPunch_medium'), v: .45, gap: .07 },
+    bhit:  { f: v5('impactWood_medium'), v: .5, gap: .08 },
+    shot:  { f: v5('impactSoft_medium'), v: .3, gap: .05 },
+    throw: { f: ['drawKnife1', 'drawKnife2', 'drawKnife3'], v: .22, gap: .06 },
+    build: { f: v5('impactWood_heavy'), v: .55, gap: .1 },
+    drum:  { f: v5('impactSoft_heavy'), v: 1, gap: .05 },
+    boom:  { f: v5('impactMining'), v: .8, gap: .05, synth: true },   // the synth rumble plays under it
+    horn:  { f: ['../music/raid_prehistoric_drums'], v: .9, gap: 1 },
+    click: { f: ['click_001', 'click_002', 'click_003'], v: .35, gap: .04 },
+    dawn:  { f: ['jingles_STEEL02'], v: .6, gap: 1 },
+    lose:  { f: ['jingles_STEEL14'], v: .6, gap: 1 },
+    boss:  { f: ['jingles_HIT15'], v: .6, gap: 1 },
+  };
+  const SBUF = {}, SLAST = {};
+  let SND_ON = Q.get('snd') !== '0'; try { if (localStorage.getItem('tribe3d_snd') === '0') SND_ON = false; } catch (_) {}
+  function loadSnd() {
+    const files = new Set(); for (const k in SFX) SFX[k].f.forEach(f => files.add(f));
+    for (const f of files) fetch(`art/tribe3d/sfx/${f}.ogg`).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(b => new Promise((ok, no) => AC.decodeAudioData(b, ok, no))).then(buf => { SBUF[f] = buf; }).catch(() => {});
+    startMusic();
+  }
+  // music: two looping <audio> tracks through gain nodes, cross-faded by the time of day (raid drums are a one-shot sting)
+  const MUS = { day: 'day_jungleloop', night: 'night_jungle_battle_loop' }, MEL = {};
+  function startMusic() {
+    if (!AC.createMediaElementSource) return;
+    for (const k in MUS) {
+      const a = new Audio(`art/tribe3d/music/${MUS[k]}.ogg`); a.loop = true; a.preload = 'auto'; a.crossOrigin = 'anonymous';
+      const g = AC.createGain(); g.gain.value = 0; AC.createMediaElementSource(a).connect(g).connect(AC.destination); MEL[k] = { a, g };
+    }
+    musicStep();
+  }
+  function musicStep() {   // called every frame: day track by day, night track while the beasts are out
+    if (!MEL.day || !AC) return; const nk = nightK(), on = SND_ON && G.on, vd = on ? .32 * (1 - nk) : 0, vn = on ? .38 * nk : 0;
+    for (const [k, v] of [['day', vd], ['night', vn]]) { const m = MEL[k]; m.g.gain.setTargetAtTime(v, AC.currentTime, .4); if (v > .005 && m.a.paused) m.a.play().catch(() => {}); else if (v <= .005 && !m.a.paused && m.g.gain.value < .01) m.a.pause(); }
+  }
+  function toggleSnd() { SND_ON = !SND_ON; try { localStorage.setItem('tribe3d_snd', SND_ON ? '1' : '0'); } catch (_) {} au(); musicStep(); return SND_ON; }
   function sfx(k) {
-    if (!AC) return;
+    if (!AC || !SND_ON) return;
+    const d = SFX[k], now = AC.currentTime;
+    if (d) {
+      if (now - (SLAST[k] || -9) < d.gap) return;
+      const ready = d.f.filter(f => SBUF[f]);
+      if (ready.length) {
+        SLAST[k] = now; const s = AC.createBufferSource(), g = AC.createGain(); s.buffer = SBUF[ready[Math.random() * ready.length | 0]];
+        s.playbackRate.value = .92 + Math.random() * .16; g.gain.value = d.v; s.connect(g).connect(AC.destination); s.start();
+        if (!d.synth) return;
+      }
+    }
+    synth(k === 'bhit' ? 'hit' : k);
+  }
+  function noiseSrc() { if (!NB) { NB = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = NB.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } const s = AC.createBufferSource(); s.buffer = NB; return s; }
+  function synth(k) {   // the old code beeps (fallback)
     if (k === 'whoosh' || k === 'boom' || k === 'drum') {
       const t = AC.currentTime, n = noiseSrc(), f = AC.createBiquadFilter(), g = AC.createGain(); n.connect(f).connect(g).connect(AC.destination);
       if (k === 'whoosh') { f.type = 'bandpass'; f.Q.value = 1.4; f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(300, t + 1.2); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.16, t + .5); g.gain.exponentialRampToValueAtTime(.001, t + 1.3); n.start(t); n.stop(t + 1.35); return; }
@@ -1865,20 +1920,20 @@ const GAME = window.GAME = (function () {
     hudEl.go = mk('button', 'gGo', '', 'เรียกศัตรูเลย'); hudEl.go.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); callEarly(); });
     hudEl.fix = mk('button', 'gFix', '', 'ซ่อมด่วน'); hudEl.fix.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); repairAll(); });
     hudEl.sk = mk('div', 'gSk', '', SK_ORDER.map(k => `<button class="sk" data-k="${k}" title="${SK[k].n} (${SK_ORDER.indexOf(k) + 1})">${ICON[k]}<span class="cdv"></span><b>${SK[k].n}</b></button>`).join(''));
-    for (const b of hudEl.sk.children) b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); aimSkill(b.dataset.k); });
+    for (const b of hudEl.sk.children) b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); sfx('click'); aimSkill(b.dataset.k); });
     ov = document.createElement('canvas'); ov.id = 'gOv'; document.body.insertBefore(ov, $('hud')); ox = ov.getContext('2d');
     const fit = () => { const d = window.devicePixelRatio || 1; ov.width = innerWidth * d; ov.height = innerHeight * d; ov.style.width = innerWidth + 'px'; ov.style.height = innerHeight + 'px'; };
     fit(); addEventListener('resize', fit);
     const stop = e => { e.stopPropagation(); };
     for (const el of [hudEl.btn, hudEl.bar, hudEl.conf]) el.addEventListener('pointerdown', stop);
-    hudEl.btn.addEventListener('pointerdown', () => { au(); endAim(); hudEl.bar.classList.toggle('open'); if (!hudEl.bar.classList.contains('open')) cancelBuild(); });
+    hudEl.btn.addEventListener('pointerdown', () => { au(); sfx('click'); endAim(); hudEl.bar.classList.toggle('open'); if (!hudEl.bar.classList.contains('open')) cancelBuild(); });
     $('gOk').addEventListener('pointerdown', e => { e.stopPropagation(); confirmBuild(); });
     const sst = document.createElement('style'); sst.textContent = '#gSel { left: 50%; bottom: 100px; transform: translateX(-50%); display: none; padding: 6px 12px 8px; font: 600 12px Kanit, sans-serif; text-align: center; max-width: 90vw; } #gSel b { font-weight: 800; font-size: 14px; text-shadow: var(--ol); } #gSel button { margin-top: 5px; font: 800 12px Kanit, sans-serif; color: #fff; padding: 5px 10px; border-radius: 10px; border: 2px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#5ac85a, #2a8a2a); } #gSel #gRep { background: linear-gradient(#c8a04a, #8a6a1a); }'; document.head.appendChild(sst);
     $('gNo').addEventListener('pointerdown', e => { e.stopPropagation(); cancelBuild(); });
     for (const t of BUILD_ORDER) {
       const c = document.createElement('div'); c.className = 'gCard'; c.dataset.t = t;
       c.innerHTML = `<img alt="" src="${thumb(t)}"><b>${BT[t].n}</b><span class="cs">${costTxt(BT[t].cost)}</span><span class="cap"></span>`;
-      c.addEventListener('pointerdown', e => { e.stopPropagation(); au(); startBuild(t); }); hudEl.bar.appendChild(c);
+      c.addEventListener('pointerdown', e => { e.stopPropagation(); au(); sfx('click'); startBuild(t); }); hudEl.bar.appendChild(c);
     }
     // the time button becomes the game speed button
     const tb = $('bTime'), nb = tb.cloneNode(true); tb.replaceWith(nb);
@@ -2047,11 +2102,11 @@ const GAME = window.GAME = (function () {
   function load() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch (_) { return null; } }
   function screen(html, buttons, dark) {
     const s = document.createElement('div'); s.className = 'gScreen' + (dark ? ' dark' : ''); s.innerHTML = `<div class="box">${html}<div class="btns"></div></div>`;
-    for (const [label, f, alt] of buttons) { const b = document.createElement('button'); b.textContent = label; if (alt) b.className = 'alt'; b.addEventListener('pointerdown', e => { e.stopPropagation(); au(); s.remove(); f(); }); s.querySelector('.btns').appendChild(b); }
+    for (const [label, f, alt] of buttons) { const b = document.createElement('button'); b.textContent = label; if (alt) b.className = 'alt'; b.addEventListener('pointerdown', e => { e.stopPropagation(); au(); sfx('click'); s.remove(); f(); }); s.querySelector('.btns').appendChild(b); }
     document.body.appendChild(s); return s;
   }
   function gameOver() {
-    if (G.over) return; G.over = true; G.on = false; const n = G.day - 1;
+    if (G.over) return; G.over = true; G.on = false; sfx('lose'); musicStep(); const n = G.day - 1;
     try { G.best = Math.max(+localStorage.getItem(BEST) || 0, n); localStorage.setItem(BEST, G.best); localStorage.removeItem(SAVE); } catch (_) {}
     screen(`<h1>โถงหัวหน้าเผ่าถูกทำลาย</h1><p>เผ่าของคุณรอดมาได้ <b>${n}</b> คืน · ล้มศัตรู ${G.killed} ตัว<br>สถิติดีที่สุด ${G.best} คืน</p>`, [['เริ่มใหม่', () => location.reload()]], true);
   }
@@ -2072,6 +2127,8 @@ const GAME = window.GAME = (function () {
   function init() {
     ghostMat = new THREE.MeshLambertMaterial({ color: 0x6aff7a, transparent: true, opacity: .55, depthWrite: false });
     hud();
+    const sb = $('bSnd'), sndUi = () => { sb.classList.toggle('off', !SND_ON); $('sndW').style.display = SND_ON ? '' : 'none'; $('sndL').textContent = SND_ON ? 'เสียง' : 'ปิดเสียง'; };
+    if (sb) { sndUi(); sb.addEventListener('pointerdown', e => { e.stopPropagation(); toggleSnd(); sndUi(); sfx('click'); }); }
     // tap = short press without dragging
     let down = null;
     addEventListener('pointerdown', e => { if (e.target.closest && (e.target.closest('button') || e.target.closest('.pnl') || e.target.closest('.gScreen'))) { down = null; return; } down = { x: e.clientX, y: e.clientY, t: performance.now() }; au(); });
@@ -2139,6 +2196,7 @@ const GAME = window.GAME = (function () {
   let hudT = 0;
   function step(dt0) {
     if (!G.on) return dt0;
+    musicStep();
     const dt = Math.min(dt0, .05) * G.speed;
     const wasNight = isNight(); G.t += dt;
     if (G.t >= CYCLE) { G.t -= CYCLE; G.day++; planWave(); for (const k of SK_ORDER) if (SK[k].day === G.day) say(`ปลดล็อกทักษะใหม่: ${SK[k].n}! · ${SK[k].d}`, 4500); }
@@ -2180,7 +2238,7 @@ const GAME = window.GAME = (function () {
     for (let r = 18; r < 70; r += 3) for (let a = 0; a < 360; a += 9) { const x = VX + Math.cos(a * D2R) * r, z = VZ + Math.sin(a * D2R) * r; if (!placeOk(t, x, z)) return { x, z }; }
     return null;
   }
-  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, PEOPLE, tryUpgrade, train, forts, repairAll, planWave, callEarly, QUESTS, capOf, countOf, hallLv, get fxCount() { return FXA.length; }, get on() { return G.on; },
+  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, PEOPLE, tryUpgrade, train, forts, repairAll, planWave, callEarly, QUESTS, capOf, countOf, hallLv, get fxCount() { return FXA.length; }, snd: () => ({ on: SND_ON, ctx: AC && AC.state, bufs: Object.keys(SBUF).length, want: new Set(Object.values(SFX).flatMap(d => d.f)).size, music: Object.fromEntries(Object.entries(MEL).map(([k, m]) => [k, { playing: !m.a.paused, t: +m.a.currentTime.toFixed(1), gain: +m.g.gain.value.toFixed(2) }])) }), sfx, get on() { return G.on; },
     cheat: { res(n) { G.res.wood = G.res.stone = G.res.food = n; }, night() { G.t = DAY + DUSK - .1; }, day(d) { G.day = d; } } };
 })();
 </script>
