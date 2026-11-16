@@ -1672,6 +1672,12 @@ Open: redo campfire / fence / firewood / fern tree (4 credits) or clean them (ow
   - Villagers are workers only now: at night they walk to the big fire and sit round it; they hit back only at a beast within 6.
   - No loot: beasts no longer drop food and the dawn food bonus is gone; food / wood / stone come only from gathering, hunting herds, farms (plus quest rewards and the call-early bonus).
   - Quests 16: hut, tower, FORT, TRAIN 2 SOLDIERS (the panel selects the fort), farm, night 1, hall 2, walls, 8 people, 6 SOLDIERS (upgrade the fort), outpost, night 5, hall 3, 4 towers, night 10, hall 5. Save keeps the soldiers per fort. Balance sim builds 2 forts and trains while food > 60.
+- Batch 12 (2026-11-16, owner asked "เคยเล่น troll and เอลไหม" then "ละไงต่อ" = go on; free): the Troll-and-Elves race (genre feel only: no names / art / map from it).
+  - ยักษ์ป่า (forest giant, `EN.giant`): the KayKit man scaled to 9.5 units with a green tint, walks (Walking_A), chops at buildings (x2.2 damage to buildings). Comes every night from night 3 except boss nights (last in the wave list; clock text "ยักษ์ป่า Lv.N + ..."). Never killed: at 0 HP it limps back to the forest (`giantBeat`++). `giantLv` +1 after every night it came, +.25 for every building it smashes; HP 260 x (1 + .45 (lv - 1)), damage 20 x (1 + .2 (lv - 1)). Saved (`gl`, `gb`).
+  - Walls in 3 tiers: รั้วไม้แหลม 160 HP -> กำแพงหิน 420 (wood 10 + stone 25, needs hall 2) -> กำแพงหินเสริม 900 with spikes (stone 60, hall 3); the mesh changes (grey blocks + cap, then taller darker blocks + bone spikes). Wall panel: "อัปเกรดทุกช่วง xN" upgrades every wall of that tier while resources last.
+  - Night panic button "ซ่อมด่วนทั้งหมด (ไม้ N)" (same spot as the call-early button, shown at night when something is damaged): mends the most damaged buildings first, 1 wood per 8 HP, until the wood runs out.
+  - Quests 18: + "ไล่ยักษ์ป่ากลับป่า" (after night 1), + "อัปเกรดรั้วเป็นกำแพงหิน 4 ช่วง" (tap the quest = select a wall).
+  - Balance sim (no skills): survives 16+ nights; the giant is driven off 7 times, reaches Lv 12 by night 16 and starts winning (walls / soldiers fall) = the race. Night-2 giant at 300 HP x2.5 killed the sim's hall, so it starts on night 3, softer. Check `node tools/qa/tribe3d_giant.js <shots>`.
 
 ## 2026-11-16: map 1 of the grinding game as a 3D-pixel test (`map3d.html`, free, no PixelLab)
 Owner (consulting about `map.html`, the map Fable 5.2 repainted on 2026-11-13): "หากจะทำแมพให้เป็น 3D พิกเซลละ" -> "ตัวละครจะมีปัญหาไหม" -> "ลองทำดู1แมพ".

@@ -887,7 +887,7 @@ const GAME = window.GAME = (function () {
   const DAY = 110, DUSK = 10, NIGHT = 65, DAWN = 8, CYCLE = DAY + DUSK + NIGHT + DAWN;
   const G = { on: false, q: 0, res: { wood: 120, stone: 60, food: 80 }, popCap: 0, day: 1, t: 0, speed: 1, over: false, best: 0,
     buildings: [], vill: [], enemies: [], shots: [], nodes: [], terr: [], floats: [], mode: null, ghost: null, ghostOk: false, ghostAt: null, killed: 0, raid: null, birthT: 0, eatT: 0,
-    cd: { spear: 0, pot: 0, drum: 0 }, aim: null, buff: 0, zones: [], later: [], spears: [], rings: [], shake: 0, dying: [], chief: null, sol: [] };
+    cd: { spear: 0, pot: 0, drum: 0 }, aim: null, buff: 0, zones: [], later: [], spears: [], rings: [], shake: 0, dying: [], chief: null, sol: [], giantLv: 1, giantBeat: 0 };
   const SAVE = 'tribe3d_v2', BEST = 'tribe3d_best';   // v2 = started from scratch (v1 saves had the hand-made village)
   const RES_N = { wood: 'ไม้', stone: 'หิน', food: 'อาหาร' };
   const BT = {   // building types
@@ -918,6 +918,7 @@ const GAME = window.GAME = (function () {
     alpha:{ a: 'Wolf', hp: 380, dmg: 18, spd: 6.8, r: 2.2, food: 20, n: 'จ่าฝูงหมาป่า', boss: true, scale: 1.9, tint: 0x8a2a2a },
     bird: { hp: 520, dmg: 26, spd: 11, r: 3, food: 30, n: 'นกยักษ์', boss: true, fly: true },
     mammoth: { hp: 900, dmg: 34, spd: 3.6, r: 3.5, food: 60, n: 'แมมมอธคลั่ง', boss: true },
+    giant: { hp: 260, dmg: 20, spd: 4.4, r: 2.6, n: 'ยักษ์ป่า', boss: true, giant: true, bldK: 2.2 },   // comes back every night, stronger (owner liked the Troll and Elves feel)
   };
   const V = new V3(), V2 = new V3(), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   let ov, ox, hudEl = {}, VMAT = [], ghostMat, terrLines = [];
@@ -969,7 +970,8 @@ const GAME = window.GAME = (function () {
   }
 
   // ---------- buildings
-  function buildMesh(type, x, z, ry) {
+  const WALLN = ['รั้วไม้แหลม', 'กำแพงหิน', 'กำแพงหินเสริม'], WALLHP = [160, 420, 900];
+  function buildMesh(type, x, z, ry, lv) {
     const g = new THREE.Group(); g.position.set(x, groundY(x, z), z); g.rotation.y = ry || 0; scene.add(g);
     const add = (n, ox, oz, s, r2) => { if (!MODELS[n]) return; const m = new THREE.Mesh(MODELS[n], VCOL); m.position.set(ox || 0, 0, oz || 0); m.scale.setScalar(s || 1); m.rotation.y = r2 || 0; m.castShadow = m.receiveShadow = true; g.add(m); };
     if (type === 'hut') add(['hut_cone', 'hut_dome', 'hut_bone'][Math.random() * 3 | 0], 0, 0, .95);
@@ -977,6 +979,12 @@ const GAME = window.GAME = (function () {
     else if (type === 'farm') { const rows = new THREE.Mesh(new THREE.BoxGeometry(7, .5, 6), new THREE.MeshLambertMaterial({ color: 0x8a5a32 })); rows.position.y = .25; rows.receiveShadow = true; g.add(rows);
       for (let i = 0; i < 4; i++) for (let k = 0; k < 5; k++) { const p = new THREE.Mesh(new THREE.BoxGeometry(.6, .8, .6), new THREE.MeshLambertMaterial({ color: new THREE.Color().setHSL(.27 + rnd() * .06, .55, .34 + rnd() * .1) })); p.position.set(-2.6 + k * 1.3, .85, -2.2 + i * 1.45); p.castShadow = true; g.add(p); } }
     else if (type === 'tower') add('watchtower', 0, 0, .8);
+    else if (type === 'wall' && (lv || 1) > 1) {   // stone wall (2) / reinforced stone with spikes (3)
+      const big = lv > 2, h = big ? 3.4 : 2.5;
+      for (let i = -2; i <= 2; i++) { const c = new THREE.Color().setHSL(.08, .06, (big ? .38 : .5) + rnd() * .08), m = new THREE.Mesh(new THREE.BoxGeometry(1, h, big ? 1.5 : 1.2), new THREE.MeshLambertMaterial({ color: c })); m.position.set(i * 1.02, h / 2, 0); m.rotation.y = (rnd() - .5) * .12; m.castShadow = m.receiveShadow = true; g.add(m); }
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(5.3, .35, big ? 1.7 : 1.35), new THREE.MeshLambertMaterial({ color: big ? 0x4a4440 : 0x7a7068 })); cap.position.y = h + .15; cap.castShadow = true; g.add(cap);
+      if (big) for (let i = -2; i <= 2; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(.22, .9, 5), new THREE.MeshLambertMaterial({ color: 0xd8d0c0 })); sp.position.set(i * 1.02, h + .75, 0); sp.castShadow = true; g.add(sp); }
+    }
     else if (type === 'wall') { for (let i = -2; i <= 2; i++) add('palisade_log', i * .95, 0, 1.1, rnd() * 3); }
     else if (type === 'fire') add('campfire', 0, 0, .8);
     else if (type === 'fort') {   // a ring of sharpened posts open at the front, a totem and a red war banner
@@ -1080,6 +1088,7 @@ const GAME = window.GAME = (function () {
       PEOPLE.tpl.woman = mergePerson(C(R), ['Rogue_Cape', 'Knife'], M[3]); PEOPLE.tpl.woman.mats = [M[3], M[4], M[5]];
       PEOPLE.tpl.chief = mergePerson(C(B), ['2H_Axe', 'Barbarian_Hat', 'Barbarian_Cape', 'Barbarian_Round_Shield'], M[2]); PEOPLE.tpl.chief.mats = [M[2]];
       PEOPLE.tpl.warrior = Object.assign({}, PEOPLE.tpl.chief, { mats: [M[1]] });
+      PEOPLE.tpl.giant = Object.assign({}, PEOPLE.tpl.man, { mats: [new THREE.MeshLambertMaterial({ map: T[0], color: 0x9ac07a })] });   // green-skinned forest giant
       PEOPLE.clips = B.animations; PEOPLE.ready = true;
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
@@ -1274,6 +1283,12 @@ const GAME = window.GAME = (function () {
       const g = new THREE.Group(); const body = new THREE.Mesh(MODELS.bird_body, VCOL); body.castShadow = true; g.add(body);
       for (const sx of [1, -1]) { const w = new THREE.Mesh(MODELS.bird_wing, VCOL); w.position.set(sx * .9, .5, .2); w.scale.set(sx, 1, 1); w.castShadow = true; g.add(w); (e.wings = e.wings || []).push(w); }
       g.scale.setScalar(1.6); e.root = g; e.y = 16; e.fly = true; scene.add(g);
+    } else if (def.giant) {
+      if (!PEOPLE.ready) return null;
+      const p = newPerson('giant', 9.5, 0); e.root = new THREE.Group(); e.root.add(p.root); scene.add(e.root);
+      e.mixer = p.mixer; e.acts = p.acts; e.an = { run: 'Walking_A', atk: '1H_Melee_Attack_Chop', flee: 'Running_A' }; play(e, e.an.run);
+      const L2 = G.giantLv; e.hp = e.max = def.hp * (1 + .45 * (L2 - 1)); e.dmg = def.dmg * (1 + .2 * (L2 - 1)); e.lv = Math.floor(L2);
+      if (!G.giantSeen) { G.giantSeen = true; say('ยักษ์ป่ามาแล้ว! ทุบกำแพงแรงมาก · กด ซ่อมด่วน ที่บนจอได้', 4000); }
     } else if (kind === 'mammoth') { e.root = new THREE.Group(); const m = new THREE.Mesh(MODELS.mammoth, VCOL); m.castShadow = true; m.scale.setScalar(1.5); e.root.add(m); scene.add(e.root); }
     else {
       const src = ANIM_SRC[def.a]; if (!src) return null;
@@ -1289,8 +1304,12 @@ const GAME = window.GAME = (function () {
   function setEm(e, r, g, b) { e.root.traverse(o => { if (o.isMesh && o.material) { const mm = Array.isArray(o.material) ? o.material : [o.material]; for (const q of mm) if (q.emissive) q.emissive.setRGB(r, g, b); } }); }
   function flash(e) { setEm(e, .8, .15, .1); e.fl = .12; }
   function hurtEnemy(e, dmg, by) {
-    if (e.dead) return; e.hp -= dmg; flash(e); if (FXA.length < 60) fx('spark', e.x + (rnd() - .5), (e.fly ? e.y : groundY(e.x, e.z)) + 1 + rnd(), e.z + (rnd() - .5), { k: .5 }); float(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 3.5, e.z, '-' + Math.round(dmg), '#ff8a6a');
+    if (e.dead || e.flee) return; e.hp -= dmg; flash(e); if (FXA.length < 60) fx('spark', e.x + (rnd() - .5), (e.fly ? e.y : groundY(e.x, e.z)) + 1 + rnd(), e.z + (rnd() - .5), { k: .5 }); float(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 3.5, e.z, '-' + Math.round(dmg), '#ff8a6a');
     for (let i = 0; i < 6; i++) spawnP(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 1.2, e.z, (rnd() - .5) * 5, 2 + rnd() * 4, (rnd() - .5) * 5, .45, 3, 0);
+    if (e.hp <= 0 && e.def.giant) {   // the giant is never killed: hurt, it limps back to the forest and grows
+      e.hp = 0; e.flee = true; e.fleeT = 7; scene.remove(e.ring); play(e, e.an.flee); G.giantBeat++; G.killed++;
+      say('ยักษ์ป่าบาดเจ็บ หนีกลับป่า! คืนหน้าจะกลับมาแรงกว่าเดิม', 3000); sfx('dawn'); return;
+    }
     if (e.hp <= 0) {
       e.dead = true; G.killed++; scene.remove(e.ring); if (e.mixer) play(e, 'Death');
       if (e.def.boss) say(`ล้ม${e.def.n}สำเร็จ!`, 2500);
@@ -1330,17 +1349,17 @@ const GAME = window.GAME = (function () {
       else { gx = VX + c * (VR - 9); gz = VZ + sn * (VR - 9); }
     } else e.gate = null;
     if (gx === t.x && d <= tr) {   // attack
-      if (e.mixer) play(e, e.acts.Attack ? 'Attack' : e.acts.Attack_Headbutt ? 'Attack_Headbutt' : 'Idle');
+      if (e.mixer) play(e, e.an ? e.an.atk : e.acts.Attack ? 'Attack' : e.acts.Attack_Headbutt ? 'Attack_Headbutt' : 'Idle');
       e.face = Math.atan2(t.x - e.x, t.z - e.z); e.atk -= dt; if (e.atk <= 0) { e.atk = 1.3; hitTarget(e, t); }
     } else {
       const ox2 = e.x, oz2 = e.z; moveTo(e, gx, gz, e.def.spd * (e.slow > 0 ? .55 : 1), dt); e.face = Math.atan2(gx - ox2, gz - oz2);
       const bl = blocker(e, e.x, e.z); if (bl) { e.x = ox2; e.z = oz2; e.target = bl; e.retarget = 4; }
-      if (e.mixer) play(e, 'Gallop');
+      if (e.mixer) play(e, e.an ? e.an.run : 'Gallop');
     }
     place(e);
   }
   function hitTarget(e, t) {
-    if (t.g && t.type) { t.hp -= e.dmg; float(t.x, groundY(t.x, t.z) + 6, t.z, '-' + Math.round(e.dmg), '#ff5a4a'); for (let i = 0; i < 8; i++) spawnP(t.x + (rnd() - .5) * t.r, groundY(t.x, t.z) + 1 + rnd() * 3, t.z + (rnd() - .5) * t.r, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .8, 4, 0); if (t.hp <= 0 && !t.dead) { say(`${BT[t.type].n}ถูกทำลาย!`, 1800); removeBuilding(t); } }
+    if (t.g && t.type) { const dm = e.dmg * (e.def.bldK || 1); t.hp -= dm; float(t.x, groundY(t.x, t.z) + 6, t.z, '-' + Math.round(dm), '#ff5a4a'); if (t.hp <= 0 && !t.dead && e.def.giant) { G.giantLv += .25; say(`ยักษ์ป่าทุบ${BT[t.type].n}พัง! มันโตขึ้นอีก`, 2000); } for (let i = 0; i < 8; i++) spawnP(t.x + (rnd() - .5) * t.r, groundY(t.x, t.z) + 1 + rnd() * 3, t.z + (rnd() - .5) * t.r, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .8, 4, 0); if (t.hp <= 0 && !t.dead) { say(`${BT[t.type].n}ถูกทำลาย!`, 1800); removeBuilding(t); } }
     else hurtVillager(t, e.dmg);
     sfx('hit');
   }
@@ -1359,6 +1378,7 @@ const GAME = window.GAME = (function () {
     const list = [], cnt = n <= 1 ? 3 : 1 + n * 2 + Math.floor(n * n / 4);
     for (let i = 0; i < cnt; i++) list.push(n >= 4 && i % 5 === 4 ? 'bull' : n >= 3 && i % 3 === 2 ? 'fox' : n >= 6 && i % 7 === 3 ? 'stag' : 'wolf');
     if (n % 5 === 0) list.push(n % 15 === 0 ? 'alpha' : n % 10 === 0 ? 'mammoth' : 'bird');
+    else if (n >= 3) list.push('giant');
     return list;
   }
   function planWave() {
@@ -1397,8 +1417,14 @@ const GAME = window.GAME = (function () {
     const L = G.next ? G.next.list : [], c = {}; for (const k of L) c[k] = (c[k] || 0) + 1;
     const boss = L.find(k => EN[k].boss), kinds = Object.keys(c).filter(k => !EN[k].boss);
     const body = kinds.length <= 2 ? kinds.map(k => `${EN[k].n} ${c[k]}`).join(' · ') : `ศัตรู ${L.length - (boss ? 1 : 0)} ตัว`;
-    return boss ? `บอส${EN[boss].n}! + ${body}` : body;
+    return boss ? `${boss === 'giant' ? `ยักษ์ป่า Lv.${Math.floor(G.giantLv)}` : `บอส${EN[boss].n}!`} + ${body}` : body;
   }
+  function repairAll() {   // night panic button: mend the most damaged first while the wood lasts
+    let n = 0; const dmg = G.buildings.filter(b => !b.site && !b.dead && b.hp < b.max).sort((p, q) => p.hp / p.max - q.hp / q.max);
+    for (const b of dmg) { if (G.res.wood < 1) break; const need = Math.ceil((b.max - b.hp) / 8), use = Math.min(need, Math.floor(G.res.wood)); G.res.wood -= use; b.hp = Math.min(b.max, b.hp + use * 8); n++; float(b.x, groundY(b.x, b.z) + 6, b.z, 'ซ่อม!', '#9aff8a'); }
+    if (n) sfx('build'); else say('ไม้ไม่พอ', 900); return n;
+  }
+  const repairNeed = () => G.buildings.reduce((s2, b) => s2 + (!b.site && !b.dead && b.hp < b.max ? Math.ceil((b.max - b.hp) / 8) : 0), 0);
   function callEarly() {
     if (!G.on || G.t >= DAY - 3) return;
     const w = Math.round((DAY - G.t) * .35), st = Math.round(w / 2); G.res.wood += w; G.res.stone += st; G.t = DAY;
@@ -1413,8 +1439,10 @@ const GAME = window.GAME = (function () {
     { t: 'ฝึกทหาร 2 คน (แตะที่ป้อมทหาร)', go: 'fortsel', sol: 2, r: { food: 30 } },
     { t: 'สร้างแปลงผัก 1 แปลง', go: 'farm', n: 1, r: { food: 30 } },
     { t: 'รอดคืนแรก · กลางคืนลองกด ฝนหอก (ปุ่มขวา)', done: () => G.day >= 2, r: { wood: 40, stone: 20 } },
+    { t: 'ไล่ยักษ์ป่ากลับป่า (มาตั้งแต่คืนที่ 3: วางรั้ว + ทหารรอไว้)', done: () => G.giantBeat >= 1, r: { wood: 40, stone: 40 } },
     { t: 'อัปเกรดโถงหัวหน้าเผ่าเป็นขั้น 2 (แตะที่โถง)', go: 'hall', lv: 2, r: { wood: 50, stone: 30 } },
     { t: 'สร้างรั้วไม้แหลมขวางลูกศรแดง', go: 'wall', n: 4, r: { stone: 30 } },
+    { t: 'อัปเกรดรั้วเป็นกำแพงหิน 4 ช่วง (แตะที่รั้ว)', go: 'wallsel', wallLv: 2, n: 4, r: { stone: 40 } },
     { t: 'มีชาวเผ่า 8 คน (สร้างกระท่อมเพิ่ม)', go: 'hut', people: 8, r: { food: 40 } },
     { t: 'มีทหาร 6 คน (อัปเกรดป้อมทหาร)', go: 'fortsel', sol: 6, r: { wood: 50, food: 40 } },
     { t: 'ตั้งด่านหน้า ขยายดินแดนไปหาเหมือง / ดงเบอร์รี่', go: 'outpost', n: 1, r: { wood: 60, stone: 40 } },
@@ -1424,20 +1452,22 @@ const GAME = window.GAME = (function () {
     { t: 'รอดคืนที่ 10 (บอสใหญ่!)', done: () => G.day >= 11, r: { wood: 200, stone: 150, food: 100 } },
     { t: 'อัปเกรดโถงเป็นขั้น 5', go: 'hall', lv: 5, r: { wood: 200, stone: 200 } },
   ];
-  const qDone = q => q.done ? q.done() : q.lv ? hallLv() >= q.lv : q.sol ? G.sol.length >= q.sol : q.people ? G.vill.length >= q.people : countOf(q.go, true) >= q.n;
-  const qProg = q => q.lv || q.done ? '' : q.sol ? ` (${G.sol.length}/${q.sol})` : q.people ? ` (${G.vill.length}/${q.people})` : q.n > 1 ? ` (${countOf(q.go, true)}/${q.n})` : '';
+  const wallsAt = l => G.buildings.filter(b => b.type === 'wall' && !b.site && (b.lv || 1) >= l).length;
+  const qDone = q => q.done ? q.done() : q.wallLv ? wallsAt(q.wallLv) >= q.n : q.lv ? hallLv() >= q.lv : q.sol ? G.sol.length >= q.sol : q.people ? G.vill.length >= q.people : countOf(q.go, true) >= q.n;
+  const qProg = q => q.wallLv ? ` (${wallsAt(q.wallLv)}/${q.n})` : q.lv || q.done ? '' : q.sol ? ` (${G.sol.length}/${q.sol})` : q.people ? ` (${G.vill.length}/${q.people})` : q.n > 1 ? ` (${countOf(q.go, true)}/${q.n})` : '';
   function questStep() {
     const q = QUESTS[G.q];
     if (q && qDone(q)) { for (const k in q.r) G.res[k] += q.r[k]; say(`ภารกิจสำเร็จ! ได้ ${costTxt(q.r)}`, 2600); sfx('dawn'); G.q++; save(); }
     const q2 = QUESTS[G.q], el = hudEl.q; if (!el) return;
     const html = q2 ? `<i>ภารกิจ ${G.q + 1}/${QUESTS.length}${q2.go ? ' · แตะเพื่อไปทำ' : ''}</i><b>${q2.t}${qProg(q2)}</b><span>รางวัล ${costTxt(q2.r)}</span>` : `<i>ภารกิจครบแล้ว</i><b>รอดให้นานที่สุด! สถิติ ${G.best} คืน</b>`;
     if (el.innerHTML !== html) el.innerHTML = html;
-    hudEl.btn.classList.toggle('hint', !!(q2 && q2.go && q2.go !== 'hall' && q2.go !== 'fortsel' && !G.mode && !hudEl.bar.classList.contains('open')));
+    hudEl.btn.classList.toggle('hint', !!(q2 && q2.go && q2.go !== 'hall' && q2.go !== 'fortsel' && q2.go !== 'wallsel' && !G.mode && !hudEl.bar.classList.contains('open')));
     for (const c of hudEl.bar.children) c.classList.toggle('qhint', !!(q2 && q2.go === c.dataset.t));
   }
   function questGo() {
     const q = QUESTS[G.q]; if (!q || !q.go) return; au();
     if (q.go === 'hall') { TB.camT.set(G.hall.x, 0, G.hall.z); cancelBuild(); select(G.hall); }
+    else if (q.go === 'wallsel') { const w = G.buildings.find(b => b.type === 'wall' && !b.site && (b.lv || 1) < 2); if (!w) { endAim(); hudEl.bar.classList.add('open'); startBuild('wall'); return; } TB.camT.set(w.x, 0, w.z); cancelBuild(); select(w); }
     else if (q.go === 'fortsel') { const f = forts()[0]; if (!f) { endAim(); hudEl.bar.classList.add('open'); startBuild('fort'); return; } TB.camT.set(f.x, 0, f.z); cancelBuild(); select(f); }
     else { endAim(); hudEl.bar.classList.add('open'); startBuild(q.go); }
   }
@@ -1447,7 +1477,7 @@ const GAME = window.GAME = (function () {
     if (!G.next || G.next.n !== G.day) planWave();
     const n = G.day, list = G.next.list.slice();
     G.raid = { list, pts: G.next.pts, t: 0, i: 0 }; showWave(false);
-    say(n % 5 === 0 ? `คืนที่ ${n}: บอส${EN[list[list.length - 1]].n}กำลังมา!` : `คืนที่ ${n}: ฝูงศัตรู ${list.length} ตัวกำลังมา!`, 3500);
+    say(n % 5 === 0 ? `คืนที่ ${n}: บอส${EN[list[list.length - 1]].n}กำลังมา!` : list.includes('giant') ? `คืนที่ ${n}: ศัตรู ${list.length - 1} ตัว + ยักษ์ป่า Lv.${Math.floor(G.giantLv)}!` : `คืนที่ ${n}: ฝูงศัตรู ${list.length} ตัวกำลังมา!`, 3500);
     sfx('horn');
   }
   function raidStep(dt) {
@@ -1737,6 +1767,7 @@ const GAME = window.GAME = (function () {
       #gQ b { display: block; font-size: 12.5px; font-weight: 800; line-height: 1.25; text-shadow: var(--ol); }
       #gQ span { display: block; font-size: 10.5px; color: #c8f0a0; }
       #gGo { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); display: none; font: 800 12px Kanit, sans-serif; color: #fff; padding: 4px 12px; border-radius: 12px; border: 2px solid var(--ink); background: linear-gradient(#e8583a, #9a1e12); text-shadow: var(--ol); box-shadow: 0 3px 0 var(--ink); cursor: pointer; white-space: nowrap; }
+      #gFix { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); display: none; font: 800 12px Kanit, sans-serif; color: #fff; padding: 4px 12px; border-radius: 12px; border: 2px solid var(--ink); background: linear-gradient(#5ac85a, #2a8a2a); text-shadow: var(--ol); box-shadow: 0 3px 0 var(--ink); cursor: pointer; white-space: nowrap; }
       #gBuildBtn.hint { animation: bHint 1s ease-in-out infinite; }
       @keyframes bHint { 50% { box-shadow: 0 0 0 3px #fff, 0 0 18px 6px #ffd27a, 0 6px 0 5px var(--ink); } }
       .gCard.qhint { outline: 3px solid #9aff8a; }
@@ -1767,6 +1798,7 @@ const GAME = window.GAME = (function () {
     hudEl.tip = mk('div', 'gTip', 'pnl', '');
     hudEl.q = mk('div', 'gQ', 'pnl', ''); hudEl.q.addEventListener('pointerdown', e => { e.stopPropagation(); questGo(); });
     hudEl.go = mk('button', 'gGo', '', 'เรียกศัตรูเลย'); hudEl.go.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); callEarly(); });
+    hudEl.fix = mk('button', 'gFix', '', 'ซ่อมด่วน'); hudEl.fix.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); repairAll(); });
     hudEl.sk = mk('div', 'gSk', '', SK_ORDER.map(k => `<button class="sk" data-k="${k}" title="${SK[k].n} (${SK_ORDER.indexOf(k) + 1})">${ICON[k]}<span class="cdv"></span><b>${SK[k].n}</b></button>`).join(''));
     for (const b of hudEl.sk.children) b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); au(); aimSkill(b.dataset.k); });
     ov = document.createElement('canvas'); ov.id = 'gOv'; document.body.insertBefore(ov, $('hud')); ox = ov.getContext('2d');
@@ -1814,6 +1846,7 @@ const GAME = window.GAME = (function () {
     else if (night) { const left = G.enemies.filter(e => !e.dead && !e.flee).length + (G.raid ? G.raid.list.length - G.raid.i : 0); txt = `กลางคืน · ศัตรูเหลือ ${left}`; k = (t - DAY - DUSK) / NIGHT; }
     else { txt = 'รุ่งเช้า'; k = 1; }
     $('gPh').textContent = txt; $('gBarI').style.width = (k * 100).toFixed(1) + '%';
+    const need = t >= DAY ? repairNeed() : 0; hudEl.fix.style.display = need > 0 ? 'block' : 'none'; if (need > 0) { const tx = `ซ่อมด่วนทั้งหมด (ไม้ ${need})`; if (hudEl.fix.textContent !== tx) hudEl.fix.textContent = tx; }
     const early = G.on && t < DAY - 5; hudEl.go.style.display = early ? 'block' : 'none'; if (early) { const tx = `เรียกศัตรูมาเลย (ได้ ไม้ +${Math.round((DAY - t) * .35)})`; if (hudEl.go.textContent !== tx) hudEl.go.textContent = tx; }
     updSkills();
     if (G.sel && (G.sel.site || G.sel.type === 'fort') && hudEl.sel && hudEl.sel.style.display !== 'none' && (G.selT = (G.selT || 0) + 1) % 5 === 0) select(G.sel.dead ? null : G.sel);   // live: build % / soldiers in training
@@ -1873,8 +1906,8 @@ const GAME = window.GAME = (function () {
     select(best);
   }
   // ---------- tap a building: level, HP, upgrade, repair
-  const UPG = { tower: 'แรงขึ้น ยิงไกลขึ้น เร็วขึ้น', hut: 'รับคนเพิ่ม +3', wall: 'ทนขึ้น +60%', fire: 'รักษาเร็วขึ้น', farm: 'อาหารเพิ่ม +60%', hall: 'ทนขึ้น +250 · ดินแดนกว้างขึ้น', fort: 'ทหารเพิ่ม +2 · แรงขึ้น', store: 'ทนขึ้น', outpost: 'ดินแดนกว้างขึ้น +10' };
-  function upCost(b) { const l = b.lv || 1; return b.type === 'hall' ? HALL_UP[l - 1] : { wood: 40 * l, stone: 30 * l }; }
+  const UPG = { tower: 'แรงขึ้น ยิงไกลขึ้น เร็วขึ้น', hut: 'รับคนเพิ่ม +3', wall: 'เป็นกำแพงหิน ทนขึ้นมาก', fire: 'รักษาเร็วขึ้น', farm: 'อาหารเพิ่ม +60%', hall: 'ทนขึ้น +250 · ดินแดนกว้างขึ้น', fort: 'ทหารเพิ่ม +2 · แรงขึ้น', store: 'ทนขึ้น', outpost: 'ดินแดนกว้างขึ้น +10' };
+  function upCost(b) { const l = b.lv || 1; return b.type === 'hall' ? HALL_UP[l - 1] : b.type === 'wall' ? (l === 1 ? { wood: 10, stone: 25 } : { stone: 60 }) : { wood: 40 * l, stone: 30 * l }; }
   function upMax(b) { return b.type === 'hall' ? 5 : 3; }
   function upWhyNot(b) { const l = b.lv || 1; if (b.site) return 'กำลังสร้าง'; if (l >= upMax(b) || !UPG[b.type]) return 'ขั้นสูงสุด'; if (b.type !== 'hall' && l >= hallLv()) return `ต้องอัปเกรดโถงเป็นขั้น ${l + 1} ก่อน`; return null; }
   function tryUpgrade(b) { if (upWhyNot(b)) return false; const c = upCost(b); if (!canPay(c)) { say('ทรัพยากรไม่พอ', 900); return false; } pay(c); upgrade(b); save(); return true; }
@@ -1886,12 +1919,14 @@ const GAME = window.GAME = (function () {
     hudEl.sel.style.display = 'block';
     if (b.site) { hudEl.sel.innerHTML = `<b>${BT[b.type].n}</b> กำลังสร้าง ${Math.round(b.prog * 100)}% · ชาวเผ่าที่ว่างจะมาช่วยสร้าง`; return; }
     const tr = b.type === 'fort' ? (() => { const n = G.sol.filter(s2 => s2.fort === b).length, room = fortCap(b) - n - (b.queue || 0); return `<br>ทหาร ${n}/${fortCap(b)}${b.queue ? ` · กำลังฝึก ${b.queue}` : ''} ` + (room > 0 ? `<button id="gTr">ฝึกทหาร +1 (${costTxt(SOL.cost)})</button>` + (room > 1 ? ` <button id="gTrAll">ฝึกให้เต็ม x${room}</button>` : '') : '<i>ป้อมเต็มแล้ว · อัปเกรดเพื่อรับเพิ่ม</i>'); })() : '';
-    const upTxt = b.type === 'hall' ? `ขั้น ${l + 1}: ${unlockTxt(l + 1)}` : UPG[b.type];
-    hudEl.sel.innerHTML = `<b>${BT[b.type].n}</b> ขั้น ${l} · HP ${Math.round(b.hp)}/${b.max}<br>` + (!why ? `<button id="gUp">อัปเกรด ${upTxt} (${costTxt(uc)})</button>` : `<i>${why}</i>`) + tr + (b.hp < b.max ? ` <button id="gRep">ซ่อม (ไม้ ${rep2})</button>` : '');
+    const upTxt = b.type === 'hall' ? `ขั้น ${l + 1}: ${unlockTxt(l + 1)}` : b.type === 'wall' ? `เป็น${WALLN[l]}` : UPG[b.type];
+    const same = b.type === 'wall' && !why ? G.buildings.filter(w => w.type === 'wall' && !w.site && (w.lv || 1) === l).length : 0;
+    hudEl.sel.innerHTML = `<b>${b.type === 'wall' ? WALLN[l - 1] : BT[b.type].n}</b> ขั้น ${l} · HP ${Math.round(b.hp)}/${b.max}<br>` + (!why ? `<button id="gUp">อัปเกรด ${upTxt} (${costTxt(uc)})</button>` + (same > 1 ? ` <button id="gUpAll">อัปเกรดทุกช่วง x${same}</button>` : '') : `<i>${why}</i>`) + tr + (b.hp < b.max ? ` <button id="gRep">ซ่อม (ไม้ ${rep2})</button>` : '');
     const up = $('gUp'), rp = $('gRep'), t1 = $('gTr'), ta = $('gTrAll');
     if (t1) t1.addEventListener('pointerdown', e => { e.stopPropagation(); if (!train(b, 1)) say('อาหาร / ไม้ไม่พอ', 900); select(b); });
     if (ta) ta.addEventListener('pointerdown', e => { e.stopPropagation(); if (!train(b, 99)) say('อาหาร / ไม้ไม่พอ', 900); select(b); });
     if (up) up.addEventListener('pointerdown', e => { e.stopPropagation(); if (tryUpgrade(b)) select(b); });
+    const ua = $('gUpAll'); if (ua) ua.addEventListener('pointerdown', e => { e.stopPropagation(); let n = 0; for (const w of G.buildings.filter(w => w.type === 'wall' && !w.site && (w.lv || 1) === l)) { if (!canPay(upCost(w))) break; if (tryUpgrade(w)) n++; } say(n ? `อัปเกรด ${n} ช่วง` : 'ทรัพยากรไม่พอ', 1200); select(b); });
     if (rp) rp.addEventListener('pointerdown', e => { e.stopPropagation(); if (G.res.wood < rep2) { say('ไม้ไม่พอ', 900); return; } G.res.wood -= rep2; b.hp = b.max; select(b); });
   }
   function upgrade(b) {
@@ -1899,8 +1934,9 @@ const GAME = window.GAME = (function () {
     if (b.type === 'hut') G.popCap += 3;
     else if (b.type === 'hall') { b.max += 250; b.hp += 250; G.popCap += 2; const t0 = G.terr.find(t => t.hall); if (t0) { t0.r += 8; drawTerr(); } if (G.on) say(`โถงขั้น ${b.lv}! ปลดล็อก: ${unlockTxt(b.lv)}`, 4000); }
     else if (b.type === 'outpost') { const t = G.terr.find(t => t.b === b); if (t) { t.r += 10; drawTerr(); } }
-    else { b.max = Math.round(b.max * (b.type === 'wall' ? 1.6 : 1.25)); b.hp = b.max; if (b.type === 'fort') for (const s2 of G.sol) if (s2.fort === b) { s2.max = solMax(s2); s2.hp = s2.max; } }
-    if (b.type !== 'hall') b.g.scale.multiplyScalar(1.08);
+    else if (b.type === 'wall') { b.max = WALLHP[b.lv - 1]; b.hp = b.max; const ng = buildMesh('wall', b.x, b.z, b.ry, b.lv); scene.remove(b.g); b.g = ng; }
+    else { b.max = Math.round(b.max * 1.25); b.hp = b.max; if (b.type === 'fort') for (const s2 of G.sol) if (s2.fort === b) { s2.max = solMax(s2); s2.hp = s2.max; } }
+    if (b.type !== 'hall' && b.type !== 'wall') b.g.scale.multiplyScalar(1.08);
   }
 
   // ---------- overlay: HP bars + floating numbers
@@ -1940,7 +1976,7 @@ const GAME = window.GAME = (function () {
 
   // ---------- save / load / screens
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, sol: forts().map(f => G.sol.filter(s2 => s2.fort === f).length), hl: hallLv(), q: G.q, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp), b.lv || 1, b.site ? +b.prog.toFixed(2) : 1]) })); } catch (_) {}
+    try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, sol: forts().map(f => G.sol.filter(s2 => s2.fort === f).length), hl: hallLv(), q: G.q, gl: G.giantLv, gb: G.giantBeat, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp), b.lv || 1, b.site ? +b.prog.toFixed(2) : 1]) })); } catch (_) {}
   }
   function load() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch (_) { return null; } }
   function screen(html, buttons, dark) {
@@ -1962,7 +1998,7 @@ const GAME = window.GAME = (function () {
     if (saved && saved.hl) for (let i = 1; i < saved.hl; i++) upgrade(G.hall);
     const n0 = saved ? Math.max(4, saved.vill) : 4;
     for (let i = 0; i < n0; i++) { const a = rnd() * 6.28, r = 6 + rnd() * 10; addVillager(VX + Math.cos(a) * r, VZ + Math.sin(a) * r); }
-    if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp, lv, prog] of saved.b) { const site = prog != null && prog < 1, b = addBuilding(t, x, z, ry, null, null, site); if (site) { b.prog = prog; b.g.scale.set(1, .12 + .88 * prog, 1); } for (let i = 1; i < (lv || 1); i++) upgrade(b); b.hp = Math.min(b.max, hp); } G.q = saved.q || 0; const fs = forts(); (saved.sol || []).forEach((n, i) => { if (fs[i]) for (let k = 0; k < n; k++) addSoldier(fs[i]); }); }
+    if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp, lv, prog] of saved.b) { const site = prog != null && prog < 1, b = addBuilding(t, x, z, ry, null, null, site); if (site) { b.prog = prog; b.g.scale.set(1, .12 + .88 * prog, 1); } for (let i = 1; i < (lv || 1); i++) upgrade(b); b.hp = Math.min(b.max, hp); } G.q = saved.q || 0; G.giantLv = saved.gl || 1; G.giantBeat = saved.gb || 0; const fs = forts(); (saved.sol || []).forEach((n, i) => { if (fs[i]) for (let k = 0; k < n; k++) addSoldier(fs[i]); }); }
     makeSites(); makeMinimap(); makeChief(); planWave(); G.on = true; sky(); updHud(); save();
     say(saved ? `กลับมาที่เผ่า · วันที่ ${G.day}` : 'วันที่ 1 · เผ่าเพิ่งตั้งรกราก: สร้างทุกอย่างเอง!', 3500);
     G.tut = saved ? 99 : 0;
@@ -2043,7 +2079,8 @@ const GAME = window.GAME = (function () {
     const night = isNight();
     if (night && !wasNight) planRaid();
     if (!night && wasNight) {   // dawn: survivors flee, reward
-      for (const e of G.enemies) if (!e.dead) { e.flee = true; e.fleeT = 6; if (e.mixer) play(e, 'Gallop'); if (e.ring) scene.remove(e.ring); }
+      if (G.raid && G.raid.list.includes('giant')) G.giantLv += 1;
+      for (const e of G.enemies) if (!e.dead && !e.flee) { e.flee = true; e.fleeT = 6; if (e.mixer) play(e, e.an ? e.an.flee : 'Gallop'); if (e.ring) scene.remove(e.ring); }
       G.raid = null; for (const v of G.vill) if (v.mixer) { v.busy = 1.6; v.hold = 1.6; vPlay(v, 'cheer', true); } if (G.chief) { G.chief.g.rotation.y = Math.atan2(VX - G.chief.x, VZ - G.chief.z); chiefDo('cheer'); } for (const s2 of G.sol) { s2.max = solMax(s2); s2.hp = s2.max; if (s2.mixer) { s2.busy = 1.6; vPlay(s2, 'cheer', true); } } say(`รอดคืนที่ ${G.day} แล้ว!`, 3000); sfx('dawn'); save();
     }
     if (night) raidStep(dt);
@@ -2077,7 +2114,7 @@ const GAME = window.GAME = (function () {
     for (let r = 18; r < 70; r += 3) for (let a = 0; a < 360; a += 9) { const x = VX + Math.cos(a * D2R) * r, z = VZ + Math.sin(a * D2R) * r; if (!placeOk(t, x, z)) return { x, z }; }
     return null;
   }
-  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, PEOPLE, tryUpgrade, train, forts, planWave, callEarly, QUESTS, capOf, countOf, hallLv, get fxCount() { return FXA.length; }, get on() { return G.on; },
+  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, PEOPLE, tryUpgrade, train, forts, repairAll, planWave, callEarly, QUESTS, capOf, countOf, hallLv, get fxCount() { return FXA.length; }, get on() { return G.on; },
     cheat: { res(n) { G.res.wood = G.res.stone = G.res.food = n; }, night() { G.t = DAY + DUSK - .1; }, day(d) { G.day = d; } } };
 })();
 </script>
