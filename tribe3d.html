@@ -686,6 +686,32 @@ function updAnimals(dt) {
     a.m.rotation.y += dr * Math.min(1, dt * 3); a.m.rotation.z = Math.sin(a.ph) * .03;
   }
 }
+// ---------- Quaternius Ultimate Fantasy RTS (CC0, vendor/quaternius): buildings that change look with their level (art/tribe3d/rts/*.glb)
+const RTS = {};   // name -> { s: scene, cx, cz, y0 } (centre + floor of the model, pack units)
+const RTS_NAMES = ['Temple_FirstAge_Level1', 'Temple_FirstAge_Level2', 'Temple_FirstAge_Level3', 'Wonder_FirstAge_Level2'];
+for (let l = 1; l <= 3; l++) { RTS_NAMES.push(`WatchTower_FirstAge_Level${l}`, `Barracks_FirstAge_Level${l}`, `Storage_FirstAge_Level${l}`, `Archery_FirstAge_Level${l}`, `Farm_FirstAge_Level${l}`, `Farm_FirstAge_Level${l}_Wheat`); for (let v = 1; v <= 3; v++) RTS_NAMES.push(`Houses_FirstAge_${v}_Level${l}`); }
+async function loadRTS() {
+  if (!THREE.GLTFLoader || Q.get('rts') === '0') return;
+  const ld = new THREE.GLTFLoader(), mats = {};
+  await Promise.all(RTS_NAMES.map(n => ld.loadAsync(`art/tribe3d/rts/${n}.glb`).then(g => {
+    const s = g.scene;
+    s.traverse(o => { if (!o.isMesh) return; const cv = m => { const c = m.color.clone().convertLinearToSRGB(), k = m.name + c.getHexString(); return mats[k] || (mats[k] = new THREE.MeshLambertMaterial({ color: c })); }; o.material = Array.isArray(o.material) ? o.material.map(cv) : cv(o.material); o.castShadow = o.receiveShadow = true; });
+    s.updateMatrixWorld(true); const bx = new THREE.Box3().setFromObject(s);
+    RTS[n] = { s, cx: (bx.min.x + bx.max.x) / 2, cz: (bx.min.z + bx.max.z) / 2, y0: bx.min.y };
+  }).catch(e => console.warn('rts', n, e.message))));
+}
+// ---------- Quaternius Ultimate Monsters (CC0, vendor/quaternius): night enemies and bosses (art/tribe3d/monsters/*.glb, loaded after the map shows)
+const MON_SRC = {}, MON_NAMES = ['Tribal', 'Orc', 'Mushnub', 'Ghost', 'MushroomKing', 'Yeti', 'Dragon_Evolved', 'Demon'];
+async function loadMonsters() {
+  if (!THREE.GLTFLoader || !THREE.SkeletonUtils || Q.get('mon') === '0') return;
+  const ld = new THREE.GLTFLoader();
+  await Promise.all(MON_NAMES.map(n => ld.loadAsync(`art/tribe3d/monsters/${n}.glb`).then(g => {
+    const src = g.scene, mats = new Map();
+    src.traverse(o => { if (!o.isMesh) return; const cv = m => { if (!mats.has(m)) { if (m.map) { m.map.encoding = THREE.LinearEncoding; m.map.magFilter = THREE.NearestFilter; } mats.set(m, new THREE.MeshLambertMaterial({ map: m.map || null, color: m.map ? 0xffffff : m.color })); } return mats.get(m); }; o.material = Array.isArray(o.material) ? o.material.map(cv) : cv(o.material); o.castShadow = true; o.frustumCulled = false; });
+    src.updateMatrixWorld(true); const sz = new THREE.Box3().setFromObject(src).getSize(new V3());
+    MON_SRC[n] = { src, clips: g.animations, h: Math.max(.01, sz.y) };
+  }).catch(e => console.warn('monster', n, e.message))));
+}
 // ---------- Quaternius animated animals (CC0, vendor/quaternius): herds that graze, walk and gallop (loaded after the map shows)
 const ANIM_SRC = {};   // name -> { src, clips, sc } so the game can clone animals as enemies
 const HERDS = [], HERD_DEF = {
@@ -863,7 +889,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
   try {
     await new Promise(r => setTimeout(r, 30));
     const t0 = performance.now();
-    await Promise.all([loadModels(), loadKenney(), loadNature()]);
+    await Promise.all([loadModels(), loadKenney(), loadNature(), loadRTS()]);
     genTerrain(); buildTerrain(); const st = buildNature(); buildVillage(); buildAnimals(); buildParticles();
     TB.stats = { ...st, buildMs: Math.round(performance.now() - t0), villagers: villagers.length, mammoths: MAMMOTHS.length, models: Object.keys(MODELS).length, kenney: Object.keys(KEN).length };
     setCam(camI); setTime(timeI); layout();
@@ -872,6 +898,7 @@ function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now;
     say(matchMedia('(pointer: coarse)').matches ? 'ลากนิ้วเพื่อเลื่อนแมพ<small>บีบนิ้วซูม · ปุ่มบนขวา: มุมกล้อง / ซูม / เวลา</small>' : 'ลากเมาส์หรือ WASD เพื่อเลื่อนแมพ<small>ล้อเมาส์ซูม · C มุมกล้อง · N เวลา</small>', 4500);
     requestAnimationFrame(frame);
     loadAnimals().then(() => { TB.stats.animals = HERDS.length; TB.animalsReady = true; });
+    loadMonsters().then(() => { TB.stats.monsters = Object.keys(MON_SRC).length; TB.monReady = true; });
     if (window.GAME) GAME.init();
   } catch (err) { $('load').textContent = 'โหลดไม่สำเร็จ: ' + err.message; console.error(err); }
 })();
@@ -919,7 +946,17 @@ const GAME = window.GAME = (function () {
     bird: { hp: 520, dmg: 26, spd: 11, r: 3, food: 30, n: 'นกยักษ์', boss: true, fly: true },
     mammoth: { hp: 900, dmg: 34, spd: 3.6, r: 3.5, food: 60, n: 'แมมมอธคลั่ง', boss: true },
     giant: { hp: 260, dmg: 20, spd: 4.4, r: 2.6, n: 'ยักษ์ป่า', boss: true, giant: true, bldK: 2.2 },   // comes back every night, stronger (owner liked the Troll and Elves feel)
+    // Quaternius Ultimate Monsters (m = model, h = height in world units, flyH = cruising height)
+    tribal:  { m: 'Tribal', h: 3.6, hp: 45, dmg: 8, spd: 5.6, r: 1.3, food: 5, n: 'นักรบเผ่าป่าเถื่อน' },
+    mush:    { m: 'Mushnub', h: 2.4, hp: 26, dmg: 5, spd: 5.2, r: 1.1, food: 3, n: 'เห็ดพิษ' },
+    ghost:   { m: 'Ghost', h: 3.2, hp: 34, dmg: 7, spd: 8, r: 1.2, food: 3, n: 'ผีป่า', fly: true, flyH: 7 },
+    orc:     { m: 'Orc', h: 4.6, hp: 130, dmg: 15, spd: 4.6, r: 1.8, food: 14, n: 'อสูรออร์ค' },
+    mushking:{ m: 'MushroomKing', h: 9, hp: 750, dmg: 28, spd: 3.8, r: 3.2, food: 50, n: 'ราชาเห็ด', boss: true },
+    yeti:    { m: 'Yeti', h: 10, hp: 1100, dmg: 36, spd: 4, r: 3.5, food: 70, n: 'เยติยักษ์', boss: true },
+    dragon:  { m: 'Dragon_Evolved', h: 7, hp: 1000, dmg: 30, spd: 9, r: 3.2, food: 60, n: 'มังกรไฟ', boss: true, fly: true, flyH: 14 },
+    demon:   { m: 'Demon', h: 11, hp: 1500, dmg: 40, spd: 4.2, r: 3.6, food: 90, n: 'ปีศาจรัตติกาล', boss: true },
   };
+  const BOSSES = ['bird', 'mushking', 'mammoth', 'yeti', 'dragon', 'alpha', 'demon'];   // one every 5th night, in this order, then round again
   const V = new V3(), V2 = new V3(), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   let ov, ox, hudEl = {}, VMAT = [], ghostMat, terrLines = [];
   const rnd = Math.random;
@@ -971,9 +1008,28 @@ const GAME = window.GAME = (function () {
 
   // ---------- buildings
   const WALLN = ['รั้วไม้แหลม', 'กำแพงหิน', 'กำแพงหินเสริม'], WALLHP = [160, 420, 900];
+  // Ultimate Fantasy RTS look per level (hall 1 stays the hand-made longhouse; hall 5 / others 3 levels). One scale per type
+  // so a higher level really looks bigger.
+  const RTS_SC = { hall: 6.6, hut: 7, tower: 8, fort: 7, store: 4, farm: 4.8, outpost: 5 };
+  function rtsOf(type, lv, x, z) {
+    const L = Math.min(3, lv || 1);
+    const n = type === 'hall' ? [null, null, 'Temple_FirstAge_Level1', 'Temple_FirstAge_Level2', 'Temple_FirstAge_Level3', 'Wonder_FirstAge_Level2'][lv || 1]
+      : type === 'hut' ? `Houses_FirstAge_${1 + Math.abs(Math.round(x * 7 + z * 13)) % 3}_Level${L}`
+      : type === 'tower' ? `WatchTower_FirstAge_Level${L}` : type === 'fort' ? `Barracks_FirstAge_Level${L}` : type === 'store' ? `Storage_FirstAge_Level${L}`
+      : type === 'outpost' ? `Archery_FirstAge_Level${L}` : type === 'farm' ? `Farm_FirstAge_Level${L}` : null;
+    if (!n || !RTS[n]) return null;
+    return type === 'farm' && RTS[n + '_Wheat'] ? [n, n + '_Wheat'] : [n];
+  }
   function buildMesh(type, x, z, ry, lv) {
     const g = new THREE.Group(); g.position.set(x, groundY(x, z), z); g.rotation.y = ry || 0; scene.add(g);
     const add = (n, ox, oz, s, r2) => { if (!MODELS[n]) return; const m = new THREE.Mesh(MODELS[n], VCOL); m.position.set(ox || 0, 0, oz || 0); m.scale.setScalar(s || 1); m.rotation.y = r2 || 0; m.castShadow = m.receiveShadow = true; g.add(m); };
+    const rn = rtsOf(type, lv, x, z);
+    if (rn) {
+      const sc = RTS_SC[type], oz = type === 'outpost' ? -1.2 : 0;
+      for (const n of rn) { const R = RTS[n], m = R.s.clone(); m.scale.setScalar(sc); m.position.set(-R.cx * sc, -R.y0 * sc, -R.cz * sc + oz); g.add(m); }
+      if (type === 'outpost') add('campfire', 0, 2.2, .6);
+      return g;
+    }
     if (type === 'hut') add(['hut_cone', 'hut_dome', 'hut_bone'][Math.random() * 3 | 0], 0, 0, .95);
     else if (type === 'store') { add('woodpile', -1.2, 0, 1); add('stonepile', 1.3, .3, 1); }
     else if (type === 'farm') { const rows = new THREE.Mesh(new THREE.BoxGeometry(7, .5, 6), new THREE.MeshLambertMaterial({ color: 0x8a5a32 })); rows.position.y = .25; rows.receiveShadow = true; g.add(rows);
@@ -1279,7 +1335,16 @@ const GAME = window.GAME = (function () {
   // ---------- enemies
   function spawnEnemy(kind, x, z) {
     const def = EN[kind], k = 1 + .24 * (G.day - 1), e = { kind, def, x, z, y: 0, hp: def.hp * k, max: def.hp * k, dmg: def.dmg * (1 + .14 * (G.day - 1)), atk: 0, wp: [], target: null };
-    if (def.fly) {   // giant bird: body + two flapping wings
+    if (def.m) {   // Quaternius monster (not loaded yet / ?mon=0: a wolf comes instead)
+      const src = MON_SRC[def.m]; if (!src) return kind === 'wolf' ? null : spawnEnemy(def.boss ? 'alpha' : 'wolf', x, z);
+      const root = THREE.SkeletonUtils.clone(src.src); root.scale.setScalar(def.h / src.h); scene.add(root);
+      e.root = root; e.mixer = new THREE.AnimationMixer(root); e.acts = {}; for (const c of src.clips) e.acts[c.name] = e.mixer.clipAction(c);
+      if (e.acts.Death) { e.acts.Death.setLoop(THREE.LoopOnce, 1); e.acts.Death.clampWhenFinished = true; }
+      const has = (...n) => n.find(q => e.acts[q]);
+      e.an = { run: def.fly ? has('Fast_Flying', 'Flying_Idle') : def.boss ? has('Walk', 'Run') : has('Run', 'Walk'), atk: has('Weapon', 'Punch', 'Headbutt', 'Bite_Front'), flee: has('Fast_Flying', 'Run', 'Walk') };
+      if (def.fly) { e.fly = true; e.y = groundY(x, z) + def.flyH; }
+      play(e, e.an.run);
+    } else if (def.fly) {   // giant bird: body + two flapping wings
       const g = new THREE.Group(); const body = new THREE.Mesh(MODELS.bird_body, VCOL); body.castShadow = true; g.add(body);
       for (const sx of [1, -1]) { const w = new THREE.Mesh(MODELS.bird_wing, VCOL); w.position.set(sx * .9, .5, .2); w.scale.set(sx, 1, 1); w.castShadow = true; g.add(w); (e.wings = e.wings || []).push(w); }
       g.scale.setScalar(1.6); e.root = g; e.y = 16; e.fly = true; scene.add(g);
@@ -1334,9 +1399,9 @@ const GAME = window.GAME = (function () {
     const t = e.target; if (!t) { place(e); return; }
     const tr = (t.r || .6) + e.def.r + .6, d = Math.hypot(t.x - e.x, t.z - e.z);
     if (e.fly) {   // circle high, then dive onto the target
-      e.ph = (e.ph || 0) + dt; e.wings.forEach((w, i) => { w.rotation.z = Math.sin(e.ph * 7) * .7 * (i ? -1 : 1); });
-      if (d > tr + 2) { moveTo(e, t.x, t.z, e.def.spd * (e.slow > 0 ? .55 : 1), dt); e.y += ((groundY(e.x, e.z) + 16) - e.y) * Math.min(1, dt * 2); e.face = Math.atan2(t.x - e.x, t.z - e.z); }
-      else { e.y += ((groundY(e.x, e.z) + 3) - e.y) * Math.min(1, dt * 3); e.atk -= dt; if (e.atk <= 0 && e.y < groundY(e.x, e.z) + 5) { e.atk = 2.2; hitTarget(e, t); } }
+      e.ph = (e.ph || 0) + dt; if (e.wings) e.wings.forEach((w, i) => { w.rotation.z = Math.sin(e.ph * 7) * .7 * (i ? -1 : 1); });
+      if (d > tr + 2) { moveTo(e, t.x, t.z, e.def.spd * (e.slow > 0 ? .55 : 1), dt); e.y += ((groundY(e.x, e.z) + (e.def.flyH || 16)) - e.y) * Math.min(1, dt * 2); e.face = Math.atan2(t.x - e.x, t.z - e.z); if (e.an) play(e, e.an.run); }
+      else { e.y += ((groundY(e.x, e.z) + 3) - e.y) * Math.min(1, dt * 3); if (e.an) play(e, e.an.atk); e.atk -= dt; if (e.atk <= 0 && e.y < groundY(e.x, e.z) + 5) { e.atk = 2.2; hitTarget(e, t); } }
       place(e); return;
     }
     // walk round the palisade to a gate when the target is inside the ring
@@ -1376,8 +1441,8 @@ const GAME = window.GAME = (function () {
   const CHEV = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(0, 2.6), new THREE.Vector2(2.3, -1.4), new THREE.Vector2(0, -.4), new THREE.Vector2(-2.3, -1.4)])).rotateX(-Math.PI / 2);
   function waveList(n) {
     const list = [], cnt = n <= 1 ? 3 : 1 + n * 2 + Math.floor(n * n / 4);
-    for (let i = 0; i < cnt; i++) list.push(n >= 4 && i % 5 === 4 ? 'bull' : n >= 3 && i % 3 === 2 ? 'fox' : n >= 6 && i % 7 === 3 ? 'stag' : 'wolf');
-    if (n % 5 === 0) list.push(n % 15 === 0 ? 'alpha' : n % 10 === 0 ? 'mammoth' : 'bird');
+    for (let i = 0; i < cnt; i++) list.push(n >= 5 && i % 6 === 5 ? 'orc' : n >= 4 && i % 5 === 4 ? 'bull' : n >= 4 && i % 4 === 1 ? 'ghost' : n >= 3 && i % 3 === 2 ? 'fox' : n >= 2 && i % 4 === 3 ? 'tribal' : n >= 3 && i % 7 === 0 && i ? 'mush' : n >= 6 && i % 7 === 3 ? 'stag' : 'wolf');
+    if (n % 5 === 0) list.push(BOSSES[(n / 5 - 1) % BOSSES.length]);
     else if (n >= 3) list.push('giant');
     return list;
   }
@@ -1936,7 +2001,8 @@ const GAME = window.GAME = (function () {
     else if (b.type === 'outpost') { const t = G.terr.find(t => t.b === b); if (t) { t.r += 10; drawTerr(); } }
     else if (b.type === 'wall') { b.max = WALLHP[b.lv - 1]; b.hp = b.max; const ng = buildMesh('wall', b.x, b.z, b.ry, b.lv); scene.remove(b.g); b.g = ng; }
     else { b.max = Math.round(b.max * 1.25); b.hp = b.max; if (b.type === 'fort') for (const s2 of G.sol) if (s2.fort === b) { s2.max = solMax(s2); s2.hp = s2.max; } }
-    if (b.type !== 'hall' && b.type !== 'wall') b.g.scale.multiplyScalar(1.08);
+    if (b.type !== 'wall' && rtsOf(b.type, b.lv, b.x, b.z)) { const ng = buildMesh(b.type, b.x, b.z, b.ry, b.lv); scene.remove(b.g); b.g = ng; }   // new look for the new level
+    else if (b.type !== 'hall' && b.type !== 'wall') b.g.scale.multiplyScalar(1.08);
   }
 
   // ---------- overlay: HP bars + floating numbers
