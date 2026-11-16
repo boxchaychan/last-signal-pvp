@@ -801,7 +801,7 @@ const GAME = window.GAME = (function () {
   const DAY = 110, DUSK = 10, NIGHT = 65, DAWN = 8, CYCLE = DAY + DUSK + NIGHT + DAWN;
   const G = { on: false, res: { wood: 110, stone: 60, food: 90 }, popCap: 0, day: 1, t: 0, speed: 1, over: false, best: 0,
     buildings: [], vill: [], enemies: [], shots: [], nodes: [], terr: [], floats: [], mode: null, ghost: null, ghostOk: false, ghostAt: null, killed: 0, raid: null, birthT: 0, eatT: 0,
-    cd: { spear: 0, pot: 0, drum: 0 }, aim: null, buff: 0, zones: [], later: [], spears: [], rings: [], shake: 0 };
+    cd: { spear: 0, pot: 0, drum: 0 }, aim: null, buff: 0, zones: [], later: [], spears: [], rings: [], shake: 0, dying: [], chief: null };
   const SAVE = 'tribe3d_v1', BEST = 'tribe3d_best';
   const RES_N = { wood: 'ไม้', stone: 'หิน', food: 'อาหาร' };
   const BT = {   // building types
@@ -925,16 +925,94 @@ const GAME = window.GAME = (function () {
     if (MODELS.rock_0) for (let i = 0; i < 3; i++) { const a = rnd() * 6.28, x = cx + Math.cos(a) * rad * .6, z = cz + Math.sin(a) * rad * .6; if (kindAt(x, z) === 2) { const m = mkMesh('rock_' + (i % 3), x, z, rnd() * 6, 1.3); G.nodes.push({ type: 'stone', x, z, amt: 60, max: 60, w: 0, m }); } }
   }
 
+  // ---------- people: CC0 KayKit Adventurers (art/tribe3d/people/, vendor/kaykit/). The Barbarian (bear hood, fur cape) and
+  // the Rogue (recoloured to leather) share one rig, so the Barbarian's 13 moves play on both. Each body is merged into ONE
+  // skinned mesh (rigid parts like the axe / hood become bone-weighted) = one draw call per person.
+  const PEOPLE = { ready: false, tpl: {}, mats: [], clips: [] };
+  const MOVE = { idle: 'Idle', walk: 'Walking_A', run: 'Running_A', chop: '1H_Melee_Attack_Chop', pick: 'PickUp', stab: '1H_Melee_Attack_Slice_Diagonal', smash: '2H_Melee_Attack_Chop', throw: 'Throw', hit: 'Hit_A', die: 'Death_A', cheer: 'Cheer', build: 'Interact', sit: 'Sit_Floor_Idle' };
+  function mergePerson(root, keep, mat) {
+    root.updateMatrixWorld(true);
+    let skel = null; const parts = [], rigid = [];
+    root.traverse(o => { if (o.isSkinnedMesh) { parts.push(o); skel = o.skeleton; } else if (o.isMesh) rigid.push(o); });
+    const P = [], N = [], UV = [], SI = [], SW = [], IDX = [], v = new V3(), m3 = new THREE.Matrix3(); let base = 0;
+    const add = (geo, mat4, bone) => {
+      const p = geo.attributes.position, n = geo.attributes.normal, uv = geo.attributes.uv, si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight; m3.getNormalMatrix(mat4);
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i).applyMatrix4(mat4); P.push(v.x, v.y, v.z); v.fromBufferAttribute(n, i).applyMatrix3(m3).normalize(); N.push(v.x, v.y, v.z);
+        UV.push(uv ? uv.getX(i) : 0, uv ? uv.getY(i) : 0);
+        if (si) { SI.push(si.getX(i), si.getY(i), si.getZ(i), si.getW(i)); SW.push(sw.getX(i), sw.getY(i), sw.getZ(i), sw.getW(i)); } else { SI.push(bone, 0, 0, 0); SW.push(1, 0, 0, 0); }
+      }
+      if (geo.index) for (let i = 0; i < geo.index.count; i++) IDX.push(base + geo.index.getX(i)); else for (let i = 0; i < p.count; i++) IDX.push(base + i);
+      base += p.count;
+    };
+    for (const s of parts) add(s.geometry, s.bindMatrix, 0);
+    for (const r of rigid) { if (!keep.includes(r.name)) continue; let b = r.parent; while (b && skel.bones.indexOf(b) < 0) b = b.parent; if (b) add(r.geometry, r.matrixWorld, skel.bones.indexOf(b)); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4)); g.setIndex(IDX);
+    for (const o of [...parts, ...rigid]) o.parent.remove(o);
+    const m = new THREE.SkinnedMesh(g, mat); m.castShadow = true; m.frustumCulled = false; root.add(m); m.bind(skel, new THREE.Matrix4());
+    const box = new THREE.Box3().setFromBufferAttribute(g.attributes.position); return { root, h: box.max.y - box.min.y, mesh: m };
+  }
+  async function loadPeople() {
+    try {
+      const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader();
+      const [B, R] = await Promise.all([ld.loadAsync('art/tribe3d/people/Barbarian.glb'), ld.loadAsync('art/tribe3d/people/Rogue.glb')]);
+      const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
+      const tex = n => tl.loadAsync(`art/tribe3d/people/tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = THREE.NearestFilter; return t; });
+      const T = await Promise.all(['barba_0', 'barba_1', 'barba_2', 'rogue_0', 'rogue_1', 'rogue_2'].map(tex));
+      const M = T.map(t => new THREE.MeshLambertMaterial({ map: t })); PEOPLE.mats = M;
+      const C = (g) => THREE.SkeletonUtils.clone(g.scene);
+      PEOPLE.tpl.man = mergePerson(C(B), ['1H_Axe', 'Barbarian_Hat', 'Barbarian_Cape'], M[0]); PEOPLE.tpl.man.mats = [M[0], M[1]];
+      PEOPLE.tpl.woman = mergePerson(C(R), ['Rogue_Cape', 'Knife'], M[3]); PEOPLE.tpl.woman.mats = [M[3], M[4], M[5]];
+      PEOPLE.tpl.chief = mergePerson(C(B), ['2H_Axe', 'Barbarian_Hat', 'Barbarian_Cape', 'Barbarian_Round_Shield'], M[2]); PEOPLE.tpl.chief.mats = [M[2]];
+      PEOPLE.clips = B.animations; PEOPLE.ready = true;
+      if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
+    } catch (e) { console.warn('people', e.message); }
+  }
+  function newPerson(kind, h, mi) {   // a clone of a template with its own skeleton + mixer
+    const T = PEOPLE.tpl[kind], root = THREE.SkeletonUtils.clone(T.root); root.scale.setScalar(h / T.h);
+    let mesh = null; root.traverse(o => { if (o.isSkinnedMesh) mesh = o; });
+    if (mesh) mesh.material = T.mats[(mi == null ? Math.random() * T.mats.length : mi) | 0];
+    const mixer = new THREE.AnimationMixer(root), acts = {}; for (const c of PEOPLE.clips) acts[c.name] = mixer.clipAction(c);
+    return { root, mixer, acts, mesh };
+  }
+  function personize(v) {   // swap a villager's old Blender poses for an animated person
+    const p = newPerson(Math.random() < .5 ? 'man' : 'woman', 3.1);
+    for (const k in v.poses) v.g.remove(v.poses[k]); v.poses = {};
+    v.g.add(p.root); v.mixer = p.mixer; v.acts = p.acts; v.mat = p.mesh.material; v.cur = null; v.mixer.update(Math.random() * 2);
+    if (v.load) v.load.position.y = 3.6;
+  }
+  function vPlay(v, move, once, fade) {   // move = MOVE key; one-shots hold the pose a moment (v.busy)
+    const n = MOVE[move]; if (!v.acts || !v.acts[n]) return 0; const a = v.acts[n];
+    if (v.cur === n && !once) return 0;
+    a.reset(); a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity); a.clampWhenFinished = !!once; a.timeScale = 1;
+    a.fadeIn(fade == null ? .18 : fade).play(); if (v.cur && v.cur !== n && v.acts[v.cur]) v.acts[v.cur].fadeOut(fade == null ? .18 : fade); v.cur = n;
+    return a.getClip().duration;
+  }
+  function makeChief() {
+    if (!PEOPLE.ready || G.chief || !G.hall) return;
+    const p = newPerson('chief', 4.2, 0), h = G.hall, x = h.x + 9, z = h.z + 1;
+    p.root.position.set(x, groundY(x, z), z); p.root.rotation.y = Math.atan2(VX - x, VZ - z); scene.add(p.root);
+    G.chief = { x, z, g: p.root, mixer: p.mixer, acts: p.acts, mat: p.mesh.material, cur: null, busy: 0 }; vPlay(G.chief, 'idle');
+  }
+  function chiefDo(move) { const c = G.chief; if (!c) return; c.busy = vPlay(c, move, true, .12) * .95; }
+  function peopleStep(dt) {
+    const c = G.chief; if (c) { if (c.busy > 0) { c.busy -= dt; if (c.busy <= 0) vPlay(c, 'idle'); } c.mixer.update(dt); }
+    for (const v of G.dying) v.mixer.update(dt);
+  }
+
   // ---------- villagers
   function addVillager(x, z) {
     const g = new THREE.Group(); g.position.set(x, groundY(x, z), z); scene.add(g);
     const tint = new THREE.Color().setHSL(.07 + rnd() * .05, .3 + rnd() * .3, .78 + rnd() * .22);
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true, color: tint });
     const poses = {}; for (const p of ['stand', 'step', 'thrust']) { if (!MODELS['caveman_' + p]) continue; const m = new THREE.Mesh(MODELS['caveman_' + p], mat); m.castShadow = true; m.visible = p === 'stand'; m.scale.setScalar(.95); g.add(m); poses[p] = m; }
-    const v = { g, poses, x, z, hp: 30, st: 'idle', t: rnd(), job: null, carry: null, ph: rnd() * 6, ang: rnd() * 6.28, pose: 'stand', atk: 0 };
+    const v = { g, poses, x, z, hp: 30, st: 'idle', t: rnd(), job: null, carry: null, ph: rnd() * 6, ang: rnd() * 6.28, pose: 'stand', atk: 0, mat };
+    if (PEOPLE.ready) personize(v);
     G.vill.push(v); return v;
   }
-  function setPose(v, p) { if (v.pose === p || !v.poses[p]) return; v.poses[v.pose].visible = false; v.poses[p].visible = true; v.pose = p; }
+  function setPose(v, p) { if (v.mixer || v.pose === p || !v.poses[p]) return; v.poses[v.pose].visible = false; v.poses[p].visible = true; v.pose = p; }
   function moveTo(o, tx, tz, spd, dt) {
     const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d < .05) return true;
     const st = Math.min(d, spd * dt);
@@ -966,12 +1044,14 @@ const GAME = window.GAME = (function () {
     if (v.hp < 30 && !night) v.hp = Math.min(30, v.hp + dt * 1.5);
     for (const b of G.buildings) if (b.type === 'fire' && Math.hypot(b.x - v.x, b.z - v.z) < 10) v.hp = Math.min(30, v.hp + BT.fire.heal * dt);
     let moving = false;
-    if (night) {   // defend: fight the nearest enemy close to us or to the village, else gather at the hall
+    if (v.busy > 0) v.busy -= dt;
+    if (v.hold > 0) v.hold -= dt;
+    else if (night) {   // defend: fight the nearest enemy close to us or to the village, else gather at the hall
       if (v.job && v.job.w) v.job.w--; v.job = null; v.carry = null; v.st = 'idle'; v.t = 1;
       let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.def.fly && x.y > 4) continue; const d = Math.hypot(x.x - v.x, x.z - v.z); if (d < ed) { ed = d; e = x; } }
       if (e && ed < 26) {
         if (ed > e.def.r + 1.4) { moveTo(v, e.x, e.z, G.buff > 0 ? 7.4 : 5.2, dt); moving = true; v.face = Math.atan2(e.x - v.x, e.z - v.z); }
-        else { v.atk -= dt; v.face = Math.atan2(e.x - v.x, e.z - v.z); if (v.atk <= 0) { v.atk = G.buff > 0 ? .6 : 1; hurtEnemy(e, G.buff > 0 ? 15 : 6, v); setPose(v, 'thrust'); v.tp = .3; } }
+        else { v.atk -= dt; v.face = Math.atan2(e.x - v.x, e.z - v.z); if (v.atk <= 0) { v.atk = G.buff > 0 ? .6 : 1; hurtEnemy(e, G.buff > 0 ? 15 : 6, v); setPose(v, 'thrust'); v.tp = .3; if (v.mixer) { v.busy = Math.min(v.atk, vPlay(v, rnd() < .5 ? 'stab' : 'chop', true, .08) * .9); } } }
       } else { const h = G.hall; if (h && Math.hypot(h.x - v.x, h.z - v.z) > 9) { moveTo(v, h.x + Math.cos(v.ang) * 7, h.z + Math.sin(v.ang) * 7, 4.5, dt); moving = true; v.face = Math.atan2(h.x - v.x, h.z - v.z); } }
     } else if (v.st === 'idle') { v.t -= dt; if (v.t <= 0) pickJob(v); }
     else if (v.st === 'go') {
@@ -984,17 +1064,23 @@ const GAME = window.GAME = (function () {
     } else if (v.st === 'hunt') {
       const a = v.job && v.job.hunt; if (!a || a.dead) { v.st = 'idle'; v.t = .5; v.job = null; }
       else { if (Math.hypot(a.x - v.x, a.z - v.z) > 2.6) { moveTo(v, a.x, a.z, 5, dt); moving = true; v.face = Math.atan2(a.x - v.x, a.z - v.z); }
-        else { killHerd(a); v.carry = { type: 'food', n: 14 }; v.job = null; v.st = 'back'; setPose(v, 'thrust'); v.tp = .4; } }
+        else { killHerd(a); v.carry = { type: 'food', n: 14 }; v.job = null; v.st = 'back'; setPose(v, 'thrust'); v.tp = .4; if (v.mixer) { v.hold = .7; v.busy = .7; vPlay(v, 'throw', true, .08); } } }
     } else if (v.st === 'back') {
       const s = nearestStore(v.x, v.z); if (!s) { v.st = 'idle'; v.t = 1; }
       else { if (moveTo(v, s.x + Math.cos(v.ang) * (s.r + 1), s.z + Math.sin(v.ang) * (s.r + 1), 5.2, dt)) { if (v.carry) { G.res[v.carry.type] += v.carry.n; float(s.x, groundY(s.x, s.z) + 5, s.z, `+${v.carry.n} ${RES_N[v.carry.type]}`, v.carry.type === 'food' ? '#ffd27a' : v.carry.type === 'wood' ? '#e8c08a' : '#d8dde8'); } v.carry = null; v.st = 'idle'; v.t = .3; } moving = true; v.face = Math.atan2(s.x - v.x, s.z - v.z); }
     }
-    if (v.tp > 0 && v.st !== 'work') { v.tp -= dt; if (v.tp <= 0) setPose(v, 'stand'); }
-    if (moving) { v.ph += dt * 9; if (v.pose !== 'thrust') setPose(v, Math.sin(v.ph) > 0 ? 'step' : 'stand'); }
-    else if (v.pose === 'step') setPose(v, 'stand');
-    v.g.position.set(v.x, groundY(v.x, v.z) + (moving ? Math.abs(Math.sin(v.ph)) * .12 : 0), v.z);
+    if (v.mixer) {   // animated person: loops follow the state, one-shots (attack, throw, cheer) hold for v.busy
+      if (!(v.busy > 0)) vPlay(v, moving ? 'run' : v.st === 'work' && v.job ? (v.job.type === 'food' ? 'pick' : 'chop') : 'idle');
+      v.mixer.update(dt * (moving && v.cur === MOVE.run ? Math.min(1.5, Math.max(.8, (G.buff > 0 ? 7.4 : 5.2) / 5.2)) : 1));
+      v.g.position.set(v.x, groundY(v.x, v.z), v.z);
+    } else {
+      if (v.tp > 0 && v.st !== 'work') { v.tp -= dt; if (v.tp <= 0) setPose(v, 'stand'); }
+      if (moving) { v.ph += dt * 9; if (v.pose !== 'thrust') setPose(v, Math.sin(v.ph) > 0 ? 'step' : 'stand'); }
+      else if (v.pose === 'step') setPose(v, 'stand');
+      v.g.position.set(v.x, groundY(v.x, v.z) + (moving ? Math.abs(Math.sin(v.ph)) * .12 : 0), v.z);
+    }
     if (v.face != null) { let dr = v.face - v.g.rotation.y; while (dr > Math.PI) dr -= 6.283; while (dr < -Math.PI) dr += 6.283; v.g.rotation.y += dr * Math.min(1, dt * 8); }
-    if (v.carry && !v.load) { v.load = new THREE.Mesh(new THREE.BoxGeometry(.7, .5, .7), new THREE.MeshLambertMaterial({ color: 0xffffff })); v.load.position.set(0, 2.9, .1); v.load.castShadow = true; v.g.add(v.load); }
+    if (v.carry && !v.load) { v.load = new THREE.Mesh(new THREE.BoxGeometry(.7, .5, .7), new THREE.MeshLambertMaterial({ color: 0xffffff })); v.load.position.set(0, v.mixer ? 3.6 : 2.9, .1); v.load.castShadow = true; v.g.add(v.load); }
     if (v.load) { v.load.visible = !!v.carry; if (v.carry) v.load.material.color.set(v.carry.type === 'wood' ? 0x8a5a32 : v.carry.type === 'stone' ? 0x9a9690 : 0xd84a4a); }
   }
   function killHerd(a) {
@@ -1002,8 +1088,9 @@ const GAME = window.GAME = (function () {
     setTimeout(() => { scene.remove(a.root); const i = HERDS.indexOf(a); if (i >= 0) HERDS.splice(i, 1); }, 2500);
   }
   function hurtVillager(v, dmg) {
-    v.hp -= dmg; for (let i = 0; i < 5; i++) spawnP(v.x, groundY(v.x, v.z) + 1.6, v.z, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .5, 3, 0);
-    if (v.hp <= 0 && !v.dead) { v.dead = true; if (v.job && v.job.w) v.job.w--; v.g.rotation.x = -Math.PI / 2; v.g.position.y += .4; setTimeout(() => scene.remove(v.g), 2500); G.vill = G.vill.filter(x => x !== v); say('ชาวเผ่าเสียชีวิต 1 คน', 1500); }
+    v.hp -= dmg; if (v.mixer && v.hp > 0 && !(v.busy > 0) && rnd() < .4) v.busy = vPlay(v, 'hit', true, .06) * .8; for (let i = 0; i < 5; i++) spawnP(v.x, groundY(v.x, v.z) + 1.6, v.z, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .5, 3, 0);
+    if (v.hp <= 0 && !v.dead) { v.dead = true; if (v.job && v.job.w) v.job.w--; if (v.load) v.load.visible = false;
+      if (v.mixer) { vPlay(v, 'die', true, .1); G.dying.push(v); setTimeout(() => { scene.remove(v.g); G.dying = G.dying.filter(x => x !== v); }, 3200); } else { v.g.rotation.x = -Math.PI / 2; v.g.position.y += .4; setTimeout(() => scene.remove(v.g), 2500); } G.vill = G.vill.filter(x => x !== v); say('ชาวเผ่าเสียชีวิต 1 คน', 1500); }
   }
 
   // ---------- enemies
@@ -1212,6 +1299,7 @@ const GAME = window.GAME = (function () {
     if (!canCast(k)) return false;
     G.cd[k] = SK[k].cd; endAim(); au();
     if (k === 'spear') castSpear(x, z); else if (k === 'pot') castPot(x, z); else castDrum();
+    if (G.chief) { if (k !== 'drum') G.chief.g.rotation.y = Math.atan2(x - G.chief.x, z - G.chief.z); chiefDo(k === 'drum' ? 'cheer' : 'throw'); }
     updSkills(); return true;
   }
   function castSpear(x, z) {
@@ -1254,13 +1342,13 @@ const GAME = window.GAME = (function () {
   function castDrum() {
     const h = G.hall || { x: VX, z: VZ }; G.buff = 12;
     say('กลองศึก! ชาวเผ่าฮึกเหิม', 1800); for (const t of [0, .28, .56, 1.1]) setTimeout(() => sfx('drum'), t * 1000);
-    for (const v of G.vill) { v.hp = 30; fx('aura', v.x, groundY(v.x, v.z), v.z, { fol: v, life: 12, k: .75 }); const m = Object.values(v.poses)[0]; if (m) m.material.emissive.setRGB(.35, .24, .05); }
+    for (const v of G.vill) { v.hp = 30; fx('aura', v.x, groundY(v.x, v.z), v.z, { fol: v, life: 12, k: .75 }); if (v.mat) v.mat.emissive.setRGB(.35, .24, .05); if (v.mixer && !v.hold) { v.busy = .9; vPlay(v, 'cheer', true, .1); } }
     for (let i = 0; i < 12; i++) later(i * .9, () => { if (G.hall) ringFx(h.x, h.z, 3, 46, 0xffd27a, 1.1); });
     burst(h.x, groundY(h.x, h.z) + 3, h.z, 30, 8, 3, 4);
   }
   function skillStep(dt) {
     for (const k of SK_ORDER) if (G.cd[k] > 0) G.cd[k] = Math.max(0, G.cd[k] - dt);
-    if (G.buff > 0) { G.buff -= dt; if (G.buff <= 0) for (const v of G.vill) { const m = Object.values(v.poses)[0]; if (m) m.material.emissive.setRGB(0, 0, 0); } }
+    if (G.buff > 0) { G.buff -= dt; if (G.buff <= 0) for (const v of G.vill) if (v.mat) v.mat.emissive.setRGB(0, 0, 0); }
     for (const l of G.later) { l.t -= dt; if (l.t <= 0) { l.done = true; l.f(); } }
     G.later = G.later.filter(l => !l.done);
     for (const s of G.spears) {
@@ -1576,7 +1664,7 @@ const GAME = window.GAME = (function () {
     const n0 = saved ? Math.max(4, saved.vill) : 8;
     for (let i = 0; i < n0; i++) { const a = rnd() * 6.28, r = 6 + rnd() * 10; addVillager(VX + Math.cos(a) * r, VZ + Math.sin(a) * r); }
     if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp, lv] of saved.b) { const b = addBuilding(t, x, z, ry); for (let i = 1; i < (lv || 1); i++) upgrade(b); b.hp = Math.min(b.max, hp); } }
-    makeSites(); makeMinimap(); G.on = true; sky(); updHud(); save();
+    makeSites(); makeMinimap(); makeChief(); G.on = true; sky(); updHud(); save();
     say(saved ? `กลับมาที่เผ่า · วันที่ ${G.day}` : 'วันที่ 1 · สร้างบ้านและเตรียมป้องกันก่อนค่ำ!', 3500);
     G.tut = saved ? 99 : 0;
   }
@@ -1593,7 +1681,7 @@ const GAME = window.GAME = (function () {
       const rc = cv.getBoundingClientRect(); ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
       ray.setFromCamera(ndc, cam); const hit = ray.intersectObjects(TERRAIN, false)[0]; if (hit) hoverAt = { x: hit.point.x, z: hit.point.z };
     });
-    loadFx(); flashL = new THREE.PointLight(0xffa040, 0, 40, 1.6); scene.add(flashL);
+    loadPeople(); loadFx(); flashL = new THREE.PointLight(0xffa040, 0, 40, 1.6); scene.add(flashL);
     const sv = load(); try { G.best = +localStorage.getItem(BEST) || 0; } catch (_) {}
     const how = `<p>กลางวัน: ชาวเผ่าตัดไม้ ขุดหิน เก็บเบอร์รี่ และล่าสัตว์เอง · กด <b>สร้าง</b> เพื่อวางกระท่อม แปลงผัก หอพุ่งหอก รั้ว กองไฟ<br>กลางคืน: ฝูงสัตว์ร้ายบุก หอกับชาวเผ่าช่วยกันป้องกัน · ทุก 5 คืนมีบอส<br><b>ด่านหน้า</b> ขยายดินแดนออกไป ได้ทรัพยากรมากขึ้น · ถ้า <b>โถงหัวหน้าเผ่า</b> พัง = แพ้</p>`;
     if (Q.get('autostart') === '1') { setup(null); return; }
@@ -1657,7 +1745,7 @@ const GAME = window.GAME = (function () {
     if (night && !wasNight) planRaid();
     if (!night && wasNight) {   // dawn: survivors flee, reward
       for (const e of G.enemies) if (!e.dead) { e.flee = true; e.fleeT = 6; if (e.mixer) play(e, 'Gallop'); if (e.ring) scene.remove(e.ring); }
-      G.raid = null; const bonus = 10 + G.day * 5; G.res.food += bonus; say(`รอดคืนที่ ${G.day} แล้ว! ได้อาหาร +${bonus}`, 3000); sfx('dawn'); save();
+      G.raid = null; for (const v of G.vill) if (v.mixer) { v.busy = 1.6; v.hold = 1.6; vPlay(v, 'cheer', true); } if (G.chief) { G.chief.g.rotation.y = Math.atan2(VX - G.chief.x, VZ - G.chief.z); chiefDo('cheer'); } const bonus = 10 + G.day * 5; G.res.food += bonus; say(`รอดคืนที่ ${G.day} แล้ว! ได้อาหาร +${bonus}`, 3000); sfx('dawn'); save();
     }
     if (night) raidStep(dt);
     if (G.tut < 99) {   // first-day tips, one at a time
@@ -1677,7 +1765,7 @@ const GAME = window.GAME = (function () {
     G.birthT += dt; if (!night && G.birthT > 22) { G.birthT = 0; if (G.vill.length < Math.min(G.popCap, MAX_POP) && G.res.food >= 45) { G.res.food -= 25; const h = G.hall; addVillager(h.x + 3, h.z + 3); say('ชาวเผ่าเพิ่ม 1 คน', 1200); } }
     for (const v of G.vill.slice()) vStep(v, dt);
     for (const e of G.enemies) eStep(e, dt); G.enemies = G.enemies.filter(e => !e.gone);
-    shotStep(dt); skillStep(dt);
+    shotStep(dt); skillStep(dt); peopleStep(dt);
     hudT -= dt0; if (hudT <= 0) { hudT = .2; updHud(); drawMinimap(); }
     return dt;
   }
@@ -1686,7 +1774,7 @@ const GAME = window.GAME = (function () {
     for (let r = 42; r < 70; r += 3) for (let a = 0; a < 360; a += 9) { const x = VX + Math.cos(a * D2R) * r, z = VZ + Math.sin(a * D2R) * r; if (!placeOk(t, x, z)) return { x, z }; }
     return null;
   }
-  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, get fxCount() { return FXA.length; }, get on() { return G.on; },
+  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, PEOPLE, get fxCount() { return FXA.length; }, get on() { return G.on; },
     cheat: { res(n) { G.res.wood = G.res.stone = G.res.food = n; }, night() { G.t = DAY + DUSK - .1; }, day(d) { G.day = d; } } };
 })();
 </script>
