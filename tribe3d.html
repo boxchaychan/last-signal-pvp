@@ -1165,9 +1165,12 @@ const GAME = window.GAME = (function () {
       PEOPLE.tpl.warrior = Object.assign({}, PEOPLE.tpl.chief, { mats: [M[1]] });   // fallback when a pack file is missing
       PEOPLE.tpl.hunter = PEOPLE.tpl.warrior; PEOPLE.tpl.shaman = PEOPLE.tpl.warrior;
       const [TK, TM, TH, TH2, TM2] = await Promise.all(['knigh_0', 'mage_0', 'rogue_3', 'rogue_4', 'mage_1'].map(n => tex(n).catch(() => null)));
-      const [AB, AT, GE] = await Promise.all(['art/tribe3d/people/anims_bow.glb', 'art/tribe3d/people/anims_tools.glb', 'art/tribe3d/gear/archer_gear.glb'].map(u => ld.loadAsync(u).catch(() => null)));
+      const [AB, AT, GE, GM] = await Promise.all(['art/tribe3d/people/anims_bow.glb', 'art/tribe3d/people/anims_tools.glb', 'art/tribe3d/gear/archer_gear.glb', 'art/tribe3d/gear/mage_gear.glb'].map(u => ld.loadAsync(u).catch(() => null)));
       const GEAR = {};   // Blender gear (tools/blender/archer_gear.py): flat colours, modelled +Y up (glTF turned it), the bow is held as it is
       if (GE) for (const c of GE.scene.children) { c.traverse(o => { if (!o.isMesh) return; const mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), side: THREE.DoubleSide })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; if (c.name !== 'Bow') o.geometry.rotateX(Math.PI / 2); }); GEAR[c.name] = c; }
+      if (GM) for (const c of GM.scene.children) {   // ★★ shaman gear (tools/blender/mage_gear.py, modelled Y-up): "glow*" materials are drawn unlit
+        c.traverse(o => { if (!o.isMesh) return; const mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => (q.name || '').startsWith('glow') ? new THREE.MeshBasicMaterial({ color: q.color.clone().convertLinearToSRGB() }) : new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), emissive: 0x2a1a00 })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; });
+        GEAR[c.name] = c; }
       const findN = (r, n) => { let f = null; r.traverse(o => { if (o.name === n && !f) f = o; }); return f; };
       const addGear = (T, list) => { T.root.updateMatrixWorld(true); for (const [n, bone, pos, rot, local, sc] of list) { const bn = findN(T.root, bone); if (!GEAR[n] || !bn) continue; const g = GEAR[n].clone(); g.position.set(...pos); g.rotation.set(...rot); if (sc) g.scale.setScalar(sc); if (local) bn.add(g); else { T.root.add(g); g.updateMatrixWorld(true); bn.attach(g); } } };
       if (Kn && TK) { const m = new THREE.MeshLambertMaterial({ map: TK }); PEOPLE.tpl.warrior = mergePerson(C(Kn), ['Knight_Helmet', 'Knight_Cape', '1H_Sword', 'Round_Shield'], m); PEOPLE.tpl.warrior.mats = [m]; }
@@ -1176,7 +1179,8 @@ const GAME = window.GAME = (function () {
       if (Kn && TK) { const m = new THREE.MeshLambertMaterial({ map: TK }); const T2 = PEOPLE.tpl.warrior2 = mergePerson(C(Kn), ['Knight_Helmet', 'Knight_Cape', '1H_Sword', 'Badge_Shield'], m); T2.mats = [m]; addGear(T2, [['Plume', 'head', [0.02, 2.2, -0.05], [-0.25, 0, 0.1], 0, 1.9]]); }
       if (RH && TH2) { const m = new THREE.MeshLambertMaterial({ map: TH2 }); const T2 = PEOPLE.tpl.hunter2 = mergePerson(C(RH), ['Rogue_Cape'], m); T2.mats = [m];
         addGear(T2, [['Bow', 'handslotl', [0, 0, 0], [0, 0, 0], 1], ['Quiver', 'hips', [-0.36, 0.62, -0.1], [-0.35, 0, 0.32]], ['Plume', 'head', [0.32, 1.98, -0.02], [0, 0, -0.55]], ['Pad', 'upperarml', [0.3, 1.17, 0], [0, 0, -0.7]]]); }
-      if (Mg && TM2) { const m = new THREE.MeshLambertMaterial({ map: TM2 }); const T2 = PEOPLE.tpl.shaman2 = mergePerson(C(Mg), ['Mage_Hat', 'Mage_Cape', '2H_Staff', 'Spellbook_open'], m); T2.mats = [m]; }
+      if (Mg && TM2) { const m = new THREE.MeshLambertMaterial({ map: TM2 }); const T2 = PEOPLE.tpl.shaman2 = mergePerson(C(Mg), ['Mage_Hat', 'Mage_Cape', '2H_Staff', 'Spellbook_open'], m); T2.mats = [m];
+        addGear(T2, [['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 1.9], ['Crystal', 'handslotr', [-0.88, 1.05, 1.28], [Math.PI / 2, 0, 0], 0, 1.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.3]]); }
       if (Mg && TM) { const m = new THREE.MeshLambertMaterial({ map: TM }); PEOPLE.tpl.shaman = mergePerson(C(Mg), ['Mage_Hat', 'Mage_Cape', '2H_Staff'], m); PEOPLE.tpl.shaman.mats = [m]; }
       PEOPLE.tpl.giant = Object.assign({}, PEOPLE.tpl.man, { mats: [new THREE.MeshLambertMaterial({ map: T[0], color: 0x9ac07a })] });   // green-skinned forest giant
       PEOPLE.clips = [...B.animations, ...(AB ? AB.animations : []), ...(AT ? AT.animations : [])]; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
@@ -1390,6 +1394,7 @@ const GAME = window.GAME = (function () {
   function solStep(s, dt) {
     const home = s.fort && !s.fort.dead ? s.fort : G.hall, buff = G.buff > 0, U = UNIT[s.kind || 'warrior'];
     if (s.busy > 0) s.busy -= dt;
+    if (s.tier > 1 && s.kind === 'shaman' && rnd() < dt * 5) spawnP(s.x + (rnd() - .5) * 2, groundY(s.x, s.z) + .5 + rnd() * 2.5, s.z + (rnd() - .5) * 2, 0, 1 + rnd(), 0, .9, 2.5, 3);
     if (U.heal) { s.hl -= dt; if (s.hl <= 0) { s.hl = .5; let w = null, wk = .999;   // shaman: mend the most hurt fighter close by
       for (const o of [...G.sol, ...G.vill]) { const k2 = o.hp / (o.max || 30); if (k2 < wk && Math.hypot(o.x - s.x, o.z - s.z) < 24) { wk = k2; w = o; } }
       if (w) { const amt = U.heal * tierK(s) * (1 + .1 * (G.day - 1)); w.hp = Math.min(w.max || 30, w.hp + amt); s.hl = 2; G.healN = (G.healN || 0) + 1; float(w.x, groundY(w.x, w.z) + 4, w.z, '+' + Math.round(amt), '#9aff8a'); for (let i = 0; i < 8; i++) spawnP(w.x + (rnd() - .5) * 1.5, groundY(w.x, w.z) + .5 + rnd() * 2, w.z + (rnd() - .5) * 1.5, 0, 2 + rnd() * 2, 0, .8, 3, 2); if (s.mixer && !(s.busy > 0)) s.busy = vPlay(s, 'raise', true, .1) * .7; } } }
