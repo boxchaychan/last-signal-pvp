@@ -14,7 +14,7 @@ const out = process.argv[2] || '';
     await pg.goto('http://localhost:8000/tribe3d.html?autostart=1'); await pg.waitForFunction(() => window.GAME && GAME.on && TB.animalsReady && GAME.PEOPLE.ready, null, {timeout: 150000});
     // a small base: hall 2, 4 walls in front of tonight's banner, a fort with soldiers
     log.push('setup: ' + await pg.evaluate(() => {
-      const G = GAME.G; GAME.cheat.res(2000); GAME.tryUpgrade(G.hall); GAME.cheat.day(3); GAME.planWave();
+      const G = GAME.G; GAME.cheat.res(2000); GAME.tryUpgrade(G.hall); GAME.cheat.day(4); GAME.planWave();
       const p = G.next.pts[0], h = G.hall, d = Math.hypot(p.x - h.x, p.z - h.z), ux = (p.x - h.x) / d, uz = (p.z - h.z) / d;
       for (let i = -2; i <= 1; i++) { const x = h.x + ux * 30 - uz * i * 5.6, z = h.z + uz * 30 + ux * i * 5.6; GAME.startBuild('wall'); G.ghostAt = { x, z }; G.ghostOk = true; G.ghost.rotation.y = Math.atan2(ux, uz) + Math.PI / 2; GAME.confirmBuild(); }
       const fp = GAME.spot('fort'); GAME.startBuild('fort'); G.ghostAt = fp; G.ghostOk = true; GAME.confirmBuild(); GAME.startBuild('wall'); document.getElementById('gNo').dispatchEvent(new PointerEvent('pointerdown'));
