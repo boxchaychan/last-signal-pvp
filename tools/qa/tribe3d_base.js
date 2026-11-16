@@ -42,12 +42,12 @@ const out = process.argv[2] || '';
     await run(20); log.push('after fort: ' + JSON.stringify(await st()));
     await pg.evaluate(() => { TB.hold = false; }); await pg.locator('#gQ').click(); await pg.waitForTimeout(300);
     log.push('fort panel: ' + await pg.locator('#gSel').textContent());
-    if (await pg.locator('#gTrAll').count()) await pg.locator('#gTrAll').click();
+    { const r = await pg.evaluate(() => { const e = document.getElementById('gTrAll'); if (!e) return null; const q = e.getBoundingClientRect(); return [q.x + q.width / 2, q.y + q.height / 2]; }); if (r) await pg.mouse.click(r[0], r[1]); }   // a real tap on the button's centre
     await run(26); log.push('soldiers: ' + await pg.evaluate(() => GAME.G.sol.length + ' hud ' + document.getElementById('gR_sol').textContent + ' quest ' + GAME.G.q));
     await pg.evaluate(() => { const f = GAME.forts()[0]; TB.camT.set(f.x, 0, f.z); TB.zoomBy(2); TB.hold = false; }); await pg.waitForTimeout(900); await shot('b06_fort'); await pg.evaluate(() => TB.zoomBy(-2));
     // the wave preview from far out, then call them now
     await pg.evaluate(() => { const p = GAME.G.next.pts[0], h = GAME.G.hall; TB.camT.set((p.x + h.x) / 2, 0, (p.z + h.z) / 2); TB.zoomBy(-1); TB.hold = false; }); await pg.waitForTimeout(900); await shot('b03_wave_preview');
-    await pg.evaluate(() => { TB.hold = true; }); await pg.locator('#gGo').click(); log.push('called early: ' + JSON.stringify(await st()));
+    await pg.evaluate(() => { TB.hold = true; GAME.G.t = 5; TB.step(.05); }); await pg.waitForTimeout(400); await pg.locator('#gGo').click();   // build phase is short now: go back into it first log.push('called early: ' + JSON.stringify(await st()));
     await run(14); const sp = await pg.evaluate(() => { const p = GAME.G.next.pts[0]; return GAME.G.enemies.map(e => Math.round(Math.min(...GAME.G.next.pts.map(q => Math.hypot(q.x - e.x, q.z - e.z))))).join(','); });
     log.push('night: ' + JSON.stringify(await st()) + ' enemy distance from banners: ' + sp);
     await pg.evaluate(() => { const e = GAME.G.enemies.find(e => !e.dead); if (e) TB.camT.set(e.x, 0, e.z); TB.draw(); }); await shot('b04_night');
