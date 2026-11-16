@@ -11,7 +11,7 @@ const out = process.argv[2] || '';
   const shot = async n => { if (out) await pg.screenshot({path: `${out}/${n}.png`}); };
   const run = (sec, dt = .05) => pg.evaluate(([sec, dt]) => { TB.hold = true; for (let t = 0; t < sec; t += dt) TB.step(dt); TB.draw(); }, [sec, dt]);
   try {
-    await pg.goto('http://localhost:8000/tribe3d.html?autostart=1'); await pg.waitForFunction(() => window.GAME && GAME.on && TB.animalsReady && GAME.PEOPLE.ready, null, {timeout: 90000});
+    await pg.goto('http://localhost:8000/tribe3d.html?autostart=1'); await pg.waitForFunction(() => window.GAME && GAME.on && TB.animalsReady && GAME.PEOPLE.ready, null, {timeout: 150000});
     // a small base: hall 2, 4 walls in front of tonight's banner, a fort with soldiers
     log.push('setup: ' + await pg.evaluate(() => {
       const G = GAME.G; GAME.cheat.res(2000); GAME.tryUpgrade(G.hall); GAME.cheat.day(3); GAME.planWave();
