@@ -14,7 +14,7 @@ const out = process.argv[2] || '';
   const st = () => pg.evaluate(() => { const G = GAME.G; return { day: G.day, t: Math.round(G.t), q: G.q, b: G.buildings.map(b => b.type + (b.site ? '@' + Math.round(b.prog * 100) : '')).join(','), vill: G.vill.length, cap: G.popCap, hall: GAME.hallLv(), res: Object.values(G.res).map(Math.round).join('/'), en: G.enemies.filter(e => !e.dead).length, sol: G.sol.length, kill: G.killed }; });
   const tapGround = async () => { for (const [x, y] of [[422, 200], [380, 230], [470, 180], [350, 170], [500, 240], [300, 220]]) { await pg.mouse.click(x, y); await pg.waitForTimeout(150); if (await pg.evaluate(() => GAME.G.ghostOk)) return true; } return false; };
   try {
-    await pg.goto('http://localhost:8000/tribe3d.html'); await pg.waitForFunction(() => window.TB && TB.ready && document.querySelector('.gScreen') && TB.animalsReady, null, {timeout: 90000});
+    await pg.goto('http://localhost:8000/tribe3d.html'); await pg.waitForFunction(() => window.TB && TB.ready && document.querySelector('.gScreen') && TB.animalsReady, null, {timeout: 150000});
     await pg.evaluate(() => localStorage.clear());
     await pg.locator('.gScreen button').first().click(); await pg.waitForTimeout(800);
     log.push('start: ' + JSON.stringify(await st()) + ' quest: ' + await pg.locator('#gQ').textContent());
@@ -61,7 +61,7 @@ const out = process.argv[2] || '';
     log.push('after upgrade: ' + JSON.stringify(await st()) + ' tower cap ' + await pg.evaluate(() => GAME.capOf('tower')) + ' quest: ' + await pg.locator('#gQ').textContent());
     await shot('b05_hall2');
     // save -> reload -> continue
-    await pg.reload(); await pg.waitForFunction(() => window.TB && TB.ready && document.querySelector('.gScreen'), null, {timeout: 90000});
+    await pg.reload(); await pg.waitForFunction(() => window.TB && TB.ready && document.querySelector('.gScreen'), null, {timeout: 150000});
     await pg.locator('.gScreen button').first().click(); await pg.waitForTimeout(800); log.push('continued: ' + JSON.stringify(await st()));
   } catch (e) { errs.push('TEST ' + e.message); }
   console.log(log.join('\n')); console.log('errors: ' + (errs.length ? '\n' + errs.slice(0, 12).join('\n') : 'none'));

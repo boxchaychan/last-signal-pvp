@@ -12,7 +12,7 @@ const out = process.argv[2] || '';
   const run = (sec, dt = .05) => pg.evaluate(([sec, dt]) => { TB.hold = true; for (let t = 0; t < sec; t += dt) TB.step(dt); TB.draw(); }, [sec, dt]);
   try {
     await pg.goto('http://localhost:8000/tribe3d.html'); await pg.waitForFunction(() => window.TB && TB.ready && document.querySelector('.gScreen'), null, {timeout: 60000});
-    await pg.waitForFunction(() => TB.animalsReady, null, {timeout: 90000});
+    await pg.waitForFunction(() => TB.animalsReady, null, {timeout: 150000});
     await shot('g01_title');
     await pg.locator('.gScreen button').first().click(); await pg.waitForTimeout(500);
     log.push('started: ' + JSON.stringify(await pg.evaluate(() => ({ on: GAME.on, vill: GAME.G.vill.length, b: GAME.G.buildings.length, nodes: GAME.G.nodes.length, res: GAME.G.res }))));

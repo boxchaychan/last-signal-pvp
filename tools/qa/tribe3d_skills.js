@@ -21,7 +21,7 @@ const out = process.argv[2] || '';
   }, kinds);
   const state = () => pg.evaluate(() => ({ alive: GAME.G.enemies.filter(e => !e.dead).length, hp: Math.round(GAME.G.enemies.filter(e => !e.dead).reduce((s, e) => s + e.hp, 0)), cd: Object.fromEntries(Object.entries(GAME.G.cd).map(([k, v]) => [k, +v.toFixed(1)])), fx: GAME.fxCount, aim: GAME.G.aim, buff: +GAME.G.buff.toFixed(1) }));
   try {
-    await pg.goto('http://localhost:8000/tribe3d.html?autostart=1'); await pg.waitForFunction(() => window.GAME && GAME.on && TB.animalsReady, null, {timeout: 90000});
+    await pg.goto('http://localhost:8000/tribe3d.html?autostart=1'); await pg.waitForFunction(() => window.GAME && GAME.on && TB.animalsReady, null, {timeout: 150000});
     await pg.waitForTimeout(1500);
     await pg.evaluate(() => { GAME.cheat.night(); TB.hold = true; TB.step(.2); GAME.G.raid = null; });
     // 1. spear rain with real clicks

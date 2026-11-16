@@ -7,7 +7,9 @@ from PIL import Image
 src, out = sys.argv[1], sys.argv[2]
 JOBS = {   # texture: (hue range of the cloth in degrees, [(new hue, saturation factor, value factor), ...])
     'barbarian': ((190, 235), [(30, .8, 1.05), (85, .6, .95), (5, 1, 1)]),
-    'rogue': ((95, 200), [(27, .7, 1), (42, .8, 1.1), (8, .85, .95)]),
+    'rogue': ((95, 200), [(27, .7, 1), (42, .8, 1.1), (8, .85, .95), (128, .62, .8)]),   # 3 = forest green (hooded hunters)
+    'knight': ((0, 0), [(0, 1, 1)]),   # lift only
+    'mage': ((0, 0), [(0, 1, 1)]),
 }
 LIFT, SAT = .85, 1.1
 for name, ((h0, h1), variants) in JOBS.items():
