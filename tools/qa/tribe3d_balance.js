@@ -9,14 +9,15 @@ const DAYS = +(process.argv[2] || 12), SKILLS = !!process.env.SKILLS;   // SKILL
   await pg.goto('http://localhost:8000/tribe3d.html?autostart=1'); await pg.waitForFunction(() => window.GAME && GAME.on && TB.animalsReady, null, {timeout: 90000});
   for (let d = 0; d < DAYS; d++) {
     const r = await pg.evaluate((SK) => {
-      const G = GAME.G, BT = GAME.BT, can = c => Object.entries(c).every(([k, v]) => G.res[k] >= v), plan = ['tower', 'hut', 'farm', 'tower', 'wall', 'wall', 'hut', 'fire', 'outpost', 'tower'];
+      const G = GAME.G, BT = GAME.BT, can = c => Object.entries(c).every(([k, v]) => G.res[k] >= v), plan = ['tower', 'fort', 'hut', 'farm', 'tower', 'wall', 'wall', 'hut', 'fire', 'outpost', 'tower', 'fort'];
       let built = [];
       if (GAME.hallLv() < 5 && GAME.tryUpgrade(G.hall)) built.push('HALL' + GAME.hallLv());   // the base-builder: hall first when affordable
       for (const t of plan) { if (!can(BT[t].cost)) continue; const p = GAME.spot(t); if (!p) continue; GAME.startBuild(t); G.ghostAt = p; G.ghostOk = true; GAME.confirmBuild(); built.push(t); }
+      for (const f of GAME.forts()) { let n = 0; while (G.res.food > 40 && GAME.train(f, 1)) n++; if (n) built.push('SOL' + n); }   // soldiers, keeping some food
       if (GAME.G.mode) { /* leave build mode */ }
       TB.hold = true; const start = G.day; let guard = 0;
       let casts = 0; while (G.day === start && !G.over && guard++ < 6000) { TB.step(.05); if (SK && guard % 20 === 0 && GAME.isNight() && GAME.autoCast()) casts++; }
-      return { casts, hall: GAME.hallLv(), q: G.q, day: G.day, over: G.over, built: built.join('+'), vill: G.vill.length, hall: Math.round(G.hall.hp), b: G.buildings.length, killed: G.killed, res: Object.values(G.res).map(Math.round).join('/') };
+      return { casts, hall: GAME.hallLv(), q: G.q, day: G.day, over: G.over, built: built.join('+'), vill: G.vill.length, sol: G.sol.length, hall: Math.round(G.hall.hp), b: G.buildings.length, killed: G.killed, res: Object.values(G.res).map(Math.round).join('/') };
     }, SKILLS);
     console.log(JSON.stringify(r)); if (r.over) break;
   }

@@ -11,7 +11,7 @@ const out = process.argv[2] || '';
   pg.on('response', r => { if (r.status() >= 400) errs.push(r.status() + ' ' + r.url()); });
   const shot = async n => { if (out) await pg.screenshot({path: `${out}/${n}.png`}); };
   const run = (sec, dt = .05) => pg.evaluate(([sec, dt]) => { TB.hold = true; for (let t = 0; t < sec; t += dt) TB.step(dt); TB.draw(); }, [sec, dt]);
-  const st = () => pg.evaluate(() => { const G = GAME.G; return { day: G.day, t: Math.round(G.t), q: G.q, b: G.buildings.map(b => b.type + (b.site ? '@' + Math.round(b.prog * 100) : '')).join(','), vill: G.vill.length, cap: G.popCap, hall: GAME.hallLv(), res: Object.values(G.res).map(Math.round).join('/'), en: G.enemies.filter(e => !e.dead).length }; });
+  const st = () => pg.evaluate(() => { const G = GAME.G; return { day: G.day, t: Math.round(G.t), q: G.q, b: G.buildings.map(b => b.type + (b.site ? '@' + Math.round(b.prog * 100) : '')).join(','), vill: G.vill.length, cap: G.popCap, hall: GAME.hallLv(), res: Object.values(G.res).map(Math.round).join('/'), en: G.enemies.filter(e => !e.dead).length, sol: G.sol.length, kill: G.killed }; });
   const tapGround = async () => { for (const [x, y] of [[422, 200], [380, 230], [470, 180], [350, 170], [500, 240], [300, 220]]) { await pg.mouse.click(x, y); await pg.waitForTimeout(150); if (await pg.evaluate(() => GAME.G.ghostOk)) return true; } return false; };
   try {
     await pg.goto('http://localhost:8000/tribe3d.html'); await pg.waitForFunction(() => window.TB && TB.ready && document.querySelector('.gScreen') && TB.animalsReady, null, {timeout: 90000});
@@ -35,13 +35,25 @@ const out = process.argv[2] || '';
     log.push('cap check: ' + JSON.stringify(await pg.evaluate(() => ({ tower: GAME.countOf('tower') + '/' + GAME.capOf('tower'), why: (GAME.startBuild('tower'), document.getElementById('gTip').textContent) }))));
     await pg.locator('#gNo').click();
     await run(20); log.push('after tower: ' + JSON.stringify(await st()));
+    // quest: fort, then quest: train soldiers (the quest panel selects the fort, "ฝึกให้เต็ม")
+    await pg.evaluate(() => { GAME.cheat.res(300); const p = GAME.spot('fort'); TB.camT.set(p.x, 0, p.z); TB.draw(); });
+    await pg.locator('#gQ').click(); await pg.waitForTimeout(200); log.push('fort quest -> mode ' + await pg.evaluate(() => GAME.G.mode));
+    if (await tapGround()) await pg.locator('#gOk').click(); await pg.locator('#gNo').click();
+    await run(20); log.push('after fort: ' + JSON.stringify(await st()));
+    await pg.evaluate(() => { TB.hold = false; }); await pg.locator('#gQ').click(); await pg.waitForTimeout(300);
+    log.push('fort panel: ' + await pg.locator('#gSel').textContent());
+    if (await pg.locator('#gTrAll').count()) await pg.locator('#gTrAll').click();
+    await run(26); log.push('soldiers: ' + await pg.evaluate(() => GAME.G.sol.length + ' hud ' + document.getElementById('gR_sol').textContent + ' quest ' + GAME.G.q));
+    await pg.evaluate(() => { const f = GAME.forts()[0]; TB.camT.set(f.x, 0, f.z); TB.zoomBy(2); TB.hold = false; }); await pg.waitForTimeout(900); await shot('b06_fort'); await pg.evaluate(() => TB.zoomBy(-2));
     // the wave preview from far out, then call them now
     await pg.evaluate(() => { const p = GAME.G.next.pts[0], h = GAME.G.hall; TB.camT.set((p.x + h.x) / 2, 0, (p.z + h.z) / 2); TB.zoomBy(-1); TB.hold = false; }); await pg.waitForTimeout(900); await shot('b03_wave_preview');
     await pg.evaluate(() => { TB.hold = true; }); await pg.locator('#gGo').click(); log.push('called early: ' + JSON.stringify(await st()));
     await run(14); const sp = await pg.evaluate(() => { const p = GAME.G.next.pts[0]; return GAME.G.enemies.map(e => Math.round(Math.min(...GAME.G.next.pts.map(q => Math.hypot(q.x - e.x, q.z - e.z))))).join(','); });
     log.push('night: ' + JSON.stringify(await st()) + ' enemy distance from banners: ' + sp);
     await pg.evaluate(() => { const e = GAME.G.enemies.find(e => !e.dead); if (e) TB.camT.set(e.x, 0, e.z); TB.draw(); }); await shot('b04_night');
-    await run(70); log.push('dawn: ' + JSON.stringify(await st()));
+    log.push('night fight: soldiers ' + await pg.evaluate(() => GAME.G.sol.map(x => x.cur || '').join(',') + ' villagers sitting ' + GAME.G.vill.filter(v => v.sit).length + '/' + GAME.G.vill.length + ' food ' + Math.round(GAME.G.res.food)));
+    await pg.evaluate(() => { const v = GAME.G.vill.find(v => v.sit) || GAME.G.vill[0]; TB.camT.set(v.x, 0, v.z); TB.zoomBy(2); TB.draw(); }); await shot('b07_night_fire'); await pg.evaluate(() => TB.zoomBy(-2));
+    await run(70); log.push('dawn: ' + JSON.stringify(await st()) + ' soldiers ' + await pg.evaluate(() => GAME.G.sol.length));
     // hall upgrade with a real tap on the hall
     await pg.evaluate(() => { GAME.cheat.res(400); const h = GAME.G.hall; TB.camT.set(h.x, 0, h.z); TB.hold = false; }); await pg.waitForTimeout(500);
     await pg.mouse.click(422, 195); await pg.waitForTimeout(300); log.push('hall panel: ' + await pg.locator('#gSel').textContent());
