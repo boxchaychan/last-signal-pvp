@@ -887,7 +887,7 @@ const GAME = window.GAME = (function () {
   const DAY = 110, DUSK = 10, NIGHT = 65, DAWN = 8, CYCLE = DAY + DUSK + NIGHT + DAWN;
   const G = { on: false, q: 0, res: { wood: 120, stone: 60, food: 80 }, popCap: 0, day: 1, t: 0, speed: 1, over: false, best: 0,
     buildings: [], vill: [], enemies: [], shots: [], nodes: [], terr: [], floats: [], mode: null, ghost: null, ghostOk: false, ghostAt: null, killed: 0, raid: null, birthT: 0, eatT: 0,
-    cd: { spear: 0, pot: 0, drum: 0 }, aim: null, buff: 0, zones: [], later: [], spears: [], rings: [], shake: 0, dying: [], chief: null };
+    cd: { spear: 0, pot: 0, drum: 0 }, aim: null, buff: 0, zones: [], later: [], spears: [], rings: [], shake: 0, dying: [], chief: null, sol: [] };
   const SAVE = 'tribe3d_v2', BEST = 'tribe3d_best';   // v2 = started from scratch (v1 saves had the hand-made village)
   const RES_N = { wood: 'ไม้', stone: 'หิน', food: 'อาหาร' };
   const BT = {   // building types
@@ -898,13 +898,14 @@ const GAME = window.GAME = (function () {
     tower:   { n: 'หอพุ่งหอก', cost: { wood: 40, stone: 25 }, hp: 170, r: 2.4, range: 30, rate: 1.25, dmg: 15, d: 'ยิงหอกใส่ศัตรู' },
     wall:    { n: 'รั้วไม้แหลม', cost: { wood: 12 }, hp: 160, r: 2.8, wall: true, d: 'ขวางทางศัตรู' },
     fire:    { n: 'กองไฟ', cost: { wood: 15, stone: 5 }, hp: 60, r: 1.8, heal: 3, d: 'ส่องสว่าง รักษาชาวเผ่า' },
+    fort:    { n: 'ป้อมทหาร', cost: { wood: 60, stone: 30 }, hp: 260, r: 4, d: 'ฝึกทหาร · กลางคืนทหารออกไปสู้เอง' },
     outpost: { n: 'ด่านหน้า', cost: { wood: 60, stone: 40, food: 20 }, hp: 220, r: 3, terr: 40, store: true, d: 'ขยายดินแดน (อาณานิคม)' },
   };
-  const BUILD_ORDER = ['hut', 'farm', 'tower', 'wall', 'fire', 'store', 'outpost'];
+  const BUILD_ORDER = ['hut', 'farm', 'tower', 'fort', 'wall', 'fire', 'store', 'outpost'];
   // base builder (owner 2026-11-16: "ผสมระหว่างทาวเวอร์กับสร้างเมือง"): the hall level (1-5) caps how many of each you may have,
   // a placed building is a site that villagers walk to and build (seconds of work below)
-  const CAP = { hut: [2, 4, 6, 8, 10], farm: [1, 2, 3, 4, 5], tower: [1, 3, 5, 7, 9], wall: [8, 16, 24, 32, 40], fire: [1, 2, 3, 4, 4], store: [1, 2, 2, 3, 4], outpost: [0, 1, 2, 3, 4] };
-  const BTIME = { hut: 10, farm: 8, tower: 14, wall: 3, fire: 5, store: 7, outpost: 18 };
+  const CAP = { hut: [2, 4, 6, 8, 10], farm: [1, 2, 3, 4, 5], tower: [1, 3, 5, 7, 9], fort: [1, 1, 2, 2, 3], wall: [8, 16, 24, 32, 40], fire: [1, 2, 3, 4, 4], store: [1, 2, 2, 3, 4], outpost: [0, 1, 2, 3, 4] };
+  const BTIME = { hut: 10, farm: 8, tower: 14, fort: 14, wall: 3, fire: 5, store: 7, outpost: 18 };
   const HALL_UP = [{ wood: 100, stone: 50 }, { wood: 220, stone: 140 }, { wood: 400, stone: 280 }, { wood: 650, stone: 450 }];
   const hallLv = () => (G.hall && G.hall.lv) || 1;
   const capOf = t => CAP[t] ? CAP[t][hallLv() - 1] : 99;
@@ -978,6 +979,12 @@ const GAME = window.GAME = (function () {
     else if (type === 'tower') add('watchtower', 0, 0, .8);
     else if (type === 'wall') { for (let i = -2; i <= 2; i++) add('palisade_log', i * .95, 0, 1.1, rnd() * 3); }
     else if (type === 'fire') add('campfire', 0, 0, .8);
+    else if (type === 'fort') {   // a ring of sharpened posts open at the front, a totem and a red war banner
+      for (let i = 0; i < 12; i++) { const a = Math.PI / 2 + .55 + i / 12 * (6.283 - 1.1); add('palisade_log', Math.cos(a) * 3.3, Math.sin(a) * 3.3, 1.05, -a); }
+      add('totem', 0, -.8, .75);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(.13, .15, 6.5, 6), new THREE.MeshLambertMaterial({ color: 0x5a3a20 })); pole.position.set(1.6, 3.25, .6); pole.castShadow = true; g.add(pole);
+      const cloth = new THREE.Mesh(new THREE.BoxGeometry(.1, 1.6, 2.2), new THREE.MeshLambertMaterial({ color: 0xc8281c })); cloth.position.set(1.6, 5.4, 1.75); cloth.castShadow = true; g.add(cloth);
+    }
     else if (type === 'outpost') { add('totem', 0, -1.5, .8); add('campfire', 0, 2.2, .6); add('woodpile', 2.6, 1, .7); }
     return g;
   }
@@ -1072,6 +1079,7 @@ const GAME = window.GAME = (function () {
       PEOPLE.tpl.man = mergePerson(C(B), ['1H_Axe', 'Barbarian_Hat', 'Barbarian_Cape'], M[0]); PEOPLE.tpl.man.mats = [M[0], M[1]];
       PEOPLE.tpl.woman = mergePerson(C(R), ['Rogue_Cape', 'Knife'], M[3]); PEOPLE.tpl.woman.mats = [M[3], M[4], M[5]];
       PEOPLE.tpl.chief = mergePerson(C(B), ['2H_Axe', 'Barbarian_Hat', 'Barbarian_Cape', 'Barbarian_Round_Shield'], M[2]); PEOPLE.tpl.chief.mats = [M[2]];
+      PEOPLE.tpl.warrior = Object.assign({}, PEOPLE.tpl.chief, { mats: [M[1]] });
       PEOPLE.clips = B.animations; PEOPLE.ready = true;
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
@@ -1153,16 +1161,16 @@ const GAME = window.GAME = (function () {
     const night = isNight() && G.enemies.length;
     if (v.hp < 30 && !night) v.hp = Math.min(30, v.hp + dt * 1.5);
     for (const b of G.buildings) if (b.type === 'fire' && Math.hypot(b.x - v.x, b.z - v.z) < 10) v.hp = Math.min(30, v.hp + BT.fire.heal * dt);
-    let moving = false;
+    let moving = false; v.sit = false;
     if (v.busy > 0) v.busy -= dt;
     if (v.hold > 0) v.hold -= dt;
-    else if (night) {   // defend: fight the nearest enemy close to us or to the village, else gather at the hall
+    else if (night) {   // villagers hide: sit round the big fire; they only hit back at a beast that is right on them
       if (v.job && v.job.w) v.job.w--; v.job = null; v.carry = null; v.st = 'idle'; v.t = 1; endSite(v);
       let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.def.fly && x.y > 4) continue; const d = Math.hypot(x.x - v.x, x.z - v.z); if (d < ed) { ed = d; e = x; } }
-      if (e && ed < 26) {
+      if (e && ed < 6) {
         if (ed > e.def.r + 1.4) { moveTo(v, e.x, e.z, G.buff > 0 ? 7.4 : 5.2, dt); moving = true; v.face = Math.atan2(e.x - v.x, e.z - v.z); }
         else { v.atk -= dt; v.face = Math.atan2(e.x - v.x, e.z - v.z); if (v.atk <= 0) { v.atk = G.buff > 0 ? .6 : 1; hurtEnemy(e, G.buff > 0 ? 15 : 6, v); setPose(v, 'thrust'); v.tp = .3; if (v.mixer) { v.busy = Math.min(v.atk, vPlay(v, rnd() < .5 ? 'stab' : 'chop', true, .08) * .9); } } }
-      } else { const h = G.hall; if (h && Math.hypot(h.x - v.x, h.z - v.z) > 9) { moveTo(v, h.x + Math.cos(v.ang) * 7, h.z + Math.sin(v.ang) * 7, 4.5, dt); moving = true; v.face = Math.atan2(h.x - v.x, h.z - v.z); } }
+      } else { const fx2 = VX + Math.cos(v.ang) * 5.5, fz2 = VZ + Math.sin(v.ang) * 5.5; if (Math.hypot(fx2 - v.x, fz2 - v.z) > .5) { moveTo(v, fx2, fz2, 5, dt); moving = true; v.face = Math.atan2(fx2 - v.x, fz2 - v.z); } else { v.face = Math.atan2(VX - v.x, VZ - v.z); v.sit = true; } }
     } else if (v.st === 'idle') { v.t -= dt; if (v.t <= 0) pickJob(v); }
     else if (v.st === 'go') {
       const n = v.job; if (!n || n.amt < 1) { if (n) n.w--; v.st = 'idle'; v.t = .5; }
@@ -1185,7 +1193,7 @@ const GAME = window.GAME = (function () {
       else { if (moveTo(v, s.x + Math.cos(v.ang) * (s.r + 1), s.z + Math.sin(v.ang) * (s.r + 1), 5.2, dt)) { if (v.carry) { G.res[v.carry.type] += v.carry.n; float(s.x, groundY(s.x, s.z) + 5, s.z, `+${v.carry.n} ${RES_N[v.carry.type]}`, v.carry.type === 'food' ? '#ffd27a' : v.carry.type === 'wood' ? '#e8c08a' : '#d8dde8'); } v.carry = null; v.st = 'idle'; v.t = .3; } moving = true; v.face = Math.atan2(s.x - v.x, s.z - v.z); }
     }
     if (v.mixer) {   // animated person: loops follow the state, one-shots (attack, throw, cheer) hold for v.busy
-      if (!(v.busy > 0)) vPlay(v, moving ? 'run' : v.st === 'bwork' ? 'chop' : v.st === 'work' && v.job ? (v.job.type === 'food' ? 'pick' : 'chop') : 'idle');
+      if (!(v.busy > 0)) vPlay(v, moving ? 'run' : night && v.sit ? 'sit' : v.st === 'bwork' ? 'chop' : v.st === 'work' && v.job ? (v.job.type === 'food' ? 'pick' : 'chop') : 'idle');
       v.mixer.update(dt * (moving && v.cur === MOVE.run ? Math.min(1.5, Math.max(.8, (G.buff > 0 ? 7.4 : 5.2) / 5.2)) : 1));
       v.g.position.set(v.x, groundY(v.x, v.z), v.z);
     } else {
@@ -1211,7 +1219,52 @@ const GAME = window.GAME = (function () {
   function hurtVillager(v, dmg) {
     v.hp -= dmg; if (v.mixer && v.hp > 0 && !(v.busy > 0) && rnd() < .4) v.busy = vPlay(v, 'hit', true, .06) * .8; for (let i = 0; i < 5; i++) spawnP(v.x, groundY(v.x, v.z) + 1.6, v.z, (rnd() - .5) * 4, 2 + rnd() * 3, (rnd() - .5) * 4, .5, 3, 0);
     if (v.hp <= 0 && !v.dead) { v.dead = true; if (v.job && v.job.w) v.job.w--; endSite(v); if (v.load) v.load.visible = false;
-      if (v.mixer) { vPlay(v, 'die', true, .1); G.dying.push(v); setTimeout(() => { scene.remove(v.g); G.dying = G.dying.filter(x => x !== v); }, 3200); } else { v.g.rotation.x = -Math.PI / 2; v.g.position.y += .4; setTimeout(() => scene.remove(v.g), 2500); } G.vill = G.vill.filter(x => x !== v); say('ชาวเผ่าเสียชีวิต 1 คน', 1500); }
+      if (v.mixer) { vPlay(v, 'die', true, .1); G.dying.push(v); setTimeout(() => { scene.remove(v.g); G.dying = G.dying.filter(x => x !== v); }, 3200); } else { v.g.rotation.x = -Math.PI / 2; v.g.position.y += .4; setTimeout(() => scene.remove(v.g), 2500); } G.vill = G.vill.filter(x => x !== v); G.sol = G.sol.filter(x => x !== v); say(v.sol ? 'ทหารเสียชีวิต 1 คน' : 'ชาวเผ่าเสียชีวิต 1 คน', 1500); }
+  }
+
+  // ---------- soldiers (owner 2026-11-16: "สร้างป้อมป้องกัน ละมีทหารค่อยออกไปสู้ ... ไปสู้เองตามจำนวนที่มี"): trained at a fort,
+  // guard it by day, go out by themselves at night to fight every beast near our land, come back after; villagers only work
+  const SOL = { hp: 100, dmg: 12, atk: .9, spd: 6.2, cost: { food: 10, wood: 5 }, time: 5 };
+  const solMax = s => Math.round(SOL.hp * (1 + .16 * (G.day - 1)) * (1 + ((s.fort && s.fort.lv || 1) - 1) * .25));   // they grow with the nights like the beasts
+  const fortCap = f => f.site || f.dead ? 0 : 5 + ((f.lv || 1) - 1) * 2;
+  const forts = () => G.buildings.filter(b => b.type === 'fort' && !b.site && !b.dead);
+  const solCap = () => forts().reduce((n, f) => n + fortCap(f), 0);
+  function addSoldier(f) {
+    const g = new THREE.Group(), x = f.x + (rnd() - .5) * 3, z = f.z + f.r + 1.5; g.position.set(x, groundY(x, z), z); scene.add(g);
+    const s = { g, x, z, fort: f, st: 'guard', atk: 0, ang: rnd() * 6.28, sol: true }; s.max = s.hp = solMax(s);
+    if (PEOPLE.ready) { const p = newPerson('warrior', 3.4); g.add(p.root); Object.assign(s, { mixer: p.mixer, acts: p.acts, mat: p.mesh.material, cur: null }); p.mixer.update(rnd()); }
+    else if (MODELS.caveman_stand) { const m = new THREE.Mesh(MODELS.caveman_stand, new THREE.MeshLambertMaterial({ vertexColors: true, color: 0xff9a8a })); m.castShadow = true; g.add(m); s.mat = m.material; }
+    G.sol.push(s); float(x, groundY(x, z) + 4, z, 'ทหาร +1', '#9adfff'); return s;
+  }
+  function train(f, n) {   // queue soldiers at a fort, paid now; returns how many were queued
+    let k = 0;
+    while (k < (n || 1) && G.sol.filter(s => s.fort === f).length + (f.queue || 0) < fortCap(f) && canPay(SOL.cost)) { pay(SOL.cost); f.queue = (f.queue || 0) + 1; k++; }
+    if (k) { f.trainT = f.trainT > 0 ? f.trainT : SOL.time; sfx('build'); }
+    return k;
+  }
+  function fortStep(f, dt) { if (f.queue > 0) { f.trainT -= dt; if (f.trainT <= 0) { f.queue--; addSoldier(f); f.trainT = SOL.time; } } }
+  function solStep(s, dt) {
+    const home = s.fort && !s.fort.dead ? s.fort : G.hall, buff = G.buff > 0;
+    if (s.busy > 0) s.busy -= dt;
+    if (!isNight() && s.hp < s.max) s.hp = Math.min(s.max, s.hp + dt * 2);
+    let e = null, ed = 1e9, near = null, nd = 1e9;
+    for (const x of G.enemies) {   // the squad's target = the beast nearest to their fort; a beast right on a soldier comes first
+      if (x.dead || x.flee || (x.fly && x.y > groundY(x.x, x.z) + 6)) continue; const dh = Math.hypot(x.x - home.x, x.z - home.z); if (dh > 60 && !inTerr(x.x, x.z, 18)) continue;
+      if (dh < ed) { ed = dh; e = x; } const d = Math.hypot(x.x - s.x, x.z - s.z); if (d < nd) { nd = d; near = x; }
+    }
+    if (near && nd < near.def.r + 3) e = near; if (e) ed = Math.hypot(e.x - s.x, e.z - s.z);
+    let moving = false;
+    if (e) {   // out to fight
+      s.face = Math.atan2(e.x - s.x, e.z - s.z);
+      if (ed > e.def.r + 1.6) { moveTo(s, e.x, e.z, SOL.spd * (buff ? 1.3 : 1), dt); moving = true; }
+      else { s.atk -= dt; if (s.atk <= 0) { s.atk = SOL.atk * (buff ? .6 : 1); hurtEnemy(e, SOL.dmg * (1 + ((s.fort && s.fort.lv || 1) - 1) * .25) * (1 + .14 * (G.day - 1)) * (buff ? 2.5 : 1)); if (s.mixer) s.busy = Math.min(s.atk, vPlay(s, rnd() < .5 ? 'smash' : 'stab', true, .08) * .9); } }
+    } else {   // back to the fort's gate, face outward
+      const tx = home.x + Math.cos(s.ang) * (home.r + 2.5), tz = home.z + Math.sin(s.ang) * (home.r + 2.5);
+      if (Math.hypot(tx - s.x, tz - s.z) > .6) { moveTo(s, tx, tz, SOL.spd * .8, dt); moving = true; s.face = Math.atan2(tx - s.x, tz - s.z); } else s.face = s.ang * 0 + Math.atan2(s.x - home.x, s.z - home.z);
+    }
+    if (s.mixer) { if (!(s.busy > 0)) vPlay(s, moving ? 'run' : 'idle'); s.mixer.update(dt); }
+    s.g.position.set(s.x, groundY(s.x, s.z), s.z);
+    if (s.face != null) { let dr = s.face - s.g.rotation.y; while (dr > Math.PI) dr -= 6.283; while (dr < -Math.PI) dr += 6.283; s.g.rotation.y += dr * Math.min(1, dt * 8); }
   }
 
   // ---------- enemies
@@ -1240,7 +1293,6 @@ const GAME = window.GAME = (function () {
     for (let i = 0; i < 6; i++) spawnP(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + 1.2, e.z, (rnd() - .5) * 5, 2 + rnd() * 4, (rnd() - .5) * 5, .45, 3, 0);
     if (e.hp <= 0) {
       e.dead = true; G.killed++; scene.remove(e.ring); if (e.mixer) play(e, 'Death');
-      G.res.food += e.def.food; float(e.x, groundY(e.x, e.z) + 4, e.z, `+${e.def.food} อาหาร`, '#ffd27a');
       if (e.def.boss) say(`ล้ม${e.def.n}สำเร็จ!`, 2500);
       e.dieT = e.fly ? 3 : 2.2;
     }
@@ -1249,6 +1301,7 @@ const GAME = window.GAME = (function () {
     let best = null, bd = 1e9;
     for (const b of G.buildings) { const d = Math.hypot(b.x - e.x, b.z - e.z) - b.r * 1.5; if (d < bd) { bd = d; best = b; } }
     for (const v of G.vill) { const d = Math.hypot(v.x - e.x, v.z - e.z) + 6; if (d < bd) { bd = d; best = v; } }
+    for (const v of G.sol) { const d = Math.hypot(v.x - e.x, v.z - e.z) + 1; if (d < bd) { bd = d; best = v; } }
     return best;
   }
   function blocker(e, nx, nz) { for (const b of G.buildings) if (b.type === 'wall' && Math.hypot(b.x - nx, b.z - nz) < b.r + e.def.r * .6) return b; return null; }
@@ -1356,11 +1409,14 @@ const GAME = window.GAME = (function () {
   const QUESTS = [
     { t: 'สร้างกระท่อม 1 หลัง (มีที่อยู่ คนถึงจะเพิ่ม)', go: 'hut', n: 1, r: { wood: 30 } },
     { t: 'สร้างหอพุ่งหอก ใกล้ลูกศรแดง (ทางที่ศัตรูจะมา)', go: 'tower', n: 1, r: { wood: 30, stone: 20 } },
+    { t: 'สร้างป้อมทหาร (ทหารจะออกไปสู้เองตอนกลางคืน)', go: 'fort', n: 1, r: { wood: 30, food: 20 } },
+    { t: 'ฝึกทหาร 2 คน (แตะที่ป้อมทหาร)', go: 'fortsel', sol: 2, r: { food: 30 } },
     { t: 'สร้างแปลงผัก 1 แปลง', go: 'farm', n: 1, r: { food: 30 } },
     { t: 'รอดคืนแรก · กลางคืนลองกด ฝนหอก (ปุ่มขวา)', done: () => G.day >= 2, r: { wood: 40, stone: 20 } },
     { t: 'อัปเกรดโถงหัวหน้าเผ่าเป็นขั้น 2 (แตะที่โถง)', go: 'hall', lv: 2, r: { wood: 50, stone: 30 } },
     { t: 'สร้างรั้วไม้แหลมขวางลูกศรแดง', go: 'wall', n: 4, r: { stone: 30 } },
     { t: 'มีชาวเผ่า 8 คน (สร้างกระท่อมเพิ่ม)', go: 'hut', people: 8, r: { food: 40 } },
+    { t: 'มีทหาร 6 คน (อัปเกรดป้อมทหาร)', go: 'fortsel', sol: 6, r: { wood: 50, food: 40 } },
     { t: 'ตั้งด่านหน้า ขยายดินแดนไปหาเหมือง / ดงเบอร์รี่', go: 'outpost', n: 1, r: { wood: 60, stone: 40 } },
     { t: 'รอดคืนที่ 5 (บอสมา!)', done: () => G.day >= 6, r: { wood: 100, stone: 80, food: 60 } },
     { t: 'อัปเกรดโถงเป็นขั้น 3', go: 'hall', lv: 3, r: { wood: 80, stone: 60 } },
@@ -1368,20 +1424,21 @@ const GAME = window.GAME = (function () {
     { t: 'รอดคืนที่ 10 (บอสใหญ่!)', done: () => G.day >= 11, r: { wood: 200, stone: 150, food: 100 } },
     { t: 'อัปเกรดโถงเป็นขั้น 5', go: 'hall', lv: 5, r: { wood: 200, stone: 200 } },
   ];
-  const qDone = q => q.done ? q.done() : q.lv ? hallLv() >= q.lv : q.people ? G.vill.length >= q.people : countOf(q.go, true) >= q.n;
-  const qProg = q => q.lv || q.done ? '' : q.people ? ` (${G.vill.length}/${q.people})` : q.n > 1 ? ` (${countOf(q.go, true)}/${q.n})` : '';
+  const qDone = q => q.done ? q.done() : q.lv ? hallLv() >= q.lv : q.sol ? G.sol.length >= q.sol : q.people ? G.vill.length >= q.people : countOf(q.go, true) >= q.n;
+  const qProg = q => q.lv || q.done ? '' : q.sol ? ` (${G.sol.length}/${q.sol})` : q.people ? ` (${G.vill.length}/${q.people})` : q.n > 1 ? ` (${countOf(q.go, true)}/${q.n})` : '';
   function questStep() {
     const q = QUESTS[G.q];
     if (q && qDone(q)) { for (const k in q.r) G.res[k] += q.r[k]; say(`ภารกิจสำเร็จ! ได้ ${costTxt(q.r)}`, 2600); sfx('dawn'); G.q++; save(); }
     const q2 = QUESTS[G.q], el = hudEl.q; if (!el) return;
     const html = q2 ? `<i>ภารกิจ ${G.q + 1}/${QUESTS.length}${q2.go ? ' · แตะเพื่อไปทำ' : ''}</i><b>${q2.t}${qProg(q2)}</b><span>รางวัล ${costTxt(q2.r)}</span>` : `<i>ภารกิจครบแล้ว</i><b>รอดให้นานที่สุด! สถิติ ${G.best} คืน</b>`;
     if (el.innerHTML !== html) el.innerHTML = html;
-    hudEl.btn.classList.toggle('hint', !!(q2 && q2.go && q2.go !== 'hall' && !G.mode && !hudEl.bar.classList.contains('open')));
+    hudEl.btn.classList.toggle('hint', !!(q2 && q2.go && q2.go !== 'hall' && q2.go !== 'fortsel' && !G.mode && !hudEl.bar.classList.contains('open')));
     for (const c of hudEl.bar.children) c.classList.toggle('qhint', !!(q2 && q2.go === c.dataset.t));
   }
   function questGo() {
     const q = QUESTS[G.q]; if (!q || !q.go) return; au();
     if (q.go === 'hall') { TB.camT.set(G.hall.x, 0, G.hall.z); cancelBuild(); select(G.hall); }
+    else if (q.go === 'fortsel') { const f = forts()[0]; if (!f) { endAim(); hudEl.bar.classList.add('open'); startBuild('fort'); return; } TB.camT.set(f.x, 0, f.z); cancelBuild(); select(f); }
     else { endAim(); hudEl.bar.classList.add('open'); startBuild(q.go); }
   }
 
@@ -1550,13 +1607,14 @@ const GAME = window.GAME = (function () {
   function castDrum() {
     const h = G.hall || { x: VX, z: VZ }; G.buff = 12;
     say('กลองศึก! ชาวเผ่าฮึกเหิม', 1800); for (const t of [0, .28, .56, 1.1]) setTimeout(() => sfx('drum'), t * 1000);
+    for (const v of G.sol) { v.hp = v.max; fx('aura', v.x, groundY(v.x, v.z), v.z, { fol: v, life: 12, k: .75 }); if (v.mat) v.mat.emissive.setRGB(.35, .24, .05); }
     for (const v of G.vill) { v.hp = 30; fx('aura', v.x, groundY(v.x, v.z), v.z, { fol: v, life: 12, k: .75 }); if (v.mat) v.mat.emissive.setRGB(.35, .24, .05); if (v.mixer && !v.hold) { v.busy = .9; vPlay(v, 'cheer', true, .1); } }
     for (let i = 0; i < 12; i++) later(i * .9, () => { if (G.hall) ringFx(h.x, h.z, 3, 46, 0xffd27a, 1.1); });
     burst(h.x, groundY(h.x, h.z) + 3, h.z, 30, 8, 3, 4);
   }
   function skillStep(dt) {
     for (const k of SK_ORDER) if (G.cd[k] > 0) G.cd[k] = Math.max(0, G.cd[k] - dt);
-    if (G.buff > 0) { G.buff -= dt; if (G.buff <= 0) for (const v of G.vill) if (v.mat) v.mat.emissive.setRGB(0, 0, 0); }
+    if (G.buff > 0) { G.buff -= dt; if (G.buff <= 0) for (const v of [...G.vill, ...G.sol]) if (v.mat) v.mat.emissive.setRGB(0, 0, 0); }
     for (const l of G.later) { l.t -= dt; if (l.t <= 0) { l.done = true; l.f(); } }
     G.later = G.later.filter(l => !l.done);
     for (const s of G.spears) {
@@ -1631,6 +1689,7 @@ const GAME = window.GAME = (function () {
     wood: '<svg viewBox="0 0 24 24"><path d="M3 9.5 17 4l2.5 6.5L5.5 16z" fill="#b07a44"/><ellipse cx="18.3" cy="7.2" rx="2.2" ry="3.4" transform="rotate(-21 18.3 7.2)" fill="#e8c890"/><path d="M5 15 19 20l-1 2L4 17z" fill="#8a5a32"/></svg>',
     stone: '<svg viewBox="0 0 24 24"><path d="M4 16 7 8l6-3 6 4 2 7-5 4H8z" fill="#9a9690"/><path d="M7 8l6-3 6 4-6 2z" fill="#c8c4bc"/></svg>',
     food: '<svg viewBox="0 0 24 24"><circle cx="9" cy="14" r="4.2" fill="#d8283c"/><circle cx="15" cy="15" r="3.6" fill="#b01e30"/><circle cx="12.5" cy="9.5" r="3.3" fill="#e84a5a"/><path d="M12 6c1-3 4-4 6-3-1 2-3 3-6 3z" fill="#4a9a3a"/></svg>',
+    sol: '<svg viewBox="0 0 24 24"><path d="M12 2.5l7 2.6v6c0 5-3.2 8.5-7 10.4-3.8-1.9-7-5.4-7-10.4v-6z" fill="#c8281c" stroke="#3a0a04" stroke-width="1"/><path d="M12 5l4.5 1.7v4.4c0 3.4-2 5.8-4.5 7.2z" fill="#e8584a"/><path d="M12 7v9M8.5 10.5h7" stroke="#ffd27a" stroke-width="1.6"/></svg>',
     pop: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.6" fill="#f0c9a0"/><path d="M5 21c0-5 3-8 7-8s7 3 7 8z" fill="#a8743e"/></svg>',
     build: '<svg viewBox="0 0 24 24"><path d="M3 20l8-8 2 2-8 8z" fill="#c9a368"/><path d="M11 4h7l3 3-3 3-2-2-4 4-3-3 4-4-2-1z" fill="#d8d4cc"/></svg>',
     spear: '<svg viewBox="0 0 24 24"><path d="M2.5 0v4M9.5 2v4M16.5 0v3" stroke="#ffe08a" stroke-width="1.4" opacity=".8"/><g fill="#c9a368"><rect x="4.2" y="1" width="1.7" height="12.5"/><rect x="11.2" y="3" width="1.7" height="12.5"/><rect x="18.2" y="0" width="1.7" height="12.5"/></g><g fill="#eeeae2" stroke="#3a2a1a" stroke-width=".6"><path d="M3 13.2h4.1L5.05 19z"/><path d="M10 15.2h4.1L12.05 21z"/><path d="M17 12.2h4.1L19.05 18z"/></g><path d="M1.5 22.5h21" stroke="#ffd27a" stroke-width="1.8"/></svg>',
@@ -1683,6 +1742,7 @@ const GAME = window.GAME = (function () {
       .gCard.qhint { outline: 3px solid #9aff8a; }
       .gCard .cap { display: block; font-size: 10px; color: #ffe7b8; }
       @media (max-height: 340px) { #gQ { top: 150px; max-width: 190px; } }
+      @media (max-width: 980px) { #gRes { gap: 6px; padding: 5px 9px; } #gRes .r { min-width: 0; font-size: 13.5px; gap: 3px; } #gRes svg { width: 18px; height: 18px; } }
       #gSk { position: fixed; right: calc(27px + env(safe-area-inset-right)); bottom: 106px; display: flex; flex-direction: column-reverse; gap: 15px; }
       .sk { position: relative; width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--ink); padding: 0; cursor: pointer; background: radial-gradient(circle at 50% 32%, #8a6236, #43290f 75%); box-shadow: 0 0 0 2px #c9a368, 0 4px 0 2px var(--ink), inset 0 3px 0 #ffe7b844; }
       .sk svg { width: 36px; height: 36px; display: block; margin: auto; filter: drop-shadow(0 2px 0 #0008); }
@@ -1699,7 +1759,7 @@ const GAME = window.GAME = (function () {
     css();
     $('card').remove(); $('hint').textContent = 'ลากเลื่อนแมพ · บีบนิ้ว/ล้อเมาส์ ซูม · กด สร้าง เพื่อวางสิ่งก่อสร้าง';
     const H = $('hud'), mk = (tag, id, cls, html) => { const e = document.createElement(tag); if (id) e.id = id; if (cls) e.className = cls; if (html) e.innerHTML = html; H.appendChild(e); return e; };
-    hudEl.res = mk('div', 'gRes', 'pnl', ['wood', 'stone', 'food', 'pop'].map(k => `<div class="r">${ICON[k]}<span id="gR_${k}">0</span></div>`).join(''));
+    hudEl.res = mk('div', 'gRes', 'pnl', ['wood', 'stone', 'food', 'pop', 'sol'].map(k => `<div class="r">${ICON[k]}<span id="gR_${k}">0</span></div>`).join(''));
     hudEl.clock = mk('div', 'gClock', 'pnl', '<div class="d" id="gDay">วันที่ 1</div><div class="p" id="gPh">กลางวัน</div><div class="bar"><i id="gBarI"></i></div>');
     hudEl.btn = mk('button', 'gBuildBtn', '', ICON.build + '<span>สร้าง</span>');
     hudEl.bar = mk('div', 'gBar', 'pnl', '');
@@ -1745,7 +1805,7 @@ const GAME = window.GAME = (function () {
   }
   function updHud() {
     for (const k of ['wood', 'stone', 'food']) $('gR_' + k).textContent = Math.floor(G.res[k]);
-    $('gR_pop').textContent = `${G.vill.length}/${Math.min(G.popCap, MAX_POP)}`;
+    $('gR_pop').textContent = `${G.vill.length}/${Math.min(G.popCap, MAX_POP)}`; $('gR_sol').textContent = `${G.sol.length}/${solCap()}`;
     const night = isNight(), t = G.t; $('gDay').textContent = `วันที่ ${G.day}`;
     hudEl.clock.classList.toggle('night', t >= DAY);
     let txt, k;
@@ -1756,6 +1816,7 @@ const GAME = window.GAME = (function () {
     $('gPh').textContent = txt; $('gBarI').style.width = (k * 100).toFixed(1) + '%';
     const early = G.on && t < DAY - 5; hudEl.go.style.display = early ? 'block' : 'none'; if (early) { const tx = `เรียกศัตรูมาเลย (ได้ ไม้ +${Math.round((DAY - t) * .35)})`; if (hudEl.go.textContent !== tx) hudEl.go.textContent = tx; }
     updSkills();
+    if (G.sel && (G.sel.site || G.sel.type === 'fort') && hudEl.sel && hudEl.sel.style.display !== 'none' && (G.selT = (G.selT || 0) + 1) % 5 === 0) select(G.sel.dead ? null : G.sel);   // live: build % / soldiers in training
     for (const c of hudEl.bar.children) { const t2 = c.dataset.t, cap = capOf(t2), nn = countOf(t2), ce = c.querySelector('.cap'), ct = cap ? `มี ${nn}/${cap}` : 'โถงขั้น 2'; if (ce.textContent !== ct) ce.textContent = ct; }
     for (const c of hudEl.bar.children) { const cs = costOf(c.dataset.t); c.classList.toggle('no', !canPay(cs) || countOf(c.dataset.t) >= capOf(c.dataset.t)); const el = c.querySelector('.cs'); const tx = costTxt(cs); if (el.textContent !== tx) el.textContent = tx; }
   }
@@ -1812,7 +1873,7 @@ const GAME = window.GAME = (function () {
     select(best);
   }
   // ---------- tap a building: level, HP, upgrade, repair
-  const UPG = { tower: 'แรงขึ้น ยิงไกลขึ้น เร็วขึ้น', hut: 'รับคนเพิ่ม +3', wall: 'ทนขึ้น +60%', fire: 'รักษาเร็วขึ้น', farm: 'อาหารเพิ่ม +60%', hall: 'ทนขึ้น +250 · ดินแดนกว้างขึ้น', store: 'ทนขึ้น', outpost: 'ดินแดนกว้างขึ้น +10' };
+  const UPG = { tower: 'แรงขึ้น ยิงไกลขึ้น เร็วขึ้น', hut: 'รับคนเพิ่ม +3', wall: 'ทนขึ้น +60%', fire: 'รักษาเร็วขึ้น', farm: 'อาหารเพิ่ม +60%', hall: 'ทนขึ้น +250 · ดินแดนกว้างขึ้น', fort: 'ทหารเพิ่ม +2 · แรงขึ้น', store: 'ทนขึ้น', outpost: 'ดินแดนกว้างขึ้น +10' };
   function upCost(b) { const l = b.lv || 1; return b.type === 'hall' ? HALL_UP[l - 1] : { wood: 40 * l, stone: 30 * l }; }
   function upMax(b) { return b.type === 'hall' ? 5 : 3; }
   function upWhyNot(b) { const l = b.lv || 1; if (b.site) return 'กำลังสร้าง'; if (l >= upMax(b) || !UPG[b.type]) return 'ขั้นสูงสุด'; if (b.type !== 'hall' && l >= hallLv()) return `ต้องอัปเกรดโถงเป็นขั้น ${l + 1} ก่อน`; return null; }
@@ -1824,9 +1885,12 @@ const GAME = window.GAME = (function () {
     const l = b.lv || 1, uc = upCost(b), rep2 = Math.ceil((b.max - b.hp) / 8), why = upWhyNot(b);
     hudEl.sel.style.display = 'block';
     if (b.site) { hudEl.sel.innerHTML = `<b>${BT[b.type].n}</b> กำลังสร้าง ${Math.round(b.prog * 100)}% · ชาวเผ่าที่ว่างจะมาช่วยสร้าง`; return; }
+    const tr = b.type === 'fort' ? (() => { const n = G.sol.filter(s2 => s2.fort === b).length, room = fortCap(b) - n - (b.queue || 0); return `<br>ทหาร ${n}/${fortCap(b)}${b.queue ? ` · กำลังฝึก ${b.queue}` : ''} ` + (room > 0 ? `<button id="gTr">ฝึกทหาร +1 (${costTxt(SOL.cost)})</button>` + (room > 1 ? ` <button id="gTrAll">ฝึกให้เต็ม x${room}</button>` : '') : '<i>ป้อมเต็มแล้ว · อัปเกรดเพื่อรับเพิ่ม</i>'); })() : '';
     const upTxt = b.type === 'hall' ? `ขั้น ${l + 1}: ${unlockTxt(l + 1)}` : UPG[b.type];
-    hudEl.sel.innerHTML = `<b>${BT[b.type].n}</b> ขั้น ${l} · HP ${Math.round(b.hp)}/${b.max}<br>` + (!why ? `<button id="gUp">อัปเกรด ${upTxt} (${costTxt(uc)})</button>` : `<i>${why}</i>`) + (b.hp < b.max ? ` <button id="gRep">ซ่อม (ไม้ ${rep2})</button>` : '');
-    const up = $('gUp'), rp = $('gRep');
+    hudEl.sel.innerHTML = `<b>${BT[b.type].n}</b> ขั้น ${l} · HP ${Math.round(b.hp)}/${b.max}<br>` + (!why ? `<button id="gUp">อัปเกรด ${upTxt} (${costTxt(uc)})</button>` : `<i>${why}</i>`) + tr + (b.hp < b.max ? ` <button id="gRep">ซ่อม (ไม้ ${rep2})</button>` : '');
+    const up = $('gUp'), rp = $('gRep'), t1 = $('gTr'), ta = $('gTrAll');
+    if (t1) t1.addEventListener('pointerdown', e => { e.stopPropagation(); if (!train(b, 1)) say('อาหาร / ไม้ไม่พอ', 900); select(b); });
+    if (ta) ta.addEventListener('pointerdown', e => { e.stopPropagation(); if (!train(b, 99)) say('อาหาร / ไม้ไม่พอ', 900); select(b); });
     if (up) up.addEventListener('pointerdown', e => { e.stopPropagation(); if (tryUpgrade(b)) select(b); });
     if (rp) rp.addEventListener('pointerdown', e => { e.stopPropagation(); if (G.res.wood < rep2) { say('ไม้ไม่พอ', 900); return; } G.res.wood -= rep2; b.hp = b.max; select(b); });
   }
@@ -1835,7 +1899,7 @@ const GAME = window.GAME = (function () {
     if (b.type === 'hut') G.popCap += 3;
     else if (b.type === 'hall') { b.max += 250; b.hp += 250; G.popCap += 2; const t0 = G.terr.find(t => t.hall); if (t0) { t0.r += 8; drawTerr(); } if (G.on) say(`โถงขั้น ${b.lv}! ปลดล็อก: ${unlockTxt(b.lv)}`, 4000); }
     else if (b.type === 'outpost') { const t = G.terr.find(t => t.b === b); if (t) { t.r += 10; drawTerr(); } }
-    else { b.max = Math.round(b.max * (b.type === 'wall' ? 1.6 : 1.25)); b.hp = b.max; }
+    else { b.max = Math.round(b.max * (b.type === 'wall' ? 1.6 : 1.25)); b.hp = b.max; if (b.type === 'fort') for (const s2 of G.sol) if (s2.fort === b) { s2.max = solMax(s2); s2.hp = s2.max; } }
     if (b.type !== 'hall') b.g.scale.multiplyScalar(1.08);
   }
 
@@ -1847,6 +1911,7 @@ const GAME = window.GAME = (function () {
     for (const b of G.buildings) if (b.site) bar(b.x, groundY(b.x, b.z) + 6, b.z, b.prog, '#ffcf5a', 40); else if (b.hp < b.max) bar(b.x, groundY(b.x, b.z) + 7, b.z, b.hp / b.max, b.type === 'hall' ? '#ffd27a' : '#7aff8a', b.type === 'hall' ? 60 : 34);
     for (const e of G.enemies) if (!e.dead && !e.gone) bar(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + (e.def.boss ? 9 : 4), e.z, e.hp / e.max, '#ff5a4a', e.def.boss ? 70 : 26);
     for (const v of G.vill) if (v.hp < 30) bar(v.x, groundY(v.x, v.z) + 3.6, v.z, v.hp / 30, '#8adfff', 18);
+    for (const v of G.sol) if (v.hp < v.max) bar(v.x, groundY(v.x, v.z) + 4.2, v.z, v.hp / v.max, '#7ab8ff', 22);
     ox.textAlign = 'center'; ox.font = '800 13px Kanit, sans-serif'; ox.lineWidth = 3; ox.strokeStyle = '#140c06';
     for (const f of G.floats) { f.t += dt; const [sx, sy] = proj(f.x, f.y + f.t * 2, f.z); ox.globalAlpha = Math.max(0, 1 - f.t / 1.4); ox.strokeText(f.text, sx, sy); ox.fillStyle = f.col; ox.fillText(f.text, sx, sy); }
     ox.globalAlpha = 1; G.floats = G.floats.filter(f => f.t < 1.4);
@@ -1875,7 +1940,7 @@ const GAME = window.GAME = (function () {
 
   // ---------- save / load / screens
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, hl: hallLv(), q: G.q, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp), b.lv || 1, b.site ? +b.prog.toFixed(2) : 1]) })); } catch (_) {}
+    try { localStorage.setItem(SAVE, JSON.stringify({ res: G.res, day: G.day, t: G.t < DAY ? G.t : 0, vill: G.vill.length, sol: forts().map(f => G.sol.filter(s2 => s2.fort === f).length), hl: hallLv(), q: G.q, b: G.buildings.filter(b => !b.pre).map(b => [b.type, +b.x.toFixed(1), +b.z.toFixed(1), +b.ry.toFixed(2), Math.round(b.hp), b.lv || 1, b.site ? +b.prog.toFixed(2) : 1]) })); } catch (_) {}
   }
   function load() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch (_) { return null; } }
   function screen(html, buttons, dark) {
@@ -1897,7 +1962,7 @@ const GAME = window.GAME = (function () {
     if (saved && saved.hl) for (let i = 1; i < saved.hl; i++) upgrade(G.hall);
     const n0 = saved ? Math.max(4, saved.vill) : 4;
     for (let i = 0; i < n0; i++) { const a = rnd() * 6.28, r = 6 + rnd() * 10; addVillager(VX + Math.cos(a) * r, VZ + Math.sin(a) * r); }
-    if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp, lv, prog] of saved.b) { const site = prog != null && prog < 1, b = addBuilding(t, x, z, ry, null, null, site); if (site) { b.prog = prog; b.g.scale.set(1, .12 + .88 * prog, 1); } for (let i = 1; i < (lv || 1); i++) upgrade(b); b.hp = Math.min(b.max, hp); } G.q = saved.q || 0; }
+    if (saved) { Object.assign(G.res, saved.res); G.day = saved.day; G.t = saved.t; for (const [t, x, z, ry, hp, lv, prog] of saved.b) { const site = prog != null && prog < 1, b = addBuilding(t, x, z, ry, null, null, site); if (site) { b.prog = prog; b.g.scale.set(1, .12 + .88 * prog, 1); } for (let i = 1; i < (lv || 1); i++) upgrade(b); b.hp = Math.min(b.max, hp); } G.q = saved.q || 0; const fs = forts(); (saved.sol || []).forEach((n, i) => { if (fs[i]) for (let k = 0; k < n; k++) addSoldier(fs[i]); }); }
     makeSites(); makeMinimap(); makeChief(); planWave(); G.on = true; sky(); updHud(); save();
     say(saved ? `กลับมาที่เผ่า · วันที่ ${G.day}` : 'วันที่ 1 · เผ่าเพิ่งตั้งรกราก: สร้างทุกอย่างเอง!', 3500);
     G.tut = saved ? 99 : 0;
@@ -1979,7 +2044,7 @@ const GAME = window.GAME = (function () {
     if (night && !wasNight) planRaid();
     if (!night && wasNight) {   // dawn: survivors flee, reward
       for (const e of G.enemies) if (!e.dead) { e.flee = true; e.fleeT = 6; if (e.mixer) play(e, 'Gallop'); if (e.ring) scene.remove(e.ring); }
-      G.raid = null; for (const v of G.vill) if (v.mixer) { v.busy = 1.6; v.hold = 1.6; vPlay(v, 'cheer', true); } if (G.chief) { G.chief.g.rotation.y = Math.atan2(VX - G.chief.x, VZ - G.chief.z); chiefDo('cheer'); } const bonus = 10 + G.day * 5; G.res.food += bonus; say(`รอดคืนที่ ${G.day} แล้ว! ได้อาหาร +${bonus}`, 3000); sfx('dawn'); save();
+      G.raid = null; for (const v of G.vill) if (v.mixer) { v.busy = 1.6; v.hold = 1.6; vPlay(v, 'cheer', true); } if (G.chief) { G.chief.g.rotation.y = Math.atan2(VX - G.chief.x, VZ - G.chief.z); chiefDo('cheer'); } for (const s2 of G.sol) { s2.max = solMax(s2); s2.hp = s2.max; if (s2.mixer) { s2.busy = 1.6; vPlay(s2, 'cheer', true); } } say(`รอดคืนที่ ${G.day} แล้ว!`, 3000); sfx('dawn'); save();
     }
     if (night) raidStep(dt);
     if (G.tut < 99) {   // first-day tips, one at a time
@@ -1996,9 +2061,11 @@ const GAME = window.GAME = (function () {
       if (b.type === 'tower' || b.type === 'hall') { const T = BT[b.type], lv = b.lv || 1; b.cd -= dt; if (b.cd <= 0) { let e = null, ed = 1e9; for (const x of G.enemies) { if (x.dead || x.flee) continue; const d = Math.hypot(x.x - b.x, x.z - b.z); if (d < ed) { ed = d; e = x; } } if (e && ed < T.range + (lv - 1) * (b.type === 'hall' ? 2 : 5)) { shoot(b, e); b.cd = T.rate / (1 + (lv - 1) * .25) / (G.buff > 0 ? 2 : 1); } else b.cd = .3; } }
     }
     for (const n of G.nodes) if (n.regrow && n.amt < n.max) n.amt = Math.min(n.max, n.amt + dt * .25);
-    G.eatT += dt; if (G.eatT > 20) { G.eatT = 0; const eat = Math.ceil(G.vill.length / 2); G.res.food = Math.max(0, G.res.food - eat); if (G.res.food <= 0 && G.vill.length > 3) { const v = G.vill[G.vill.length - 1]; hurtVillager(v, 99); say('อาหารหมด! ชาวเผ่าอดตาย', 2000); } }
+    G.eatT += dt; if (G.eatT > 20) { G.eatT = 0; const eat = Math.ceil((G.vill.length + G.sol.length) / 2); G.res.food = Math.max(0, G.res.food - eat); if (G.res.food <= 0 && G.vill.length > 3) { const v = G.vill[G.vill.length - 1]; hurtVillager(v, 99); say('อาหารหมด! ชาวเผ่าอดตาย', 2000); } }
     G.birthT += dt; if (!night && G.birthT > 22) { G.birthT = 0; if (G.vill.length < Math.min(G.popCap, MAX_POP) && G.res.food >= 45) { G.res.food -= 25; const h = G.hall; addVillager(h.x + 3, h.z + 3); say('ชาวเผ่าเพิ่ม 1 คน', 1200); } }
     for (const v of G.vill.slice()) vStep(v, dt);
+    for (const s2 of G.sol.slice()) solStep(s2, dt);
+    for (const f of forts()) fortStep(f, dt);
     for (const e of G.enemies) eStep(e, dt); G.enemies = G.enemies.filter(e => !e.gone);
     shotStep(dt); skillStep(dt); peopleStep(dt);
     if (!night && G.next && waveObjs.length && !waveObjs[0].visible) showWave(true);
@@ -2010,7 +2077,7 @@ const GAME = window.GAME = (function () {
     for (let r = 18; r < 70; r += 3) for (let a = 0; a < 360; a += 9) { const x = VX + Math.cos(a * D2R) * r, z = VZ + Math.sin(a * D2R) * r; if (!placeOk(t, x, z)) return { x, z }; }
     return null;
   }
-  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, PEOPLE, tryUpgrade, planWave, callEarly, QUESTS, capOf, countOf, hallLv, get fxCount() { return FXA.length; }, get on() { return G.on; },
+  return { G, BT, EN, SK, init, step, draw, setup, spawnEnemy, planRaid, save, tap, startBuild, confirmBuild, isNight, spot, cast, aimSkill, autoCast, fx, PEOPLE, tryUpgrade, train, forts, planWave, callEarly, QUESTS, capOf, countOf, hallLv, get fxCount() { return FXA.length; }, get on() { return G.on; },
     cheat: { res(n) { G.res.wood = G.res.stone = G.res.food = n; }, night() { G.t = DAY + DUSK - .1; }, day(d) { G.day = d; } } };
 })();
 </script>
