@@ -14,7 +14,7 @@
   sea + beach in the south), forests, rocks, grass tufts, a village (cone / dome / mammoth-bone huts, longhouse, campfire, totem,
   palisade with a gate, watchtowers, racks, piles, garden plots, dock, cave in the cliff with torches), blocky placeholder villagers.
   Camera LOCKED to 4 angles (button / C), drag or WASD to pan, wheel / pinch / Q E to zoom, day / sunset / night (button / N).
-  URL: ?cam=0..3, ?seed=N, ?t=0..2 time of day, ?ol=0 no outlines, ?px=0 smooth (full-resolution) look, ?blender=0 code shapes, ?animals=0 no Quaternius herds, ?kenney=0 no Kenney props. QA hooks: window.TB (ready, hold, step, draw, info()).
+  URL: ?cam=0..3, ?seed=N, ?t=0..2 time of day, ?ol=0 no outlines, ?px=0 smooth (full-resolution) look, ?blender=0 code shapes, ?animals=0 no Quaternius herds, ?kenney=0 no Kenney props, ?qn=0 no Quaternius nature (trees with leaf cards, bushes, flowers, grass). QA hooks: window.TB (ready, hold, step, draw, cam, info()).
 -->
 <style>
   @font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
@@ -367,6 +367,53 @@ function kPlace(n, x, z, ry, target, flat) {   // target = height, or the longes
   m.scale.setScalar(s); m.position.set(x, groundY(x, z) - k.box.min.y * s, z); m.rotation.y = ry; m.castShadow = m.receiveShadow = true; scene.add(m); return m;
 }
 
+// ---------- Quaternius Ultimate Stylized Nature (CC0, vendor/quaternius): trees with cut-out leaf cards, bushes, flowers, grass, ferns.
+// Light copies made by tools/blender/nature_pack.py (bark thinned, no images): art/tribe3d/nature/*.glb + small textures in tex/.
+// Each model = a few parts, one per material (bark / leaves / flowers ...); a part is instanced like the Blender models.
+const NAT = {};
+const NAT_NAMES = ['MapleTree_1', 'MapleTree_2', 'MapleTree_3', 'MapleTree_4', 'MapleTree_5', 'BirchTree_1', 'BirchTree_2', 'BirchTree_4', 'BirchTree_5',
+  'NormalTree_2', 'NormalTree_3', 'NormalTree_4', 'NormalTree_5', 'PineTree_1', 'PineTree_2', 'PineTree_4', 'PineTree_5', 'DeadTree_1', 'DeadTree_3', 'DeadTree_5', 'DeadTree_6', 'DeadTree_9',
+  'Bush', 'Bush_Flowers', 'Bush_Large', 'Bush_Large_Flowers', 'Bush_Small', 'Bush_Small_Flowers', 'Flower_1_Clump', 'Flower_2_Clump', 'Flower_3_Clump', 'Flower_4_Clump', 'Flower_5_Clump',
+  'Grass_Small', 'Grass_Large'];
+const NAT_TEXOF = { MapleTree_Leaves: 'MapleTree_Leaves', BirchTree_Leaves: 'BirchTree_Leaves', NormalTree_Leaves: 'NormalTree_Leaves', PineTree_Leaves: 'PineTree_Leaves',
+  Bush_Leaves: 'Bush_Leaves', Flowers: 'Flowers', Grass: 'Grass', MapleTree_Bark: 'MapleTree_Bark', BirchTree_Bark: 'BirchTree_Bark', NormalTree_Bark: 'NormalTree_Bark', PineTree_Bark: 'PineTree_Bark' };
+const NAT_FLAT = { MapleTree_Leaves: 0xf08a3c, BirchTree_Leaves: 0xf2cf4a, NormalTree_Leaves: 0x7cc24e, PineTree_Leaves: 0x3f9a6a, Bush_Leaves: 0x6fb848, Grass: 0x9ad860 };
+async function loadNature() {
+  if (!THREE.GLTFLoader || Q.get('qn') === '0') return;
+  const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), mats = {};
+  const matFor = mn => {
+    if (mats[mn]) return mats[mn];
+    const t = NAT_TEXOF[mn], card = !/Bark|Grass/.test(mn), flat = NAT_FLAT[mn];
+    const map = t ? tl.load(`art/tribe3d/nature/tex/${t}.png`) : null;
+    if (map) { map.magFilter = THREE.NearestFilter; map.minFilter = THREE.NearestMipmapNearestFilter; }
+    const m = new THREE.MeshLambertMaterial({ map, color: flat || 0xffffff, alphaTest: card ? .32 : 0, side: card ? THREE.DoubleSide : THREE.FrontSide });
+    // leaves: the texture gives only the cut-out shape (+ a hint of its light / dark), the colour is flat, so a crown reads as one clean clump
+    if (flat) m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', 'vec4 tx = texture2D(map, vUv); diffuseColor.a *= tx.a; diffuseColor.rgb *= .82 + .3 * dot(tx.rgb, vec3(.3, .59, .11)) / max(.2, max(tx.r, max(tx.g, tx.b)));'); };
+    // shadows of the cut-out cards: the shape of the leaves, not of the whole card
+    m.userData.depth = card ? new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: .32, side: THREE.DoubleSide }) : null;
+    return (mats[mn] = m);
+  };
+  await Promise.all(NAT_NAMES.map(async n => {
+    try {
+      const g = await ld.loadAsync(`art/tribe3d/nature/${n}.glb`); g.scene.updateMatrixWorld(true);
+      const parts = {};
+      g.scene.traverse(o => { if (o.isMesh) { const mn = (o.material.name || '').replace(/\.\d+$/, ''), geo = o.geometry.clone(); geo.applyMatrix4(o.matrixWorld); (parts[mn] = parts[mn] || []).push(geo); } });
+      const list = Object.entries(parts).map(([mn, l]) => ({ geo: mergeGeos(l), mat: matFor(mn), mn }));
+      for (const p of list) if (/Tree_Leaves/.test(p.mn)) {   // crown normals point out from the crown's middle: light on top / sun side, shade below, like one soft ball
+        p.geo.computeBoundingBox(); const c = p.geo.boundingBox.getCenter(new V3()), sz = p.geo.boundingBox.getSize(new V3()), P = p.geo.attributes.position, N = p.geo.attributes.normal, v = new V3();
+        c.y -= sz.y * .4;
+        for (let i = 0; i < P.count; i++) { v.set((P.getX(i) - c.x) / sz.x, (P.getY(i) - c.y) / sz.y, (P.getZ(i) - c.z) / sz.z).normalize(); N.setXYZ(i, v.x, v.y, v.z); }
+      }
+      let h = 0; for (const p of list) { p.geo.computeBoundingBox(); h = Math.max(h, p.geo.boundingBox.max.y); }
+      NAT[n] = { parts: list, h };
+    } catch (e) { console.warn('nature', n, e.message); }
+  }));
+}
+function natInst(n, list, shadow, colOf) {   // instance every part of a Quaternius model at the items of list ({x, y, z, s, ry})
+  const M = NAT[n]; if (!M || !list.length) return;
+  for (const p of M.parts) for (const m of inst(p.geo, p.mat, list, shadow, colOf)) if (p.mat.userData.depth) m.customDepthMaterial = p.mat.userData.depth;
+}
+
 // ---------- instanced helpers
 const dummy = new THREE.Object3D(), tmpC = new THREE.Color();
 const ICH = 60;   // instanced things are split into 60-unit chunks, each with its own bounding sphere, so off-screen chunks are culled
@@ -380,7 +427,7 @@ function inst(geo, mat, list, shadow, colOf) {
     let a0 = 1e9, a1 = -1e9, b0 = 1e9, b1 = -1e9, c0 = 1e9, c1 = -1e9, sm = 1;
     for (const o of items) { a0 = Math.min(a0, o.x); a1 = Math.max(a1, o.x); b0 = Math.min(b0, o.y); b1 = Math.max(b1, o.y); c0 = Math.min(c0, o.z); c1 = Math.max(c1, o.z); sm = Math.max(sm, o.sx || o.s || 1, o.sy || o.s || 1, o.sz || o.s || 1); }
     g2.boundingSphere = new THREE.Sphere(new V3((a0 + a1) / 2, (b0 + b1) / 2, (c0 + c1) / 2), Math.hypot(a1 - a0, b1 - b0, c1 - c0) / 2 + gr * sm);
-    const m = new THREE.InstancedMesh(g2, mat, items.length); m.castShadow = !!shadow; m.receiveShadow = true;
+    const m = new THREE.InstancedMesh(g2, mat, items.length); m.castShadow = !!shadow; m.receiveShadow = true; m.frustumCulled = true;   // three r147 turns culling OFF for instanced meshes: the chunk spheres above only work with it back on
     items.forEach((o, i) => { dummy.position.set(o.x, o.y, o.z); dummy.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0); dummy.scale.set(o.sx || o.s || 1, o.sy || o.s || 1, o.sz || o.s || 1); dummy.updateMatrix(); m.setMatrixAt(i, dummy.matrix); if (colOf) m.setColorAt(i, colOf(o)); });
     scene.add(m); out.push(m);
   }
@@ -390,35 +437,62 @@ const L = (c) => new THREE.MeshLambertMaterial({ color: c });
 
 // ---------- nature
 function buildNature() {
-  const r = rng(SEED + 3), broad = [], pine = [], rocks = [], tufts = [];
+  const r = rng(SEED + 3), broad = [], pine = [], rocks = [], tufts = [], bush = [], dead = [];
   const nearVillage = (x, z) => Math.hypot(x - VX, z - VZ) < VR + 3;
+  const edge = (i, j) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const ii = i + dx, jj = j + dy; if (ii >= 0 && jj >= 0 && ii < NT && jj < NT && KIND[tIdx(ii, jj)] !== 3) return true; } return false; };
   for (let j = 0; j < NT; j++) for (let i = 0; i < NT; i++) {
     const kind = KIND[tIdx(i, j)], y = tileY(i, j), x = -HM + (i + .2 + r() * .6) * TS, z = -HM + (j + .2 + r() * .6) * TS;
     if (kind === 0 || kind === 1 || kind === 6) { if (kind === 1 && r() < .02) rocks.push({ x, y, z, s: .4 + r() * .5, ry: r() * 6, c: .75 + r() * .2 }); continue; }
     const vill = nearVillage(x, z), lv = LV[tIdx(i, j)];
-    if (kind === 3 && !vill && r() < .62) (lv >= 3 ? pine : broad).push({ x, y, z, s: .8 + r() * .55, ry: r() * 6, g: r() });
-    else if (kind === 2 && !vill && r() < (lv >= 3 ? .1 : .035)) (lv >= 3 || r() < .3 ? pine : broad).push({ x, y, z, s: .8 + r() * .5, ry: r() * 6, g: r() });
+    if (kind === 3 && !vill && r() < .62) (lv >= 3 ? pine : broad).push({ x, y, z, s: .8 + r() * .55, ry: r() * 6, g: r(), k: 3, e: edge(i, j) });
+    else if (kind === 2 && !vill && r() < (lv >= 3 ? .1 : .035)) (lv >= 3 || r() < .3 ? pine : broad).push({ x, y, z, s: .8 + r() * .5, ry: r() * 6, g: r(), k: 2 });
     else if (kind === 4 && r() < .07) rocks.push({ x, y, z, s: .6 + r() * 1.3, ry: r() * 6, rx: r(), c: .7 + r() * .25 });
     else if (kind === 5 && r() < .03) rocks.push({ x, y, z, s: .8 + r(), ry: r() * 6, c: .9 });
+    if (kind === 4 && r() < .012) dead.push({ x, y, z, s: .7 + r() * .4, ry: r() * 6, g: r() });
+    if ((kind === 2 || kind === 3) && !vill) { const b = r(); if (b < (kind === 3 ? .1 : .035)) bush.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8 + r() * .7, ry: r() * 6, f: r(), k: kind }); }
     if ((kind === 2 || kind === 3) && !vill) { const n = r() * 1.9 | 0; for (let q = 0; q < n; q++) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8 + r() * .6, f: r() }); }
-    else if (kind === 2 && vill && r() < .5) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8, f: r() });
+    else if (kind === 2 && vill && r() < .7) tufts.push({ x: -HM + (i + r()) * TS, y, z: -HM + (j + r()) * TS, s: .8, f: r() });
   }
   for (const o of broad.concat(pine)) TREE_T[tIdx(Math.floor((o.x + HM) / TS), Math.floor((o.z + HM) / TS))] = 1;
   TREE_LIST = broad.concat(pine); ROCK_LIST = rocks;
   const trunk = new THREE.CylinderGeometry(.3, .42, 2.6, 6).translate(0, 1.3, 0), bA = new THREE.IcosahedronGeometry(1.95, 0).translate(0, 3.6, 0), bB = new THREE.IcosahedronGeometry(1.35, 0).translate(.95, 4.8, .45), bC = new THREE.IcosahedronGeometry(1.15, 0).translate(-.9, 4.3, -.6);
   const pTr = new THREE.CylinderGeometry(.25, .35, 1.8, 6).translate(0, .9, 0), pA = new THREE.ConeGeometry(2.3, 2.8, 7).translate(0, 2.6, 0), pB = new THREE.ConeGeometry(1.75, 2.5, 7).translate(0, 4.1, 0), pC = new THREE.ConeGeometry(1.15, 2.2, 7).translate(0, 5.5, 0);
   if (MODELS.tree_broad_0 && MODELS.tree_pine_0 && MODELS.rock_0) {
-    let blist = broad;
-    if (KEN_MAT && KEN['tree-autumn'] && KEN['tree-tall']) {   // Kenney trees for colour: autumn crowns + tall green ones
+    let blist = broad, plist = pine;
+    const QN = NAT.MapleTree_1 && NAT.NormalTree_2 && NAT.Grass_Small;
+    if (QN) {   // Quaternius trees: every lone meadow tree, the forest edges and a few autumn / birch accents inside; the deep forest keeps the light Blender crowns
+      const pick = (o, names) => names[Math.floor(o.g * 997) % names.length];
+      const MAP = ['MapleTree_1', 'MapleTree_2', 'MapleTree_3', 'MapleTree_5', 'MapleTree_4'], BIR = ['BirchTree_1', 'BirchTree_2', 'BirchTree_4', 'BirchTree_5'],
+        NOR = ['NormalTree_2', 'NormalTree_3', 'NormalTree_4', 'NormalTree_5'], PIN = ['PineTree_1', 'PineTree_2', 'PineTree_4', 'PineTree_5'];
+      const qb = new Map(), add = (n, o) => { if (!qb.has(n)) qb.set(n, []); qb.get(n).push(o); };
+      blist = []; plist = [];
+      for (const o of broad) {
+        if (o.k === 2 || o.e) add(pick(o, o.g < .1 ? MAP : o.g < .22 ? BIR : NOR), o);
+        else if (o.g < .04) add(pick(o, MAP), o);
+        else if (o.g < .06) add(pick(o, BIR), o);
+        else blist.push(o);
+      }
+      for (const o of pine) { if (o.k === 2 || o.e) add(pick(o, PIN), o); else plist.push(o); }
+      for (const [n, l] of qb) natInst(n, l.map(o => ({ ...o, s: o.s * 1.05 })), true, o => tmpC.setRGB(.9 + o.g * .2, .9 + o.g * .2, .9 + o.g * .2));
+      natInst('DeadTree_1', dead.filter(o => o.g < .3), true); natInst('DeadTree_3', dead.filter(o => o.g >= .3 && o.g < .55), true); natInst('DeadTree_6', dead.filter(o => o.g >= .55 && o.g < .8), true); natInst('DeadTree_9', dead.filter(o => o.g >= .8), true);
+    } else if (KEN_MAT && KEN['tree-autumn'] && KEN['tree-tall']) {   // Kenney trees for colour: autumn crowns + tall green ones
       const ka = broad.filter(o => o.g < .14), kt = broad.filter(o => o.g >= .14 && o.g < .2), kat = ka.filter((o, i) => i % 2), kas = ka.filter((o, i) => !(i % 2));
       blist = broad.filter(o => o.g >= .2);
       for (const [n, l, h] of [['tree-autumn', kas, 6.5], ['tree-autumn-tall', kat, 8.5], ['tree-tall', kt, 8]]) if (KEN[n]) { const sc = kScale(n, h); inst(KEN[n].geo, KEN_MAT, l.map(o => ({ ...o, s: o.s * sc, y: o.y - KEN[n].box.min.y * sc * o.s })), true); }
     }
     for (let v = 0; v < 3; v++) inst(MODELS['tree_broad_' + v], VCOL, blist.filter((o, i) => i % 3 === v), true, o => tmpC.setRGB(.86 + o.g * .16, .9 + o.g * .12, .82 + o.g * .14));
-    for (let v = 0; v < 2; v++) inst(MODELS['tree_pine_' + v], VCOL, pine.filter((o, i) => i % 2 === v), true, o => tmpC.setRGB(.88 + o.g * .14, .9 + o.g * .12, .88 + o.g * .14));
+    for (let v = 0; v < 2; v++) inst(MODELS['tree_pine_' + v], VCOL, plist.filter((o, i) => i % 2 === v), true, o => tmpC.setRGB(.88 + o.g * .14, .9 + o.g * .12, .88 + o.g * .14));
     for (let v = 0; v < 3; v++) inst(MODELS['rock_' + v], VCOL, rocks.filter((o, i) => i % 3 === v), true, o => tmpC.setRGB(o.c * 1.15, o.c * 1.15, o.c * 1.15));
-    inst(new THREE.BoxGeometry(.25, .5, .25).translate(0, .25, 0), new THREE.MeshLambertMaterial(), tufts, false, o => o.f > .95 ? tmpC.set([0xffffff, 0xffd75a, 0xff8fb8][o.f * 1000 % 3 | 0]) : tmpC.setHSL(.25 + o.f * .08, .5, .3 + o.f * .2));
-    return { trees: broad.length + pine.length, rocks: rocks.length, tufts: tufts.length, blender: true };
+    if (QN) {   // ground cover: grass clumps, flower clumps, bushes, ferns (Quaternius cards) instead of the little boxes
+      const gcol = o => tmpC.setHSL(.22 + o.f * .08, .6, .58 + o.f * .2);
+      natInst('Grass_Small', tufts.filter(o => o.f < .5).map(o => ({ ...o, s: o.s * 2.4, ry: o.f * 40 })), false, gcol);
+      natInst('Grass_Large', tufts.filter(o => o.f >= .5 && o.f < .9).map(o => ({ ...o, s: o.s * 2, ry: o.f * 40 })), false, gcol);
+      const fl = tufts.filter(o => o.f >= .9), FL = ['Flower_1_Clump', 'Flower_2_Clump', 'Flower_3_Clump', 'Flower_4_Clump', 'Flower_5_Clump'];
+      FL.forEach((n, v) => natInst(n, fl.filter(o => (o.f * 1000 | 0) % 5 === v).map(o => ({ ...o, s: 1.6, ry: o.f * 40 })), false));
+      const BU = ['Bush', 'Bush_Flowers', 'Bush_Large', 'Bush_Large_Flowers', 'Bush_Small', 'Bush_Small_Flowers'];
+      BU.forEach((n, v) => natInst(n, bush.filter(o => (o.f * 1000 | 0) % 6 === v).map(o => ({ ...o, s: o.s * 1.5 })), true, o => tmpC.setRGB(.95 + o.f * .15, .95 + o.f * .15, .9 + o.f * .1)));
+    } else inst(new THREE.BoxGeometry(.25, .5, .25).translate(0, .25, 0), new THREE.MeshLambertMaterial(), tufts, false, o => o.f > .95 ? tmpC.set([0xffffff, 0xffd75a, 0xff8fb8][o.f * 1000 % 3 | 0]) : tmpC.setHSL(.25 + o.f * .08, .5, .3 + o.f * .2));
+    return { trees: broad.length + pine.length, rocks: rocks.length, tufts: tufts.length, blender: true, qn: QN ? { lone: broad.length + pine.length - blist.length - plist.length, bush: bush.length, dead: dead.length } : 0 };
   }
   const bark = L(0x7a5236), leaf = new THREE.MeshLambertMaterial();
   inst(trunk, bark, broad, true); inst(bA, leaf, broad, true, o => tmpC.setHSL(.26 + o.g * .07, .5, .34 + o.g * .08)); inst(bB, leaf, broad, true, o => tmpC.setHSL(.27 + o.g * .07, .55, .42 + o.g * .08)); inst(bC, leaf, broad, true, o => tmpC.setHSL(.25 + o.g * .07, .5, .38 + o.g * .08));
@@ -756,13 +830,17 @@ function step(dt) {
   if (window.GAME && GAME.on) dt = GAME.step(dt);
   updVillagers(dt); updAnimals(dt); updHerds(dt); updParticles(dt);
 }
+let shH = 78;
 function draw() {
   CT.set(camT.x, groundY(camT.x, camT.z) * .5, camT.z);
   const tr = CT.dot(R), tu = CT.dot(UPV);
   CT.addScaledVector(R, Math.round(tr / Ue) * Ue - tr).addScaledVector(UPV, Math.round(tu / Ue) * Ue - tu);
   cam.position.copy(CT).addScaledVector(TOC, 500); cam.lookAt(CT);
   // the sun's shadow box follows the view, moved in whole shadow texels so shadows do not crawl
-  const tx = 156 / 2048, sx = Math.round(CT.x / tx) * tx, sz = Math.round(CT.z / tx) * tx;
+  // its size follows the zoom (view footprint + room for shadows cast from just outside), so fewer things are drawn into it and shadows stay crisp
+  const H = Math.round(Math.max(30, Math.min(78, Math.hypot(rw * Ue / 2, rh * Ue / 2 / Math.sin(pitch)) + 10)));
+  if (H !== shH) { shH = H; Object.assign(sun.shadow.camera, { left: -H, right: H, top: H, bottom: -H }); sun.shadow.camera.updateProjectionMatrix(); }
+  const tx = 2 * H / 2048, sx = Math.round(CT.x / tx) * tx, sz = Math.round(CT.z / tx) * tx;
   sun.target.position.set(sx, 0, sz); sun.position.set(sx + SUNDIR.x * 250, SUNDIR.y * 250, sz + SUNDIR.z * 250);
   if (window.GAME && GAME.on) GAME.draw();
   if ((frameN++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
@@ -770,14 +848,14 @@ function draw() {
   renderer.setRenderTarget(null); renderer.render(postScene, postCam);
 }
 let frameN = 0;
-const TB = window.TB = { renderer, scene, ready: false, hold: false, step, draw, setCam, setTime, zoomBy, camT, MAMMOTHS, HERDS, info: () => ({ rw, rh, S, cam: camI, time: timeI, ...TB.stats }) };
+const TB = window.TB = { renderer, scene, cam, ready: false, hold: false, step, draw, setCam, setTime, zoomBy, camT, MAMMOTHS, HERDS, info: () => ({ rw, rh, S, cam: camI, time: timeI, ...TB.stats }) };
 let last = performance.now();
 function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; if (!TB.hold) { step(dt); draw(); } requestAnimationFrame(frame); }
 (async function init() {
   try {
     await new Promise(r => setTimeout(r, 30));
     const t0 = performance.now();
-    await loadModels(); await loadKenney();
+    await Promise.all([loadModels(), loadKenney(), loadNature()]);
     genTerrain(); buildTerrain(); const st = buildNature(); buildVillage(); buildAnimals(); buildParticles();
     TB.stats = { ...st, buildMs: Math.round(performance.now() - t0), villagers: villagers.length, mammoths: MAMMOTHS.length, models: Object.keys(MODELS).length, kenney: Object.keys(KEN).length };
     setCam(camI); setTime(timeI); layout();
