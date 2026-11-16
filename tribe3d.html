@@ -37,7 +37,8 @@
   .ib em { position: absolute; right: -6px; bottom: -6px; font: 800 10px Kanit, sans-serif; font-style: normal; color: #3a2408; background: var(--gold); border: 2px solid var(--ink); border-radius: 8px; padding: 0 4px; line-height: 14px; white-space: nowrap; }
   .ib.on, .ib:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
   .ib.off svg { opacity: .4; }
-  #hint { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); font-size: 12px; font-weight: 600; background: #20140acc; padding: 3px 12px; border-radius: 8px; white-space: nowrap; pointer-events: none; }
+  #hint.gone { opacity: 0; pointer-events: none; } @media (max-height: 340px) { #hint { display: none; } }
+  #hint { transition: opacity 1s; position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); font-size: 12px; font-weight: 600; background: #20140acc; padding: 3px 12px; border-radius: 8px; white-space: nowrap; pointer-events: none; }
   #msg { position: fixed; left: 50%; top: 28%; transform: translate(-50%, -50%); font-weight: 800; font-size: 22px; text-align: center; text-shadow: var(--ol), 0 0 14px #ff9a3c; pointer-events: none; transition: opacity .6s; white-space: nowrap; }
   #msg small { display: block; font-size: 14px; font-weight: 600; }
   #load { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font: 800 18px Kanit, sans-serif; color: #fff; text-shadow: var(--ol); background: radial-gradient(circle at 50% 40%, #6a4a26, #20140a); }
@@ -170,8 +171,8 @@ function applyGfx() {   // switch the look: shadow softness, the rim light, smoo
 const SUNDIR = new V3(-50, 100, 70).normalize();
 const TIMES = [
   { n: 'กลางวัน', sky: 0xb8d4ff, gnd: 0x7a6a58, hi: .56, sc: 0xffe6bc, si: .66, bg: 0x6aa84f, fire: .0, water: 1, haze: .22, hz: [.8, .88, .98], sat: 1.15, cool: [.88, .95, 1.12], warm: [1.07, 1.0, .9], cloud: .2 },
-  { n: 'เย็น', sky: 0xffb890, gnd: 0x5a3a5a, hi: .5, sc: 0xffa050, si: .62, bg: 0x6a7a4a, fire: .6, water: .85, haze: .3, hz: [1, .7, .55], sat: 1.12, cool: [.86, .86, 1.12], warm: [1.12, .98, .82], cloud: .16 },
-  { n: 'กลางคืน', sky: 0x5a6ab0, gnd: 0x2a2a48, hi: .5, sc: 0xa8bcff, si: .34, bg: 0x1a2a3a, fire: 2.2, water: .62, haze: .22, hz: [.12, .15, .3], sat: .95, cool: [.88, .95, 1.18], warm: [1.12, 1.0, .85], cloud: 0 },
+  { n: 'เย็น', sky: 0xe8d0c8, gnd: 0x5a4a5a, hi: .56, sc: 0xffcc9a, si: .52, bg: 0x6a7a4a, fire: .35, water: .85, haze: .28, hz: [1, .8, .7], sat: .94, cool: [.9, .9, 1.1], warm: [1.07, .99, .9], cloud: .16 },   // softer golden hour (the old one turned dirt neon orange)
+  { n: 'กลางคืน', sky: 0x7484c8, gnd: 0x3a3a5c, hi: .62, sc: 0xb4c6ff, si: .4, bg: 0x1a2a3a, fire: 2.2, water: .62, haze: .22, hz: [.12, .15, .3], sat: .95, cool: [.88, .95, 1.18], warm: [1.12, 1.0, .85], cloud: 0 },
 ];
 const FIRES = [];   // {x, y, z, light, big}
 function setTime(i) {
@@ -216,13 +217,14 @@ function genTerrain() {
     LV[tIdx(i, j)] = Math.max(-1, Math.min(7, lv));
   }
   // kinds
+  const FRESH0 = !!window.GAME && Q.get('village') !== 'full';
   for (let j = 0; j < NT; j++) for (let i = 0; i < NT; i++) {
     const k = tIdx(i, j), l = LV[k], wx = -HM + (i + .5) * TS, wz = -HM + (j + .5) * TS, dv = Math.hypot(wx - VX, wz - VZ);
     let nearW = false; for (let dy = -1; dy <= 1 && !nearW; dy++) for (let dx = -1; dx <= 1; dx++) { const ii = i + dx, jj = j + dy; if (ii >= 0 && jj >= 0 && ii < NT && jj < NT && LV[tIdx(ii, jj)] < 0) { nearW = true; break; } }
     let kind;
     if (l < 0) kind = 0;
     else if (l === 0 || (nearW && l <= 1 && dv > VR)) kind = 1;
-    else if (dv < VR - 4 && (dv < 12 || onPath(wx, wz) || N2(wx / 9, wz / 9) > .74)) kind = 6;   // plaza, paths to the huts, a few worn patches
+    else if (dv < VR - 4 && (FRESH0 ? dv < 13 + N2(wx / 5, wz / 5) * 3 || N2(wx / 9, wz / 9) > .86 : dv < 12 || onPath(wx, wz) || N2(wx / 9, wz / 9) > .74)) kind = 6;   // plaza (+ paths to the old huts only in ?village=full), a few worn patches
     else if (l >= 6) kind = 5;
     else if (l >= 4 || (l === 3 && N2(wx / 14 + 9, wz / 14) > .55)) kind = 4;
     else kind = fbm(N3, wx / 40, wz / 40) > .52 && dv > VR + 4 ? 3 : 2;
@@ -586,7 +588,7 @@ function campfire(x, z, big) {
   for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; const m = addMesh(g, new THREE.DodecahedronGeometry(big ? .5 : .35, 0), L(0x8f8a86), Math.cos(a) * rr, .25, Math.sin(a) * rr); m.rotation.set(a, a * 2, 0); }
   if (!MODELS.campfire) for (const a of [0, 1.2, 2.4]) { const m = addMesh(g, new THREE.CylinderGeometry(.2, .2, rr * 1.6, 5), L(0x5a3a22), 0, .35, 0); m.rotation.set(Math.PI / 2 - .3, a, 0); }
   scene.add(g);
-  const light = new THREE.PointLight(0xff9a3c, 0, big ? 60 : 28, 1.4); light.position.set(x, y + 3, z); scene.add(light);
+  const light = new THREE.PointLight(0xffa860, 0, big ? 46 : 28, 1.6); /* warm but not neon on the dirt */ light.position.set(x, y + 3, z); scene.add(light);
   FIRES.push({ x, y: y + .5, z, light, big });
 }
 function torch(x, z) {
@@ -980,7 +982,10 @@ const GAME = window.GAME = (function () {
   function canPay(c) { for (const k in c) if (G.res[k] < c[k]) return false; return true; }
   function pay(c) { for (const k in c) G.res[k] -= c[k]; }
   function costTxt(c) { return Object.entries(c).map(([k, v]) => `${RES_N[k]} ${v}`).join(' · '); }
-  function float(x, y, z, text, col) { G.floats.push({ x, y, z, text, col: col || '#fff', t: 0 }); }
+  function float(x, y, z, text, col) {   // stacked: a new one near a fresh one goes on top of it
+    for (const f of G.floats) if (f.t < .7 && Math.abs(f.x - x) < 3 && Math.abs(f.z - z) < 3 && Math.abs(f.y - y) < 1.5) y = f.y + 1.6;
+    G.floats.push({ x, y, z, text, col: col || '#fff', t: 0 }); if (G.floats.length > 40) G.floats.shift();
+  }
   function nightK() {   // 0 day .. 1 night
     const t = G.t; if (t < DAY) return 0; if (t < DAY + DUSK) return (t - DAY) / DUSK; if (t < DAY + DUSK + NIGHT) return 1; return 1 - (t - DAY - DUSK - NIGHT) / DAWN;
   }
@@ -1281,7 +1286,7 @@ const GAME = window.GAME = (function () {
     } else if (v.st === 'work') {
       v.t -= dt; v.tp = (v.tp || 0) - dt; if (v.tp <= 0) { setPose(v, v.pose === 'thrust' ? 'stand' : 'thrust'); v.tp = .35; }
       if (!v.job) { v.st = 'idle'; v.t = .5; }
-      else if (v.t <= 0) { const n = v.job, got = Math.min(6, n.amt); n.amt -= got; n.w--; v.carry = { type: n.type, n: got }; v.job = null; v.st = 'back'; setPose(v, 'stand'); }
+      else if (v.t <= 0) { const n = v.job, got = Math.floor(Math.min(6, n.amt)); /* regrowing bushes hold fractions: carry whole units */ n.amt -= got; n.w--; v.carry = { type: n.type, n: got }; v.job = null; v.st = 'back'; setPose(v, 'stand'); }
     } else if (v.st === 'hunt') {
       const a = v.job && v.job.hunt; if (!a || a.dead) { v.st = 'idle'; v.t = .5; v.job = null; }
       else { if (Math.hypot(a.x - v.x, a.z - v.z) > 2.6) { moveTo(v, a.x, a.z, 5, dt); moving = true; v.face = Math.atan2(a.x - v.x, a.z - v.z); }
@@ -1523,7 +1528,7 @@ const GAME = window.GAME = (function () {
     for (const p of G.next.pts) {
       const d = Math.hypot(h.x - p.x, h.z - p.z), a = Math.atan2(h.x - p.x, h.z - p.z), ux = (h.x - p.x) / d, uz = (h.z - p.z) / d;
       for (let s2 = 4, i = 0; s2 < d - 12; s2 += 8, i++) {   // chevrons marching toward the hall
-        const x = p.x + ux * s2, z = p.z + uz * s2, m = new THREE.Mesh(CHEV, mat.clone()); m.position.set(x, Math.max(groundY(x, z), -.3) + .3, z); m.rotation.y = a; m.renderOrder = 9; m.userData.i = i; scene.add(m); waveObjs.push(m);
+        const x = p.x + ux * s2, z = p.z + uz * s2; if (inTerr(x, z, -2)) break; const m = new THREE.Mesh(CHEV, mat.clone()); m.position.set(x, Math.max(groundY(x, z), -.3) + .3, z); m.rotation.y = a; m.renderOrder = 9; m.userData.i = i; scene.add(m); waveObjs.push(m);
       }
       const flag = new THREE.Group(), y = Math.max(groundY(p.x, p.z), -.3);   // a red war banner where they come out
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(.15, .18, 7, 6), new THREE.MeshLambertMaterial({ color: 0x5a3a20 })); pole.position.y = 3.5; flag.add(pole);
@@ -2074,7 +2079,7 @@ const GAME = window.GAME = (function () {
     if (!G.mode || !G.ghostOk) return; const t = G.mode, { x, z } = G.ghostAt;
     pay(costOf(t)); const ry = G.ghost.rotation.y; scene.remove(G.ghost); G.ghost = null;
     recruit(addBuilding(t, x, z, ry, null, null, true)); sfx('build');
-    float(x, groundY(x, z) + 5, z, BT[t].n + ' · ชาวเผ่ากำลังมาสร้าง', '#ffe08a'); save();
+    float(x, groundY(x, z) + 5, z, 'กำลังสร้าง…', '#ffe08a'); save();
     const keep = t; G.mode = null; startBuild(keep);   // keep building the same thing
   }
   function tap(cx, cy) {
@@ -2135,7 +2140,7 @@ const GAME = window.GAME = (function () {
     for (const e of G.enemies) if (!e.dead && !e.gone) bar(e.x, (e.fly ? e.y : groundY(e.x, e.z)) + (e.def.boss ? 9 : 4), e.z, e.hp / e.max, '#ff5a4a', e.def.boss ? 70 : 26);
     for (const v of G.vill) if (v.hp < 30) bar(v.x, groundY(v.x, v.z) + 3.6, v.z, v.hp / 30, '#8adfff', 18);
     for (const v of G.sol) if (v.hp < v.max) bar(v.x, groundY(v.x, v.z) + 4.2, v.z, v.hp / v.max, '#7ab8ff', 22);
-    ox.textAlign = 'center'; ox.font = '800 13px Kanit, sans-serif'; ox.lineWidth = 3; ox.strokeStyle = '#140c06';
+    ox.textAlign = 'center'; ox.font = '800 12px Kanit, sans-serif'; ox.lineWidth = 3; ox.strokeStyle = '#140c06';
     for (const f of G.floats) { f.t += dt; const [sx, sy] = proj(f.x, f.y + f.t * 2, f.z); ox.globalAlpha = Math.max(0, 1 - f.t / 1.4); ox.strokeText(f.text, sx, sy); ox.fillStyle = f.col; ox.fillText(f.text, sx, sy); }
     ox.globalAlpha = 1; G.floats = G.floats.filter(f => f.t < 1.4);
     siteLabels();
@@ -2274,6 +2279,7 @@ const GAME = window.GAME = (function () {
       G.raid = null; for (const v of G.vill) if (v.mixer) { v.busy = 1.6; v.hold = 1.6; vPlay(v, 'cheer', true); } if (G.chief) { G.chief.g.rotation.y = Math.atan2(VX - G.chief.x, VZ - G.chief.z); chiefDo('cheer'); } for (const s2 of G.sol) { s2.max = solMax(s2); s2.hp = s2.max; if (s2.mixer) { s2.busy = 1.6; vPlay(s2, 'cheer', true); } } say(`รอดคืนที่ ${G.day} แล้ว!`, 3000); sfx('dawn'); save();
     }
     if (night) raidStep(dt);
+    if (G.day > 1 || G.t > 60) { const h = document.getElementById('hint'); if (h && !h.classList.contains('gone')) h.classList.add('gone'); }
     if (G.tut < 99) {   // first-day tips, one at a time
       const T2 = [[6, 'ลูกศรแดงบนพื้น = ทางที่ศัตรูจะมาคืนนี้ · ทำตามภารกิจซ้ายมือ'], [DAY + 2, 'ค่ำแล้ว! ศัตรูมาตามลูกศรแดง · ลูกศรขอบจอชี้ทางศัตรู'], [DAY + DUSK + 9, 'กดปุ่ม ฝนหอก (ขวามือ) แล้วแตะพื้นตรงฝูงศัตรู!']];
       if (G.day === 1 && G.tut < T2.length && G.t > T2[G.tut][0]) { say(T2[G.tut][1], 5500); G.tut++; }
