@@ -47,7 +47,7 @@ const out = process.argv[2] || '';
     await pg.evaluate(() => { const f = GAME.forts()[0]; TB.camT.set(f.x, 0, f.z); TB.zoomBy(2); TB.hold = false; }); await pg.waitForTimeout(900); await shot('b06_fort'); await pg.evaluate(() => TB.zoomBy(-2));
     // the wave preview from far out, then call them now
     await pg.evaluate(() => { const p = GAME.G.next.pts[0], h = GAME.G.hall; TB.camT.set((p.x + h.x) / 2, 0, (p.z + h.z) / 2); TB.zoomBy(-1); TB.hold = false; }); await pg.waitForTimeout(900); await shot('b03_wave_preview');
-    await pg.evaluate(() => { TB.hold = true; GAME.G.t = 5; TB.step(.05); }); await pg.waitForTimeout(400); await pg.locator('#gGo').click();   // build phase is short now: go back into it first log.push('called early: ' + JSON.stringify(await st()));
+    await pg.evaluate(() => { TB.hold = true; GAME.G.t = 5; for (let t = 0; t < .5; t += .05) TB.step(.05); }); await pg.waitForTimeout(400); await pg.locator('#gGo').click();   // step long enough for the HUD to refresh   // build phase is short now: go back into it first log.push('called early: ' + JSON.stringify(await st()));
     await run(14); const sp = await pg.evaluate(() => { const p = GAME.G.next.pts[0]; return GAME.G.enemies.map(e => Math.round(Math.min(...GAME.G.next.pts.map(q => Math.hypot(q.x - e.x, q.z - e.z))))).join(','); });
     log.push('night: ' + JSON.stringify(await st()) + ' enemy distance from banners: ' + sp);
     await pg.evaluate(() => { const e = GAME.G.enemies.find(e => !e.dead); if (e) TB.camT.set(e.x, 0, e.z); TB.draw(); }); await shot('b04_night');
