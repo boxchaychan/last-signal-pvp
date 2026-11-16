@@ -1722,3 +1722,11 @@ Owner: "ใส่เข้าเกม tribe3d.html: 1. Ultimate Fantasy RTS = �
   2. Unit cards: `makePortraits()` renders every unit once (anti-aliased, soft + rim light, warrior blocking, hunter shooting, shaman casting...) into data URLs; the fort / hall panels show them as cards (portrait, name +1, cost). Short screens: smaller cards and the panel sits at the bottom.
   - Very short phone screens (height <= 340, e.g. landscape with the browser bars ~290 px): the skill buttons sit in a row left of "สร้าง" (hidden while the build bar is open), smaller minimap, quest panel moved up: they used to cover the top-right buttons / the minimap.
   - Check `node tools/qa/tribe3d_gfx.js <shots>` (PC 1280x720 + Pixel 5 landscape). Shots `art/incoming/tribe3d/shot_gfx_pretty_pc.png`, `shot_gfx_phone_short.png`.
+- Same day, owner "ปรับกราฟิกโดยรวม" (free): looked at day / dusk / night, PC + phone (`node tools/qa/tribe3d_look.js <folder> [pc|phone]` builds a small base and shoots each), fixed what stood out:
+  - Dusk turned all dirt neon orange: softer golden hour (sky 0xe8d0c8, sun 0xffcc9a .52, sat .94, warm [1.07, .99, .9], fire .35); campfire light 0xffa860, range 46, decay 1.6.
+  - Night: buildings were black blobs: brighter moonlit night (hemi .62 sky 0x7484c8 ground 0x3a3a5c, moon .4 0xb4c6ff).
+  - Ground: in the fresh-start game the old footpaths to the deleted hand-made huts were still painted: now a round dirt plaza (radius ~13-16) + rare worn patches (`FRESH0` in the terrain kinds; `?village=full` keeps the old paths).
+  - Floating texts stack instead of overlapping (max 40), 12 px; "กำลังสร้าง…" replaces the long site text; carried amounts are whole numbers (regrowing bushes had made "+0.27500000000000001 อาหาร").
+  - Red wave chevrons stop at the edge of our land (the village stays clean); the bottom hint fades after the first minute and is hidden on very short screens.
+  - LESSON (twice in one batch): a `// comment` added in the middle of a one-line JS statement silently comments out the rest of the line (the big campfire light vanished, the carry line broke): use `/* */` mid-line.
+  - Before / after: `art/incoming/tribe3d/gfx_before_after.png`.
