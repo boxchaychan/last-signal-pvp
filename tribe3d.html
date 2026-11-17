@@ -1124,7 +1124,7 @@ const GAME = window.GAME = (function () {
   // the Rogue (recoloured to leather) share one rig, so the Barbarian's 13 moves play on both. Each body is merged into ONE
   // skinned mesh (rigid parts like the axe / hood become bone-weighted) = one draw call per person.
   const PEOPLE = { ready: false, tpl: {}, mats: [], clips: [] };
-  const MOVE = { bowIdle: 'Ranged_Bow_Idle', bowShot: 'Ranged_Bow_Release', chopT: 'Chopping', mine: 'Pickaxing', hammer: 'Hammering', shoot: '1H_Ranged_Shoot', cast: 'Spellcast_Shoot', raise: 'Spellcast_Raise', idle: 'Idle', walk: 'Walking_A', run: 'Running_A', chop: '1H_Melee_Attack_Chop', pick: 'PickUp', stab: '1H_Melee_Attack_Slice_Diagonal', smash: '2H_Melee_Attack_Chop', throw: 'Throw', hit: 'Hit_A', die: 'Death_A', cheer: 'Cheer', build: 'Interact', sit: 'Sit_Floor_Idle' };
+  const MOVE = { spin: '2H_Melee_Attack_Spin', bowIdle: 'Ranged_Bow_Idle', bowShot: 'Ranged_Bow_Release', chopT: 'Chopping', mine: 'Pickaxing', hammer: 'Hammering', shoot: '1H_Ranged_Shoot', cast: 'Spellcast_Shoot', raise: 'Spellcast_Raise', idle: 'Idle', walk: 'Walking_A', run: 'Running_A', chop: '1H_Melee_Attack_Chop', pick: 'PickUp', stab: '1H_Melee_Attack_Slice_Diagonal', smash: '2H_Melee_Attack_Chop', throw: 'Throw', hit: 'Hit_A', die: 'Death_A', cheer: 'Cheer', build: 'Interact', sit: 'Sit_Floor_Idle' };
   function mergePerson(root, keep, mat) {
     root.updateMatrixWorld(true);
     let skel = null; const parts = [], rigid = [];
@@ -1141,7 +1141,7 @@ const GAME = window.GAME = (function () {
       base += p.count;
     };
     for (const s of parts) add(s.geometry, s.bindMatrix, 0);
-    for (const r of rigid) { if (!keep.includes(r.name)) continue; let b = r.parent; while (b && skel.bones.indexOf(b) < 0) b = b.parent; if (b) add(r.geometry, r.matrixWorld, skel.bones.indexOf(b)); }
+    for (const r of rigid) { if (!keep.includes(r.name) && !r.userData.keep) continue; let b = r.parent; while (b && skel.bones.indexOf(b) < 0) b = b.parent; if (b) add(r.geometry, r.matrixWorld, skel.bones.indexOf(b)); }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
     g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4)); g.setIndex(IDX);
@@ -1149,41 +1149,61 @@ const GAME = window.GAME = (function () {
     const m = new THREE.SkinnedMesh(g, mat); m.castShadow = true; m.frustumCulled = false; root.add(m); m.bind(skel, new THREE.Matrix4());
     const box = new THREE.Box3().setFromBufferAttribute(g.attributes.position); return { root, h: box.max.y - box.min.y, mesh: m };
   }
-  async function loadPeople() {
+  async function loadPeople() {   // KayKit Adventurers 2.0 (owner 2026-11-17 "เอาตัวเวอร์ชันเก่าออก"): tools/art/kaykit2_build.mjs + kaykit_recolor.py
     try {
-      const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader();
-      const [B, R] = await Promise.all([ld.loadAsync('art/tribe3d/people/Barbarian.glb'), ld.loadAsync('art/tribe3d/people/Rogue.glb')]);
-      const [Kn, Mg, RH] = await Promise.all(['Knight', 'Mage', 'Rogue_Hooded'].map(n => ld.loadAsync(`art/tribe3d/people/${n}.glb`).catch(() => null)));   // warriors, shamans, hunters
+      const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), P = 'art/tribe3d/people/';
+      const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
+      const [GL, WP, AN, GE, GM, TO, FW] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
+        ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
+        ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits
+      const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
-      const tex = n => tl.loadAsync(`art/tribe3d/people/tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
-      const T = await Promise.all(['barba_0', 'barba_1', 'barba_2', 'rogue_0', 'rogue_1', 'rogue_2'].map(tex));
-      const M = T.map(t => new THREE.MeshLambertMaterial({ map: t })); PEOPLE.mats = M;
-      const C = (g) => THREE.SkeletonUtils.clone(g.scene);
-      PEOPLE.tpl.man = mergePerson(C(B), ['1H_Axe', 'Barbarian_Hat', 'Barbarian_Cape'], M[0]); PEOPLE.tpl.man.mats = [M[0], M[1]];
-      PEOPLE.tpl.woman = mergePerson(C(R), ['Rogue_Cape', 'Knife'], M[3]); PEOPLE.tpl.woman.mats = [M[3], M[4], M[5]];
-      PEOPLE.tpl.chief = mergePerson(C(B), ['2H_Axe', 'Barbarian_Hat', 'Barbarian_Cape', 'Barbarian_Round_Shield'], M[2]); PEOPLE.tpl.chief.mats = [M[2]];
-      PEOPLE.tpl.warrior = Object.assign({}, PEOPLE.tpl.chief, { mats: [M[1]] });   // fallback when a pack file is missing
-      PEOPLE.tpl.hunter = PEOPLE.tpl.warrior; PEOPLE.tpl.shaman = PEOPLE.tpl.warrior;
-      const [TK, TM, TH, TH2, TM2, TK2] = await Promise.all(['knigh_0', 'mage_0', 'rogue_3', 'rogue_4', 'mage_1', 'knigh_1'].map(n => tex(n).catch(() => null)));
-      const [AB, AT, GE, GM] = await Promise.all(['art/tribe3d/people/anims_bow.glb', 'art/tribe3d/people/anims_tools.glb', 'art/tribe3d/gear/archer_gear.glb', 'art/tribe3d/gear/mage_gear.glb'].map(u => ld.loadAsync(u).catch(() => null)));
-      const GEAR = {};   // Blender gear (tools/blender/archer_gear.py): flat colours, modelled +Y up (glTF turned it), the bow is held as it is
+      const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
+      const TX = {}; await Promise.all(['barba_0', 'barba_1', 'barba_2', 'rogue_0', 'rogue_1', 'rogue_2', 'rogue_3', 'knigh_0', 'knigh_1', 'knigh_2', 'mage_0', 'mage_1', 'mage_2', 'range_0', 'range_1'].map(n => tex(n).then(t => { TX[n] = t; })));
+      const mat = (n, col) => new THREE.MeshLambertMaterial({ map: TX[n], color: col || 0xffffff });
+      const WEAP = {}; for (const c of WP.scene.children) WEAP[c.name] = c;
+      const GEAR = {};   // Blender gear (tools/blender/*_gear.py): flat colours, "glow*" materials unlit; archer gear was modelled +Y up (glTF turned it)
       if (GE) for (const c of GE.scene.children) { c.traverse(o => { if (!o.isMesh) return; const mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), side: THREE.DoubleSide })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; if (c.name !== 'Bow') o.geometry.rotateX(Math.PI / 2); }); GEAR[c.name] = c; }
-      if (GM) for (const c of GM.scene.children) {   // ★★ shaman gear (tools/blender/mage_gear.py, modelled Y-up): "glow*" materials are drawn unlit
-        c.traverse(o => { if (!o.isMesh) return; const mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => (q.name || '').startsWith('glow') ? new THREE.MeshBasicMaterial({ color: q.color.clone().convertLinearToSRGB() }) : new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), emissive: 0x2a1a00 })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; });
-        GEAR[c.name] = c; }
+      if (GM) for (const c of GM.scene.children) { c.traverse(o => { if (!o.isMesh) return; const mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => (q.name || '').startsWith('glow') ? new THREE.MeshBasicMaterial({ color: q.color.clone().convertLinearToSRGB() }) : new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), emissive: 0x2a1a00 })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; }); GEAR[c.name] = c; }
+      const bitsMat = {};
+      for (const B of [TO, FW]) if (B) for (const c of B.scene.children) { c.traverse(o => { if (!o.isMesh) return; const q = o.material, k = q.map ? q.map.uuid : q.uuid;
+        if (!bitsMat[k]) { if (q.map) { q.map.encoding = enc; q.map.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; q.map.userData.unit = true; } bitsMat[k] = new THREE.MeshLambertMaterial({ map: q.map || null, color: q.map ? 0xffffff : q.color }); }
+        o.material = bitsMat[k]; o.castShadow = true; }); GEAR[c.name] = c; }
+      PEOPLE.gear = GEAR;
       const findN = (r, n) => { let f = null; r.traverse(o => { if (o.name === n && !f) f = o; }); return f; };
+      // one hero + weapons on the hand slots, merged into one skinned mesh (the weapons share the hero's texture atlas)
+      function hero(name, weapons, m, drop) {
+        const r = THREE.SkeletonUtils.clone(H[name].scene);
+        for (const d of drop || []) { const o = findN(r, d); if (o) o.parent.remove(o); }
+        for (const [w, bone] of weapons) { const bn = findN(r, bone), src = WEAP[w]; if (!bn || !src) continue; const c = src.clone(); c.traverse(o => { if (o.isMesh) o.userData.keep = true; }); bn.add(c); }
+        const T = mergePerson(r, [], m); T.mats = [m]; return T;
+      }
       const addGear = (T, list) => { T.root.updateMatrixWorld(true); for (const [n, bone, pos, rot, local, sc] of list) { const bn = findN(T.root, bone); if (!GEAR[n] || !bn) continue; const g = GEAR[n].clone(); g.position.set(...pos); g.rotation.set(...rot); if (sc) g.scale.setScalar(sc); if (local) bn.add(g); else { T.root.add(g); g.updateMatrixWorld(true); bn.attach(g); } } };
-      if (Kn && TK) { const m = new THREE.MeshLambertMaterial({ map: TK }); PEOPLE.tpl.warrior = mergePerson(C(Kn), ['Knight_Helmet', 'Knight_Cape', '1H_Sword', 'Round_Shield'], m); PEOPLE.tpl.warrior.mats = [m]; }
-      if (RH && TH) { const m = new THREE.MeshLambertMaterial({ map: TH }); PEOPLE.tpl.hunter = mergePerson(C(RH), ['Rogue_Cape', '1H_Crossbow'], m); PEOPLE.tpl.hunter.mats = [m]; }
-      // ★★ units (fort level 2+, shamans from hall level 3): owner 2026-11-16 "ทำตัวเทียร์ตัวอื่นๆ ด้วย" after the ★★ archer lookbook
-      if (Kn && TK) { const m = new THREE.MeshLambertMaterial({ map: TK2 || TK }); const T2 = PEOPLE.tpl.warrior2 = mergePerson(C(Kn), ['Knight_Helmet', 'Knight_Cape', '1H_Sword', 'Badge_Shield'], m); T2.mats = [m]; addGear(T2, [['Plume', 'head', [0.02, 2.2, -0.05], [-0.25, 0, 0.1], 0, 1.9]]); }
-      if (RH && TH2) { const m = new THREE.MeshLambertMaterial({ map: TH2 }); const T2 = PEOPLE.tpl.hunter2 = mergePerson(C(RH), ['Rogue_Cape'], m); T2.mats = [m];
-        addGear(T2, [['Bow', 'handslotl', [0, 0, 0], [0, 0, 0], 1], ['Quiver', 'hips', [-0.36, 0.62, -0.1], [-0.35, 0, 0.32]], ['Plume', 'head', [0.32, 1.98, -0.02], [0, 0, -0.55]], ['Pad', 'upperarml', [0.3, 1.17, 0], [0, 0, -0.7]]]); }
-      if (Mg && TM2) { const m = new THREE.MeshLambertMaterial({ map: TM2 }); const T2 = PEOPLE.tpl.shaman2 = mergePerson(C(Mg), ['Mage_Hat', 'Mage_Cape', '2H_Staff', 'Spellbook_open'], m); T2.mats = [m];
-        addGear(T2, [['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 1.9], ['Crystal', 'handslotr', [-0.88, 1.05, 1.28], [Math.PI / 2, 0, 0], 0, 1.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.3]]); }
-      if (Mg && TM) { const m = new THREE.MeshLambertMaterial({ map: TM }); PEOPLE.tpl.shaman = mergePerson(C(Mg), ['Mage_Hat', 'Mage_Cape', '2H_Staff'], m); PEOPLE.tpl.shaman.mats = [m]; }
-      PEOPLE.tpl.giant = Object.assign({}, PEOPLE.tpl.man, { mats: [new THREE.MeshLambertMaterial({ map: T[0], color: 0x9ac07a })] });   // green-skinned forest giant
-      PEOPLE.clips = [...B.animations, ...(AB ? AB.animations : []), ...(AT ? AT.animations : [])]; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
+      const R_ = 'handslotr', L_ = 'handslotl', tpl = PEOPLE.tpl;
+      // villagers + chief + giant
+      tpl.man = hero('Barbarian', [], mat('barba_0')); tpl.man.mats = [mat('barba_0'), mat('barba_1')];
+      tpl.woman = hero('Rogue', [], mat('rogue_1')); tpl.woman.mats = [mat('rogue_1'), mat('rogue_2'), mat('rogue_3')];
+      tpl.chief = hero('Barbarian', [['axe_2handed', R_], ['shield_round_barbarian', L_]], mat('barba_2'));
+      addGear(tpl.chief, [['HatStar', 'head', [0, 2.05, 0.55], [-0.3, 0, 0], 0, 2.2], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.35]]);   // the chief: gold star + collar
+      tpl.giant = hero('Barbarian', [['axe_2handed', R_]], mat('barba_1', 0x9ac07a));   // green-skinned forest giant
+      // ★ / ★★ / ★★★ units
+      tpl.warrior = hero('Knight', [['sword_1handed', R_], ['shield_round', L_]], mat('knigh_0'), ['Knight_HelmetVisor']);
+      tpl.warrior2 = hero('Knight', [['sword_1handed', R_], ['shield_badge_color', L_]], mat('knigh_1'), ['Knight_HelmetVisor']);
+      addGear(tpl.warrior2, [['Plume', 'head', [0.02, 2.2, -0.05], [-0.25, 0, 0.1], 0, 1.9]]);
+      tpl.warrior3 = hero('Knight', [['sword_2handed_color', R_], ['shield_spikes_color', L_]], mat('knigh_2'));
+      addGear(tpl.warrior3, [['Plume', 'head', [0.02, 2.25, -0.08], [-0.2, 0, 0.1], 0, 2.6]]);
+      tpl.hunter = hero('Rogue_Hooded', [['crossbow_1handed', R_]], mat('rogue_0'));
+      tpl.hunter2 = hero('Ranger', [['bow_withString', L_]], mat('range_0'));
+      tpl.hunter3 = hero('Ranger', GEAR.bow_A_withString ? [] : [['bow_withString', L_]], mat('range_1'));
+      addGear(tpl.hunter3, [['bow_A_withString', 'handslotl', [0, 0, 0], [0, 0, 0], 1, 1.35], ['Plume', 'head', [0.3, 2.0, -0.05], [0, 0, -0.55], 0, 1.4], ['Pad', 'upperarml', [0.3, 1.17, 0], [0, 0, -0.7]]]);
+      tpl.shaman = hero('Mage', [['staff', R_]], mat('mage_0'));
+      tpl.shaman2 = hero('Mage', [['staff', R_], ['spellbook_open', L_]], mat('mage_1'));
+      addGear(tpl.shaman2, [['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 1.9], ['Crystal', 'handslotr', [-0.88, 1.05, 1.28], [Math.PI / 2, 0, 0], 0, 1.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.3]]);
+      tpl.shaman3 = hero('Mage', GEAR.staff_B ? [['spellbook_open', L_]] : [['staff', R_], ['spellbook_open', L_]], mat('mage_2'));
+      addGear(tpl.shaman3, [['staff_B', 'handslotr', [0, 0, 0], [0, 0, 0], 1, 1.25], ['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 2.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.45]]);
+      PEOPLE.mats = [...tpl.man.mats, ...tpl.woman.mats];
+      for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');   // anims.glb joins several files: the loader renamed their duplicate bones hips_1, hips_2...
+      PEOPLE.clips = AN.animations; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
   }
@@ -1192,7 +1212,7 @@ const GAME = window.GAME = (function () {
     const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xdfe8ff, 0x6a5a48, .72));
     const key = new THREE.DirectionalLight(0xfff0d8, 1); key.position.set(-4, 8, 10); sc.add(key); const rim = new THREE.DirectionalLight(0xbfe0ff, .7); rim.position.set(6, 5, -8); sc.add(rim);
     const cam2 = new THREE.OrthographicCamera(-1.7 * W / H, 1.7 * W / H, 1.7, -1.7, .1, 100); cam2.position.set(0, 1.65 + 5, 16); cam2.lookAt(0, 1.6, 0);
-    const pose = { warrior: ['Block', .5], hunter: ['1H_Ranged_Shoot', .3], shaman: ['Spellcast_Raise', .6], warrior2: ['1H_Melee_Attack_Slice_Diagonal', .35], hunter2: ['Ranged_Bow_Draw', .9], shaman2: ['Spellcast_Shoot', .45], chief: ['Cheer', .5], man: ['Idle', .4], woman: ['Idle', .4] };
+    const pose = { warrior: ['Block', .5], hunter: ['1H_Ranged_Shoot', .3], shaman: ['Spellcast_Raise', .6], warrior2: ['1H_Melee_Attack_Slice_Diagonal', .35], hunter2: ['Ranged_Bow_Draw', .9], warrior3: ['2H_Melee_Attack_Chop', .4], hunter3: ['Ranged_Bow_Draw', .9], shaman3: ['Spellcast_Raise', .55], shaman2: ['Spellcast_Shoot', .45], chief: ['Cheer', .5], man: ['Idle', .4], woman: ['Idle', .4] };
     const rt2 = new THREE.WebGLRenderTarget(W * SS, H * SS, { samples: 4 }), px = new Uint8Array(W * H * SS * SS * 4), cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
     for (const k of Object.keys(pose)) {
       if (!PEOPLE.tpl[k]) continue;
@@ -1207,7 +1227,7 @@ const GAME = window.GAME = (function () {
     }
     renderer.setRenderTarget(null); renderer.setClearColor(cc, ca); rt2.dispose(); PEOPLE.portrait = out;
   }
-  const card = (id, k, label, cost) => `<button id="${id}" class="uc${k.endsWith('2') ? ' gold' : ''}">${PEOPLE.portrait && PEOPLE.portrait[k] ? `<img alt="" src="${PEOPLE.portrait[k]}">` : ''}<b>${label}</b><small>${costTxt(cost)}</small></button>`;
+  const card = (id, k, label, cost) => `<button id="${id}" class="uc${k.endsWith('3') ? ' violet' : k.endsWith('2') ? ' gold' : ''}">${PEOPLE.portrait && PEOPLE.portrait[k] ? `<img alt="" src="${PEOPLE.portrait[k]}">` : ''}<b>${label}</b><small>${costTxt(cost)}</small></button>`;
   function newPerson(kind, h, mi) {   // a clone of a template with its own skeleton + mixer
     const T = PEOPLE.tpl[kind], root = THREE.SkeletonUtils.clone(T.root); root.scale.setScalar(h / T.h);
     let mesh = null; root.traverse(o => { if (o.isSkinnedMesh) mesh = o; });
@@ -1220,7 +1240,11 @@ const GAME = window.GAME = (function () {
     for (const k in v.poses) v.g.remove(v.poses[k]); v.poses = {};
     v.g.add(p.root); v.mixer = p.mixer; v.acts = p.acts; v.mat = p.mesh.material; v.cur = null; v.mixer.update(Math.random() * 2);
     if (v.load) v.load.position.y = 3.6;
+    // tools from KayKit RPG Tools Bits on the right hand, shown by job: axe = wood, pickaxe = stone, hammer = building
+    let hand = null; p.root.traverse(o => { if (o.name === 'handslotr' && !hand) hand = o; }); v.tools = {};
+    if (hand && PEOPLE.gear) for (const [job, n] of [['wood', 'axe'], ['stone', 'pickaxe'], ['build', 'hammer']]) { const src = PEOPLE.gear[n]; if (!src) continue; const t = src.clone(); t.visible = false; t.scale.setScalar(1.6); hand.add(t); v.tools[job] = t; }   // the bits are made a little small for our chibi hands
   }
+  function showTool(v, job) { if (!v.tools || v.toolOn === job) return; for (const k in v.tools) v.tools[k].visible = k === job; v.toolOn = job; }
   function vPlay(v, move, once, fade) {   // move = MOVE key; one-shots hold the pose a moment (v.busy)
     const n = MOVE[move]; if (!v.acts || !v.acts[n]) return 0; const a = v.acts[n];
     if (v.cur === n && !once) return 0;
@@ -1318,6 +1342,7 @@ const GAME = window.GAME = (function () {
     }
     if (v.mixer) {   // animated person: loops follow the state, one-shots (attack, throw, cheer) hold for v.busy
       if (!(v.busy > 0)) { const has = k => v.acts[MOVE[k]] ? k : null; vPlay(v, moving ? 'run' : night && v.sit ? 'sit' : v.st === 'bwork' ? has('hammer') || 'chop' : v.st === 'work' && v.job ? (v.job.type === 'food' ? 'pick' : v.job.type === 'stone' ? has('mine') || 'chop' : has('chopT') || 'chop') : 'idle'); }
+      showTool(v, night && v.hide > 0 ? null : v.st === 'bgo' || v.st === 'bwork' ? 'build' : v.job && !v.job.hunt && (v.st === 'go' || v.st === 'work') ? v.job.type : null);
       v.mixer.update(dt * (moving && v.cur === MOVE.run ? Math.min(1.5, Math.max(.8, (G.buff > 0 ? 7.4 : 5.2) / 5.2)) : 1));
       v.g.position.set(v.x, groundY(v.x, v.z), v.z);
     } else {
@@ -1358,8 +1383,11 @@ const GAME = window.GAME = (function () {
   const SOL = UNIT.warrior;
   const shamanCap = () => [0, 1, 1, 2, 2][hallLv() - 1];
   const kindN = (k, f) => G.sol.filter(s2 => s2.kind === k && (!f || s2.fort === f)).length;
-  const tierFor = (f, kind) => kind === 'shaman' ? (hallLv() >= 3 ? 2 : 1) : ((f && f.lv || 1) >= 2 ? 2 : 1);
-  const tierK = s => s.tier > 1 ? 1.5 : 1;   // ★★ = +50% life and power
+  const tierFor = (f, kind) => kind === 'shaman' ? (hallLv() >= 5 ? 3 : hallLv() >= 3 ? 2 : 1) : Math.min(3, (f && f.lv) || 1);   // ★★ fort 2 / hall 3, ★★★ fort 3 / hall 5
+  const tplOf = (kind, t) => t > 2 && PEOPLE.tpl[kind + '3'] ? kind + '3' : t > 1 && PEOPLE.tpl[kind + '2'] ? kind + '2' : kind;
+  const STARS = t => '★'.repeat(t || 1), TIER_COL = [0xffffff, 0xffd24a, 0xd88aff];
+  const unitName = (kind, t) => kind === 'hunter' && t > 1 ? 'นักธนู' : UNIT[kind].n;
+  const tierK = s => s.tier > 2 ? 2.2 : s.tier > 1 ? 1.5 : 1;   // ★★ = +50% life and power, ★★★ = +120%
   const solMax = s => Math.round(tierK(s) * UNIT[s.kind || 'warrior'].hp * (1 + .16 * (G.day - 1)) * (1 + ((s.fort && s.fort.lv || 1) - 1) * .25));   // they grow with the nights like the beasts
   const fortCap = f => f.site || f.dead ? 0 : 5 + ((f.lv || 1) - 1) * 2;
   const forts = () => G.buildings.filter(b => b.type === 'fort' && !b.site && !b.dead);
@@ -1368,9 +1396,9 @@ const GAME = window.GAME = (function () {
     kind = kind || 'warrior'; const U = UNIT[kind];
     const g = new THREE.Group(), x = f.x + (rnd() - .5) * 3, z = f.z + f.r + 1.5; g.position.set(x, groundY(x, z), z); scene.add(g);
     const s = { g, x, z, fort: f, kind, tier: tierFor(f, kind), st: 'guard', atk: 0, hl: 0, ang: rnd() * 6.28, sol: true }; s.max = s.hp = solMax(s);
-    if (PEOPLE.ready) { const p = newPerson(s.tier > 1 && PEOPLE.tpl[kind + '2'] ? kind + '2' : kind, U.h); g.add(p.root); Object.assign(s, { mixer: p.mixer, acts: p.acts, mat: p.mesh.material, cur: null }); p.mixer.update(rnd()); }
+    if (PEOPLE.ready) { const p = newPerson(tplOf(kind, s.tier), U.h); g.add(p.root); Object.assign(s, { mixer: p.mixer, acts: p.acts, mat: p.mesh.material, cur: null }); p.mixer.update(rnd()); }
     else if (MODELS.caveman_stand) { const m = new THREE.Mesh(MODELS.caveman_stand, new THREE.MeshLambertMaterial({ vertexColors: true, color: 0xff9a8a })); m.castShadow = true; g.add(m); s.mat = m.material; }
-    tierDeco(s); G.sol.push(s); float(x, groundY(x, z) + 4, z, (s.tier > 1 && kind === 'hunter' ? 'นักธนู' : U.n) + (s.tier > 1 ? ' ★★' : '') + ' +1', '#9adfff'); return s;
+    tierDeco(s); G.sol.push(s); float(x, groundY(x, z) + 4, z, unitName(kind, s.tier) + ' ' + STARS(s.tier) + ' +1', '#9adfff'); return s;
   }
   function train(f, n, kind) {   // queue units at a fort (warriors / hunters) or the hall (shamans), paid now; returns how many
     kind = kind || 'warrior'; const U = UNIT[kind], cap = f.type === 'hall' ? shamanCap() : fortCap(f); let k = 0; f.qk = f.qk || [];
@@ -1379,26 +1407,26 @@ const GAME = window.GAME = (function () {
     return k;
   }
   function fortStep(f, dt) { if (f.qk && f.qk.length) { f.trainT -= dt; if (f.trainT <= 0) { const kind = f.qk.shift(); f.queue = f.qk.length; addSoldier(f, kind); f.trainT = f.qk.length ? UNIT[f.qk[0]].time : 0; } } }
-  let STAR_TEX = null;
+  const STAR_TEX = {};
   function tierDeco(s) {   // owner 2026-11-17 "เพิ่มความแตกต่างหน่อย 1 ดาวกับ 2 ดาว": ★★ units stand out at a glance
-    if (s.tier < 2 || s.deco) return; const U = UNIT[s.kind];
-    if (!STAR_TEX) { const c = document.createElement('canvas'); c.width = 64; c.height = 32; const x = c.getContext('2d');
-      const star = (cx, cy, r) => { x.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } x.closePath(); x.fillStyle = '#ffd24a'; x.strokeStyle = '#3a2208'; x.lineWidth = 3; x.stroke(); x.fill(); };
-      star(17, 17, 14); star(47, 17, 14); STAR_TEX = new THREE.CanvasTexture(c); }
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: STAR_TEX, depthWrite: false })); sp.scale.set(1.5, .75, 1); sp.position.y = U.h * 1.15 + .9; sp.renderOrder = 8; s.g.add(sp);
-    const ring = new THREE.Mesh(new THREE.RingGeometry(.95, 1.25, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd24a, transparent: true, opacity: .7, depthWrite: false })); ring.position.y = .12; ring.renderOrder = 3; s.g.add(ring);
-    for (const c of s.g.children) if (c !== sp && c !== ring) c.scale.multiplyScalar(1.15);
+    if (s.tier < 2 || s.deco) return; const U = UNIT[s.kind], n = s.tier;
+    if (!STAR_TEX[n]) { const c = document.createElement('canvas'); c.width = 32 * n; c.height = 32; const x = c.getContext('2d');
+      const star = (cx, cy, r) => { x.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } x.closePath(); x.fillStyle = n > 2 ? '#e8a8ff' : '#ffd24a'; x.strokeStyle = '#2a0838'; x.lineWidth = 3; x.stroke(); x.fill(); };
+      for (let i = 0; i < n; i++) star(16 + i * 32, 17, 14); STAR_TEX[n] = new THREE.CanvasTexture(c); }
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: STAR_TEX[n], depthWrite: false })); sp.scale.set(.75 * n, .75, 1); sp.position.y = U.h * 1.15 + .9; sp.renderOrder = 8; s.g.add(sp);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.95, 1.25, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TIER_COL[n - 1], transparent: true, opacity: .75, depthWrite: false })); ring.position.y = .12; ring.renderOrder = 3; s.g.add(ring);
+    for (const c of s.g.children) if (c !== sp && c !== ring) c.scale.multiplyScalar(n > 2 ? 1.3 : 1.15);
     s.deco = { sp, ring };
   }
   function promote(f) {   // fort level 2 (or hall level 3 for shamans): its units become ★★ on the spot
     for (const s2 of G.sol) { if (s2.fort !== f || s2.dead) continue; const t = tierFor(f, s2.kind); if (t <= (s2.tier || 1)) continue;
       s2.tier = t; s2.max = solMax(s2); s2.hp = s2.max;
-      if (PEOPLE.ready && s2.mixer && PEOPLE.tpl[s2.kind + '2']) { for (const c of s2.g.children.slice()) s2.g.remove(c); const p = newPerson(s2.kind + '2', UNIT[s2.kind].h); s2.g.add(p.root); Object.assign(s2, { mixer: p.mixer, acts: p.acts, mat: p.mesh.material, cur: null, busy: 0 }); }
+      if (PEOPLE.ready && s2.mixer) { for (const c of s2.g.children.slice()) s2.g.remove(c); const p = newPerson(tplOf(s2.kind, t), UNIT[s2.kind].h); s2.g.add(p.root); Object.assign(s2, { mixer: p.mixer, acts: p.acts, mat: p.mesh.material, cur: null, busy: 0 }); }
       s2.deco = null; tierDeco(s2);
-      const gy = groundY(s2.x, s2.z); burst(s2.x, gy + 1.5, s2.z, 16, 5, 3, 3); ringFx(s2.x, s2.z, .5, 3, 0xffd24a, .6); float(s2.x, gy + 4.5, s2.z, '★★', '#ffd24a'); }
+      const gy = groundY(s2.x, s2.z); burst(s2.x, gy + 1.5, s2.z, 16, 5, 3, 3); ringFx(s2.x, s2.z, .5, 3, TIER_COL[t - 1], .6); float(s2.x, gy + 4.5, s2.z, STARS(t), t > 2 ? '#e8a8ff' : '#ffd24a'); }
   }
   function bolt(s, e, dmg) {   // crossbow bolt or a shaman's glowing spell, flies like the tower spears
-    const magic = s.kind === 'shaman', m = magic ? new THREE.Mesh(new THREE.SphereGeometry(s.tier > 1 ? .6 : .45, 8, 6), new THREE.MeshBasicMaterial({ color: s.tier > 1 ? 0xffb03a : 0x9aff6a })) : new THREE.Mesh(new THREE.BoxGeometry(.1, .1, 1.4), new THREE.MeshLambertMaterial({ color: 0xe8d8b0 }));
+    const magic = s.kind === 'shaman', m = magic ? new THREE.Mesh(new THREE.SphereGeometry(s.tier > 2 ? .75 : s.tier > 1 ? .6 : .45, 8, 6), new THREE.MeshBasicMaterial({ color: s.tier > 2 ? 0x6af0ff : s.tier > 1 ? 0xffb03a : 0x9aff6a })) : new THREE.Mesh(new THREE.BoxGeometry(.1, .1, 1.4), new THREE.MeshLambertMaterial({ color: 0xe8d8b0 }));
     const y0 = groundY(s.x, s.z) + 2.2; m.position.set(s.x, y0, s.z); scene.add(m);
     G.shots.push({ m, x0: s.x, y0, z0: s.z, e, t: 0, dur: Math.max(.2, Math.hypot(e.x - s.x, e.z - s.z) / (magic ? 30 : 55)), dmg, glow: magic, flat: true });
     sfx('throw');
@@ -1406,7 +1434,7 @@ const GAME = window.GAME = (function () {
   function solStep(s, dt) {
     const home = s.fort && !s.fort.dead ? s.fort : G.hall, buff = G.buff > 0, U = UNIT[s.kind || 'warrior'];
     if (s.busy > 0) s.busy -= dt;
-    if (s.tier > 1 && s.kind === 'shaman' && rnd() < dt * 5) spawnP(s.x + (rnd() - .5) * 2, groundY(s.x, s.z) + .5 + rnd() * 2.5, s.z + (rnd() - .5) * 2, 0, 1 + rnd(), 0, .9, 2.5, 3);
+    if (s.tier > 1 && rnd() < dt * (s.tier > 2 ? 6 : s.kind === 'shaman' ? 5 : 0)) spawnP(s.x + (rnd() - .5) * 2, groundY(s.x, s.z) + .5 + rnd() * 2.5, s.z + (rnd() - .5) * 2, 0, 1 + rnd(), 0, .9, 2.5, 3);
     if (U.heal) { s.hl -= dt; if (s.hl <= 0) { s.hl = .5; let w = null, wk = .999;   // shaman: mend the most hurt fighter close by
       for (const o of [...G.sol, ...G.vill]) { const k2 = o.hp / (o.max || 30); if (k2 < wk && Math.hypot(o.x - s.x, o.z - s.z) < 24) { wk = k2; w = o; } }
       if (w) { const amt = U.heal * tierK(s) * (1 + .1 * (G.day - 1)); w.hp = Math.min(w.max || 30, w.hp + amt); s.hl = 2; G.healN = (G.healN || 0) + 1; float(w.x, groundY(w.x, w.z) + 4, w.z, '+' + Math.round(amt), '#9aff8a'); for (let i = 0; i < 8; i++) spawnP(w.x + (rnd() - .5) * 1.5, groundY(w.x, w.z) + .5 + rnd() * 2, w.z + (rnd() - .5) * 1.5, 0, 2 + rnd() * 2, 0, .8, 3, 2); if (s.mixer && !(s.busy > 0)) s.busy = vPlay(s, 'raise', true, .1) * .7; } } }
@@ -1420,10 +1448,10 @@ const GAME = window.GAME = (function () {
     let moving = false;
     if (e) {   // out to fight
       s.face = Math.atan2(e.x - s.x, e.z - s.z);
-      if (ed > (U.reach ? U.reach + (s.tier > 1 ? 4 : 0) : e.def.r + 1.6)) { moveTo(s, e.x, e.z, U.spd * (buff ? 1.3 : 1), dt); moving = true; }   // ranged ones stop at their reach
+      if (ed > (U.reach ? U.reach + ((s.tier || 1) - 1) * 4 : e.def.r + 1.6)) { moveTo(s, e.x, e.z, U.spd * (buff ? 1.3 : 1), dt); moving = true; }   // ranged ones stop at their reach
       else { s.atk -= dt; if (s.atk <= 0) { s.atk = U.atk * (buff ? .6 : 1); const dmg = U.dmg * tierK(s) * (1 + ((s.fort && s.fort.lv || 1) - 1) * .25) * (1 + .14 * (G.day - 1)) * (buff ? 2.5 : 1);
         if (U.reach) bolt(s, e, dmg); else hurtEnemy(e, dmg);
-        if (s.mixer) s.busy = Math.min(s.atk, vPlay(s, s.tier > 1 && s.kind === 'hunter' && s.acts[MOVE.bowShot] ? 'bowShot' : U.move[(rnd() * U.move.length) | 0], true, .08) * .9); } }
+        if (s.mixer) s.busy = Math.min(s.atk, vPlay(s, s.tier > 1 && s.kind === 'hunter' && s.acts[MOVE.bowShot] ? 'bowShot' : s.tier > 2 && s.kind === 'warrior' ? (rnd() < .6 ? 'smash' : 'spin') : U.move[(rnd() * U.move.length) | 0], true, .08) * .9); } }
     } else {   // back to the fort's gate, face outward
       const tx = home.x + Math.cos(s.ang) * (home.r + 2.5), tz = home.z + Math.sin(s.ang) * (home.r + 2.5);
       if (Math.hypot(tx - s.x, tz - s.z) > .6) { moveTo(s, tx, tz, U.spd * .8, dt); moving = true; s.face = Math.atan2(tx - s.x, tz - s.z); } else s.face = s.ang * 0 + Math.atan2(s.x - home.x, s.z - home.z);
@@ -1452,7 +1480,7 @@ const GAME = window.GAME = (function () {
     } else if (def.giant) {
       if (!PEOPLE.ready) return null;
       const p = newPerson('giant', 9.5, 0); e.root = new THREE.Group(); e.root.add(p.root); scene.add(e.root);
-      e.mixer = p.mixer; e.acts = p.acts; e.an = { run: 'Walking_A', atk: '1H_Melee_Attack_Chop', flee: 'Running_A' }; play(e, e.an.run);
+      e.mixer = p.mixer; e.acts = p.acts; e.an = { run: 'Walking_A', atk: '2H_Melee_Attack_Chop', flee: 'Running_A' }; play(e, e.an.run);
       const L2 = G.giantLv; e.hp = e.max = def.hp * (1 + .38 * (L2 - 1)); e.dmg = def.dmg * (1 + .2 * (L2 - 1)); e.lv = Math.floor(L2);
       if (!G.giantSeen) { G.giantSeen = true; say('ยักษ์ป่ามาแล้ว! ทุบกำแพงแรงมาก · กด ซ่อมด่วน ที่บนจอได้', 4000); }
     } else if (kind === 'mammoth') { e.root = new THREE.Group(); const m = new THREE.Mesh(MODELS.mammoth, VCOL); m.castShadow = true; m.scale.setScalar(1.5); e.root.add(m); scene.add(e.root); }
@@ -2038,7 +2066,7 @@ const GAME = window.GAME = (function () {
     for (const el of [hudEl.btn, hudEl.bar, hudEl.conf]) el.addEventListener('pointerdown', stop);
     hudEl.btn.addEventListener('pointerdown', () => { au(); sfx('click'); endAim(); hudEl.bar.classList.toggle('open'); if (!hudEl.bar.classList.contains('open')) cancelBuild(); });
     $('gOk').addEventListener('pointerdown', e => { e.stopPropagation(); confirmBuild(); });
-    const sst = document.createElement('style'); sst.textContent = '#gSel { left: 50%; bottom: 100px; transform: translateX(-50%); display: none; padding: 8px 12px 10px; font: 600 12px Kanit, sans-serif; text-align: center; max-width: 92vw; width: 330px; } #gSel .hd { display: flex; align-items: center; gap: 8px; text-align: left; } #gSel .hd img { width: 60px; height: 52px; image-rendering: pixelated; background: radial-gradient(circle at 50% 60%, #7a6a4a, #3a2a14 70%); border: 2px solid var(--ink); border-radius: 10px; } #gSel .tt { flex: 1; } #gSel .tt b { font-size: 16px; display: block; } #gSel .stars { color: #ffd24a; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 0 #140c06; } #gSel .stars i { color: #5a4630; font-style: normal; } #gSel .hpb { height: 7px; background: #140c06; border-radius: 4px; margin-top: 3px; overflow: hidden; border: 1px solid #000; } #gSel .hpb i { display: block; height: 100%; background: linear-gradient(90deg, #5ad85a, #9aff8a); } #gSel button.x { margin: 0; padding: 0; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(#7a5a3a, #4a2f14); font-size: 14px; align-self: flex-start; } #gSel .rows { margin: 6px 0 4px; background: #00000033; border-radius: 10px; padding: 3px 8px; } #gSel .row { display: flex; align-items: center; gap: 6px; padding: 2px 0; border-bottom: 1px solid #ffffff14; } #gSel .row:last-child { border: 0; } #gSel .row span { flex: 1; text-align: left; color: #f3dcb0; } #gSel .row b { font-size: 13px; } #gSel .row em { font-style: normal; font-weight: 800; color: #9aff8a; text-shadow: var(--ol); min-width: 54px; text-align: right; } #gSel .unl { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin: 2px 0 4px; color: #ffe7b8; } #gSel .unl span { display: flex; align-items: center; gap: 2px; background: #00000040; border-radius: 8px; padding: 1px 5px 1px 1px; font-size: 11px; } #gSel .unl img { width: 22px; height: 19px; image-rendering: pixelated; } #gSel .act { display: flex; align-items: center; gap: 8px; justify-content: center; } #gSel .ccs { display: flex; flex-direction: column; gap: 2px; } #gSel .cc { display: flex; align-items: center; gap: 3px; font-weight: 800; font-size: 13px; } #gSel .cc svg { width: 16px; height: 16px; } #gSel .cc.no { color: #ff6a5a; } #gSel .cc.ok { color: #fff; } #gSel button.big { margin: 0; flex: 1; font-size: 15px; padding: 9px 10px; border-radius: 12px; background: linear-gradient(#6ae86a, #2a9a2a); box-shadow: 0 4px 0 var(--ink), inset 0 3px 0 #ffffff55; } #gSel button.big.dis { background: linear-gradient(#8a8070, #5a5040); } #gSel button.sm { margin-top: 5px; font-size: 12px; padding: 4px 10px; } #gSel button.rep { background: linear-gradient(#c8a04a, #8a6a1a); } #gSel .why { margin: 4px 0; color: #ffd27a; font-weight: 800; } #gSel .shake { animation: gShake .35s; } @keyframes gShake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } } @media (max-height: 420px) { #gSel { width: 380px; padding: 4px 9px 5px; bottom: 6px !important; max-height: calc(100vh - 12px); overflow-y: auto; } #gSel .hd img { width: 40px; height: 34px; } #gSel .tt b { font-size: 14px; } #gSel .rows { margin: 3px 0 2px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; } #gSel .row { padding: 0; } #gSel .row:nth-last-child(2) { border: 0; } #gSel .unl { margin: 0 0 2px; } #gSel .unl img { display: none; } #gSel .unl span { font-size: 10px; padding: 0 4px; } #gSel button.big { padding: 5px 8px; font-size: 13px; } #gSel .ccs { flex-direction: row; gap: 6px; } } #gSel b { font-weight: 800; font-size: 14px; text-shadow: var(--ol); } #gSel button { margin-top: 5px; font: 800 12px Kanit, sans-serif; color: #fff; padding: 5px 10px; border-radius: 10px; border: 2px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#5ac85a, #2a8a2a); } #gSel #gRep { background: linear-gradient(#c8a04a, #8a6a1a); } #gSel .st { margin-top: 3px; } #gSel .ucs { display: flex; gap: 6px; justify-content: center; margin: 4px 0 2px; } #gSel button.uc { display: flex; flex-direction: column; align-items: center; width: 98px; margin: 0; padding: 2px 4px 4px; background: radial-gradient(circle at 50% 35%, #5a7a9a, #22344a 75%); } #gSel .uc img { width: 64px; height: 75px; display: block; } #gSel button.uc.gold { background: radial-gradient(circle at 50% 35%, #c8a050, #5a3a10 75%); box-shadow: 0 0 0 2px #ffd24a, 0 0 12px 2px #ffb03a88, 0 4px 0 var(--ink); } #gSel .uc b { font-size: 12px; } #gSel .uc small { font: 600 10px Kanit, sans-serif; color: #ffe7b8; } @media (max-height: 420px) { #gSel { bottom: 6px; padding: 4px 10px 5px; } #gSel .uc img { width: 40px; height: 47px; } #gSel button.uc { width: 86px; padding: 1px 3px 3px; } #gSel .uc b { font-size: 11px; } #gSel .uc small { font-size: 9px; } #gSel .ucs { margin: 2px 0 0; } }'; document.head.appendChild(sst);
+    const sst = document.createElement('style'); sst.textContent = '#gSel { left: 50%; bottom: 100px; transform: translateX(-50%); display: none; padding: 8px 12px 10px; font: 600 12px Kanit, sans-serif; text-align: center; max-width: 92vw; width: 330px; } #gSel .hd { display: flex; align-items: center; gap: 8px; text-align: left; } #gSel .hd img { width: 60px; height: 52px; image-rendering: pixelated; background: radial-gradient(circle at 50% 60%, #7a6a4a, #3a2a14 70%); border: 2px solid var(--ink); border-radius: 10px; } #gSel .tt { flex: 1; } #gSel .tt b { font-size: 16px; display: block; } #gSel .stars { color: #ffd24a; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 0 #140c06; } #gSel .stars i { color: #5a4630; font-style: normal; } #gSel .hpb { height: 7px; background: #140c06; border-radius: 4px; margin-top: 3px; overflow: hidden; border: 1px solid #000; } #gSel .hpb i { display: block; height: 100%; background: linear-gradient(90deg, #5ad85a, #9aff8a); } #gSel button.x { margin: 0; padding: 0; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(#7a5a3a, #4a2f14); font-size: 14px; align-self: flex-start; } #gSel .rows { margin: 6px 0 4px; background: #00000033; border-radius: 10px; padding: 3px 8px; } #gSel .row { display: flex; align-items: center; gap: 6px; padding: 2px 0; border-bottom: 1px solid #ffffff14; } #gSel .row:last-child { border: 0; } #gSel .row span { flex: 1; text-align: left; color: #f3dcb0; } #gSel .row b { font-size: 13px; } #gSel .row em { font-style: normal; font-weight: 800; color: #9aff8a; text-shadow: var(--ol); min-width: 54px; text-align: right; } #gSel .unl { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin: 2px 0 4px; color: #ffe7b8; } #gSel .unl span { display: flex; align-items: center; gap: 2px; background: #00000040; border-radius: 8px; padding: 1px 5px 1px 1px; font-size: 11px; } #gSel .unl img { width: 22px; height: 19px; image-rendering: pixelated; } #gSel .act { display: flex; align-items: center; gap: 8px; justify-content: center; } #gSel .ccs { display: flex; flex-direction: column; gap: 2px; } #gSel .cc { display: flex; align-items: center; gap: 3px; font-weight: 800; font-size: 13px; } #gSel .cc svg { width: 16px; height: 16px; } #gSel .cc.no { color: #ff6a5a; } #gSel .cc.ok { color: #fff; } #gSel button.big { margin: 0; flex: 1; font-size: 15px; padding: 9px 10px; border-radius: 12px; background: linear-gradient(#6ae86a, #2a9a2a); box-shadow: 0 4px 0 var(--ink), inset 0 3px 0 #ffffff55; } #gSel button.big.dis { background: linear-gradient(#8a8070, #5a5040); } #gSel button.sm { margin-top: 5px; font-size: 12px; padding: 4px 10px; } #gSel button.rep { background: linear-gradient(#c8a04a, #8a6a1a); } #gSel .why { margin: 4px 0; color: #ffd27a; font-weight: 800; } #gSel .shake { animation: gShake .35s; } @keyframes gShake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } } @media (max-height: 420px) { #gSel { width: 380px; padding: 4px 9px 5px; bottom: 6px !important; max-height: calc(100vh - 12px); overflow-y: auto; } #gSel .hd img { width: 40px; height: 34px; } #gSel .tt b { font-size: 14px; } #gSel .rows { margin: 3px 0 2px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; } #gSel .row { padding: 0; } #gSel .row:nth-last-child(2) { border: 0; } #gSel .unl { margin: 0 0 2px; } #gSel .unl img { display: none; } #gSel .unl span { font-size: 10px; padding: 0 4px; } #gSel button.big { padding: 5px 8px; font-size: 13px; } #gSel .ccs { flex-direction: row; gap: 6px; } } #gSel b { font-weight: 800; font-size: 14px; text-shadow: var(--ol); } #gSel button { margin-top: 5px; font: 800 12px Kanit, sans-serif; color: #fff; padding: 5px 10px; border-radius: 10px; border: 2px solid var(--ink); cursor: pointer; text-shadow: var(--ol); background: linear-gradient(#5ac85a, #2a8a2a); } #gSel #gRep { background: linear-gradient(#c8a04a, #8a6a1a); } #gSel .st { margin-top: 3px; } #gSel .ucs { display: flex; gap: 6px; justify-content: center; margin: 4px 0 2px; } #gSel button.uc { display: flex; flex-direction: column; align-items: center; width: 98px; margin: 0; padding: 2px 4px 4px; background: radial-gradient(circle at 50% 35%, #5a7a9a, #22344a 75%); } #gSel .uc img { width: 64px; height: 75px; display: block; } #gSel button.uc.violet { background: radial-gradient(circle at 50% 35%, #a070d0, #2a1048 75%); box-shadow: 0 0 0 2px #e8a8ff, 0 0 14px 3px #c060ff99, 0 4px 0 var(--ink); } #gSel button.uc.gold { background: radial-gradient(circle at 50% 35%, #c8a050, #5a3a10 75%); box-shadow: 0 0 0 2px #ffd24a, 0 0 12px 2px #ffb03a88, 0 4px 0 var(--ink); } #gSel .uc b { font-size: 12px; } #gSel .uc small { font: 600 10px Kanit, sans-serif; color: #ffe7b8; } @media (max-height: 420px) { #gSel { bottom: 6px; padding: 4px 10px 5px; } #gSel .uc img { width: 40px; height: 47px; } #gSel button.uc { width: 86px; padding: 1px 3px 3px; } #gSel .uc b { font-size: 11px; } #gSel .uc small { font-size: 9px; } #gSel .ucs { margin: 2px 0 0; } }'; document.head.appendChild(sst);
     $('gNo').addEventListener('pointerdown', e => { e.stopPropagation(); cancelBuild(); });
     for (const t of BUILD_ORDER) {
       const c = document.createElement('div'); c.className = 'gCard'; c.dataset.t = t;
@@ -2148,10 +2176,10 @@ const GAME = window.GAME = (function () {
     const T = BT[b.type], hp = b.type === 'wall' ? WALLHP[lv - 1] : b.type === 'hall' ? 500 + 250 * (lv - 1) : Math.round(T.hp * Math.pow(1.25, lv - 1));
     const r = [['พลังชีวิต', hp]];
     if (b.type === 'tower') r.push(['ดาเมจ', Math.round(T.dmg * (1 + .05 * (G.day - 1)) * (1 + (lv - 1) * .5))], ['ระยะยิง', T.range + (lv - 1) * 5], ['ยิงต่อวิ', (1 / (T.rate / (1 + (lv - 1) * .25))).toFixed(1)]);
-    else if (b.type === 'hall') r.push(['หัวหน้าขว้างหอก', Math.round(T.dmg * (1 + .05 * (G.day - 1)) * (1 + (lv - 1) * .3))], ['ที่อยู่', 4 + 2 * (lv - 1)], ['หมอผีได้', [0, 1, 1, 2, 2][lv - 1] + (lv >= 3 ? ' ★★' : '')]);
+    else if (b.type === 'hall') r.push(['หัวหน้าขว้างหอก', Math.round(T.dmg * (1 + .05 * (G.day - 1)) * (1 + (lv - 1) * .3))], ['ที่อยู่', 4 + 2 * (lv - 1)], ['หมอผีได้', [0, 1, 1, 2, 2][lv - 1] + (lv >= 5 ? ' ★★★' : lv >= 3 ? ' ★★' : '')]);
     else if (b.type === 'hut') r.push(['ที่อยู่', 4 + 3 * (lv - 1) + ' คน']);
     else if (b.type === 'farm') r.push(['อาหาร/วิ', (T.food * (1 + (lv - 1) * .6)).toFixed(2)]);
-    else if (b.type === 'fort') r.push(['ทหารได้', 5 + (lv - 1) * 2 + ' คน'], ['ทหารที่ฝึก', lv >= 2 ? '★★ (+50%)' : '★']);
+    else if (b.type === 'fort') r.push(['ทหารได้', 5 + (lv - 1) * 2 + ' คน'], ['ทหารที่ฝึก', lv >= 3 ? '★★★ (+120%)' : lv >= 2 ? '★★ (+50%)' : '★']);
     else if (b.type === 'outpost') r.push(['ดินแดน', T.terr + (lv - 1) * 10]);
     return r;
   }
@@ -2164,8 +2192,8 @@ const GAME = window.GAME = (function () {
     hudEl.sel.style.display = 'block';
     if (b.site) { hudEl.selHtml = null; hudEl.sel.innerHTML = `<b>${BT[b.type].n}</b> กำลังสร้าง ${Math.round(b.prog * 100)}% · ชาวเผ่าที่ว่างจะมาช่วยสร้าง`; return; }
     const tr = b.type === 'fort' ? (() => { const n = G.sol.filter(s2 => s2.fort === b).length, room = fortCap(b) - n - (b.queue || 0);
-        return `<div class="st">นักรบ ${kindN('warrior', b)} · พราน ${kindN('hunter', b)} (${n}/${fortCap(b)})${b.queue ? ` · กำลังฝึก ${b.queue}` : ''}</div>` + (room > 0 ? `<div class="ucs">${(b.lv || 1) >= 2 ? card('gTr', 'warrior2', 'นักรบ ★★ +1', UNIT.warrior.cost) + card('gTrH', 'hunter2', 'นักธนู ★★ +1', UNIT.hunter.cost) : card('gTr', 'warrior', 'นักรบ ★ +1', UNIT.warrior.cost) + card('gTrH', 'hunter', 'พรานหน้าไม้ ★ +1', UNIT.hunter.cost)}</div>` + (room > 1 ? `<button id="gTrAll">นักรบเต็ม x${room}</button>` : '') : '<i>ป้อมเต็มแล้ว · อัปเกรดเพื่อรับเพิ่ม</i>'); })()
-      : b.type === 'hall' ? (() => { const n = kindN('shaman'), cap = shamanCap(), room = cap - n - (b.queue || 0); return `<div class="st">หมอผี ${n}/${cap}${b.queue ? ` · กำลังฝึก ${b.queue}` : ''}</div>` + (cap === 0 ? '<i>(ฝึกได้ตั้งแต่โถงขั้น 2)</i>' : room > 0 ? `<div class="ucs">${hallLv() >= 3 ? card('gTrS', 'shaman2', 'หมอผี ★★ +1', UNIT.shaman.cost) : card('gTrS', 'shaman', 'หมอผี ★ +1', UNIT.shaman.cost)}</div>` : ''); })() : '';
+        return `<div class="st">นักรบ ${kindN('warrior', b)} · พราน ${kindN('hunter', b)} (${n}/${fortCap(b)})${b.queue ? ` · กำลังฝึก ${b.queue}` : ''}</div>` + (room > 0 ? `<div class="ucs">${(() => { const t = tierFor(b, 'warrior'); return card('gTr', tplOf('warrior', t), `นักรบ ${STARS(t)} +1`, UNIT.warrior.cost) + card('gTrH', tplOf('hunter', t), `${unitName('hunter', t)} ${STARS(t)} +1`, UNIT.hunter.cost); })()}</div>` + (room > 1 ? `<button id="gTrAll">นักรบเต็ม x${room}</button>` : '') : '<i>ป้อมเต็มแล้ว · อัปเกรดเพื่อรับเพิ่ม</i>'); })()
+      : b.type === 'hall' ? (() => { const n = kindN('shaman'), cap = shamanCap(), room = cap - n - (b.queue || 0); return `<div class="st">หมอผี ${n}/${cap}${b.queue ? ` · กำลังฝึก ${b.queue}` : ''}</div>` + (cap === 0 ? '<i>(ฝึกได้ตั้งแต่โถงขั้น 2)</i>' : room > 0 ? `<div class="ucs">${(() => { const t = tierFor(b, 'shaman'); return card('gTrS', tplOf('shaman', t), `หมอผี ${STARS(t)} +1`, UNIT.shaman.cost); })()}</div>` : ''); })() : '';
     const same = b.type === 'wall' && !why ? G.buildings.filter(w => w.type === 'wall' && !w.site && (w.lv || 1) === l).length : 0;
     const name = b.type === 'wall' ? WALLN[l - 1] : BT[b.type].n, mx = upMax(b), now = statsOf(b, l), nx = why ? null : statsOf(b, l + 1);
     const rows = now.map(([k, v], i) => `<div class="row"><span>${k}</span><b>${k === 'พลังชีวิต' ? Math.round(b.hp) + '/' + b.max : v}</b>${nx && String(nx[i][1]) !== String(v) ? `<em>➜ ${nx[i][1]}</em>` : ''}</div>`).join('');

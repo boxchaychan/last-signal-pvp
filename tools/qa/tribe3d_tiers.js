@@ -27,8 +27,8 @@ const out = process.argv[2];
     log.push('villager moves: ' + await pg.evaluate(() => [...new Set(GAME.G.vill.map(v => v.cur))].join(',')));
     // lineup of all unit portraits
     const urls = await pg.evaluate(() => GAME.PEOPLE.portrait);
-    await pg.setContent(`<body style="margin:0;background:#2c2418;display:flex;gap:8px;padding:10px;font:800 14px sans-serif;color:#ffd27a">${['warrior', 'warrior2', 'hunter', 'hunter2', 'shaman', 'shaman2'].map(k => `<div style="text-align:center"><img src="${urls[k]}" style="width:192px;height:224px;background:radial-gradient(circle at 50% 35%,#5a7a9a,#22344a 75%);border-radius:14px"><div>${k}</div></div>`).join('')}</body>`);
-    await pg.setViewportSize({ width: 1240, height: 270 }); await pg.screenshot({ path: `${out}/tier_portraits.png` });
+    await pg.setContent(`<body style="margin:0;background:#2c2418;display:flex;flex-wrap:wrap;width:1240px;gap:8px;padding:10px;font:800 14px sans-serif;color:#ffd27a">${['warrior', 'warrior2', 'warrior3', 'hunter', 'hunter2', 'hunter3', 'shaman', 'shaman2', 'shaman3', 'man', 'woman', 'chief'].map(k => `<div style="text-align:center"><img src="${urls[k]}" style="width:144px;height:168px;background:radial-gradient(circle at 50% 35%,#5a7a9a,#22344a 75%);border-radius:14px"><div>${k}</div></div>`).join('')}</body>`);
+    await pg.setViewportSize({ width: 1260, height: 420 }); await pg.screenshot({ path: `${out}/tier_portraits.png` });
   } catch (e) { errs.push('TEST ' + e.message); }
   console.log(log.join('\n')); console.log('errors: ' + (errs.length ? '\n' + errs.slice(0, 8).join('\n') : 'none')); await b.close();
 })();
