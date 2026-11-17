@@ -37,12 +37,26 @@ const glc = document.getElementById('gl'), uic = document.getElementById('ui'), 
 const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const TONE = Q.get('tone') === '1'; if (TONE) { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = +(Q.get('exp') || 1.12); }   // film-like contrast (Tripo's viewer look); ?tone=0 = flat
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xa6d4e6); scene.fog = new THREE.Fog(0xa6d4e6, 34, 78);
 const camera = new THREE.PerspectiveCamera(36, 1, .1, 220);
-scene.add(new THREE.HemisphereLight(0xeaf5ff, 0x6c7a3a, .95));
-const sun = new THREE.DirectionalLight(0xfff0d4, 1.5); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+const HEMI = new THREE.HemisphereLight(0xeaf5ff, 0x6c7a3a, .62); scene.add(HEMI);   // less flat fill, a stronger sun + rim: more shape and contrast
+const sun = new THREE.DirectionalLight(0xfff0d4, 1.75); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -17, right: 17, top: 17, bottom: -17, near: 1, far: 60 }); sun.shadow.bias = -.0005; sun.shadow.normalBias = .03; scene.add(sun, sun.target);
-const rim = new THREE.DirectionalLight(0xcfe6ff, .5); rim.position.set(7, 7, -11); scene.add(rim);
+const rim = new THREE.DirectionalLight(0xcfe6ff, .85); rim.position.set(7, 7, -11); scene.add(rim);
+// image-based light for the PBR models (the huntress, monsters): a painted sky dome + a hot sun spot turned into an environment map, so her
+// gold trims, leather and skin get soft light and sheen from all around like in the Tripo viewer (Lambert ground / plants are not affected)
+if (Q.get('env') !== '0') {
+  const pm = new THREE.PMREMGenerator(renderer), es = new THREE.Scene(), g = new THREE.SphereGeometry(50, 48, 24), P0 = g.attributes.position, col = [], c = new THREE.Color();
+  for (let i = 0; i < P0.count; i++) { const y = P0.getY(i) / 50;
+    if (y > 0) c.setRGB(lerp(1.05, .35, Math.pow(y, .5)), lerp(1.0, .62, Math.pow(y, .5)), lerp(.92, 1.05, Math.pow(y, .5)));   // warm horizon -> blue top
+    else c.setRGB(.36, .40, .22).lerp(new THREE.Color(.62, .55, .40), Math.max(0, 1 + y * 3));   // grass below, warm earth near the horizon
+    col.push(c.r, c.g, c.b); }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); es.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const sunB = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, .93, .8).multiplyScalar(14) })); sunB.position.set(-24, 38, 26); es.add(sunB);
+  const fill = new THREE.Mesh(new THREE.PlaneGeometry(30, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color(.8, .9, 1).multiplyScalar(2.2), side: THREE.DoubleSide })); fill.position.set(30, 12, -24); fill.lookAt(0, 0, 0); es.add(fill);
+  scene.environment = pm.fromScene(es, .035).texture; pm.dispose();
+}
 
 // ---------- textures painted in code
 function canvasTex(w, h, draw, srgb = true) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); if (srgb) t.encoding = THREE.sRGBEncoding; return t; }
@@ -64,7 +78,7 @@ function grassTex() {
 }
 function dirtTex() {   // trodden earth: flat warm colour, soft patches, fine specks, a ragged grassy edge
   return canvasTex(512, 512, g => {
-    const R = rng(11); g.fillStyle = '#b29674'; g.fillRect(0, 0, 512, 512);
+    const R = rng(11); g.fillStyle = '#a2815a'; g.fillRect(0, 0, 512, 512);
     for (let i = 0; i < 60; i++) { const r = 30 + R() * 70, x = R() * 512, y = R() * 512, gr = g.createRadialGradient(x, y, 0, x, y, r); const c = R() < .5 ? '140,112,80' : '204,184,150'; gr.addColorStop(0, `rgba(${c},.22)`); gr.addColorStop(1, `rgba(${c},0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
     for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${R() < .5 ? '120,86,50' : '226,200,160'},${.18 + R() * .25})`; g.fillRect(R() * 512, R() * 512, 1.3, 1.3); }
     for (let i = 0; i < 90; i++) { const x = R() * 512, y = R() * 512, a = R() * 3, w = 1.6 + R() * 2.4; g.fillStyle = 'rgba(70,50,30,.35)'; g.beginPath(); g.ellipse(x + .8, y + .9, w, w * .7, a, 0, TAU); g.fill(); g.fillStyle = `hsl(${28 + R() * 14},${10 + R() * 12}%,${58 + R() * 14}%)`; g.beginPath(); g.ellipse(x, y, w, w * .7, a, 0, TAU); g.fill(); }
@@ -141,7 +155,8 @@ function rigTripo(gl, kscene, clips) {
     R[n] = rot; W.compose(J[n] ? new V3(...J[n]) : new V3(), rot.clone().multiply(kq[n]), ksc[n]);
     o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true);
   });
-  const src = sms[0].material, m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughness: .72, metalness: 0 });
+  const src = sms[0].material, rmM = src.roughnessMap || src.metalnessMap || null;   // metal / roughness map from the rig (G rough, B metal): only shines with the environment light
+  const m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughnessMap: rmM, metalnessMap: scene.environment ? rmM : null, roughness: rmM ? 1 : .72, metalness: rmM && scene.environment ? 1 : 0, envMapIntensity: +(Q.get('envi') || .55) });
   const skel = new THREE.Skeleton(ks.bones), meshes = {};
   for (const sm of sms) {
     const g = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
@@ -167,7 +182,7 @@ const LOWER = /^(root|hips|upperleg|lowerleg|foot|toes)/;
 const PULL = { Ranged_Bow_Draw: [.2, .4, 9, 9], Ranged_Bow_Draw_Up: [.2, .4, 9, 9], Ranged_Bow_Aiming_Idle: [-1, 0, 9, 9], Ranged_Bow_Release: [-1, 0, .2, .27], Ranged_Bow_Release_Up: [-1, 0, .2, .27] };   // [pull starts, full, lets go, straight] as clip fractions
 function pullAt(name, f) { const p = PULL[name]; if (!p) return 0; let v = p[0] < 0 ? 1 : clamp((f - p[0]) / (p[1] - p[0]), 0, 1); if (f >= p[2]) v *= 1 - clamp((f - p[2]) / (p[3] - p[2]), 0, 1); return v; }
 
-const P = { ready: false, pos: new V3(0, 0, 2.5), face: Math.PI, mode: 'load', hp: 120, max: 120, lv: 1, xp: 0, kills: 0, dmg: 22, shot: null, aimHold: 0, aimDir: new V3(0, 0, -1),
+const P = { ready: false, pos: new V3(0, 0, 2.5), face: .35, mode: 'load', hp: 120, max: 120, lv: 1, xp: 0, kills: 0, dmg: 22, shot: null, aimHold: 0, aimDir: new V3(0, 0, -1),
   cd: { atk: 0, dodge: 0, s1: 0, s2: 0 }, cdMax: { dodge: .6, s1: 7, s2: 4.5 }, inv: 0, hitT: 0, flash: 0, pose: 'Ranged_Bow_Idle', stats: { arrows: 0, hits: 0, dodges: 0, rains: 0, pierces: 0 } };
 let ACT = {}; const LY = { up: null, lo: null };
 function lay(layer, name, o = {}) {
@@ -296,7 +311,7 @@ function hurtHero(d) {
   if (P.hp <= 0) { P.hp = 0; P.mode = 'dead'; P.shot = null; both('Death_A', { once: true, fade: .1 }); after(2.8, respawn); return; }
   if (P.mode === 'free' && !P.shot) { P.hitT = .32; lay('up', 'Hit_A', { once: true, restart: true, fade: .05, ts: 1.6 }); }
 }
-function respawn() { P.hp = P.max; P.pos.set(0, 0, 2.5); P.mode = 'free'; P.inv = 1.6; both('Ranged_Bow_Idle', { fade: .2 }); ring(P.pos, 0x9fe8ff, .3, 3, .7); burst(new V3(P.pos.x, 1, P.pos.z), { n: 14, color: 0xbff0ff, up: 5, spd: 2, size: .35, life: .8, grav: -2 }); }
+function respawn() { P.hp = P.max; P.pos.set(0, 0, 2.5); P.face = .35; P.mode = 'free'; P.inv = 1.6; both('Ranged_Bow_Idle', { fade: .2 }); ring(P.pos, 0x9fe8ff, .3, 3, .7); burst(new V3(P.pos.x, 1, P.pos.z), { n: 14, color: 0xbff0ff, up: 5, spd: 2, size: .35, life: .8, grav: -2 }); }
 
 function fireArrow(dir, o = {}) {
   const big = !!o.big, g = makeArrow(big ? 2.4 : 1.15), from = STR.nock.clone(); if (!big) from.y = Math.max(.9, from.y);
@@ -478,13 +493,13 @@ function sfx(k, vol = 1, rate = 1) {
 }
 
 // ---------- camera
-const CAM = { zs: [.5, .64, .82, 1.05], zi: 1, z: .64, shake: 0, tgt: new V3(0, 0, 2.5) };
+const CAM = { zs: [.48, .62, .8, 1.02], zi: 1, z: .62, shake: 0, tgt: new V3(0, 0, 2.5) };
 function updCam(dt) {
   const pose = P.mode === 'pose';
   if (pose) { const f = 1 - Math.exp(-dt * 6); CAM.tgt.lerp(P.pos, f); camera.position.lerp(_a.set(P.pos.x - .9, 1.75, P.pos.z + 5.4), f); camera.lookAt(P.pos.x - .9, .95, P.pos.z); return; }
   CAM.z = lerp(CAM.z, CAM.zs[CAM.zi], 1 - Math.exp(-dt * 5)); CAM.tgt.lerp(P.pos, 1 - Math.exp(-dt * 7));
   const sx = (Math.random() - .5) * CAM.shake, sy = (Math.random() - .5) * CAM.shake; CAM.shake = Math.max(0, CAM.shake - dt * .8);
-  camera.position.set(CAM.tgt.x + sx, 8.4 * CAM.z + sy, CAM.tgt.z + 10.8 * CAM.z); camera.lookAt(CAM.tgt.x + sx, .9, CAM.tgt.z - .6);
+  camera.position.set(CAM.tgt.x + sx, 7.4 * CAM.z + sy, CAM.tgt.z + 11.2 * CAM.z); camera.lookAt(CAM.tgt.x + sx, 1, CAM.tgt.z - .8);   // ~33 deg: more of her face, less hood top
 }
 
 // ---------- move gallery (every move she has, on loop; drag to turn her)
