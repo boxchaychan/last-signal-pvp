@@ -53,4 +53,4 @@ async function bits(dir, items, file) {
   await io.write(`${out}/${file}`, doc); console.log(file, main.listChildren().map(n => n.getName()).join(','));
 }
 await bits(KK + 'rpg_tools_bits/gltf', ['axe', 'pickaxe', 'hammer', 'shovel', 'bucket_metal', 'torch'], 'tools.glb');
-await bits(KK + 'fantasy_weapons_bits/gltf', ['bow_A_withString', 'staff_A', 'staff_B', 'halberd', 'sword_E', 'shield_B', 'spear_A'], 'fweapons.glb');
+await bits(KK + 'fantasy_weapons_bits/gltf', ['bow_A_withString', 'staff_A', 'staff_B', 'halberd', 'sword_E', 'shield_B', 'spear_A', 'arrow_A'], 'fweapons.glb');

@@ -1230,14 +1230,35 @@ const GAME = window.GAME = (function () {
         for (let t = 0; t < I.count; t += 3) { let u = 0, v = 0, x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { const i = I.getX(t + k); u += uv.getX(i); v += uv.getY(i); x += p.getX(i); y += p.getY(i); z += p.getZ(i); }
           u /= 3; v /= 3; x /= 3; y /= 3; z /= 3; if (!(u > .125 && u < .25 && v < .25 && y < 1.53 && z > .25 && Math.abs(x) < .33)) keep.push(I.getX(t), I.getX(t + 1), I.getX(t + 2)); }
         g.setIndex(keep); h.geometry = g; };
+      // ★★★ archer with the Rogue's (female) head (owner "เอาที่แนะนำเลย"): it only uses the skin / hair / eyes / metal cells, which sit at the same place in the
+      // Ranger atlas, so it joins the Ranger merge with the Ranger texture; its skin indices are remapped by bone name (the two files order their joints differently)
+      const rogueHead = r => { const old = findN(r, 'Ranger_Head'), src = findN(H.Rogue.scene, 'Rogue_Head'); if (!old || !src) return shave(r);
+        const g = src.geometry.clone(), from = src.skeleton.bones.map(b => b.name), to = old.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, ix = j => Math.max(0, to.indexOf(from[j]));
+        for (let i = 0; i < si.count; i++) si.setXYZW(i, ix(si.getX(i)), ix(si.getY(i)), ix(si.getZ(i)), ix(si.getW(i)));
+        const m = new THREE.SkinnedMesh(g, old.material); m.name = 'Rogue_Head'; old.parent.add(m); m.bind(old.skeleton, src.bindMatrix.clone()); old.parent.remove(old); };
       // KayKit's Death_A keeps the bow standing up on the dead archer: in bow units' own copy the left hand slot turns the bow over to lie flat as they fall
-      const BOW_FALL = -Math.PI / 2, bowDie = CL => CL.map(c => { if (c.name !== 'Death_A') return c; const d = c.clone(), t = d.tracks.find(t => t.name === 'handslotl.quaternion'); if (!t) return d;
+      // + an arrow on the string (owner "เอาที่แนะนำเลย"): "ArrowNock" in the right hand slot, shown by its own visible track: all through the ready
+      // stance, from the nock (40 %) in Draw, in Release only before the shot (4 %) and again once the next arrow is nocked (50 %) (timings measured from the hands' distance)
+      const BOW_FALL = -Math.PI / 2, NOCK = { Ranged_Bow_Idle: [[0], [true]], Ranged_Bow_Draw: [[0, .4], [false, true]], Ranged_Bow_Release: [[0, .04, .5], [true, false, true]] };
+      const bowDie = CL => CL.map(c => {
+        if (NOCK[c.name]) { const d = c.clone(), [t, v] = NOCK[c.name]; d.tracks.push(new THREE.BooleanKeyframeTrack('ArrowNock.visible', t.map(f => f * c.duration), v)); return d; }
+        if (c.name !== 'Death_A') return c; const d = c.clone(), t = d.tracks.find(t => t.name === 'handslotl.quaternion'); if (!t) return d;
         const q = new THREE.Quaternion(), r = new THREE.Quaternion(), X = new V3(1, 0, 0); for (let i = 0; i < t.times.length; i++) { r.setFromAxisAngle(X, BOW_FALL * Math.min(1, Math.max(0, (t.times[i] - .15) / .45))); q.fromArray(t.values, i * 4).multiply(r).toArray(t.values, i * 4); } return d; });
+      const nockArrow = T => {   // KayKit arrow_A laid from the right hand slot toward the bow hand of the fully drawn pose (Release at 0 s), 1.35 x that distance long
+        const A = GEAR.arrow_A, rel = T.clips.find(c => c.name === 'Ranged_Bow_Release'); if (!A || !rel) return;
+        const o = THREE.SkeletonUtils.clone(T.root), mx = new THREE.AnimationMixer(o); mx.clipAction(rel).play(); mx.setTime(0); o.updateMatrixWorld(true);
+        const d = o.getObjectByName('handslotl').getWorldPosition(new V3()).applyMatrix4(o.getObjectByName('handslotr').matrixWorld.clone().invert());
+        const a = A.clone(); a.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(a), sz = bb.getSize(new V3()), ax = sz.x > sz.y && sz.x > sz.z ? 'x' : sz.y > sz.z ? 'y' : 'z';
+        const axis = new V3(); axis[ax] = ARROW_TIP; const len = sz[ax], k = d.length() * 1.35 / len, nockEnd = bb.getCenter(new V3()); nockEnd[ax] = ARROW_TIP > 0 ? bb.min[ax] : bb.max[ax];
+        const g = new THREE.Group(); g.name = 'ArrowNock'; g.visible = false; g.add(a); a.position.copy(nockEnd).multiplyScalar(-1);
+        g.quaternion.setFromUnitVectors(axis, d.clone().normalize()); g.scale.setScalar(k); a.traverse(m => { if (m.isMesh) m.castShadow = true; });
+        T.root.getObjectByName('handslotr').add(g); };
+      const ARROW_TIP = 1;   // which end of arrow_A's long axis is the head (+1 / -1)
       // ★★★ archer (owner 2026-11-17 "ผสมกัน"): the KayKit Ranger body wearing the hood and bow cut from the owner's Tripo huntress
       // (tools/blender/tripo_parts.py); ?archer=tripo = the whole Tripo huntress (tools/blender/tripo_rig.py)
       if (TW && /[?&]archer=tripo/.test(location.search)) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }
-      else if (HP) try { const T = hero('Ranger', [], mat('range_t'), [], shave); tripoParts(T, HP, H.Knight.scene, H.Ranger.scene, WEAP.bow_withString); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
-      for (const k of ['hunter2', 'hunter3']) if (tpl[k] && !tpl[k].clips) tpl[k].clips = bowDie(AN.animations);
+      else if (HP) try { const T = hero('Ranger', [], mat('range_t'), [], rogueHead); tripoParts(T, HP, H.Knight.scene, H.Rogue.scene, WEAP.bow_withString); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
+      for (const k of ['hunter2', 'hunter3']) if (tpl[k] && !tpl[k].clips) { tpl[k].clips = bowDie(AN.animations); try { nockArrow(tpl[k]); } catch (e) { console.warn('arrow', e.message); } }
       PEOPLE.clips = AN.animations; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
