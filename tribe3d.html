@@ -1156,10 +1156,10 @@ const GAME = window.GAME = (function () {
     try {
       const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), P = 'art/tribe3d/people/';
       const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
-      const [GL, WP, AN, GE, GM, TO, FW, TG, HG] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
+      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
         ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
         ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null),
-        ld.loadAsync(P + 'hero_model.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py
+        ld.loadAsync(P + 'hero_model.glb').catch(() => null), ld.loadAsync(P + 'warrior_f.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
       const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
       const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
@@ -1225,9 +1225,44 @@ const GAME = window.GAME = (function () {
       addGear(tpl.shaman3, [['HaloB', 'head', [0, 1.98, -0.66], [0, 0, 0], 0, 1.45], ['Orbit', 'root', [0, 1.35, 0], [0, 0, 0], 0, 1.15], ['staff_B', 'handslotr', [0, 0, 0], [0, 0, 0], 1, 1.25], ['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 2.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.45]]);
       PEOPLE.mats = [...tpl.man.mats, ...tpl.woman.mats];
       for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');   // anims.glb joins several files: the loader renamed their duplicate bones hips_1, hips_2...
+      if (TW) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }   // ★★★ archer = the owner's tribal huntress
       PEOPLE.clips = AN.animations; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
+  }
+  // A static model rigged by tools/blender/tripo_rig.py (her weights, bones named like KayKit's, her joints in the node extras) is put on a KayKit
+  // skeleton: every bone sits on her joint, turned from its KayKit rest by the rotation that takes the KayKit bone direction to hers (so her
+  // A-pose arms "unbend" to KayKit's T-pose inside the bind), then the KayKit clips play as they are, minus the bone moves / scales (her
+  // bones keep her lengths) and with the hips move scaled to her size.
+  function rigTripo(gl, kscene, clips) {
+    let J = null, sm = null; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh && !sm) sm = o; });
+    const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
+    r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
+    const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new V3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new V3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
+    const kkHips = bone.hips.position.clone(), k = J.hips[1] / kw.hips.y;
+    const DIR = { hips: 'spine', spine: 'chest', chest: 'head', upperarml: 'lowerarml', lowerarml: 'wristl', wristl: 'handl', handl: 'handslotl', upperarmr: 'lowerarmr', lowerarmr: 'wristr', wristr: 'handr', handr: 'handslotr', upperlegl: 'lowerlegl', lowerlegl: 'footl', footl: 'toesl', upperlegr: 'lowerlegr', lowerlegr: 'footr', footr: 'toesr' };
+    const R = {}, inv = new THREE.Matrix4(), W = new THREE.Matrix4();
+    r.traverse(o => {
+      if (!o.isBone) return; const n = o.name, pn = o.parent && o.parent.isBone ? o.parent.name : null, rot = new THREE.Quaternion();
+      if (DIR[n] && J[n] && J[DIR[n]]) rot.setFromUnitVectors(kw[DIR[n]].clone().sub(kw[n]).normalize(), new V3(...J[DIR[n]]).sub(new V3(...J[n])).normalize());
+      else if (pn && n !== 'head') rot.copy(R[pn]);
+      R[n] = rot;
+      W.compose(J[n] ? new V3(...J[n]) : new V3(), rot.clone().multiply(kq[n]), ksc[n]);
+      o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true);
+    });
+    const geo = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = geo.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
+    for (let i = 0; i < si.count; i++) si.setXYZW(i, map(si.getX(i)), map(si.getY(i)), map(si.getZ(i)), map(si.getW(i)));
+    const src = sm.material; if (src.map) { src.map.encoding = THREE.LinearEncoding; src.map.userData.unit = true; }
+    const m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughness: .7, metalness: 0 });
+    const mesh = new THREE.SkinnedMesh(geo, m); mesh.castShadow = true; mesh.frustumCulled = false; r.add(mesh); r.updateMatrixWorld(true);
+    mesh.bind(new THREE.Skeleton(ks.bones), new THREE.Matrix4());
+    const herHips = bone.hips.position.clone();
+    const mine = clips.map(c => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(t => !/\.scale$/.test(t.name) && (!/\.position$/.test(t.name) || t.name === 'hips.position')).map(t => {
+      if (t.name !== 'hips.position') return t; const v = t.values.slice();
+      for (let i = 0; i < v.length; i += 3) { v[i] = herHips.x + (v[i] - kkHips.x) * k; v[i + 1] = herHips.y + (v[i + 1] - kkHips.y) * k; v[i + 2] = herHips.z + (v[i + 2] - kkHips.z) * k; }
+      return new THREE.VectorKeyframeTrack(t.name, t.times, v);
+    })));
+    geo.computeBoundingBox(); return { root: r, h: (geo.boundingBox.max.y - geo.boundingBox.min.y) * .9, mesh, mats: [m], clips: mine };
   }
   function makePortraits() {   // a pretty picture of each unit for the training cards: smooth, anti-aliased, soft light + rim light
     const W = 96, H = 112, SS = 2, out = {};
@@ -1239,7 +1274,7 @@ const GAME = window.GAME = (function () {
     for (const k of Object.keys(pose)) {
       if (!PEOPLE.tpl[k]) continue;
       const p = newPerson(k, 3, 0); p.root.rotation.y = -.45; sc.add(p.root);
-      const c = PEOPLE.clips.find(c => c.name === pose[k][0]) || PEOPLE.clips.find(c => c.name === 'Idle'); if (c) { p.mixer.clipAction(c).play(); p.mixer.update(c.duration * pose[k][1]); }
+      const CL = PEOPLE.tpl[k].clips || PEOPLE.clips, c = CL.find(c => c.name === pose[k][0]) || CL.find(c => c.name === 'Idle'); if (c) { p.mixer.clipAction(c).play(); p.mixer.update(c.duration * pose[k][1]); }
       p.mesh.material = p.mesh.material.clone(); if (p.mesh.material.map) { const t = p.mesh.material.map.clone(); t.magFilter = THREE.LinearFilter; t.needsUpdate = true; p.mesh.material.map = t; }
       renderer.setRenderTarget(rt2); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam2); renderer.readRenderTargetPixels(rt2, 0, 0, W * SS, H * SS, px);
       const big = document.createElement('canvas'); big.width = W * SS; big.height = H * SS; const bx = big.getContext('2d'), id = bx.createImageData(W * SS, H * SS);
@@ -1254,7 +1289,7 @@ const GAME = window.GAME = (function () {
     const T = PEOPLE.tpl[kind], root = THREE.SkeletonUtils.clone(T.root); root.scale.setScalar(h / T.h);
     let mesh = null; root.traverse(o => { if (o.isSkinnedMesh) mesh = o; });
     if (mesh) mesh.material = T.mats[(mi == null ? Math.random() * T.mats.length : mi) | 0];
-    const mixer = new THREE.AnimationMixer(root), acts = {}; for (const c of PEOPLE.clips) acts[c.name] = mixer.clipAction(c);
+    const mixer = new THREE.AnimationMixer(root), acts = {}; for (const c of T.clips || PEOPLE.clips) acts[c.name] = mixer.clipAction(c);
     return { root, mixer, acts, mesh };
   }
   function personize(v) {   // swap a villager's old Blender poses for an animated person
