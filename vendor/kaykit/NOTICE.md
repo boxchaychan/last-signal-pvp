@@ -25,3 +25,8 @@ textures; Rig_Medium, no moves inside: the moves come from the Character Animati
 glTF kept in `art/incoming/kaykit/rpg_tools_bits/gltf/` and `art/incoming/kaykit/fantasy_weapons_bits/gltf/` (+ `contents.png`); each pack uses
 its own texture atlas. tribe3d uses `art/tribe3d/people/tools.glb` (axe, pickaxe, hammer, shovel: villagers' tools) and `fweapons.glb`
 (ornate bow / staff for ★★★ units), built by `tools/art/kaykit2_build.mjs`. Licences `License_rpg_tools_bits.txt`, `License_fantasy_weapons_bits.txt`.
+
+# KayKit : Character Pack Skeletons 1.0 (CC0) — from github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0 (owner sent the org link 2026-11-17)
+Kept in `art/incoming/kaykit/skeletons_1.0/`: `characters/` (Skeleton_Warrior / Mage / Rogue / Minion .glb, each with 95 moves incl. Spawn_Ground_Skeletons,
+Death_C_Skeletons = falls apart into bones, Death_C_Skeletons_Resurrect), `assets/` (blade, axe, staff, crossbow, shields, arrows, quiver; glTF), `LICENSE.txt`.
+Same Rig_Medium bone names as our people (+ IK helper bones). Not in a game yet. Preview: `art/incoming/kaykit/skeletons_preview.mp4` (not in git).
