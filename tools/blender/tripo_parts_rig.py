@@ -14,7 +14,7 @@ SRC, OUT = sys.argv[-2], sys.argv[-1]
 SC, VOXEL = 10, .06
 # the "tribal female warrior" split on 2026-11-17 (game coords: y up, she looks at +z, her left hand +x, 0.97 tall)
 ROLE = {0: 'head', 1: 'body', 2: 'bow', 3: 'legs', 4: 'arm_r', 5: 'foot_l', 6: 'cape', 7: 'string', 8: 'arm_l', 9: 'foot_r'}
-FACES = {0: 9000, 1: 7000, 2: 2400, 3: 3000, 4: 1400, 5: 700, 6: 1000, 7: 300, 8: 1400, 9: 700}
+FACES = {0: 17000, 1: 12000, 2: 4000, 3: 5000, 4: 2400, 5: 1200, 6: 2000, 7: 600, 8: 2300, 9: 1200}   # ~48k: one hero can afford the detail (was 27k: spikes and folds went soft)
 BONESET = {   # heat-weighted parts: the only bones that may move them
     'body': ['hips', 'spine', 'chest', 'upperlegl', 'upperlegr'],
     'cape': ['hips', 'spine', 'chest'],
@@ -54,13 +54,14 @@ def only(o):
 
 # ---- textures of each part (before anything renames them)
 def part_images(o):
-    base = norm = None
+    base = norm = rm = None
     for n in o.active_material.node_tree.nodes:
         if n.type == 'TEX_IMAGE' and n.image:
             nm = n.image.name.lower()
             if 'basecolor' in nm: base = n.image
             elif 'normal' in nm: norm = n.image
-    return base, norm
+            elif '_rm' in nm: rm = n.image   # glTF metal-roughness: G roughness, B metal (the gold trims shine with an environment light)
+    return base, norm, rm
 IMG = {n: part_images(o) for n, o in parts.items()}
 
 # ---- geometry: x10, join seams, cap the cut holes, decimate
@@ -165,14 +166,15 @@ def tile(img, size, half=False):
 def build_atlas(which, half):
     s = 2 if half else 1; A = np.zeros((AH // s, AW // s, 4), np.float32); A[..., 3] = 1
     if which == 1: A[..., 0:3] = (.5, .5, 1)   # flat normal where nothing is
+    if which == 2: A[..., 0:3] = (1, .65, 0)   # rough, not metal
     for n, (x0, y0, sz) in SLOTS.items():
         img = IMG[n][which]
         if img is None: continue
         t = tile(img, sz, half); A[y0 // s:y0 // s + t.shape[0], x0 // s:x0 // s + t.shape[1]] = t
-    im = bpy.data.images.new('atlas_' + ('normal' if which else 'base'), AW // s, AH // s, alpha=False)
+    im = bpy.data.images.new('atlas_' + ('base', 'normal', 'rm')[which], AW // s, AH // s, alpha=False)
     im.colorspace_settings.name = 'Non-Color' if which else 'sRGB'; im.pixels.foreach_set(A.ravel()); im.update(); im.pack()
     print('atlas', im.name, im.size[:], 'mean', A.reshape(-1, 4).mean(0).round(3)); return im
-BASE, NORM = build_atlas(0, False), build_atlas(1, True)
+BASE, NORM, RMI = build_atlas(0, False), build_atlas(1, True), build_atlas(2, True)
 for n, o in parts.items():
     x0, y0, sz = SLOTS[n]; uv = o.data.uv_layers.active.data
     for l in uv:
@@ -181,7 +183,8 @@ for n, o in parts.items():
 mat = bpy.data.materials.new('huntress'); mat.use_nodes = True; nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
 tb = nt.nodes.new('ShaderNodeTexImage'); tb.image = BASE; nt.links.new(tb.outputs['Color'], bsdf.inputs['Base Color'])
 tn = nt.nodes.new('ShaderNodeTexImage'); tn.image = NORM; nm_ = nt.nodes.new('ShaderNodeNormalMap'); nt.links.new(tn.outputs['Color'], nm_.inputs['Color']); nt.links.new(nm_.outputs['Normal'], bsdf.inputs['Normal'])
-bsdf.inputs['Metallic'].default_value = 0; bsdf.inputs['Roughness'].default_value = .65
+tr = nt.nodes.new('ShaderNodeTexImage'); tr.image = RMI; sp = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(tr.outputs['Color'], sp.inputs['Color'])
+nt.links.new(sp.outputs['Green'], bsdf.inputs['Roughness']); nt.links.new(sp.outputs['Blue'], bsdf.inputs['Metallic'])
 for o in parts.values(): o.data.materials.clear(); o.data.materials.append(mat)
 
 # ---- join: "body" = every part but the bow, "bow", "string" (the game can pull the string to the hand while she draws); all skinned on the rig
