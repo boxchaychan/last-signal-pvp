@@ -94,7 +94,7 @@ HC, HR = Vector((0, 1.665, 0)), (.44, .43, .41)
 def jaw(q):   # narrower, rounder lower face (chibi cheeks to a soft chin)
     t = max(0, (HC.y - q.y) / HR[1])
     return Vector((q.x * (1 - .2 * t * t), q.y, q.z * (1 - .08 * t) + .02 * t))
-P = Part('head|skull', smooth=True); blob(P, HC, HR, SKIN, p=2.3, segs=(28, 18), squash=jaw)
+P = Part('head|skull', smooth=True); blob(P, HC, HR, SKIN, p=2.3, segs=(36, 24), squash=jaw)
 bvh = BVHTree.FromBMesh(P.bm)   # in Blender space
 def face_pt(x, y, off):   # point on the front of the skull at game (x, y), pushed out along +z
     loc, n, i, d = bvh.ray_cast(G(x, y, 0), G(0, 0, 1))
@@ -137,31 +137,36 @@ HHC, HHR = Vector((0, 1.7, -.03)), (.52, .49, .52)   # a full mass, well outside
 def hairline(q):
     t = (q.z - HHC.z) / HHR[2]
     return q.y > 1.55 + .3 * max(t, 0) - .25 * max(-t, 0)
-P = Part('head|hair', smooth=True); blob(P, HHC, HHR, HAIR, segs=(28, 18), keep=hairline)
+P = Part('head|hair', smooth=True); blob(P, HHC, HHR, HAIR, segs=(36, 22), keep=hairline)
 def surf(d):   # point on the hair shell in direction d (game)
     d = Vector(d).normalized(); t = 1 / math.sqrt((d.x / HHR[0]) ** 2 + (d.y / HHR[1]) ** 2 + (d.z / HHR[2]) ** 2); return HHC + d * t, d
 CLUMPS = [   # aim (root on the shell), grow, length, width, thickness, curl, colour: few BIG soft clumps like the picture
     # bangs: wide clumps from the top front, hanging over the headband down to the brows; the middle-right one longest
-    ((-.27, .75, .62), (-.12, -.92, .38), .44, .16, .07, (-.05, -.15, .02), HAIR), ((-.03, .8, .6), (-.05, -.92, .4), .52, .17, .075, (0, -.15, .02), HAIR_L),
-    ((.2, .78, .6), (.06, -.92, .38), .44, .16, .07, (.05, -.15, .02), HAIR), ((.42, .65, .6), (.22, -.93, .3), .38, .15, .065, (.05, -.15, 0), HAIR_L),
-    ((-.45, .65, .6), (-.22, -.93, .3), .38, .15, .065, (-.05, -.15, 0), HAIR),
+    ((-.27, .75, .62), (-.12, -.92, .38), .46, .2, .085, (-.05, -.15, .02), HAIR), ((-.03, .8, .6), (-.05, -.92, .4), .54, .22, .09, (0, -.15, .02), HAIR_L),
+    ((.2, .78, .6), (.06, -.92, .38), .46, .2, .085, (.05, -.15, .02), HAIR), ((.42, .65, .6), (.22, -.93, .3), .4, .18, .075, (.05, -.15, 0), HAIR_L),
+    ((-.45, .65, .6), (-.22, -.93, .3), .4, .18, .075, (-.05, -.15, 0), HAIR),
     ((-.95, .15, .32), (-.2, -1, .1), .3, .11, .055, (0, -.1, .1), HAIR_D), ((.95, .15, .32), (.2, -1, .1), .3, .11, .055, (0, -.1, .1), HAIR_D),   # locks before the ears
-    # crown: tufts sweeping up and back, overlapping into one mass
-    ((.08, 1, .2), (.45, .85, -.2), .28, .24, .11, (.2, -.25, -.2), HAIR_L), ((-.25, 1, .1), (-.4, .8, -.4), .28, .24, .11, (-.1, -.3, -.25), HAIR),
-    ((.32, .95, -.05), (.6, .65, -.45), .28, .22, .1, (.1, -.3, -.2), HAIR), ((0, .9, -.35), (0, .5, -.85), .32, .24, .11, (0, -.35, -.1), HAIR),
-    ((-.08, 1, -.05), (.05, .75, -.65), .26, .22, .1, (0, -.3, -.2), HAIR_L),
-    # sides: clumps hanging out and DOWN (not a mane), layered
-    ((-.9, .6, .1), (-.85, -.25, -.2), .36, .2, .095, (-.05, -.2, 0), HAIR), ((-.85, .3, -.3), (-.8, -.45, -.4), .34, .2, .095, (0, -.2, 0), HAIR_D),
-    ((.9, .6, .05), (.85, -.25, -.25), .34, .2, .095, (.05, -.2, 0), HAIR), ((.85, .3, -.35), (.8, -.45, -.45), .32, .19, .09, (0, -.2, 0), HAIR_D),
-    ((-.75, .85, -.2), (-.9, .2, -.5), .34, .2, .095, (0, -.3, 0), HAIR), ((.75, .85, -.2), (.9, .2, -.5), .32, .2, .095, (0, -.3, 0), HAIR),
-    # back
-    ((-.35, .3, -.9), (-.3, -.55, -.75), .32, .22, .1, (0, -.2, 0), HAIR_D), ((.35, .3, -.9), (.3, -.55, -.75), .3, .22, .1, (0, -.2, 0), HAIR_D), ((0, 0, -1), (0, -.7, -.7), .28, .22, .1, (0, -.1, 0), HAIR_D),
+    # crown: sharp spikes sweeping up and BACK (one big tuft up and to his left like the picture)
+    ((-.1, 1, .3), (.25, 1, -.25), .46, .2, .09, (.25, -.2, -.35), HAIR_L), ((-.35, .95, .15), (-.35, .9, -.5), .42, .19, .085, (-.1, -.3, -.3), HAIR),
+    ((.35, .95, .1), (.4, .8, -.55), .4, .19, .085, (.1, -.3, -.3), HAIR), ((0, .95, -.15), (0, .85, -.7), .46, .2, .09, (0, -.35, -.25), HAIR_L),
+    ((-.25, .9, -.35), (-.35, .6, -.85), .42, .19, .085, (0, -.35, -.1), HAIR), ((.25, .9, -.35), (.35, .6, -.85), .42, .19, .085, (0, -.35, -.1), HAIR),
+    # sides: out, back and down
+    ((-.9, .6, .15), (-.5, .3, -.8), .42, .18, .08, (-.05, -.35, -.1), HAIR), ((.9, .6, .1), (.5, .3, -.85), .4, .18, .08, (.05, -.35, -.1), HAIR),
+    ((-.9, .25, -.15), (-.5, -.2, -.85), .4, .18, .08, (0, -.3, 0), HAIR_D), ((.9, .25, -.2), (.5, -.2, -.85), .38, .18, .08, (0, -.3, 0), HAIR_D),
+    ((-.7, .6, -.6), (-.45, .3, -1), .42, .18, .08, (0, -.3, 0), HAIR), ((.7, .6, -.6), (.45, .3, -1), .4, .18, .08, (0, -.3, 0), HAIR),
+    # back: down and back
+    ((-.4, .2, -.9), (-.3, -.4, -.9), .36, .18, .08, (0, -.25, .05), HAIR_D), ((.4, .2, -.9), (.3, -.4, -.9), .34, .18, .08, (0, -.25, .05), HAIR_D),
+    ((0, .35, -1), (0, -.15, -1), .4, .2, .09, (0, -.3, 0), HAIR), ((0, -.15, -1), (0, -.7, -.7), .3, .2, .09, (0, -.1, .05), HAIR_D),
+    ((-.75, -.1, -.6), (-.4, -.6, -.75), .3, .16, .075, (0, -.1, 0), HAIR_D), ((.75, -.1, -.6), (.4, -.6, -.75), .3, .16, .075, (0, -.1, 0), HAIR_D),
 ]
 for aim, grow, L, w, t, curl, col in CLUMPS:
     p0, n = surf(aim); g = Vector(grow).normalized(); cv = Vector(curl)
     side = g.cross(n); side = side.normalized() if side.length > .15 else g.cross(Y).normalized()
-    pts = [p0 - n * .07, p0 + g * L * .22, p0 + g * L * .5 + cv * L * .1, p0 + g * L * .78 + cv * L * .25, p0 + g * L + cv * L * .42]
-    tube(P, pts, [(w * .8, t * .8), (w, t), (w * .85, t * .85), (w * .5, t * .55), (.006, .006)], col, sides=8, side=side)
+    # a smooth leaf: thick near the root, a long taper, the tip hooked by the curl (quadratic) and sharp
+    ks = (0, .12, .28, .46, .64, .82, 1)
+    pts = [p0 - n * .07] + [p0 + g * L * k + cv * L * .45 * k * k for k in ks[1:]]
+    prof = (.85, 1, .92, .74, .52, .28, .02)
+    tube(P, pts, [(w * f, t * min(1, f * 1.15)) for f in prof], col, sides=10, side=side)
 P.done()
 # headband round the hair line + knot and tails at the back
 P = Part('head|band', smooth=True); YB = 1.77; N = 28; ring = []
@@ -185,8 +190,8 @@ for yc, rx, rz, r, col, tilt in ((1.2, .27, .25, .09, RED, .05), (1.265, .245, .
     tube(P, pts, [r] * len(pts), col, sides=8)
 blob(P, (.2, 1.2, -.14), (.1, .09, .09), RED, segs=(10, 8))   # the knot behind his left shoulder, where the tails start
 for (x0, y0, z0), L, h, col in (((.16, 1.2, -.18), .8, .14, RED), ((.12, 1.12, -.2), .62, .12, RED_D)):   # tails blown back over his left shoulder, sagging
-    pts = [Vector((x0, y0, z0)), Vector((x0 + .22 * L, y0 - .1 * L, z0 - .22 * L)), Vector((x0 + .45 * L, y0 - .3 * L, z0 - .3 * L)), Vector((x0 + .64 * L, y0 - .52 * L, z0 - .28 * L)), Vector((x0 + .78 * L, y0 - .72 * L, z0 - .22 * L))]
-    ribbon(P, pts, [h * .75, h, h * 1.15, h * 1.15, h * 1.05], Vector((.55, .55, .3)), .035, col, fork=.13)
+    pts = [Vector((x0 + .8 * L * u * (1.1 - .3 * u), y0 - .75 * L * u * u - .06 * L * u, z0 - .32 * L * math.sin(u * 2.2) + .05 * math.sin(u * 9))) for u in [k / 8 for k in range(9)]]   # a soft wave along it
+    ribbon(P, pts, [h * (.75 + .4 * min(1, k / 4)) for k in range(9)], Vector((.55, .55, .3)), .035, col, fork=.13)
 P.done()
 
 # ================= BODY =================
@@ -194,7 +199,8 @@ P = Part('chest|torso', smooth=True)
 blob(P, (0, 1.0, 0), (.3, .25, .215), PURP, p=3.2, segs=(18, 12), squash=lambda q: Vector((q.x * (1 + .06 * (q.y - .9) / .3), q.y, q.z)))
 fz = lambda y: .214   # front surface of the torso (flat-ish rounded box)
 slab(P, [(-.1, .78), (.1, .78), (.11, 1.1), (-.11, 1.1)], (0, 0, .205), X, Y, Z, .03, PURP_L)   # lighter front panel
-slab(P, [(-.17, 1.2), (-.07, 1.2), (0, 1.12), (.07, 1.2), (.17, 1.2), (.09, 1.1), (0, 1.0), (-.09, 1.1)], (0, 0, .225), X, Y, Z, .035, GOLD)   # gold chevron emblem
+slab(P, [(-.21, 1.11), (-.13, 1.13), (-.05, 1.07), (0, 1.12), (.05, 1.07), (.13, 1.13), (.21, 1.11), (.1, 1.02), (0, .92), (-.1, 1.02)], (0, 0, .224), X, Y, Z, .035, GOLD)   # winged gold chevron
+slab(P, [(0, 1.06), (.035, 1.02), (0, .98), (-.035, 1.02)], (0, 0, .244), X, Y, Z, .015, GOLD_D)
 P.done()
 P = Part('spine|waist', smooth=True)
 blob(P, (0, .7, 0), (.27, .12, .2), PURP, p=3, segs=(16, 10))
@@ -216,13 +222,16 @@ blob(P, (.27, .6, .15), (.014, .014, .01), GOLD, segs=(6, 4))
 P.done()
 
 for sx, s in ((1, 'l'), (-1, 'r')):
-    # shoulder pad (two layered steel plates, gold rims), pinned to the upper arm
+    # shoulder pad: three layered steel plates (flat lids, gold rims, a gold ridge on the top one), pinned to the upper arm and tilted
+    # in a little, so the idle arm (about 50 deg down) carries them over the shoulder like the picture
     P = Part(f'upperarm{s}|pad')
-    blob(P, (sx * .3, 1.17, 0), (.2, .13, .19), STEEL, segs=(8, 5), keep=lambda q: q.y > 1.12)
-    tube(P, [Vector((sx * .3 + math.sin(k / 12 * 6.283) * .2, 1.125, math.cos(k / 12 * 6.283) * .19)) for k in range(13)], [.03] * 13, GOLD, sides=5)
-    blob(P, (sx * .4, 1.1, 0), (.15, .1, .165), STEEL_D, segs=(8, 5), keep=lambda q: q.y > 1.05)
-    tube(P, [Vector((sx * .4 + math.sin(k / 12 * 6.283) * .15, 1.055, math.cos(k / 12 * 6.283) * .165)) for k in range(13)], [.025] * 13, GOLD, sides=5)
-    P.done()
+    for i, (dx, dy, rx, ry, rz, col) in enumerate(((0, .03, .21, .1, .2, STEEL), (.075, -.05, .17, .08, .17, STEEL_D), (.13, -.12, .13, .065, .14, STEEL))):
+        c = Vector((sx * (.3 + dx), 1.15 + dy, 0))
+        blob(P, c, (rx, ry, rz), col, segs=(14, 8), keep=lambda q, c=c: q.y > c.y - .005)
+        tube(P, [c + Vector((math.sin(k / 16 * 6.283) * rx, 0, math.cos(k / 16 * 6.283) * rz)) for k in range(17)], [.024 - i * .003] * 17, GOLD, sides=6)
+        if i == 0: tube(P, [c + Vector((0, math.sin(a2) * ry * 1.02, math.cos(a2) * rz * 1.02)) for a2 in [k / 10 * math.pi for k in range(1, 10)]], [.02] * 9, GOLD, sides=6)
+    P.done(); ob = bpy.data.objects[f'upperarm{s}|pad']; piv = G(.21 * sx, 1.11, 0)
+    ob.data.transform(Matrix.Translation(piv) @ Matrix.Rotation(sx * .28, 4, Vector((0, -1, 0))) @ Matrix.Translation(-piv))
     P = Part(f'upperarm{s}|sleeve', smooth=True)
     blob(P, (sx * .25, 1.11, 0), (.1, .1, .1), PURP_D, segs=(10, 8)); tube(P, [(sx * .24, 1.11, 0), (sx * .47, 1.11, 0)], [.092, .086], PURP_D, sides=10); P.done()
     P = Part(f'lowerarm{s}|gauntlet', smooth=True)
@@ -266,5 +275,16 @@ P.done()
 HS = 1.08   # the picture's head is a touch bigger than the KayKit people's
 for ob in bpy.data.objects:
     if ob.name.startswith('head|'): ob.data.transform(Matrix.Translation(G(0, 1.24, 0)) @ Matrix.Scale(HS, 4) @ Matrix.Translation(-G(0, 1.24, 0)))
-bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', export_apply=True)
+# soft shading: ambient occlusion baked into vertex colours (Cycles), so hair roots, the neck under the chin, under the scarf / pads / belt
+# and between the clumps go darker; the game multiplies each part's colour by it (mergePerson)
+sc = bpy.context.scene; sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 96
+w = bpy.data.worlds.new('w'); sc.world = w; w.light_settings.distance = .32
+sc.render.bake.target = 'VERTEX_COLORS'
+body = [ob for ob in bpy.data.objects if ob.type == 'MESH' and '|' in ob.name]
+for ob in bpy.data.objects: ob.select_set(False)
+for ob in body:
+    ca = ob.data.color_attributes.new('AO', 'FLOAT_COLOR', 'POINT'); ob.data.color_attributes.active_color = ca; ob.select_set(True)
+bpy.context.view_layer.objects.active = body[0]
+bpy.ops.object.bake(type='AO')
+bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', export_apply=True, export_vertex_color='ACTIVE')
 print('wrote', OUT, len(bpy.data.objects), 'parts')
