@@ -249,6 +249,11 @@ function pickKind() { let r = Math.random(); for (const [k, D] of Object.entries
 const NUMS = [], ARROWS = [];
 function num(p, text, color, big) { NUMS.push({ p: p.clone(), text: String(text), color, big: !!big, t: 0, vx: rnd(-.4, .4) }); }
 function targets() { return MON.filter(m => !m.dead && m.born > .3).concat(DUM); }
+function pickAt(x, y) {   // the enemy under the cursor: nearest on screen to any point of its body (feet to head)
+  let best = null, bd = 34 * S;
+  for (const e of targets()) for (const f of [.15, .5, .85]) { const [sx, sy, ok] = toScreen(_b.set(e.pos.x, e.top * f, e.pos.z)); if (!ok) continue; const d = Math.hypot(sx - x, sy - y); if (d < bd) { bd = d; best = e; } }
+  return best;
+}
 function nearest(range, from = P.pos) {
   let best = null, bd = range; for (const m of MON) { if (m.dead || m.born < .3) continue; const d = Math.hypot(m.pos.x - from.x, m.pos.z - from.z); if (d < bd) { bd = d; best = m; } }
   if (best) return best; bd = range; for (const d0 of DUM) { const d = Math.hypot(d0.pos.x - from.x, d0.pos.z - from.z); if (d < bd) { bd = d; best = d0; } } return best;
@@ -320,14 +325,14 @@ function updArrows(dt) {
 const ATK = { draw: .3, rel: .24 };
 function busy() { return P.mode !== 'free'; }
 function aimPoint() {   // where the basic attack goes: the mouse (PC) / nearest enemy (phone button, auto) / straight ahead
-  if (IN.mouse.held && IN.mouse.has) return { p: IN.mouse.g.clone() };
+  if (IN.mouse.held && IN.mouse.shoot) { const e = IN.mouse.tgt; if (e && !e.dead) return { p: e.pos.clone(), e }; return { p: IN.mouse.g.clone() }; }
   if (IN.atkHeld || IN.keyAtk || AUTO.on) { const e = nearest(13); if (e) return { p: e.pos.clone(), e }; if (IN.atkHeld || IN.keyAtk) return { p: P.pos.clone().add(new V3(Math.sin(P.face), 0, Math.cos(P.face)).multiplyScalar(8)) }; }
   return null;
 }
 function updShot(dt) {
   const s = P.shot;
   if (!s) { if (busy() || P.hitT > 0) return; const a = aimPoint(); if (a) { P.shot = { ph: 'draw', t: 0, p: a.p, e: a.e }; lay('up', 'Ranged_Bow_Draw', { fade: .08, ts: .6 / ATK.draw }); } return; }
-  s.t += dt; if (s.e && !s.e.dead) s.p.copy(s.e.pos); else if (IN.mouse.held && IN.mouse.has) s.p.copy(IN.mouse.g);
+  s.t += dt; if (s.e && !s.e.dead) s.p.copy(s.e.pos); else if (IN.mouse.held && IN.mouse.shoot) s.p.copy(IN.mouse.g);
   _d.set(s.p.x - P.pos.x, 0, s.p.z - P.pos.z); if (_d.lengthSq() > .01) P.aimDir.copy(_d.normalize()); P.aimHold = .45;
   if (s.ph === 'draw' && s.t >= ATK.draw) { fireArrow(P.aimDir); s.ph = 'rel'; s.t = 0; lay('up', 'Ranged_Bow_Release', { fade: .06, at: .2 * 1.33, ts: 1.6 }); }
   else if (s.ph === 'rel' && s.t >= ATK.rel) P.shot = null;
@@ -373,7 +378,8 @@ function castPierce(t) {   // ธนูทะลวง: a charged arrow that goe
 }
 
 // ---------- input: joystick (left half), buttons (right), keyboard + mouse on PC
-const IN = { keys: {}, mv: new V3(), stick: null, atkId: null, atkHeld: false, keyAtk: false, aim: null, rot: null, touchSeen: false, mouse: { x: 0, y: 0, has: false, held: false, g: new V3() } };
+const IN = { keys: {}, mv: new V3(), stick: null, atkId: null, atkHeld: false, keyAtk: false, aim: null, rot: null, touchSeen: !!(window.matchMedia && matchMedia('(pointer: coarse)').matches),
+  mouse: { x: 0, y: 0, has: false, held: false, shoot: false, tgt: null, g: new V3() }, goto: null };
 const AUTO = { on: Q.get('auto') === '1' }, SND = { on: Q.get('snd') !== '0' };
 const ray = new THREE.Raycaster(), gplane = new THREE.Plane(new V3(0, 1, 0), 0), _ndc = new THREE.Vector2();
 function screenToGround(x, y, out) { _ndc.set(x / SW * 2 - 1, -(y / SH) * 2 + 1); ray.setFromCamera(_ndc, camera); return ray.ray.intersectPlane(gplane, out); }
@@ -403,7 +409,13 @@ uic.addEventListener('pointerdown', e => {
     if (b === 'atk') { IN.atkId = e.pointerId; IN.atkHeld = true; } else if (b === 'dodge') dodge();
     else if (b === 's1' || b === 's2') IN.aim = { id: e.pointerId, sk: b, sx: x, sy: y, x, y, mouse }; else topBtn(b); return;
   }
-  if (mouse) { if (e.button === 0) IN.mouse.held = true; else if (e.button === 2) dodge(); return; }
+  if (mouse) {
+    IN.mouse.x = x; IN.mouse.y = y; IN.mouse.has = true; screenToGround(x, y, IN.mouse.g);
+    if (e.button === 2) { dodge(); return; } if (e.button !== 0) return;
+    const en = pickAt(x, y); IN.mouse.held = true; IN.mouse.shoot = !!en || e.shiftKey; IN.mouse.tgt = en;
+    if (!IN.mouse.shoot) { IN.goto = IN.mouse.g.clone(); ring(IN.goto, 0xfff3c0, .15, .7, .35, .9); }   // click on the ground = walk there (hold = follow the cursor)
+    else IN.goto = null; return;
+  }
   if (x < SW * .55 && !IN.stick) { IN.stick = { id: e.pointerId, sx: x, sy: y, x, y }; try { uic.setPointerCapture(e.pointerId); } catch (_) { } }
 });
 uic.addEventListener('pointermove', e => {
@@ -417,25 +429,31 @@ function pointerEnd(e) {
   if (IN.stick && IN.stick.id === e.pointerId) IN.stick = null;
   if (IN.atkId === e.pointerId) { IN.atkId = null; IN.atkHeld = false; }
   if (IN.rot && IN.rot.id === e.pointerId) IN.rot = null;
-  if (e.pointerType === 'mouse' && e.type === 'pointerup') IN.mouse.held = false;
+  if (e.pointerType === 'mouse' && e.type === 'pointerup') { IN.mouse.held = false; IN.mouse.shoot = false; IN.mouse.tgt = null; }
   if (IN.aim && IN.aim.id === e.pointerId) { const a = IN.aim; IN.aim = null; if (e.type === 'pointercancel') return; const t = a.mouse ? null : aimWorld(a); (a.sk === 's1' ? castRain : castPierce)(t); }
 }
 uic.addEventListener('pointerup', pointerEnd); uic.addEventListener('pointercancel', pointerEnd);
 uic.addEventListener('wheel', e => { CAM.zi = clamp(CAM.zi + (e.deltaY > 0 ? 1 : -1), 0, CAM.zs.length - 1); }, { passive: true });
+const KEYN = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyQ: 'q', KeyE: 'e', KeyR: 'r', KeyM: 'm', KeyJ: 'j', KeyK: 'k', KeyZ: 'z', Space: ' ', ShiftLeft: 'shift', ShiftRight: 'shift', Escape: 'escape',
+  ArrowUp: 'arrowup', ArrowDown: 'arrowdown', ArrowLeft: 'arrowleft', ArrowRight: 'arrowright' };
+const keyOf = e => KEYN[e.code] || (e.key || '').toLowerCase();   // by the key's PLACE: WASD works with a Thai keyboard layout too
 addEventListener('keydown', e => {
-  audioInit(); const k = e.key.toLowerCase(); IN.keys[k] = true; if (!P.ready) return;
+  audioInit(); const k = keyOf(e); IN.keys[k] = true; if (!P.ready) return; if (/^(w|a|s|d|arrow)/.test(k)) IN.goto = null;
   if (P.mode === 'pose') { if (k === 'escape' || k === 'm') closeGallery(); return; }
   if (k === ' ' || k === 'shift') { e.preventDefault(); dodge(); }
   if (k === 'q') castRain(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
   if (k === 'e') castPierce(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
   if (k === 'j' || k === 'k') IN.keyAtk = true; if (k === 'z') topBtn('zoom'); if (k === 'm') openGallery(); if (k === 'r') topBtn('auto');
 });
-addEventListener('keyup', e => { const k = e.key.toLowerCase(); IN.keys[k] = false; if (k === 'j' || k === 'k') IN.keyAtk = false; });
-addEventListener('blur', () => { IN.keys = {}; IN.mouse.held = false; IN.keyAtk = false; });
+addEventListener('keyup', e => { const k = keyOf(e); IN.keys[k] = false; if (k === 'j' || k === 'k') IN.keyAtk = false; });
+addEventListener('blur', () => { IN.keys = {}; IN.mouse.held = false; IN.mouse.shoot = false; IN.keyAtk = false; });
 function readMove() {
   let x = 0, z = 0; const K = IN.keys;
   if (K.a || K.arrowleft) x -= 1; if (K.d || K.arrowright) x += 1; if (K.w || K.arrowup) z -= 1; if (K.s || K.arrowdown) z += 1;
   if (IN.stick) { const dx = IN.stick.x - IN.stick.sx, dy = IN.stick.y - IN.stick.sy, L = Math.hypot(dx, dy), R = 60 * S; if (L > 6) { x = dx / Math.max(L, R); z = dy / Math.max(L, R); } }
+  if (x || z || IN.stick) IN.goto = null;
+  else if (IN.mouse.held && !IN.mouse.shoot && IN.mouse.has) IN.goto = IN.mouse.g.clone();   // holding the button: follow the cursor
+  if (IN.goto && P.mode === 'free') { const dx = IN.goto.x - P.pos.x, dz = IN.goto.z - P.pos.z, L = Math.hypot(dx, dz); if (L < .15) IN.goto = null; else { const k = Math.min(1, L / .6) / L; x = dx * k; z = dz * k; } }
   IN.mv.set(x, 0, z); if (IN.mv.length() > 1) IN.mv.normalize();
 }
 
@@ -588,13 +606,14 @@ function drawUI(dt) {
   bar(hx + 58 * S, hy + 30 * S, 160 * S, 11 * S, P.xp / needXp(), '#ffe27a', '#e3a21c'); txt(`ล่าได้ ${P.kills}`, hx + 226 * S, hy + 36 * S, 12 * S, '#fff2c8', 'left', 800);
   while (DPS.length && NOW - DPS[0][0] > 3) DPS.shift(); if (DPS.length) txt(`ดาเมจใส่หุ่น ${Math.round(DPS.reduce((s, q) => s + q[1], 0) / 3)} / วินาที`, hx, hy + 66 * S, 13 * S, '#fff2c8', 'left', 800);
   txt('นักธนูเผ่า · ห้องทดลองตัวละคร', (SW - 250 * S) / 2 + 10 * S, SH - 14 * S, 12 * S, 'rgba(255,248,225,.75)', 'center', 600, 'rgba(0,0,0,.45)');
-  if (!IN.touchSeen) txt('WASD เดิน · คลิกค้างยิง · Space กลิ้ง · Q ฝนธนู · E ทะลวง · R ยิงเอง · M ดูท่า', (SW - 250 * S) / 2 + 10 * S, SH - 34 * S, 12.5 * S, '#fff6dc', 'center', 600, 'rgba(0,0,0,.55)');
+  if (!IN.touchSeen) txt('คลิกพื้น / WASD เดิน · คลิกศัตรูยิง · Space กลิ้ง · Q ฝนธนู · E ทะลวง · R ยิงเอง', (SW - 250 * S) / 2 + 10 * S, SH - 34 * S, 12.5 * S, '#fff6dc', 'center', 600, 'rgba(0,0,0,.55)');
   for (const [k, l, on] of [['moves', 'ดูท่าทั้งหมด', false], ['zoom', 'ซูม ' + (CAM.zi + 1), false], ['auto', AUTO.on ? 'ยิงเอง: เปิด' : 'ยิงเอง: ปิด', AUTO.on], ['snd', SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false]]) pill(k, l, on);
   // joystick
   if (IN.stick) { const s = IN.stick, R = 60 * S, dx = s.x - s.sx, dy = s.y - s.sy, L = Math.hypot(dx, dy), k = L > R ? R / L : 1;
     ui.beginPath(); ui.arc(s.sx, s.sy, R, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.12)'; ui.fill(); ui.lineWidth = 3 * S; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke();
     ui.beginPath(); ui.arc(s.sx + dx * k, s.sy + dy * k, 26 * S, 0, TAU); ui.fillStyle = 'rgba(255,240,200,.75)'; ui.fill(); }
-  else if (IN.touchSeen) { ui.beginPath(); ui.arc(110 * S, SH - 100 * S, 60 * S, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.07)'; ui.fill(); ui.lineWidth = 2; ui.strokeStyle = 'rgba(255,255,255,.18)'; ui.stroke(); }
+  else if (IN.touchSeen) { ui.beginPath(); ui.arc(110 * S, SH - 100 * S, 60 * S, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.1)'; ui.fill(); ui.lineWidth = 2.5; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke();
+    ui.beginPath(); ui.arc(110 * S, SH - 100 * S, 24 * S, 0, TAU); ui.fillStyle = 'rgba(255,240,200,.35)'; ui.fill(); if (NOW < 12) txt('แตะค้างแล้วลาก ตรงซ้ายจอ = เดิน', 110 * S, SH - 175 * S, 13 * S, '#fff6dc', 'center', 800, 'rgba(0,0,0,.6)'); }
   // skill aiming (drag from the button)
   if (IN.aim && !IN.aim.mouse) { const t = aimWorld(IN.aim); if (t) { const [x, y] = toScreen(t); const [px, py] = toScreen(P.pos); ui.setLineDash([8 * S, 8 * S]); ui.lineWidth = 3 * S; ui.strokeStyle = 'rgba(255,230,140,.8)'; ui.beginPath(); ui.moveTo(px, py); ui.lineTo(x, y); ui.stroke(); ui.setLineDash([]);
     ui.beginPath(); ui.arc(x, y, (IN.aim.sk === 's1' ? 40 : 14) * S, 0, TAU); ui.strokeStyle = '#ffe07a'; ui.stroke(); } }
@@ -668,7 +687,7 @@ async function boot() {
   place(['Flower_1_Clump', 'Flower_3_Clump', 'Flower_5_Clump', 'Grass_Large', 'Grass_Small'], 260, 4, ARENA + 8, 4);
   if (MAXMON > 0) await Promise.all(Object.entries(MDEF).map(([k, D]) => ld.loadAsync(D.file).then(g => { const b = new THREE.Box3().setFromObject(g.scene); D.src = { scene: g.scene, clips: g.animations, h: Math.max(.01, b.max.y - b.min.y) }; }).catch(e => console.warn('monster', k, e.message))));
 }
-window.GAME = { P, MON, DUM, FX, ARROWS, STR, IN, get HERO() { return HERO; }, LY, sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { readMove(); tick(dt); } }, api: { dodge, castRain, castPierce, openGallery, closeGallery, setPose, fireAt: (x, z) => { P.aimDir.set(x - P.pos.x, 0, z - P.pos.z).normalize(); fireArrow(P.aimDir); }, spawn: spawnMon } };
+window.GAME = { P, MON, DUM, FX, ARROWS, STR, IN, get HERO() { return HERO; }, LY, toScreen: (x, y, z) => toScreen(new V3(x, y, z)), sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { readMove(); tick(dt); } }, api: { dodge, castRain, castPierce, openGallery, closeGallery, setPose, fireAt: (x, z) => { P.aimDir.set(x - P.pos.x, 0, z - P.pos.z).normalize(); fireArrow(P.aimDir); }, spawn: spawnMon } };
 boot(); frame();
 </script>
 </body>
