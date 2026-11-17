@@ -1156,14 +1156,14 @@ const GAME = window.GAME = (function () {
     try {
       const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), P = 'art/tribe3d/people/';
       const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
-      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
+      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW, HP] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
         ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
         ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null),
-        ld.loadAsync(P + 'hero_model.glb').catch(() => null), ld.loadAsync(P + 'warrior_f.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
+        ld.loadAsync(P + 'hero_model.glb').catch(() => null), (/[?&]archer=tripo/.test(location.search) ? ld.loadAsync(P + 'warrior_f.glb').catch(() => null) : null), ld.loadAsync('art/tribe3d/gear/huntress_parts.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
       const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
       const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
-      const TX = {}; await Promise.all(['barba_0', 'barba_1', 'barba_2', 'rogue_0', 'rogue_1', 'rogue_2', 'rogue_3', 'knigh_0', 'knigh_1', 'knigh_2', 'mage_0', 'mage_1', 'mage_2', 'range_0', 'range_1'].map(n => tex(n).then(t => { TX[n] = t; })));
+      const TX = {}; await Promise.all(['barba_0', 'barba_1', 'barba_2', 'rogue_0', 'rogue_1', 'rogue_2', 'rogue_3', 'knigh_0', 'knigh_1', 'knigh_2', 'mage_0', 'mage_1', 'mage_2', 'range_0', 'range_1', 'range_t'].map(n => tex(n).then(t => { TX[n] = t; })));
       const mat = (n, col) => new THREE.MeshLambertMaterial({ map: TX[n], color: col || 0xffffff });
       const WEAP = {}; for (const c of WP.scene.children) WEAP[c.name] = c;
       const GEAR = {};   // Blender gear (tools/blender/*_gear.py): flat colours, "glow*" materials unlit; archer gear was modelled +Y up (glTF turned it)
@@ -1176,8 +1176,8 @@ const GAME = window.GAME = (function () {
       PEOPLE.gear = GEAR;
       const findN = (r, n) => { let f = null; r.traverse(o => { if (o.name === n && !f) f = o; }); return f; };
       // one hero + weapons on the hand slots, merged into one skinned mesh (the weapons share the hero's texture atlas)
-      function hero(name, weapons, m, drop) {
-        const r = THREE.SkeletonUtils.clone(H[name].scene);
+      function hero(name, weapons, m, drop, edit) {
+        const r = THREE.SkeletonUtils.clone(H[name].scene); if (edit) edit(r);
         for (const d of drop || []) { const o = findN(r, d); if (o) o.parent.remove(o); }
         for (const [w, bone] of weapons) { const bn = findN(r, bone), src = WEAP[w]; if (!bn || !src) continue; const c = src.clone(); c.traverse(o => { if (o.isMesh) o.userData.keep = true; }); bn.add(c); }
         const T = mergePerson(r, [], m); T.mats = [m]; return T;
@@ -1225,7 +1225,40 @@ const GAME = window.GAME = (function () {
       addGear(tpl.shaman3, [['HaloB', 'head', [0, 1.98, -0.66], [0, 0, 0], 0, 1.45], ['Orbit', 'root', [0, 1.35, 0], [0, 0, 0], 0, 1.15], ['staff_B', 'handslotr', [0, 0, 0], [0, 0, 0], 1, 1.25], ['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 2.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.45]]);
       PEOPLE.mats = [...tpl.man.mats, ...tpl.woman.mats];
       for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');   // anims.glb joins several files: the loader renamed their duplicate bones hips_1, hips_2...
-      if (TW) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }   // ★★★ archer = the owner's tribal huntress
+      // ★★★ archer face without the Ranger's moustache + goatee (owner "เอาหนวดออก"): the hair-cell triangles below the nose, in front, between the sideburns
+      const shave = r => { const h = findN(r, 'Ranger_Head'); if (!h) return; const g = h.geometry.clone(), uv = g.attributes.uv, p = g.attributes.position, I = g.index, keep = [];
+        for (let t = 0; t < I.count; t += 3) { let u = 0, v = 0, x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { const i = I.getX(t + k); u += uv.getX(i); v += uv.getY(i); x += p.getX(i); y += p.getY(i); z += p.getZ(i); }
+          u /= 3; v /= 3; x /= 3; y /= 3; z /= 3; if (!(u > .125 && u < .25 && v < .25 && y < 1.53 && z > .25 && Math.abs(x) < .33)) keep.push(I.getX(t), I.getX(t + 1), I.getX(t + 2)); }
+        g.setIndex(keep); h.geometry = g; };
+      // ★★★ archer with the Rogue's (female) head (owner "เอาที่แนะนำเลย"): it only uses the skin / hair / eyes / metal cells, which sit at the same place in the
+      // Ranger atlas, so it joins the Ranger merge with the Ranger texture; its skin indices are remapped by bone name (the two files order their joints differently)
+      const rogueHead = r => { const old = findN(r, 'Ranger_Head'), src = findN(H.Rogue.scene, 'Rogue_Head'); if (!old || !src) return shave(r);
+        const g = src.geometry.clone(), from = src.skeleton.bones.map(b => b.name), to = old.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, ix = j => Math.max(0, to.indexOf(from[j]));
+        for (let i = 0; i < si.count; i++) si.setXYZW(i, ix(si.getX(i)), ix(si.getY(i)), ix(si.getZ(i)), ix(si.getW(i)));
+        const m = new THREE.SkinnedMesh(g, old.material); m.name = 'Rogue_Head'; old.parent.add(m); m.bind(old.skeleton, src.bindMatrix.clone()); old.parent.remove(old); };
+      // KayKit's Death_A keeps the bow standing up on the dead archer: in bow units' own copy the left hand slot turns the bow over to lie flat as they fall
+      // + an arrow on the string (owner "เอาที่แนะนำเลย"): "ArrowNock" in the right hand slot, shown by its own visible track: all through the ready
+      // stance, from the nock (40 %) in Draw, in Release only before the shot (4 %) and again once the next arrow is nocked (50 %) (timings measured from the hands' distance)
+      const BOW_FALL = -Math.PI / 2, NOCK = { Ranged_Bow_Idle: [[0], [true]], Ranged_Bow_Draw: [[0, .4], [false, true]], Ranged_Bow_Release: [[0, .04, .5], [true, false, true]] };
+      const bowDie = CL => CL.map(c => {
+        if (NOCK[c.name]) { const d = c.clone(), [t, v] = NOCK[c.name]; d.tracks.push(new THREE.BooleanKeyframeTrack('ArrowNock.visible', t.map(f => f * c.duration), v)); return d; }
+        if (c.name !== 'Death_A') return c; const d = c.clone(), t = d.tracks.find(t => t.name === 'handslotl.quaternion'); if (!t) return d;
+        const q = new THREE.Quaternion(), r = new THREE.Quaternion(), X = new V3(1, 0, 0); for (let i = 0; i < t.times.length; i++) { r.setFromAxisAngle(X, BOW_FALL * Math.min(1, Math.max(0, (t.times[i] - .15) / .45))); q.fromArray(t.values, i * 4).multiply(r).toArray(t.values, i * 4); } return d; });
+      const nockArrow = T => {   // KayKit arrow_A laid from the right hand slot toward the bow hand of the fully drawn pose (Release at 0 s), 1.35 x that distance long
+        const A = GEAR.arrow_A, rel = T.clips.find(c => c.name === 'Ranged_Bow_Release'); if (!A || !rel) return;
+        const o = THREE.SkeletonUtils.clone(T.root), mx = new THREE.AnimationMixer(o); mx.clipAction(rel).play(); mx.setTime(0); o.updateMatrixWorld(true);
+        const d = o.getObjectByName('handslotl').getWorldPosition(new V3()).applyMatrix4(o.getObjectByName('handslotr').matrixWorld.clone().invert());
+        const a = A.clone(); a.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(a), sz = bb.getSize(new V3()), ax = sz.x > sz.y && sz.x > sz.z ? 'x' : sz.y > sz.z ? 'y' : 'z';
+        const axis = new V3(); axis[ax] = ARROW_TIP; const len = sz[ax], k = d.length() * 1.35 / len, nockEnd = bb.getCenter(new V3()); nockEnd[ax] = ARROW_TIP > 0 ? bb.min[ax] : bb.max[ax];
+        const g = new THREE.Group(); g.name = 'ArrowNock'; g.visible = false; g.add(a); a.position.copy(nockEnd).multiplyScalar(-1);
+        g.quaternion.setFromUnitVectors(axis, d.clone().normalize()); g.scale.setScalar(k); a.traverse(m => { if (m.isMesh) m.castShadow = true; });
+        T.root.getObjectByName('handslotr').add(g); };
+      const ARROW_TIP = 1;   // which end of arrow_A's long axis is the head (+1 / -1)
+      // ★★★ archer (owner 2026-11-17 "ผสมกัน"): the KayKit Ranger body wearing the hood and bow cut from the owner's Tripo huntress
+      // (tools/blender/tripo_parts.py); ?archer=tripo = the whole Tripo huntress (tools/blender/tripo_rig.py)
+      if (TW && /[?&]archer=tripo/.test(location.search)) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }
+      else if (HP) try { const T = hero('Ranger', [], mat('range_t'), [], rogueHead); tripoParts(T, HP, H.Knight.scene, H.Rogue.scene, WEAP.bow_withString); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
+      for (const k of ['hunter2', 'hunter3']) if (tpl[k] && !tpl[k].clips) { tpl[k].clips = bowDie(AN.animations); try { nockArrow(tpl[k]); } catch (e) { console.warn('arrow', e.message); } }
       PEOPLE.clips = AN.animations; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
@@ -1236,21 +1269,8 @@ const GAME = window.GAME = (function () {
   // bones keep her lengths) and with the hips move scaled to her size.
   function rigTripo(gl, kscene, clips) {
     let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
-    const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
-    r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
-    const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new V3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new V3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
-    const kkHips = bone.hips.position.clone(), k = J.hips[1] / kw.hips.y;
-    const DIR = { hips: 'spine', spine: 'chest', chest: 'head', upperarml: 'lowerarml', lowerarml: 'wristl', wristl: 'handl', handl: 'handslotl', upperarmr: 'lowerarmr', lowerarmr: 'wristr', wristr: 'handr', handr: 'handslotr', upperlegl: 'lowerlegl', lowerlegl: 'footl', footl: 'toesl', upperlegr: 'lowerlegr', lowerlegr: 'footr', footr: 'toesr' };
-    const R = {}, inv = new THREE.Matrix4(), W = new THREE.Matrix4();
-    r.traverse(o => {
-      if (!o.isBone) return; const n = o.name, pn = o.parent && o.parent.isBone ? o.parent.name : null, rot = new THREE.Quaternion();
-      if (DIR[n] && J[n] && J[DIR[n]]) rot.setFromUnitVectors(kw[DIR[n]].clone().sub(kw[n]).normalize(), new V3(...J[DIR[n]]).sub(new V3(...J[n])).normalize());
-      else if (pn && n !== 'head') rot.copy(R[pn]);
-      R[n] = rot;
-      W.compose(J[n] ? new V3(...J[n]) : new V3(), rot.clone().multiply(kq[n]), ksc[n]);
-      o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true);
-    });
-    // every skinned mesh of the file (one fused mesh, or "body" + "bow" from a model split into parts: tripo_parts_rig.py), one material
+    const { r, ks, bone, kw } = tripoSkeleton(J, kscene), kkHips = kscene.getObjectByName('hips').position.clone(), k = J.hips[1] / kw.hips.y;
+    // every skinned mesh of the file (one fused mesh, or "body" + "bow" + "string" from a model split into parts: tripo_parts_rig.py), one material
     const src = sms[0].material; if (src.map) { src.map.encoding = THREE.LinearEncoding; src.map.userData.unit = true; }
     const m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughness: .7, metalness: 0 });
     const skel = new THREE.Skeleton(ks.bones); let mesh = null, geo = null;
@@ -1267,6 +1287,69 @@ const GAME = window.GAME = (function () {
       return new THREE.VectorKeyframeTrack(t.name, t.times, v);
     })));
     geo.computeBoundingBox(); return { root: r, h: (geo.boundingBox.max.y - geo.boundingBox.min.y) * .9, mesh, mats: [m], clips: mine };
+  }
+  function tripoSkeleton(J, kscene) {   // a bare KayKit skeleton with every bone moved onto her joint, turned from its KayKit rest by the rotation that takes the KayKit bone direction to hers
+    const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
+    r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
+    const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new V3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new V3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
+    const DIR = { hips: 'spine', spine: 'chest', chest: 'head', upperarml: 'lowerarml', lowerarml: 'wristl', wristl: 'handl', handl: 'handslotl', upperarmr: 'lowerarmr', lowerarmr: 'wristr', wristr: 'handr', handr: 'handslotr', upperlegl: 'lowerlegl', lowerlegl: 'footl', footl: 'toesl', upperlegr: 'lowerlegr', lowerlegr: 'footr', footr: 'toesr' };
+    const R = {}, inv = new THREE.Matrix4(), W = new THREE.Matrix4();
+    r.traverse(o => {
+      if (!o.isBone) return; const n = o.name, pn = o.parent && o.parent.isBone ? o.parent.name : null, rot = new THREE.Quaternion();
+      if (DIR[n] && J[n] && J[DIR[n]]) rot.setFromUnitVectors(kw[DIR[n]].clone().sub(kw[n]).normalize(), new V3(...J[DIR[n]]).sub(new V3(...J[n])).normalize());
+      else if (pn && n !== 'head') rot.copy(R[pn]);
+      R[n] = rot;
+      W.compose(J[n] ? new V3(...J[n]) : new V3(), rot.clone().multiply(kq[n]), ksc[n]);
+      o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true);
+    });
+    return { r, ks, bone, kw };
+  }
+  // Pieces cut from the Tripo huntress (tools/blender/tripo_parts.py, her coordinates) worn by a KayKit body T: each piece is read in the frame
+  // of HER bone (tripoSkeleton), scaled, and put in the frame of the same bone of T, then skinned rigidly to it as a second mesh (own texture)
+  const TRIPO_FIT = { TripoHood: ['head', .93, [0, -.07, .1]], TripoBow: ['handslotl', 1.12, [0, 0, 0]] };   // bone, extra scale, offset (bone frame, after scaling)
+  // a bow's own frame from its vertices: long axis (PCA), the side its string is on, the grip (middle of the belly) and its length
+  function bowFrame(pts) {
+    const c = new V3(); pts.forEach(p => c.add(p)); c.divideScalar(pts.length);
+    const C = [0, 0, 0, 0, 0, 0, 0, 0, 0]; for (const p of pts) { const d = [p.x - c.x, p.y - c.y, p.z - c.z]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i * 3 + j] += d[i] * d[j]; }
+    let L = new V3(1, 1, 1); for (let it = 0; it < 60; it++) L = new V3(C[0] * L.x + C[1] * L.y + C[2] * L.z, C[3] * L.x + C[4] * L.y + C[5] * L.z, C[6] * L.x + C[7] * L.y + C[8] * L.z).normalize();
+    const t = pts.map(p => p.clone().sub(c).dot(L)), t0 = Math.min(...t), t1 = Math.max(...t), len = t1 - t0, tip = (lo) => { const q = new V3(); let n = 0; pts.forEach((p, i) => { if (lo ? t[i] < t0 + len * .06 : t[i] > t1 - len * .06) { q.add(p); n++; } }); return q.divideScalar(n); };
+    const mid = tip(true).add(tip(false)).multiplyScalar(.5), S = mid.clone().sub(c); S.sub(L.clone().multiplyScalar(S.dot(L))).normalize();
+    const band = pts.filter((p, i) => Math.abs(t[i] - (t0 + t1) / 2) < len * .06), sv = band.map(p => p.clone().sub(c).dot(S)), smin = Math.min(...sv), smax = Math.max(...sv);
+    const grip = new V3(); let n = 0; band.forEach((p, i) => { if (sv[i] < (smin + smax) / 2) { grip.add(p); n++; } }); grip.divideScalar(n || 1);
+    return { L, S, X: L.clone().cross(S), grip, len };
+  }
+  function tripoParts(T, gl, kscene, body, kbow) {
+    let J = null; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); });
+    const { bone: her } = tripoSkeleton(J, kscene); T.root.updateMatrixWorld(true);
+    const skel = T.mesh.skeleton, mine = {}; for (const b of skel.bones) mine[b.name] = b;
+    let hw = 0; body.updateMatrixWorld(true); body.traverse(o => { if (o.isMesh && /_Head$/.test(o.name)) { const bb = new THREE.Box3().setFromObject(o); hw = bb.max.x - bb.min.x; } });
+    const sBody = T.h / (J.top[1] * 1.05), sHead = hw ? hw * 1.12 / 2.6 : sBody * 1.6;   // her face is ~2.6 wide (x10 units)
+    const P = [], N = [], UV = [], SI = [], SW = [], IDX = []; let base = 0, map = null, nmap = null;
+    gl.scene.traverse(o => {
+      if (!o.isMesh || !TRIPO_FIT[o.name]) return; const [bn, k, off] = TRIPO_FIT[o.name], hb = her[bn], mb = mine[bn]; if (!hb || !mb) return;
+      map = map || o.material.map; nmap = nmap || o.material.normalMap;
+      let M; const s = (o.name === 'TripoHood' ? sHead : sBody) * k;
+      if (o.name === 'TripoBow' && kbow) {   // turned to lie in the hand slot like the KayKit bow (its moves are made for that bow), grip on grip, k x its length
+        const kp = [], tp = [], q = new V3(); kbow.updateMatrixWorld(true);
+        kbow.traverse(m => { if (!m.isMesh) return; const A = m.geometry.attributes.position, mm = new THREE.Matrix4().copy(kbow.matrixWorld).invert().multiply(m.matrixWorld).premultiply(kbow.matrix); for (let i = 0; i < A.count; i += 2) kp.push(q.fromBufferAttribute(A, i).applyMatrix4(mm).clone()); });
+        const A = o.geometry.attributes.position; for (let i = 0; i < A.count; i += 3) tp.push(q.fromBufferAttribute(A, i).clone());
+        const K = bowFrame(kp), F = bowFrame(tp); if (F.L.y < 0) { F.L.negate(); F.X.negate(); }   // her upper limb -> the KayKit bow's +long end
+        const sb = K.len / F.len * k, R = new THREE.Matrix4().makeBasis(K.L, K.S, K.X).multiply(new THREE.Matrix4().makeBasis(F.L, F.S, F.X).transpose());
+        M = new THREE.Matrix4().copy(mb.matrixWorld).multiply(new THREE.Matrix4().makeTranslation(K.grip.x + off[0], K.grip.y + off[1], K.grip.z + off[2]))
+          .multiply(R).multiply(new THREE.Matrix4().makeScale(sb, sb, sb)).multiply(new THREE.Matrix4().makeTranslation(-F.grip.x, -F.grip.y, -F.grip.z));
+      } else M = new THREE.Matrix4().copy(mb.matrixWorld)
+        .multiply(new THREE.Matrix4().makeTranslation(...off)).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(hb.matrixWorld.clone().invert());
+      const g = o.geometry, p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv, m3 = new THREE.Matrix3().getNormalMatrix(M), v = new V3(), bi = skel.bones.indexOf(mb);
+      for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(M); P.push(v.x, v.y, v.z); v.fromBufferAttribute(n, i).applyMatrix3(m3).normalize(); N.push(v.x, v.y, v.z); UV.push(uv.getX(i), uv.getY(i)); SI.push(bi, 0, 0, 0); SW.push(1, 0, 0, 0); }
+      for (let i = 0; i < g.index.count; i++) IDX.push(base + g.index.getX(i)); base += p.count;
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4)); g.setIndex(IDX);
+    if (map) { map.encoding = THREE.LinearEncoding; map.userData.unit = true; }
+    const m = new THREE.MeshStandardMaterial({ map, normalMap: nmap, roughness: .7, metalness: 0, side: THREE.DoubleSide });
+    const mesh = new THREE.SkinnedMesh(g, m); mesh.castShadow = true; mesh.frustumCulled = false; mesh.userData.extra = true; T.root.add(mesh); mesh.bind(skel, new THREE.Matrix4());
+    return mesh;
   }
   function makePortraits() {   // a pretty picture of each unit for the training cards: smooth, anti-aliased, soft light + rim light
     const W = 96, H = 112, SS = 2, out = {};
@@ -1291,8 +1374,8 @@ const GAME = window.GAME = (function () {
   const card = (id, k, label, cost) => `<button id="${id}" class="uc${k.endsWith('3') ? ' violet' : k.endsWith('2') ? ' gold' : ''}">${PEOPLE.portrait && PEOPLE.portrait[k] ? `<img alt="" src="${PEOPLE.portrait[k]}">` : ''}<b>${label}</b><small>${costTxt(cost)}</small></button>`;
   function newPerson(kind, h, mi) {   // a clone of a template with its own skeleton + mixer
     const T = PEOPLE.tpl[kind], root = THREE.SkeletonUtils.clone(T.root); root.scale.setScalar(h / T.h);
-    let mesh = null; root.traverse(o => { if (o.isSkinnedMesh && !(mesh && mesh.name === 'body')) mesh = o; });   // a split model: its "body"
-    if (mesh) { const mt = T.mats[(mi == null ? Math.random() * T.mats.length : mi) | 0]; root.traverse(o => { if (o.isSkinnedMesh && o.material === mesh.material) o.material = mt; }); }
+    let mesh = null; root.traverse(o => { if (o.isSkinnedMesh && !o.userData.extra && !(mesh && mesh.name === 'body')) mesh = o; });   // a split model: its "body"
+    if (mesh) { const mt = T.mats[(mi == null ? Math.random() * T.mats.length : mi) | 0], old = mesh.material; root.traverse(o => { if (o.isSkinnedMesh && o.material === old) o.material = mt; }); }
     const mixer = new THREE.AnimationMixer(root), acts = {}; for (const c of T.clips || PEOPLE.clips) acts[c.name] = mixer.clipAction(c);
     return { root, mixer, acts, mesh };
   }

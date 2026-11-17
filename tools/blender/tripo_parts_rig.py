@@ -5,7 +5,7 @@
 # "Quick Cap", free), decimate each part to a budget, weights per part (heat weights on a voxel proxy limited to the part's bones, or rigid),
 # one texture atlas for every part (base colour + normal), export: mesh "body" + mesh "bow" + armature with the KayKit Rig_Medium names
 # at HER joints (the game re-binds them onto a KayKit skeleton: tribe3d.html rigTripo, so every KayKit move plays).
-#   pip install bpy ; python3 tools/blender/tripo_parts_rig.py <split.glb> art/tribe3d/people/huntress.glb
+#   pip install bpy ; python3 tools/blender/tripo_parts_rig.py art/incoming/tribe3d/tripo/warrior_split_raw.glb art/grind3d/huntress.glb
 # Part numbers are per model: look at them first (front / side point plot of each part) and fill ROLE.
 import bpy, bmesh, sys, json, math
 import numpy as np
