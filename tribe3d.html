@@ -1156,10 +1156,11 @@ const GAME = window.GAME = (function () {
     try {
       const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), P = 'art/tribe3d/people/';
       const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
-      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW, HP] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
+      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW, HP, DK] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
         ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
         ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null),
-        ld.loadAsync(P + 'hero_model.glb').catch(() => null), (/[?&]archer=tripo/.test(location.search) ? ld.loadAsync(P + 'warrior_f.glb').catch(() => null) : null), ld.loadAsync('art/tribe3d/gear/huntress_parts.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
+        ld.loadAsync(P + 'hero_model.glb').catch(() => null), (/[?&]archer=tripo/.test(location.search) ? ld.loadAsync(P + 'warrior_f.glb').catch(() => null) : null), ld.loadAsync('art/tribe3d/gear/huntress_parts.glb').catch(() => null),
+        (/[?&]knight=old/.test(location.search) ? null : ld.loadAsync(P + 'demon_knight.glb').catch(() => null))]);   // demon_knight = the owner's Tripo knight (tools/blender/tripo_parts_rig.py ... knight)   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
       const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
       const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
@@ -1258,6 +1259,11 @@ const GAME = window.GAME = (function () {
       // (tools/blender/tripo_parts.py); ?archer=tripo = the whole Tripo huntress (tools/blender/tripo_rig.py)
       if (TW && /[?&]archer=tripo/.test(location.search)) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }
       else if (HP) try { const T = hero('Ranger', [], mat('range_t'), [], rogueHead); tripoParts(T, HP, H.Knight.scene, H.Rogue.scene, WEAP.bow_withString); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
+      // นักรบ ★★★ (owner 2026-11-17: GPT design -> Tripo, split into 147 parts): the demon knight, re-bound on the KayKit skeleton like the huntress,
+      // holding the KayKit two-handed sword in the obsidian / crimson / gold knight colours; ?knight=old = the KayKit knight as before
+      if (DK) try { const T = rigTripo(DK, H.Knight.scene, AN.animations), bn = T.root.getObjectByName('handslotr'), src = WEAP.sword_2handed_color;
+        if (bn && src) { const sw = src.clone(), sm = mat('knigh_2'); sw.traverse(o => { if (o.isMesh) { o.material = sm; o.castShadow = true; } }); sw.scale.setScalar(T.k * .5); bn.add(sw); }
+        T.h /= 1.12; tpl.warrior3 = T; } catch (e) { console.warn('demon knight', e.message); }   // a bit bigger: his horns made the body read small next to the ★★★ archer
       for (const k of ['hunter2', 'hunter3']) if (tpl[k] && !tpl[k].clips) { tpl[k].clips = bowDie(AN.animations); try { nockArrow(tpl[k]); } catch (e) { console.warn('arrow', e.message); } }
       PEOPLE.clips = AN.animations; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
@@ -1286,7 +1292,7 @@ const GAME = window.GAME = (function () {
       for (let i = 0; i < v.length; i += 3) { v[i] = herHips.x + (v[i] - kkHips.x) * k; v[i + 1] = herHips.y + (v[i + 1] - kkHips.y) * k; v[i + 2] = herHips.z + (v[i + 2] - kkHips.z) * k; }
       return new THREE.VectorKeyframeTrack(t.name, t.times, v);
     })));
-    geo.computeBoundingBox(); return { root: r, h: (geo.boundingBox.max.y - geo.boundingBox.min.y) * .9, mesh, mats: [m], clips: mine };
+    geo.computeBoundingBox(); return { root: r, h: (geo.boundingBox.max.y - geo.boundingBox.min.y) * .9, mesh, mats: [m], clips: mine, k };   // k = her size / KayKit size (for weapons in KayKit hand slots)
   }
   function tripoSkeleton(J, kscene) {   // a bare KayKit skeleton with every bone moved onto her joint, turned from its KayKit rest by the rotation that takes the KayKit bone direction to hers
     const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];

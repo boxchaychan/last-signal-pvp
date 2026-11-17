@@ -1,4 +1,4 @@
-// The hero's moves for grind3d.html (the new level-grinding game, owner 2026-11-17), from the KayKit Character Animations pack (CC0,
+// The heroes' moves for grind3d.html (archer + knight) (the new level-grinding game, owner 2026-11-17), from the KayKit Character Animations pack (CC0,
 // Rig_Medium, already in art/incoming/kaykit/character_animations/). Writes art/grind3d/hero_anims.glb: only the moves below, renamed.
 // Needs @gltf-transform/core@4 + functions@4: npm i them in a scratch folder, copy this file there and run it from there:
 //   node grind3d_anims.mjs <repo>/art/incoming/kaykit/character_animations/Rig_Medium <repo>/art/grind3d/hero_anims.glb
@@ -13,6 +13,9 @@ const KEEP = {
   CombatRanged: { Ranged_Bow_Idle: 'Ranged_Bow_Idle', Ranged_Bow_Aiming_Idle: 'Ranged_Bow_Aiming_Idle', Ranged_Bow_Draw: 'Ranged_Bow_Draw', Ranged_Bow_Release: 'Ranged_Bow_Release',
     Ranged_Bow_Draw_Up: 'Ranged_Bow_Draw_Up', Ranged_Bow_Release_Up: 'Ranged_Bow_Release_Up', Ranged_Magic_Summon: 'Ranged_Magic_Summon' },
   Simulation: { Cheering: 'Cheer' },
+  CombatMelee: { Melee_2H_Idle: 'Melee_2H_Idle', Melee_2H_Attack_Slice: 'Melee_2H_Attack_Slice', Melee_2H_Attack_Chop: 'Melee_2H_Attack_Chop', Melee_2H_Attack_Stab: 'Melee_2H_Attack_Stab',
+    Melee_2H_Attack_Spin: 'Melee_2H_Attack_Spin', Melee_2H_Attack_Spinning: 'Melee_2H_Attack_Spinning', Melee_1H_Attack_Jump_Chop: 'Melee_1H_Attack_Jump_Chop',
+    Melee_1H_Attack_Slice_Horizontal: 'Melee_1H_Attack_Slice_Horizontal', Melee_Block: 'Melee_Block', Melee_Blocking: 'Melee_Blocking' },   // the knight (2026-11-17)
 };
 const io = new NodeIO(); let adoc = null;
 for (const [file, keep] of Object.entries(KEEP)) {

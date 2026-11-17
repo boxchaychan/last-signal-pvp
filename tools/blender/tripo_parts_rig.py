@@ -1,34 +1,50 @@
 # Rig a Tripo model that the owner SPLIT INTO PARTS in the Tripo app (Segment -> export GLB: one mesh + its own texture per part).
 # Knowing the parts makes the rig clean where tripo_rig.py had to guess from texture islands: every part only listens to the bones it
-# belongs to (the skirt never follows an arm, the bow is rigid in the left hand), and the bow is its own mesh the game can hide or swap.
-# Steps: drop the crumbs (parts of a few faces), x10, join seam-split vertices, close the holes where Tripo cut the parts (like Tripo's
-# "Quick Cap", free), decimate each part to a budget, weights per part (heat weights on a voxel proxy limited to the part's bones, or rigid),
-# one texture atlas for every part (base colour + normal), export: mesh "body" + mesh "bow" + armature with the KayKit Rig_Medium names
-# at HER joints (the game re-binds them onto a KayKit skeleton: tribe3d.html rigTripo, so every KayKit move plays).
-#   pip install bpy ; python3 tools/blender/tripo_parts_rig.py art/incoming/tribe3d/tripo/warrior_split_raw.glb art/grind3d/huntress.glb
-# Part numbers are per model: look at them first (front / side point plot of each part) and fill ROLE.
+# belongs to (the skirt never follows an arm, the bow is rigid in the left hand), and a bow / string is its own mesh the game can hide or swap.
+# Steps: drop crumbs, x10, join seam-split vertices, close the holes where Tripo cut the parts (like Tripo's "Quick Cap", free), decimate a
+# part when it has a budget, weights per part (heat weights on a voxel proxy limited to the part's bones, rigid, or AUTO = rigid on the bone
+# nearest to the part: chain links, spikes, gems), one texture atlas for every part (base colour + normal + metal/roughness when the export
+# has them), export: meshes "body" (+ "bow", "string") + an armature with the KayKit Rig_Medium names at the model's joints (the game
+# re-binds them onto a KayKit skeleton: grind3d.html / tribe3d.html rigTripo, so every KayKit move plays).
+#   pip install bpy
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/tribe3d/tripo/warrior_split_raw.glb art/grind3d/huntress.glb huntress
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/knight/knight_raw.glb art/tribe3d/people/demon_knight.glb knight
+# A new model: plot its parts first (front / side point plot, a grid render for the joints), then add an entry to MODELS.
 import bpy, bmesh, sys, json, math
 import numpy as np
 from mathutils import Vector
-SRC, OUT = sys.argv[-2], sys.argv[-1]
+SRC, OUT = sys.argv[1], sys.argv[2]
+MODEL = sys.argv[3] if len(sys.argv) > 3 else 'huntress'
 SC, VOXEL = 10, .06
-# the "tribal female warrior" split on 2026-11-17 (game coords: y up, she looks at +z, her left hand +x, 0.97 tall)
-ROLE = {0: 'head', 1: 'body', 2: 'bow', 3: 'legs', 4: 'arm_r', 5: 'foot_l', 6: 'cape', 7: 'string', 8: 'arm_l', 9: 'foot_r'}
-FACES = {0: 17000, 1: 12000, 2: 4000, 3: 5000, 4: 2400, 5: 1200, 6: 2000, 7: 600, 8: 2300, 9: 1200}   # ~48k: one hero can afford the detail (was 27k: spikes and folds went soft)
-BONESET = {   # heat-weighted parts: the only bones that may move them
-    'body': ['hips', 'spine', 'chest', 'upperlegl', 'upperlegr'],
-    'cape': ['hips', 'spine', 'chest'],
-    'legs': ['hips', 'upperlegl', 'lowerlegl', 'footl', 'upperlegr', 'lowerlegr', 'footr'],
-    'arm_l': ['chest', 'upperarml', 'lowerarml', 'handl'],
-    'arm_r': ['chest', 'upperarmr', 'lowerarmr', 'handr'],
+# Roles: 'headblend' (head, blending to chest down the braids), 'heat:<bones>', 'rigid:<bone>', 'mix:<bone>=<w>,<bone>=<w>' (rigid, shared),
+# 'bow' / 'string' (rigid on the left hand, own meshes), 'auto' (rigid on the nearest bone), 'drop'. Parts missing from ROLE take DEFAULT.
+MODELS = {
+  # the "tribal female warrior" split on 2026-11-17 (game coords: y up, she looks at +z, her left hand +x, 0.97 tall)
+  'huntress': dict(
+    ROLE={0: 'headblend', 1: 'heat:hips,spine,chest,upperlegl,upperlegr', 2: 'bow', 3: 'heat:hips,upperlegl,lowerlegl,footl,upperlegr,lowerlegr,footr',
+          4: 'heat:chest,upperarmr,lowerarmr,handr', 5: 'rigid:footl', 6: 'heat:hips,spine,chest', 7: 'string', 8: 'heat:chest,upperarml,lowerarml,handl', 9: 'rigid:footr'},
+    DEFAULT='drop',   # her other 30 parts are crumbs of 1-70 faces, a few millimetres each
+    FACES={0: 17000, 1: 12000, 2: 4000, 3: 5000, 4: 2400, 5: 1200, 6: 2000, 7: 600, 8: 2300, 9: 1200},   # ~48k
+    SHOULDER=[1],   # parts whose shoulder area follows the upper arm a little (no gap when she raises the bow)
+    J={'hips': (-.035, .37, .045), 'spine': (-.03, .44, .05), 'chest': (-.025, .52, .05), 'head': (-.025, .6, .04), 'top': (-.025, .86, .03),
+       'upperarml': (.06, .575, .04), 'lowerarml': (.095, .48, .045), 'wristl': (.145, .425, .05), 'handl': (.165, .418, .05), 'handslotl': (.195, .41, .05),
+       'upperarmr': (-.11, .575, .04), 'lowerarmr': (-.16, .495, .045), 'wristr': (-.19, .39, .05), 'handr': (-.195, .38, .05), 'handslotr': (-.2, .36, .05),
+       'upperlegl': (.015, .37, .045), 'lowerlegl': (.02, .2, .045), 'footl': (.022, .065, .03), 'toesl': (.022, .02, .1),
+       'upperlegr': (-.085, .37, .045), 'lowerlegr': (-.12, .2, .045), 'footr': (-.14, .065, .03), 'toesr': (-.14, .02, .1)}),
+  # the "demon knight" (GPT design -> Tripo image to 3D, quad 25k, Segment custom: 147 parts, 2026-11-17); 1.0 tall, right fist empty for a sword
+  'knight': dict(
+    ROLE={3: 'rigid:head', 0: 'heat:hips,spine,chest,upperlegl,upperlegr', 4: 'heat:hips,spine,chest',
+          13: 'heat:chest,upperarmr,lowerarmr', 27: 'rigid:upperarml', 20: 'rigid:lowerarml', 1: 'rigid:handr', 2: 'rigid:handl',
+          6: 'mix:upperarmr=.6,chest=.4', 7: 'mix:upperarml=.6,chest=.4',
+          11: 'rigid:upperlegr', 12: 'rigid:upperlegl', 10: 'rigid:lowerlegr', 21: 'rigid:lowerlegl', 9: 'rigid:footr', 8: 'rigid:footl'},
+    DEFAULT='auto', FACES={}, SHOULDER=[0],
+    J={'hips': (0, .42, .035), 'spine': (0, .5, .035), 'chest': (0, .575, .03), 'head': (0, .64, .03), 'top': (0, .98, .03),
+       'upperarml': (.11, .6, .035), 'lowerarml': (.205, .545, .045), 'wristl': (.275, .48, .05), 'handl': (.29, .465, .05), 'handslotl': (.31, .44, .055),
+       'upperarmr': (-.11, .6, .035), 'lowerarmr': (-.205, .545, .045), 'wristr': (-.275, .48, .05), 'handr': (-.29, .465, .05), 'handslotr': (-.31, .445, .06),
+       'upperlegl': (.055, .42, .035), 'lowerlegl': (.095, .27, .04), 'footl': (.13, .085, .04), 'toesl': (.13, .02, .13),
+       'upperlegr': (-.055, .42, .035), 'lowerlegr': (-.1, .27, .04), 'footr': (-.14, .085, .04), 'toesr': (-.14, .02, .13)}),
 }
-J = {   # her joints (game coords, model units), read off grid renders for tripo_rig.py; the split model has the same frame
-    'hips': (-.035, .37, .045), 'spine': (-.03, .44, .05), 'chest': (-.025, .52, .05), 'head': (-.025, .6, .04), 'top': (-.025, .86, .03),
-    'upperarml': (.06, .575, .04), 'lowerarml': (.095, .48, .045), 'wristl': (.145, .425, .05), 'handl': (.165, .418, .05), 'handslotl': (.195, .41, .05),
-    'upperarmr': (-.11, .575, .04), 'lowerarmr': (-.16, .495, .045), 'wristr': (-.19, .39, .05), 'handr': (-.195, .38, .05), 'handslotr': (-.2, .36, .05),
-    'upperlegl': (.015, .37, .045), 'lowerlegl': (.02, .2, .045), 'footl': (.022, .065, .03), 'toesl': (.022, .02, .1),
-    'upperlegr': (-.085, .37, .045), 'lowerlegr': (-.12, .2, .045), 'footr': (-.14, .065, .03), 'toesr': (-.14, .02, .1),
-}
+CFG = MODELS[MODEL]; ROLE, J = CFG['ROLE'], CFG['J']
 BONES = [('hips', 'spine', None), ('spine', 'chest', 'hips'), ('chest', 'head', 'spine'), ('head', 'top', 'chest'),
          ('upperarml', 'lowerarml', 'chest'), ('lowerarml', 'wristl', 'upperarml'), ('handl', 'handslotl', 'lowerarml'),
          ('upperarmr', 'lowerarmr', 'chest'), ('lowerarmr', 'wristr', 'upperarmr'), ('handr', 'handslotr', 'lowerarmr'),
@@ -42,11 +58,13 @@ bpy.ops.import_scene.gltf(filepath=SRC)
 parts = {}
 for o in list(bpy.data.objects):
     if o.type != 'MESH': continue
-    n = int(o.name.split('_')[-1].split('.')[0])
-    if n in ROLE: parts[n] = o
-    else: bpy.data.objects.remove(o)   # crumbs: 30 bits of 1-70 faces, a few millimetres each
+    n = int(o.name.split('_')[-1].split('.')[0]); role = ROLE.get(n, CFG['DEFAULT'])
+    if role == 'drop': bpy.data.objects.remove(o)
+    else: parts[n] = o
 for o in list(bpy.data.objects):
     if o.type != 'MESH': bpy.data.objects.remove(o)
+def role_of(n): return ROLE.get(n, CFG['DEFAULT'])
+print('parts kept', len(parts))
 
 def only(o):
     for q in bpy.data.objects: q.select_set(False)
@@ -55,32 +73,29 @@ def only(o):
 # ---- textures of each part (before anything renames them)
 def part_images(o):
     base = norm = rm = None
-    for n in o.active_material.node_tree.nodes:
-        if n.type == 'TEX_IMAGE' and n.image:
-            nm = n.image.name.lower()
-            if 'basecolor' in nm: base = n.image
-            elif 'normal' in nm: norm = n.image
-            elif '_rm' in nm: rm = n.image   # glTF metal-roughness: G roughness, B metal (the gold trims shine with an environment light)
+    if o.active_material and o.active_material.node_tree:
+        for n in o.active_material.node_tree.nodes:
+            if n.type == 'TEX_IMAGE' and n.image:
+                nm = n.image.name.lower()
+                if 'basecolor' in nm or 'base' in nm and base is None: base = n.image
+                elif 'normal' in nm: norm = n.image
+                elif '_rm' in nm or 'metal' in nm: rm = n.image   # glTF metal-roughness: G roughness, B metal
     return base, norm, rm
 IMG = {n: part_images(o) for n, o in parts.items()}
 
-# ---- geometry: x10, join seams, cap the cut holes, decimate
+# ---- geometry: x10, join seams, cap the cut holes, decimate when the part has a budget
 for n, o in parts.items():
     o.parent = None; only(o); o.scale = (SC, SC, SC); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     bm = bmesh.new(); bm.from_mesh(o.data); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
     edges = [e for e in bm.edges if e.is_boundary]
-    if edges:
-        r = bmesh.ops.holes_fill(bm, edges=edges, sides=0)
-        bmesh.ops.triangulate(bm, faces=r['faces'])
-        caps = len(r['faces'])
-    else: caps = 0
+    if edges: r = bmesh.ops.holes_fill(bm, edges=edges, sides=0); bmesh.ops.triangulate(bm, faces=r['faces'])
     bm.to_mesh(o.data); bm.free()
-    f0 = len(o.data.polygons)
-    if f0 > FACES[n]:
-        d = o.modifiers.new('dec', 'DECIMATE'); d.ratio = FACES[n] / f0; bpy.ops.object.modifier_apply(modifier='dec')
-    print('part', n, ROLE[n], 'cap faces', caps, 'faces', f0, '->', len(o.data.polygons))
+    f0, fb = len(o.data.polygons), CFG['FACES'].get(n)
+    if fb and f0 > fb:
+        d = o.modifiers.new('dec', 'DECIMATE'); d.ratio = fb / f0; bpy.ops.object.modifier_apply(modifier='dec')
+print('faces', sum(len(o.data.polygons) for o in parts.values()))
 
-# ---- armature at her joints
+# ---- armature at the model's joints
 arm = bpy.data.armatures.new('rig'); rig = bpy.data.objects.new('rig', arm); bpy.context.collection.objects.link(rig)
 only(rig); bpy.ops.object.mode_set(mode='EDIT')
 for name, tail, parent in BONES:
@@ -123,46 +138,60 @@ def heat(o, names):
     dt.vert_mapping = 'POLYINTERP_NEAREST'; dt.layers_vgroup_select_src = 'ALL'; dt.layers_vgroup_select_dst = 'NAME'
     bpy.ops.object.modifier_apply(modifier='dt'); bpy.data.objects.remove(px)
     for b in arm.bones: b.use_deform = True
-    # anything the heat solve left empty: nearest allowed bone
     fill = 0
-    for v in o.data.vertices:
+    for v in o.data.vertices:   # anything the heat solve left empty: nearest allowed bone
         if not [g for g in v.groups if g.weight > 1e-4]:
             o.vertex_groups[nearest_bone(gpos(v.co), names)].add([v.index], 1, 'REPLACE'); fill += 1
-    print('  heat', o.name, 'bones', names, 'proxy unweighted', miss, 'filled', fill)
+    print('  heat', n, 'bones', names, 'proxy unweighted', miss, 'filled', fill)
 
+auto = {}
 for n, o in parts.items():
-    role = ROLE[n]
-    if role in BONESET: heat(o, BONESET[role])
-    elif role in ('bow', 'string'): set_w(o, [{'handl': 1}] * len(o.data.vertices))
-    elif role == 'foot_l': set_w(o, [{'footl': 1}] * len(o.data.vertices))
-    elif role == 'foot_r': set_w(o, [{'footr': 1}] * len(o.data.vertices))
-    elif role == 'head':   # face + mane with the head; the hanging braids blend down to the chest (they hang from the shoulders)
+    role = role_of(n); nv = len(o.data.vertices)
+    if role.startswith('heat:'): heat(o, role[5:].split(','))
+    elif role.startswith('rigid:'): set_w(o, [{role[6:]: 1}] * nv)
+    elif role.startswith('mix:'): set_w(o, [{k: float(w) for k, w in (q.split('=') for q in role[4:].split(','))}] * nv)
+    elif role in ('bow', 'string'): set_w(o, [{'handl': 1}] * nv)
+    elif role == 'headblend':   # face + mane with the head; hanging braids blend down to the chest
         ws = []
         for v in o.data.vertices:
             x, y, z = gpos(v.co); t = max(0, min(1, (y - .5) / .12)); ws.append({'head': t, 'chest': 1 - t})
         set_w(o, ws)
+    else:   # auto: a small rigid piece (chain link, spike, gem, buckle) follows the bone nearest to its middle
+        c = sum((v.co for v in o.data.vertices), Vector()) / max(1, nv); b = nearest_bone(gpos(c), ALL); set_w(o, [{b: 1}] * nv); auto[b] = auto.get(b, 0) + 1
+print('auto parts per bone', auto)
 
-# the shoulder of the dress follows the arm a little, so a raised arm does not open a gap at the shoulder
-body = [o for n, o in parts.items() if ROLE[n] == 'body'][0]
-for side in 'lr':
-    sh = Vector(J['upperarm' + side]); g_ua = body.vertex_groups['upperarm' + side]
-    for v in body.data.vertices:
-        p = Vector(gpos(v.co)); d = (p - sh).length
-        if d < .06 and p.y > .5:
-            w = .6 * (1 - d / .06)
-            ws = {body.vertex_groups[g.group].name: g.weight * (1 - w) for g in v.groups}; ws['upperarm' + side] = ws.get('upperarm' + side, 0) + w
-            for nm, ww in ws.items(): body.vertex_groups[nm].add([v.index], ww, 'REPLACE')
+for n in CFG['SHOULDER']:   # the shoulder of the body part follows the upper arm a little, so a raised arm does not open a gap
+    if n not in parts: continue
+    body = parts[n]
+    for side in 'lr':
+        sh = Vector(J['upperarm' + side])
+        for v in body.data.vertices:
+            p = Vector(gpos(v.co)); d = (p - sh).length
+            if d < .06 and p.y > sh.y - .08:
+                w = .6 * (1 - d / .06)
+                ws = {body.vertex_groups[g.group].name: g.weight * (1 - w) for g in v.groups}; ws['upperarm' + side] = ws.get('upperarm' + side, 0) + w
+                for nm, ww in ws.items(): body.vertex_groups[nm].add([v.index], ww, 'REPLACE')
 
-# ---- one atlas for every part: base colour (2048 x 1536) + normal (half size), each part's own 0-1 UVs squeezed into its tile
-SLOTS = {0: (0, 0, 1024), 1: (1024, 0, 1024), 2: (0, 1024, 512), 3: (512, 1024, 512), 4: (1024, 1024, 256), 5: (1280, 1024, 256),
-         6: (1536, 1024, 256), 8: (1792, 1024, 256), 9: (1024, 1280, 256), 7: (1280, 1280, 128)}
-AW, AH, PAD = 2048, 1536, 2
+# ---- one atlas for every part, packed in shelves: each part's own 0-1 UVs squeezed into its tile; sizes scaled so all fit
+AW = AH = 2048; PAD = 2
+SIZE = {n: (IMG[n][0].size[0] if IMG[n][0] else 32) for n in parts}
+area = sum(s * s for s in SIZE.values()); f = min(1, math.sqrt(.82 * AW * AH / max(1, area)))
+def packit(f):
+    tiles = sorted(((max(16, int(SIZE[n] * f)), n) for n in parts), reverse=True); x = y = rowh = 0; out = {}
+    for s, n in tiles:
+        if x + s > AW: x = 0; y += rowh; rowh = 0
+        if y + s > AH: return None
+        out[n] = (x, y, s); x += s; rowh = max(rowh, s)
+    return out
+SLOTS = packit(f)
+while SLOTS is None: f *= .94; SLOTS = packit(f)
+print('atlas scale %.2f' % f, 'biggest tile', max(s for _, _, s in SLOTS.values()))
 def tile(img, size, half=False):
     a = np.empty(img.size[0] * img.size[1] * 4, np.float32); img.pixels.foreach_get(a); a = a.reshape(img.size[1], img.size[0], 4)
-    if img.size[0] != size:   # resample (nearest is fine: the sources are already this size or bigger)
-        ys = (np.arange(size) * img.size[1] / size).astype(int); xs = (np.arange(size) * img.size[0] / size).astype(int); a = a[ys][:, xs]
+    ys = (np.arange(size) * img.size[1] / size).astype(int); xs = (np.arange(size) * img.size[0] / size).astype(int); a = a[ys][:, xs]
     if half: a = a[::2, ::2]
     return a
+HAS = [any(IMG[n][k] for n in parts) for k in range(3)]
 def build_atlas(which, half):
     s = 2 if half else 1; A = np.zeros((AH // s, AW // s, 4), np.float32); A[..., 3] = 1
     if which == 1: A[..., 0:3] = (.5, .5, 1)   # flat normal where nothing is
@@ -174,32 +203,37 @@ def build_atlas(which, half):
     im = bpy.data.images.new('atlas_' + ('base', 'normal', 'rm')[which], AW // s, AH // s, alpha=False)
     im.colorspace_settings.name = 'Non-Color' if which else 'sRGB'; im.pixels.foreach_set(A.ravel()); im.update(); im.pack()
     print('atlas', im.name, im.size[:], 'mean', A.reshape(-1, 4).mean(0).round(3)); return im
-BASE, NORM, RMI = build_atlas(0, False), build_atlas(1, True), build_atlas(2, True)
+BASE = build_atlas(0, False); NORM = build_atlas(1, True) if HAS[1] else None; RMI = build_atlas(2, True) if HAS[2] else None
 for n, o in parts.items():
-    x0, y0, sz = SLOTS[n]; uv = o.data.uv_layers.active.data
-    for l in uv:
+    x0, y0, sz = SLOTS[n]
+    if not o.data.uv_layers: o.data.uv_layers.new()
+    for l in o.data.uv_layers.active.data:
         u = min(1, max(0, l.uv.x)); v = min(1, max(0, l.uv.y))
         l.uv.x = (x0 + PAD + u * (sz - 2 * PAD)) / AW; l.uv.y = (y0 + PAD + v * (sz - 2 * PAD)) / AH
-mat = bpy.data.materials.new('huntress'); mat.use_nodes = True; nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
+mat = bpy.data.materials.new(MODEL); mat.use_nodes = True; nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
 tb = nt.nodes.new('ShaderNodeTexImage'); tb.image = BASE; nt.links.new(tb.outputs['Color'], bsdf.inputs['Base Color'])
-tn = nt.nodes.new('ShaderNodeTexImage'); tn.image = NORM; nm_ = nt.nodes.new('ShaderNodeNormalMap'); nt.links.new(tn.outputs['Color'], nm_.inputs['Color']); nt.links.new(nm_.outputs['Normal'], bsdf.inputs['Normal'])
-tr = nt.nodes.new('ShaderNodeTexImage'); tr.image = RMI; sp = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(tr.outputs['Color'], sp.inputs['Color'])
-nt.links.new(sp.outputs['Green'], bsdf.inputs['Roughness']); nt.links.new(sp.outputs['Blue'], bsdf.inputs['Metallic'])
+if NORM: tn = nt.nodes.new('ShaderNodeTexImage'); tn.image = NORM; nm_ = nt.nodes.new('ShaderNodeNormalMap'); nt.links.new(tn.outputs['Color'], nm_.inputs['Color']); nt.links.new(nm_.outputs['Normal'], bsdf.inputs['Normal'])
+if RMI:
+    tr = nt.nodes.new('ShaderNodeTexImage'); tr.image = RMI; sp = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(tr.outputs['Color'], sp.inputs['Color'])
+    nt.links.new(sp.outputs['Green'], bsdf.inputs['Roughness']); nt.links.new(sp.outputs['Blue'], bsdf.inputs['Metallic'])
+else: bsdf.inputs['Metallic'].default_value = 0; bsdf.inputs['Roughness'].default_value = .6
 for o in parts.values(): o.data.materials.clear(); o.data.materials.append(mat)
 
 # ---- join: "body" = every part but the bow, "bow", "string" (the game can pull the string to the hand while she draws); all skinned on the rig
 def join(objs, name):
+    if not objs: return None
     for q in bpy.data.objects: q.select_set(False)
     for q in objs: q.select_set(True)
     bpy.context.view_layer.objects.active = objs[0]; bpy.ops.object.join(); objs[0].name = name; objs[0].data.name = name; return objs[0]
-bodyo = join([o for n, o in sorted(parts.items()) if ROLE[n] not in ('bow', 'string')], 'body')
-bowo = join([o for n, o in sorted(parts.items()) if ROLE[n] == 'bow'], 'bow')
-stro = join([o for n, o in sorted(parts.items()) if ROLE[n] == 'string'], 'string')
-for o in (bodyo, bowo, stro):
+outs = [join([o for n, o in sorted(parts.items()) if role_of(n) not in ('bow', 'string')], 'body'),
+        join([o for n, o in sorted(parts.items()) if role_of(n) == 'bow'], 'bow'),
+        join([o for n, o in sorted(parts.items()) if role_of(n) == 'string'], 'string')]
+outs = [o for o in outs if o]
+for o in outs:
     o.parent = rig; m = o.modifiers.new('rig', 'ARMATURE'); m.object = rig
     print(o.name, 'faces', len(o.data.polygons), 'verts', len(o.data.vertices))
 rig['joints'] = json.dumps({k: [round(c * SC, 4) for c in v] for k, v in J.items()})   # the game re-binds on these (glTF extras)
 for q in bpy.data.objects: q.select_set(False)
-for q in (bodyo, bowo, stro, rig): q.select_set(True)
+for q in outs + [rig]: q.select_set(True)
 bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', use_selection=True, export_image_format='JPEG', export_jpeg_quality=86, export_animations=False, export_extras=True)
 print('wrote', OUT)
