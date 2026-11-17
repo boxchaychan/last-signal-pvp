@@ -1225,10 +1225,14 @@ const GAME = window.GAME = (function () {
       addGear(tpl.shaman3, [['HaloB', 'head', [0, 1.98, -0.66], [0, 0, 0], 0, 1.45], ['Orbit', 'root', [0, 1.35, 0], [0, 0, 0], 0, 1.15], ['staff_B', 'handslotr', [0, 0, 0], [0, 0, 0], 1, 1.25], ['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 2.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.45]]);
       PEOPLE.mats = [...tpl.man.mats, ...tpl.woman.mats];
       for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');   // anims.glb joins several files: the loader renamed their duplicate bones hips_1, hips_2...
+      // KayKit's Death_A keeps the bow standing up on the dead archer: in bow units' own copy the left hand slot turns the bow over to lie flat as they fall
+      const BOW_FALL = -Math.PI / 2, bowDie = CL => CL.map(c => { if (c.name !== 'Death_A') return c; const d = c.clone(), t = d.tracks.find(t => t.name === 'handslotl.quaternion'); if (!t) return d;
+        const q = new THREE.Quaternion(), r = new THREE.Quaternion(), X = new V3(1, 0, 0); for (let i = 0; i < t.times.length; i++) { r.setFromAxisAngle(X, BOW_FALL * Math.min(1, Math.max(0, (t.times[i] - .15) / .45))); q.fromArray(t.values, i * 4).multiply(r).toArray(t.values, i * 4); } return d; });
       // ★★★ archer (owner 2026-11-17 "ผสมกัน"): the KayKit Ranger body wearing the hood and bow cut from the owner's Tripo huntress
       // (tools/blender/tripo_parts.py); ?archer=tripo = the whole Tripo huntress (tools/blender/tripo_rig.py)
       if (TW && /[?&]archer=tripo/.test(location.search)) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }
-      else if (HP) try { const T = hero('Ranger', [], mat('range_1')); tripoParts(T, HP, H.Knight.scene, H.Ranger.scene); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
+      else if (HP) try { const T = hero('Ranger', [], mat('range_1')); tripoParts(T, HP, H.Knight.scene, H.Ranger.scene, WEAP.bow_withString); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
+      for (const k of ['hunter2', 'hunter3']) if (tpl[k] && !tpl[k].clips) tpl[k].clips = bowDie(AN.animations);
       PEOPLE.clips = AN.animations; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
@@ -1272,8 +1276,19 @@ const GAME = window.GAME = (function () {
   }
   // Pieces cut from the Tripo huntress (tools/blender/tripo_parts.py, her coordinates) worn by a KayKit body T: each piece is read in the frame
   // of HER bone (tripoSkeleton), scaled, and put in the frame of the same bone of T, then skinned rigidly to it as a second mesh (own texture)
-  const TRIPO_FIT = { TripoHood: ['head', .93, [0, -.07, .1]], TripoBow: ['handl', 1.45, [0, 0, 0]] };   // bone, extra scale, offset (bone frame, after scaling)
-  function tripoParts(T, gl, kscene, body) {
+  const TRIPO_FIT = { TripoHood: ['head', .93, [0, -.07, .1]], TripoBow: ['handslotl', 1.12, [0, 0, 0]] };   // bone, extra scale, offset (bone frame, after scaling)
+  // a bow's own frame from its vertices: long axis (PCA), the side its string is on, the grip (middle of the belly) and its length
+  function bowFrame(pts) {
+    const c = new V3(); pts.forEach(p => c.add(p)); c.divideScalar(pts.length);
+    const C = [0, 0, 0, 0, 0, 0, 0, 0, 0]; for (const p of pts) { const d = [p.x - c.x, p.y - c.y, p.z - c.z]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i * 3 + j] += d[i] * d[j]; }
+    let L = new V3(1, 1, 1); for (let it = 0; it < 60; it++) L = new V3(C[0] * L.x + C[1] * L.y + C[2] * L.z, C[3] * L.x + C[4] * L.y + C[5] * L.z, C[6] * L.x + C[7] * L.y + C[8] * L.z).normalize();
+    const t = pts.map(p => p.clone().sub(c).dot(L)), t0 = Math.min(...t), t1 = Math.max(...t), len = t1 - t0, tip = (lo) => { const q = new V3(); let n = 0; pts.forEach((p, i) => { if (lo ? t[i] < t0 + len * .06 : t[i] > t1 - len * .06) { q.add(p); n++; } }); return q.divideScalar(n); };
+    const mid = tip(true).add(tip(false)).multiplyScalar(.5), S = mid.clone().sub(c); S.sub(L.clone().multiplyScalar(S.dot(L))).normalize();
+    const band = pts.filter((p, i) => Math.abs(t[i] - (t0 + t1) / 2) < len * .06), sv = band.map(p => p.clone().sub(c).dot(S)), smin = Math.min(...sv), smax = Math.max(...sv);
+    const grip = new V3(); let n = 0; band.forEach((p, i) => { if (sv[i] < (smin + smax) / 2) { grip.add(p); n++; } }); grip.divideScalar(n || 1);
+    return { L, S, X: L.clone().cross(S), grip, len };
+  }
+  function tripoParts(T, gl, kscene, body, kbow) {
     let J = null; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); });
     const { bone: her } = tripoSkeleton(J, kscene); T.root.updateMatrixWorld(true);
     const skel = T.mesh.skeleton, mine = {}; for (const b of skel.bones) mine[b.name] = b;
@@ -1283,7 +1298,16 @@ const GAME = window.GAME = (function () {
     gl.scene.traverse(o => {
       if (!o.isMesh || !TRIPO_FIT[o.name]) return; const [bn, k, off] = TRIPO_FIT[o.name], hb = her[bn], mb = mine[bn]; if (!hb || !mb) return;
       map = map || o.material.map; nmap = nmap || o.material.normalMap;
-      const s = (o.name === 'TripoHood' ? sHead : sBody) * k, M = new THREE.Matrix4().copy(mb.matrixWorld)
+      let M; const s = (o.name === 'TripoHood' ? sHead : sBody) * k;
+      if (o.name === 'TripoBow' && kbow) {   // turned to lie in the hand slot like the KayKit bow (its moves are made for that bow), grip on grip, k x its length
+        const kp = [], tp = [], q = new V3(); kbow.updateMatrixWorld(true);
+        kbow.traverse(m => { if (!m.isMesh) return; const A = m.geometry.attributes.position, mm = new THREE.Matrix4().copy(kbow.matrixWorld).invert().multiply(m.matrixWorld).premultiply(kbow.matrix); for (let i = 0; i < A.count; i += 2) kp.push(q.fromBufferAttribute(A, i).applyMatrix4(mm).clone()); });
+        const A = o.geometry.attributes.position; for (let i = 0; i < A.count; i += 3) tp.push(q.fromBufferAttribute(A, i).clone());
+        const K = bowFrame(kp), F = bowFrame(tp); if (F.L.y < 0) { F.L.negate(); F.X.negate(); }   // her upper limb -> the KayKit bow's +long end
+        const sb = K.len / F.len * k, R = new THREE.Matrix4().makeBasis(K.L, K.S, K.X).multiply(new THREE.Matrix4().makeBasis(F.L, F.S, F.X).transpose());
+        M = new THREE.Matrix4().copy(mb.matrixWorld).multiply(new THREE.Matrix4().makeTranslation(K.grip.x + off[0], K.grip.y + off[1], K.grip.z + off[2]))
+          .multiply(R).multiply(new THREE.Matrix4().makeScale(sb, sb, sb)).multiply(new THREE.Matrix4().makeTranslation(-F.grip.x, -F.grip.y, -F.grip.z));
+      } else M = new THREE.Matrix4().copy(mb.matrixWorld)
         .multiply(new THREE.Matrix4().makeTranslation(...off)).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(hb.matrixWorld.clone().invert());
       const g = o.geometry, p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv, m3 = new THREE.Matrix3().getNormalMatrix(M), v = new V3(), bi = skel.bones.indexOf(mb);
       for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(M); P.push(v.x, v.y, v.z); v.fromBufferAttribute(n, i).applyMatrix3(m3).normalize(); N.push(v.x, v.y, v.z); UV.push(uv.getX(i), uv.getY(i)); SI.push(bi, 0, 0, 0); SW.push(1, 0, 0, 0); }
