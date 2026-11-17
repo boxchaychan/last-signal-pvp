@@ -20,3 +20,8 @@ Kept in `art/incoming/kaykit/adventurers_2.0/`: `characters/` (Knight, Barbarian
 textures; Rig_Medium, no moves inside: the moves come from the Character Animations pack in
 `art/incoming/kaykit/character_animations/Rig_Medium`), `assets/` (31 weapons / shields / books / bow / quiver as glTF, attached to the
 `handslot.l` / `handslot.r` bones), `contents.png`. Licence `License_adventurers_2.0.txt`.
+
+# KayKit : RPG Tools Bits 1.0 FREE + Fantasy Weapons Bits 1.0 FREE (CC0) — owner's downloads 2026-11-17
+glTF kept in `art/incoming/kaykit/rpg_tools_bits/gltf/` and `art/incoming/kaykit/fantasy_weapons_bits/gltf/` (+ `contents.png`); each pack uses
+its own texture atlas. tribe3d uses `art/tribe3d/people/tools.glb` (axe, pickaxe, hammer, shovel: villagers' tools) and `fweapons.glb`
+(ornate bow / staff for ★★★ units), built by `tools/art/kaykit2_build.mjs`. Licences `License_rpg_tools_bits.txt`, `License_fantasy_weapons_bits.txt`.
