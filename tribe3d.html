@@ -1152,19 +1152,20 @@ const GAME = window.GAME = (function () {
   async function loadPeople() {   // KayKit Adventurers 2.0 (owner 2026-11-17 "เอาตัวเวอร์ชันเก่าออก"): tools/art/kaykit2_build.mjs + kaykit_recolor.py
     try {
       const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), P = 'art/tribe3d/people/';
-      const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
-      const [GL, WP, AN, GE, GM, TO, FW, TG] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
+      const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger', 'Hero'];   // Hero = the owner's red-scarf swordsman (tools/art/hero_build.mjs)
+      const [GL, WP, AN, GE, GM, TO, FW, TG, HG] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
         ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
-        ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits
+        ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null),
+        ld.loadAsync('art/tribe3d/gear/hero_gear.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_gear = tools/blender/hero_gear.py
       const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
       const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
-      const TX = {}; await Promise.all(['barba_0', 'barba_1', 'barba_2', 'rogue_0', 'rogue_1', 'rogue_2', 'rogue_3', 'knigh_0', 'knigh_1', 'knigh_2', 'mage_0', 'mage_1', 'mage_2', 'range_0', 'range_1'].map(n => tex(n).then(t => { TX[n] = t; })));
+      const TX = {}; await Promise.all(['barba_0', 'barba_1', 'barba_2', 'rogue_0', 'rogue_1', 'rogue_2', 'rogue_3', 'knigh_0', 'knigh_1', 'knigh_2', 'mage_0', 'mage_1', 'mage_2', 'range_0', 'range_1', 'hero_0'].map(n => tex(n).then(t => { TX[n] = t; })));
       const mat = (n, col) => new THREE.MeshLambertMaterial({ map: TX[n], color: col || 0xffffff });
       const WEAP = {}; for (const c of WP.scene.children) WEAP[c.name] = c;
       const GEAR = {};   // Blender gear (tools/blender/*_gear.py): flat colours, "glow*" materials unlit; archer gear was modelled +Y up (glTF turned it)
       if (GE) for (const c of GE.scene.children) { c.traverse(o => { if (!o.isMesh) return; const mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), side: THREE.DoubleSide })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; if (c.name !== 'Bow') o.geometry.rotateX(Math.PI / 2); }); GEAR[c.name] = c; }
-      for (const GX of [GM, TG]) if (GX) for (const c of GX.scene.children) { c.traverse(o => { if (!o.isMesh) return; const mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => (q.name || '').startsWith('glow') ? new THREE.MeshBasicMaterial({ color: q.color.clone().convertLinearToSRGB() }) : new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), emissive: 0x2a1a00 })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; }); GEAR[c.name] = c; }
+      for (const GX of [GM, TG, HG]) if (GX) for (const c of GX.scene.children) { c.traverse(o => { if (!o.isMesh) return; const side = GX === HG ? THREE.DoubleSide : THREE.FrontSide, mm = (Array.isArray(o.material) ? o.material : [o.material]).map(q => (q.name || '').startsWith('glow') ? new THREE.MeshBasicMaterial({ color: q.color.clone().convertLinearToSRGB(), side }) : new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), emissive: GX === HG ? 0x140a04 : 0x2a1a00, side })); o.material = mm.length === 1 ? mm[0] : mm; o.castShadow = true; }); GEAR[c.name] = c; }
       const bitsMat = {};
       for (const B of [TO, FW]) if (B) for (const c of B.scene.children) { c.traverse(o => { if (!o.isMesh) return; const q = o.material, k = q.map ? q.map.uuid : q.uuid;
         if (!bitsMat[k]) { if (q.map) { q.map.encoding = enc; q.map.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; q.map.userData.unit = true; } bitsMat[k] = new THREE.MeshLambertMaterial({ map: q.map || null, color: q.map ? 0xffffff : q.color }); }
@@ -1186,6 +1187,14 @@ const GAME = window.GAME = (function () {
       tpl.chief = hero('Barbarian', [['axe_2handed', R_], ['shield_round_barbarian', L_]], mat('barba_2'));
       addGear(tpl.chief, [['HatStar', 'head', [0, 2.05, 0.55], [-0.3, 0, 0], 0, 2.2], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.35]]);   // the chief: gold star + collar
       tpl.giant = hero('Barbarian', [['axe_2handed', R_]], mat('barba_1', 0x9ac07a));   // green-skinned forest giant
+      // the owner's design (art/incoming/tribe3d/hero_ref.png): spiky hair, red headband + scarf, purple tunic, gold bands, rune sword; leads the tribe as the chief (?chief=old = the crimson barbarian)
+      if (HG) {
+        tpl.hero = hero('Hero', [], mat('hero_0'));
+        addGear(tpl.hero, [['HeroHair', 'head', [0, 0, 0], [0, 0, 0], 0, 1], ['HeroBand', 'head', [0, 0, 0], [0, 0, 0], 0, 1], ['HeroScarf', 'chest', [0, 0, 0], [0, 0, 0], 0, 1],
+          ['HeroBadge', 'chest', [0, 0, 0], [0, 0, 0], 0, 1], ['HeroPouch', 'hips', [0, 0, 0], [0, 0, 0], 0, 1],
+          ['HeroPad', 'upperarml', [0.32, 1.31, 0], [0, 0, -0.22], 0, .8], ['HeroPad', 'upperarmr', [-0.32, 1.31, 0], [0, 0, 0.22], 0, .8], ['RuneBlade', R_, [0, 0, 0], [0, 0, 0], 1, 1.05]]);
+        if (!/[?&]chief=old/.test(location.search)) { tpl.chiefOld = tpl.chief; tpl.chief = tpl.hero; }
+      }
       // ★ / ★★ / ★★★ units
       tpl.warrior = hero('Knight', [['sword_1handed', R_], ['shield_round', L_]], mat('knigh_0'), ['Knight_HelmetVisor']);
       tpl.warrior2 = hero('Knight', [['sword_1handed', R_], ['shield_badge_color', L_]], mat('knigh_1'), ['Knight_HelmetVisor']);
