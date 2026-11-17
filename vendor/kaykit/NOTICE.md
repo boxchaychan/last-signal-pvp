@@ -14,3 +14,9 @@ Kept in `art/incoming/kaykit/character_animations/` (glTF only; the FBX copies o
 pickaxe, hammer, saw, fishing, work) for normal-size characters, `Rig_Large/*.glb` for big ones, the grey mannequins.
 Rig_Medium uses the same bone names as our Adventurers 1.0 characters (no IK helper bones), so its moves can play on them.
 Full licence: `License_character_animations.txt`.
+
+# KayKit : Adventurers Character Pack 2.0 FREE (CC0) — owner's download 2026-11-17
+Kept in `art/incoming/kaykit/adventurers_2.0/`: `characters/` (Knight, Barbarian, Mage, Rogue, Rogue_Hooded, Ranger .glb +
+textures; Rig_Medium, no moves inside: the moves come from the Character Animations pack in
+`art/incoming/kaykit/character_animations/Rig_Medium`), `assets/` (31 weapons / shields / books / bow / quiver as glTF, attached to the
+`handslot.l` / `handslot.r` bones), `contents.png`. Licence `License_adventurers_2.0.txt`.
