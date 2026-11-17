@@ -1125,13 +1125,14 @@ const GAME = window.GAME = (function () {
   // skinned mesh (rigid parts like the axe / hood become bone-weighted) = one draw call per person.
   const PEOPLE = { ready: false, tpl: {}, mats: [], clips: [] };
   const MOVE = { spin: '2H_Melee_Attack_Spin', bowIdle: 'Ranged_Bow_Idle', bowShot: 'Ranged_Bow_Release', chopT: 'Chopping', mine: 'Pickaxing', hammer: 'Hammering', shoot: '1H_Ranged_Shoot', cast: 'Spellcast_Shoot', raise: 'Spellcast_Raise', idle: 'Idle', walk: 'Walking_A', run: 'Running_A', chop: '1H_Melee_Attack_Chop', pick: 'PickUp', stab: '1H_Melee_Attack_Slice_Diagonal', smash: '2H_Melee_Attack_Chop', throw: 'Throw', hit: 'Hit_A', die: 'Death_A', cheer: 'Cheer', build: 'Interact', sit: 'Sit_Floor_Idle' };
+  const AO_LO = .5;   // how dark a fully occluded spot gets
   function mergePerson(root, keep, mat, skel0) {   // skel0: the skeleton when there is no skinned body left (the hero = rigid parts only); a vertexColors material takes each rigid part's colour
     root.updateMatrixWorld(true);
     let skel = skel0 || null; const parts = [], rigid = [], vc = mat.vertexColors, C = [], WHITE = new THREE.Color(1, 1, 1);
     root.traverse(o => { if (o.isSkinnedMesh) { parts.push(o); skel = o.skeleton; } else if (o.isMesh) rigid.push(o); });
     const P = [], N = [], UV = [], SI = [], SW = [], IDX = [], v = new V3(), m3 = new THREE.Matrix3(); let base = 0;
     const add = (geo, mat4, bone, col) => {
-      if (vc) for (let i = 0; i < geo.attributes.position.count; i++) C.push(col.r, col.g, col.b);
+      if (vc) { const ao = geo.attributes.color; for (let i = 0; i < geo.attributes.position.count; i++) { const k = ao ? AO_LO + (1 - AO_LO) * ao.getX(i) : 1; C.push(col.r * k, col.g * k, col.b * k); } }   // baked occlusion (hero_model.py) darkens creases
       const p = geo.attributes.position, n = geo.attributes.normal, uv = geo.attributes.uv, si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight; m3.getNormalMatrix(mat4);
       for (let i = 0; i < p.count; i++) {
         v.fromBufferAttribute(p, i).applyMatrix4(mat4); P.push(v.x, v.y, v.z); v.fromBufferAttribute(n, i).applyMatrix3(m3).normalize(); N.push(v.x, v.y, v.z);
@@ -1200,7 +1201,7 @@ const GAME = window.GAME = (function () {
           const bn = findN(r, bone); if (!bn) continue; const k = c.clone();
           k.traverse(o => { if (o.isMesh) { o.userData.keep = true; o.material = o.material.clone(); o.material.color.convertLinearToSRGB(); } }); r.add(k); k.updateMatrixWorld(true); bn.attach(k);
         }
-        const hm = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const hm = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .62, metalness: 0 });   // soft highlights (the KayKit people stay Lambert)
         tpl.hero = mergePerson(r, [], hm, skel); tpl.hero.mats = [hm]; tpl.hero.h = 2.3;   // body height like the KayKit people (the hair stands above it)
         addGear(tpl.hero, [['RuneBlade', R_, [0, 0, 0], [-2.125, -0.589, -2.622], 1, 1]]);   // turned in the hand so the KayKit idle holds it low, out to his right, flat side up, like the picture
         if (!/[?&]chief=old/.test(location.search)) { tpl.chiefOld = tpl.chief; tpl.chief = tpl.hero; }
