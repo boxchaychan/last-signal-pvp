@@ -2,7 +2,10 @@
 
 The owner speaks Thai and is not a programmer: reply in Thai, short and plain.
 
-Project now (2026-11-15): the side-scrolling game `hoodfall.html` with a NEW cast in PAINTED 2D (not pixel art); first hero = the archer "Sky Huntress" (`docs/codex/action/ARCHER.md`). Older briefs below were for the earlier pixel game. The old games (Babies & Beasts, the city game, the legends cast, the old hero classes) were removed from the repository on 2026-11-13; do not recreate them. The live pages are GitHub Pages from `main`.
+NEWEST (2026-11-17): the 3D level-grinding game `grind3d.html` (chibi archer hero, three.js). Picture jobs for it: `docs/codex/grind3d/ART.md`
+("ทำไอคอนสกิล", "ทำพื้นแมพ", "วาดตัวละครใหม่ <ใคร>", "วาดแมพ"). The briefs below are for older games.
+
+Older (2026-11-15): the side-scrolling game `hoodfall.html` with a NEW cast in PAINTED 2D (not pixel art); first hero = the archer "Sky Huntress" (`docs/codex/action/ARCHER.md`). Older briefs below were for the earlier pixel game. The old games (Babies & Beasts, the city game, the legends cast, the old hero classes) were removed from the repository on 2026-11-13; do not recreate them. The live pages are GitHub Pages from `main`.
 
 Who does what:
 - **Claude Code** writes the game code (`*.html`, `tools/`, `CLAUDE.md`) and brings new art into the game.
@@ -15,7 +18,8 @@ Who does what:
 - Keep each file under about 10 MB. When you stop, switch the folder back with `git checkout main`.
 
 ## Where the briefs are
-- `docs/codex/action/ARCHER.md`: NEWEST. Move sheets of the archer, painted 2D, one sheet per move ("ทำท่านักธนู" = next 2 todo rows; branch `codex/archer-moves`, pictures in `art/incoming/archer/`).
+- `docs/codex/grind3d/ART.md`: NEWEST, the 3D grinding game: skill icons, tileable ground textures, a new chibi hero design for Tripo, first-map concepts.
+- `docs/codex/action/ARCHER.md`: (side game) move sheets of the archer, painted 2D, one sheet per move ("ทำท่านักธนู" = next 2 todo rows; branch `codex/archer-moves`, pictures in `art/incoming/archer/`).
 - `docs/codex/action/SLASH.md`: run cycle + sword-combo frames for the new chibi pixel swordsman (pose sheet + character picture in `art/poses/ref_sketch/`; branch `codex/chibi-slash`; "ทำท่าวิ่ง" = row 0, "ทำท่าฟัน" = the first `todo` slash row; rows 0 and 1 first, then stop).
 - `docs/codex/action/MOBS.md`, `MOB_ANIM.md`: monsters and their frames (kept; "ทำมอนต่อ", "ทำเฟรมมอนต่อ").
 - `docs/codex/action/FX.md`: skill / attack effects ("ทำเอฟเฟคต่อ").
