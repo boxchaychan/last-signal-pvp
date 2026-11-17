@@ -1,10 +1,10 @@
 // The ★★★ warrior = the owner's Tripo demon knight (art/tribe3d/people/demon_knight.glb): three of them fight a night pack; moves, kills, errors, a picture.
-//   python3 -m http.server 8000 ; node tools/qa/tribe3d_knight.js [out_dir]
+//   python3 -m http.server 8000 ; node tools/qa/tribe3d_knight.js [out_dir] [mix|old]   (mix = the KayKit knight wearing the demon knight's helmet + pads)
 const {chromium} = require('playwright'); const fs = require('fs');
 (async () => { const out = process.argv[2] || '.'; fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch(); const pg = await (await b.newContext({ viewport: { width: 1280, height: 720 } })).newPage(); const errs = [];
-  pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (/error/.test(m.type()) || /demon knight/.test(m.text())) errs.push(m.text()); });
-  await pg.goto('http://localhost:8000/tribe3d.html?autostart=1&animals=0'); await pg.waitForFunction(() => window.GAME && GAME.on && GAME.PEOPLE.ready, null, {timeout: 150000});
+  pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (/error/.test(m.type()) || /demon knight|knight mix/.test(m.text())) errs.push(m.text()); });
+  await pg.goto('http://localhost:8000/tribe3d.html?autostart=1&animals=0' + (process.argv[3] ? '&knight=' + process.argv[3] : '')); await pg.waitForFunction(() => window.GAME && GAME.on && GAME.PEOPLE.ready, null, {timeout: 150000});
   const res = await pg.evaluate(() => {
     const G = GAME.G, T = GAME.PEOPLE.tpl.warrior3; let n = 0; T.root.traverse(o => { if (o.isSkinnedMesh) n++; });
     GAME.cheat.res(99999); TB.hold = true; const run = s => { for (let t = 0; t < s; t += .05) TB.step(.05); };
