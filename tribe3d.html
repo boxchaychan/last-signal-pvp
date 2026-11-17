@@ -1156,10 +1156,10 @@ const GAME = window.GAME = (function () {
     try {
       const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), P = 'art/tribe3d/people/';
       const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
-      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
+      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW, HP] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
         ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
         ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null),
-        ld.loadAsync(P + 'hero_model.glb').catch(() => null), ld.loadAsync(P + 'warrior_f.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
+        ld.loadAsync(P + 'hero_model.glb').catch(() => null), (/[?&]archer=tripo/.test(location.search) ? ld.loadAsync(P + 'warrior_f.glb').catch(() => null) : null), ld.loadAsync('art/tribe3d/gear/huntress_parts.glb').catch(() => null)]);   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
       const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
       const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
@@ -1225,7 +1225,10 @@ const GAME = window.GAME = (function () {
       addGear(tpl.shaman3, [['HaloB', 'head', [0, 1.98, -0.66], [0, 0, 0], 0, 1.45], ['Orbit', 'root', [0, 1.35, 0], [0, 0, 0], 0, 1.15], ['staff_B', 'handslotr', [0, 0, 0], [0, 0, 0], 1, 1.25], ['HatStar', 'head', [0, 2.1, 0.62], [-0.35, 0, 0], 0, 2.3], ['Collar', 'chest', [0, 1.34, 0], [0, 0, 0], 0, 1.45]]);
       PEOPLE.mats = [...tpl.man.mats, ...tpl.woman.mats];
       for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');   // anims.glb joins several files: the loader renamed their duplicate bones hips_1, hips_2...
-      if (TW) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }   // ★★★ archer = the owner's tribal huntress
+      // ★★★ archer (owner 2026-11-17 "ผสมกัน"): the KayKit Ranger body wearing the hood and bow cut from the owner's Tripo huntress
+      // (tools/blender/tripo_parts.py); ?archer=tripo = the whole Tripo huntress (tools/blender/tripo_rig.py)
+      if (TW && /[?&]archer=tripo/.test(location.search)) try { tpl.hunter3 = rigTripo(TW, H.Knight.scene, AN.animations); } catch (e) { console.warn('tripo', e.message); }
+      else if (HP) try { const T = hero('Ranger', [], mat('range_1')); tripoParts(T, HP, H.Knight.scene, H.Ranger.scene); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
       PEOPLE.clips = AN.animations; PEOPLE.ready = true; try { makePortraits(); } catch (e) { console.warn('portraits', e.message); }
       if (G.on) { for (const v of G.vill) if (!v.mixer) personize(v); makeChief(); }
     } catch (e) { console.warn('people', e.message); }
@@ -1236,20 +1239,7 @@ const GAME = window.GAME = (function () {
   // bones keep her lengths) and with the hips move scaled to her size.
   function rigTripo(gl, kscene, clips) {
     let J = null, sm = null; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh && !sm) sm = o; });
-    const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
-    r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
-    const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new V3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new V3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
-    const kkHips = bone.hips.position.clone(), k = J.hips[1] / kw.hips.y;
-    const DIR = { hips: 'spine', spine: 'chest', chest: 'head', upperarml: 'lowerarml', lowerarml: 'wristl', wristl: 'handl', handl: 'handslotl', upperarmr: 'lowerarmr', lowerarmr: 'wristr', wristr: 'handr', handr: 'handslotr', upperlegl: 'lowerlegl', lowerlegl: 'footl', footl: 'toesl', upperlegr: 'lowerlegr', lowerlegr: 'footr', footr: 'toesr' };
-    const R = {}, inv = new THREE.Matrix4(), W = new THREE.Matrix4();
-    r.traverse(o => {
-      if (!o.isBone) return; const n = o.name, pn = o.parent && o.parent.isBone ? o.parent.name : null, rot = new THREE.Quaternion();
-      if (DIR[n] && J[n] && J[DIR[n]]) rot.setFromUnitVectors(kw[DIR[n]].clone().sub(kw[n]).normalize(), new V3(...J[DIR[n]]).sub(new V3(...J[n])).normalize());
-      else if (pn && n !== 'head') rot.copy(R[pn]);
-      R[n] = rot;
-      W.compose(J[n] ? new V3(...J[n]) : new V3(), rot.clone().multiply(kq[n]), ksc[n]);
-      o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true);
-    });
+    const { r, ks, bone, kw } = tripoSkeleton(J, kscene), kkHips = kscene.getObjectByName('hips').position.clone(), k = J.hips[1] / kw.hips.y;
     const geo = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = geo.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
     for (let i = 0; i < si.count; i++) si.setXYZW(i, map(si.getX(i)), map(si.getY(i)), map(si.getZ(i)), map(si.getW(i)));
     const src = sm.material; if (src.map) { src.map.encoding = THREE.LinearEncoding; src.map.userData.unit = true; }
@@ -1263,6 +1253,49 @@ const GAME = window.GAME = (function () {
       return new THREE.VectorKeyframeTrack(t.name, t.times, v);
     })));
     geo.computeBoundingBox(); return { root: r, h: (geo.boundingBox.max.y - geo.boundingBox.min.y) * .9, mesh, mats: [m], clips: mine };
+  }
+  function tripoSkeleton(J, kscene) {   // a bare KayKit skeleton with every bone moved onto her joint, turned from its KayKit rest by the rotation that takes the KayKit bone direction to hers
+    const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
+    r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
+    const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new V3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new V3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
+    const DIR = { hips: 'spine', spine: 'chest', chest: 'head', upperarml: 'lowerarml', lowerarml: 'wristl', wristl: 'handl', handl: 'handslotl', upperarmr: 'lowerarmr', lowerarmr: 'wristr', wristr: 'handr', handr: 'handslotr', upperlegl: 'lowerlegl', lowerlegl: 'footl', footl: 'toesl', upperlegr: 'lowerlegr', lowerlegr: 'footr', footr: 'toesr' };
+    const R = {}, inv = new THREE.Matrix4(), W = new THREE.Matrix4();
+    r.traverse(o => {
+      if (!o.isBone) return; const n = o.name, pn = o.parent && o.parent.isBone ? o.parent.name : null, rot = new THREE.Quaternion();
+      if (DIR[n] && J[n] && J[DIR[n]]) rot.setFromUnitVectors(kw[DIR[n]].clone().sub(kw[n]).normalize(), new V3(...J[DIR[n]]).sub(new V3(...J[n])).normalize());
+      else if (pn && n !== 'head') rot.copy(R[pn]);
+      R[n] = rot;
+      W.compose(J[n] ? new V3(...J[n]) : new V3(), rot.clone().multiply(kq[n]), ksc[n]);
+      o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true);
+    });
+    return { r, ks, bone, kw };
+  }
+  // Pieces cut from the Tripo huntress (tools/blender/tripo_parts.py, her coordinates) worn by a KayKit body T: each piece is read in the frame
+  // of HER bone (tripoSkeleton), scaled, and put in the frame of the same bone of T, then skinned rigidly to it as a second mesh (own texture)
+  const TRIPO_FIT = { TripoHood: ['head', .93, [0, -.07, .1]], TripoBow: ['handl', 1.45, [0, 0, 0]] };   // bone, extra scale, offset (bone frame, after scaling)
+  function tripoParts(T, gl, kscene, body) {
+    let J = null; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); });
+    const { bone: her } = tripoSkeleton(J, kscene); T.root.updateMatrixWorld(true);
+    const skel = T.mesh.skeleton, mine = {}; for (const b of skel.bones) mine[b.name] = b;
+    let hw = 0; body.updateMatrixWorld(true); body.traverse(o => { if (o.isMesh && /_Head$/.test(o.name)) { const bb = new THREE.Box3().setFromObject(o); hw = bb.max.x - bb.min.x; } });
+    const sBody = T.h / (J.top[1] * 1.05), sHead = hw ? hw * 1.12 / 2.6 : sBody * 1.6;   // her face is ~2.6 wide (x10 units)
+    const P = [], N = [], UV = [], SI = [], SW = [], IDX = []; let base = 0, map = null, nmap = null;
+    gl.scene.traverse(o => {
+      if (!o.isMesh || !TRIPO_FIT[o.name]) return; const [bn, k, off] = TRIPO_FIT[o.name], hb = her[bn], mb = mine[bn]; if (!hb || !mb) return;
+      map = map || o.material.map; nmap = nmap || o.material.normalMap;
+      const s = (o.name === 'TripoHood' ? sHead : sBody) * k, M = new THREE.Matrix4().copy(mb.matrixWorld)
+        .multiply(new THREE.Matrix4().makeTranslation(...off)).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(hb.matrixWorld.clone().invert());
+      const g = o.geometry, p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv, m3 = new THREE.Matrix3().getNormalMatrix(M), v = new V3(), bi = skel.bones.indexOf(mb);
+      for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(M); P.push(v.x, v.y, v.z); v.fromBufferAttribute(n, i).applyMatrix3(m3).normalize(); N.push(v.x, v.y, v.z); UV.push(uv.getX(i), uv.getY(i)); SI.push(bi, 0, 0, 0); SW.push(1, 0, 0, 0); }
+      for (let i = 0; i < g.index.count; i++) IDX.push(base + g.index.getX(i)); base += p.count;
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4)); g.setIndex(IDX);
+    if (map) { map.encoding = THREE.LinearEncoding; map.userData.unit = true; }
+    const m = new THREE.MeshStandardMaterial({ map, normalMap: nmap, roughness: .7, metalness: 0, side: THREE.DoubleSide });
+    const mesh = new THREE.SkinnedMesh(g, m); mesh.castShadow = true; mesh.frustumCulled = false; mesh.userData.extra = true; T.root.add(mesh); mesh.bind(skel, new THREE.Matrix4());
+    return mesh;
   }
   function makePortraits() {   // a pretty picture of each unit for the training cards: smooth, anti-aliased, soft light + rim light
     const W = 96, H = 112, SS = 2, out = {};
@@ -1287,7 +1320,7 @@ const GAME = window.GAME = (function () {
   const card = (id, k, label, cost) => `<button id="${id}" class="uc${k.endsWith('3') ? ' violet' : k.endsWith('2') ? ' gold' : ''}">${PEOPLE.portrait && PEOPLE.portrait[k] ? `<img alt="" src="${PEOPLE.portrait[k]}">` : ''}<b>${label}</b><small>${costTxt(cost)}</small></button>`;
   function newPerson(kind, h, mi) {   // a clone of a template with its own skeleton + mixer
     const T = PEOPLE.tpl[kind], root = THREE.SkeletonUtils.clone(T.root); root.scale.setScalar(h / T.h);
-    let mesh = null; root.traverse(o => { if (o.isSkinnedMesh) mesh = o; });
+    let mesh = null; root.traverse(o => { if (o.isSkinnedMesh && !o.userData.extra) mesh = o; });
     if (mesh) mesh.material = T.mats[(mi == null ? Math.random() * T.mats.length : mi) | 0];
     const mixer = new THREE.AnimationMixer(root), acts = {}; for (const c of T.clips || PEOPLE.clips) acts[c.name] = mixer.clipAction(c);
     return { root, mixer, acts, mesh };
