@@ -1268,14 +1268,18 @@ const GAME = window.GAME = (function () {
   // A-pose arms "unbend" to KayKit's T-pose inside the bind), then the KayKit clips play as they are, minus the bone moves / scales (her
   // bones keep her lengths) and with the hips move scaled to her size.
   function rigTripo(gl, kscene, clips) {
-    let J = null, sm = null; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh && !sm) sm = o; });
+    let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
     const { r, ks, bone, kw } = tripoSkeleton(J, kscene), kkHips = kscene.getObjectByName('hips').position.clone(), k = J.hips[1] / kw.hips.y;
-    const geo = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = geo.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
-    for (let i = 0; i < si.count; i++) si.setXYZW(i, map(si.getX(i)), map(si.getY(i)), map(si.getZ(i)), map(si.getW(i)));
-    const src = sm.material; if (src.map) { src.map.encoding = THREE.LinearEncoding; src.map.userData.unit = true; }
+    // every skinned mesh of the file (one fused mesh, or "body" + "bow" + "string" from a model split into parts: tripo_parts_rig.py), one material
+    const src = sms[0].material; if (src.map) { src.map.encoding = THREE.LinearEncoding; src.map.userData.unit = true; }
     const m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughness: .7, metalness: 0 });
-    const mesh = new THREE.SkinnedMesh(geo, m); mesh.castShadow = true; mesh.frustumCulled = false; r.add(mesh); r.updateMatrixWorld(true);
-    mesh.bind(new THREE.Skeleton(ks.bones), new THREE.Matrix4());
+    const skel = new THREE.Skeleton(ks.bones); let mesh = null, geo = null;
+    for (const sm of sms) {
+      const g = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
+      for (let i = 0; i < si.count; i++) si.setXYZW(i, map(si.getX(i)), map(si.getY(i)), map(si.getZ(i)), map(si.getW(i)));
+      const me = new THREE.SkinnedMesh(g, m); me.name = sm.name; me.castShadow = true; me.frustumCulled = false; r.add(me); r.updateMatrixWorld(true);
+      me.bind(skel, new THREE.Matrix4()); if (!mesh || sm.name === 'body') { mesh = me; geo = g; }
+    }
     const herHips = bone.hips.position.clone();
     const mine = clips.map(c => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(t => !/\.scale$/.test(t.name) && (!/\.position$/.test(t.name) || t.name === 'hips.position')).map(t => {
       if (t.name !== 'hips.position') return t; const v = t.values.slice();
@@ -1370,8 +1374,8 @@ const GAME = window.GAME = (function () {
   const card = (id, k, label, cost) => `<button id="${id}" class="uc${k.endsWith('3') ? ' violet' : k.endsWith('2') ? ' gold' : ''}">${PEOPLE.portrait && PEOPLE.portrait[k] ? `<img alt="" src="${PEOPLE.portrait[k]}">` : ''}<b>${label}</b><small>${costTxt(cost)}</small></button>`;
   function newPerson(kind, h, mi) {   // a clone of a template with its own skeleton + mixer
     const T = PEOPLE.tpl[kind], root = THREE.SkeletonUtils.clone(T.root); root.scale.setScalar(h / T.h);
-    let mesh = null; root.traverse(o => { if (o.isSkinnedMesh && !o.userData.extra) mesh = o; });
-    if (mesh) mesh.material = T.mats[(mi == null ? Math.random() * T.mats.length : mi) | 0];
+    let mesh = null; root.traverse(o => { if (o.isSkinnedMesh && !o.userData.extra && !(mesh && mesh.name === 'body')) mesh = o; });   // a split model: its "body"
+    if (mesh) { const mt = T.mats[(mi == null ? Math.random() * T.mats.length : mi) | 0], old = mesh.material; root.traverse(o => { if (o.isSkinnedMesh && o.material === old) o.material = mt; }); }
     const mixer = new THREE.AnimationMixer(root), acts = {}; for (const c of T.clips || PEOPLE.clips) acts[c.name] = mixer.clipAction(c);
     return { root, mixer, acts, mesh };
   }
