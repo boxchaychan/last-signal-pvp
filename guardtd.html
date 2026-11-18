@@ -7,7 +7,7 @@
 <!-- guardtd.html: NEW tower defence (owner 2026-11-18 "ป้อม 3D มอนเป็นพิกเซล", "ไม่ต่อยอด", "เอาพวก kaykit มาใช้", "นักธนูเป็นตัวฮีโร่ ขอสวยๆ",
      "เลือกฮีโร่เอามาได้ 1 ตัว", "ตอนนี้ใช้ตัวหลัก 3 ตัวก่อน นักธนู ดาบโล่ ดาบใหญ่เกราะดำ").
      3D towers (Quaternius RTS watchtowers + KayKit adventurers on top), pixel monsters (our sprite sheets art/action/mobs, upright cards),
-     ONE hero picked from 3 (the owner's Tripo models re-bound onto the KayKit skeleton, KayKit moves: art/grind3d/hero_anims.glb).
+     ONE hero picked from 4 (the owner's Tripo models re-bound onto the KayKit skeleton, KayKit moves: art/grind3d/hero_anims.glb).
      Everything on the overlay is drawn on a canvas (no HTML boxes, Kanit text). Notes: last section of docs/action-game.md. Check: node tools/qa/guardtd_check.js -->
 <style>
   @font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
@@ -305,8 +305,10 @@ const HEROES = {
     idle: 'Idle', run: 'Running_A', atks: ['Melee_1H_Attack_Slice_Diagonal', 'Melee_1H_Attack_Chop'], hitAt: .42, skill: 'กระแทกโล่', skillCd: 12, skillAnim: 'Melee_Block_Attack', col: ['#ffe9a8', '#b07a1c'] },
   demon: { name: 'นักดาบปีศาจ', role: 'ดาบใหญ่ ตีแรงเป็นวง', file: 'art/tribe3d/people/demon_knight.glb', cls: 'sword', hp: 400, dmg: 30, rate: 1.25, range: 1.9, block: 2, blockR: .85, spd: 2.3,
     idle: 'Melee_2H_Idle', run: 'Running_A', atks: ['Melee_2H_Attack_Slice', 'Melee_2H_Attack_Chop'], hitAt: .45, cleave: .8, skill: 'พายุดาบ', skillCd: 14, skillAnim: 'Melee_2H_Attack_Spinning', col: ['#ff9a8a', '#8a1c2a'] },
+  dark: { name: 'อัศวินเขาดำ', role: 'ดาบใหญ่ ตีแรงเป็นวง', file: 'art/grind3d/dark_knight.glb', cls: 'sword', hp: 420, dmg: 28, rate: 1.2, range: 1.9, block: 2, blockR: .85, spd: 2.4,
+    idle: 'Melee_2H_Idle', run: 'Running_A', atks: ['Melee_2H_Attack_Chop', 'Melee_2H_Attack_Slice'], hitAt: .45, cleave: .8, skill: 'พายุดาบ', skillCd: 14, skillAnim: 'Melee_2H_Attack_Spinning', col: ['#ff7aa8', '#3a1a2a'] },
 };
-const HKEYS = ['archer', 'wing', 'demon'];
+const HKEYS = ['archer', 'wing', 'demon', 'dark'];
 let HERO = null;
 function rigTripo(gl, kscene, clips) {
   let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
@@ -428,7 +430,7 @@ function heroSkill(at) {
     for (let i = 0; i < 3; i++) after(.45 + i * .3, () => { for (const m of MON) if (!m.dead && m.pos.distanceTo(c) < 1.6) hitMon(m, H.dmg * 1.4, { num: i === 2, color: '#ffe14a' }); sfx('hit', .4); });
   } else if (H.k === 'wing') {   // กระแทกโล่: a gold shock all around, stuns
     uPlay(A, D.skillAnim, true, 1.1); after(.35, () => { ring(H.pos, 0xffe07a, .3, 1.8, .5); disc(H.pos, 0xffc23a, 1.6, .4); shake(.12); sfx('boom', .5, 1.2); for (const m of MON) if (!m.dead && m.pos.distanceTo(H.pos) < 1.7) hitMon(m, H.dmg * 2.2, { stun: 1.8, num: true, color: '#ffe14a' }); });
-  } else {   // พายุดาบ: spins, hits all around 5 times
+  } else {   // พายุดาบ (demon / dark): spins, hits all around 5 times
     uPlay(A, D.skillAnim, true, 1); H.busy = 1.5; for (let i = 0; i < 5; i++) after(.15 + i * .26, () => { if (H.dead) return; ring(H.pos, 0xff5a4a, .4, 1.8, .3, .8); sfx('slash', .5, 1 + i * .05); for (const m of MON) if (!m.dead && m.pos.distanceTo(H.pos) < 1.7) hitMon(m, H.dmg * .9, { num: i === 4, color: '#ff9a8a' }); });
   }
   after(H.busy, () => { if (!H.dead) uPlay(A, D.idle); }); return true;
@@ -529,7 +531,7 @@ function drawUI(dt) {
   // hero button + skill
   if (HERO) { const H = HERO, D = H.D, hb = BTN.hero; const done = roundBtn(hb, D.col, 0, 1, G.select); heroIcon(H.k, hb.x, hb.y, hb.r); done(); bar(hb.x + hb.r + 6 * S, hb.y - 8 * S, 90 * S, 9 * S, H.hp / H.max, '#7aff8a', '#1e9a3a'); bar(hb.x + hb.r + 6 * S, hb.y + 5 * S, 70 * S, 6 * S, H.lv >= 10 ? 1 : H.xp / needXp(), '#ffe27a', '#e3a21c');
     txt(D.name + ' Lv ' + H.lv, hb.x + hb.r + 6 * S, hb.y - 22 * S, 12 * S, '#fff6dc', 'left');
-    const sb = BTN.skill, d2 = roundBtn(sb, ['#ffe58a', '#d18a10'], H.skillT, D.skillCd, H.aim); heroIcon(H.k === 'archer' ? 'archer' : H.k === 'wing' ? 'wing' : 'demon', sb.x, sb.y - 4 * S, sb.r * .9); d2(); txt(D.skill, sb.x, sb.y + sb.r + 8 * S, 12 * S, '#fff4d6');
+    const sb = BTN.skill, d2 = roundBtn(sb, ['#ffe58a', '#d18a10'], H.skillT, D.skillCd, H.aim); heroIcon(H.k, sb.x, sb.y - 4 * S, sb.r * .9); d2(); txt(D.skill, sb.x, sb.y + sb.r + 8 * S, 12 * S, '#fff4d6');
     if (H.aim) txt('แตะพื้นที่จะยิงฝนธนู', SW / 2, SH - 24 * S, 15 * S, '#ffe9a0'); else if (G.select) txt('แตะพื้นเพื่อให้' + D.name + 'ไปยืน', SW / 2, SH - 24 * S, 15 * S, '#bff0ff'); }
   // next wave
   if (G.state === 'play' && !G.queue.length && !MON.length && G.wave < NWAVE) { const b = BTN.wave, pulse = .5 + .5 * Math.sin(NOW * 5); rr(b.rx, b.ry, b.w, b.h, b.h / 2); const g = ui.createLinearGradient(0, b.ry, 0, b.ry + b.h); g.addColorStop(0, '#ff8a5a'); g.addColorStop(1, '#c8321e'); ui.fillStyle = g; ui.fill(); ui.lineWidth = 2 + pulse * 2; ui.strokeStyle = '#ffe9c0'; ui.stroke();
@@ -565,7 +567,7 @@ let RANGE_T = 0; function drawRangeRing(c, R) { RINGM.position.x = RFILL.positio
 function drawTitle() {
   const g = ui.createLinearGradient(0, 0, 0, SH); g.addColorStop(0, 'rgba(10,16,30,.55)'); g.addColorStop(1, 'rgba(10,16,30,.25)'); ui.fillStyle = g; ui.fillRect(0, 0, SW, SH);
   txt('ป้อมผู้พิทักษ์', SW / 2, 44 * S, 38 * S, '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)'); txt('เลือกฮีโร่ 1 ตัว ไปปกป้องปราสาท 20 คลื่น', SW / 2, 80 * S, 15 * S, '#fff3cf', 'center', 600);
-  const cw = Math.min(170 * S, (SW - 60 * S) / 3), ch = Math.min(220 * S, SH - 130 * S), gap = 12 * S, x0 = SW / 2 - (cw * 3 + gap * 2) / 2, y0 = 100 * S;
+  const NH = HKEYS.length, cw = Math.min(170 * S, (SW - 60 * S) / NH), ch = Math.min(220 * S, SH - 130 * S), gap = 12 * S, x0 = SW / 2 - (cw * NH + gap * (NH - 1)) / 2, y0 = 100 * S;
   HKEYS.forEach((k, i) => { const D = HEROES[k], x = x0 + i * (cw + gap), y = y0, last = k === G.lastHero;
     MENU.push({ k: 'hero:' + k, x, y, w: cw, h: ch }); rr(x, y, cw, ch, 14 * S); const gg = ui.createLinearGradient(0, y, 0, y + ch); gg.addColorStop(0, D.col[0]); gg.addColorStop(1, D.col[1]); ui.fillStyle = gg; ui.fill(); ui.lineWidth = (last ? 4 : 2) * S; ui.strokeStyle = last ? '#fff' : 'rgba(255,240,200,.7)'; ui.stroke();
     ui.beginPath(); ui.arc(x + cw / 2, y + ch * .28, ch * .18, 0, TAU); ui.fillStyle = 'rgba(0,0,0,.25)'; ui.fill(); heroIcon(k, x + cw / 2, y + ch * .28, ch * .18);
