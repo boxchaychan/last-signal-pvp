@@ -1877,3 +1877,10 @@ Owner: "ใส่เข้าเกม tribe3d.html: 1. Ultimate Fantasy RTS = �
 - Buttons: speed x1/x2/x3, ภาพ ปกติ / พิกเซล (renders at ~300 px high and upscales with hard pixels, `?px=1`), sound. Keys: Space = next wave, Q = skill. `?hero=archer|wing|demon` skips the title. Best wave saved in the browser.
 - Check: `node tools/qa/guardtd_check.js <out> [hero] [waves]` (bot builds / upgrades, plays waves fast; 6 waves incl. the first boss with the winged knight: 20 lives left, hero Lv 5, no errors). Pictures `t*_*.png` incl. close-ups of a tower and the hero.
 - Open: balance past wave 6 (only bot-tested to 6), more maps, the next heroes (dog swordsman, fox mage, dark knight: GPT prompts in `art/incoming/grind3d/<name>/`).
+
+## 2026-11-18: the dark knight (อัศวินเขาดำ) = 4th Tripo hero
+- Owner's GPT sheet -> GPT T-pose front -> Tripo (textured, Segment by prompt "helmet with horns, plume hair, scarf, chest and torso armor, left / right arm, belt and armored skirt, cape, left / right leg, left / right boot, no base") -> `art/incoming/grind3d/darkknight/tripo_split_raw.glb` (43 parts, own texture each, 1.0 tall, faces +z).
+- Rig: `python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/darkknight/tripo_split_raw.glb art/grind3d/dark_knight.glb dark` (new `dark` entry in MODELS: part numbers read off their bounding boxes; 56k faces, 2.7 MB). All KayKit moves play clean (idle / run / chops / spin / dodge / cheer checked from the front).
+- In the games: `grind3d.html?hero=dark` (two-handed kit like the demon knight, KayKit 2H sword for now) and `guardtd.html` 4th hero card (2H, พายุดาบ).
+- Pixel tests of the same design (code, free): `art/incoming/grind3d/darkknight/px68*.png` (painted sheet, mushy) and `spear68*.png` (the clean-line sticker version: much better; tip: clean ink lines + flat colours + no effects pixelate best).
+- Owner asked for prettier moves ("ไม่มีท่าสวยๆ เลยหรือ"): free routes = Mixamo (owner downloads FBX "without skin", Claude retargets onto the KayKit skeleton; made for real proportions, so check big-head clipping), Quaternius Universal Animation Library (CC0), more KayKit packs. Not done yet.
