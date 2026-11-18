@@ -15,7 +15,9 @@ const KEEP = {
   Simulation: { Cheering: 'Cheer' },
   CombatMelee: { Melee_2H_Idle: 'Melee_2H_Idle', Melee_2H_Attack_Slice: 'Melee_2H_Attack_Slice', Melee_2H_Attack_Chop: 'Melee_2H_Attack_Chop', Melee_2H_Attack_Stab: 'Melee_2H_Attack_Stab',
     Melee_2H_Attack_Spin: 'Melee_2H_Attack_Spin', Melee_2H_Attack_Spinning: 'Melee_2H_Attack_Spinning', Melee_1H_Attack_Jump_Chop: 'Melee_1H_Attack_Jump_Chop',
-    Melee_1H_Attack_Slice_Horizontal: 'Melee_1H_Attack_Slice_Horizontal', Melee_Block: 'Melee_Block', Melee_Blocking: 'Melee_Blocking' },   // the knight (2026-11-17)
+    Melee_1H_Attack_Slice_Horizontal: 'Melee_1H_Attack_Slice_Horizontal', Melee_Block: 'Melee_Block', Melee_Blocking: 'Melee_Blocking',   // the knight (2026-11-17)
+    Melee_1H_Attack_Chop: 'Melee_1H_Attack_Chop', Melee_1H_Attack_Slice_Diagonal: 'Melee_1H_Attack_Slice_Diagonal', Melee_1H_Attack_Stab: 'Melee_1H_Attack_Stab',
+    Melee_Block_Attack: 'Melee_Block_Attack', Melee_Block_Hit: 'Melee_Block_Hit' },   // sword & shield (owner 2026-11-18 "ให้เป็นดาบโล่")
 };
 const io = new NodeIO(); let adoc = null;
 for (const [file, keep] of Object.entries(KEEP)) {
