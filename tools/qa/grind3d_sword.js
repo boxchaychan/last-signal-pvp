@@ -5,7 +5,7 @@ const { chromium } = require('playwright'); const fs = require('fs');
   const out = process.argv[2] || '.', hero = process.argv[3] || 'wing'; fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch(); const pg = await (await b.newContext({ viewport: { width: 844, height: 390 } })).newPage(); const errs = [];
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await pg.goto(`http://localhost:8000/grind3d.html?snd=0&hero=${hero}`); await pg.waitForFunction(() => window.GAME && GAME.P.ready, null, { timeout: 120000 });
+  await pg.goto(`http://localhost:8000/grind3d.html?snd=0&save=0&dummy=1&hero=${hero}`); await pg.waitForFunction(() => window.GAME && GAME.P.ready, null, { timeout: 120000 });
   await pg.waitForTimeout(2000); await pg.screenshot({ path: `${out}/s1_start.png` });
   const sim = (sec, fn) => pg.evaluate(([sec, fn]) => { if (fn) eval(fn); GAME.sim(sec); }, [sec, fn || null]).then(() => pg.waitForTimeout(120));
   const shot = async (n, sec, fn) => { await sim(sec, fn); await pg.screenshot({ path: `${out}/${n}.png` }); };

@@ -1859,3 +1859,12 @@ Owner: "ใส่เข้าเกม tribe3d.html: 1. Ultimate Fantasy RTS = �
 - New KayKit moves added to `art/grind3d/hero_anims.glb` (`tools/art/grind3d_anims.mjs`): 1H chop / slice diagonal / stab, block attack, block hit. Hit times measured from the hand slots (shield bash = left hand).
 - Weapons for now: KayKit `sword_1handed` + `shield_badge_color` in the obsidian / crimson / gold knight texture. The owner's own sword + winged shield (from the sheet) can replace them later (Tripo, same hand slots).
 - Open: cape is stiff (owner asked why, "ไม่ต้องทำ"): fix = 2-3 cape bones + spring code, free, when the owner says.
+
+## 2026-11-18: `grind3d.html` becomes a real grinding game (owner: "ทำเกมส์เก็บเวล 3 D")
+- 4 zones (`ZONES`): 1 ทุ่งเห็ด Lv 1 (mushroom, wolf; boss ราชาเห็ด), 2 ป่าเงา Lv 6 (wolf, ghost, tribal; boss หัวหน้าออร์ค), 3 ค่ายออร์ค Lv 12 (orc, tribal, demon; boss จอมปีศาจ), 4 ภูเขาน้ำแข็ง Lv 18 (yeti, ghost, demon; boss มังกรน้ำแข็ง). Same clearing, each zone recolours sky / fog / ground / leaves; monsters (Quaternius CC0 already in `art/tribe3d`) load per zone.
+- Monsters come in packs of 2-4 (up to 9 alive, `?mon=`), level = zone Lv + 0-3 (life +22 % / damage +16 % / XP +30 % per level), 14 % of packs have a gold "หัวหน้า" elite (1.3x size, 3x life, more drops). Monster Lv shown over the life bar.
+- Zone bar (top middle): 25 kills (`QUOTA`) call the zone boss (zone Lv + 4, boss life bar at the top). Boss skills = RED GROUND WARNINGS (`warnZone`: red rim, fill grows until it hits): a big circle on you, a ring around the boss, or 5 small circles in a row; bosses are not stunned and barely pushed. Beating a boss opens the next zone (button "แดน" left, or N); the last zone's boss comes back for farming.
+- Gold coins from every kill fly to the hero -> shop (button "ร้านค้า" or B, the game pauses): attack +8 %, life +10 %, crit +2 %, gold +15 % per step, cost x1.3-1.45 per step (`UPS`).
+- Saved in the browser per hero (`grind3d_v1_<hero>`): level, XP, gold, shop steps, open zones, current zone. `?save=0` = no save, `?reset=1` = start over. Training dummies only on `?dummy=1` (the old checks use it).
+- Check: `node tools/qa/grind3d_loop.js <out> [hero]` (bot plays zone 1: boss came at ~22 s game time after 25 kills, beaten at Lv 9; shop, zones 2-4 + their bosses, save after reload; no errors). Bot pace is faster than a person: tune `QUOTA` / XP if the owner finds it too quick.
+- Open: own map per zone (now one clearing, recoloured), more skills / skill upgrades, gear drops.

@@ -94,9 +94,10 @@ function dirtTex() {   // trodden earth: flat warm colour, soft patches, fine sp
     g.closePath(); g.filter = 'blur(6px)'; g.fillStyle = '#000'; g.fill(); g.filter = 'none';
   });
 }
+const ENV = {};
 { const gt = grassTex(); gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set(16, 16); gt.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(170, 170), new THREE.MeshLambertMaterial({ map: gt })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-  const cl = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshLambertMaterial({ map: dirtTex(), transparent: true, depthWrite: false })); cl.rotation.x = -Math.PI / 2; cl.position.y = .015; cl.receiveShadow = true; scene.add(cl); }
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(170, 170), new THREE.MeshLambertMaterial({ map: gt })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground); ENV.ground = ground;
+  const cl = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshLambertMaterial({ map: dirtTex(), transparent: true, depthWrite: false })); cl.rotation.x = -Math.PI / 2; cl.position.y = .015; cl.receiveShadow = true; scene.add(cl); ENV.clear = cl; }
 
 // ---------- effects: sprites, rings, streaks (all made in code, additive = bright)
 const FX = [], TIMERS = [], GEO = { ring: new THREE.RingGeometry(.86, 1, 56), plane: new THREE.PlaneGeometry(1, 1), cyl: new THREE.CylinderGeometry(1, 1, 1, 6, 1), col: new THREE.CylinderGeometry(1, 1, 1, 28, 1, true) };
@@ -196,7 +197,7 @@ const LOWER = /^(root|hips|upperleg|lowerleg|foot|toes)/;
 const PULL = { Ranged_Bow_Draw: [.2, .4, 9, 9], Ranged_Bow_Draw_Up: [.2, .4, 9, 9], Ranged_Bow_Aiming_Idle: [-1, 0, 9, 9], Ranged_Bow_Release: [-1, 0, .2, .27], Ranged_Bow_Release_Up: [-1, 0, .2, .27] };   // [pull starts, full, lets go, straight] as clip fractions
 function pullAt(name, f) { const p = PULL[name]; if (!p) return 0; let v = p[0] < 0 ? 1 : clamp((f - p[0]) / (p[1] - p[0]), 0, 1); if (f >= p[2]) v *= 1 - clamp((f - p[2]) / (p[3] - p[2]), 0, 1); return v; }
 
-const P = { ready: false, pos: new V3(0, 0, 2.5), face: .35, mode: 'load', hp: SS ? 190 : SWORD ? 160 : 120, max: SS ? 190 : SWORD ? 160 : 120, lv: 1, xp: 0, kills: 0, dmg: DMG0, shot: null, buf: 0, comboI: 0, comboWin: 0, chase: null, atk: null, aimHold: 0, aimDir: new V3(0, 0, -1),
+const P = { ready: false, pos: new V3(0, 0, 2.5), face: .35, mode: 'load', hp: SS ? 190 : SWORD ? 160 : 120, max: SS ? 190 : SWORD ? 160 : 120, lv: 1, xp: 0, kills: 0, dmg: DMG0, critB: 0, shot: null, buf: 0, comboI: 0, comboWin: 0, chase: null, atk: null, aimHold: 0, aimDir: new V3(0, 0, -1),
   cd: { atk: 0, dodge: 0, s1: 0, s2: 0 }, cdMax: { dodge: .6, s1: SWORD ? 6 : 7, s2: SWORD ? 7 : 4.5 }, inv: 0, hitT: 0, flash: 0, pose: IDLE, stats: { arrows: 0, hits: 0, dodges: 0, rains: 0, pierces: 0, swings: 0, slams: 0, spins: 0, charges: 0, bashes: 0 } };
 let ACT = {}; const LY = { up: null, lo: null };
 function lay(layer, name, o = {}) {
@@ -237,8 +238,105 @@ const MDEF = {
   mush: { file: 'art/tribe3d/monsters/Mushnub.glb', name: 'เห็ดน้อย', h: 1.0, hp: 70, spd: 2.3, r: .5, dmg: 6, xp: 6, c: { walk: 'Walk', atk: 'Bite_Front', hit: 'HitRecieve', die: 'Death', idle: 'Idle' }, hitAt: .45, w: .45 },
   wolf: { file: 'art/tribe3d/animals/Wolf.glb', name: 'หมาป่า', h: 1.15, hp: 50, spd: 3.9, r: .55, dmg: 5, xp: 5, c: { walk: 'Gallop', atk: 'Attack', hit: 'Idle_HitReact1', die: 'Death', idle: 'Idle' }, hitAt: .4, w: .35 },
   orc: { file: 'art/tribe3d/monsters/Orc.glb', name: 'ออร์ค', h: 2.0, hp: 170, spd: 1.8, r: .65, dmg: 12, xp: 15, c: { walk: 'Walk', atk: 'Punch', hit: 'HitReact', die: 'Death', idle: 'Idle' }, hitAt: .45, w: .2 },
+  tribal: { file: 'art/tribe3d/monsters/Tribal.glb', name: 'คนป่า', h: 1.7, hp: 110, spd: 2.6, r: .55, dmg: 9, xp: 10, c: { walk: 'Run', atk: 'Weapon', hit: 'HitReact', die: 'Death', idle: 'Idle' }, hitAt: .5 },
+  ghost: { file: 'art/tribe3d/monsters/Ghost.glb', name: 'วิญญาณ', h: 1.5, hp: 80, spd: 3.1, r: .5, dmg: 8, xp: 9, c: { walk: 'Fast_Flying', atk: 'Headbutt', hit: 'HitReact', die: 'Death', idle: 'Flying_Idle' }, hitAt: .45 },
+  demon: { file: 'art/tribe3d/monsters/Demon.glb', name: 'ปีศาจ', h: 2.1, hp: 190, spd: 2.2, r: .65, dmg: 14, xp: 18, c: { walk: 'Run', atk: 'Weapon', hit: 'HitReact', die: 'Death', idle: 'Idle' }, hitAt: .5 },
+  yeti: { file: 'art/tribe3d/monsters/Yeti.glb', name: 'เยติ', h: 2.3, hp: 240, spd: 1.9, r: .75, dmg: 16, xp: 22, c: { walk: 'Walk', atk: 'Punch', hit: 'HitReact', die: 'Death', idle: 'Idle' }, hitAt: .45 },
+  // bosses (owner's direction: bosses with red ground warnings): one per zone, called by filling the zone bar
+  bKing: { file: 'art/tribe3d/monsters/MushroomKing.glb', name: 'ราชาเห็ด', boss: true, h: 3.2, hp: 1500, spd: 1.6, r: 1.1, dmg: 14, xp: 160, c: { walk: 'Walk', atk: 'Punch', hit: 'HitReact', die: 'Death', idle: 'Idle', cast: 'Jump' }, hitAt: .45 },
+  bOrc: { file: 'art/tribe3d/monsters/Orc.glb', name: 'หัวหน้าออร์ค', boss: true, h: 3.8, hp: 1700, spd: 1.8, r: 1.2, dmg: 16, xp: 260, c: { walk: 'Walk', atk: 'Punch', hit: 'HitReact', die: 'Death', idle: 'Idle', cast: 'Weapon' }, hitAt: .45, tint: 0x8a2a18 },
+  bDemon: { file: 'art/tribe3d/monsters/Demon.glb', name: 'จอมปีศาจ', boss: true, h: 4.0, hp: 1900, spd: 2.0, r: 1.25, dmg: 18, xp: 380, c: { walk: 'Walk', atk: 'Weapon', hit: 'HitReact', die: 'Death', idle: 'Idle', cast: 'Jump' }, hitAt: .5 },
+  bDragon: { file: 'art/tribe3d/monsters/Dragon_Evolved.glb', name: 'มังกรน้ำแข็ง', boss: true, h: 4.2, hp: 2200, spd: 2.2, r: 1.4, dmg: 20, xp: 520, c: { walk: 'Fast_Flying', atk: 'Punch', hit: 'HitReact', die: 'Death', idle: 'Flying_Idle', cast: 'Headbutt' }, hitAt: .45, tint: 0x9fd8ff },
 };
-const MAXMON = Q.get('mon') != null ? +Q.get('mon') : 5;
+// ---------- the grinding loop (owner 2026-11-18 "ทำเกมส์เก็บเวล 3 D"): 4 zones, each with its monster level; kill to fill the zone bar -> its boss
+// comes (red ground warnings); beating a boss opens the next zone. Gold from every kill -> the shop (attack / life / crit / gold). Saved in the browser.
+const ZONES = [
+  { name: 'ทุ่งเห็ด', lv: 1, mons: { mush: .6, wolf: .4 }, boss: 'bKing', sky: 0xa6d4e6, fog: [34, 78], ground: 0xffffff, leaf: 0xffffff, hemi: 0xeaf5ff },
+  { name: 'ป่าเงา', lv: 6, mons: { wolf: .35, ghost: .3, tribal: .35 }, boss: 'bOrc', sky: 0x7d9aa6, fog: [26, 66], ground: 0x93ae8c, leaf: 0x86a888, hemi: 0xc8dcff },
+  { name: 'ค่ายออร์ค', lv: 12, mons: { orc: .45, tribal: .3, demon: .25 }, boss: 'bDemon', sky: 0xe2b088, fog: [30, 72], ground: 0xe2bf8e, leaf: 0xf0a868, hemi: 0xffe2c0 },
+  { name: 'ภูเขาน้ำแข็ง', lv: 18, mons: { yeti: .5, ghost: .2, demon: .3 }, boss: 'bDragon', sky: 0xcfe2f0, fog: [30, 74], ground: 0xd8ecf6, leaf: 0xd6ecff, hemi: 0xf0f6ff },
+];
+const QUOTA = 25;   // kills in a zone before its boss comes
+const UPS = [   // the shop: cost = base x grow^level
+  { k: 'atk', name: 'พลังโจมตี', info: n => `+${n * 8}%`, base: 30, grow: 1.32, max: 40 },
+  { k: 'hp', name: 'พลังชีวิต', info: n => `+${n * 10}%`, base: 25, grow: 1.3, max: 40 },
+  { k: 'crit', name: 'โอกาสคริ', info: n => `+${n * 2}%`, base: 40, grow: 1.4, max: 15 },
+  { k: 'gold', name: 'ทองดรอป', info: n => `+${n * 15}%`, base: 50, grow: 1.45, max: 15 },
+];
+const SAVE_ON = Q.get('save') !== '0', SKEY = 'grind3d_v1_' + HK;
+const G = { zone: 0, unl: 0, gold: 0, up: { atk: 0, hp: 0, crit: 0, gold: 0 }, prog: 0, boss: null, ready: false, panel: null, banner: null, bossWins: 0 };
+function loadSave() {
+  if (!SAVE_ON) return; try { if (Q.get('reset') === '1') localStorage.removeItem(SKEY); const d = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (!d) return;
+    P.lv = d.lv || 1; P.xp = d.xp || 0; P.kills = d.kills || 0; G.gold = d.gold || 0; G.unl = Math.min(ZONES.length - 1, d.unl || 0); G.zone = Math.min(G.unl, d.zone || 0); G.bossWins = d.bossWins || 0; Object.assign(G.up, d.up || {}); } catch (_) { }
+}
+function save() { if (!SAVE_ON) return; try { localStorage.setItem(SKEY, JSON.stringify({ lv: P.lv, xp: Math.floor(P.xp), kills: P.kills, gold: G.gold, unl: G.unl, zone: G.zone, up: G.up, bossWins: G.bossWins })); } catch (_) { } }
+const BASEHP = SS ? 190 : SWORD ? 160 : 120;
+function calcStats() {
+  const f = P.max ? P.hp / P.max : 1;
+  P.max = Math.round((BASEHP + 15 * (P.lv - 1)) * (1 + .1 * G.up.hp)); P.dmg = Math.round(DMG0 * (1 + .1 * (P.lv - 1)) * (1 + .08 * G.up.atk)); P.critB = .02 * G.up.crit; G.goldMul = 1 + .15 * G.up.gold;
+  P.hp = Math.min(P.max, Math.max(1, Math.round(P.max * f)));
+}
+const upCost = u => Math.round(u.base * Math.pow(u.grow, G.up[u.k]));
+function buy(k) { const u = UPS.find(q => q.k === k); if (!u || G.up[k] >= u.max) return false; const c = upCost(u); if (G.gold < c) { sfx('tick', .4, .6); return false; }
+  G.gold -= c; G.up[k]++; const f = P.hp / P.max; calcStats(); P.hp = Math.round(P.max * f); sfx('coin', .7, 1.2); save(); return true; }
+const LOADING = {};
+function loadKind(k) {
+  const D = MDEF[k]; if (D.src) return Promise.resolve();
+  if (!LOADING[D.file]) LOADING[D.file] = new THREE.GLTFLoader().loadAsync(D.file).then(g => { const b = new THREE.Box3().setFromObject(g.scene); return { scene: g.scene, clips: g.animations, h: Math.max(.01, b.max.y - b.min.y) }; });
+  return LOADING[D.file].then(src => { D.src = src; }).catch(e => console.warn('monster', k, e.message));
+}
+function tintMat(m, c) { if (!m.userData.base) m.userData.base = m.color.clone(); m.color.copy(m.userData.base).multiply(new THREE.Color(c)); }
+async function setZone(i) {
+  G.ready = false; const Z = ZONES[i]; G.zone = i; G.prog = 0; G.boss = null;
+  for (const m of MON) scene.remove(m.root); MON.length = 0;
+  scene.background.setHex(Z.sky); scene.fog.color.setHex(Z.sky); scene.fog.near = Z.fog[0]; scene.fog.far = Z.fog[1]; HEMI.color.setHex(Z.hemi);
+  if (ENV.ground) { tintMat(ENV.ground.material, Z.ground); tintMat(ENV.clear.material, Z.ground); }
+  for (const [n, m] of Object.entries(NMAT)) tintMat(m, /Bark/.test(n) ? 0xffffff : Z.leaf);
+  if (P.ready && P.mode !== 'dead') { P.pos.set(0, 0, 2.5); P.hp = P.max; ring(P.pos, 0x9fe8ff, .3, 3, .7); }
+  G.banner = { t: 2.6, a: 'แดน ' + (i + 1), b: Z.name, c: `มอนสเตอร์ Lv ${Z.lv}-${Z.lv + 3}` }; save();
+  if (MAXMON > 0) await Promise.all([...Object.keys(Z.mons), Z.boss].map(loadKind));
+  if (G.zone === i) { G.ready = true; monTimer = .3; }
+}
+function pickKind() { const W = ZONES[G.zone].mons; let r = Math.random(); for (const [k, w] of Object.entries(W)) { if ((r -= w) <= 0) return k; } return Object.keys(W)[0]; }
+function spawnPack() {
+  const k = pickKind(), Z = ZONES[G.zone]; if (!MDEF[k].src) return; let a = Math.random() * TAU, cx = 0, cz = 0;
+  for (let i = 0; i < 12; i++) { const d = rnd(12, 18); cx = P.pos.x + Math.cos(a) * d; cz = P.pos.z + Math.sin(a) * d; if (Math.hypot(cx, cz) < ARENA - 3) break; a += .6; }
+  if (Math.hypot(cx, cz) > ARENA - 3) { const q = (ARENA - 3) / Math.hypot(cx, cz); cx *= q; cz *= q; }
+  const n = MDEF[k].h > 1.9 ? 2 + (Math.random() < .5) : 3 + (Math.random() < .5), elite = Math.random() < .14;
+  for (let i = 0; i < n; i++) { const a2 = i / n * TAU + Math.random(); spawnMon(k, { at: [cx + Math.cos(a2) * 1.6, cz + Math.sin(a2) * 1.6], lv: Z.lv + (Math.random() * 4 | 0), elite: elite && i === 0 }); }
+}
+function callBoss() {
+  const Z = ZONES[G.zone], k = Z.boss; if (!MDEF[k].src || G.boss) return; const a = Math.random() * TAU;
+  let x = P.pos.x + Math.cos(a) * 10, z = P.pos.z + Math.sin(a) * 10; const L = Math.hypot(x, z); if (L > ARENA - 4) { x *= (ARENA - 4) / L; z *= (ARENA - 4) / L; }
+  G.boss = spawnMon(k, { at: [x, z], lv: Z.lv + 4 }); G.boss.skillCd = 3; G.banner = { t: 2.4, a: 'บอสมาแล้ว!', b: MDEF[k].name, c: 'ระวังวงแดงบนพื้น', red: true };
+  shake(.35); sfx('boom', .8, .7); column(G.boss.pos, 0xff4a2a, 1.6); ring(G.boss.pos, 0xff5a3a, .5, 6, 1);
+}
+// a red ground warning: the rim shows where, the fill grows until it hits (owner: bosses with red ground warnings)
+function warnZone(p, r, t, dmg, color = 0xff3a20) {
+  const c = new V3(p.x, 0, p.z), base = new THREE.Mesh(GEO.plane, new THREE.MeshBasicMaterial({ color: 0x5a0800, map: TEX.disc, transparent: true, opacity: .55, depthWrite: false })); base.position.set(c.x, .03, c.z); base.scale.set(r * 2, 1, r * 2); base.renderOrder = 1;
+  const fill = new THREE.Mesh(GEO.plane, addMat(color, TEX.disc, .9)); fill.position.set(c.x, .04, c.z); fill.renderOrder = 2;
+  const rim = new THREE.Mesh(GEO.ring, addMat(color, null, .95)); rim.rotation.x = -Math.PI / 2; rim.position.set(c.x, .05, c.z); rim.scale.setScalar(r); rim.renderOrder = 3;
+  addFx(base, t, (q, k) => { q.material.opacity = .55 * Math.min(1, k * 6); });
+  addFx(rim, t, (q, k) => { q.material.opacity = .6 + .4 * Math.sin(k * t * 18); });
+  addFx(fill, t, (q, k) => { const rr0 = Math.max(.01, r * k); q.scale.set(rr0 * 2, 1, rr0 * 2); }, () => {
+    if (P.mode !== 'dead' && Math.hypot(P.pos.x - c.x, P.pos.z - c.z) < r + .25) hurtHero(dmg);
+    ring(c, 0xff7a3a, r * .3, r * 1.15, .45); burst(new V3(c.x, .4, c.z), { n: 14, color: 0xff8a4a, spd: r * 2.2, up: 3, size: .5, life: .5 }); dust(c, 10, 1); shake(.22); sfx('boom', .5, rnd(.8, 1));
+  });
+}
+function bossSkill(m) {
+  const D = m.D, dmg = Math.round(m.dmg * 2.2), roll = Math.random(); m.cast = 1.0; monPlay(m, D.c.cast ? 'cast' : 'atk', true);
+  if (roll < .4) warnZone(P.pos, 3.2, 1.3, dmg);   // a big circle where you stand
+  else if (roll < .7) { warnZone(m.pos, 5.2, 1.5, dmg); }   // a ring around the boss: get out
+  else { for (let i = 0; i < 5; i++) { const a = Math.random() * TAU, d = i ? rnd(2, 6) : 0; const p = new V3(P.pos.x + Math.cos(a) * d, 0, P.pos.z + Math.sin(a) * d); after(i * .22, () => warnZone(p, 2.2, 1.1, Math.round(dmg * .7), 0xff5a10)); } }
+  m.skillCd = rnd(4.2, 5.6);
+}
+function bossDown(m) {
+  const Z = ZONES[G.zone]; G.boss = null; G.prog = 0; G.bossWins++; column(m.pos, 0xffd34a, 2); ring(m.pos, 0xffe07a, .6, 7, 1.2); shake(.4);
+  if (G.unl === G.zone && G.zone < ZONES.length - 1) { G.unl = G.zone + 1; G.banner = { t: 3.2, a: 'ชนะบอส!', b: 'เปิดแดนใหม่: ' + ZONES[G.unl].name, c: 'กดปุ่ม "แดน" มุมซ้ายเพื่อไป' }; }
+  else G.banner = { t: 2.6, a: 'ชนะบอส!', b: m.D.name, c: G.zone === ZONES.length - 1 ? 'แดนสุดท้าย: ล่าต่อได้เรื่อยๆ บอสจะกลับมา' : 'ล่าต่อเพื่อเรียกบอสอีกครั้ง' };
+  save();
+}
+const MAXMON = Q.get('mon') != null ? +Q.get('mon') : 9;
 function makeDummy(x, z) {
   const g = new THREE.Group(), L = (c, e) => new THREE.MeshLambertMaterial({ color: c, emissive: e || 0 });
   const post = new THREE.Mesh(new THREE.CylinderGeometry(.06, .07, 1.7, 8), L(0x7a5230)); post.position.y = .85;
@@ -251,19 +349,22 @@ function makeDummy(x, z) {
   g.position.set(x, 0, z); scene.add(g);
   const d = { g, pos: g.position, hp: 1, max: 1, r: .38, dummy: true, tilt: new THREE.Vector2(), tv: new THREE.Vector2(), mats: [body.material, head.material], flash: 0, alive: true, top: 1.9 }; DUM.push(d); return d;
 }
-[[-3.4, -4.4], [0, -5.6], [3.4, -4.4]].forEach(([x, z]) => makeDummy(x, z));
+if (Q.get('dummy') === '1') [[-3.4, -4.4], [0, -5.6], [3.4, -4.4]].forEach(([x, z]) => makeDummy(x, z));   // training dummies only on ?dummy=1 (the checks)
 
-function spawnMon(kind) {
+function spawnMon(kind, o = {}) {
   const D = MDEF[kind], S = MDEF[kind].src; if (!S) return;
   const root = THREE.SkeletonUtils.clone(S.scene), mats = [];
   root.traverse(o => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map(q => q.clone()) : o.material.clone(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(q => { if ('metalness' in q) { q.metalness = 0; q.roughness = .85; } mats.push(q); }); o.castShadow = true; o.frustumCulled = false; } });
-  const sc = D.h / S.h; root.scale.setScalar(.01);
+  const big = D.boss ? 1 : o.elite ? 1.3 : 1, sc = D.h / S.h * big; root.scale.setScalar(.01);
+  if (D.tint || o.elite) for (const q of mats) if (q.color) q.color.lerp(new THREE.Color(D.tint || 0xffc23a), D.tint ? .35 : .25);
   let a = Math.random() * TAU, x = 0, z = 0;
-  for (let i = 0; i < 12; i++) { const d = rnd(14, 19); x = P.pos.x + Math.cos(a) * d; z = P.pos.z + Math.sin(a) * d; if (Math.hypot(x, z) < ARENA - 1) break; a += .6; }
+  if (o.at) { x = o.at[0]; z = o.at[1]; } else for (let i = 0; i < 12; i++) { const d = rnd(14, 19); x = P.pos.x + Math.cos(a) * d; z = P.pos.z + Math.sin(a) * d; if (Math.hypot(x, z) < ARENA - 1) break; a += .6; }
   if (Math.hypot(x, z) > ARENA - 1) { const s = (ARENA - 1) / Math.hypot(x, z); x *= s; z *= s; }
   root.position.set(x, 0, z); scene.add(root); dust(root.position, 8, .8);
   const mixer = new THREE.AnimationMixer(root), acts = {}; for (const c of S.clips) acts[c.name] = mixer.clipAction(c);
-  const m = { kind, D, root, pos: root.position, mixer, acts, cur: null, hp: D.hp, max: D.hp, r: D.r, sc, born: 0, atk: false, atkT: 0, atkCd: 1, stun: 0, kb: new V3(), dead: false, deadT: 0, mats, flash: 0, alive: true, top: D.h + .35 };
+  const lv = o.lv || 1, el = o.elite ? 1 : 0, hp = Math.round(D.hp * (1 + .22 * (lv - 1)) * (el ? 3 : 1));
+  const m = { kind, D, root, pos: root.position, mixer, acts, cur: null, hp, max: hp, r: D.r * big, sc, born: 0, atk: false, atkT: 0, atkCd: 1, stun: 0, kb: new V3(), dead: false, deadT: 0, mats, flash: 0, alive: true, top: D.h * big + .35,
+    lv, elite: !!el, boss: !!D.boss, dmg: Math.round(D.dmg * (1 + .16 * (lv - 1)) * (el ? 1.5 : 1)), xp: D.xp * (1 + .3 * (lv - 1)) * (el ? 3 : 1), gold: Math.round((2 + D.xp * .4) * (1 + .25 * (lv - 1)) * (el ? 4 : 1) * (D.boss ? 3 : 1)), cast: 0, skillCd: 3 };
   monPlay(m, 'walk'); MON.push(m); return m;
 }
 function monPlay(m, k, once) {
@@ -295,26 +396,28 @@ function hitEnemy(e, dmg, dir, kb = .25, crit = false, color) {
   if (e.dummy) { e.tv.x += dir.x * (crit ? 5 : 3); e.tv.y += dir.z * (crit ? 5 : 3); DPS.push([NOW, dmg]); return; }
   e.hp -= dmg; e.kb.addScaledVector(dir, kb * 7);
   if (e.hp <= 0) { killMon(e); return; }
-  if (!e.atk) { monPlay(e, 'hit', true); e.stun = .28; }
+  if (!e.atk && !e.boss && !e.cast) { monPlay(e, 'hit', true); e.stun = .28; }
 }
 function killMon(m) {
   m.dead = true; m.deadT = 0; m.hp = 0; monPlay(m, 'die', true); P.kills++;
-  for (let i = 0; i < 3; i++) xpOrb(m.pos, m.D.xp / 3);
-  after(2.2, () => { if (MON.length - MON.filter(q => q.dead).length < MAXMON) spawnMon(pickKind()); });
+  const no = m.boss ? 10 : m.elite ? 5 : 3; for (let i = 0; i < no; i++) xpOrb(m.pos, m.xp / no);
+  const gold = Math.max(1, Math.round(m.gold * (G.goldMul || 1))), nc = Math.min(m.boss ? 12 : 4, gold); for (let i = 0; i < nc; i++) xpOrb(m.pos, 0, Math.round(gold * (i + 1) / nc) - Math.round(gold * i / nc));
+  if (m.boss) bossDown(m); else if (!G.boss) { G.prog++; if (G.prog >= QUOTA) callBoss(); }
+  if (P.kills % 5 === 0) save();
 }
-function xpOrb(p, xp) {
-  const m = new THREE.SpriteMaterial({ map: TEX.soft, color: 0xffd65a, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }), s = new THREE.Sprite(m);
+function xpOrb(p, xp, gold) {
+  const m = new THREE.SpriteMaterial({ map: TEX.soft, color: gold ? 0xffa21a : 0xffd65a, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }), s = new THREE.Sprite(m);
   s.position.set(p.x, .8, p.z); s.scale.setScalar(.45); const v = new V3(rnd(-2.5, 2.5), rnd(3, 5), rnd(-2.5, 2.5));
   addFx(s, 6, (q, k, dt, f) => {
     if (f.t < .45) { v.y -= 12 * dt; q.position.addScaledVector(v, dt); if (q.position.y < .35) { q.position.y = .35; v.y = Math.abs(v.y) * .4; } return; }
     _d.set(P.pos.x - q.position.x, 1 - q.position.y, P.pos.z - q.position.z); const L = _d.length(), sp = 6 + (f.t - .45) * 18;
-    if (L < .45 || P.mode === 'dead' && f.t > 3) { if (P.mode !== 'dead') { gainXp(xp); burst(q.position, { n: 3, color: 0xffe08a, size: .25, life: .25, spd: 2 }); } return true; }
+    if (L < .45 || P.mode === 'dead' && f.t > 3) { if (P.mode !== 'dead') { if (gold) { G.gold += gold; sfx('coin', .25, rnd(1, 1.3)); } else gainXp(xp); burst(q.position, { n: 3, color: 0xffe08a, size: .25, life: .25, spd: 2 }); } return true; }
     q.position.addScaledVector(_d.divideScalar(L), Math.min(L, sp * dt)); q.scale.setScalar(.38 + .08 * Math.sin(f.t * 20));
   });
 }
 function gainXp(x) {
   P.xp += x; sfx('tick', .25, 1.4);
-  while (P.xp >= needXp()) { P.xp -= needXp(); P.lv++; P.max += 15; P.hp = P.max; P.dmg = Math.round(DMG0 * (1 + .1 * (P.lv - 1)));
+  while (P.xp >= needXp()) { P.xp -= needXp(); P.lv++; calcStats(); P.hp = P.max; save();
     column(P.pos, 0xffd34a, 1.3); ring(P.pos, 0xffe07a, .4, 3.6, .8); burst(new V3(P.pos.x, 1, P.pos.z), { n: 20, color: 0xffe08a, spd: 3, up: 6, grav: -3, size: .4, life: 1 }); LVUP.t = 2; sfx('lvl', .7); }
 }
 const needXp = () => 20 + P.lv * 16;
@@ -341,7 +444,7 @@ function updArrows(dt) {
     for (const e of targets()) {
       if (A.hit.has(e)) continue; const ex = e.pos.x - _p0.x, ez = e.pos.z - _p0.z, t = clamp(ex * A.dir.x + ez * A.dir.z, 0, step), dx = ex - A.dir.x * t, dz = ez - A.dir.z * t;
       if (dx * dx + dz * dz < (e.r + (A.big ? .45 : .15)) ** 2) {
-        A.hit.add(e); const crit = Math.random() < (A.big ? .3 : .15); hitEnemy(e, A.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), A.dir, A.kb, crit, A.big ? '#bff4ff' : null);
+        A.hit.add(e); const crit = Math.random() < (A.big ? .3 : .15) + P.critB; hitEnemy(e, A.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), A.dir, A.kb, crit, A.big ? '#bff4ff' : null);
         if (A.big) { ring(e.pos, 0x7fe6ff, .3, 1.6, .35); shake(.08); } else { gone = true; break; }
       }
     }
@@ -427,7 +530,7 @@ const SWDS = {   // sword & shield (the winged knight): quicker one-handed blows
   charge: { range: 7, dur: .42, w: 1.25, dmg: 1.6, kb: 1.5, stun: .8, bash: { clip: 'Melee_Block_Attack', ts: 1.4, hit: .25, end: .6, R: 2.4, dmg: 1.3, kb: 1.4, stun: .6 } } };
 const SWD = SS ? SWDS : SWD2;
 const skill1 = t => SWORD ? castSlam(t) : castRain(t), skill2 = t => SS ? castCharge(t) : SWORD ? castWhirl() : castPierce(t);
-function stunMon(e, t) { if (e.dummy || e.dead || !t) return; e.atk = false; e.stun = Math.max(e.stun || 0, t); monPlay(e, 'hit', true); }
+function stunMon(e, t) { if (e.dummy || e.dead || !t || e.boss) return; e.atk = false; e.stun = Math.max(e.stun || 0, t); monPlay(e, 'hit', true); }
 function wantAtk() { return IN.atkHeld || IN.keyAtk || (IN.mouse.held && IN.mouse.shoot) || P.buf > 0 || AUTO.on && !!nearest(SWD.chase); }
 function updSword(dt) {
   P.buf = Math.max(0, P.buf - dt); P.comboWin = Math.max(0, P.comboWin - dt); if (P.comboWin <= 0 && P.mode !== 'atk') P.comboI = 0;
@@ -471,13 +574,13 @@ function swordMode(dt) {   // true while a sword move owns the hero
       const k = clamp(C.t / W.dur, 0, 1), e = 1 - (1 - k) ** 2; P.pos.x = lerp(C.from.x, C.to.x, e); P.pos.z = lerp(C.from.z, C.to.z, e);
       for (const m of targets()) { if (C.hit.has(m)) continue; const dx = m.pos.x - P.pos.x, dz = m.pos.z - P.pos.z, fwd = dx * fx + dz * fz, side = dx * fz - dz * fx;
         if (fwd < -.3 || fwd > m.r + .9 || Math.abs(side) > W.w + m.r) continue; C.hit.add(m);
-        const dir = new V3(fx + fz * Math.sign(side || 1) * .8, 0, fz - fx * Math.sign(side || 1) * .8).normalize(), crit = Math.random() < .15;   // forward + out to the side of the path
+        const dir = new V3(fx + fz * Math.sign(side || 1) * .8, 0, fz - fx * Math.sign(side || 1) * .8).normalize(), crit = Math.random() < .15 + P.critB;   // forward + out to the side of the path
         hitEnemy(m, P.dmg * W.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), dir, W.kb, crit, '#ffe9a0'); stunMon(m, W.stun); HS = Math.max(HS, .04); shake(.08); }
       C.dk -= dt; if (C.dk <= 0) { C.dk = .05; dust(P.pos, 2, .45); }
       if (k >= 1) { C.ph = 'bash'; C.t = 0; both(B.clip, { once: true, restart: true, fade: .06, ts: B.ts }); }
     } else {
       if (!C.bashed && C.t >= B.hit) { C.bashed = true; const c = new V3(P.pos.x + fx * 1.1, 0, P.pos.z + fz * 1.1); let n = 0;
-        for (const m of targets()) { const dx = m.pos.x - c.x, dz = m.pos.z - c.z; if (dx * dx + dz * dz > (B.R + m.r) ** 2) continue; const crit = Math.random() < .2;
+        for (const m of targets()) { const dx = m.pos.x - c.x, dz = m.pos.z - c.z; if (dx * dx + dz * dz > (B.R + m.r) ** 2) continue; const crit = Math.random() < .2 + P.critB;
           hitEnemy(m, P.dmg * B.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), new V3(dx, 0, dz).normalize(), B.kb, crit); stunMon(m, B.stun); n++; }
         bashFx(c, B.R); HS = Math.max(HS, n ? .1 : .04); shake(.2); P.stats.bashes++; }
       if (C.t >= B.end) { P.mode = 'free'; P.charge = null; }
@@ -500,7 +603,7 @@ function swordHit(S) {   // every target in reach and inside the arc in front
   const fx = Math.sin(P.face), fz = Math.cos(P.face), c = Math.cos(S.arc * Math.PI / 360); let n = 0;
   for (const e of targets()) { const dx = e.pos.x - P.pos.x, dz = e.pos.z - P.pos.z, d = Math.hypot(dx, dz); if (d > S.reach + e.r) continue;
     if (S.arc < 360 && d > e.r + .4 && (dx * fx + dz * fz) / d < c) continue;
-    const crit = Math.random() < .15; hitEnemy(e, P.dmg * S.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), new V3(dx, 0, dz).normalize(), S.kb, crit); stunMon(e, S.stun); n++; }
+    const crit = Math.random() < .15 + P.critB; hitEnemy(e, P.dmg * S.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), new V3(dx, 0, dz).normalize(), S.kb, crit); stunMon(e, S.stun); n++; }
   if (S.fx === 'bash') { bashFx(new V3(P.pos.x + fx * 1.1, 0, P.pos.z + fz * 1.1), S.reach); P.stats.bashes++; } else slashFx(S); if (n) { HS = Math.max(HS, S.stop); shake(S.shake); } else shake(S.shake * .3);
   if (S.fx === 'down') { const p = new V3(P.pos.x + fx * S.reach * .7, 0, P.pos.z + fz * S.reach * .7); ring(p, 0xffd27a, .2, 1.3, .3); dust(p, 5, .55); burst(new V3(p.x, .2, p.z), { n: 8, color: 0xffc060, spd: 4, up: 3, size: .35, life: .35 }); }
   if (S.fx === 'spin') { ring(P.pos, 0xfff0c0, .5, S.reach * 1.2, .4); dust(P.pos, 10, .7); }
@@ -514,7 +617,7 @@ function castSlam(t) {   // กระโดดฟาด: leap to a spot on the g
 }
 function slamHit(c) {
   const W = SWD.slam; let n = 0;
-  for (const e of targets()) { const dx = e.pos.x - c.x, dz = e.pos.z - c.z; if (dx * dx + dz * dz > (W.R + e.r) ** 2) continue; const crit = Math.random() < .2;
+  for (const e of targets()) { const dx = e.pos.x - c.x, dz = e.pos.z - c.z; if (dx * dx + dz * dz > (W.R + e.r) ** 2) continue; const crit = Math.random() < .2 + P.critB;
     hitEnemy(e, P.dmg * W.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), new V3(dx, 0, dz).normalize(), W.kb, crit); n++; }
   ring(c, 0xffe7a0, .3, W.R * 1.3, .45); ring(c, 0xff7a2a, .2, W.R * .85, .35, .9); disc(c, 0xffb050, W.R * .8, .35, .7);
   burst(new V3(c.x, .3, c.z), { n: 24, color: 0xffc860, spd: 7, up: 5, size: .5, life: .55 }); dust(c, 14, .9); shake(.32); HS = Math.max(HS, n ? .11 : .05); sfx('hit2', .9, .7);
@@ -574,13 +677,15 @@ function layout() {
   BTN = { atk: { x: SW - 92 * S, y: SH - 92 * S, r: 52 * S }, dodge: { x: SW - 200 * S, y: SH - 52 * S, r: 33 * S }, s1: { x: SW - 202 * S, y: SH - 152 * S, r: 35 * S }, s2: { x: SW - 112 * S, y: SH - 210 * S, r: 35 * S } };
   const tw = 96 * S, th = 32 * S, ty = 12 * S; let tx = SW - 12 * S - tw;
   for (const k of ['moves', 'zoom', 'auto', 'snd']) { BTN[k] = { rx: tx, ry: ty, w: tw, h: th }; tx -= tw + 8 * S; }
-  BTN.hero = { rx: 14 * S, ry: 92 * S, w: 168 * S, h: th };   // switch hero (reloads the page with ?hero=)
+  BTN.hero = { rx: 14 * S, ry: 92 * S, w: 168 * S, h: th };
+  BTN.zone = { rx: 14 * S, ry: 92 * S + th + 8 * S, w: 168 * S, h: th }; BTN.shop = { rx: 14 * S, ry: 92 * S + (th + 8 * S) * 2, w: 168 * S, h: th };   // switch hero (reloads the page with ?hero=)
 }
 function hitBtn(x, y) {
   for (const [k, b] of Object.entries(BTN)) { if (b.r ? Math.hypot(x - b.x, y - b.y) < b.r * 1.12 : x >= b.rx && x <= b.rx + b.w && y >= b.ry && y <= b.ry + b.h) return k; } return null;
 }
 function topBtn(k) {
   if (k === 'moves') openGallery(); else if (k === 'zoom') CAM.zi = (CAM.zi + 1) % CAM.zs.length; else if (k === 'auto') AUTO.on = !AUTO.on; else if (k === 'snd') SND.on = !SND.on;
+  else if (k === 'zone' || k === 'shop') { G.panel = k; sfx('tick', .4); }
   else if (k === 'hero') { const ks = Object.keys(HEROES); Q.set('hero', ks[(ks.indexOf(HK) + 1) % ks.length]); location.search = Q.toString(); }
 }
 function aimWorld(a) { const dx = a.x - a.sx, dy = a.y - a.sy, L = Math.hypot(dx, dy); if (L < 12 * S) return null; const k = Math.min(1, L / (80 * S)) * (a.sk === 's1' ? (SWORD ? SWD.slam.range : 11) : SS ? SWD.charge.range : 14) / L; return new V3(P.pos.x + dx * k, 0, P.pos.z + dy * k); }
@@ -589,6 +694,7 @@ uic.addEventListener('pointerdown', e => {
   e.preventDefault(); audioInit(); const x = e.clientX, y = e.clientY, mouse = e.pointerType === 'mouse'; if (!mouse) IN.touchSeen = true;
   if (!P.ready) return;
   if (P.mode === 'pose') { const g = galleryHit(x, y); if (g === 'close') closeGallery(); else if (g) setPose(g); else IN.rot = { id: e.pointerId, x }; return; }
+  if (G.panel) { panelClick(x, y); return; }
   const b = hitBtn(x, y);
   if (b) {
     try { uic.setPointerCapture(e.pointerId); } catch (_) { }
@@ -620,12 +726,13 @@ function pointerEnd(e) {
 }
 uic.addEventListener('pointerup', pointerEnd); uic.addEventListener('pointercancel', pointerEnd);
 uic.addEventListener('wheel', e => { CAM.zi = clamp(CAM.zi + (e.deltaY > 0 ? 1 : -1), 0, CAM.zs.length - 1); }, { passive: true });
-const KEYN = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyQ: 'q', KeyE: 'e', KeyR: 'r', KeyM: 'm', KeyJ: 'j', KeyK: 'k', KeyZ: 'z', Space: ' ', ShiftLeft: 'shift', ShiftRight: 'shift', Escape: 'escape',
+const KEYN = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyQ: 'q', KeyE: 'e', KeyR: 'r', KeyM: 'm', KeyJ: 'j', KeyK: 'k', KeyZ: 'z', KeyB: 'b', KeyN: 'n', Space: ' ', ShiftLeft: 'shift', ShiftRight: 'shift', Escape: 'escape',
   ArrowUp: 'arrowup', ArrowDown: 'arrowdown', ArrowLeft: 'arrowleft', ArrowRight: 'arrowright' };
 const keyOf = e => KEYN[e.code] || (e.key || '').toLowerCase();   // by the key's PLACE: WASD works with a Thai keyboard layout too
 addEventListener('keydown', e => {
   audioInit(); const k = keyOf(e); IN.keys[k] = true; if (!P.ready) return; if (/^(w|a|s|d|arrow)/.test(k)) IN.goto = null;
   if (P.mode === 'pose') { if (k === 'escape' || k === 'm') closeGallery(); return; }
+  if (G.panel) { if (k === 'escape' || k === 'b' || k === 'n') G.panel = null; return; } if (k === 'b') { topBtn('shop'); return; } if (k === 'n') { topBtn('zone'); return; }
   if (k === ' ' || k === 'shift') { e.preventDefault(); dodge(); }
   if (k === 'q') skill1(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
   if (k === 'e') skill2(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
@@ -648,7 +755,7 @@ const AU = { ctx: null, buf: {} };
 function audioInit() {
   if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
   try { AU.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; }
-  const F = { hit: 'impactSoft_medium_001', hit2: 'impactPunch_medium_002', wood: 'impactWood_medium_001', hurt: 'impactPunch_medium_000', lvl: 'jingles_HIT15', tick: 'click_002' };
+  const F = { hit: 'impactSoft_medium_001', hit2: 'impactPunch_medium_002', wood: 'impactWood_medium_001', hurt: 'impactPunch_medium_000', lvl: 'jingles_HIT15', tick: 'click_002', coin: 'handleCoins', boom: 'impactSoft_heavy_000' };
   for (const [k, f] of Object.entries(F)) fetch(`art/tribe3d/sfx/${f}.ogg`).then(r => r.arrayBuffer()).then(b => AU.ctx.decodeAudioData(b)).then(b => { AU.buf[k] = b; }).catch(() => { });
 }
 function sfx(k, vol = 1, rate = 1) {
@@ -719,11 +826,13 @@ function updMon(m, dt) {
   for (const q of m.mats) if (q.emissive) q.emissive.setScalar(m.flash > 0 ? .6 : 0);
   if (m.dead) { m.deadT += dt; if (m.deadT > 1.3) m.root.position.y -= dt * .7; if (m.deadT > 2.4) { scene.remove(m.root); MON.splice(MON.indexOf(m), 1); } return; }
   const dx = P.pos.x - m.pos.x, dz = P.pos.z - m.pos.z, d = Math.hypot(dx, dz), D = m.D; m.atkCd -= dt;
-  m.pos.addScaledVector(m.kb, dt); m.kb.multiplyScalar(Math.max(0, 1 - dt * 8));
+  if (m.boss) m.kb.multiplyScalar(.15); m.pos.addScaledVector(m.kb, dt); m.kb.multiplyScalar(Math.max(0, 1 - dt * 8));
+  if (m.boss && P.mode !== 'dead') { m.skillCd -= dt; if (m.cast > 0) { m.cast -= dt; m.root.rotation.y = angTo(m.root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 6)); if (m.cast <= 0) monPlay(m, 'walk'); return; }
+    if (!m.atk && m.skillCd <= 0 && d < 16) { bossSkill(m); return; } }
   if (P.mode === 'dead' || P.mode === 'pose') { monPlay(m, 'idle'); }
   else if (m.atk) {
     m.atkT += dt; const dur = m.acts[D.c.atk].getClip().duration;
-    if (!m.hitDone && m.atkT >= D.hitAt * dur) { m.hitDone = true; if (d < m.r + 1.05) hurtHero(D.dmg); }
+    if (!m.hitDone && m.atkT >= D.hitAt * dur) { m.hitDone = true; if (d < m.r + 1.05) hurtHero(m.dmg); }
     if (m.atkT >= dur * .9) m.atk = false; m.root.rotation.y = angTo(m.root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 8));
   } else if (m.stun > 0) m.stun -= dt;
   else if (d > m.r + .55) { const sp = D.spd * (m.born < .4 ? 0 : 1); m.pos.x += dx / d * sp * dt; m.pos.z += dz / d * sp * dt; monPlay(m, 'walk'); m.root.rotation.y = angTo(m.root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 8)); }
@@ -740,7 +849,7 @@ let monTimer = 0;
 const clock = new THREE.Clock();
 function frame() {
   requestAnimationFrame(frame);
-  const dt = Math.min(.05, clock.getDelta()); tick(dt);
+  const dt = Math.min(.05, clock.getDelta()); if (!G.panel) tick(dt); else NOW += dt;
   updCam(dt); renderer.render(scene, camera); drawUI(dt);
 }
 function tick(dt) {
@@ -749,7 +858,7 @@ function tick(dt) {
     readMove(); if (IN.mouse.has) screenToGround(IN.mouse.x, IN.mouse.y, IN.mouse.g);
     updHero(dt); HERO.mixer.update(dt); updString();
     if (P.mode !== 'pose') { for (const m of [...MON]) updMon(m, dt); updArrows(dt); updTimers(dt);
-      monTimer -= dt; if (monTimer <= 0 && MDEF.mush.src) { monTimer = 2.5; if (MON.filter(m => !m.dead).length < MAXMON) spawnMon(pickKind()); } }
+      monTimer -= dt; if (monTimer <= 0 && G.ready && MAXMON > 0) { monTimer = 2.2; if (MON.filter(m => !m.dead && !m.boss).length + 3 <= MAXMON) spawnPack(); } }
     updDummies(dt); updFx(dt);
     sun.position.set(P.pos.x - 8, 16, P.pos.z + 9); sun.target.position.copy(P.pos);
   }
@@ -800,17 +909,19 @@ function drawUI(dt) {
   // damage numbers + monster bars
   for (let i = NUMS.length - 1; i >= 0; i--) { const n = NUMS[i]; n.t += dt; if (n.t > .9) { NUMS.splice(i, 1); continue; } const [x, y, ok] = toScreen(_a.set(n.p.x + n.vx * n.t, n.p.y + n.t * 1.2, n.p.z)); if (!ok) continue;
     ui.globalAlpha = Math.min(1, (1 - n.t / .9) * 3); const sz = (n.big ? 30 : 20) * S * (n.t < .1 ? 1 + (.1 - n.t) * 5 : 1); txt(n.text, x, y, sz, n.color); ui.globalAlpha = 1; }
-  if (P.mode !== 'pose') for (const m of MON) { if (m.dead || m.hp >= m.max) continue; const [x, y, ok] = toScreen(_a.set(m.pos.x, m.top, m.pos.z)); if (ok) bar(x - 24 * S, y - 4 * S, 48 * S, 8 * S, m.hp / m.max, '#ff7a5a', '#c8321e'); }
+  if (P.mode !== 'pose') for (const m of MON) { if (m.dead || m.boss || (m.hp >= m.max && !m.elite)) continue; const [x, y, ok] = toScreen(_a.set(m.pos.x, m.top, m.pos.z)); if (!ok) continue; const w = (m.elite ? 64 : 48) * S;
+    bar(x - w / 2, y - 4 * S, w, 8 * S, m.hp / m.max, m.elite ? '#ffd65a' : '#ff7a5a', m.elite ? '#d08a10' : '#c8321e'); txt((m.elite ? 'หัวหน้า ' : '') + 'Lv ' + m.lv, x, y - 12 * S, 11 * S, m.elite ? '#ffe28a' : '#fff1d8', 'center', 800); }
   if (P.mode === 'pose') { drawGallery(); return; }
   // HUD
   const hx = 14 * S, hy = 12 * S; ui.beginPath(); ui.arc(hx + 26 * S, hy + 26 * S, 26 * S, 0, TAU); const lg = ui.createRadialGradient(hx + 18 * S, hy + 16 * S, 2, hx + 26 * S, hy + 26 * S, 26 * S); lg.addColorStop(0, '#ffe58a'); lg.addColorStop(1, '#c97a14'); ui.fillStyle = lg; ui.fill(); ui.lineWidth = 3 * S; ui.strokeStyle = '#fff1c8'; ui.stroke();
   txt('Lv', hx + 26 * S, hy + 15 * S, 12 * S, '#fff8e0', 'center', 800, 'rgba(90,40,0,.7)'); txt(String(P.lv), hx + 26 * S, hy + 32 * S, 22 * S, '#ffffff', 'center', 800, 'rgba(90,40,0,.8)');
   bar(hx + 58 * S, hy + 8 * S, 190 * S, 18 * S, P.hp / P.max, '#ff8a6a', '#d23a28'); txt(`${Math.ceil(P.hp)} / ${P.max}`, hx + 153 * S, hy + 17.5 * S, 12 * S, '#fff', 'center', 800, 'rgba(60,10,0,.8)');
-  bar(hx + 58 * S, hy + 30 * S, 160 * S, 11 * S, P.xp / needXp(), '#ffe27a', '#e3a21c'); txt(`ล่าได้ ${P.kills}`, hx + 226 * S, hy + 36 * S, 12 * S, '#fff2c8', 'left', 800);
+  bar(hx + 58 * S, hy + 30 * S, 160 * S, 11 * S, P.xp / needXp(), '#ffe27a', '#e3a21c'); txt(`ล่าได้ ${P.kills}`, hx + 226 * S, hy + 36 * S, 12 * S, '#fff2c8', 'left', 800); coinIcon(hx + 66 * S, hy + 56 * S, 7 * S); txt(String(G.gold), hx + 78 * S, hy + 56.5 * S, 15 * S, '#ffd65a', 'left', 800); txt(`พลังโจมตี ${P.dmg}`, hx + 140 * S, hy + 56.5 * S, 12 * S, '#fff2c8', 'left', 700);
   while (DPS.length && NOW - DPS[0][0] > 3) DPS.shift(); if (DPS.length) txt(`ดาเมจใส่หุ่น ${Math.round(DPS.reduce((s, q) => s + q[1], 0) / 3)} / วินาที`, hx, hy + 66 * S, 13 * S, '#fff2c8', 'left', 800);
-  txt(HD.name + ' · ห้องทดลองตัวละคร', (SW - 250 * S) / 2 + 10 * S, SH - 14 * S, 12 * S, 'rgba(255,248,225,.75)', 'center', 600, 'rgba(0,0,0,.45)');
+  txt(HD.name + ' · แดน ' + (G.zone + 1) + ' ' + ZONES[G.zone].name, (SW - 250 * S) / 2 + 10 * S, SH - 14 * S, 12 * S, 'rgba(255,248,225,.75)', 'center', 600, 'rgba(0,0,0,.45)');
   if (!IN.touchSeen) txt(SWORD ? 'คลิกพื้น / WASD เดิน · คลิกศัตรูฟัน (กดค้าง = คอมโบ) · Space กลิ้ง · Q กระโดดฟาด · E ' + (SS ? 'พุ่งโล่' : 'พายุดาบ') + ' · R ตีเอง' : 'คลิกพื้น / WASD เดิน · คลิกศัตรูยิง · Space กลิ้ง · Q ฝนธนู · E ทะลวง · R ยิงเอง', (SW - 250 * S) / 2 + 10 * S, SH - 34 * S, 12.5 * S, '#fff6dc', 'center', 600, 'rgba(0,0,0,.55)');
-  for (const [k, l, on] of [['moves', 'ดูท่าทั้งหมด', false], ['zoom', 'ซูม ' + (CAM.zi + 1), false], ['auto', (SWORD ? 'ตีเอง: ' : 'ยิงเอง: ') + (AUTO.on ? 'เปิด' : 'ปิด'), AUTO.on], ['snd', SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false], ['hero', 'ตัวละคร: ' + HD.name + '  ›', false]]) pill(k, l, on);
+  for (const [k, l, on] of [['moves', 'ดูท่าทั้งหมด', false], ['zoom', 'ซูม ' + (CAM.zi + 1), false], ['auto', (SWORD ? 'ตีเอง: ' : 'ยิงเอง: ') + (AUTO.on ? 'เปิด' : 'ปิด'), AUTO.on], ['snd', SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false], ['hero', 'ตัวละคร: ' + HD.name + '  ›', false], ['zone', 'แดน: ' + ZONES[G.zone].name + '  ›', false], ['shop', 'ร้านค้า (B)', canBuy()]]) pill(k, l, on);
+  drawZoneBar(); drawBanner(dt);
   // joystick
   if (IN.stick) { const s = IN.stick, R = 60 * S, dx = s.x - s.sx, dy = s.y - s.sy, L = Math.hypot(dx, dy), k = L > R ? R / L : 1;
     ui.beginPath(); ui.arc(s.sx, s.sy, R, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.12)'; ui.fill(); ui.lineWidth = 3 * S; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke();
@@ -823,8 +934,44 @@ function drawUI(dt) {
   roundBtn('atk', '', ['#ffcf6a', '#c56a12'], 0, 1, IN.atkHeld); roundBtn('dodge', 'กลิ้ง', ['#9fe2ff', '#2d7fb8'], P.cd.dodge, P.cdMax.dodge);
   roundBtn('s1', SWORD ? 'กระโดดฟาด' : 'ฝนธนู', SWORD ? ['#ffc27a', '#c4421a'] : ['#ffe58a', '#d18a10'], P.cd.s1, P.cdMax.s1, IN.aim && IN.aim.sk === 's1');
   roundBtn('s2', SS ? 'พุ่งโล่' : SWORD ? 'พายุดาบ' : 'ทะลวง', SS ? ['#ffe9a8', '#b07a1c'] : SWORD ? ['#cfe4ff', '#3a5fc0'] : ['#a8f2ff', '#1f8fae'], P.cd.s2, P.cdMax.s2, IN.aim && IN.aim.sk === 's2');
-  if (LVUP.t > 0) { LVUP.t -= dt; const k = LVUP.t; ui.globalAlpha = Math.min(1, k * 2); txt('เลเวลอัพ!', SW / 2, SH * .26 - (2 - k) * 8 * S, 40 * S * (k > 1.8 ? 1 + (k - 1.8) * 2 : 1), '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)'); txt(`Lv ${P.lv} · พลังโจมตี ${P.dmg}`, SW / 2, SH * .26 + 34 * S, 16 * S, '#fff3cf'); ui.globalAlpha = 1; }
+  if (LVUP.t > 0 && G.banner) LVUP.t = 0; if (LVUP.t > 0) { LVUP.t -= dt; const k = LVUP.t; ui.globalAlpha = Math.min(1, k * 2); txt('เลเวลอัพ!', SW / 2, SH * .26 - (2 - k) * 8 * S, 40 * S * (k > 1.8 ? 1 + (k - 1.8) * 2 : 1), '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)'); txt(`Lv ${P.lv} · พลังโจมตี ${P.dmg}`, SW / 2, SH * .26 + 34 * S, 16 * S, '#fff3cf'); ui.globalAlpha = 1; }
   if (P.mode === 'dead') txt('ล้มแล้ว... กำลังฟื้น', SW / 2, SH * .4, 26 * S, '#ffd0c0');
+  if (G.panel) drawPanel();
+}
+function coinIcon(x, y, r) { ui.beginPath(); ui.arc(x, y, r, 0, TAU); ui.fillStyle = '#ffc22a'; ui.fill(); ui.lineWidth = Math.max(1.5, r * .25); ui.strokeStyle = '#9a5a08'; ui.stroke(); ui.beginPath(); ui.arc(x, y, r * .45, 0, TAU); ui.strokeStyle = '#fff0a0'; ui.lineWidth = Math.max(1, r * .18); ui.stroke(); }
+const canBuy = () => UPS.some(u => G.up[u.k] < u.max && G.gold >= upCost(u));
+function drawZoneBar() {   // top middle: progress to the boss, or the boss's life
+  const w = Math.min(340 * S, SW * .36), x = SW / 2 - w / 2, y = 58 * S;
+  if (G.boss && !G.boss.dead) { const b = G.boss; txt(b.D.name + '  Lv ' + b.lv, SW / 2, y - 2 * S, 16 * S, '#ffb0a0', 'center', 800, 'rgba(70,0,0,.9)'); bar(x - 20 * S, y + 8 * S, w + 40 * S, 16 * S, b.hp / b.max, '#ff5a4a', '#a81c10'); txt(Math.ceil(b.hp) + ' / ' + b.max, SW / 2, y + 16.5 * S, 11 * S, '#fff', 'center', 800, 'rgba(60,0,0,.8)'); return; }
+  if (!G.ready) { txt('กำลังเดินทาง...', SW / 2, y + 6 * S, 14 * S, '#fff3cf'); return; }
+  txt(`แดน ${G.zone + 1} ${ZONES[G.zone].name} · ล่าอีก ${Math.max(0, QUOTA - G.prog)} ตัว บอสจะมา`, SW / 2, y - 1 * S, 12.5 * S, '#fff3cf', 'center', 800);
+  bar(x, y + 8 * S, w, 10 * S, G.prog / QUOTA, '#ff9a6a', '#d0461e');
+}
+function drawBanner(dt) { const B = G.banner; if (!B) return; B.t -= dt; if (B.t <= 0) { G.banner = null; return; } ui.globalAlpha = Math.min(1, B.t * 2, (3.4 - B.t) * 4);
+  txt(B.a, SW / 2, SH * .3, 34 * S, B.red ? '#ff6a4a' : '#ffe14a', 'center', 800, B.red ? 'rgba(60,0,0,.9)' : 'rgba(110,50,0,.9)'); txt(B.b, SW / 2, SH * .3 + 34 * S, 22 * S, '#fff3cf'); if (B.c) txt(B.c, SW / 2, SH * .3 + 60 * S, 14 * S, '#ffe9c0', 'center', 700); ui.globalAlpha = 1; }
+let PB = [];
+function drawPanel() {   // the shop / the zone list: painted on the canvas like the rest of the HUD
+  ui.fillStyle = 'rgba(0,0,0,.45)'; ui.fillRect(0, 0, SW, SH); PB = [];
+  const shop = G.panel === 'shop', rows = shop ? UPS.length : ZONES.length, rh = 46 * S, pw = Math.min(SW - 24 * S, 420 * S), ph = 60 * S + rows * (rh + 6 * S) + 44 * S, px = (SW - pw) / 2, py = Math.max(8 * S, (SH - ph) / 2);
+  rr(px, py, pw, ph, 16 * S); const g = ui.createLinearGradient(0, py, 0, py + ph); g.addColorStop(0, 'rgba(70,46,22,.97)'); g.addColorStop(1, 'rgba(34,22,10,.97)'); ui.fillStyle = g; ui.fill(); ui.lineWidth = 3 * S; ui.strokeStyle = '#e8b858'; ui.stroke();
+  txt(shop ? 'ร้านค้า' : 'เลือกแดน', px + pw / 2, py + 24 * S, 20 * S, '#ffe9b0');
+  if (shop) { coinIcon(px + pw - 84 * S, py + 24 * S, 8 * S); txt(String(G.gold), px + pw - 70 * S, py + 25 * S, 16 * S, '#ffd65a', 'left'); }
+  for (let i = 0; i < rows; i++) { const y = py + 50 * S + i * (rh + 6 * S), x = px + 14 * S, w = pw - 28 * S;
+    rr(x, y, w, rh, 10 * S); ui.fillStyle = 'rgba(255,255,255,.08)'; ui.fill();
+    if (shop) { const u = UPS[i], n = G.up[u.k], mx = n >= u.max, c = upCost(u), ok = !mx && G.gold >= c;
+      txt(u.name, x + 12 * S, y + 15 * S, 15 * S, '#fff3d2', 'left'); txt(`ขั้น ${n} · ตอนนี้ ${u.info(n)}` + (mx ? '' : ` → ${u.info(n + 1)}`), x + 12 * S, y + 33 * S, 11.5 * S, '#e8d2a8', 'left', 600);
+      const bw = 104 * S, bx = x + w - bw - 6 * S, by = y + 7 * S, bh = rh - 14 * S; rr(bx, by, bw, bh, bh / 2); ui.fillStyle = mx ? 'rgba(120,120,120,.6)' : ok ? '#f0a020' : 'rgba(110,80,50,.8)'; ui.fill();
+      if (mx) txt('สูงสุด', bx + bw / 2, by + bh / 2 + 1, 13 * S, '#fff'); else { coinIcon(bx + 18 * S, by + bh / 2, 6.5 * S); txt(String(c), bx + 30 * S, by + bh / 2 + 1, 13.5 * S, ok ? '#3a2208' : '#ffd8b0', 'left', 800, ok ? 'rgba(255,240,200,.5)' : 'rgba(0,0,0,.6)'); }
+      PB.push({ k: 'buy:' + u.k, x: bx, y: by, w: bw, h: bh }); }
+    else { const Z = ZONES[i], open = i <= G.unl, cur = i === G.zone;
+      txt(`แดน ${i + 1} · ${Z.name}`, x + 12 * S, y + 15 * S, 15 * S, open ? '#fff3d2' : '#9a8a70', 'left'); txt(open ? `มอนสเตอร์ Lv ${Z.lv}-${Z.lv + 3} · บอส ${MDEF[Z.boss].name}` : `ล็อก: ชนะบอสแดน ${i} ก่อน`, x + 12 * S, y + 33 * S, 11.5 * S, open ? '#e8d2a8' : '#8a7a60', 'left', 600);
+      const bw = 92 * S, bx = x + w - bw - 6 * S, by = y + 7 * S, bh = rh - 14 * S; rr(bx, by, bw, bh, bh / 2); ui.fillStyle = cur ? 'rgba(120,200,120,.85)' : open ? '#f0a020' : 'rgba(90,80,70,.7)'; ui.fill();
+      txt(cur ? 'อยู่ที่นี่' : open ? 'ไป' : 'ล็อก', bx + bw / 2, by + bh / 2 + 1, 13.5 * S, cur || open ? '#2a1a06' : '#bbb', 'center', 800, 'rgba(255,240,200,.4)'); if (open && !cur) PB.push({ k: 'go:' + i, x: bx, y: by, w: bw, h: bh }); } }
+  const cy = py + ph - 36 * S; rr(px + 14 * S, cy, pw - 28 * S, 28 * S, 14 * S); ui.fillStyle = 'rgba(255,120,80,.92)'; ui.fill(); txt('ปิด', px + pw / 2, cy + 15 * S, 14 * S, '#fff'); PB.push({ k: 'close', x: px + 14 * S, y: cy, w: pw - 28 * S, h: 28 * S });
+}
+function panelClick(x, y) {
+  const b = PB.find(q => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h); if (!b) return;
+  if (b.k === 'close') G.panel = null; else if (b.k.startsWith('buy:')) buy(b.k.slice(4)); else if (b.k.startsWith('go:')) { G.panel = null; setZone(+b.k.slice(3)); }
 }
 function drawGallery() {
   const cols = 3, bw = 104 * S, bh = 30 * S, gap = 6 * S, pad = 12 * S, rows = Math.ceil(MOVES.length / cols), pw = cols * bw + (cols - 1) * gap + pad * 2;
@@ -875,7 +1022,7 @@ async function boot() {
     HERO.mixer = new THREE.AnimationMixer(HERO.root);
     for (const c of HERO.clips) { const up = new THREE.AnimationClip(c.name + '_up', c.duration, c.tracks.filter(t => !LOWER.test(t.name))), lo = new THREE.AnimationClip(c.name + '_lo', c.duration, c.tracks.filter(t => LOWER.test(t.name)));
       ACT[c.name] = { up: HERO.mixer.clipAction(up), lo: HERO.mixer.clipAction(lo) }; }
-    both(IDLE, { fade: 0 }); P.mode = 'free'; P.ready = true; HERO.mixer.update(0);
+    loadSave(); calcStats(); P.hp = P.max; both(IDLE, { fade: 0 }); P.mode = 'free'; P.ready = true; HERO.mixer.update(0);
   } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
   // after she shows: the woods around the clearing, then the monsters
   const NAT = { MapleTree_1: [5.5, 7], MapleTree_3: [5.5, 7], NormalTree_2: [5, 6.5], NormalTree_4: [5, 6.5], PineTree_1: [6, 8], BirchTree_1: [5.5, 7], Bush_Large_Flowers: [1.1, 1.5], Bush_Flowers: [.8, 1.1], Bush_Small: [.6, .8], Flower_1_Clump: [.35, .5], Flower_3_Clump: [.35, .5], Flower_5_Clump: [.35, .5], Grass_Large: [.45, .7], Grass_Small: [.3, .45] };
@@ -897,9 +1044,9 @@ async function boot() {
   place(['MapleTree_1', 'MapleTree_3', 'NormalTree_2', 'NormalTree_4', 'PineTree_1', 'BirchTree_1'], 80, ARENA + 3, 58);
   place(['Bush_Large_Flowers', 'Bush_Flowers', 'Bush_Small'], 50, 11, ARENA + 6, 6);
   place(['Flower_1_Clump', 'Flower_3_Clump', 'Flower_5_Clump', 'Grass_Large', 'Grass_Small'], 260, 4, ARENA + 8, 4);
-  if (MAXMON > 0) await Promise.all(Object.entries(MDEF).map(([k, D]) => ld.loadAsync(D.file).then(g => { const b = new THREE.Box3().setFromObject(g.scene); D.src = { scene: g.scene, clips: g.animations, h: Math.max(.01, b.max.y - b.min.y) }; }).catch(e => console.warn('monster', k, e.message))));
+  await setZone(G.zone);
 }
-window.GAME = { P, MON, DUM, FX, ARROWS, STR, IN, get HERO() { return HERO; }, LY, toScreen: (x, y, z) => toScreen(new V3(x, y, z)), sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { readMove(); tick(dt); } }, SWD, HK, api: { dodge, castRain, castPierce, castSlam, castWhirl, castCharge, skill1, skill2, swing: i => swing(i || 0, null), openGallery, closeGallery, setPose, fireAt: (x, z) => { P.aimDir.set(x - P.pos.x, 0, z - P.pos.z).normalize(); fireArrow(P.aimDir); }, spawn: spawnMon } };
+window.GAME = { P, MON, DUM, FX, ARROWS, STR, IN, G, ZONES, setZone, callBoss, buy, calcStats, get HERO() { return HERO; }, LY, toScreen: (x, y, z) => toScreen(new V3(x, y, z)), sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { readMove(); tick(dt); } }, SWD, HK, api: { dodge, castRain, castPierce, castSlam, castWhirl, castCharge, skill1, skill2, swing: i => swing(i || 0, null), openGallery, closeGallery, setPose, fireAt: (x, z) => { P.aimDir.set(x - P.pos.x, 0, z - P.pos.z).normalize(); fireArrow(P.aimDir); }, spawn: spawnMon } };
 boot(); frame();
 </script>
 </body>
