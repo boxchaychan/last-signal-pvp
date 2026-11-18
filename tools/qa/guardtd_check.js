@@ -5,7 +5,7 @@ const { chromium } = require('playwright'); const fs = require('fs');
   const out = process.argv[2] || '.', hero = process.argv[3] || 'archer', waves = +(process.argv[4] || 6); fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch(); const pg = await (await b.newContext({ viewport: { width: 844, height: 390 } })).newPage(); const errs = [];
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await pg.goto('http://localhost:8000/guardtd.html?snd=0'); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'title', null, { timeout: 120000 });
+  await pg.goto('http://localhost:8000/guardtd.html?snd=0&map=' + (process.argv[5] || 'forest') + '&menu=1'); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'title', null, { timeout: 120000 });
   await pg.waitForTimeout(800); await pg.screenshot({ path: `${out}/t1_title.png` });
   await pg.evaluate(h => GAME.pickHero(h), hero); await pg.waitForFunction(() => GAME.G.state === 'play', null, { timeout: 120000 }); await pg.waitForTimeout(600);
   await pg.screenshot({ path: `${out}/t2_start.png` });
