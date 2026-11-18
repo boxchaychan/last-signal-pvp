@@ -1156,12 +1156,14 @@ const GAME = window.GAME = (function () {
     try {
       const ld = new THREE.GLTFLoader(), tl = new THREE.TextureLoader(), P = 'art/tribe3d/people/';
       const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
-      const KMIX = /[?&]knight=mix/.test(location.search);   // ?knight=mix = the KayKit knight wearing pieces cut from the Tripo demon knight (tools/blender/tripo_gear.py)
+      const KN = (location.search.match(/[?&]knight=(\w+)/) || [])[1] || '';   // ★★★ warrior: '' = Tripo demon knight, wing = Tripo winged knight, old = KayKit knight,
+      // mix / wingmix = the KayKit knight wearing pieces cut from the demon / winged knight (tools/blender/tripo_gear.py)
       const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW, HP, DK, KP] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
         ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
         ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null),
         ld.loadAsync(P + 'hero_model.glb').catch(() => null), (/[?&]archer=tripo/.test(location.search) ? ld.loadAsync(P + 'warrior_f.glb').catch(() => null) : null), ld.loadAsync('art/tribe3d/gear/huntress_parts.glb').catch(() => null),
-        (/[?&]knight=(old|mix)/.test(location.search) ? null : ld.loadAsync(P + 'demon_knight.glb').catch(() => null)), (KMIX ? ld.loadAsync('art/tribe3d/gear/knight_parts.glb').catch(() => null) : null)]);   // demon_knight = the owner's Tripo knight (tools/blender/tripo_parts_rig.py ... knight)   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
+        (['old', 'mix', 'wingmix'].includes(KN) ? null : ld.loadAsync(P + (KN === 'wing' ? 'winged_knight.glb' : 'demon_knight.glb')).catch(() => null)),
+        (/^(wing)?mix$/.test(KN) ? ld.loadAsync('art/tribe3d/gear/' + (KN === 'mix' ? 'knight_parts.glb' : 'winged_parts.glb')).catch(() => null) : null)]);   // demon_knight = the owner's Tripo knight (tools/blender/tripo_parts_rig.py ... knight)   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
       const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
       const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
@@ -1270,9 +1272,12 @@ const GAME = window.GAME = (function () {
       if (KP) try {
         for (const c of KP.scene.children) { c.traverse(o => { if (!o.isMesh) return; const q = o.material; if (q.map) { q.map.encoding = enc; q.map.userData.unit = true; }
           o.material = new THREE.MeshStandardMaterial({ map: q.map || null, normalMap: q.normalMap || null, roughness: .7, metalness: 0 }); o.castShadow = true; }); GEAR[c.name] = c; }
-        const K = window.KMIX_TUNE || { helm: [[0, 1.72, 0.02], [0, 0, 0], 0, 3.1], padL: [[0.4, 1.26, 0], [0, 0, -0.55], 0, 2.6], padR: [[-0.4, 1.26, 0], [0, 0, 0.55], 0, 2.6] };   // KMIX_TUNE: a look script can try other numbers
-        const T = hero('Knight', [['sword_2handed_color', R_]], mat('knigh_2'), ['Knight_Helmet', 'Knight_HelmetVisor', 'Knight_Head']);
-        addGear(T, [['DemonHelm', 'head', ...K.helm], ['DemonPadL', 'upperarml', ...K.padL], ['DemonPadR', 'upperarmr', ...K.padR]]);
+        // ?knight=wingmix (owner 2026-11-18): the winged knight's helmet with its wings, ear discs and blond hair (covers the KayKit head), shoulder pads and knee guards; the KayKit face stays
+        const W = KN === 'wingmix', pre = W ? 'Wing' : 'Demon', K = window.KMIX_TUNE || (W   // KMIX_TUNE: a look script can try other numbers
+          ? { helm: [[0, 2.12, -0.12], [0, 0, 0], 0, 3.6], padL: [[0.4, 1.26, 0], [0, 0, -0.55], 0, 2.6], padR: [[-0.4, 1.26, 0], [0, 0, 0.55], 0, 2.6], kneeL: [[0.17, 0.3, 0.1], [0, 0, 0], 0, 1.8], kneeR: [[-0.17, 0.3, 0.1], [0, 0, 0], 0, 1.8] }
+          : { helm: [[0, 1.72, 0.02], [0, 0, 0], 0, 3.1], padL: [[0.4, 1.26, 0], [0, 0, -0.55], 0, 2.6], padR: [[-0.4, 1.26, 0], [0, 0, 0.55], 0, 2.6] });
+        const T = hero('Knight', [['sword_2handed_color', R_]], mat('knigh_2'), ['Knight_Helmet', 'Knight_HelmetVisor', ...(W ? [] : ['Knight_Head'])]);
+        addGear(T, [[pre + 'Helm', 'head', ...K.helm], [pre + 'PadL', 'upperarml', ...K.padL], [pre + 'PadR', 'upperarmr', ...K.padR], ...(K.kneeL ? [[pre + 'KneeL', 'lowerlegl', ...K.kneeL], [pre + 'KneeR', 'lowerlegr', ...K.kneeR]] : [])]);
         T.h = tpl.warrior.h; tpl.warrior3 = T;   // its height is measured without the head it took off: use the ★ knight's, so it stands as tall as the others
       } catch (e) { console.warn('knight mix', e.message); }
       for (const k of ['hunter2', 'hunter3']) if (tpl[k] && !tpl[k].clips) { tpl[k].clips = bowDie(AN.animations); try { nockArrow(tpl[k]); } catch (e) { console.warn('arrow', e.message); } }

@@ -9,6 +9,7 @@
 #   pip install bpy
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/tribe3d/tripo/warrior_split_raw.glb art/grind3d/huntress.glb huntress
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/knight/knight_raw.glb art/tribe3d/people/demon_knight.glb knight
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/winged/raw.glb art/tribe3d/people/winged_knight.glb winged
 # A new model: plot its parts first (front / side point plot, a grid render for the joints), then add an entry to MODELS.
 import bpy, bmesh, sys, json, math
 import numpy as np
@@ -43,6 +44,20 @@ MODELS = {
        'upperarmr': (-.11, .6, .035), 'lowerarmr': (-.205, .545, .045), 'wristr': (-.275, .48, .05), 'handr': (-.29, .465, .05), 'handslotr': (-.31, .445, .06),
        'upperlegl': (.055, .42, .035), 'lowerlegl': (.095, .27, .04), 'footl': (.13, .085, .04), 'toesl': (.13, .02, .13),
        'upperlegr': (-.055, .42, .035), 'lowerlegr': (-.1, .27, .04), 'footr': (-.14, .085, .04), 'toesr': (-.14, .02, .13)}),
+  # the "winged knight" (owner's GPT T-pose front / left / back -> Tripo multi-view, segment custom 21 names, 2026-11-18): texturing re-merged the
+  # 194 parts into 140, many of them several loose pieces from all over the body, so 'auto' works per loose piece and 'main:<role>' gives
+  # the biggest piece of a part the role (the rest auto). 0.97 tall, T-pose, open hands, symmetric
+  'winged': dict(
+    ROLE={0: 'rigid:head', 1: 'rigid:head', 9: 'rigid:head', 6: 'heat:spine,chest', 18: 'rigid:chest',
+          10: 'heat:hips,upperlegl,upperlegr,lowerlegl,lowerlegr', 2: 'heat:lowerlegr,footr', 20: 'heat:lowerlegl,footl', 12: 'rigid:lowerlegr', 28: 'rigid:lowerlegl',
+          15: 'rigid:handr', 78: 'main:rigid:handl', 22: 'rigid:lowerarml', 19: 'mix:upperarml=.6,chest=.4', 101: 'main:mix:upperarmr=.6,chest=.4',
+          3: 'mix:spine=.5,chest=.5', 16: 'mix:spine=.5,chest=.5', 36: 'mix:spine=.5,chest=.5', 92: 'main:mix:spine=.5,chest=.5', 193: 'main:mix:spine=.5,chest=.5'},
+    DEFAULT='auto', FACES={}, SHOULDER=[],
+    J={'hips': (0, .36, .06), 'spine': (0, .43, .06), 'chest': (0, .5, .06), 'head': (0, .57, .05), 'top': (0, .97, .05),
+       'upperarml': (.105, .51, .065), 'lowerarml': (.215, .505, .065), 'wristl': (.285, .505, .065), 'handl': (.3, .505, .065), 'handslotl': (.335, .5, .07),
+       'upperarmr': (-.105, .51, .065), 'lowerarmr': (-.215, .505, .065), 'wristr': (-.285, .505, .065), 'handr': (-.3, .505, .065), 'handslotr': (-.335, .5, .07),
+       'upperlegl': (.06, .335, .06), 'lowerlegl': (.075, .19, .06), 'footl': (.085, .075, .05), 'toesl': (.085, .02, .15),
+       'upperlegr': (-.06, .335, .06), 'lowerlegr': (-.075, .19, .06), 'footr': (-.085, .075, .05), 'toesr': (-.085, .02, .15)}),
 }
 CFG = MODELS[MODEL]; ROLE, J = CFG['ROLE'], CFG['J']
 BONES = [('hips', 'spine', None), ('spine', 'chest', 'hips'), ('chest', 'head', 'spine'), ('head', 'top', 'chest'),
@@ -144,20 +159,44 @@ def heat(o, names):
             o.vertex_groups[nearest_bone(gpos(v.co), names)].add([v.index], 1, 'REPLACE'); fill += 1
     print('  heat', n, 'bones', names, 'proxy unweighted', miss, 'filled', fill)
 
+def islands(o):   # the loose pieces of a part (vertex index lists, biggest first)
+    nb = [[] for _ in o.data.vertices]
+    for e in o.data.edges: a, b = e.vertices; nb[a].append(b); nb[b].append(a)
+    seen, out = [False] * len(nb), []
+    for v in range(len(nb)):
+        if seen[v]: continue
+        st, comp = [v], []; seen[v] = True
+        while st:
+            a = st.pop(); comp.append(a)
+            for b in nb[a]:
+                if not seen[b]: seen[b] = True; st.append(b)
+        out.append(comp)
+    return sorted(out, key=len, reverse=True)
+def fixed(role):   # rigid / mix role -> one weight dict
+    if role.startswith('rigid:'): return {role[6:]: 1}
+    return {k: float(w) for k, w in (q.split('=') for q in role[4:].split(','))}
 auto = {}
+def auto_w(o, ws, comps):   # a small rigid piece (chain link, spike, gem, buckle) follows the bone nearest to its middle: per loose piece
+    for comp in comps:
+        c = gpos(sum((o.data.vertices[i].co for i in comp), Vector()) / len(comp))
+        b = 'head' if c[1] > J['head'][1] + .02 else nearest_bone(c, ALL); auto[b] = auto.get(b, 0) + 1   # above the neck = the head (helmet discs beside a big chibi head are nearer the shoulder bone)
+        for i in comp: ws[i] = {b: 1}
 for n, o in parts.items():
     role = role_of(n); nv = len(o.data.vertices)
     if role.startswith('heat:'): heat(o, role[5:].split(','))
-    elif role.startswith('rigid:'): set_w(o, [{role[6:]: 1}] * nv)
-    elif role.startswith('mix:'): set_w(o, [{k: float(w) for k, w in (q.split('=') for q in role[4:].split(','))}] * nv)
+    elif role.startswith('rigid:') or role.startswith('mix:'): set_w(o, [fixed(role)] * nv)
+    elif role.startswith('main:'):
+        comps = islands(o); ws = [None] * nv
+        for i in comps[0]: ws[i] = fixed(role[5:])
+        auto_w(o, ws, comps[1:]); set_w(o, ws)
     elif role in ('bow', 'string'): set_w(o, [{'handl': 1}] * nv)
     elif role == 'headblend':   # face + mane with the head; hanging braids blend down to the chest
         ws = []
         for v in o.data.vertices:
             x, y, z = gpos(v.co); t = max(0, min(1, (y - .5) / .12)); ws.append({'head': t, 'chest': 1 - t})
         set_w(o, ws)
-    else:   # auto: a small rigid piece (chain link, spike, gem, buckle) follows the bone nearest to its middle
-        c = sum((v.co for v in o.data.vertices), Vector()) / max(1, nv); b = nearest_bone(gpos(c), ALL); set_w(o, [{b: 1}] * nv); auto[b] = auto.get(b, 0) + 1
+    else:   # auto
+        ws = [None] * nv; auto_w(o, ws, islands(o)); set_w(o, ws)
 print('auto parts per bone', auto)
 
 for n in CFG['SHOULDER']:   # the shoulder of the body part follows the upper arm a little, so a raised arm does not open a gap
