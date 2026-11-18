@@ -611,11 +611,15 @@ function castSkill(i, at) {
 }
 
 // ---------- game state, waves
-const G = { state: 'title', gold: 220, lives: 20, wave: 0, kills: 0, build: 0, queue: [], spawnT: 0, speed: 1, menu: null, select: false, best: 0, px: Q.get('px') === '1', hk: null };
-G.starsBy = {}; try { for (const k of ['archer', 'wing', 'demon', 'dark', 'hood']) G.starsBy[k] = +localStorage.getItem('guardtd_stars_' + k) || 0; G.best = +localStorage.getItem('guardtd_best') || 0; G.lastHero = localStorage.getItem('guardtd_hero') || 'archer'; } catch (_) { G.lastHero = 'archer'; }
+const G = { state: 'title', gold: MAP.gold, lives: 20, wave: 0, kills: 0, build: 0, queue: [], spawnT: 0, speed: 1, menu: null, select: false, best: 0, px: Q.get('px') === '1', hk: null };
+// progress (owner: "ทำไปเรื่อยๆ"): best stars per map and hero; a map opens when the one before it was won
+const lsGet = k => { try { return +localStorage.getItem(k) || 0; } catch (_) { return 0; } };
+const mapStars = m => Math.max(0, ...['archer', 'wing', 'demon', 'dark', 'hood'].map(h => lsGet(`guardtd_stars_${m}_${h}`)), m === 'forest' ? lsGet('guardtd_stars_archer') : 0);
+const mapOpen = m => Q.get('unlock') === '1' || MAPKEYS.indexOf(m) <= 0 || mapStars(MAPKEYS[MAPKEYS.indexOf(m) - 1]) > 0;
+G.starsBy = {}; try { for (const k of ['archer', 'wing', 'demon', 'dark', 'hood']) G.starsBy[k] = lsGet(`guardtd_stars_${MAPK}_${k}`); localStorage.setItem('guardtd_map', MAPK); G.best = +localStorage.getItem('guardtd_best') || 0; G.lastHero = localStorage.getItem('guardtd_hero') || 'archer'; } catch (_) { G.lastHero = 'archer'; }
 const FLASH = { t: 0 }, LVUP = { t: 0 }, BANNER = { t: 0, a: '', b: '' };
 function waveList(n) {   // wave n (1..20): count, which monsters, life multiplier, a boss every 5th
-  const hpMul = Math.pow(1.14, n - 1), pool = n <= 3 ? T1 : n <= 7 ? T1.concat(T2) : n <= 11 ? T2.concat(T3.slice(0, 3)) : n <= 15 ? T2.concat(T3) : T3.concat(T2.slice(2)), R = rng(n * 97), L = [];
+  const hpMul = Math.pow(1.14, n - 1) * MAP.hp, pool = n <= 3 ? T1 : n <= 7 ? T1.concat(T2) : n <= 11 ? T2.concat(T3.slice(0, 3)) : n <= 15 ? T2.concat(T3) : T3.concat(T2.slice(2)), R = rng(n * 97), L = [];
   const groups = 2 + Math.floor(n / 4); for (let g = 0; g < groups; g++) { const k = pool[R() * pool.length | 0], cnt = T3.includes(k) ? 2 + (n > 12) : 4 + Math.floor(n / 5); for (let i = 0; i < cnt; i++) L.push({ k, t: i === 0 && g > 0 ? 2.2 : T3.includes(k) ? 1.3 : .75, hpMul }); }
   if ([3, 7, 12, 17].includes(n)) L.splice(Math.floor(L.length / 2), 0, { k: 'goblin_archer', t: 2, hpMul, golden: true });
   if (BOSSW[n]) L.push({ k: BOSSW[n], t: 3, hpMul: 1 }); return L;
@@ -633,14 +637,15 @@ function updWaves(dt) {
     if (G.wave >= NWAVE) { endGame(true); return; } G.build = 25; G.gold += 20 + G.wave * 4; BANNER.t = 1.8; BANNER.a = 'ผ่านคลื่นที่ ' + G.wave; BANNER.b = 'โบนัสทอง +' + (20 + G.wave * 4); BANNER.red = false; sfx('coin', .6); }
   if (G.build > 0 && !G.queue.length && !MON.length && !G.starting) { G.build -= dt; if (G.build <= 0) { G.build = 0; startWave(); } }
 }
-function endGame(win) { G.state = win ? 'win' : 'lose'; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
-  try { const k = 'guardtd_stars_' + G.hk; if (G.stars > (+localStorage.getItem(k) || 0)) localStorage.setItem(k, G.stars); } catch (_) { } if (G.wave > G.best) { G.best = win ? NWAVE : G.wave - 1; try { localStorage.setItem('guardtd_best', G.best); } catch (_) { } } if (HERO && win) uPlay(HERO.u, 'Cheer'); sfx(win ? 'lvl' : 'hurt', .7); }
+function endGame(win) { G.state = win ? 'win' : 'lose'; BANNER.t = 0; G.menu = null; if (HERO) HERO.aim = -1; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
+  try { const k = `guardtd_stars_${MAPK}_${G.hk}`; if (G.stars > (+localStorage.getItem(k) || 0)) localStorage.setItem(k, G.stars); } catch (_) { } if (G.wave > G.best) { G.best = win ? NWAVE : G.wave - 1; try { localStorage.setItem('guardtd_best', G.best); } catch (_) { } } if (HERO && win) uPlay(HERO.u, 'Cheer'); sfx(win ? 'lvl' : 'hurt', .7); }
 async function pickHero(hk) {
   G.state = 'load'; G.hk = hk; try { localStorage.setItem('guardtd_hero', hk); } catch (_) { }
   try { await loadHero(hk); await preloadWave(1); } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
   G.state = 'play'; G.build = 0; BANNER.t = 2.6; BANNER.a = 'ปกป้องปราสาท!'; BANNER.b = 'แตะแท่นหินเพื่อสร้างป้อม · แตะพื้นเพื่อสั่งฮีโร่เดิน'; BANNER.red = false;
 }
-function restart() { location.search = (G.hk ? '?hero=' + G.hk : '') + (G.px ? (G.hk ? '&' : '?') + 'px=1' : ''); }
+function goPage(o) { const p = new URLSearchParams(); p.set('map', o.map || MAPK); if (o.hero) p.set('hero', o.hero); if (o.menu) p.set('menu', '1'); if (G.px) p.set('px', '1'); if (Q.get('snd') === '0') p.set('snd', '0'); location.search = p.toString(); }
+function restart() { goPage({ hero: G.hk }); }
 
 // ---------- floating numbers + coins (drawn on the overlay)
 const NUMS = []; function num(p, text, color) { if (NUMS.length > 40) return; NUMS.push({ p: p.clone(), text: String(text), color, t: 0 }); }
@@ -844,22 +849,30 @@ const RFILL = new THREE.Mesh(new THREE.CircleGeometry(1, 48).rotateX(-Math.PI / 
 let RANGE_T = 0; function drawRangeRing(c, R) { RINGM.position.x = RFILL.position.x = c.x; RINGM.position.z = RFILL.position.z = c.z; RINGM.scale.setScalar(R); RFILL.scale.setScalar(R); RANGE_T = .1; }
 function drawTitle() {
   const g = ui.createLinearGradient(0, 0, 0, SH); g.addColorStop(0, 'rgba(10,16,30,.55)'); g.addColorStop(1, 'rgba(10,16,30,.25)'); ui.fillStyle = g; ui.fillRect(0, 0, SW, SH);
-  txt('ป้อมผู้พิทักษ์', SW / 2, 44 * S, 38 * S, '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)'); txt('เลือกฮีโร่ 1 ตัว ไปปกป้องปราสาท 20 คลื่น', SW / 2, 80 * S, 15 * S, '#fff3cf', 'center', 600);
-  const NH = HKEYS.length, cw = Math.min(170 * S, (SW - 40 * S - 12 * S * (NH - 1)) / NH), ch = Math.min(220 * S, SH - 130 * S), gap = 12 * S, x0 = SW / 2 - (cw * NH + gap * (NH - 1)) / 2, y0 = 100 * S;
+  txt('ป้อมผู้พิทักษ์', SW / 2, 30 * S, 32 * S, '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)');
+  { const mw = Math.min(190 * S, (SW - 60 * S) / 3), mh = 40 * S, gx = 10 * S, mx0 = SW / 2 - (mw * 3 + gx * 2) / 2, my = 54 * S;   // the map row
+    MAPKEYS.forEach((m, i) => { const M = MAPS[m], x = mx0 + i * (mw + gx), on = m === MAPK, open = mapOpen(m); MENU.push({ k: 'map:' + m, x, y: my, w: mw, h: mh });
+      rr(x, my, mw, mh, 10 * S); ui.fillStyle = on ? 'rgba(255,196,64,.92)' : open ? 'rgba(26,20,12,.75)' : 'rgba(26,20,12,.45)'; ui.fill(); ui.lineWidth = (on ? 3 : 1.5) * S; ui.strokeStyle = on ? '#fff' : 'rgba(255,230,170,.6)'; ui.stroke();
+      txt(M.sub + ' · ' + M.name, x + 10 * S, my + 14 * S, 12.5 * S, on ? '#3a2208' : open ? '#fff3d2' : '#9a8a70', 'left', 800, on ? 'rgba(255,240,200,.5)' : 'rgba(0,0,0,.6)');
+      if (open) { const st = mapStars(m); for (let j = 0; j < 3; j++) star(x + 18 * S + j * 15 * S, my + 29 * S, 6 * S, j < st); txt(['ง่าย', 'ปานกลาง', 'ยาก'][i], x + mw - 10 * S, my + 29 * S, 10.5 * S, on ? '#5a3a08' : '#e8d2a8', 'right', 700, 'rgba(0,0,0,.2)'); }
+      else txt('ล็อก: ชนะแมพก่อนหน้า', x + 10 * S, my + 29 * S, 10.5 * S, '#9a8a70', 'left', 700); });
+    if (MAPMSG.t > 0) { MAPMSG.t -= 1 / 60; txt('ชนะ ' + MAPS[MAPKEYS[MAPKEYS.indexOf(MAPMSG.m) - 1]].name + ' ก่อน แล้วแมพนี้จะเปิด', SW / 2, my + mh + 12 * S, 13 * S, '#ffb0a0'); } }
+  const NH = HKEYS.length, cw = Math.min(170 * S, (SW - 40 * S - 12 * S * (NH - 1)) / NH), ch = Math.min(220 * S, SH - 150 * S), gap = 12 * S, x0 = SW / 2 - (cw * NH + gap * (NH - 1)) / 2, y0 = 116 * S;
   HKEYS.forEach((k, i) => { const D = HEROES[k], x = x0 + i * (cw + gap), y = y0, last = k === G.lastHero;
     MENU.push({ k: 'hero:' + k, x, y, w: cw, h: ch }); rr(x, y, cw, ch, 14 * S); const gg = ui.createLinearGradient(0, y, 0, y + ch); gg.addColorStop(0, D.col[0]); gg.addColorStop(1, D.col[1]); ui.fillStyle = gg; ui.fill(); ui.lineWidth = (last ? 4 : 2) * S; ui.strokeStyle = last ? '#fff' : 'rgba(255,240,200,.7)'; ui.stroke();
     ui.beginPath(); ui.arc(x + cw / 2, y + ch * .28, ch * .18, 0, TAU); ui.fillStyle = 'rgba(0,0,0,.25)'; ui.fill(); heroIcon(k, x + cw / 2, y + ch * .28, ch * .18);
     txt(D.name, x + cw / 2, y + ch * .58, 18 * S, '#fff'); txt(D.role, x + cw / 2, y + ch * .58 + 20 * S, 11.5 * S, '#fff8e0', 'center', 600); const K4 = kitOf(k).map(q => q.name); txt(K4.slice(0, 2).join(' · '), x + cw / 2, y + ch * .58 + 36 * S, 10 * S, '#fff8e0', 'center', 600); txt(K4.slice(2).join(' · '), x + cw / 2, y + ch * .58 + 50 * S, 10 * S, '#fff8e0', 'center', 600);
     rr(x + cw * .18, y + ch - 32 * S, cw * .64, 24 * S, 12 * S); ui.fillStyle = 'rgba(30,20,10,.75)'; ui.fill(); txt('เลือก', x + cw / 2, y + ch - 20 * S, 13 * S, '#ffe9b0');
     const st = G.starsBy[k] || 0; for (let j = 0; j < 3; j++) star(x + cw / 2 + (j - 1) * 17 * S, y + 14 * S, 7 * S, j < st); });
-  if (G.best) txt('ดีที่สุด: ผ่าน ' + G.best + ' คลื่น', SW / 2, y0 + ch + 20 * S, 13 * S, '#fff3cf', 'center', 600);
+  txt('เลือกแมพ แล้วเลือกฮีโร่ 1 ตัว ไปปกป้องปราสาท 20 คลื่น', SW / 2, y0 + ch + 14 * S, 12.5 * S, '#fff3cf', 'center', 600);
 }
+const MAPMSG = { t: 0, m: '' };
 function star(x, y, r, on) { ui.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr0 = i % 2 ? r * .45 : r; ui.lineTo(x + Math.cos(a) * rr0, y + Math.sin(a) * rr0); } ui.closePath(); ui.fillStyle = on ? '#ffd34a' : 'rgba(255,255,255,.2)'; ui.fill(); ui.lineWidth = 2.5 * S; ui.strokeStyle = on ? '#8a5a08' : 'rgba(0,0,0,.4)'; ui.stroke(); }
 function drawEnd() {
   ui.fillStyle = 'rgba(0,0,0,.45)'; ui.fillRect(0, 0, SW, SH); const win = G.state === 'win';
   txt(win ? 'ชนะ! ปราสาทปลอดภัย' : 'ปราสาทแตกแล้ว...', SW / 2, SH * .32, 32 * S, win ? '#ffe14a' : '#ff8a7a');
   if (win) for (let i = 0; i < 3; i++) star(SW / 2 + (i - 1) * 46 * S, SH * .32 - 50 * S - (i === 1 ? 8 * S : 0), 18 * S, i < G.stars); txt(`ผ่าน ${win ? NWAVE : G.wave - 1} คลื่น · ล่าได้ ${G.kills} ตัว`, SW / 2, SH * .32 + 34 * S, 15 * S, '#fff3cf');
-  const bw = 150 * S, bh = 40 * S, y = SH * .55; [['again', 'เล่นอีกครั้ง', SW / 2 - bw - 8 * S], ['title', 'เปลี่ยนฮีโร่', SW / 2 + 8 * S]].forEach(([k, l, x]) => { MENU.push({ k, x, y, w: bw, h: bh }); rr(x, y, bw, bh, bh / 2); ui.fillStyle = k === 'again' ? '#f0a020' : 'rgba(255,255,255,.18)'; ui.fill(); txt(l, x + bw / 2, y + bh / 2, 15 * S, '#fff'); });
+  const bw = 150 * S, bh = 40 * S, y = SH * .55, nx = win && MAPKEYS.indexOf(MAPK) < MAPKEYS.length - 1; (nx ? [['again', 'เล่นอีกครั้ง', SW / 2 - bw * 1.5 - 12 * S], ['next', 'แมพถัดไป ›', SW / 2 - bw / 2], ['title', 'เปลี่ยนฮีโร่', SW / 2 + bw / 2 + 12 * S]] : [['again', 'เล่นอีกครั้ง', SW / 2 - bw - 8 * S], ['title', 'เปลี่ยนฮีโร่ / แมพ', SW / 2 + 8 * S]]).forEach(([k, l, x]) => { MENU.push({ k, x, y, w: bw, h: bh }); rr(x, y, bw, bh, bh / 2); ui.fillStyle = k === 'again' ? '#f0a020' : k === 'next' ? '#3ab04a' : 'rgba(255,255,255,.18)'; ui.fill(); txt(l, x + bw / 2, y + bh / 2, 15 * S, '#fff'); });
 }
 
 // ---------- input
@@ -872,8 +885,8 @@ uic.addEventListener('pointermove', e => { if (G.menu && !G.menu.pad.tower) { co
 uic.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); tap(e.clientX, e.clientY); });
 function tap(x, y) {
   const mb = MENU.find(q => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h);
-  if (G.state === 'title') { if (mb && mb.k.startsWith('hero:')) pickHero(mb.k.slice(5)); return; }
-  if (G.state === 'win' || G.state === 'lose') { if (mb) { if (mb.k === 'again') restart(); else location.search = G.px ? '?px=1&menu=1' : '?menu=1'; } return; }
+  if (G.state === 'title') { if (mb && mb.k.startsWith('hero:')) pickHero(mb.k.slice(5)); else if (mb && mb.k.startsWith('map:')) { const m = mb.k.slice(4); if (!mapOpen(m)) { sfx('tick', .4, .6); MAPMSG.t = 2; MAPMSG.m = m; } else if (m !== MAPK) goPage({ map: m, menu: true }); } return; }
+  if (G.state === 'win' || G.state === 'lose') { if (mb) { if (mb.k === 'again') restart(); else if (mb.k === 'next') goPage({ map: MAPKEYS[MAPKEYS.indexOf(MAPK) + 1], menu: true }); else goPage({ menu: true }); } return; }
   if (G.state !== 'play') return;
   if (mb && G.menu) { const t = G.menu.pad.tower; if (TDEF[mb.k]) { if (buildTower(G.menu.pad, mb.k)) G.menu = null; else sfx('tick', .4, .6); } else if (mb.k === 'up') { upgradeTower(t); } else if (mb.k === 'sell') { sellTower(t); G.menu = null; } return; }
   if (inBtn(BTN.spd, x, y)) { G.speed = G.speed === 1 ? 2 : G.speed === 2 ? 3 : 1; return; } if (inBtn(BTN.px, x, y)) { setPx(!G.px); return; } if (inBtn(BTN.snd, x, y)) { SND.on = !SND.on; return; }
@@ -935,7 +948,7 @@ function platformTop(s, k, H) {   // cast rays down at the middle from heights b
   return best;
 }
 setPx(G.px); boot(); frame();
-window.GAME = { castSkill, learnSkill, canLearn, HPAD, closeCam: (x, z, d = 4) => { CAM.base = new V3(x, d * .8, z + d * .6); camera.position.copy(CAM.base); camera.lookAt(x, .4, z); }, G, MON, TOWERS, PADS, PROJ, FX, get HERO() { return HERO; }, TDEF, HEROES, KITS, buildTower, upgradeTower, sellTower, startWave, pickHero, setPx, tap, toScreen: (x, y, z) => toScreen(new V3(x, y, z)),
+window.GAME = { castSkill, learnSkill, canLearn, HPAD, endGameT: w => endGame(w), MAPK, closeCam: (x, z, d = 4) => { CAM.base = new V3(x, d * .8, z + d * .6); camera.position.copy(CAM.base); camera.lookAt(x, .4, z); }, G, MON, TOWERS, PADS, PROJ, FX, get HERO() { return HERO; }, TDEF, HEROES, KITS, buildTower, upgradeTower, sellTower, startWave, pickHero, setPx, tap, toScreen: (x, y, z) => toScreen(new V3(x, y, z)),
   sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { NOW += dt; tick(dt); } } };
 </script>
 </body>
