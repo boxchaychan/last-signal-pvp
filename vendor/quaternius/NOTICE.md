@@ -24,3 +24,10 @@
 - Author: Quaternius. Licence: CC0 1.0 (public domain), see `License_UltimateMonsters.txt` (copied unchanged; its header says "Ultimate Platformer Pack", same slip as Stylized Nature).
 - Downloaded by the owner on 2026-11-16 (Google Drive zip of the pack).
 - In the repo: `art/tribe3d/monsters/*.glb` — 8 of the 50 models, .gltf -> .glb (the shared Atlas_Monsters texture is embedded in each): Big/Tribal, Orc, Yeti, Demon, MushroomKing; Blob/Mushnub; Flying/Ghost, Dragon_Evolved. Animations: Big = Death, HitReact, Idle, Punch, Run, Walk, Weapon, ...; Flying = Fast_Flying, Flying_Idle, Headbutt, Punch, Death, ...; Blob = Walk, Bite_Front, Death, ...
+
+# Quaternius — Universal Animation Library 1 + 2 [Standard]
+
+- Author: Quaternius. Licence: CC0 1.0 (public domain), see `License_UniversalAnimationLibrary.txt` / `License_UniversalAnimationLibrary2.txt` (copied unchanged).
+- Sent by the owner on 2026-11-18 (the two free "Standard" zips).
+- In the repo: `art/incoming/quaternius/ual/UAL1_Standard.glb`, `UAL2_Standard.glb` (43 moves each on the Quaternius mannequin, no root motion; the `_RM` copies, FBX, .blend, the female mannequin and the setup pictures are not stored) + the pack README.
+- Game copy: `art/grind3d/ual_anims.json` = chosen moves retargeted onto the KayKit Rig_Medium skeleton by `tools/art/ual_retarget.js`.

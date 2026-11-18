@@ -194,6 +194,12 @@ const MOVES = SS ? SSMOVES : SWORD ? SMOVES : [['Ranged_Bow_Idle', 'ยืนถ
   ['Ranged_Bow_Draw_Up', 'ง้างขึ้นฟ้า'], ['Ranged_Bow_Release_Up', 'ยิงขึ้นฟ้า'], ['Running_HoldingBow', 'วิ่งถือธนู'], ['Running_A', 'วิ่ง'], ['Walking_A', 'เดิน'], ['Walking_Backwards', 'เดินถอยหลัง'],
   ['Running_Strafe_Left', 'วิ่งข้างซ้าย'], ['Running_Strafe_Right', 'วิ่งข้างขวา'], ['Dodge_Forward', 'กลิ้งหน้า'], ['Dodge_Backward', 'กลิ้งหลัง'], ['Dodge_Left', 'กลิ้งซ้าย'], ['Dodge_Right', 'กลิ้งขวา'],
   ['Jump_Full_Short', 'กระโดด'], ['Hit_A', 'โดนตี'], ['Hit_B', 'โดนตี 2'], ['Death_A', 'ล้ม'], ['Death_B', 'ล้ม 2'], ['Spawn_Ground', 'ลุกขึ้น'], ['PickUp', 'เก็บของ'], ['Use_Item', 'ใช้ของ'], ['Ranged_Magic_Summon', 'อัญเชิญ'], ['Cheer', 'ดีใจ']];
+// the Quaternius moves (art/grind3d/ual_anims.json) in every hero's move gallery
+MOVES.push(...[['Q_Sword_Regular_Combo', 'Q คอมโบดาบ'], ['Q_Sword_Heavy_Combo', 'Q คอมโบหนัก'], ['Q_Sword_Regular_A', 'Q ฟัน 1'], ['Q_Sword_Regular_B', 'Q ฟัน 2'], ['Q_Sword_Regular_C', 'Q ฟัน 3'],
+  ['Q_Sword_Dash', 'Q พุ่งฟัน'], ['Q_Sword_Block', 'Q ตั้งดาบกัน'], ['Q_Sword_Idle', 'Q ยืนถือดาบ'], ['Q_Sword_Attack', 'Q ฟันเดี่ยว'], ['Q_Shield_Dash', 'Q พุ่งโล่'], ['Q_Shield_OneShot', 'Q กระแทกโล่'],
+  ['Q_Idle_Shield_Loop', 'Q ยืนตั้งโล่'], ['Q_Melee_Hook', 'Q หมัดฮุก'], ['Q_Punch_Jab', 'Q หมัดแย็บ'], ['Q_Punch_Cross', 'Q หมัดตรง'], ['Q_OverhandThrow', 'Q ขว้าง'], ['Q_Spell_Simple_Shoot', 'Q ร่ายเวท'],
+  ['Q_NinjaJump_Start', 'Q กระโดดนินจา'], ['Q_Slide_Loop', 'Q สไลด์'], ['Q_Roll', 'Q ม้วนตัว'], ['Q_Sprint_Loop', 'Q วิ่งเร็ว'], ['Q_Jog_Fwd_Loop', 'Q วิ่งเหยาะ'], ['Q_Hit_Knockback', 'Q โดนกระเด็น'],
+  ['Q_Death01', 'Q ล้ม'], ['Q_Dance_Loop', 'Q เต้น'], ['Q_Idle_FoldArms_Loop', 'Q กอดอก'], ['Q_Yes', 'Q พยักหน้า'], ['Q_Zombie_Walk_Fwd_Loop', 'Q เดินซอมบี้']]);
 const LOWER = /^(root|hips|upperleg|lowerleg|foot|toes)/;
 const PULL = { Ranged_Bow_Draw: [.2, .4, 9, 9], Ranged_Bow_Draw_Up: [.2, .4, 9, 9], Ranged_Bow_Aiming_Idle: [-1, 0, 9, 9], Ranged_Bow_Release: [-1, 0, .2, .27], Ranged_Bow_Release_Up: [-1, 0, .2, .27] };   // [pull starts, full, lets go, straight] as clip fractions
 function pullAt(name, f) { const p = PULL[name]; if (!p) return 0; let v = p[0] < 0 ? 1 : clamp((f - p[0]) / (p[1] - p[0]), 0, 1); if (f >= p[2]) v *= 1 - clamp((f - p[2]) / (p[3] - p[2]), 0, 1); return v; }
@@ -785,7 +791,7 @@ function updCam(dt) {
 let GAL = [];
 function openGallery() { if (P.mode !== 'free') return; P.mode = 'pose'; P.shot = null; IN.stick = null; IN.atkHeld = false; P.face = .55; setPose(P.pose); }
 function closeGallery() { P.mode = 'free'; both(IDLE, { fade: .2 }); }
-const ONCE = /^(Death|Dodge|Hit|Spawn|Jump|PickUp|Use_Item|Cheer|Ranged_Magic|Melee_(1H|2H)_Attack_(?!Spinning)|Melee_Block(_Attack|_Hit)?$)/;
+const ONCE = /^(Death|Dodge|Hit|Spawn|Jump|PickUp|Use_Item|Cheer|Ranged_Magic|Melee_(1H|2H)_Attack_(?!Spinning)|Melee_Block(_Attack|_Hit)?$|Q_(?!.*(_Loop|Sword_Idle|Sword_Block))[A-Za-z_]+$)/;
 function setPose(n) { P.pose = n; P.poseWait = 0; both(n, { fade: .12, restart: true, once: ONCE.test(n) }); }   // one-shot moves stop at the end, wait, play again
 function galleryHit(x, y) { for (const g of GAL) if (x >= g.x && x <= g.x + g.w && y >= g.y && y <= g.y + g.h) return g.k; return null; }
 
@@ -1011,6 +1017,8 @@ async function boot() {
     parts.forEach(p => p.then(() => { LOAD.f = .1 + .8 * (++done / parts.length); }));
     const [KN, HU, AN, WP, WT] = await Promise.all(parts);
     for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');   // the joined move file renamed duplicate bones hips_1...
+    // + Quaternius Universal Animation Library 1 + 2 (CC0), retargeted onto the KayKit skeleton by tools/art/ual_retarget.js: names start with Q_
+    try { const UJ = await fetch('art/grind3d/ual_anims.json').then(r => r.json()); for (const c of UJ.clips) AN.animations.push(THREE.AnimationClip.parse(c)); } catch (e) { console.warn('ual', e.message); }
     HERO = rigTripo(HU, KN.scene, AN.animations);
     if (!SWORD) setupString(HERO);
     else {   // the KayKit two-handed sword (obsidian / crimson / gold knight colours) in the right hand slot, as in the tribe game; horns / wings make the model taller than its body
