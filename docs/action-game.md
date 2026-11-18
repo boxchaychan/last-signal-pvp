@@ -1845,3 +1845,9 @@ Owner: "ใส่เข้าเกม tribe3d.html: 1. Ultimate Fantasy RTS = �
 - Skills: กระโดดฟาด (Q / drag the button: a spot up to 8 m, orange warning circle, leaps there, AoE 2.8 m x2.4 dmg, big knock-back, shake, hit-stop), พายุดาบ (E / tap: 1.9 s spin, hits all within 2.5 m every 0.22 s at x0.55, drifts toward the nearest enemy or where the stick points). Cooldowns 6 / 7 s.
 - Swoosh effect: an arc strip built in code (`arcGeo`, texture `SLASH`) revealed along the swing then fading; additive white + orange glow over a deep red-orange normal-blend layer (additive alone vanished on the pale earth); side slash flat at chest height, chop vertical overhead -> front + ground ring / dust, spin a full ring.
 - Check: `node tools/qa/grind3d_sword.js <out> wing|demon` (combo on dummies 4 swings / 5 hits, slam, whirl, dodge, 28 s auto fight: Lv 3, 16-19 kills, no errors); archer check unchanged and clean.
+
+## 2026-11-18: the winged knight = the tribe CHIEF in `tribe3d.html` (owner: "ไม่ต้องใส่ทั้งตัว เอาไว้เป็นหัวหน้า")
+- Decision: no more cutting the winged knight onto a KayKit body (the "whole Tripo head on KayKit" option was not built). The whole Tripo winged knight (`art/tribe3d/people/winged_knight.glb`) is now the หัวหน้าเผ่า: stands by the hall, throws for the skills, cheers after a wave, holds the KayKit two-handed sword (same `tripoKnight()` helper as the ★★★ demon knight).
+- `?chief=scarf` = the red-scarf hero from the owner's design (`hero_model.py`, chief before this), `?chief=old` = the crimson barbarian. ★★★ warrior unchanged (demon knight; `?knight=` options still there).
+- Check `node tools/qa/tribe3d_chief.js <out> [scarf|old]` (idle + throw close-ups, errors): clean; `tribe3d_knight.js` and `tribe3d_people.js` clean.
+- Open: in KayKit `Idle` the long sword sticks out low to his right (no 2H idle in the tribe clip set); turn it in the hand if the owner minds.
