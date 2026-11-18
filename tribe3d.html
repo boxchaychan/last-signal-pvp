@@ -1158,12 +1158,14 @@ const GAME = window.GAME = (function () {
       const HEROES = ['Barbarian', 'Knight', 'Mage', 'Rogue', 'Rogue_Hooded', 'Ranger'];
       const KN = (location.search.match(/[?&]knight=(\w+)/) || [])[1] || '';   // ★★★ warrior: '' = Tripo demon knight, wing = Tripo winged knight, old = KayKit knight,
       // mix / wingmix = the KayKit knight wearing pieces cut from the demon / winged knight (tools/blender/tripo_gear.py)
-      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW, HP, DK, KP] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
+      const CH = (location.search.match(/[?&]chief=(\w+)/) || [])[1] || '';   // the chief: '' = Tripo winged knight, scarf = red-scarf hero, old = crimson barbarian
+      const [GL, WP, AN, GE, GM, TO, FW, TG, HG, TW, HP, DK, KP, WC] = await Promise.all([Promise.all(HEROES.map(n => ld.loadAsync(P + n + '.glb'))), ld.loadAsync(P + 'weapons.glb'), ld.loadAsync(P + 'anims.glb'),
         ld.loadAsync('art/tribe3d/gear/archer_gear.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/mage_gear.glb').catch(() => null),
         ld.loadAsync(P + 'tools.glb').catch(() => null), ld.loadAsync(P + 'fweapons.glb').catch(() => null), ld.loadAsync('art/tribe3d/gear/tier_gear.glb').catch(() => null),
         ld.loadAsync(P + 'hero_model.glb').catch(() => null), (/[?&]archer=tripo/.test(location.search) ? ld.loadAsync(P + 'warrior_f.glb').catch(() => null) : null), ld.loadAsync('art/tribe3d/gear/huntress_parts.glb').catch(() => null),
         (['old', 'mix', 'wingmix'].includes(KN) ? null : ld.loadAsync(P + (KN === 'wing' ? 'winged_knight.glb' : 'demon_knight.glb')).catch(() => null)),
-        (/^(wing)?mix$/.test(KN) ? ld.loadAsync('art/tribe3d/gear/' + (KN === 'mix' ? 'knight_parts.glb' : 'winged_parts.glb')).catch(() => null) : null)]);   // demon_knight = the owner's Tripo knight (tools/blender/tripo_parts_rig.py ... knight)   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
+        (/^(wing)?mix$/.test(KN) ? ld.loadAsync('art/tribe3d/gear/' + (KN === 'mix' ? 'knight_parts.glb' : 'winged_parts.glb')).catch(() => null) : null),
+        (CH ? null : ld.loadAsync(P + 'winged_knight.glb').catch(() => null))]);   // demon_knight = the owner's Tripo knight (tools/blender/tripo_parts_rig.py ... knight)   // KayKit RPG Tools Bits / Fantasy Weapons Bits; hero_model = tools/blender/hero_model.py; warrior_f = the owner's Tripo model (tools/blender/tripo_rig.py)
       const H = {}; HEROES.forEach((n, i) => { H[n] = GL[i]; });
       const enc = THREE.LinearEncoding;   // the scene's colours are all plain (linear) like the vertex-coloured props; an sRGB decode makes people far too dark
       const tex = n => tl.loadAsync(P + `tex_${n}.png`).then(t => { t.flipY = false; t.encoding = enc; t.magFilter = GFX === 2 ? THREE.LinearFilter : THREE.NearestFilter; t.userData.unit = true; return t; });
@@ -1208,7 +1210,7 @@ const GAME = window.GAME = (function () {
         const hm = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .62, metalness: 0 });   // soft highlights (the KayKit people stay Lambert)
         tpl.hero = mergePerson(r, [], hm, skel); tpl.hero.mats = [hm]; tpl.hero.h = 2.3;   // body height like the KayKit people (the hair stands above it)
         addGear(tpl.hero, [['RuneBlade', R_, [0, 0, 0], [-2.125, -0.589, -2.622], 1, 1]]);   // turned in the hand so the KayKit idle holds it low, out to his right, flat side up, like the picture
-        if (!/[?&]chief=old/.test(location.search)) { tpl.chiefOld = tpl.chief; tpl.chief = tpl.hero; }
+        if (CH !== 'old') { tpl.chiefOld = tpl.chief; tpl.chief = tpl.hero; }
       }
       // ★ / ★★ / ★★★ units
       tpl.warrior = hero('Knight', [['sword_1handed', R_], ['shield_round', L_]], mat('knigh_0'), ['Knight_HelmetVisor']);
@@ -1264,9 +1266,13 @@ const GAME = window.GAME = (function () {
       else if (HP) try { const T = hero('Ranger', [], mat('range_t'), [], rogueHead); tripoParts(T, HP, H.Knight.scene, H.Rogue.scene, WEAP.bow_withString); tpl.hunter3 = T; } catch (e) { console.warn('tripo parts', e.message); }
       // นักรบ ★★★ (owner 2026-11-17: GPT design -> Tripo, split into 147 parts): the demon knight, re-bound on the KayKit skeleton like the huntress,
       // holding the KayKit two-handed sword in the obsidian / crimson / gold knight colours; ?knight=old = the KayKit knight as before
-      if (DK) try { const T = rigTripo(DK, H.Knight.scene, AN.animations), bn = T.root.getObjectByName('handslotr'), src = WEAP.sword_2handed_color;
+      const tripoKnight = gl => { const T = rigTripo(gl, H.Knight.scene, AN.animations), bn = T.root.getObjectByName('handslotr'), src = WEAP.sword_2handed_color;
         if (bn && src) { const sw = src.clone(), sm = mat('knigh_2'); sw.traverse(o => { if (o.isMesh) { o.material = sm; o.castShadow = true; } }); sw.scale.setScalar(T.k * .5); bn.add(sw); }
-        T.h /= 1.12; tpl.warrior3 = T; } catch (e) { console.warn('demon knight', e.message); }   // a bit bigger: his horns made the body read small next to the ★★★ archer
+        T.h /= 1.12; return T; };   // a bit bigger: his horns made the body read small next to the ★★★ archer
+      if (DK) try { tpl.warrior3 = tripoKnight(DK); } catch (e) { console.warn('demon knight', e.message); }
+      // หัวหน้าเผ่า (owner 2026-11-18 "ไม่ต้องใส่ทั้งตัว เอาไว้เป็นหัวหน้า"): the owner's Tripo winged knight, whole (not cut onto a KayKit body), leads
+      // the tribe holding the KayKit two-handed sword; ?chief=scarf = the red-scarf hero (hero_model.py), ?chief=old = the crimson barbarian
+      if (WC) try { tpl.chief = tripoKnight(WC); } catch (e) { console.warn('winged chief', e.message); }
       // ?knight=mix (owner 2026-11-17 "ทำเลย"): the KayKit knight with the demon knight's horned helmet + shoulder pads (Tripo parts 3 / 111 / 141 / 142, 7, 6),
       // each piece pinned to one bone with its own small textures, and the two-handed sword; its own head / helmet / visor are taken off under the helmet
       if (KP) try {
