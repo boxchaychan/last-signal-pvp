@@ -73,6 +73,7 @@ const PADS = []; {
     let cover = 0; const tp = new V3(); for (let s = 0; s < PATHLEN; s += .5) { pathAt(s, tp); if (tp.distanceTo(c) < 3.2) cover++; } cand.push({ i, j, c, cover }); }
   cand.sort((a, b) => b.cover - a.cover); for (const q of cand) { if (PADS.length >= 12) break; if (PADS.every(p => p.c.distanceTo(q.c) > 2.1)) PADS.push({ i: q.i, j: q.j, c: q.c, tower: null }); }
 }
+const HPAD = PADS.shift();   // the hero dais (owner: the hero stays in ONE slot)
 { // ground: one mesh, a flat colour per tile (two greens, dirt road), on a thick earth block (a diorama)
   const pos = [], col = [], R = rng(7), c = new THREE.Color();
   const quad = (x0, z0, x1, z1, y, cc) => { pos.push(x0, y, z0, x0, y, z1, x1, y, z1, x0, y, z0, x1, y, z1, x1, y, z0); for (let k = 0; k < 6; k++) col.push(cc.r, cc.g, cc.b); };
@@ -88,6 +89,11 @@ const PADS = []; {
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ color: 0x5aa9d6 })); sea.rotation.x = -Math.PI / 2; sea.position.y = -1.25; scene.add(sea);
   // build pads: stone slabs
   const slab = new THREE.BoxGeometry(.86, .1, .86), sm = new THREE.MeshLambertMaterial({ color: 0x9a9284 }), em = new THREE.MeshLambertMaterial({ color: 0x6a6254 });
+  { const c = HPAD.c, st = new THREE.Mesh(new THREE.CylinderGeometry(.5, .56, .2, 20), new THREE.MeshLambertMaterial({ color: 0x8a8070 })); st.position.set(c.x, .1, c.z); st.receiveShadow = st.castShadow = true;
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(.44, .44, .04, 20), new THREE.MeshLambertMaterial({ color: 0xb8a070 })); top.position.set(c.x, .21, c.z); top.receiveShadow = true;
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(.47, .03, 6, 32).rotateX(Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xe8c040, emissive: 0x3a2a00 })); rim.position.set(c.x, .21, c.z); scene.add(st, top, rim);
+    for (let i = 0; i < 4; i++) { const a = i / 4 * TAU + Math.PI / 4, p = new THREE.Mesh(new THREE.CylinderGeometry(.05, .06, .5, 6), new THREE.MeshLambertMaterial({ color: 0x6a5a48 })); p.position.set(c.x + Math.cos(a) * .52, .3, c.z + Math.sin(a) * .52); p.castShadow = true;
+      const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: 0xffb040, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); f.position.set(p.position.x, .62, p.position.z); f.scale.setScalar(.22); f.userData.flame = true; scene.add(p, f); HPAD.flames = (HPAD.flames || []).concat(f); } }
   for (const p of PADS) { const e = new THREE.Mesh(new THREE.BoxGeometry(.96, .06, .96), em); e.position.set(p.c.x, .03, p.c.z); const s = new THREE.Mesh(slab, sm); s.position.set(p.c.x, .07, p.c.z); s.receiveShadow = e.receiveShadow = true; scene.add(e, s); p.slab = s; }
 }
 
@@ -130,14 +136,15 @@ function sfx(k, vol = 1, rate = 1) {
 
 // ---------- pixel monsters: our sprite sheets (art/action/mobs/<n>.png + .json: 6 frames x rows walk / attack / death / hurt, foot point fx, fy), upright cards
 const MOB = {
-  shroom: { hp: 34, spd: 1.15, gold: 4 }, wisp: { hp: 26, spd: 1.55, gold: 4 }, monkey: { hp: 30, spd: 1.6, gold: 4 }, kappa: { hp: 40, spd: 1.2, gold: 5 }, paper_doll: { hp: 28, spd: 1.45, gold: 4 }, goblin_archer: { hp: 36, spd: 1.3, gold: 5 },
-  wolf: { hp: 55, spd: 1.75, gold: 7 }, skeleton: { hp: 80, spd: 1.1, gold: 8 }, boar_guard: { hp: 120, spd: .95, gold: 10 }, draugr: { hp: 95, spd: 1.05, gold: 9 }, jackal_warrior: { hp: 90, spd: 1.25, gold: 9 }, nekomata: { hp: 70, spd: 1.6, gold: 8 }, fox_spirit: { hp: 75, spd: 1.5, gold: 8 },
-  golem: { hp: 260, spd: .7, gold: 18 }, troll: { hp: 300, spd: .75, gold: 20 }, oni: { hp: 280, spd: .85, gold: 20 }, croc_guard: { hp: 220, spd: .9, gold: 16 }, terracotta_general: { hp: 240, spd: .85, gold: 18 }, ice_golem: { hp: 320, spd: .65, gold: 22 },
+  shroom: { hp: 34, spd: 1.15, gold: 4 }, wisp: { hp: 26, spd: 1.55, gold: 4, fly: true }, kasa_obake: { hp: 30, spd: 1.35, gold: 5, fly: true }, monkey: { hp: 30, spd: 1.6, gold: 4 }, kappa: { hp: 40, spd: 1.2, gold: 5 }, paper_doll: { hp: 28, spd: 1.45, gold: 4 }, goblin_archer: { hp: 36, spd: 1.3, gold: 5 },
+  wolf: { hp: 55, spd: 1.75, gold: 7 }, tengu: { hp: 70, spd: 1.45, gold: 9, fly: true }, skeleton: { hp: 80, spd: 1.1, gold: 8 }, boar_guard: { hp: 120, spd: .95, gold: 10 }, draugr: { hp: 95, spd: 1.05, gold: 9 }, jackal_warrior: { hp: 90, spd: 1.25, gold: 9 }, nekomata: { hp: 70, spd: 1.6, gold: 8 }, fox_spirit: { hp: 75, spd: 1.5, gold: 8 },
+  golem: { hp: 260, spd: .7, gold: 18, armor: true }, troll: { hp: 300, spd: .75, gold: 20, regen: true }, oni: { hp: 280, spd: .85, gold: 20 }, croc_guard: { hp: 220, spd: .9, gold: 16, armor: true }, terracotta_general: { hp: 240, spd: .85, gold: 18, armor: true }, ice_golem: { hp: 320, spd: .65, gold: 22, armor: true }, ice_wraith: { hp: 150, spd: 1.2, gold: 15, fly: true },
   boss_treant: { hp: 2200, spd: .5, gold: 120, boss: true, sc: 1.25 }, boss_nian: { hp: 4200, spd: .6, gold: 180, boss: true, sc: 1.25 }, boss_orochi: { hp: 7000, spd: .5, gold: 260, boss: true, sc: 1.3 }, boss_jotun: { hp: 11000, spd: .5, gold: 400, boss: true, sc: 1.35 },
 };
-const MOBNAME = { shroom: 'เห็ดพิษ', wisp: 'ภูตตะเกียง', monkey: 'ลิงโจร', kappa: 'กัปปะ', paper_doll: 'ตุ๊กตากระดาษ', goblin_archer: 'ก็อบลิน', wolf: 'หมาป่าเงา', skeleton: 'โครงกระดูก', boar_guard: 'นักรบหมูป่า', draugr: 'ดรากร์', jackal_warrior: 'นักรบหมาใน', nekomata: 'แมวสองหาง', fox_spirit: 'ปีศาจจิ้งจอก',
+const MOBNAME = { kasa_obake: 'ร่มผี', tengu: 'นกเทงงู', ice_wraith: 'วิญญาณน้ำแข็ง', shroom: 'เห็ดพิษ', wisp: 'ภูตตะเกียง', monkey: 'ลิงโจร', kappa: 'กัปปะ', paper_doll: 'ตุ๊กตากระดาษ', goblin_archer: 'ก็อบลิน', wolf: 'หมาป่าเงา', skeleton: 'โครงกระดูก', boar_guard: 'นักรบหมูป่า', draugr: 'ดรากร์', jackal_warrior: 'นักรบหมาใน', nekomata: 'แมวสองหาง', fox_spirit: 'ปีศาจจิ้งจอก',
   golem: 'โกเลมหิน', troll: 'โทรล', oni: 'ยักษ์โอนิ', croc_guard: 'ทหารจระเข้', terracotta_general: 'นายพลดินเผา', ice_golem: 'โกเลมน้ำแข็ง', boss_treant: 'ต้นไม้อสูร', boss_nian: 'เหนียนโซ่ว', boss_orochi: 'โอโรจิแปดหัว', boss_jotun: 'ยักษ์โยตุน' };
-const T1 = ['shroom', 'wisp', 'monkey', 'kappa', 'paper_doll', 'goblin_archer'], T2 = ['wolf', 'skeleton', 'boar_guard', 'draugr', 'jackal_warrior', 'nekomata', 'fox_spirit'], T3 = ['golem', 'troll', 'oni', 'croc_guard', 'terracotta_general', 'ice_golem'];
+const T1 = ['shroom', 'wisp', 'monkey', 'kappa', 'paper_doll', 'goblin_archer', 'kasa_obake'], T2 = ['wolf', 'skeleton', 'boar_guard', 'draugr', 'jackal_warrior', 'nekomata', 'fox_spirit', 'tengu'], T3 = ['golem', 'troll', 'oni', 'croc_guard', 'terracotta_general', 'ice_golem', 'ice_wraith'];
+// traits (owner: "ทำให้เกมส์สนุกนะ"): fly = only the archer / mage towers and ranged heroes reach them (bombs and knights cannot); armor = arrows, bombs and swords do half, magic is full; regen = heals itself
 const BOSSW = { 5: 'boss_treant', 10: 'boss_nian', 15: 'boss_orochi', 20: 'boss_jotun' }, NWAVE = 20;
 const SHEET = {}, TL = new THREE.TextureLoader(), PXW = 1 / 86;   // world units per sprite pixel
 function loadSheet(k) {
@@ -152,12 +159,13 @@ const CARD_V = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectio
 const CARD_F = 'uniform sampler2D map; uniform vec4 rect; uniform float flash; uniform vec3 tint; uniform float op; varying vec2 vUv;' +
   'void main(){ vec4 c = texture2D(map, rect.xy + vUv * rect.zw); if (c.a < .45) discard; vec3 col = mix(c.rgb * tint, vec3(1.0), flash); gl_FragColor = vec4(col, op); }';
 const MON = [], BLOB = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), BLOBM = new THREE.MeshBasicMaterial({ map: TEX.blob, transparent: true, depthWrite: false });
-function spawnMon(k, hpMul) {
+function spawnMon(k, hpMul, golden) {
   const S = SHEET[k]; if (!S || !S.ok) return null; const D = MOB[k];
   const mat = new THREE.ShaderMaterial({ uniforms: { map: { value: S.t }, rect: { value: new THREE.Vector4(0, 0, 1 / 6, 1 / S.rows) }, flash: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) }, op: { value: 1 } }, vertexShader: CARD_V, fragmentShader: CARD_F, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(S.g, mat); scene.add(mesh); const blob = new THREE.Mesh(BLOB, BLOBM); const bs = S.J.w * PXW * (D.sc || 1) * .55; blob.scale.set(bs, 1, bs * .6); blob.position.y = .02; scene.add(blob);
   const hp = Math.round(D.hp * hpMul), m = { k, D, S, mesh, mat, blob, pos: new V3(), s: 0, side: rnd(-.22, .22), hp, max: hp, spd: D.spd, slowT: 0, slowK: 1, stunT: 0, fr: Math.random() * 6, row: 'walk', flip: false, flash: 0,
-    dead: false, deadT: 0, fight: null, atkT: rnd(.2, 1), boss: !!D.boss, dmg: Math.round((D.boss ? 40 : 6 + D.hp / 18) * (.8 + hpMul * .2)), gold: Math.round(D.gold * (1 + (hpMul - 1) * .35)) };
+    dead: false, deadT: 0, fight: null, atkT: rnd(.2, 1), boss: !!D.boss, dmg: Math.round((D.boss ? 40 : 6 + D.hp / 18) * (.8 + hpMul * .2)), gold: Math.round(D.gold * (1 + (hpMul - 1) * .35)), fly: !!D.fly, yo: D.fly ? .7 : 0, skT: 5 };
+  if (golden) { m.golden = true; m.spd = 2.3; m.hp = m.max = Math.round(70 * hpMul); m.gold = 60 + G.wave * 6; m.mat.uniforms.tint.value.setRGB(1.5, 1.2, .35); }
   pathAt(0, m.pos, m.side); MON.push(m); return m;
 }
 function setRow(m, row) { if (m.row !== row) { m.row = row; m.fr = 0; } }
@@ -165,7 +173,9 @@ const _p = new V3(), _q = new V3(), _s0 = new V3(), _s1 = new V3();
 function updMon(m, dt) {
   const S = m.S, J = S.J; m.flash = Math.max(0, m.flash - dt * 6); m.mat.uniforms.flash.value = m.flash;
   if (m.dead) { m.deadT += dt; m.fr = Math.min(5, m.deadT * 9); if (m.deadT > 1.1) { m.mat.uniforms.op.value = 1; m.mesh.position.y -= dt * .8; } if (m.deadT > 1.6) { scene.remove(m.mesh, m.blob); m.mat.dispose(); MON.splice(MON.indexOf(m), 1); } }
-  else if (m.stunT > 0) { m.stunT -= dt; }
+  else if (m.stunT > 0) { m.stunT -= dt; m.fr += dt * 3; }
+  if (!m.dead && m.D.regen && m.hp < m.max) m.hp = Math.min(m.max, m.hp + m.max * .025 * dt);
+  if (!m.dead && m.boss && m.stunT <= 0) bossSkill(m, dt);
   else if (m.fight) {   // blocked by the hero: stand and hit
     const H = m.fight; if (!HERO || HERO.dead || H.pos.distanceTo(m.pos) > 1.25) { m.fight = null; setRow(m, 'walk'); }
     else { setRow(m, 'attack'); m.atkT -= dt; m.fr += dt * 9; if (m.fr >= 6) m.fr = 0; if (m.atkT <= 0) { m.atkT = m.boss ? 1.6 : 1.2; after(.25, () => { if (!m.dead && m.fight && !HERO.dead) hurtHero(m.dmg, m); }); } m.flip = H.pos.x < m.pos.x; }
@@ -175,23 +185,36 @@ function updMon(m, dt) {
     // the side the card faces = where it walks ON SCREEN
     _s0.project(camera); _s1.copy(m.pos).project(camera); if (Math.abs(_s1.x - _s0.x) > 1e-5) m.flip = _s1.x < _s0.x;
     if (m.s >= PATHLEN) { leak(m); return; }
-    if (HERO && !HERO.dead && HERO.blocking.length < HERO.D.block && m.pos.distanceTo(HERO.pos) < HERO.D.blockR) { m.fight = HERO; HERO.blocking.push(m); m.atkT = .5; }
   }
   const row = J.rows[m.dead ? 'death' : m.row] || 0, f = Math.floor(m.fr) % 6;
   m.mat.uniforms.rect.value.set(f / 6, 1 - (row + 1) / S.rows, 1 / 6, 1 / S.rows);
-  const tint = m.mat.uniforms.tint.value; if (m.slowT > 0 && !m.dead) tint.setRGB(.7, .85, 1.25); else tint.setRGB(1, 1, 1);
-  m.mesh.position.set(m.pos.x, m.dead ? m.mesh.position.y : 0, m.pos.z); m.mesh.quaternion.copy(camera.quaternion); m.mesh.scale.x = m.flip ? -1 : 1; m.blob.position.set(m.pos.x, .02, m.pos.z);
+  const tint = m.mat.uniforms.tint.value; if (m.golden) tint.setRGB(1.5, 1.2, .35); else if (m.stunT > 0 && !m.dead) tint.setRGB(1.1, 1.1, .7); else if (m.slowT > 0 && !m.dead) tint.setRGB(.7, .85, 1.25); else tint.setRGB(1, 1, 1);
+  m.mesh.position.set(m.pos.x, m.dead ? m.mesh.position.y : m.yo + (m.fly ? .08 * Math.sin(NOW * 4 + m.side * 9) : 0), m.pos.z); if (m.dead && m.fly && m.deadT < .5) m.mesh.position.y = Math.max(0, m.yo * (1 - m.deadT * 2)); m.mesh.quaternion.copy(camera.quaternion); m.mesh.scale.x = m.flip ? -1 : 1; m.blob.position.set(m.pos.x, .02, m.pos.z);
 }
 function hitMon(m, dmg, o = {}) {
-  if (m.dead) return; m.hp -= dmg; m.flash = 1; if (o.slow) { m.slowT = 1.6; m.slowK = 1 - o.slow; } if (o.stun && !m.boss) m.stunT = Math.max(m.stunT, o.stun);
+  if (m.dead) return; if (m.D.armor && !o.magic) { dmg *= .5; o = Object.assign({}, o, { color: '#a0a0a0' }); } m.hp -= dmg; m.flash = 1; if (o.slow) { m.slowT = Math.max(m.slowT, o.slowT || 1.6); m.slowK = 1 - o.slow; } if (o.stun && !m.boss) m.stunT = Math.max(m.stunT, o.stun);
   if (o.num || dmg >= 40) num(new V3(m.pos.x, m.S.top + .1, m.pos.z), Math.round(dmg), o.color || '#ffffff');
   if (m.hp <= 0) killMon(m, o.by);
 }
 function killMon(m, by) {
   m.dead = true; m.hp = 0; m.deadT = 0; m.fr = 0; if (m.fight && HERO) HERO.blocking = HERO.blocking.filter(q => q !== m); m.fight = null;
-  G.gold += m.gold; coinPop(m.pos, m.gold); G.kills++; if (HERO) heroXp(m.boss ? 60 : 1 + m.max / 60);
+  G.gold += m.gold; coinPop(m.pos, m.gold); G.kills++; comboKill();
+  if (m.golden) { BANNER.t = 1.6; BANNER.a = 'จับก็อบลินทองได้!'; BANNER.b = '+' + m.gold + ' ทอง'; BANNER.red = false; for (let i = 0; i < 10; i++) after(i * .04, () => burst(new V3(m.pos.x, .6, m.pos.z), { n: 2, color: 0xffd34a, spd: 3, up: 5, size: .3, life: .8 })); sfx('coin', .9, .9); } if (HERO) heroXp(m.boss ? 60 : 1 + m.max / 60);
   if (m.boss) { shake(.3); burst(new V3(m.pos.x, 1, m.pos.z), { n: 30, color: 0xffd34a, spd: 4, up: 5, size: .4, life: 1 }); }
 }
+// bosses (owner: fun): every 7 s a roar that stuns the towers near it, or a call for minions
+function bossSkill(m, dt) {
+  m.skT -= dt; if (m.skT > 0) return; m.skT = 7; m.nskill = (m.nskill || 0) + 1;
+  if (m.nskill % 2) { ring(m.pos, 0xff3a2a, .4, 3, .6); disc(m.pos, 0xff2a1a, 2.8, .5, .7); shake(.2); sfx('boom', .7, .5); let n = 0;
+    for (const t of TOWERS) if (t.pad.c.distanceTo(m.pos) < 3) { t.stunT = 2.5; n++; } num(new V3(m.pos.x, m.S.top + .5, m.pos.z), n ? 'คำราม! ป้อมมึน' : 'คำราม!', '#ff8a7a'); }
+  else { const pool = G.wave >= 10 ? T2 : T1, k = pool.find(q => SHEET[q] && SHEET[q].ok); if (!k) return; num(new V3(m.pos.x, m.S.top + .5, m.pos.z), 'เรียกลูกน้อง!', '#ff8a7a'); ring(m.pos, 0xb040ff, .3, 1.5, .5);
+    for (let i = 0; i < 3; i++) { const q = spawnMon(k, Math.pow(1.14, G.wave - 1)); if (q) { q.s = Math.max(0, m.s - .4 - i * .45); pathAt(q.s, q.pos, q.side); dust(q.pos, 4); } } }
+}
+// kill combos: kills close together count up; a big combo pays a little gold
+function comboKill() { G.combo = (NOW - (G.comboT || -9) < 1.3) ? (G.combo || 0) + 1 : 1; G.comboT = NOW; if (G.combo >= 3) COMBO.t = 1.2, COMBO.n = G.combo;
+  clearTimeout(G.comboTO); G.comboTO = null; G.comboEnd = NOW + 1.3; }
+function updCombo() { if (G.comboEnd && NOW > G.comboEnd) { if (G.combo >= 5) { const b = G.combo * 2; G.gold += b; sfx('coin', .5, 1.3); COMBO.paid = b; COMBO.n = G.combo; COMBO.t = 1.4; } G.combo = 0; G.comboEnd = 0; } }
+const COMBO = { t: 0, n: 0, paid: 0 };
 function leak(m) { G.lives -= m.boss ? 5 : 1; scene.remove(m.mesh, m.blob); m.mat.dispose(); MON.splice(MON.indexOf(m), 1); shake(.15); sfx('hurt', .5, .7); FLASH.t = .35;
   if (G.lives <= 0 && G.state === 'play') { G.lives = 0; endGame(false); } }
 
@@ -255,15 +278,16 @@ function upgradeTower(t) { if (t.lv >= 2) return; const c = t.D.cost[t.lv + 1]; 
 function sellTower(t) { G.gold += Math.round(t.spent * .6); scene.remove(t.g); t.pad.tower = null; TOWERS.splice(TOWERS.indexOf(t), 1); dust(t.pad.c, 10); sfx('coin', .6); }
 const dust = (p, n = 6) => { for (let i = 0; i < n; i++) { const m = new THREE.SpriteMaterial({ map: TEX.soft, color: 0xd9c49a, transparent: true, depthWrite: false, opacity: .6 }), s = new THREE.Sprite(m); const a = Math.random() * TAU, v = new V3(Math.cos(a) * 1.5, .5, Math.sin(a) * 1.5); s.position.set(p.x, .15, p.z); s.scale.setScalar(.35);
   addFx(s, .6, (q, k, dt) => { q.position.addScaledVector(v, dt); v.multiplyScalar(1 - 3 * dt); q.material.opacity = .6 * (1 - k); q.scale.setScalar(.35 * (1 + k)); }, () => m.dispose()); } };
-function towerTarget(t, range) { let best = null, bs = -1; for (const m of MON) { if (m.dead || m.s < .3) continue; if (Math.hypot(m.pos.x - t.pad.c.x, m.pos.z - t.pad.c.z) > range) continue; if (m.s > bs) { bs = m.s; best = m; } } return best; }
+function towerTarget(t, range) { let best = null, bs = -1; const air = !t.D.ground && t.k !== 'bomb'; for (const m of MON) { if (m.dead || m.s < .3 || (m.fly && !air)) continue; if (Math.hypot(m.pos.x - t.pad.c.x, m.pos.z - t.pad.c.z) > range) continue; if (m.s > bs) { bs = m.s; best = m; } } return best; }
 function updTower(t, dt) {
-  const D = t.D, L = t.lv, R = D.range[L]; for (const u of t.units) u.mixer.update(dt); t.cd -= dt; t.g.traverse(o => { if (o.userData.spin) { o.rotation.y += dt * 2; o.position.y += Math.sin(NOW * 3) * .002; } });
+  const D = t.D, L = t.lv, R = D.range[L]; for (const u of t.units) u.mixer.update(dt); t.cd -= dt; t.buffT = Math.max(0, (t.buffT || 0) - dt); t.g.traverse(o => { if (o.userData.spin) { o.rotation.y += dt * 2; o.position.y += Math.sin(NOW * 3) * .002; } });
+  if (t.stunT > 0) { t.stunT -= dt; t.g.rotation.z = Math.sin(NOW * 30) * .03; if (t.stunT <= 0) t.g.rotation.z = 0; return; }
   const m = towerTarget(t, R); if (m) { const a = Math.atan2(m.pos.x - t.pad.c.x, m.pos.z - t.pad.c.z); for (const u of t.units) if (!D.ground) u.root.rotation.y = angTo(u.root.rotation.y, a, 1 - Math.exp(-dt * 10)); }
   if (m && t.cd <= 0) {
-    t.cd = D.rate[L]; for (const u of t.units) uPlay(u, D.atk, true, D.ground ? 1.5 : 1.3);
+    t.cd = D.rate[L] * (t.buffT > 0 ? .65 : 1); for (const u of t.units) uPlay(u, D.atk, true, D.ground ? 1.5 : 1.3);
     after(D.hitAt, () => { if (!t.units || !TOWERS.includes(t)) return;
-      if (D.ground) { let any = false; for (const q of MON) if (!q.dead && Math.hypot(q.pos.x - t.pad.c.x, q.pos.z - t.pad.c.z) < R) { hitMon(q, D.dmg[L]); any = true; } if (any) { ring(t.pad.c, 0xcfe6ff, .3, R, .35, .7); sfx('slash', .35, 1.2); } }
-      else { const u = t.units[0], from = new V3(); u.root.getWorldPosition(from); from.y += .55; const tg = m.dead ? towerTarget(t, R + .5) : m; if (tg) shoot(D.unit === 'Ranger' ? 'arrow' : D.unit === 'Mage' ? 'bolt' : 'bomb', from, tg, D.dmg[L], { splash: D.splash && D.splash[L], slow: D.slow && D.slow[L] }); } });
+      if (D.ground) { let any = false; for (const q of MON) if (!q.dead && !q.fly && Math.hypot(q.pos.x - t.pad.c.x, q.pos.z - t.pad.c.z) < R) { hitMon(q, D.dmg[L]); any = true; } if (any) { ring(t.pad.c, 0xcfe6ff, .3, R, .35, .7); sfx('slash', .35, 1.2); } }
+      else { const u = t.units[0], from = new V3(); u.root.getWorldPosition(from); from.y += .55; const tg = m.dead ? towerTarget(t, R + .5) : m; if (tg) shoot(D.unit === 'Ranger' ? 'arrow' : D.unit === 'Mage' ? 'bolt' : 'bomb', from, tg, D.dmg[L], { splash: D.splash && D.splash[L], slow: D.slow && D.slow[L], magic: D.unit === 'Mage' }); } });
     after(D.hitAt + .5, () => { if (t.units) for (const u of t.units) uPlay(u, D.idle); });
   }
 }
@@ -274,10 +298,10 @@ const AM = { wood: new THREE.MeshLambertMaterial({ color: 0x8a5a32 }), tip: new 
 function makeArrow(s = 1, glow) { const g = new THREE.Group(); g.add(new THREE.Mesh(AG.shaft, AM.wood), new THREE.Mesh(AG.head, glow ? new THREE.MeshBasicMaterial({ color: 0xbff4ff }) : AM.tip)); g.scale.setScalar(s); return g; }
 function shoot(type, from, tg, dmg, o = {}) {
   let mesh; if (type === 'arrow' || type === 'harrow') { mesh = makeArrow(type === 'harrow' ? 1.5 : 1.1, type === 'harrow'); sfx('twang', .35, rnd(.95, 1.1)); }
-  else if (type === 'bolt') { mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: 0xc070ff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); mesh.scale.setScalar(.5); sfx('zap', .5); }
+  else if (type === 'bolt' || type === 'hbolt') { mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: type === 'hbolt' ? 0xff60e0 : 0xc070ff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); mesh.scale.setScalar(.5); sfx('zap', .5); }
   else { mesh = new THREE.Mesh(new THREE.SphereGeometry(.11, 10, 8), AM.bomb); mesh.castShadow = true; }
   mesh.position.copy(from); scene.add(mesh);
-  const p = { type, mesh, tg, dmg, o, from: from.clone(), t: 0, dur: type === 'bomb' ? .8 : 0, land: null, spd: type === 'bolt' ? 9 : 16 };
+  const p = { type, mesh, tg, dmg, o, from: from.clone(), t: 0, dur: type === 'bomb' ? .8 : 0, land: null, spd: type === 'bolt' ? 9 : type === 'hbolt' ? 12 : 16 };
   if (type === 'bomb') { const lead = tg.spd * (tg.slowT > 0 ? tg.slowK : 1) * .8; p.land = new V3(); pathAt(Math.min(PATHLEN, tg.s + (tg.fight ? 0 : lead)), p.land, tg.side); }
   PROJ.push(p);
 }
@@ -285,30 +309,54 @@ function updProj(dt) {
   for (let i = PROJ.length - 1; i >= 0; i--) {
     const p = PROJ[i]; p.t += dt; let done = false;
     if (p.type === 'bomb') { const k = Math.min(1, p.t / p.dur); p.mesh.position.lerpVectors(p.from, p.land, k); p.mesh.position.y = lerp(p.from.y, .1, k) + Math.sin(k * Math.PI) * 1.6; p.mesh.rotation.x += dt * 8;
-      if (k >= 1) { done = true; const R = p.o.splash || 1; for (const m of MON) if (!m.dead && m.pos.distanceTo(p.land) < R) hitMon(m, p.dmg); ring(p.land, 0xffa040, .2, R * 1.1, .4); burst(new V3(p.land.x, .3, p.land.z), { n: 14, color: 0xff9a3a, spd: 3, up: 3, size: .4, life: .45 }); dust(p.land, 6); sfx('boom', .45, rnd(.9, 1.1)); shake(.05); } }
-    else { const tg = p.tg, aim = tg && !tg.dead ? _q.set(tg.pos.x, tg.S.top * .55, tg.pos.z) : (p.last || p.mesh.position); if (tg && !tg.dead) p.last = aim.clone();
+      if (k >= 1) { done = true; const R = p.o.splash || 1; for (const m of MON) if (!m.dead && !m.fly && m.pos.distanceTo(p.land) < R) hitMon(m, p.dmg); ring(p.land, 0xffa040, .2, R * 1.1, .4); burst(new V3(p.land.x, .3, p.land.z), { n: 14, color: 0xff9a3a, spd: 3, up: 3, size: .4, life: .45 }); dust(p.land, 6); sfx('boom', .45, rnd(.9, 1.1)); shake(.05); } }
+    else { const tg = p.tg, aim = tg && !tg.dead ? _q.set(tg.pos.x, tg.yo + tg.S.top * .55, tg.pos.z) : (p.last || p.mesh.position); if (tg && !tg.dead) p.last = aim.clone();
       _p.subVectors(aim, p.mesh.position); const L = _p.length(), step = p.spd * dt;
-      if (p.type !== 'bolt') p.mesh.quaternion.setFromUnitVectors(new V3(0, 0, 1), _p.clone().normalize());
+      if (p.type !== 'bolt' && p.type !== 'hbolt') p.mesh.quaternion.setFromUnitVectors(new V3(0, 0, 1), _p.clone().normalize());
       if (L <= step || p.t > 3) { done = true;
-        if (p.type === 'bolt') { const R = p.o.splash || .7; for (const m of MON) if (!m.dead && m.pos.distanceTo(aim) < R + .2) hitMon(m, p.dmg, { slow: p.o.slow }); burst(aim, { n: 10, color: 0xc080ff, spd: 2.5, size: .3, life: .35 }); ring(aim, 0xb070ff, .1, R, .3); }
+        if (p.type === 'bolt' || p.type === 'hbolt') { const R = p.o.splash || .7; for (const m of MON) if (!m.dead && Math.hypot(m.pos.x - aim.x, m.pos.z - aim.z) < R + .2) hitMon(m, p.dmg, { slow: p.o.slow, magic: true }); burst(aim, { n: 10, color: 0xc080ff, spd: 2.5, size: .3, life: .35 }); ring(aim, 0xb070ff, .1, R, .3); }
         else if (tg && !tg.dead) { hitMon(tg, p.dmg, p.o); burst(aim, { n: 4, color: 0xfff0c0, spd: 2, size: .18, life: .25 }); if (p.o.hit) p.o.hit(tg); } }
       else p.mesh.position.addScaledVector(_p, step / L); }
-    if (done) { scene.remove(p.mesh); if (p.type === 'bolt') p.mesh.material.dispose(); else if (p.type === 'bomb') p.mesh.geometry.dispose(); PROJ.splice(i, 1); }
+    if (done) { scene.remove(p.mesh); if (p.type === 'bolt' || p.type === 'hbolt') p.mesh.material.dispose(); else if (p.type === 'bomb') p.mesh.geometry.dispose(); PROJ.splice(i, 1); }
   }
 }
 
-// ---------- the 3 heroes (owner: pick 1): the owner's Tripo models, re-bound onto the KayKit skeleton (rigTripo, from grind3d.html)
+// ---------- the heroes (owner: pick 1; "ให้ตัวละครฮีโร่อยู่ในช่องอย่างเดียว เดินไม่ได้ แต่มีสกิล", "4 สกิล อัพได้เมื่อเลเวลขึ้น"):
+// the owner's Tripo models re-bound onto the KayKit skeleton (rigTripo, from grind3d.html). The hero stands on the HERO DAIS (the best spot by the road)
+// and never walks; it attacks what comes in reach and has 4 skills: 1 point per level, each skill 3 steps, the 4th (ultimate) from hero Lv 5.
 const HEROES = {
-  archer: { name: 'นักธนูเผ่า', role: 'ยิงไกล เร็ว', file: 'art/grind3d/huntress.glb', cls: 'bow', hp: 240, dmg: 15, rate: .7, range: 3.8, block: 1, blockR: .6, spd: 2.6,
-    idle: 'Ranged_Bow_Idle', run: 'Running_HoldingBow', atks: ['Ranged_Bow_Release'], hitAt: .2, skill: 'ฝนธนู', skillCd: 14, skillAnim: 'Ranged_Bow_Release_Up', aimed: true, col: ['#9fe8a0', '#2f8a4a'] },
-  wing: { name: 'อัศวินปีก', role: 'ดาบโล่ กันได้ 3 ตัว', file: 'art/tribe3d/people/winged_knight.glb', cls: 'sword', ss: true, hp: 520, dmg: 20, rate: .95, range: 1.9, block: 3, blockR: .85, spd: 2.3,
-    idle: 'Idle', run: 'Running_A', atks: ['Melee_1H_Attack_Slice_Diagonal', 'Melee_1H_Attack_Chop'], hitAt: .42, skill: 'กระแทกโล่', skillCd: 12, skillAnim: 'Melee_Block_Attack', col: ['#ffe9a8', '#b07a1c'] },
-  demon: { name: 'นักดาบปีศาจ', role: 'ดาบใหญ่ ตีแรงเป็นวง', file: 'art/tribe3d/people/demon_knight.glb', cls: 'sword', hp: 400, dmg: 30, rate: 1.25, range: 1.9, block: 2, blockR: .85, spd: 2.3,
-    idle: 'Melee_2H_Idle', run: 'Running_A', atks: ['Melee_2H_Attack_Slice', 'Melee_2H_Attack_Chop'], hitAt: .45, cleave: .8, skill: 'พายุดาบ', skillCd: 14, skillAnim: 'Melee_2H_Attack_Spinning', col: ['#ff9a8a', '#8a1c2a'] },
-  dark: { name: 'อัศวินเขาดำ', role: 'ดาบใหญ่ ตีแรงเป็นวง', file: 'art/grind3d/dark_knight.glb', cls: 'sword', hp: 420, dmg: 28, rate: 1.2, range: 1.9, block: 2, blockR: .85, spd: 2.4,
-    idle: 'Melee_2H_Idle', run: 'Running_A', atks: ['Melee_2H_Attack_Chop', 'Melee_2H_Attack_Slice'], hitAt: .45, cleave: .8, skill: 'พายุดาบ', skillCd: 14, skillAnim: 'Melee_2H_Attack_Spinning', col: ['#ff7aa8', '#3a1a2a'] },
+  archer: { name: 'นักธนูเผ่า', role: 'ยิงไกล เร็ว', file: 'art/grind3d/huntress.glb', cls: 'bow', dmg: 15, rate: .7, range: 4.3,
+    idle: 'Ranged_Bow_Idle', atks: ['Ranged_Bow_Release'], hitAt: .2, col: ['#9fe8a0', '#2f8a4a'] },
+  wing: { name: 'อัศวินปีก', role: 'ดาบโล่ ฟันรอบฐาน', file: 'art/tribe3d/people/winged_knight.glb', cls: 'sword', ss: true, dmg: 24, rate: .85, range: 2.4,
+    idle: 'Idle', atks: ['Q_Sword_Regular_A', 'Q_Sword_Regular_B', 'Melee_1H_Attack_Chop'], hitAt: .22, col: ['#ffe9a8', '#b07a1c'] },
+  demon: { name: 'นักดาบปีศาจ', role: 'ดาบใหญ่ ตีแรงเป็นวง', file: 'art/tribe3d/people/demon_knight.glb', cls: 'sword', dmg: 32, rate: 1.2, range: 2.4, cleave: .9,
+    idle: 'Melee_2H_Idle', atks: ['Melee_2H_Attack_Slice', 'Melee_2H_Attack_Chop'], hitAt: .45, col: ['#ff9a8a', '#8a1c2a'] },
+  dark: { name: 'อัศวินเขาดำ', role: 'ดาบใหญ่ ตีแรงเป็นวง', file: 'art/grind3d/dark_knight.glb', cls: 'sword', kit: 'demon', dmg: 30, rate: 1.15, range: 2.4, cleave: .9,
+    idle: 'Melee_2H_Idle', atks: ['Melee_2H_Attack_Chop', 'Melee_2H_Attack_Slice'], hitAt: .45, col: ['#ff7aa8', '#3a1a2a'] },
+  hood: { name: 'นักเวทฮู้ด', role: 'เวทไกล โดนเป็นวง', file: 'art/grind3d/hood_knight.glb', cls: 'mage', dmg: 19, rate: 1.0, range: 4.3, splash: .65,
+    idle: 'Q_Spell_Simple_Idle_Loop', atks: ['Q_Spell_Simple_Shoot'], hitAt: .22, col: ['#c89aff', '#4a2a7a'] },
 };
-const HKEYS = ['archer', 'wing', 'demon', 'dark'];
+const HKEYS = ['archer', 'wing', 'demon', 'dark', 'hood'];
+// skills: aim 'spot' / 'line' = tap the button, then tap the ground (anywhere on the map); null = at once. pow = x hero attack per step
+const KITS = {
+  archer: [{ id: 'rain', name: 'ฝนธนู', aim: 'spot', cd: 12, pow: [1.1, 1.5, 2], r: [1.4, 1.6, 1.85], anim: 'Ranged_Bow_Release_Up' },
+    { id: 'pierce', name: 'ธนูทะลวง', aim: 'line', cd: 9, pow: [2.5, 3.5, 5], anim: 'Ranged_Bow_Release' },
+    { id: 'frost', name: 'ศรน้ำแข็ง', aim: 'spot', cd: 14, pow: [.8, 1.1, 1.5], r: [1.5, 1.7, 1.9], dur: [2, 3, 4], anim: 'Ranged_Bow_Release' },
+    { id: 'storm', name: 'พายุศร', aim: null, cd: 30, ult: true, dur: [4, 5, 6.5], anim: 'Cheer' }],
+  wing: [{ id: 'bash', name: 'กระแทกโล่', aim: null, cd: 10, pow: [2, 2.6, 3.4], dur: [1.2, 1.6, 2], anim: 'Q_Shield_OneShot' },
+    { id: 'dash', name: 'พุ่งโล่', aim: 'spot', cd: 11, pow: [2, 3, 4], anim: 'Q_Shield_Dash' },
+    { id: 'holy', name: 'แสงศักดิ์สิทธิ์', aim: 'spot', cd: 14, pow: [3, 4.5, 6], r: [1.5, 1.7, 1.9], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'wings', name: 'ปีกสวรรค์', aim: null, cd: 35, ult: true, pow: [6, 8, 11], dur: [6, 7, 8], anim: 'Melee_1H_Attack_Jump_Chop' }],
+  demon: [{ id: 'spin', name: 'พายุดาบ', aim: null, cd: 12, pow: [.8, 1.1, 1.4], anim: 'Melee_2H_Attack_Spinning' },
+    { id: 'wave', name: 'คลื่นดาบ', aim: 'line', cd: 9, pow: [2.5, 3.5, 5], anim: 'Melee_2H_Attack_Slice' },
+    { id: 'chain', name: 'โซ่ปีศาจ', aim: 'spot', cd: 15, pow: [1, 1.3, 1.6], r: [1.6, 1.8, 2], dur: [1.5, 2, 2.6], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'giant', name: 'ดาบอสูร', aim: 'spot', cd: 35, ult: true, pow: [8, 11, 15], r: [2, 2.2, 2.5], anim: 'Melee_2H_Attack_Chop' }],
+  hood: [{ id: 'fire', name: 'ลูกไฟเวท', aim: 'spot', cd: 8, pow: [2, 2.8, 3.8], r: [1.3, 1.5, 1.7], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'bolt', name: 'สายฟ้าลูกโซ่', aim: null, cd: 10, pow: [1.6, 2.2, 3], n: [4, 5, 7], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'freeze', name: 'วงเวทเยือกแข็ง', aim: 'spot', cd: 15, pow: [.6, .8, 1], r: [1.6, 1.8, 2], dur: [1.5, 2, 2.6], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'meteor', name: 'อุกกาบาต', aim: 'spot', cd: 35, ult: true, pow: [9, 12, 16], r: [2.3, 2.5, 2.8], anim: 'Ranged_Magic_Summon' }],
+};
+const kitOf = k => KITS[HEROES[k].kit || k];
 let HERO = null;
 function rigTripo(gl, kscene, clips) {
   let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
@@ -365,84 +413,126 @@ const HERO_TILES = 1.05;   // hero height in tiles (a little taller than the tow
 async function loadHero(hk) {
   const D = HEROES[hk], ld = new THREE.GLTFLoader(); LOAD.msg = 'กำลังเรียก' + D.name + '...'; LOAD.f = .1;
   const parts = [ld.loadAsync('art/tribe3d/people/Knight.glb'), ld.loadAsync(D.file), ld.loadAsync('art/grind3d/hero_anims.glb')]; let done = 0;
-  if (D.cls === 'sword') parts.push(new THREE.TextureLoader().loadAsync('art/tribe3d/people/tex_knigh_2.png'));
+  if (D.cls !== 'bow') parts.push(new THREE.TextureLoader().loadAsync(D.cls === 'mage' ? 'art/tribe3d/people/tex_mage_1.png' : 'art/tribe3d/people/tex_knigh_2.png'));
   parts.forEach(p => p.then(() => { LOAD.f = .1 + .85 * (++done / parts.length); }));
   const [KN, HU, AN, WT] = await Promise.all(parts);
   for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');
+  try { const UJ = await fetch('art/grind3d/ual_anims.json').then(r => r.json()); for (const c of UJ.clips) AN.animations.push(THREE.AnimationClip.parse(c)); } catch (e) { console.warn('ual', e.message); }   // Quaternius UAL (CC0), tools/art/ual_retarget.js
   const T = rigTripo(HU, KN.scene, AN.animations);
-  if (D.cls === 'sword') {
+  if (D.cls !== 'bow') {
     WT.flipY = false; WT.encoding = THREE.sRGBEncoding; const sm = new THREE.MeshStandardMaterial({ map: WT, roughness: .45, metalness: .4, envMapIntensity: .9 });
     const hold = (n, bn, k = 1) => { const src = WEAP[n]; if (!src || !bn) return null; const w = src.clone(); w.traverse(o => { if (o.isMesh) { o.material = sm; o.castShadow = true; } }); w.scale.setScalar(T.k * .5 * k); bn.add(w); return w; };
-    hold(D.ss ? 'sword_1handed' : 'sword_2handed_color', T.bone.handslotr, D.ss ? .9 : 1); if (D.ss) hold('shield_badge_color', T.bone.handslotl, .7); T.h /= 1.12;
+    if (D.cls === 'mage') hold('staff', T.bone.handslotr, 1.15); else { hold(D.ss ? 'sword_1handed' : 'sword_2handed_color', T.bone.handslotr, D.ss ? .9 : 1); if (D.ss) hold('shield_badge_color', T.bone.handslotl, .7); T.h /= 1.12; }
   }
   T.root.scale.setScalar(HERO_TILES / T.h); scene.add(T.root);
   const mixer = new THREE.AnimationMixer(T.root), acts = {}; for (const c of T.clips) acts[c.name] = mixer.clipAction(c);
-  const home = new V3(WP[WP.length - 3].x - 1.2, 0, WP[WP.length - 3].z + 1.2);
-  HERO = { k: hk, D, T, u: { mixer, acts, cur: null }, pos: home.clone(), home: home.clone(), goto: null, face: -Math.PI / 2, hp: D.hp, max: D.hp, lv: 1, xp: 0, dmg: D.dmg, cd: 0, skillT: 0, dead: false, deadT: 0, blocking: [], busy: 0, combo: 0, regenT: 0, mode: 'idle', target: null, aim: false };
+  const base = new V3(HPAD.c.x, .23, HPAD.c.z), near = new V3(); let bd = 1e9; for (let s0 = 0; s0 < PATHLEN; s0 += .25) { const p = new V3(); pathAt(s0, p); const d = p.distanceTo(base); if (d < bd) { bd = d; near.copy(p); } }
+  const rest = Math.atan2(near.x - base.x, near.z - base.z);
+  HERO = { k: hk, D, T, u: { mixer, acts, cur: null }, pos: base.clone(), base, face: rest, rest, lv: 1, xp: 0, pts: 1, dmg: D.dmg, cd: 0, busy: 0, combo: 0, mode: 'idle', aim: -1, buffT: 0, jump: null,
+    kit: kitOf(hk), sk: [0, 0, 0, 0], cdk: [0, 0, 0, 0], blocking: [], dead: false };
   if (D.cls === 'bow') setupString(T); uPlay(HERO.u, D.idle); mixer.update(0);
-  const ring0 = new THREE.Mesh(GEO.ring, addMat(0x9fe8ff, null, .0)); ring0.rotation.x = -Math.PI / 2; ring0.position.y = .06; scene.add(ring0); HERO.sel = ring0;
 }
-const needXp = () => 20 + HERO.lv * 14;
-function heroXp(x) { const H = HERO; if (H.lv >= 10) return; H.xp += x; while (H.lv < 10 && H.xp >= needXp()) { H.xp -= needXp(); H.lv++; H.max = Math.round(H.D.hp * (1 + .1 * (H.lv - 1))); H.dmg = Math.round(H.D.dmg * (1 + .12 * (H.lv - 1))); H.hp = H.max;
-  if (!H.dead) { column(H.pos, 0xffd34a, 1.1); ring(H.pos, 0xffe07a, .3, 2.2, .7); } LVUP.t = 1.8; sfx('lvl', .5); } }
-function hurtHero(d, by) { const H = HERO; if (!H || H.dead) return; H.hp -= d; H.flash = .15; H.regenT = 3; num(new V3(H.pos.x, 1.4, H.pos.z), '-' + d, '#ff7a6a');
-  if (H.hp <= 0) { H.hp = 0; H.dead = true; H.deadT = 0; for (const m of H.blocking) m.fight = null; H.blocking = []; H.goto = null; uPlay(H.u, 'Death_A', true); H.mode = 'dead'; sfx('hurt', .6, .8); } }
-function heroTarget() { const H = HERO, D = H.D; let best = null, bd = 1e9;
-  const R = D.cls === 'bow' ? D.range : 1.9; for (const m of MON) { if (m.dead || m.s < .3) continue; const d = Math.hypot(m.pos.x - H.pos.x, m.pos.z - H.pos.z); if (D.cls !== 'bow') { if (Math.hypot(m.pos.x - H.home.x, m.pos.z - H.home.z) > 2.2) continue; }
-    else if (d > R) continue; const sc = (m.fight === H ? -5 : 0) + d; if (sc < bd) { bd = sc; best = m; } } return best; }
+const MAXLV = 12, needXp = () => 18 + HERO.lv * 12;
+const skReq = (i, step) => KITS_OF().length && (kitOf(HERO.k)[i].ult ? [5, 8, 11] : [1, 3, 5])[step - 1];
+function KITS_OF() { return HERO ? kitOf(HERO.k) : []; }
+function canLearn(i) { const H = HERO; if (!H || H.pts <= 0 || H.sk[i] >= 3) return false; return H.lv >= skReq(i, H.sk[i] + 1); }
+function learnSkill(i) { const H = HERO; if (!canLearn(i)) return false; H.pts--; H.sk[i]++; const K = H.kit[i]; sfx('lvl', .4, 1.4); ring(H.pos, 0xffe07a, .3, 1.4, .5);
+  BANNER.t = 1.4; BANNER.a = (H.sk[i] === 1 ? 'เรียนสกิล: ' : 'อัปสกิล: ') + K.name; BANNER.b = 'ขั้น ' + H.sk[i] + ' / 3'; BANNER.red = false; return true; }
+function heroXp(x) { const H = HERO; if (H.lv >= MAXLV) return; H.xp += x;
+  while (H.lv < MAXLV && H.xp >= needXp()) { H.xp -= needXp(); H.lv++; H.pts++; H.dmg = Math.round(H.D.dmg * (1 + .1 * (H.lv - 1))); column(H.pos, 0xffd34a, 1.1); ring(H.pos, 0xffe07a, .3, 2.2, .7); LVUP.t = 2; sfx('lvl', .5); } }
+function hurtHero() { }   // the hero stands on its dais: monsters walk past it, nothing hits it
+function heroTarget(R) { const H = HERO; let best = null, bs = -1; R = R || H.D.range;   // the one furthest along the road in reach (like the towers)
+  for (const m of MON) { if (m.dead || m.s < .3 || (m.fly && H.D.cls === 'sword')) continue; if (Math.hypot(m.pos.x - H.pos.x, m.pos.z - H.pos.z) > R) continue; if (m.s > bs) { bs = m.s; best = m; } } return best; }
+function handPos(H) { const p = new V3(); H.T.bone.handslotr.getWorldPosition(p); return p; }
 function updHero(dt) {
-  const H = HERO, D = H.D, A = H.u; A.mixer.update(dt); H.cd -= dt; H.skillT = Math.max(0, H.skillT - dt); H.flash = Math.max(0, (H.flash || 0) - dt); H.busy -= dt;
-  H.sel.material.opacity = (G.select ? .8 : 0); H.sel.position.set(H.home.x, .06, H.home.z); H.sel.scale.setScalar(.45 + .05 * Math.sin(NOW * 5));
-  if (H.dead) { H.deadT += dt; if (H.deadT > 10) { H.dead = false; H.hp = H.max; H.pos.copy(H.home); H.mode = 'idle'; uPlay(A, D.idle); ring(H.pos, 0x9fe8ff, .3, 2, .6); column(H.pos, 0x9fe8ff, .8); } }
-  else {
-    H.regenT -= dt; if (H.regenT <= 0 && H.hp < H.max) H.hp = Math.min(H.max, H.hp + H.max * .06 * dt);
-    if (H.goto) {   // ordered to move: run there, nothing else
-      for (const m of H.blocking) m.fight = null; H.blocking = [];
-      _p.subVectors(H.goto, H.pos); _p.y = 0; const L = _p.length(); if (L < .08) { H.goto = null; H.mode = 'idle'; uPlay(A, D.idle); }
-      else { H.pos.addScaledVector(_p, Math.min(L, D.spd * dt) / L); H.face = angTo(H.face, Math.atan2(_p.x, _p.z), 1 - Math.exp(-dt * 14)); uPlay(A, D.run); H.mode = 'run'; }
-    } else if (H.busy <= 0) {
-      const m = heroTarget(); H.target = m;
-      if (m && D.cls !== 'bow' && Math.hypot(m.pos.x - H.pos.x, m.pos.z - H.pos.z) > .75 && m.fight !== H) {   // swordsmen walk up to the enemy (only near their spot)
-        _p.subVectors(m.pos, H.pos); _p.y = 0; const L = _p.length(); H.pos.addScaledVector(_p, Math.min(L - .6, D.spd * dt) / L); H.face = angTo(H.face, Math.atan2(_p.x, _p.z), 1 - Math.exp(-dt * 14)); uPlay(A, D.run); H.mode = 'run';
-      } else if (m) {
-        H.face = angTo(H.face, Math.atan2(m.pos.x - H.pos.x, m.pos.z - H.pos.z), 1 - Math.exp(-dt * 16));
-        if (H.cd <= 0) { H.cd = D.rate; const an = D.atks[H.combo++ % D.atks.length]; uPlay(A, an, true, D.cls === 'bow' ? 1.25 : 1.15); H.busy = D.rate * .85; H.mode = 'atk';
-          after(D.hitAt, () => { if (H.dead) return;
-            if (D.cls === 'bow') { const tg = m.dead ? heroTarget() : m; if (tg) shoot('harrow', STR.nock.clone(), tg, H.dmg, { num: true, color: '#bff4ff' }); }
-            else { const tg = m.dead ? null : m; sfx('slash', .5, rnd(.95, 1.1)); if (tg && Math.hypot(tg.pos.x - H.pos.x, tg.pos.z - H.pos.z) < 1.3) { hitMon(tg, H.dmg, { num: true, color: '#ffe9a8' }); burst(new V3(tg.pos.x, .6, tg.pos.z), { n: 6, color: 0xfff0c0, spd: 3, size: .25, life: .3 });
-              if (D.cleave) for (const q of MON) if (q !== tg && !q.dead && q.pos.distanceTo(tg.pos) < D.cleave) hitMon(q, H.dmg * .6); } } });
-        }
-      } else if (H.pos.distanceTo(H.home) > .15) { _p.subVectors(H.home, H.pos); const L = _p.length(); H.pos.addScaledVector(_p, Math.min(L, D.spd * dt) / L); H.face = angTo(H.face, Math.atan2(_p.x, _p.z), 1 - Math.exp(-dt * 14)); uPlay(A, D.run); H.mode = 'run'; }
-      else { if (H.mode !== 'idle') { uPlay(A, D.idle); H.mode = 'idle'; } }
-    }
+  const H = HERO, D = H.D, A = H.u; A.mixer.update(dt); H.cd -= dt; H.busy -= dt; H.buffT = Math.max(0, H.buffT - dt);
+  for (let i = 0; i < 4; i++) H.cdk[i] = Math.max(0, H.cdk[i] - dt);
+  if (H.jump) { const J = H.jump; J.t += dt; const k = clamp(J.t / J.dur, 0, 1); H.pos.lerpVectors(J.from, J.to, J.back ? 1 - Math.max(0, (k - .55) / .45) : k); H.pos.y = H.base.y + (J.h || 0) * Math.sin(Math.min(1, k) * Math.PI);
+    if (J.back) { const k1 = clamp(k / .45, 0, 1), k2 = clamp((k - .55) / .45, 0, 1); H.pos.lerpVectors(J.from, J.to, k < .5 ? k1 : 1 - k2); H.pos.y = H.base.y; }
+    if (J.hit && !J.done && k >= (J.hitK || .5)) { J.done = true; J.hit(); } if (k >= 1) { H.pos.copy(H.base); H.jump = null; } }
+  if (H.buffT > 0 && H.k === 'archer' && Math.random() < dt * 8) burst(new V3(H.pos.x, .8, H.pos.z), { n: 1, color: 0x9fe8ff, spd: 1, up: 2, size: .25, life: .5, grav: 0 });
+  if (H.busy <= 0 && !H.jump) {
+    const R = D.range * (H.buffT > 0 && H.k === 'archer' ? 1.15 : 1), m = heroTarget(R);
+    if (m) { H.face = angTo(H.face, Math.atan2(m.pos.x - H.pos.x, m.pos.z - H.pos.z), 1 - Math.exp(-dt * 16));
+      if (H.cd <= 0) { const fast = H.buffT > 0 && H.k === 'archer'; H.cd = D.rate * (fast ? .33 : 1); const an = D.atks[H.combo++ % D.atks.length]; uPlay(A, an, true, fast ? 2.4 : 1.25); H.busy = H.cd * .85; H.mode = 'atk';
+        after(D.hitAt / (fast ? 2 : 1), () => {
+          if (D.cls === 'bow') { const tgs = fast ? MON.filter(q => !q.dead && q.s > .3 && q.pos.distanceTo(H.pos) < R).sort((a, b) => b.s - a.s).slice(0, 3) : [m.dead ? heroTarget(R) : m]; for (const tg of tgs) if (tg) shoot('harrow', STR.nock.clone(), tg, H.dmg, { num: !fast, color: '#bff4ff' }); }
+          else if (D.cls === 'mage') { const tg = m.dead ? heroTarget(R) : m; if (tg) shoot('hbolt', handPos(H), tg, H.dmg, { splash: D.splash, magic: true }); }
+          else { const tg = m.dead ? heroTarget(R) : m; sfx('slash', .5, rnd(.95, 1.1)); if (tg) { hitMon(tg, H.dmg, { num: true, color: '#ffe9a8' }); burst(new V3(tg.pos.x, .6, tg.pos.z), { n: 6, color: 0xfff0c0, spd: 3, size: .25, life: .3 }); slashFx(H.pos, tg.pos, D.ss ? 0xfff0c0 : 0xff6a5a);
+            if (D.cleave) for (const q of MON) if (q !== tg && !q.dead && q.pos.distanceTo(tg.pos) < D.cleave) hitMon(q, H.dmg * .6); } } });
+      }
+    } else { H.face = angTo(H.face, H.rest, 1 - Math.exp(-dt * 4)); if (H.mode !== 'idle' && !(A.cur && A.cur.isRunning() && A.cur.loop === THREE.LoopOnce)) { uPlay(A, D.idle); H.mode = 'idle'; } }
   }
-  H.blocking = H.blocking.filter(m => !m.dead && m.fight === H);
-  H.pos.x = clamp(H.pos.x, OX + .3, -OX - .3); H.pos.z = clamp(H.pos.z, OZ + .3, -OZ - .3);
-  H.T.root.position.copy(H.pos); H.T.root.rotation.y = H.face; H.T.mat.emissive.setRGB(H.flash * 3, H.flash * .5, H.flash * .4);
+  H.T.root.position.copy(H.pos); H.T.root.rotation.y = H.face;
   if (D.cls === 'bow') updString();
 }
-function heroSkill(at) {
-  const H = HERO, D = H.D; if (!H || H.dead || H.skillT > 0) return false; H.skillT = D.skillCd; H.goto = null; H.busy = .9; const A = H.u;
-  if (H.k === 'archer') {   // ฝนธนู: a gold circle on the ground, arrows pour down, 3 hits
-    const c = (at || (heroTarget() || H).pos).clone(); c.y = 0; H.face = Math.atan2(c.x - H.pos.x, c.z - H.pos.z); uPlay(A, D.skillAnim, true, 1.2); disc(c, 0xffd34a, 1.6, 1.4); ring(c, 0xffe07a, 1.5, 1.6, 1.4, .8);
-    for (let i = 0; i < 36; i++) after(.25 + i * .022, () => { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * 1.5, ar = makeArrow(1.2, true); const x = c.x + Math.cos(a) * d, z = c.z + Math.sin(a) * d; ar.position.set(x + .5, 3, z - .3); ar.quaternion.setFromUnitVectors(new V3(0, 0, 1), new V3(-.5, -3, .3).normalize());
-      addFx(ar, .22, (q, k) => { q.position.set(x + .5 * (1 - k), 3 * (1 - k), z - .3 * (1 - k)); }); });
-    for (let i = 0; i < 3; i++) after(.45 + i * .3, () => { for (const m of MON) if (!m.dead && m.pos.distanceTo(c) < 1.6) hitMon(m, H.dmg * 1.4, { num: i === 2, color: '#ffe14a' }); sfx('hit', .4); });
-  } else if (H.k === 'wing') {   // กระแทกโล่: a gold shock all around, stuns
-    uPlay(A, D.skillAnim, true, 1.1); after(.35, () => { ring(H.pos, 0xffe07a, .3, 1.8, .5); disc(H.pos, 0xffc23a, 1.6, .4); shake(.12); sfx('boom', .5, 1.2); for (const m of MON) if (!m.dead && m.pos.distanceTo(H.pos) < 1.7) hitMon(m, H.dmg * 2.2, { stun: 1.8, num: true, color: '#ffe14a' }); });
-  } else {   // พายุดาบ (demon / dark): spins, hits all around 5 times
-    uPlay(A, D.skillAnim, true, 1); H.busy = 1.5; for (let i = 0; i < 5; i++) after(.15 + i * .26, () => { if (H.dead) return; ring(H.pos, 0xff5a4a, .4, 1.8, .3, .8); sfx('slash', .5, 1 + i * .05); for (const m of MON) if (!m.dead && m.pos.distanceTo(H.pos) < 1.7) hitMon(m, H.dmg * .9, { num: i === 4, color: '#ff9a8a' }); });
+function slashFx(from, to, color) { const m = new THREE.Mesh(new THREE.RingGeometry(.55, .8, 24, 1, -1.1, 2.2), addMat(color, null, .9)); m.rotation.x = -Math.PI / 2; m.position.set(from.x, .5, from.z); m.rotation.z = -Math.atan2(to.z - from.z, to.x - from.x);
+  addFx(m, .22, (q, k) => { q.material.opacity = .9 * (1 - k); q.scale.setScalar(1 + k * .6); }, () => { m.geometry.dispose(); m.material.dispose(); }); }
+// a projectile that flies along a line and hits everything it passes once (ธนูทะลวง / คลื่นดาบ)
+function lineShot(from, to, mesh, dmg, o = {}) {
+  const dir = new V3(to.x - from.x, 0, to.z - from.z).normalize(), len = o.len || 8, spd = o.spd || 14, hit = new Set(); mesh.position.set(from.x, o.y || .6, from.z); mesh.quaternion.setFromUnitVectors(new V3(0, 0, 1), dir);
+  addFx(mesh, len / spd, (q, k, dt) => { q.position.addScaledVector(dir, spd * dt); if (o.trail && Math.random() < .6) burst(q.position.clone(), { n: 1, color: o.trail, spd: .5, up: .3, size: .3, life: .3, grav: 0 });
+    for (const m of MON) if (!m.dead && !hit.has(m) && Math.hypot(m.pos.x - q.position.x, m.pos.z - q.position.z) < (o.w || .55)) { hit.add(m); hitMon(m, dmg, { num: true, color: o.color || '#bff4ff', stun: o.stun }); burst(new V3(m.pos.x, .6, m.pos.z), { n: 5, color: o.trail || 0xffffff, spd: 2.5, size: .25, life: .3 }); } });
+}
+function bolt3(a, b, color) {   // a jagged lightning bolt between two points (thin glowing rods)
+  const pts = [a.clone()]; for (let i = 1; i < 6; i++) { const p = a.clone().lerp(b, i / 6); p.x += rnd(-.18, .18); p.y += rnd(-.15, .15); p.z += rnd(-.18, .18); pts.push(p); } pts.push(b.clone());
+  for (let i = 0; i < pts.length - 1; i++) { const m = new THREE.Mesh(CYL, addMat(color, null, 1)); rod(m, pts[i], pts[i + 1], .035); addFx(m, .3, (q, k) => { q.material.opacity = 1 - k; }, () => m.material.dispose()); }
+}
+// skill i (0..3) at a spot on the ground (aimed skills) or now
+function castSkill(i, at) {
+  const H = HERO; if (!H || G.state !== 'play') return false; const K = H.kit[i], lv = H.sk[i]; if (!K || lv <= 0 || H.cdk[i] > 0 || H.jump) return false;
+  if (K.aim && !at) { H.aim = H.aim === i ? -1 : i; return true; }
+  H.aim = -1; H.cdk[i] = K.cd; const P = H.dmg * (K.pow ? K.pow[lv - 1] : 1), R = K.r ? K.r[lv - 1] : 0, T = K.dur ? K.dur[lv - 1] : 0, A = H.u;
+  const c = at ? new V3(at.x, 0, at.z) : null; if (c) H.face = Math.atan2(c.x - H.pos.x, c.z - H.pos.z);
+  uPlay(A, K.anim, true, 1.15); H.busy = .7; after(.75, () => { if (!H.jump) { uPlay(A, H.D.idle); H.mode = 'idle'; } });
+  const MAGIC = ['frost', 'holy', 'chain', 'fire', 'bolt', 'freeze', 'meteor'].includes(K.id);
+  const hitIn = (p, r, d, o) => { for (const m of MON) if (!m.dead && Math.hypot(m.pos.x - p.x, m.pos.z - p.z) < r) hitMon(m, d, Object.assign({ magic: MAGIC }, o)); };
+  switch (K.id) {
+    case 'rain': disc(c, 0xffd34a, R, 1.4); ring(c, 0xffe07a, R - .1, R, 1.4, .8);
+      for (let j = 0; j < 40; j++) after(.25 + j * .022, () => { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * R, ar = makeArrow(1.2, true), x = c.x + Math.cos(a) * d, z = c.z + Math.sin(a) * d; ar.quaternion.setFromUnitVectors(new V3(0, 0, 1), new V3(-.5, -3, .3).normalize()); addFx(ar, .22, (q, k) => { q.position.set(x + .5 * (1 - k), 3 * (1 - k), z - .3 * (1 - k)); }); });
+      for (let j = 0; j < 3; j++) after(.45 + j * .3, () => { hitIn(c, R, P, { num: j === 2, color: '#ffe14a' }); sfx('hit', .4); }); break;
+    case 'pierce': after(.18, () => { lineShot(STR.nock.clone(), c, makeArrow(2.6, true), P * 1, { len: 9, spd: 18, w: .5, trail: 0x7fe6ff, color: '#7fe6ff' }); sfx('twang', .9, .7); shake(.06); }); break;
+    case 'frost': after(.18, () => { disc(c, 0x9fe0ff, R, .9); ring(c, 0xcff4ff, .3, R, .5); burst(new V3(c.x, .3, c.z), { n: 22, color: 0xcff4ff, spd: R * 2.2, up: 3, size: .3, life: .6 }); sfx('zap', .5, .6);
+      hitIn(c, R, P, { slow: .65, slowT: T, num: true, color: '#9fe0ff' }); }); break;
+    case 'storm': H.buffT = T; ring(H.pos, 0x9fe8ff, .3, 2, .6); column(H.pos, 0x9fe8ff, .9); sfx('lvl', .4, 1.6); break;
+    case 'bash': after(.3, () => { ring(H.pos, 0xffe07a, .3, 2.4, .5); disc(H.pos, 0xffc23a, 2.2, .4); shake(.12); sfx('boom', .5, 1.2); hitIn(H.pos, 2.3, P, { stun: T, num: true, color: '#ffe14a' }); }); break;
+    case 'dash': { const to = c.clone().sub(H.base); if (to.length() > 5) to.setLength(5); to.add(H.base); H.busy = 1; const hit = new Set();
+      H.jump = { from: H.base.clone(), to, t: 0, dur: .9, back: true, hitK: .45, hit: () => { ring(to, 0xffe07a, .3, 1.5, .4); shake(.1); sfx('boom', .45, 1.3); hitIn(to, 1.4, P * .5, { stun: .6 }); } };
+      const tick = () => { if (!H.jump) return; for (const m of MON) if (!m.dead && !hit.has(m) && m.pos.distanceTo(H.pos) < .9) { hit.add(m); hitMon(m, P, { num: true, color: '#ffe14a', stun: .5 }); } after(.03, tick); }; tick(); break; }
+    case 'holy': column(c, 0xfff2a0, 1); disc(c, 0xffe07a, R, .9); after(.35, () => { ring(c, 0xffffff, .3, R, .5); burst(new V3(c.x, 1, c.z), { n: 20, color: 0xfff6c0, spd: 2, up: 5, size: .35, life: .7, grav: -2 }); sfx('lvl', .35, 1.8); hitIn(c, R, P, { num: true, color: '#fff6a0' }); }); break;
+    case 'wings': H.busy = 1.3; uPlay(A, 'Q_NinjaJump_Start', true, 1); after(.45, () => uPlay(A, K.anim, true, 1.2));
+      H.jump = { from: H.base.clone(), to: H.base.clone(), t: 0, dur: 1.1, h: 2.4, hitK: .85, hit: () => { ring(H.base, 0xffe07a, .5, 3.8, .7); disc(H.base, 0xffd34a, 3.5, .6); column(H.base, 0xfff2a0, 1); shake(.3); sfx('boom', .7, .9);
+        hitIn(H.base, 3.6, P, { stun: 1, num: true, color: '#ffe14a' }); for (const t of TOWERS) { t.buffT = T; ring(t.pad.c, 0xffe07a, .2, .9, .6); } BANNER.t = 1.5; BANNER.a = 'ป้อมทุกป้อมโจมตีเร็วขึ้น!'; BANNER.b = T + ' วินาที'; BANNER.red = false; } }; break;
+    case 'spin': H.busy = 1.5; for (let j = 0; j < 5; j++) after(.15 + j * .26, () => { ring(H.pos, 0xff5a4a, .4, 2.4, .3, .8); sfx('slash', .5, 1 + j * .05); hitIn(H.pos, 2.4, P, { num: j === 4, color: '#ff9a8a' }); }); break;
+    case 'wave': after(.3, () => { const m = new THREE.Mesh(new THREE.RingGeometry(.5, .85, 24, 1, Math.PI * .15, Math.PI * .7).rotateX(-Math.PI / 2).rotateY(Math.PI / 2 + Math.PI), addMat(0xff4a3a, null, .95)); lineShot(H.pos.clone(), c, m, P, { len: 9, spd: 11, w: .75, trail: 0xff6a4a, color: '#ff9a8a', y: .35 }); sfx('slash', .8, .7); shake(.08); }); break;
+    case 'chain': disc(c, 0x9a3aff, R, T + .3, .8); ring(c, 0xc07aff, .2, R, .5); sfx('zap', .6, .5);
+      for (const m of MON) if (!m.dead && m.pos.distanceTo(c) < R) { hitMon(m, P, { num: true, color: '#d0a0ff', stun: m.boss ? 0 : T, slow: m.boss ? .5 : 0, slowT: T, magic: true }); bolt3(new V3(c.x, .2, c.z), new V3(m.pos.x, .5, m.pos.z), 0xb070ff); } break;
+    case 'giant': { const g = new THREE.Group(), bl = new THREE.Mesh(new THREE.BoxGeometry(.5, 3.4, .12), new THREE.MeshStandardMaterial({ color: 0x9aa0b8, metalness: .6, roughness: .3, emissive: 0x401010 })); bl.position.y = 1.7;
+      const gd = new THREE.Mesh(new THREE.BoxGeometry(1.4, .22, .3), new THREE.MeshStandardMaterial({ color: 0x5a1a20, metalness: .4, roughness: .5 })); gd.position.y = 3.4; g.add(bl, gd); g.position.set(c.x, 8, c.z); disc(c, 0xff2a1a, R, .6);
+      addFx(g, 2.2, (q, k, dt, f) => { if (f.t < .5) q.position.y = 8 - 8.6 * Math.min(1, (f.t / .5) ** 2); else q.position.y = -.6 - (f.t - .5) * .6; if (f.t >= .5 && !f.hit) { f.hit = true; ring(c, 0xff5a3a, .3, R * 1.2, .5); burst(new V3(c.x, .4, c.z), { n: 26, color: 0xff7a4a, spd: R * 2.5, up: 4, size: .45, life: .6 }); dust(c, 12); shake(.35); sfx('boom', .8, .8); hitIn(c, R, P, { stun: 1.2, num: true, color: '#ff8a7a' }); } }, () => { bl.geometry.dispose(); gd.geometry.dispose(); }); break; }
+    case 'fire': after(.2, () => { const b = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: 0xff8a3a, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); b.scale.setScalar(.7); const from = handPos(H);
+      addFx(b, .5, (q, k) => { q.position.lerpVectors(from, c, k); q.position.y = lerp(from.y, .2, k) + Math.sin(k * Math.PI) * 1.2; if (Math.random() < .7) burst(q.position.clone(), { n: 1, color: 0xff6a2a, spd: .4, up: .4, size: .3, life: .3, grav: 0 }); },
+        () => { b.material.dispose(); ring(c, 0xff8a3a, .2, R * 1.1, .4); burst(new V3(c.x, .3, c.z), { n: 18, color: 0xff7a2a, spd: R * 2.4, up: 3, size: .4, life: .5 }); sfx('boom', .5, 1.1); shake(.08); hitIn(c, R, P, { num: true, color: '#ffb07a' }); }); }); break;
+    case 'bolt': after(.2, () => { let from = handPos(H), hit = new Set(), cur = null; const n = K.n[lv - 1];
+      for (let j = 0; j < n; j++) { let best = null, bd = j ? 2.8 : 6; for (const m of MON) { if (m.dead || hit.has(m)) continue; const d = m.pos.distanceTo(cur ? cur.pos : H.pos); if (d < bd) { bd = d; best = m; } } if (!best) break;
+        const to = new V3(best.pos.x, .55, best.pos.z); bolt3(from, to, 0xbfe6ff); hit.add(best); hitMon(best, P, { num: true, color: '#cfe8ff', stun: .3, magic: true }); from = to; cur = best; } sfx('zap', .7, 1.4); }); break;
+    case 'freeze': after(.2, () => { disc(c, 0x7ad0ff, R, T + .2, .8); ring(c, 0xcff4ff, .3, R, .6); burst(new V3(c.x, .3, c.z), { n: 24, color: 0xdff6ff, spd: R * 2, up: 2, size: .3, life: .7 }); sfx('zap', .6, .5);
+      hitIn(c, R, P, { stun: T, slow: .5, slowT: T + 1, num: true, color: '#9fe0ff' }); }); break;
+    case 'meteor': { disc(c, 0xff3a1a, R, 1.1); ring(c, 0xff6a3a, R - .1, R, 1.1, .9); const b = new THREE.Mesh(new THREE.SphereGeometry(.55, 14, 10), new THREE.MeshBasicMaterial({ color: 0xff7a2a })), from = new V3(c.x - 4, 9, c.z - 3);
+      addFx(b, .95, (q, k) => { q.position.lerpVectors(from, c, Math.min(1, k * k)); burst(q.position.clone(), { n: 2, color: 0xff8a3a, spd: .6, up: .5, size: .6, life: .4, grav: 0 }); },
+        () => { b.geometry.dispose(); b.material.dispose(); ring(c, 0xffa040, .3, R * 1.3, .6); disc(c, 0xff6a1a, R, .5); burst(new V3(c.x, .5, c.z), { n: 40, color: 0xff8a2a, spd: R * 3, up: 6, size: .5, life: .8 }); dust(c, 14); shake(.45); sfx('boom', .9, .7); hitIn(c, R, P, { stun: .8, num: true, color: '#ffb07a' }); }); break; }
   }
-  after(H.busy, () => { if (!H.dead) uPlay(A, D.idle); }); return true;
+  return true;
 }
 
 // ---------- game state, waves
 const G = { state: 'title', gold: 220, lives: 20, wave: 0, kills: 0, build: 0, queue: [], spawnT: 0, speed: 1, menu: null, select: false, best: 0, px: Q.get('px') === '1', hk: null };
-try { G.best = +localStorage.getItem('guardtd_best') || 0; G.lastHero = localStorage.getItem('guardtd_hero') || 'archer'; } catch (_) { G.lastHero = 'archer'; }
+G.starsBy = {}; try { for (const k of ['archer', 'wing', 'demon', 'dark', 'hood']) G.starsBy[k] = +localStorage.getItem('guardtd_stars_' + k) || 0; G.best = +localStorage.getItem('guardtd_best') || 0; G.lastHero = localStorage.getItem('guardtd_hero') || 'archer'; } catch (_) { G.lastHero = 'archer'; }
 const FLASH = { t: 0 }, LVUP = { t: 0 }, BANNER = { t: 0, a: '', b: '' };
 function waveList(n) {   // wave n (1..20): count, which monsters, life multiplier, a boss every 5th
   const hpMul = Math.pow(1.14, n - 1), pool = n <= 3 ? T1 : n <= 7 ? T1.concat(T2) : n <= 11 ? T2.concat(T3.slice(0, 3)) : n <= 15 ? T2.concat(T3) : T3.concat(T2.slice(2)), R = rng(n * 97), L = [];
   const groups = 2 + Math.floor(n / 4); for (let g = 0; g < groups; g++) { const k = pool[R() * pool.length | 0], cnt = T3.includes(k) ? 2 + (n > 12) : 4 + Math.floor(n / 5); for (let i = 0; i < cnt; i++) L.push({ k, t: i === 0 && g > 0 ? 2.2 : T3.includes(k) ? 1.3 : .75, hpMul }); }
+  if ([3, 7, 12, 17].includes(n)) L.splice(Math.floor(L.length / 2), 0, { k: 'goblin_archer', t: 2, hpMul, golden: true });
   if (BOSSW[n]) L.push({ k: BOSSW[n], t: 3, hpMul: 1 }); return L;
 }
 function preloadWave(n) { if (n > NWAVE) return Promise.resolve(); return Promise.all([...new Set(waveList(n).map(q => q.k))].map(loadSheet)); }
@@ -452,12 +542,14 @@ async function startWave() {
   G.starting = true; G.build = 0; await preloadWave(n); G.starting = false; G.wave = n; G.queue = waveList(n); G.spawnT = .5; BANNER.t = 2; BANNER.a = 'คลื่นที่ ' + n; BANNER.b = BOSSW[n] ? 'บอส: ' + MOBNAME[BOSSW[n]] : ''; preloadWave(n + 1); sfx('tick', .6);
 }
 function updWaves(dt) {
-  if (G.queue.length) { G.spawnT -= dt; if (G.spawnT <= 0) { const q = G.queue.shift(); spawnMon(q.k, q.hpMul); G.spawnT = G.queue.length ? G.queue[0].t : 0; if (MOB[q.k].boss) { BANNER.t = 2.2; BANNER.a = 'บอสมาแล้ว!'; BANNER.b = MOBNAME[q.k]; BANNER.red = true; shake(.25); sfx('boom', .7, .6); } } }
+  updCombo();
+  if (G.queue.length) { G.spawnT -= dt; if (G.spawnT <= 0) { const q = G.queue.shift(); const mm = spawnMon(q.k, q.hpMul, q.golden); if (q.golden && mm) { BANNER.t = 1.6; BANNER.a = 'ก็อบลินทองมาแล้ว!'; BANNER.b = 'ฆ่าให้ทันก่อนมันหนี'; BANNER.red = false; } G.spawnT = G.queue.length ? G.queue[0].t : 0; if (MOB[q.k].boss) { BANNER.t = 2.2; BANNER.a = 'บอสมาแล้ว!'; BANNER.b = MOBNAME[q.k]; BANNER.red = true; shake(.25); sfx('boom', .7, .6); } } }
   else if (G.wave > 0 && !MON.length && G.build <= 0 && !G.starting && G.state === 'play') {
     if (G.wave >= NWAVE) { endGame(true); return; } G.build = 25; G.gold += 20 + G.wave * 4; BANNER.t = 1.8; BANNER.a = 'ผ่านคลื่นที่ ' + G.wave; BANNER.b = 'โบนัสทอง +' + (20 + G.wave * 4); BANNER.red = false; sfx('coin', .6); }
   if (G.build > 0 && !G.queue.length && !MON.length && !G.starting) { G.build -= dt; if (G.build <= 0) { G.build = 0; startWave(); } }
 }
-function endGame(win) { G.state = win ? 'win' : 'lose'; if (G.wave > G.best) { G.best = win ? NWAVE : G.wave - 1; try { localStorage.setItem('guardtd_best', G.best); } catch (_) { } } if (HERO && win) uPlay(HERO.u, 'Cheer'); sfx(win ? 'lvl' : 'hurt', .7); }
+function endGame(win) { G.state = win ? 'win' : 'lose'; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
+  try { const k = 'guardtd_stars_' + G.hk; if (G.stars > (+localStorage.getItem(k) || 0)) localStorage.setItem(k, G.stars); } catch (_) { } if (G.wave > G.best) { G.best = win ? NWAVE : G.wave - 1; try { localStorage.setItem('guardtd_best', G.best); } catch (_) { } } if (HERO && win) uPlay(HERO.u, 'Cheer'); sfx(win ? 'lvl' : 'hurt', .7); }
 async function pickHero(hk) {
   G.state = 'load'; G.hk = hk; try { localStorage.setItem('guardtd_hero', hk); } catch (_) { }
   try { await loadHero(hk); await preloadWave(1); } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
@@ -488,7 +580,8 @@ async function loadScenery(ld) {
 // ---------- overlay UI (canvas)
 let SW = 800, SH = 450, DPR = 1, S = 1, BTN = {}, MENU = [];
 function layout() { S = clamp(Math.min(SW, SH) / 400, .8, 1.4);
-  BTN = { skill: { x: SW - 64 * S, y: SH - 64 * S, r: 42 * S }, wave: { rx: SW - 236 * S, ry: SH - 86 * S, w: 120 * S, h: 44 * S }, hero: { x: 52 * S, y: SH - 52 * S, r: 34 * S } };
+  BTN = { wave: { rx: SW / 2 - 64 * S, ry: SH - 56 * S, w: 128 * S, h: 44 * S }, hero: { x: 46 * S, y: SH - 46 * S, r: 32 * S },
+    sk: [{ x: SW - 150 * S, y: SH - 50 * S, r: 27 * S }, { x: SW - 140 * S, y: SH - 124 * S, r: 27 * S }, { x: SW - 66 * S, y: SH - 158 * S, r: 27 * S }, { x: SW - 60 * S, y: SH - 62 * S, r: 36 * S }] };
   const tw = 86 * S, th = 30 * S; let tx = SW - 12 * S - tw; for (const k of ['snd', 'px', 'spd']) { BTN[k] = { rx: tx, ry: 10 * S, w: tw, h: th }; tx -= tw + 6 * S; } }
 function rr(x, y, w, h, r) { ui.beginPath(); ui.moveTo(x + r, y); ui.arcTo(x + w, y, x + w, y + h, r); ui.arcTo(x + w, y + h, x, y + h, r); ui.arcTo(x, y + h, x, y, r); ui.arcTo(x, y, x + w, y, r); ui.closePath(); }
 function txt(s, x, y, size, color, align = 'center', weight = 800, stroke = 'rgba(28,16,6,.9)') { ui.font = `${weight} ${size}px Kanit, sans-serif`; ui.textAlign = align; ui.textBaseline = 'middle'; ui.lineJoin = 'round'; ui.lineWidth = Math.max(2, size * .22); ui.strokeStyle = stroke; ui.strokeText(s, x, y); ui.fillStyle = color; ui.fillText(s, x, y); }
@@ -507,9 +600,31 @@ function towerIcon(k, x, y, r) {   // painted in code: bow / crystal / bomb / sw
 }
 function heroIcon(k, x, y, r) { ui.save(); ui.translate(x, y); ui.strokeStyle = '#fff8e6'; ui.fillStyle = '#fff8e6'; ui.lineCap = 'round'; ui.lineJoin = 'round';
   if (k === 'archer') { ui.lineWidth = r * .08; for (const [ox, oy] of [[-.32, -.1], [0, .12], [.32, -.06]]) { ui.beginPath(); ui.moveTo(ox * r, oy * r - r * .4); ui.lineTo(ox * r, oy * r + r * .2); ui.stroke(); ui.beginPath(); ui.moveTo(ox * r, oy * r + r * .36); ui.lineTo(ox * r - r * .1, oy * r + r * .16); ui.lineTo(ox * r + r * .1, oy * r + r * .16); ui.closePath(); ui.fill(); } }
+  else if (k === 'hood') { ui.beginPath(); ui.moveTo(0, -r * .58); ui.quadraticCurveTo(r * .55, -r * .45, r * .46, r * .1); ui.lineTo(r * .3, r * .5); ui.lineTo(-r * .3, r * .5); ui.lineTo(-r * .46, r * .1); ui.quadraticCurveTo(-r * .55, -r * .45, 0, -r * .58); ui.fill(); ui.fillStyle = '#3a1a5a'; ui.beginPath(); ui.ellipse(0, r * .08, r * .26, r * .28, 0, 0, TAU); ui.fill(); ui.fillStyle = '#e0a0ff'; for (const sx of [-1, 1]) { ui.beginPath(); ui.arc(sx * r * .1, r * .08, r * .05, 0, TAU); ui.fill(); } }
   else if (k === 'wing') { ui.beginPath(); ui.moveTo(0, -r * .5); ui.lineTo(r * .42, -r * .34); ui.lineTo(r * .38, r * .1); ui.quadraticCurveTo(r * .3, r * .38, 0, r * .55); ui.quadraticCurveTo(-r * .3, r * .38, -r * .38, r * .1); ui.lineTo(-r * .42, -r * .34); ui.closePath(); ui.fill(); ui.strokeStyle = '#b07a1c'; ui.lineWidth = r * .07; ui.beginPath(); ui.moveTo(0, -r * .34); ui.lineTo(0, r * .36); ui.moveTo(-r * .22, -r * .04); ui.lineTo(r * .22, -r * .04); ui.stroke(); }
   else { ui.lineWidth = r * .1; for (const a0 of [0, Math.PI]) { ui.beginPath(); ui.arc(0, 0, r * .45, a0 + .3, a0 + 2.5); ui.stroke(); } ui.beginPath(); ui.arc(0, 0, r * .1, 0, TAU); ui.fill(); }
   ui.restore(); }
+function skIcon(id, x, y, r) {   // painted in code, one per skill
+  ui.save(); ui.translate(x, y); ui.strokeStyle = '#fff8e6'; ui.fillStyle = '#fff8e6'; ui.lineCap = 'round'; ui.lineJoin = 'round'; ui.lineWidth = r * .1;
+  const arrow = (x0, y0, x1, y1, h) => { ui.beginPath(); ui.moveTo(x0, y0); ui.lineTo(x1, y1); ui.stroke(); const a = Math.atan2(y1 - y0, x1 - x0); ui.beginPath(); ui.moveTo(x1 + Math.cos(a) * h, y1 + Math.sin(a) * h); ui.lineTo(x1 + Math.cos(a + 2.4) * h, y1 + Math.sin(a + 2.4) * h); ui.lineTo(x1 + Math.cos(a - 2.4) * h, y1 + Math.sin(a - 2.4) * h); ui.closePath(); ui.fill(); };
+  const flake = () => { for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI; ui.beginPath(); ui.moveTo(Math.cos(a) * r * .5, Math.sin(a) * r * .5); ui.lineTo(-Math.cos(a) * r * .5, -Math.sin(a) * r * .5); ui.stroke(); } ui.beginPath(); ui.arc(0, 0, r * .12, 0, TAU); ui.fill(); };
+  if (id === 'rain') { ui.lineWidth = r * .07; for (const [ox, oy] of [[-.3, -.1], [0, .1], [.3, -.05]]) arrow(ox * r, oy * r - r * .4, ox * r, oy * r + r * .22, r * .14); }
+  else if (id === 'pierce') { ui.lineWidth = r * .1; arrow(-r * .55, r * .25, r * .35, -r * .2, r * .2); ui.lineWidth = r * .05; for (const o of [-.15, .1]) { ui.beginPath(); ui.moveTo(-r * .55, r * (.25 + o)); ui.lineTo(-r * .2, r * (.08 + o)); ui.stroke(); } }
+  else if (id === 'frost' || id === 'freeze') { ui.strokeStyle = '#dff6ff'; ui.fillStyle = '#dff6ff'; flake(); }
+  else if (id === 'storm') { ui.lineWidth = r * .08; for (let i = 0; i < 3; i++) { const a = i / 3 * TAU; ui.save(); ui.rotate(a); arrow(-r * .1, r * .45, r * .3, r * .25, r * .14); ui.restore(); } }
+  else if (id === 'bash' || id === 'dash') { ui.beginPath(); ui.moveTo(r * (id === 'dash' ? .12 : 0), -r * .46); ui.lineTo(r * (id === 'dash' ? .5 : .38), -r * .32); ui.lineTo(r * (id === 'dash' ? .46 : .34), r * .1); ui.quadraticCurveTo(r * .3, r * .38, r * (id === 'dash' ? .12 : 0), r * .5); ui.quadraticCurveTo(-r * .2, r * .38, -r * (id === 'dash' ? .1 : .34), r * .1); ui.lineTo(-r * (id === 'dash' ? .14 : .38), -r * .32); ui.closePath(); ui.fill();
+    if (id === 'dash') { ui.lineWidth = r * .07; for (const yy of [-.25, .02, .3]) { ui.beginPath(); ui.moveTo(-r * .28, yy * r); ui.lineTo(-r * .6, yy * r); ui.stroke(); } } else { ui.lineWidth = r * .06; ui.beginPath(); ui.arc(0, 0, r * .7, -.6, .6); ui.stroke(); ui.beginPath(); ui.arc(0, 0, r * .7, Math.PI - .6, Math.PI + .6); ui.stroke(); } }
+  else if (id === 'holy') { ui.fillStyle = '#fff2a0'; ui.beginPath(); ui.arc(0, 0, r * .22, 0, TAU); ui.fill(); ui.strokeStyle = '#fff2a0'; ui.lineWidth = r * .07; for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; ui.beginPath(); ui.moveTo(Math.cos(a) * r * .32, Math.sin(a) * r * .32); ui.lineTo(Math.cos(a) * r * .55, Math.sin(a) * r * .55); ui.stroke(); } }
+  else if (id === 'wings') { for (const sx of [-1, 1]) { ui.beginPath(); ui.moveTo(0, r * .1); ui.quadraticCurveTo(sx * r * .3, -r * .55, sx * r * .62, -r * .45); ui.quadraticCurveTo(sx * r * .5, -r * .1, sx * r * .55, r * .05); ui.quadraticCurveTo(sx * r * .35, r * .05, sx * r * .45, r * .3); ui.quadraticCurveTo(sx * r * .2, r * .25, 0, r * .1); ui.fill(); } }
+  else if (id === 'spin') { ui.lineWidth = r * .1; for (const a0 of [0, Math.PI]) { ui.beginPath(); ui.arc(0, 0, r * .45, a0 + .3, a0 + 2.5); ui.stroke(); } ui.beginPath(); ui.arc(0, 0, r * .1, 0, TAU); ui.fill(); }
+  else if (id === 'wave') { ui.fillStyle = '#ffb0a0'; ui.beginPath(); ui.arc(-r * .15, 0, r * .55, -1.2, 1.2); ui.arc(-r * .35, 0, r * .45, 1.05, -1.05, true); ui.closePath(); ui.fill(); }
+  else if (id === 'chain') { ui.lineWidth = r * .09; for (const [cx, cy] of [[-.28, .22], [0, 0], [.28, -.22]]) { ui.beginPath(); ui.ellipse(cx * r, cy * r, r * .2, r * .12, -.65, 0, TAU); ui.stroke(); } }
+  else if (id === 'giant') { ui.beginPath(); ui.moveTo(0, r * .6); ui.lineTo(-r * .13, r * .25); ui.lineTo(-r * .13, -r * .3); ui.lineTo(r * .13, -r * .3); ui.lineTo(r * .13, r * .25); ui.closePath(); ui.fill(); ui.fillRect(-r * .35, -r * .4, r * .7, r * .1); ui.fillRect(-r * .06, -r * .62, r * .12, r * .22); }
+  else if (id === 'fire') { ui.fillStyle = '#ffd08a'; ui.beginPath(); ui.moveTo(0, -r * .55); ui.quadraticCurveTo(r * .45, -r * .05, r * .3, r * .3); ui.quadraticCurveTo(0, r * .6, -r * .3, r * .3); ui.quadraticCurveTo(-r * .45, -r * .05, 0, -r * .55); ui.fill(); ui.fillStyle = '#ff7a2a'; ui.beginPath(); ui.arc(0, r * .2, r * .16, 0, TAU); ui.fill(); }
+  else if (id === 'bolt') { ui.fillStyle = '#dff0ff'; ui.beginPath(); ui.moveTo(r * .1, -r * .6); ui.lineTo(-r * .3, r * .05); ui.lineTo(-r * .02, r * .05); ui.lineTo(-r * .15, r * .6); ui.lineTo(r * .32, -r * .1); ui.lineTo(r * .03, -r * .1); ui.closePath(); ui.fill(); }
+  else if (id === 'meteor') { ui.strokeStyle = '#ffb07a'; ui.lineWidth = r * .1; for (const o of [-.16, 0, .16]) { ui.beginPath(); ui.moveTo(-r * .5 + o * r, -r * .5 - o * r); ui.lineTo(-r * .05 + o * r, -r * .05 - o * r); ui.stroke(); } ui.fillStyle = '#ff8a3a'; ui.beginPath(); ui.arc(r * .15, r * .15, r * .28, 0, TAU); ui.fill(); }
+  ui.restore();
+}
 function roundBtn(b, col, cd, cdMax, on) { ui.beginPath(); ui.arc(b.x, b.y + 3 * S, b.r, 0, TAU); ui.fillStyle = 'rgba(0,0,0,.28)'; ui.fill();
   const g = ui.createRadialGradient(b.x - b.r * .3, b.y - b.r * .4, b.r * .1, b.x, b.y, b.r); g.addColorStop(0, col[0]); g.addColorStop(1, col[1]); ui.beginPath(); ui.arc(b.x, b.y, b.r * (on ? .92 : 1), 0, TAU); ui.fillStyle = g; ui.fill(); ui.lineWidth = 3 * S; ui.strokeStyle = on ? '#fff' : 'rgba(255,240,200,.85)'; ui.stroke();
   return () => { if (cd > 0) { ui.beginPath(); ui.moveTo(b.x, b.y); ui.arc(b.x, b.y, b.r, -Math.PI / 2, -Math.PI / 2 + TAU * cd / cdMax); ui.closePath(); ui.fillStyle = 'rgba(10,8,20,.6)'; ui.fill(); txt(Math.ceil(cd) + '', b.x, b.y, b.r * .5, '#fff'); } }; }
@@ -522,27 +637,46 @@ function drawUI(dt) {
   // monster life bars, numbers
   for (const m of MON) { if (m.dead || (m.hp >= m.max && !m.boss)) continue; const [x, y, ok] = toScreen(_a.set(m.pos.x, m.S.top + .05, m.pos.z)); if (!ok) continue; const w = (m.boss ? 70 : 30) * S; bar(x - w / 2, y - 3 * S, w, (m.boss ? 8 : 5) * S, m.hp / m.max, '#ff7a5a', '#c8321e'); }
   for (let i = NUMS.length - 1; i >= 0; i--) { const n = NUMS[i]; n.t += dt; if (n.t > .9) { NUMS.splice(i, 1); continue; } const [x, y, ok] = toScreen(_a.set(n.p.x, n.p.y + n.t * .9, n.p.z)); if (!ok) continue; ui.globalAlpha = Math.min(1, (1 - n.t / .9) * 3); if (n.coin) coin(x - 12 * S, y, 5 * S); txt(n.text, x + (n.coin ? 2 * S : 0), y, (n.coin ? 13 : 16) * S, n.color, n.coin ? 'left' : 'center'); ui.globalAlpha = 1; }
-  if (HERO && !HERO.dead) { const [x, y, ok] = toScreen(_a.set(HERO.pos.x, 1.25, HERO.pos.z)); if (ok) { bar(x - 22 * S, y - 3 * S, 44 * S, 6 * S, HERO.hp / HERO.max, '#7aff8a', '#1e9a3a'); txt('Lv ' + HERO.lv, x, y - 11 * S, 11 * S, '#fff8d0'); } }
-  if (HERO && HERO.dead) { const [x, y, ok] = toScreen(_a.set(HERO.home.x, .6, HERO.home.z)); if (ok) txt('ฟื้นใน ' + Math.ceil(10 - HERO.deadT), x, y, 14 * S, '#bff0ff'); }
+  if (HERO) { const [x, y, ok] = toScreen(_a.set(HERO.base.x, 1.5, HERO.base.z)); if (ok) txt('Lv ' + HERO.lv, x, y, 11 * S, '#fff8d0'); }
   // top-left: lives, gold, wave
   rr(10 * S, 10 * S, 250 * S, 34 * S, 17 * S); ui.fillStyle = 'rgba(26,20,12,.72)'; ui.fill(); heart(30 * S, 27 * S, 9 * S); txt(String(G.lives), 46 * S, 28 * S, 17 * S, '#fff', 'left');
   coin(92 * S, 27 * S, 9 * S); txt(String(G.gold), 106 * S, 28 * S, 17 * S, '#ffd65a', 'left'); txt(`คลื่น ${G.wave}/${NWAVE}`, 200 * S, 28 * S, 15 * S, '#fff3d2');
   pill(BTN.spd, 'เร็ว x' + G.speed, G.speed > 1); pill(BTN.px, G.px ? 'ภาพ: พิกเซล' : 'ภาพ: ปกติ', G.px); pill(BTN.snd, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false);
   // hero button + skill
-  if (HERO) { const H = HERO, D = H.D, hb = BTN.hero; const done = roundBtn(hb, D.col, 0, 1, G.select); heroIcon(H.k, hb.x, hb.y, hb.r); done(); bar(hb.x + hb.r + 6 * S, hb.y - 8 * S, 90 * S, 9 * S, H.hp / H.max, '#7aff8a', '#1e9a3a'); bar(hb.x + hb.r + 6 * S, hb.y + 5 * S, 70 * S, 6 * S, H.lv >= 10 ? 1 : H.xp / needXp(), '#ffe27a', '#e3a21c');
-    txt(D.name + ' Lv ' + H.lv, hb.x + hb.r + 6 * S, hb.y - 22 * S, 12 * S, '#fff6dc', 'left');
-    const sb = BTN.skill, d2 = roundBtn(sb, ['#ffe58a', '#d18a10'], H.skillT, D.skillCd, H.aim); heroIcon(H.k, sb.x, sb.y - 4 * S, sb.r * .9); d2(); txt(D.skill, sb.x, sb.y + sb.r + 8 * S, 12 * S, '#fff4d6');
-    if (H.aim) txt('แตะพื้นที่จะยิงฝนธนู', SW / 2, SH - 24 * S, 15 * S, '#ffe9a0'); else if (G.select) txt('แตะพื้นเพื่อให้' + D.name + 'ไปยืน', SW / 2, SH - 24 * S, 15 * S, '#bff0ff'); }
+  if (HERO) { const H = HERO, D = H.D, hb = BTN.hero; const done = roundBtn(hb, D.col, 0, 1, G.showRange); heroIcon(H.k, hb.x, hb.y, hb.r); done();
+    txt(D.name + ' Lv ' + H.lv, hb.x + hb.r + 6 * S, hb.y - 16 * S, 12.5 * S, '#fff6dc', 'left'); bar(hb.x + hb.r + 6 * S, hb.y - 4 * S, 86 * S, 7 * S, H.lv >= MAXLV ? 1 : H.xp / needXp(), '#ffe27a', '#e3a21c');
+    if (H.pts > 0) txt(`แต้มสกิล ${H.pts} · แตะ + ที่ปุ่มสกิล`, hb.x + hb.r + 6 * S, hb.y + 14 * S, 11 * S, NOW % 1 < .6 ? '#9fff9a' : '#e0ffd0', 'left');
+    if (G.showRange) drawRangeRing(H.base, D.range);
+    H.kit.forEach((K, i) => { const b = BTN.sk[i], lv = H.sk[i], ok = lv > 0, col = !ok ? ['#6a6458', '#2a2620'] : K.ult ? ['#ff9ad8', '#8a1a6a'] : D.col;
+      const d = roundBtn(b, col, ok ? H.cdk[i] : 0, K.cd, H.aim === i); ui.globalAlpha = ok ? 1 : .45; skIcon(K.id, b.x, b.y, b.r); ui.globalAlpha = 1; d();
+      for (let j = 0; j < 3; j++) { ui.beginPath(); ui.arc(b.x + (j - 1) * 8 * S, b.y + b.r + 6 * S, 3 * S, 0, TAU); ui.fillStyle = j < lv ? '#ffd34a' : 'rgba(0,0,0,.45)'; ui.fill(); }
+      if (!ok && !canLearn(i)) txt(H.lv < skReq(i, 1) ? 'Lv' + skReq(i, 1) : '', b.x, b.y, 12 * S, '#fff');
+      if (canLearn(i)) { const px = b.x + b.r * .72, py = b.y - b.r * .72, pr = 11 * S * (1 + .08 * Math.sin(NOW * 8)); ui.beginPath(); ui.arc(px, py, pr, 0, TAU); ui.fillStyle = '#3ad04a'; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = '#fff'; ui.stroke(); txt('+', px, py + 1, 15 * S, '#fff', 'center', 800, 'rgba(0,60,0,.8)'); } });
+    if (H.aim >= 0) txt('แตะพื้นที่จะใช้ "' + H.kit[H.aim].name + '"', SW / 2, SH - 72 * S, 15 * S, '#ffe9a0'); }
   // next wave
   if (G.state === 'play' && !G.queue.length && !MON.length && G.wave < NWAVE) { const b = BTN.wave, pulse = .5 + .5 * Math.sin(NOW * 5); rr(b.rx, b.ry, b.w, b.h, b.h / 2); const g = ui.createLinearGradient(0, b.ry, 0, b.ry + b.h); g.addColorStop(0, '#ff8a5a'); g.addColorStop(1, '#c8321e'); ui.fillStyle = g; ui.fill(); ui.lineWidth = 2 + pulse * 2; ui.strokeStyle = '#ffe9c0'; ui.stroke();
     txt(G.wave ? 'เริ่มคลื่นถัดไป' : 'เริ่มคลื่นแรก', b.rx + b.w / 2, b.ry + b.h / 2 - (G.wave ? 6 : 0) * S, 14 * S, '#fff'); if (G.wave && G.build > 0) txt(`อีก ${Math.ceil(G.build)} วิ · เรียกเร็ว +${Math.ceil(G.build)} ทอง`, b.rx + b.w / 2, b.ry + b.h / 2 + 11 * S, 9.5 * S, '#ffe9c0', 'center', 600); }
   else if (G.queue.length || MON.length) { BTN.wave.hide = true; }
+  if (G.state === 'play' && !G.queue.length && !MON.length && G.wave < NWAVE && !G.starting) drawPreview();
+  for (const t of TOWERS) if (t.stunT > 0) { const [x, y, ok] = toScreen(_a.set(t.pad.c.x, 1.6, t.pad.c.z)); if (ok) txt('มึน!', x, y + Math.sin(NOW * 8) * 2 * S, 13 * S, '#ffe14a'); }
+  if (COMBO.t > 0) { COMBO.t -= dt; ui.globalAlpha = Math.min(1, COMBO.t * 3); const k = 1 + Math.max(0, COMBO.t - 1) * 1.5; txt(COMBO.paid ? `คอมโบ ${COMBO.n}! +${COMBO.paid} ทอง` : `คอมโบ x${COMBO.n}`, SW / 2, 66 * S, 20 * S * k, COMBO.n >= 10 ? '#ff9a4a' : '#ffe14a'); ui.globalAlpha = 1; if (COMBO.t <= 0) COMBO.paid = 0; }
   // the build / tower menu
   if (BANNER.t > 0) { BANNER.t -= dt; ui.globalAlpha = Math.min(1, BANNER.t * 2); txt(BANNER.a, SW / 2, SH * .26, 32 * S, BANNER.red ? '#ff6a4a' : '#ffe14a', 'center', 800, BANNER.red ? 'rgba(60,0,0,.9)' : 'rgba(110,50,0,.9)'); if (BANNER.b) txt(BANNER.b, SW / 2, SH * .26 + 30 * S, 15 * S, '#fff3cf'); ui.globalAlpha = 1; }
   else if (LVUP.t > 0) { LVUP.t -= dt; ui.globalAlpha = Math.min(1, LVUP.t * 2); txt('ฮีโร่เลเวลอัพ! Lv ' + HERO.lv, SW / 2, SH * .22, 22 * S, '#ffe14a'); ui.globalAlpha = 1; }
   if (G.menu) drawMenu();
   if (FLASH.t > 0) { FLASH.t -= dt; ui.fillStyle = `rgba(255,40,30,${FLASH.t * .5})`; ui.fillRect(0, 0, SW, SH); }
   if (G.state === 'win' || G.state === 'lose') drawEnd();
+}
+function drawPreview() {   // what the next wave brings (owner: fun = plan the towers): monster pictures, how many, their traits
+  const L = waveList(G.wave + 1), kinds = []; for (const q of L) { const e = kinds.find(z => z.k === q.k && !!z.golden === !!q.golden); if (e) e.n++; else kinds.push({ k: q.k, n: 1, golden: q.golden }); }
+  const sz = 38 * S, gap = 6 * S, W = kinds.length * (sz + gap) - gap, x0 = SW / 2 - W / 2, y0 = SH - 56 * S - sz - 30 * S;
+  rr(x0 - 10 * S, y0 - 18 * S, W + 20 * S, sz + 30 * S, 10 * S); ui.fillStyle = 'rgba(26,20,12,.72)'; ui.fill(); txt('คลื่นถัดไป', x0 + W / 2, y0 - 8 * S, 11 * S, '#ffe9b0');
+  kinds.forEach((q, i) => { const x = x0 + i * (sz + gap), y = y0 + 2 * S, Sh = SHEET[q.k], D = MOB[q.k];
+    rr(x, y, sz, sz, 6 * S); ui.fillStyle = D.boss ? 'rgba(160,30,20,.55)' : q.golden ? 'rgba(200,150,20,.5)' : 'rgba(255,255,255,.1)'; ui.fill();
+    if (Sh && Sh.ok && Sh.t.image) { const J = Sh.J, k = Math.min(sz / J.w, sz / J.h) * 1.15; ui.imageSmoothingEnabled = false; ui.drawImage(Sh.t.image, 0, 0, J.w, J.h, x + sz / 2 - J.w * k / 2, y + sz - J.h * k + 2 * S, J.w * k, J.h * k); ui.imageSmoothingEnabled = true; }
+    txt('x' + q.n, x + sz - 2 * S, y + sz - 4 * S, 11 * S, '#fff', 'right');
+    const tag = D.boss ? ['บอส', '#ff7a6a'] : q.golden ? ['ทอง', '#ffd65a'] : D.fly ? ['บิน', '#9fe0ff'] : D.armor ? ['เกราะ', '#d0d0d0'] : D.regen ? ['ฟื้นเลือด', '#9fff9a'] : null;
+    if (tag) txt(tag[0], x + sz / 2, y + 6 * S, 10 * S, tag[1]); });
 }
 function menuBtn(k, x, y, w, h, draw) { MENU.push({ k, x, y, w, h }); draw(); }
 function drawMenu() {
@@ -567,17 +701,20 @@ let RANGE_T = 0; function drawRangeRing(c, R) { RINGM.position.x = RFILL.positio
 function drawTitle() {
   const g = ui.createLinearGradient(0, 0, 0, SH); g.addColorStop(0, 'rgba(10,16,30,.55)'); g.addColorStop(1, 'rgba(10,16,30,.25)'); ui.fillStyle = g; ui.fillRect(0, 0, SW, SH);
   txt('ป้อมผู้พิทักษ์', SW / 2, 44 * S, 38 * S, '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)'); txt('เลือกฮีโร่ 1 ตัว ไปปกป้องปราสาท 20 คลื่น', SW / 2, 80 * S, 15 * S, '#fff3cf', 'center', 600);
-  const NH = HKEYS.length, cw = Math.min(170 * S, (SW - 60 * S) / NH), ch = Math.min(220 * S, SH - 130 * S), gap = 12 * S, x0 = SW / 2 - (cw * NH + gap * (NH - 1)) / 2, y0 = 100 * S;
+  const NH = HKEYS.length, cw = Math.min(170 * S, (SW - 40 * S - 12 * S * (NH - 1)) / NH), ch = Math.min(220 * S, SH - 130 * S), gap = 12 * S, x0 = SW / 2 - (cw * NH + gap * (NH - 1)) / 2, y0 = 100 * S;
   HKEYS.forEach((k, i) => { const D = HEROES[k], x = x0 + i * (cw + gap), y = y0, last = k === G.lastHero;
     MENU.push({ k: 'hero:' + k, x, y, w: cw, h: ch }); rr(x, y, cw, ch, 14 * S); const gg = ui.createLinearGradient(0, y, 0, y + ch); gg.addColorStop(0, D.col[0]); gg.addColorStop(1, D.col[1]); ui.fillStyle = gg; ui.fill(); ui.lineWidth = (last ? 4 : 2) * S; ui.strokeStyle = last ? '#fff' : 'rgba(255,240,200,.7)'; ui.stroke();
     ui.beginPath(); ui.arc(x + cw / 2, y + ch * .28, ch * .18, 0, TAU); ui.fillStyle = 'rgba(0,0,0,.25)'; ui.fill(); heroIcon(k, x + cw / 2, y + ch * .28, ch * .18);
-    txt(D.name, x + cw / 2, y + ch * .58, 18 * S, '#fff'); txt(D.role, x + cw / 2, y + ch * .58 + 20 * S, 11.5 * S, '#fff8e0', 'center', 600); txt('สกิล: ' + D.skill, x + cw / 2, y + ch * .58 + 36 * S, 11.5 * S, '#fff8e0', 'center', 600);
-    rr(x + cw * .18, y + ch - 32 * S, cw * .64, 24 * S, 12 * S); ui.fillStyle = 'rgba(30,20,10,.75)'; ui.fill(); txt('เลือก', x + cw / 2, y + ch - 20 * S, 13 * S, '#ffe9b0'); });
+    txt(D.name, x + cw / 2, y + ch * .58, 18 * S, '#fff'); txt(D.role, x + cw / 2, y + ch * .58 + 20 * S, 11.5 * S, '#fff8e0', 'center', 600); const K4 = kitOf(k).map(q => q.name); txt(K4.slice(0, 2).join(' · '), x + cw / 2, y + ch * .58 + 36 * S, 10 * S, '#fff8e0', 'center', 600); txt(K4.slice(2).join(' · '), x + cw / 2, y + ch * .58 + 50 * S, 10 * S, '#fff8e0', 'center', 600);
+    rr(x + cw * .18, y + ch - 32 * S, cw * .64, 24 * S, 12 * S); ui.fillStyle = 'rgba(30,20,10,.75)'; ui.fill(); txt('เลือก', x + cw / 2, y + ch - 20 * S, 13 * S, '#ffe9b0');
+    const st = G.starsBy[k] || 0; for (let j = 0; j < 3; j++) star(x + cw / 2 + (j - 1) * 17 * S, y + 14 * S, 7 * S, j < st); });
   if (G.best) txt('ดีที่สุด: ผ่าน ' + G.best + ' คลื่น', SW / 2, y0 + ch + 20 * S, 13 * S, '#fff3cf', 'center', 600);
 }
+function star(x, y, r, on) { ui.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr0 = i % 2 ? r * .45 : r; ui.lineTo(x + Math.cos(a) * rr0, y + Math.sin(a) * rr0); } ui.closePath(); ui.fillStyle = on ? '#ffd34a' : 'rgba(255,255,255,.2)'; ui.fill(); ui.lineWidth = 2.5 * S; ui.strokeStyle = on ? '#8a5a08' : 'rgba(0,0,0,.4)'; ui.stroke(); }
 function drawEnd() {
   ui.fillStyle = 'rgba(0,0,0,.45)'; ui.fillRect(0, 0, SW, SH); const win = G.state === 'win';
-  txt(win ? 'ชนะ! ปราสาทปลอดภัย' : 'ปราสาทแตกแล้ว...', SW / 2, SH * .32, 32 * S, win ? '#ffe14a' : '#ff8a7a'); txt(`ผ่าน ${win ? NWAVE : G.wave - 1} คลื่น · ล่าได้ ${G.kills} ตัว`, SW / 2, SH * .32 + 34 * S, 15 * S, '#fff3cf');
+  txt(win ? 'ชนะ! ปราสาทปลอดภัย' : 'ปราสาทแตกแล้ว...', SW / 2, SH * .32, 32 * S, win ? '#ffe14a' : '#ff8a7a');
+  if (win) for (let i = 0; i < 3; i++) star(SW / 2 + (i - 1) * 46 * S, SH * .32 - 50 * S - (i === 1 ? 8 * S : 0), 18 * S, i < G.stars); txt(`ผ่าน ${win ? NWAVE : G.wave - 1} คลื่น · ล่าได้ ${G.kills} ตัว`, SW / 2, SH * .32 + 34 * S, 15 * S, '#fff3cf');
   const bw = 150 * S, bh = 40 * S, y = SH * .55; [['again', 'เล่นอีกครั้ง', SW / 2 - bw - 8 * S], ['title', 'เปลี่ยนฮีโร่', SW / 2 + 8 * S]].forEach(([k, l, x]) => { MENU.push({ k, x, y, w: bw, h: bh }); rr(x, y, bw, bh, bh / 2); ui.fillStyle = k === 'again' ? '#f0a020' : 'rgba(255,255,255,.18)'; ui.fill(); txt(l, x + bw / 2, y + bh / 2, 15 * S, '#fff'); });
 }
 
@@ -597,14 +734,15 @@ function tap(x, y) {
   if (mb && G.menu) { const t = G.menu.pad.tower; if (TDEF[mb.k]) { if (buildTower(G.menu.pad, mb.k)) G.menu = null; else sfx('tick', .4, .6); } else if (mb.k === 'up') { upgradeTower(t); } else if (mb.k === 'sell') { sellTower(t); G.menu = null; } return; }
   if (inBtn(BTN.spd, x, y)) { G.speed = G.speed === 1 ? 2 : G.speed === 2 ? 3 : 1; return; } if (inBtn(BTN.px, x, y)) { setPx(!G.px); return; } if (inBtn(BTN.snd, x, y)) { SND.on = !SND.on; return; }
   if (!G.queue.length && !MON.length && G.wave < NWAVE && inBtn(BTN.wave, x, y)) { startWave(); return; }
-  if (HERO && inBtn(BTN.skill, x, y)) { G.menu = null; G.select = false; if (HERO.D.aimed) { if (HERO.skillT <= 0 && !HERO.dead) HERO.aim = !HERO.aim; } else heroSkill(); return; }
-  if (HERO && inBtn(BTN.hero, x, y)) { G.menu = null; HERO.aim = false; G.select = !G.select; return; }
+  if (HERO) { for (let i = 0; i < 4; i++) { const b = BTN.sk[i]; if (canLearn(i) && Math.hypot(x - (b.x + b.r * .72), y - (b.y - b.r * .72)) < 17 * S) { learnSkill(i); return; } }
+    for (let i = 0; i < 4; i++) if (inBtn(BTN.sk[i], x, y)) { G.menu = null; if (HERO.sk[i] > 0) { if (!castSkill(i)) sfx('tick', .3, .6); } else if (canLearn(i)) learnSkill(i); else sfx('tick', .3, .6); return; }
+    if (inBtn(BTN.hero, x, y)) { G.menu = null; G.showRange = !G.showRange; return; } }
   const p = groundAt(x, y); if (!p) { G.menu = null; return; }
-  if (HERO && HERO.aim) { HERO.aim = false; heroSkill(p); return; }
-  const pad = padAt(p); if (pad && !G.select) { G.menu = G.menu && G.menu.pad === pad ? null : { pad }; return; }
-  G.menu = null; if (HERO && !HERO.dead && Math.abs(p.x) < -OX - .2 && Math.abs(p.z) < -OZ - .2) { HERO.goto = p.clone(); HERO.home.copy(p); G.select = false; ring(p, 0x9fe8ff, .1, .6, .4); }
+  if (HERO && HERO.aim >= 0) { const i = HERO.aim; HERO.aim = -1; castSkill(i, p); return; }
+  const pad = padAt(p); if (pad) { G.menu = G.menu && G.menu.pad === pad ? null : { pad }; return; }
+  G.menu = null; if (HERO && p.distanceTo(HERO.base) < .7) G.showRange = !G.showRange;
 }
-addEventListener('keydown', e => { audioInit(); if (G.state !== 'play') return; if (e.code === 'Space') { e.preventDefault(); startWave(); } if (e.code === 'KeyQ' && HERO) { if (HERO.D.aimed) HERO.aim = !HERO.aim; else heroSkill(); } if (e.code === 'Escape') { G.menu = null; G.select = false; if (HERO) HERO.aim = false; } });
+addEventListener('keydown', e => { audioInit(); if (G.state !== 'play') return; if (e.code === 'Space') { e.preventDefault(); startWave(); } const n = ['Digit1', 'Digit2', 'Digit3', 'Digit4'].indexOf(e.code); if (n >= 0 && HERO) { if (HERO.sk[n] > 0) castSkill(n); else learnSkill(n); } if (e.code === 'Escape') { G.menu = null; if (HERO) HERO.aim = -1; } });
 
 // ---------- view: the whole island fits the screen (landscape phones); ?px=1 / the pill = render at low resolution, upscaled with hard pixels
 function setPx(on) { G.px = on; glc.classList.toggle('px', on); resize(); }
@@ -623,6 +761,7 @@ function frame() {
   requestAnimationFrame(frame); let dt = Math.min(.05, clock.getDelta()); NOW += dt; SFXN = 0;
   if (G.state === 'play' || G.state === 'win' || G.state === 'lose') { const steps = G.state === 'play' ? G.speed : 1; for (let i = 0; i < steps; i++) tick(dt); } else if (HERO) HERO.u.mixer.update(dt);
   const sx = (Math.random() - .5) * CAM.shake, sy = (Math.random() - .5) * CAM.shake; CAM.shake = Math.max(0, CAM.shake - dt * .8); if (CAM.base) { camera.position.set(CAM.base.x + sx, CAM.base.y + sy, CAM.base.z); }
+  if (HPAD.flames) for (const f of HPAD.flames) f.scale.setScalar(.2 + .05 * Math.sin(NOW * 13 + f.position.x * 7) + .03 * Math.random());
   RANGE_T -= dt; RINGM.material.opacity = RANGE_T > 0 ? .9 : 0; RFILL.material.opacity = RANGE_T > 0 ? .12 : 0;
   renderer.render(scene, camera); drawUI(dt);
 }
@@ -651,7 +790,7 @@ function platformTop(s, k, H) {   // cast rays down at the middle from heights b
   return best;
 }
 setPx(G.px); boot(); frame();
-window.GAME = { closeCam: (x, z, d = 4) => { CAM.base = new V3(x, d * .8, z + d * .6); camera.position.copy(CAM.base); camera.lookAt(x, .4, z); }, G, MON, TOWERS, PADS, PROJ, FX, get HERO() { return HERO; }, TDEF, HEROES, buildTower, upgradeTower, sellTower, startWave, pickHero, heroSkill, setPx, tap, toScreen: (x, y, z) => toScreen(new V3(x, y, z)),
+window.GAME = { castSkill, learnSkill, canLearn, HPAD, closeCam: (x, z, d = 4) => { CAM.base = new V3(x, d * .8, z + d * .6); camera.position.copy(CAM.base); camera.lookAt(x, .4, z); }, G, MON, TOWERS, PADS, PROJ, FX, get HERO() { return HERO; }, TDEF, HEROES, KITS, buildTower, upgradeTower, sellTower, startWave, pickHero, setPx, tap, toScreen: (x, y, z) => toScreen(new V3(x, y, z)),
   sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { NOW += dt; tick(dt); } } };
 </script>
 </body>

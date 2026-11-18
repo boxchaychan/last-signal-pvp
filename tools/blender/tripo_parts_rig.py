@@ -11,6 +11,7 @@
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/knight/knight_raw.glb art/tribe3d/people/demon_knight.glb knight
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/winged/raw.glb art/tribe3d/people/winged_knight.glb winged
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/darkknight/tripo_split_raw.glb art/grind3d/dark_knight.glb dark
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/hoodknight/tripo_split_raw.glb art/grind3d/hood_knight.glb hood
 # A new model: plot its parts first (front / side point plot, a grid render for the joints), then add an entry to MODELS.
 import bpy, bmesh, sys, json, math
 import numpy as np
@@ -60,6 +61,20 @@ MODELS = {
        'upperarmr': (-.1, .525, .08), 'lowerarmr': (-.215, .52, .085), 'wristr': (-.295, .515, .085), 'handr': (-.315, .515, .085), 'handslotr': (-.36, .51, .09),
        'upperlegl': (.065, .34, .08), 'lowerlegl': (.085, .195, .08), 'footl': (.1, .075, .08), 'toesl': (.1, .02, .17),
        'upperlegr': (-.065, .34, .08), 'lowerlegr': (-.085, .195, .08), 'footr': (-.1, .075, .08), 'toesr': (-.1, .02, .17)}),
+  # the "hooded knight" (owner's GPT T-pose -> Tripo, textured, segment by prompt: 137 parts, 2026-11-18): 1.0 tall, T-pose, faces +z
+  'hood': dict(
+    ROLE={0: 'rigid:head', 9: 'rigid:head', 31: 'rigid:head', 11: 'mix:chest=.7,head=.3', 2: 'rigid:chest', 4: 'heat:spine,chest', 7: 'heat:hips,spine,chest',
+          8: 'heat:hips,upperlegl,upperlegr', 30: 'rigid:hips', 25: 'rigid:hips', 1: 'rigid:hips', 17: 'rigid:hips', 18: 'rigid:hips', 19: 'rigid:hips',
+          22: 'mix:hips=.7,upperlegl=.15,upperlegr=.15', 12: 'heat:hips,upperlegl,lowerlegl', 10: 'heat:hips,upperlegr,lowerlegr',
+          5: 'heat:lowerlegl,footl', 13: 'heat:lowerlegr,footr', 33: 'mix:upperlegl=.4,lowerlegl=.6', 32: 'mix:upperlegr=.4,lowerlegr=.6',
+          21: 'heat:chest,upperarml', 20: 'heat:chest,upperarmr', 27: 'rigid:upperarml', 26: 'rigid:upperarmr', 29: 'mix:upperarml=.6,chest=.4', 28: 'mix:upperarmr=.6,chest=.4',
+          24: 'mix:upperarml=.6,chest=.4', 23: 'mix:upperarmr=.6,chest=.4', 15: 'heat:lowerarml,handl', 14: 'heat:lowerarmr,handr', 3: 'rigid:handl', 6: 'rigid:handr'},
+    DEFAULT='auto', FACES={}, SHOULDER=[4, 2],
+    J={'hips': (0, .43, .04), 'spine': (0, .5, .04), 'chest': (0, .57, .04), 'head': (0, .655, .03), 'top': (0, 1.0, .03),
+       'upperarml': (.09, .59, .04), 'lowerarml': (.205, .59, .045), 'wristl': (.29, .585, .06), 'handl': (.31, .585, .065), 'handslotl': (.35, .58, .07),
+       'upperarmr': (-.09, .59, .04), 'lowerarmr': (-.205, .59, .045), 'wristr': (-.29, .585, .06), 'handr': (-.31, .585, .065), 'handslotr': (-.35, .58, .07),
+       'upperlegl': (.05, .42, .03), 'lowerlegl': (.075, .22, .03), 'footl': (.1, .07, .03), 'toesl': (.1, .02, .11),
+       'upperlegr': (-.05, .42, .03), 'lowerlegr': (-.075, .22, .03), 'footr': (-.1, .07, .03), 'toesr': (-.1, .02, .11)}),
   # the "winged knight" (owner's GPT T-pose front / left / back -> Tripo multi-view, segment custom 21 names, 2026-11-18): texturing re-merged the
   # 194 parts into 140, many of them several loose pieces from all over the body, so 'auto' works per loose piece and 'main:<role>' gives
   # the biggest piece of a part the role (the rest auto). 0.97 tall, T-pose, open hands, symmetric
