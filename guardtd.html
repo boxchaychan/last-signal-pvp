@@ -262,6 +262,8 @@ function spawnMon(k, hpMul, golden) {
   if (golden) { m.golden = true; m.spd = 2.3; m.hp = m.max = Math.round(70 * hpMul); m.gold = 60 + G.wave * 6; m.mat.uniforms.tint.value.setRGB(1.5, 1.2, .35); }
   pathAt(0, m.pos, m.side); MON.push(m); return m;
 }
+const CUP = new V3(0, 1, 0);   /* the camera's up: refreshed every frame */
+function monPt(m, f, out = new V3()) { return out.set(m.pos.x, m.yo || 0, m.pos.z).addScaledVector(CUP, m.S.top * f); }
 function setRow(m, row) { if (m.row !== row) { m.row = row; m.fr = 0; } }
 const _p = new V3(), _q = new V3(), _s0 = new V3(), _s1 = new V3();
 function updMon(m, dt) {
@@ -287,7 +289,7 @@ function updMon(m, dt) {
 }
 function hitMon(m, dmg, o = {}) {
   if (m.dead) return; if (m.D.armor && !o.magic) { dmg *= .5; o = Object.assign({}, o, { color: '#a0a0a0' }); } m.hp -= dmg; m.flash = 1; if (o.slow) { m.slowT = Math.max(m.slowT, o.slowT || 1.6); m.slowK = 1 - o.slow; } if (o.stun && !m.boss) m.stunT = Math.max(m.stunT, o.stun);
-  if (o.num || dmg >= 40) num(new V3(m.pos.x, m.S.top + .1, m.pos.z), Math.round(dmg), o.color || '#ffffff');
+  if (o.num || dmg >= 40) num(monPt(m, 1.05), Math.round(dmg), o.color || '#ffffff');
   if (m.hp <= 0) killMon(m, o.by);
 }
 function killMon(m, by) {
@@ -300,7 +302,7 @@ function killMon(m, by) {
 function bossSkill(m, dt) {
   m.skT -= dt; if (m.skT > 0) return; m.skT = 7; m.nskill = (m.nskill || 0) + 1;
   if (m.nskill % 2) { ring(m.pos, 0xff3a2a, .4, 3, .6); disc(m.pos, 0xff2a1a, 2.8, .5, .7); shake(.2); sfx('boom', .7, .5); let n = 0;
-    for (const t of TOWERS) if (t.pad.c.distanceTo(m.pos) < 3) { t.stunT = 2.5; n++; } num(new V3(m.pos.x, m.S.top + .5, m.pos.z), n ? 'คำราม! ป้อมมึน' : 'คำราม!', '#ff8a7a'); }
+    for (const t of TOWERS) if (t.pad.c.distanceTo(m.pos) < 3) { t.stunT = 2.5; n++; } num(monPt(m, 1.2), n ? 'คำราม! ป้อมมึน' : 'คำราม!', '#ff8a7a'); }
   else { if ((m.calls = (m.calls || 0) + 1) > 4) return; const pool = G.wave >= 10 ? T2 : T1, k = pool.find(q => SHEET[q] && SHEET[q].ok); if (!k) return; num(new V3(m.pos.x, m.S.top + .5, m.pos.z), 'เรียกลูกน้อง!', '#ff8a7a'); ring(m.pos, 0xb040ff, .3, 1.5, .5);
     for (let i = 0; i < 3; i++) { const q = spawnMon(k, Math.pow(1.16, Math.min(G.wave, 10) - 1) * Math.pow(1.15, Math.max(0, G.wave - 10)) * MAP.hp * .6); if (q) { q.gold = 1; q.s = Math.max(0, m.s - .4 - i * .45); pathAt(q.s, q.pos, q.side); dust(q.pos, 4); } } }
 }
@@ -395,7 +397,7 @@ const PROJ = [], AG = { shaft: new THREE.CylinderGeometry(.012, .012, .5, 5).rot
 const AM = { wood: new THREE.MeshLambertMaterial({ color: 0x8a5a32 }), tip: new THREE.MeshLambertMaterial({ color: 0xe6e0c8 }), bomb: new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: .4, metalness: .3 }) };
 function makeArrow(s = 1, glow) { const g = new THREE.Group(); g.add(new THREE.Mesh(AG.shaft, AM.wood), new THREE.Mesh(AG.head, glow ? new THREE.MeshBasicMaterial({ color: 0xbff4ff }) : AM.tip)); g.scale.setScalar(s); return g; }
 function shoot(type, from, tg, dmg, o = {}) {
-  let mesh; if (type === 'arrow' || type === 'harrow') { mesh = makeArrow(type === 'harrow' ? 1.5 : 1.1, type === 'harrow'); sfx('twang', .35, rnd(.95, 1.1)); }
+  let mesh; if (type === 'arrow' || type === 'harrow') { mesh = makeArrow(type === 'harrow' ? 1.0 : .75, type === 'harrow'); sfx('twang', .35, rnd(.95, 1.1)); }
   else if (type === 'bolt' || type === 'hbolt') { mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: type === 'hbolt' ? 0xff60e0 : 0xc070ff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); mesh.scale.setScalar(.5); sfx('zap', .5); }
   else { mesh = new THREE.Mesh(new THREE.SphereGeometry(.11, 10, 8), AM.bomb); mesh.castShadow = true; }
   mesh.position.copy(from); scene.add(mesh);
@@ -409,11 +411,11 @@ function updProj(dt) {
     if (p.type === 'bomb') { const k = Math.min(1, p.t / p.dur); p.mesh.position.lerpVectors(p.from, p.land, k); p.mesh.position.y = lerp(p.from.y, .1, k) + Math.sin(k * Math.PI) * 1.6; p.mesh.rotation.x += dt * 8;
       if (k >= 1) { done = true; const R = p.o.splash || 1; for (const m of MON) if (!m.dead && !m.fly && m.pos.distanceTo(p.land) < R) hitMon(m, p.dmg);
         if (p.o.cluster) for (let j = 0; j < 3; j++) { const a = j / 3 * TAU + Math.random(), c2 = new V3(p.land.x + Math.cos(a) * .9, 0, p.land.z + Math.sin(a) * .9); after(.15 + j * .1, () => { ring(c2, 0xffa040, .1, .8, .3); burst(new V3(c2.x, .25, c2.z), { n: 7, color: 0xff9a3a, spd: 2, up: 2, size: .3, life: .35 }); sfx('boom', .25, 1.4); for (const q of MON) if (!q.dead && !q.fly && q.pos.distanceTo(c2) < .75) hitMon(q, p.dmg * .45); }); } ring(p.land, 0xffa040, .2, R * 1.1, .4); burst(new V3(p.land.x, .3, p.land.z), { n: 14, color: 0xff9a3a, spd: 3, up: 3, size: .4, life: .45 }); dust(p.land, 6); sfx('boom', .45, rnd(.9, 1.1)); shake(.05); } }
-    else { const tg = p.tg, aim = tg && !tg.dead ? _q.set(tg.pos.x, tg.yo + tg.S.top * .55, tg.pos.z) : (p.last || p.mesh.position); if (tg && !tg.dead) p.last = aim.clone();
+    else { const tg = p.tg, aim = tg && !tg.dead ? monPt(tg, .45, _q) : (p.last || p.mesh.position); if (tg && !tg.dead) p.last = aim.clone();
       _p.subVectors(aim, p.mesh.position); const L = _p.length(), step = p.spd * dt;
       if (p.type !== 'bolt' && p.type !== 'hbolt') p.mesh.quaternion.setFromUnitVectors(new V3(0, 0, 1), _p.clone().normalize());
       if (L <= step || p.t > 3) { done = true;
-        if (p.type === 'bolt' || p.type === 'hbolt') { const R = p.o.splash || .7; for (const m of MON) if (!m.dead && Math.hypot(m.pos.x - aim.x, m.pos.z - aim.z) < R + .2) hitMon(m, p.dmg, { slow: p.o.slow, magic: true });
+        if (p.type === 'bolt' || p.type === 'hbolt') { const R = p.o.splash || .7; const hc = tg && !tg.dead ? tg.pos : aim; for (const m of MON) if (!m.dead && Math.hypot(m.pos.x - hc.x, m.pos.z - hc.z) < R + .2) hitMon(m, p.dmg, { slow: p.o.slow, magic: true });
           if (p.o.chain) { let from = aim.clone(), hit = new Set(); for (let j = 0; j < p.o.chain; j++) { let best = null, bd = 2.6; for (const q of MON) { if (q.dead || hit.has(q) || Math.hypot(q.pos.x - from.x, q.pos.z - from.z) < .3) continue; const d = Math.hypot(q.pos.x - from.x, q.pos.z - from.z); if (d < bd) { bd = d; best = q; } } if (!best) break; const to = new V3(best.pos.x, best.yo + .5, best.pos.z); bolt3(from, to, 0xd8b0ff); hit.add(best); hitMon(best, p.dmg * .6, { magic: true }); from = to; } } burst(aim, { n: 10, color: 0xc080ff, spd: 2.5, size: .3, life: .35 }); ring(aim, 0xb070ff, .1, R, .3); }
         else if (tg && !tg.dead) { hitMon(tg, p.dmg, p.o); burst(aim, { n: 4, color: 0xfff0c0, spd: 2, size: .18, life: .25 }); if (p.o.hit) p.o.hit(tg); } }
       else p.mesh.position.addScaledVector(_p, step / L); }
@@ -801,7 +803,7 @@ function drawUI(dt) {
   if (G.state === 'title') return drawTitle();
   if (G.state === 'load') { ui.fillStyle = 'rgba(14,20,30,.6)'; ui.fillRect(0, 0, SW, SH); txt(LOAD.msg, SW / 2, SH / 2, 22 * S, '#ffe9b0'); bar(SW / 2 - 120 * S, SH / 2 + 24 * S, 240 * S, 12 * S, LOAD.f, '#ffd45a', '#e09a20'); return; }
   // monster life bars, numbers
-  for (const m of MON) { if (m.dead || (m.hp >= m.max && !m.boss)) continue; const [x, y, ok] = toScreen(_a.set(m.pos.x, m.S.top + .05, m.pos.z)); if (!ok) continue; const w = (m.boss ? 70 : 30) * S; bar(x - w / 2, y - 3 * S, w, (m.boss ? 8 : 5) * S, m.hp / m.max, '#ff7a5a', '#c8321e'); }
+  for (const m of MON) { if (m.dead || (m.hp >= m.max && !m.boss)) continue; const [x, y, ok] = toScreen(monPt(m, 1.02, _a)); if (!ok) continue; const w = (m.boss ? 70 : 30) * S; bar(x - w / 2, y - 3 * S, w, (m.boss ? 8 : 5) * S, m.hp / m.max, '#ff7a5a', '#c8321e'); }
   for (let i = NUMS.length - 1; i >= 0; i--) { const n = NUMS[i]; n.t += dt; if (n.t > .9) { NUMS.splice(i, 1); continue; } const [x, y, ok] = toScreen(_a.set(n.p.x, n.p.y + n.t * .9, n.p.z)); if (!ok) continue; ui.globalAlpha = Math.min(1, (1 - n.t / .9) * 3); if (n.coin) coin(x - 12 * S, y, 5 * S); txt(n.text, x + (n.coin ? 2 * S : 0), y, (n.coin ? 13 : 16) * S, n.color, n.coin ? 'left' : 'center'); ui.globalAlpha = 1; }
   if (HERO) { const [x, y, ok] = toScreen(_a.set(HERO.base.x, 1.5, HERO.base.z)); if (ok) txt('Lv ' + HERO.lv, x, y, 11 * S, '#fff8d0'); }
   // top-left: lives, gold, wave
@@ -988,6 +990,7 @@ function frame() {
   updAmbient(dt); updScenery(dt);
   if (HPAD.flames) for (const f of HPAD.flames) f.scale.setScalar(.2 + .05 * Math.sin(NOW * 13 + f.position.x * 7) + .03 * Math.random());
   RANGE_T -= dt; RINGM.material.opacity = RANGE_T > 0 ? .9 : 0; RFILL.material.opacity = RANGE_T > 0 ? .12 : 0;
+  CUP.set(0, 1, 0).applyQuaternion(camera.quaternion);
   if (!NORENDER) { renderer.render(scene, camera); drawUI(dt); }
 }
 const NORENDER = Q.get('norender') === '1';   // the balance checks run the game logic only
