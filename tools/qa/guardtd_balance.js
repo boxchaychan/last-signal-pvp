@@ -14,8 +14,8 @@ const { chromium } = require('playwright');
       const spend = () => { for (let k = 0; k < 4; k++) GAME.learnSkill(k);
         const free = GAME.PADS.filter(p => !p.tower); const n = GAME.TOWERS.length;
         if (free.length && G.gold >= GAME.TDEF[mix[n % mix.length]].cost[0] && (n < 4 || G.gold > 140 || GAME.TOWERS.every(t => t.lv >= 1))) GAME.buildTower(free[0], mix[n % mix.length]);
-        for (const t of GAME.TOWERS.slice().sort((a, c) => a.lv - c.lv)) if (t.lv < 2 && G.gold >= t.D.cost[t.lv + 1] + 20) GAME.upgradeTower(t);
-        if (GAME.TOWERS.every(t => t.lv >= 2) && G.lives < 20 && G.gold >= 100) { G.gold -= 100; G.lives++; } };
+        for (const t of GAME.TOWERS.slice().sort((a, c) => a.lv - c.lv)) if (t.lv < 3 && G.gold >= t.D.cost[t.lv + 1] + 20) GAME.upgradeTower(t);
+        if (GAME.TOWERS.every(t => t.lv >= 3) && G.lives < 20 && G.gold >= 100) { G.gold -= 100; G.lives++; } };
       let t = 0; for (let w = 1; w <= 20 && G.state === 'play'; w++) {
         await GAME.startWave(); let guard = 0;
         while ((G.queue.length || GAME.MON.length) && G.state === 'play' && guard++ < 4000) { GAME.sim(.5); t += .5; spend();
