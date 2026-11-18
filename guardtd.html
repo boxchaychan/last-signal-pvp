@@ -74,7 +74,7 @@ const MAPS = {
     sun: 0xf4f8ff, hemi: [0xf0f6ff, 0x8090a0], trees: ['PineTree_1', 'PineTree_2', 'PineTree_4', 'DeadTree_3', 'BirchTree_1'], tint: { PineTree_Leaves: 0x9fc8c0, BirchTree_Leaves: 0xe8f0f0, Bush_Leaves: 0xa8c8c0, Grass: 0xd8e8e8, NormalTree_Leaves: 0xb8d8d0 }, flowers: false },
 };
 const MAPKEYS = ['forest', 'autumn', 'snow'];
-let MAPK = Q.get('map'); if (!MAPS[MAPK]) { try { MAPK = localStorage.getItem('guardtd_map'); } catch (_) { } } if (!MAPS[MAPK]) MAPK = 'forest';
+let MAPK = Q.get('map'); if (!MAPS[MAPK]) MAPK = 'forest';   // one map for now (owner 2026-11-19 "ทำแมพเดียวก่อน"); ?map= still opens the others
 const MAP = MAPS[MAPK];
 scene.background.setHex(MAP.sky); scene.fog = new THREE.Fog(MAP.sky, 26, 60); HEMI.color.setHex(MAP.hemi[0]); HEMI.groundColor.setHex(MAP.hemi[1]); sun.color.setHex(MAP.sun);
 const MW = 18, MH = 10, OX = -MW / 2, OZ = -MH / 2;
@@ -200,7 +200,7 @@ function fxSheet(k, p, o = {}) {
   addFx(m, life, (q, k, dt, f) => { let fr = Math.floor(f.t / dur * S.n); fr = o.loop ? fr % S.n : Math.min(S.n - 1, fr); tex.offset.set((fr % S.cols) / S.cols, 1 - (Math.floor(fr / S.cols) + 1) / S.rows);
     if (o.follow) q.position.set(o.follow.x, o.y || .1, o.follow.z); if (o.loop) q.material.opacity = (o.opacity || 1) * Math.min(1, (life - f.t) / .5, f.t / .25); }, () => { tex.dispose(); m.material.dispose(); });
 }
-const CAM = { shake: 0, zoom: 1, pan: new V3(), override: null };   // zoom (owner: "ซูมไม่ได้หรือ"): pinch / wheel / the pill, drag to look around when zoomed in const shake = a => { CAM.shake = Math.max(CAM.shake, a); };
+const CAM = { shake: 0, zoom: 1, pan: new V3(), override: null }; /* zoom (owner: "ซูมไม่ได้หรือ"): pinch / wheel / the pill, drag to look around when zoomed in */ const shake = a => { CAM.shake = Math.max(CAM.shake, a); };
 
 // ---------- sound (Kenney CC0 clips already in the repo + a synthesized bow twang)
 const AU = { ctx: null, buf: {} }, SND = { on: Q.get('snd') !== '0' };
@@ -239,7 +239,7 @@ const MOBNAME = { kasa_obake: 'ร่มผี', tengu: 'นกเทงงู',
   golem: 'โกเลมหิน', troll: 'โทรล', oni: 'ยักษ์โอนิ', croc_guard: 'ทหารจระเข้', terracotta_general: 'นายพลดินเผา', ice_golem: 'โกเลมน้ำแข็ง', boss_treant: 'ต้นไม้อสูร', boss_nian: 'เหนียนโซ่ว', boss_orochi: 'โอโรจิแปดหัว', boss_jotun: 'ยักษ์โยตุน' };
 const T1 = ['shroom', 'wisp', 'monkey', 'kappa', 'paper_doll', 'goblin_archer', 'kasa_obake'], T2 = ['wolf', 'skeleton', 'boar_guard', 'draugr', 'jackal_warrior', 'nekomata', 'fox_spirit', 'tengu'], T3 = ['golem', 'troll', 'oni', 'croc_guard', 'terracotta_general', 'ice_golem', 'ice_wraith'];
 // traits (owner: "ทำให้เกมส์สนุกนะ"): fly = only the archer / mage towers and ranged heroes reach them (bombs and knights cannot); armor = arrows, bombs and swords do half, magic is full; regen = heals itself
-const BOSSW = { 5: 'boss_treant', 10: 'boss_nian', 15: 'boss_orochi', 20: 'boss_jotun' }, NWAVE = 20;
+const BOSSL = ['boss_treant', 'boss_nian', 'boss_orochi', 'boss_jotun'], BOSSW = new Proxy({}, { get: (_, n) => (+n > 0 && +n % 5 === 0) ? BOSSL[(+n / 5 - 1) % 4] : undefined }), NWAVE = 1e9;   // ENDLESS: no last wave (owner "มอนมาเรื่อยๆ")
 const SHEET = {}, TL = new THREE.TextureLoader(), PXW = 1 / 86;   // world units per sprite pixel
 function loadSheet(k) {
   if (SHEET[k]) return SHEET[k].p;
@@ -638,8 +638,8 @@ const FLASH = { t: 0 }, LVUP = { t: 0 }, BANNER = { t: 0, a: '', b: '' };
 function waveList(n) {   // wave n (1..20): count, which monsters, life multiplier, a boss every 5th
   const hpMul = Math.pow(1.16, Math.min(n, 10) - 1) * Math.pow(1.15, Math.max(0, n - 10)) * MAP.hp, pool = n <= 3 ? T1 : n <= 7 ? T1.concat(T2) : n <= 11 ? T2.concat(T3.slice(0, 3)) : n <= 15 ? T2.concat(T3) : T3.concat(T2.slice(2)), R = rng(n * 97), L = [];
   const groups = 2 + Math.floor(n / 4); for (let g = 0; g < groups; g++) { const k = pool[R() * pool.length | 0], cnt = T3.includes(k) ? 2 + (n > 12) : 4 + Math.floor(n / 5); for (let i = 0; i < cnt; i++) L.push({ k, t: i === 0 && g > 0 ? 2.2 : T3.includes(k) ? 1.3 : .75, hpMul }); }
-  if ([3, 7, 12, 17].includes(n)) L.splice(Math.floor(L.length / 2), 0, { k: 'goblin_archer', t: 2, hpMul, golden: true });
-  if (BOSSW[n]) L.push({ k: BOSSW[n], t: 3, hpMul: MAP.hp * (1 + (n - 5) * .03) }); return L;
+  if (n % 5 === 3) L.splice(Math.floor(L.length / 2), 0, { k: 'goblin_archer', t: 2, hpMul, golden: true });
+  if (BOSSW[n]) L.push({ k: BOSSW[n], t: 3, hpMul: n <= 20 ? MAP.hp * (1 + (n - 5) * .03) : hpMul * .12 }); return L;
 }
 function preloadWave(n) { if (n > NWAVE) return Promise.resolve(); return Promise.all([...new Set(waveList(n).map(q => q.k))].map(loadSheet)); }
 async function startWave() {
@@ -651,10 +651,10 @@ function updWaves(dt) {
   updCombo();
   if (G.queue.length) { G.spawnT -= dt; if (G.spawnT <= 0) { const q = G.queue.shift(); const mm = spawnMon(q.k, q.hpMul, q.golden); if (q.golden && mm) { BANNER.t = 1.6; BANNER.a = 'ก็อบลินทองมาแล้ว!'; BANNER.b = 'ฆ่าให้ทันก่อนมันหนี'; BANNER.red = false; } G.spawnT = G.queue.length ? G.queue[0].t : 0; if (MOB[q.k].boss) { BANNER.t = 2.2; BANNER.a = 'บอสมาแล้ว!'; BANNER.b = MOBNAME[q.k]; BANNER.red = true; shake(.25); sfx('boom', .7, .6); setMusic('drums'); } } }
   else if (G.wave > 0 && !MON.length && G.build <= 0 && !G.starting && G.state === 'play') {
-    if (G.wave >= NWAVE) { endGame(true); return; } G.build = 25; G.gold += 20 + G.wave * 3; setMusic('calm'); if (TUT.step === 4) { TUT.step = 9; try { localStorage.setItem('guardtd_tut', '1'); } catch (_) { } } BANNER.t = 1.8; BANNER.a = 'ผ่านคลื่นที่ ' + G.wave; BANNER.b = 'โบนัสทอง +' + (20 + G.wave * 4); BANNER.red = false; sfx('coin', .6); }
+    if (G.wave >= NWAVE) { endGame(true); return; } G.build = 12; G.gold += 20 + Math.min(G.wave, 30) * 3; setMusic('calm'); if (TUT.step === 4) { TUT.step = 9; try { localStorage.setItem('guardtd_tut', '1'); } catch (_) { } } BANNER.t = 1.8; BANNER.a = 'ผ่านคลื่นที่ ' + G.wave; BANNER.b = 'โบนัสทอง +' + (20 + G.wave * 4); BANNER.red = false; sfx('coin', .6); }
   if (G.build > 0 && !G.queue.length && !MON.length && !G.starting) { G.build -= dt; if (G.build <= 0) { G.build = 0; startWave(); } }
 }
-function endGame(win) { G.state = win ? 'win' : 'lose'; BANNER.t = 0; jingle(win ? 'win' : 'lose'); G.menu = null; if (HERO) HERO.aim = -1; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
+function endGame(win) { G.state = win ? 'win' : 'lose'; G.rec = G.wave - 1; try { const kb = `guardtd_best_${MAPK}_${G.hk}`; G.newRec = G.rec > lsGet(kb); if (G.newRec) localStorage.setItem(kb, G.rec); } catch (_) { } BANNER.t = 0; jingle(win ? 'win' : 'lose'); G.menu = null; if (HERO) HERO.aim = -1; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
   try { const k = `guardtd_stars_${MAPK}_${G.hk}`; if (G.stars > (+localStorage.getItem(k) || 0)) localStorage.setItem(k, G.stars); } catch (_) { } if (G.wave > G.best) { G.best = win ? NWAVE : G.wave - 1; try { localStorage.setItem('guardtd_best', G.best); } catch (_) { } } if (HERO && win) uPlay(HERO.u, 'Cheer'); sfx(win ? 'lvl' : 'hurt', .7); }
 async function pickHero(hk) {
   G.state = 'load'; G.hk = hk; try { localStorage.setItem('guardtd_hero', hk); } catch (_) { }
@@ -806,7 +806,7 @@ function drawUI(dt) {
   if (HERO) { const [x, y, ok] = toScreen(_a.set(HERO.base.x, 1.5, HERO.base.z)); if (ok) txt('Lv ' + HERO.lv, x, y, 11 * S, '#fff8d0'); }
   // top-left: lives, gold, wave
   rr(10 * S, 10 * S, 250 * S, 34 * S, 17 * S); ui.fillStyle = 'rgba(26,20,12,.72)'; ui.fill(); heart(30 * S, 27 * S, 9 * S); txt(String(G.lives), 46 * S, 28 * S, 17 * S, '#fff', 'left'); if (G.lives < 20 && G.gold >= 100) { ui.beginPath(); ui.arc(70 * S, 18 * S, 7 * S, 0, TAU); ui.fillStyle = '#3ad04a'; ui.fill(); txt('+', 70 * S, 18.5 * S, 11 * S, '#fff', 'center', 800, 'rgba(0,60,0,.8)'); }
-  coin(92 * S, 27 * S, 9 * S); txt(String(G.gold), 106 * S, 28 * S, 17 * S, '#ffd65a', 'left'); txt(`คลื่น ${G.wave}/${NWAVE}`, 200 * S, 28 * S, 15 * S, '#fff3d2');
+  coin(92 * S, 27 * S, 9 * S); txt(String(G.gold), 106 * S, 28 * S, 17 * S, '#ffd65a', 'left'); txt(`คลื่น ${G.wave}`, 200 * S, 28 * S, 15 * S, '#fff3d2');
   pill(BTN.spd, 'เร็ว x' + G.speed, G.speed > 1); pill(BTN.pause, 'พัก', G.paused); pill(BTN.zoom, CAM.zoom > 1.05 ? 'ซูม ' + CAM.zoom.toFixed(1) : 'ซูม', CAM.zoom > 1.05); pill(BTN.px, G.px ? 'ภาพ: พิกเซล' : 'ภาพ: ปกติ', G.px); pill(BTN.snd, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false);
   // hero button + skill
   if (HERO) { const H = HERO, D = H.D, hb = BTN.hero; const done = roundBtn(hb, D.col, 0, 1, G.showRange); heroIcon(H.k, hb.x, hb.y, hb.r); done();
@@ -870,7 +870,8 @@ let RANGE_T = 0; function drawRangeRing(c, R) { RINGM.position.x = RFILL.positio
 function drawTitle() {
   const g = ui.createLinearGradient(0, 0, 0, SH); g.addColorStop(0, 'rgba(10,16,30,.55)'); g.addColorStop(1, 'rgba(10,16,30,.25)'); ui.fillStyle = g; ui.fillRect(0, 0, SW, SH);
   txt('ป้อมผู้พิทักษ์', SW / 2, 30 * S, 32 * S, '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)');
-  { const mw = Math.min(190 * S, (SW - 60 * S) / 3), mh = 40 * S, gx = 10 * S, mx0 = SW / 2 - (mw * 3 + gx * 2) / 2, my = 54 * S;   // the map row
+  txt(MAP.name + ' · ด่านไม่รู้จบ: อยู่รอดให้นานที่สุด', SW / 2, 66 * S, 15 * S, '#fff3cf', 'center', 700);
+  if (Q.get('maps') === '1') { const mw = Math.min(190 * S, (SW - 60 * S) / 3), mh = 40 * S, gx = 10 * S, mx0 = SW / 2 - (mw * 3 + gx * 2) / 2, my = 54 * S;   // the map row (hidden for now: owner "ทำแมพเดียวก่อน"; ?maps=1 shows it)
     MAPKEYS.forEach((m, i) => { const M = MAPS[m], x = mx0 + i * (mw + gx), on = m === MAPK, open = mapOpen(m); MENU.push({ k: 'map:' + m, x, y: my, w: mw, h: mh });
       rr(x, my, mw, mh, 10 * S); ui.fillStyle = on ? 'rgba(255,196,64,.92)' : open ? 'rgba(26,20,12,.75)' : 'rgba(26,20,12,.45)'; ui.fill(); ui.lineWidth = (on ? 3 : 1.5) * S; ui.strokeStyle = on ? '#fff' : 'rgba(255,230,170,.6)'; ui.stroke();
       txt(M.sub + ' · ' + M.name, x + 10 * S, my + 14 * S, 12.5 * S, on ? '#3a2208' : open ? '#fff3d2' : '#9a8a70', 'left', 800, on ? 'rgba(255,240,200,.5)' : 'rgba(0,0,0,.6)');
@@ -883,8 +884,8 @@ function drawTitle() {
     ui.beginPath(); ui.arc(x + cw / 2, y + ch * .28, ch * .18, 0, TAU); ui.fillStyle = 'rgba(0,0,0,.25)'; ui.fill(); heroIcon(k, x + cw / 2, y + ch * .28, ch * .18);
     txt(D.name, x + cw / 2, y + ch * .58, 18 * S, '#fff'); txt(D.role, x + cw / 2, y + ch * .58 + 20 * S, 11.5 * S, '#fff8e0', 'center', 600); const K4 = kitOf(k).map(q => q.name); txt(K4.slice(0, 2).join(' · '), x + cw / 2, y + ch * .58 + 36 * S, 10 * S, '#fff8e0', 'center', 600); txt(K4.slice(2).join(' · '), x + cw / 2, y + ch * .58 + 50 * S, 10 * S, '#fff8e0', 'center', 600);
     rr(x + cw * .18, y + ch - 32 * S, cw * .64, 24 * S, 12 * S); ui.fillStyle = 'rgba(30,20,10,.75)'; ui.fill(); txt('เลือก', x + cw / 2, y + ch - 20 * S, 13 * S, '#ffe9b0');
-    const st = G.starsBy[k] || 0; for (let j = 0; j < 3; j++) star(x + cw / 2 + (j - 1) * 17 * S, y + 14 * S, 7 * S, j < st); });
-  txt('เลือกแมพ แล้วเลือกฮีโร่ 1 ตัว ไปปกป้องปราสาท 20 คลื่น', SW / 2, y0 + ch + 14 * S, 12.5 * S, '#fff3cf', 'center', 600);
+    const bw0 = lsGet(`guardtd_best_${MAPK}_${k}`); if (bw0) txt('สถิติ ' + bw0 + ' คลื่น', x + cw / 2, y + 14 * S, 11 * S, '#fff8d0', 'center', 800); });
+  txt('เลือกฮีโร่ 1 ตัว · มอนมาไม่หยุด บอสทุก 5 คลื่น', SW / 2, y0 + ch + 14 * S, 12.5 * S, '#fff3cf', 'center', 600);
 }
 const MAPMSG = { t: 0, m: '' };
 // first game: point at a build spot, then the skill "+", then the wave button, then "use a skill"; remembered once wave 1 is cleared
@@ -910,8 +911,9 @@ function star(x, y, r, on) { ui.beginPath(); for (let i = 0; i < 10; i++) { cons
 function drawEnd() {
   ui.fillStyle = 'rgba(0,0,0,.45)'; ui.fillRect(0, 0, SW, SH); const win = G.state === 'win';
   txt(win ? 'ชนะ! ปราสาทปลอดภัย' : 'ปราสาทแตกแล้ว...', SW / 2, SH * .32, 32 * S, win ? '#ffe14a' : '#ff8a7a');
-  if (win) for (let i = 0; i < 3; i++) star(SW / 2 + (i - 1) * 46 * S, SH * .32 - 50 * S - (i === 1 ? 8 * S : 0), 18 * S, i < G.stars); txt(`ผ่าน ${win ? NWAVE : G.wave - 1} คลื่น · ล่าได้ ${G.kills} ตัว`, SW / 2, SH * .32 + 34 * S, 15 * S, '#fff3cf');
-  const bw = 150 * S, bh = 40 * S, y = SH * .55, nx = win && MAPKEYS.indexOf(MAPK) < MAPKEYS.length - 1; (nx ? [['again', 'เล่นอีกครั้ง', SW / 2 - bw * 1.5 - 12 * S], ['next', 'แมพถัดไป ›', SW / 2 - bw / 2], ['title', 'เปลี่ยนฮีโร่', SW / 2 + bw / 2 + 12 * S]] : [['again', 'เล่นอีกครั้ง', SW / 2 - bw - 8 * S], ['title', 'เปลี่ยนฮีโร่ / แมพ', SW / 2 + 8 * S]]).forEach(([k, l, x]) => { MENU.push({ k, x, y, w: bw, h: bh }); rr(x, y, bw, bh, bh / 2); ui.fillStyle = k === 'again' ? '#f0a020' : k === 'next' ? '#3ab04a' : 'rgba(255,255,255,.18)'; ui.fill(); txt(l, x + bw / 2, y + bh / 2, 15 * S, '#fff'); });
+  if (!win) { txt(`ไปได้ถึงคลื่นที่ ${G.rec}`, SW / 2, SH * .32 - 44 * S, 24 * S, '#ffe14a'); txt(G.newRec ? 'สถิติใหม่!' : 'สถิติ ' + lsGet(`guardtd_best_${MAPK}_${G.hk}`) + ' คลื่น', SW / 2, SH * .32 + 56 * S, 15 * S, G.newRec ? '#9fff9a' : '#fff3cf'); }
+  if (win) for (let i = 0; i < 3; i++) star(SW / 2 + (i - 1) * 46 * S, SH * .32 - 50 * S - (i === 1 ? 8 * S : 0), 18 * S, i < G.stars); txt(`ผ่าน ${G.wave - (win ? 0 : 1)} คลื่น · ล่าได้ ${G.kills} ตัว`, SW / 2, SH * .32 + 34 * S, 15 * S, '#fff3cf');
+  const bw = 150 * S, bh = 40 * S, y = SH * .55, nx = win && MAPKEYS.indexOf(MAPK) < MAPKEYS.length - 1; (nx ? [['again', 'เล่นอีกครั้ง', SW / 2 - bw * 1.5 - 12 * S], ['next', 'แมพถัดไป ›', SW / 2 - bw / 2], ['title', 'เปลี่ยนฮีโร่', SW / 2 + bw / 2 + 12 * S]] : [['again', 'เล่นอีกครั้ง', SW / 2 - bw - 8 * S], ['title', 'เปลี่ยนฮีโร่', SW / 2 + 8 * S]]).forEach(([k, l, x]) => { MENU.push({ k, x, y, w: bw, h: bh }); rr(x, y, bw, bh, bh / 2); ui.fillStyle = k === 'again' ? '#f0a020' : k === 'next' ? '#3ab04a' : 'rgba(255,255,255,.18)'; ui.fill(); txt(l, x + bw / 2, y + bh / 2, 15 * S, '#fff'); });
 }
 
 // ---------- input

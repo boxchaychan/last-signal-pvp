@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch(); const errs = [];
   for (let gi = 0; gi < games; gi++) {
     const pg = await b.newPage(); pg.on('pageerror', e => errs.push(e.message));
-    await pg.goto(`http://localhost:8000/guardtd.html?snd=0&norender=1&map=${map}&hero=${hero}`); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 120000 });
+    await pg.goto(`http://localhost:8000/guardtd.html?snd=0&norender=1&maxw=40&map=${map}&hero=${hero}`); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 120000 });
     const res = await pg.evaluate(async (useSkill) => {
       const G = GAME.G, out = []; const mix = ['archer', 'mage', 'bomb', 'archer', 'knight', 'mage', 'archer', 'bomb', 'mage', 'archer', 'knight'];
       const spend = () => { for (let k = 0; k < 4; k++) GAME.learnSkill(k);
@@ -16,7 +16,7 @@ const { chromium } = require('playwright');
         if (free.length && G.gold >= GAME.TDEF[mix[n % mix.length]].cost[0] && (n < 4 || G.gold > 140 || GAME.TOWERS.every(t => t.lv >= 1))) GAME.buildTower(free[0], mix[n % mix.length]);
         for (const t of GAME.TOWERS.slice().sort((a, c) => a.lv - c.lv)) if (t.lv < 3 && G.gold >= t.D.cost[t.lv + 1] + 20) GAME.upgradeTower(t);
         if (GAME.TOWERS.every(t => t.lv >= 3) && G.lives < 20 && G.gold >= 100) { G.gold -= 100; G.lives++; } };
-      let t = 0; for (let w = 1; w <= 20 && G.state === 'play'; w++) {
+      let t = 0; for (let w = 1; w <= (+(new URLSearchParams(location.search).get("maxw")) || 40) && G.state === "play"; w++) {
         await GAME.startWave(); let guard = 0;
         while ((G.queue.length || GAME.MON.length) && G.state === 'play' && guard++ < 4000) { GAME.sim(.5); t += .5; spend();
           if (useSkill && guard % 6 === 0) { const m = GAME.MON.filter(q => !q.dead).sort((a, c) => c.s - a.s)[0]; if (m) for (let k = 0; k < 4; k++) GAME.castSkill(k, m.pos.clone()); } }
