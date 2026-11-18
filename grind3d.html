@@ -31,6 +31,11 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + 
 const angTo = (a, b, t) => { const d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const rng = s => () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 const ARENA = 24, HERO_H = 1.75;
+// heroes (owner 2026-11-18 "เอานักดาบเข้ามาเทส"): ?hero=archer = the huntress (bow) | wing = the winged knight | demon = the demon knight (the owner's Tripo swordsmen)
+const HEROES = { archer: { name: 'นักธนูเผ่า', file: 'art/grind3d/huntress.glb', cls: 'bow' }, wing: { name: 'อัศวินปีก', file: 'art/tribe3d/people/winged_knight.glb', cls: 'sword' },
+  demon: { name: 'นักดาบปีศาจ', file: 'art/tribe3d/people/demon_knight.glb', cls: 'sword' } };
+const HK = HEROES[Q.get('hero')] ? Q.get('hero') : 'archer', HD = HEROES[HK], SWORD = HD.cls === 'sword', IDLE = SWORD ? 'Melee_2H_Idle' : 'Ranged_Bow_Idle', DMG0 = SWORD ? 26 : 22;
+let HS = 0;   // hit-stop: game time nearly stops for a moment when a sword blow lands
 
 // ---------- renderer, light, camera
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
@@ -170,11 +175,16 @@ function rigTripo(gl, kscene, clips) {
     return new THREE.VectorKeyframeTrack(t.name, t.times, v);
   })));
   const body = meshes.body || Object.values(meshes)[0]; body.geometry.computeBoundingBox(); const bb = body.geometry.boundingBox;
-  return { root: r, h: bb.max.y - bb.min.y, meshes, bone, mat: m, clips: mine };
+  return { root: r, h: bb.max.y - bb.min.y, meshes, bone, mat: m, clips: mine, k };
 }
 
 // moves: names, Thai labels for the move gallery; upper / lower body layers so she can shoot while running
-const MOVES = [['Ranged_Bow_Idle', 'ยืนถือธนู'], ['Idle', 'ยืนพัก'], ['Idle_B', 'ยืนพัก 2'], ['Ranged_Bow_Aiming_Idle', 'เล็งค้าง'], ['Ranged_Bow_Draw', 'ง้างธนู'], ['Ranged_Bow_Release', 'ปล่อยลูก'],
+const SMOVES = [['Melee_2H_Idle', 'ยืนถือดาบ'], ['Idle', 'ยืนพัก'], ['Melee_2H_Attack_Slice', 'ฟันเฉียง'], ['Melee_2H_Attack_Chop', 'ฟันผ่า'], ['Melee_2H_Attack_Spin', 'หมุนฟัน'],
+  ['Melee_2H_Attack_Stab', 'แทง'], ['Melee_2H_Attack_Spinning', 'พายุดาบ'], ['Melee_1H_Attack_Jump_Chop', 'กระโดดฟาด'], ['Melee_1H_Attack_Slice_Horizontal', 'ฟันกวาด'], ['Melee_Block', 'ตั้งการ์ด'],
+  ['Melee_Blocking', 'กันค้าง'], ['Running_A', 'วิ่ง'], ['Walking_A', 'เดิน'], ['Walking_Backwards', 'เดินถอยหลัง'], ['Running_Strafe_Left', 'วิ่งข้างซ้าย'], ['Running_Strafe_Right', 'วิ่งข้างขวา'],
+  ['Dodge_Forward', 'กลิ้งหน้า'], ['Dodge_Backward', 'กลิ้งหลัง'], ['Dodge_Left', 'กลิ้งซ้าย'], ['Dodge_Right', 'กลิ้งขวา'], ['Jump_Full_Short', 'กระโดด'], ['Hit_A', 'โดนตี'], ['Hit_B', 'โดนตี 2'],
+  ['Death_A', 'ล้ม'], ['Death_B', 'ล้ม 2'], ['Spawn_Ground', 'ลุกขึ้น'], ['Cheer', 'ดีใจ']];
+const MOVES = SWORD ? SMOVES : [['Ranged_Bow_Idle', 'ยืนถือธนู'], ['Idle', 'ยืนพัก'], ['Idle_B', 'ยืนพัก 2'], ['Ranged_Bow_Aiming_Idle', 'เล็งค้าง'], ['Ranged_Bow_Draw', 'ง้างธนู'], ['Ranged_Bow_Release', 'ปล่อยลูก'],
   ['Ranged_Bow_Draw_Up', 'ง้างขึ้นฟ้า'], ['Ranged_Bow_Release_Up', 'ยิงขึ้นฟ้า'], ['Running_HoldingBow', 'วิ่งถือธนู'], ['Running_A', 'วิ่ง'], ['Walking_A', 'เดิน'], ['Walking_Backwards', 'เดินถอยหลัง'],
   ['Running_Strafe_Left', 'วิ่งข้างซ้าย'], ['Running_Strafe_Right', 'วิ่งข้างขวา'], ['Dodge_Forward', 'กลิ้งหน้า'], ['Dodge_Backward', 'กลิ้งหลัง'], ['Dodge_Left', 'กลิ้งซ้าย'], ['Dodge_Right', 'กลิ้งขวา'],
   ['Jump_Full_Short', 'กระโดด'], ['Hit_A', 'โดนตี'], ['Hit_B', 'โดนตี 2'], ['Death_A', 'ล้ม'], ['Death_B', 'ล้ม 2'], ['Spawn_Ground', 'ลุกขึ้น'], ['PickUp', 'เก็บของ'], ['Use_Item', 'ใช้ของ'], ['Ranged_Magic_Summon', 'อัญเชิญ'], ['Cheer', 'ดีใจ']];
@@ -182,8 +192,8 @@ const LOWER = /^(root|hips|upperleg|lowerleg|foot|toes)/;
 const PULL = { Ranged_Bow_Draw: [.2, .4, 9, 9], Ranged_Bow_Draw_Up: [.2, .4, 9, 9], Ranged_Bow_Aiming_Idle: [-1, 0, 9, 9], Ranged_Bow_Release: [-1, 0, .2, .27], Ranged_Bow_Release_Up: [-1, 0, .2, .27] };   // [pull starts, full, lets go, straight] as clip fractions
 function pullAt(name, f) { const p = PULL[name]; if (!p) return 0; let v = p[0] < 0 ? 1 : clamp((f - p[0]) / (p[1] - p[0]), 0, 1); if (f >= p[2]) v *= 1 - clamp((f - p[2]) / (p[3] - p[2]), 0, 1); return v; }
 
-const P = { ready: false, pos: new V3(0, 0, 2.5), face: .35, mode: 'load', hp: 120, max: 120, lv: 1, xp: 0, kills: 0, dmg: 22, shot: null, aimHold: 0, aimDir: new V3(0, 0, -1),
-  cd: { atk: 0, dodge: 0, s1: 0, s2: 0 }, cdMax: { dodge: .6, s1: 7, s2: 4.5 }, inv: 0, hitT: 0, flash: 0, pose: 'Ranged_Bow_Idle', stats: { arrows: 0, hits: 0, dodges: 0, rains: 0, pierces: 0 } };
+const P = { ready: false, pos: new V3(0, 0, 2.5), face: .35, mode: 'load', hp: SWORD ? 160 : 120, max: SWORD ? 160 : 120, lv: 1, xp: 0, kills: 0, dmg: DMG0, shot: null, buf: 0, comboI: 0, comboWin: 0, chase: null, atk: null, aimHold: 0, aimDir: new V3(0, 0, -1),
+  cd: { atk: 0, dodge: 0, s1: 0, s2: 0 }, cdMax: { dodge: .6, s1: SWORD ? 6 : 7, s2: SWORD ? 7 : 4.5 }, inv: 0, hitT: 0, flash: 0, pose: IDLE, stats: { arrows: 0, hits: 0, dodges: 0, rains: 0, pierces: 0, swings: 0, slams: 0, spins: 0 } };
 let ACT = {}; const LY = { up: null, lo: null };
 function lay(layer, name, o = {}) {
   const A = ACT[name]; if (!A) return null; const a = A[layer], cur = LY[layer];
@@ -300,7 +310,7 @@ function xpOrb(p, xp) {
 }
 function gainXp(x) {
   P.xp += x; sfx('tick', .25, 1.4);
-  while (P.xp >= needXp()) { P.xp -= needXp(); P.lv++; P.max += 15; P.hp = P.max; P.dmg = Math.round(22 * (1 + .1 * (P.lv - 1)));
+  while (P.xp >= needXp()) { P.xp -= needXp(); P.lv++; P.max += 15; P.hp = P.max; P.dmg = Math.round(DMG0 * (1 + .1 * (P.lv - 1)));
     column(P.pos, 0xffd34a, 1.3); ring(P.pos, 0xffe07a, .4, 3.6, .8); burst(new V3(P.pos.x, 1, P.pos.z), { n: 20, color: 0xffe08a, spd: 3, up: 6, grav: -3, size: .4, life: 1 }); LVUP.t = 2; sfx('lvl', .7); }
 }
 const needXp = () => 20 + P.lv * 16;
@@ -308,10 +318,10 @@ function hurtHero(d) {
   if (P.mode === 'dead' || P.mode === 'pose') return;
   if (P.inv > 0) { num(new V3(P.pos.x, 2.2, P.pos.z), 'หลบ!', '#9fe8ff'); return; }
   P.hp -= d; P.flash = .16; num(new V3(P.pos.x, 2.1, P.pos.z), '-' + d, '#ff6a5a'); shake(.12); sfx('hurt', .5);
-  if (P.hp <= 0) { P.hp = 0; P.mode = 'dead'; P.shot = null; both('Death_A', { once: true, fade: .1 }); after(2.8, respawn); return; }
+  if (P.hp <= 0) { P.hp = 0; P.mode = 'dead'; P.shot = null; P.atk = P.slam = P.spin = P.chase = null; P.pos.y = 0; both('Death_A', { once: true, fade: .1 }); after(2.8, respawn); return; }
   if (P.mode === 'free' && !P.shot) { P.hitT = .32; lay('up', 'Hit_A', { once: true, restart: true, fade: .05, ts: 1.6 }); }
 }
-function respawn() { P.hp = P.max; P.pos.set(0, 0, 2.5); P.face = .35; P.mode = 'free'; P.inv = 1.6; both('Ranged_Bow_Idle', { fade: .2 }); ring(P.pos, 0x9fe8ff, .3, 3, .7); burst(new V3(P.pos.x, 1, P.pos.z), { n: 14, color: 0xbff0ff, up: 5, spd: 2, size: .35, life: .8, grav: -2 }); }
+function respawn() { P.hp = P.max; P.pos.set(0, 0, 2.5); P.face = .35; P.mode = 'free'; P.inv = 1.6; both(IDLE, { fade: .2 }); ring(P.pos, 0x9fe8ff, .3, 3, .7); burst(new V3(P.pos.x, 1, P.pos.z), { n: 14, color: 0xbff0ff, up: 5, spd: 2, size: .35, life: .8, grav: -2 }); }
 
 function fireArrow(dir, o = {}) {
   const big = !!o.big, g = makeArrow(big ? 2.4 : 1.15), from = STR.nock.clone(); if (!big) from.y = Math.max(.9, from.y);
@@ -353,7 +363,8 @@ function updShot(dt) {
   else if (s.ph === 'rel' && s.t >= ATK.rel) P.shot = null;
 }
 function dodge() {
-  if (P.mode !== 'free' || P.cd.dodge > 0) return;
+  if (!(P.mode === 'free' || P.mode === 'atk' && P.atk && P.atk.hit) || P.cd.dodge > 0) return;   // a sword blow's recovery can be cancelled into a dodge
+  P.atk = null; P.chase = null;
   const mv = IN.mv.lengthSq() > .02 ? IN.mv.clone().normalize() : IN.mouse.has && !IN.touchSeen ? new V3(IN.mouse.g.x - P.pos.x, 0, IN.mouse.g.z - P.pos.z).normalize() : new V3(Math.sin(P.face), 0, Math.cos(P.face));
   P.mode = 'dodge'; P.dodge = { t: 0, dir: mv, from: P.pos.clone() }; P.shot = null; P.inv = .42; P.cd.dodge = P.cdMax.dodge; P.face = Math.atan2(mv.x, mv.z); P.stats.dodges++;
   both('Dodge_Forward', { fade: .06, once: true, restart: true, ts: 1 }); dust(P.pos, 7, .6); ring(P.pos, 0xbfefff, .3, 1.4, .3, .6); sfx('whoosh', .5);
@@ -392,6 +403,114 @@ function castPierce(t) {   // ธนูทะลวง: a charged arrow that goe
   return true;
 }
 
+// ---------- the swordsman (owner 2026-11-18): a 3-hit combo, กระโดดฟาด (leap slam on a spot), พายุดาบ (whirlwind). All numbers in SWD.
+const SWD = {
+  combo: [   // hit times = where the sword hand moves fastest in each clip (measured), divided by the time scale. clip, time scale, hit (s), may chain from (s), ends (s), damage x attack, reach (m), arc (deg), lunge (m), knock-back, hit-stop (s), shake, effect
+    { clip: 'Melee_2H_Attack_Slice', ts: 1.35, hit: .3, chain: .4, end: .62, dmg: 1, reach: 2.4, arc: 160, lunge: .6, kb: .35, stop: .05, shake: .05, fx: 'side' },
+    { clip: 'Melee_2H_Attack_Chop', ts: 1.5, hit: .48, chain: .58, end: .85, dmg: 1.4, reach: 2.6, arc: 90, lunge: .8, kb: .55, stop: .07, shake: .09, fx: 'down' },
+    { clip: 'Melee_2H_Attack_Spin', ts: 1.7, hit: .52, chain: 9, end: 1.05, dmg: 3, reach: 2.9, arc: 360, lunge: .4, kb: 1.3, stop: .12, shake: .22, fx: 'spin' }],
+  buffer: .28, reset: .6, chase: 13,   // a press is remembered 0.28 s; the next swing within 0.6 s goes on with the combo; walk up to targets this far
+  slam: { clip: 'Melee_1H_Attack_Jump_Chop', ts: 1.25, range: 8, up: .12, land: .58, end: .95, R: 2.8, dmg: 2.4, kb: 1.5, h: .35 },   // the clip jumps by itself (hips up 0.24-0.46 s)
+  whirl: { clip: 'Melee_2H_Attack_Spinning', ts: 1.25, dur: 1.9, tick: .22, R: 2.5, dmg: .55, kb: .3, spd: 3.2 } };
+const skill1 = t => SWORD ? castSlam(t) : castRain(t), skill2 = t => SWORD ? castWhirl() : castPierce(t);
+function wantAtk() { return IN.atkHeld || IN.keyAtk || (IN.mouse.held && IN.mouse.shoot) || P.buf > 0 || AUTO.on && !!nearest(SWD.chase); }
+function updSword(dt) {
+  P.buf = Math.max(0, P.buf - dt); P.comboWin = Math.max(0, P.comboWin - dt); if (P.comboWin <= 0 && P.mode !== 'atk') P.comboI = 0;
+  if (P.mode !== 'free' || P.hitT > 0) return;
+  if (!wantAtk()) { P.chase = null; return; }
+  const a = aimPoint() || { p: P.pos.clone().add(new V3(Math.sin(P.face), 0, Math.cos(P.face))) }, S = SWD.combo[P.comboI];
+  if (a.e && Math.hypot(a.p.x - P.pos.x, a.p.z - P.pos.z) > S.reach + a.e.r - .25) { P.chase = a.e; return; }   // walk up to it first
+  P.chase = null; swing(P.comboI, a.p);
+}
+function swing(i, p) {
+  const S = SWD.combo[i]; P.mode = 'atk'; P.buf = 0; P.atk = { i, S, t: 0, hit: false, lf: 0, lunge: S.lunge };
+  if (p) { const dx = p.x - P.pos.x, dz = p.z - P.pos.z; if (dx * dx + dz * dz > .01) P.face = Math.atan2(dx, dz); P.atk.lunge = clamp(Math.hypot(dx, dz) - 1.2, 0, S.lunge); }   // never run into the target
+  both(S.clip, { once: true, restart: true, fade: .06, ts: S.ts }); P.stats.swings++; sfx('whoosh', .45, rnd(.9, 1.1) * (i === 2 ? .8 : 1));
+}
+function swordFree(dt) {   // walk / run, or walk up to the target the attack is aimed at
+  if (P.chase && (P.chase.dead || IN.mv.lengthSq() > .02)) P.chase = null;
+  const mv = IN.mv.clone(); if (P.chase) { mv.set(P.chase.pos.x - P.pos.x, 0, P.chase.pos.z - P.pos.z); if (mv.lengthSq() > 1e-4) mv.normalize(); }
+  const L = mv.length(); P.pos.addScaledVector(mv, 5.6 * dt); if (L > .1) P.face = angTo(P.face, Math.atan2(mv.x, mv.z), 1 - Math.exp(-dt * 16));
+  const loco = L > .1 ? 'Running_A' : IDLE; lay('lo', loco, { fade: .15, ts: L > .1 ? Math.max(.6, L) : 1 }); if (P.hitT <= 0) upToLoco(loco, .15);
+}
+function swordMode(dt) {   // true while a sword move owns the hero
+  if (P.mode === 'atk') {
+    const A = P.atk, S = A.S; A.t += dt; const f = Math.sin(clamp(A.t / S.hit, 0, 1) * Math.PI / 2);
+    P.pos.x += Math.sin(P.face) * A.lunge * (f - A.lf); P.pos.z += Math.cos(P.face) * A.lunge * (f - A.lf); A.lf = f;   // a step into the blow
+    if (!A.hit && A.t >= S.hit) { A.hit = true; swordHit(S); }
+    if (A.hit && A.t >= S.chain && A.i < 2 && wantAtk()) {   // chain into the next blow when the target is still in reach
+      const a = aimPoint(), N = SWD.combo[A.i + 1]; if (!a || !a.e || Math.hypot(a.e.pos.x - P.pos.x, a.e.pos.z - P.pos.z) < N.reach + a.e.r + .6) { swing(A.i + 1, a ? a.p : null); return true; } }
+    if (A.t >= S.end) { P.mode = 'free'; P.comboI = (A.i + 1) % 3; P.comboWin = A.i === 2 ? 0 : SWD.reset; P.atk = null; }
+    return true;
+  }
+  if (P.mode === 'slam') {
+    const L = P.slam, W = SWD.slam; L.t += dt; const k = clamp((L.t - W.up) / (W.land - W.up), 0, 1), e = k * k * (3 - 2 * k);
+    P.pos.x = lerp(L.from.x, L.to.x, e); P.pos.z = lerp(L.from.z, L.to.z, e); P.pos.y = Math.sin(k * Math.PI) * W.h * L.hk;
+    if (!L.hit && L.t >= W.land) { L.hit = true; P.pos.y = 0; slamHit(L.to); }
+    if (L.t >= W.end) { P.mode = 'free'; P.slam = null; }
+    return true;
+  }
+  if (P.mode === 'spin') {
+    const Sp = P.spin, W = SWD.whirl; Sp.t += dt; Sp.tk -= dt;
+    const mv = IN.mv.clone(); if (mv.lengthSq() < .02) { const e = nearest(7); if (e) { mv.set(e.pos.x - P.pos.x, 0, e.pos.z - P.pos.z); if (mv.length() > 1) mv.normalize().multiplyScalar(.7); else mv.set(0, 0, 0); } }
+    P.pos.addScaledVector(mv, W.spd * dt);
+    if (Sp.tk <= 0) { Sp.tk = W.tick; let n = 0;
+      for (const e of targets()) { const dx = e.pos.x - P.pos.x, dz = e.pos.z - P.pos.z; if (dx * dx + dz * dz < (W.R + e.r) ** 2) { hitEnemy(e, P.dmg * W.dmg * rnd(.9, 1.1), new V3(dx, 0, dz).normalize(), W.kb, Math.random() < .1); n++; } }
+      slashFx({ fx: 'spin', reach: W.R }, .22); if (n) { HS = Math.max(HS, .03); shake(.05); } sfx('whoosh', .3, rnd(.7, .85)); }
+    if (Sp.t >= W.dur) { P.mode = 'free'; P.spin = null; both(IDLE, { fade: .15 }); dust(P.pos, 6, .6); }
+    return true;
+  }
+  return false;
+}
+function swordHit(S) {   // every target in reach and inside the arc in front
+  const fx = Math.sin(P.face), fz = Math.cos(P.face), c = Math.cos(S.arc * Math.PI / 360); let n = 0;
+  for (const e of targets()) { const dx = e.pos.x - P.pos.x, dz = e.pos.z - P.pos.z, d = Math.hypot(dx, dz); if (d > S.reach + e.r) continue;
+    if (S.arc < 360 && d > e.r + .4 && (dx * fx + dz * fz) / d < c) continue;
+    const crit = Math.random() < .15; hitEnemy(e, P.dmg * S.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), new V3(dx, 0, dz).normalize(), S.kb, crit); n++; }
+  slashFx(S); if (n) { HS = Math.max(HS, S.stop); shake(S.shake); } else shake(S.shake * .3);
+  if (S.fx === 'down') { const p = new V3(P.pos.x + fx * S.reach * .7, 0, P.pos.z + fz * S.reach * .7); ring(p, 0xffd27a, .2, 1.3, .3); dust(p, 5, .55); burst(new V3(p.x, .2, p.z), { n: 8, color: 0xffc060, spd: 4, up: 3, size: .35, life: .35 }); }
+  if (S.fx === 'spin') { ring(P.pos, 0xfff0c0, .5, S.reach * 1.2, .4); dust(P.pos, 10, .7); }
+}
+function castSlam(t) {   // กระโดดฟาด: leap to a spot on the ground and smash it
+  if (!(P.mode === 'free' || P.mode === 'atk' && P.atk && P.atk.hit) || P.cd.s1 > 0) return false; const W = SWD.slam, tg = skillTarget(t, W.range), d = Math.hypot(tg.x - P.pos.x, tg.z - P.pos.z);
+  P.mode = 'slam'; P.atk = null; P.chase = null; P.cd.s1 = P.cdMax.s1; P.slam = { t: 0, from: P.pos.clone(), to: tg, hit: false, hk: clamp(d / W.range + .3, .3, 1) }; P.stats.slams++;
+  if (d > .05) P.face = Math.atan2(tg.x - P.pos.x, tg.z - P.pos.z);
+  both(W.clip, { once: true, restart: true, fade: .06, ts: W.ts }); disc(tg, 0xff8a3a, W.R, W.land + .3); dust(P.pos, 5, .5); sfx('whoosh', .6, .75);
+  return true;
+}
+function slamHit(c) {
+  const W = SWD.slam; let n = 0;
+  for (const e of targets()) { const dx = e.pos.x - c.x, dz = e.pos.z - c.z; if (dx * dx + dz * dz > (W.R + e.r) ** 2) continue; const crit = Math.random() < .2;
+    hitEnemy(e, P.dmg * W.dmg * rnd(.9, 1.1) * (crit ? 1.8 : 1), new V3(dx, 0, dz).normalize(), W.kb, crit); n++; }
+  ring(c, 0xffe7a0, .3, W.R * 1.3, .45); ring(c, 0xff7a2a, .2, W.R * .85, .35, .9); disc(c, 0xffb050, W.R * .8, .35, .7);
+  burst(new V3(c.x, .3, c.z), { n: 24, color: 0xffc860, spd: 7, up: 5, size: .5, life: .55 }); dust(c, 14, .9); shake(.32); HS = Math.max(HS, n ? .11 : .05); sfx('hit2', .9, .7);
+}
+function castWhirl() {   // พายุดาบ: spin for 1.9 s, hitting everything around 4 times a second; drifts toward the nearest enemy or where the stick points
+  if (!(P.mode === 'free' || P.mode === 'atk' && P.atk && P.atk.hit) || P.cd.s2 > 0) return false; const W = SWD.whirl;
+  P.mode = 'spin'; P.atk = null; P.chase = null; P.cd.s2 = P.cdMax.s2; P.spin = { t: 0, tk: .1 }; P.stats.spins++;
+  both(W.clip, { fade: .08, ts: W.ts, restart: true }); ring(P.pos, 0xcfe4ff, .3, 2.6, .4); sfx('whoosh', .7, .7);
+  return true;
+}
+// a blade swoosh: an arc strip (u along the swing, v inner -> outer edge), revealed along the swing, then fading
+const SLASH = canvasTex(64, 16, g => { const a = g.createLinearGradient(0, 0, 0, 16); a.addColorStop(0, 'rgba(255,255,255,.55)'); a.addColorStop(.14, 'rgba(255,255,255,1)'); a.addColorStop(.5, 'rgba(255,255,255,.35)'); a.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = a; g.fillRect(0, 0, 64, 16); g.globalCompositeOperation = 'destination-in'; const b = g.createLinearGradient(0, 0, 64, 0); b.addColorStop(0, 'rgba(0,0,0,0)'); b.addColorStop(.75, 'rgba(0,0,0,1)'); b.addColorStop(1, 'rgba(0,0,0,1)'); g.fillStyle = b; g.fillRect(0, 0, 64, 16); });
+function arcGeo(r0, r1, a0, a1, n) {
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= n; i++) { const u = i / n, a = a0 + (a1 - a0) * u, c = Math.cos(a), s = Math.sin(a); pos.push(c * r0, s * r0, 0, c * r1, s * r1, 0); uv.push(u, 0, u, 1); if (i < n) { const j = i * 2; idx.push(j, j + 1, j + 2, j + 1, j + 3, j + 2); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); return g;
+}
+function slashFx(S, life = .32) {
+  const n = 28, g = new THREE.Group(); g.position.set(P.pos.x, 0, P.pos.z); g.rotation.y = P.face; let geo;
+  if (S.fx === 'down') geo = arcGeo(S.reach * .35, S.reach * .95, 1.9, -.45, n);   // overhead -> in front, low
+  else if (S.fx === 'spin') geo = arcGeo(S.reach * .45, S.reach * 1.02, 0, TAU, n);
+  else geo = arcGeo(S.reach * .4, S.reach * 1.02, -Math.PI / 2 - 1.45, -Math.PI / 2 + 1.45, n);   // his right -> front -> left
+  const blue = S.fx === 'spin' && life < .3, core = new THREE.Mesh(geo, addMat(0xfff6dc, SLASH, 1)), glow = new THREE.Mesh(geo, addMat(blue ? 0x9cc8ff : 0xffa640, SLASH, .7)); glow.scale.setScalar(1.08);
+  const under = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: blue ? 0x2a4fb0 : 0xc8401a, map: SLASH, transparent: true, opacity: .62, depthWrite: false, side: THREE.DoubleSide })); under.scale.setScalar(1.14); under.renderOrder = 3; core.renderOrder = glow.renderOrder = 4;   // a deep colour under the glow: additive light alone vanishes on the pale earth
+  for (const m of [under, core, glow]) { if (S.fx === 'down') { m.rotation.y = -Math.PI / 2; m.position.y = 1.1; } else { m.rotation.x = -Math.PI / 2; m.position.y = S.fx === 'spin' ? .75 : 1.0; if (S.fx === 'side') m.rotation.y = .18; } g.add(m); }
+  addFx(g, life, (q, k) => { const rev = clamp(k / .38, 0, 1); geo.setDrawRange(0, Math.max(6, Math.ceil(n * rev) * 6)); const o = 1 - clamp((k - .38) / .62, 0, 1); core.material.opacity = o; glow.material.opacity = .7 * o; under.material.opacity = .62 * o; q.scale.setScalar(1 + k * .08); },
+    () => { geo.dispose(); core.material.dispose(); glow.material.dispose(); under.material.dispose(); });
+}
+
 // ---------- input: joystick (left half), buttons (right), keyboard + mouse on PC
 const IN = { keys: {}, mv: new V3(), stick: null, atkId: null, atkHeld: false, keyAtk: false, aim: null, rot: null, touchSeen: !!(window.matchMedia && matchMedia('(pointer: coarse)').matches),
   mouse: { x: 0, y: 0, has: false, held: false, shoot: false, tgt: null, g: new V3() }, goto: null };
@@ -405,14 +524,16 @@ function layout() {
   BTN = { atk: { x: SW - 92 * S, y: SH - 92 * S, r: 52 * S }, dodge: { x: SW - 200 * S, y: SH - 52 * S, r: 33 * S }, s1: { x: SW - 202 * S, y: SH - 152 * S, r: 35 * S }, s2: { x: SW - 112 * S, y: SH - 210 * S, r: 35 * S } };
   const tw = 96 * S, th = 32 * S, ty = 12 * S; let tx = SW - 12 * S - tw;
   for (const k of ['moves', 'zoom', 'auto', 'snd']) { BTN[k] = { rx: tx, ry: ty, w: tw, h: th }; tx -= tw + 8 * S; }
+  BTN.hero = { rx: 14 * S, ry: 92 * S, w: 168 * S, h: th };   // switch hero (reloads the page with ?hero=)
 }
 function hitBtn(x, y) {
   for (const [k, b] of Object.entries(BTN)) { if (b.r ? Math.hypot(x - b.x, y - b.y) < b.r * 1.12 : x >= b.rx && x <= b.rx + b.w && y >= b.ry && y <= b.ry + b.h) return k; } return null;
 }
 function topBtn(k) {
   if (k === 'moves') openGallery(); else if (k === 'zoom') CAM.zi = (CAM.zi + 1) % CAM.zs.length; else if (k === 'auto') AUTO.on = !AUTO.on; else if (k === 'snd') SND.on = !SND.on;
+  else if (k === 'hero') { const ks = Object.keys(HEROES); Q.set('hero', ks[(ks.indexOf(HK) + 1) % ks.length]); location.search = Q.toString(); }
 }
-function aimWorld(a) { const dx = a.x - a.sx, dy = a.y - a.sy, L = Math.hypot(dx, dy); if (L < 12 * S) return null; const k = Math.min(1, L / (80 * S)) * (a.sk === 's1' ? 11 : 14) / L; return new V3(P.pos.x + dx * k, 0, P.pos.z + dy * k); }
+function aimWorld(a) { const dx = a.x - a.sx, dy = a.y - a.sy, L = Math.hypot(dx, dy); if (L < 12 * S) return null; const k = Math.min(1, L / (80 * S)) * (a.sk === 's1' ? (SWORD ? SWD.slam.range : 11) : 14) / L; return new V3(P.pos.x + dx * k, 0, P.pos.z + dy * k); }
 uic.addEventListener('contextmenu', e => e.preventDefault());
 uic.addEventListener('pointerdown', e => {
   e.preventDefault(); audioInit(); const x = e.clientX, y = e.clientY, mouse = e.pointerType === 'mouse'; if (!mouse) IN.touchSeen = true;
@@ -421,13 +542,13 @@ uic.addEventListener('pointerdown', e => {
   const b = hitBtn(x, y);
   if (b) {
     try { uic.setPointerCapture(e.pointerId); } catch (_) { }
-    if (b === 'atk') { IN.atkId = e.pointerId; IN.atkHeld = true; } else if (b === 'dodge') dodge();
+    if (b === 'atk') { IN.atkId = e.pointerId; IN.atkHeld = true; P.buf = SWD.buffer; } else if (b === 'dodge') dodge();
     else if (b === 's1' || b === 's2') IN.aim = { id: e.pointerId, sk: b, sx: x, sy: y, x, y, mouse }; else topBtn(b); return;
   }
   if (mouse) {
     IN.mouse.x = x; IN.mouse.y = y; IN.mouse.has = true; screenToGround(x, y, IN.mouse.g);
     if (e.button === 2) { dodge(); return; } if (e.button !== 0) return;
-    const en = pickAt(x, y); IN.mouse.held = true; IN.mouse.shoot = !!en || e.shiftKey; IN.mouse.tgt = en;
+    const en = pickAt(x, y); IN.mouse.held = true; IN.mouse.shoot = !!en || e.shiftKey; IN.mouse.tgt = en; if (IN.mouse.shoot) P.buf = SWD.buffer;
     if (!IN.mouse.shoot) { IN.goto = IN.mouse.g.clone(); ring(IN.goto, 0xfff3c0, .15, .7, .35, .9); }   // click on the ground = walk there (hold = follow the cursor)
     else IN.goto = null; return;
   }
@@ -445,7 +566,7 @@ function pointerEnd(e) {
   if (IN.atkId === e.pointerId) { IN.atkId = null; IN.atkHeld = false; }
   if (IN.rot && IN.rot.id === e.pointerId) IN.rot = null;
   if (e.pointerType === 'mouse' && e.type === 'pointerup') { IN.mouse.held = false; IN.mouse.shoot = false; IN.mouse.tgt = null; }
-  if (IN.aim && IN.aim.id === e.pointerId) { const a = IN.aim; IN.aim = null; if (e.type === 'pointercancel') return; const t = a.mouse ? null : aimWorld(a); (a.sk === 's1' ? castRain : castPierce)(t); }
+  if (IN.aim && IN.aim.id === e.pointerId) { const a = IN.aim; IN.aim = null; if (e.type === 'pointercancel') return; const t = a.mouse ? null : aimWorld(a); (a.sk === 's1' ? skill1 : skill2)(t); }
 }
 uic.addEventListener('pointerup', pointerEnd); uic.addEventListener('pointercancel', pointerEnd);
 uic.addEventListener('wheel', e => { CAM.zi = clamp(CAM.zi + (e.deltaY > 0 ? 1 : -1), 0, CAM.zs.length - 1); }, { passive: true });
@@ -456,9 +577,9 @@ addEventListener('keydown', e => {
   audioInit(); const k = keyOf(e); IN.keys[k] = true; if (!P.ready) return; if (/^(w|a|s|d|arrow)/.test(k)) IN.goto = null;
   if (P.mode === 'pose') { if (k === 'escape' || k === 'm') closeGallery(); return; }
   if (k === ' ' || k === 'shift') { e.preventDefault(); dodge(); }
-  if (k === 'q') castRain(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
-  if (k === 'e') castPierce(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
-  if (k === 'j' || k === 'k') IN.keyAtk = true; if (k === 'z') topBtn('zoom'); if (k === 'm') openGallery(); if (k === 'r') topBtn('auto');
+  if (k === 'q') skill1(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
+  if (k === 'e') skill2(IN.mouse.has && !IN.touchSeen ? IN.mouse.g.clone() : null);
+  if (k === 'j' || k === 'k') { IN.keyAtk = true; P.buf = SWD.buffer; } if (k === 'z') topBtn('zoom'); if (k === 'm') openGallery(); if (k === 'r') topBtn('auto');
 });
 addEventListener('keyup', e => { const k = keyOf(e); IN.keys[k] = false; if (k === 'j' || k === 'k') IN.keyAtk = false; });
 addEventListener('blur', () => { IN.keys = {}; IN.mouse.held = false; IN.mouse.shoot = false; IN.keyAtk = false; });
@@ -505,8 +626,8 @@ function updCam(dt) {
 // ---------- move gallery (every move she has, on loop; drag to turn her)
 let GAL = [];
 function openGallery() { if (P.mode !== 'free') return; P.mode = 'pose'; P.shot = null; IN.stick = null; IN.atkHeld = false; P.face = .55; setPose(P.pose); }
-function closeGallery() { P.mode = 'free'; both('Ranged_Bow_Idle', { fade: .2 }); }
-const ONCE = /^(Death|Dodge|Hit|Spawn|Jump|PickUp|Use_Item|Cheer|Ranged_Magic)/;
+function closeGallery() { P.mode = 'free'; both(IDLE, { fade: .2 }); }
+const ONCE = /^(Death|Dodge|Hit|Spawn|Jump|PickUp|Use_Item|Cheer|Ranged_Magic|Melee_(1H|2H)_Attack_(?!Spinning)|Melee_Block$)/;
 function setPose(n) { P.pose = n; P.poseWait = 0; both(n, { fade: .12, restart: true, once: ONCE.test(n) }); }   // one-shot moves stop at the end, wait, play again
 function galleryHit(x, y) { for (const g of GAL) if (x >= g.x && x <= g.x + g.w && y >= g.y && y <= g.y + g.h) return g.k; return null; }
 
@@ -516,7 +637,9 @@ function updHero(dt) {
   for (const k in P.cd) P.cd[k] = Math.max(0, P.cd[k] - dt);
   P.inv = Math.max(0, P.inv - dt); P.flash = Math.max(0, P.flash - dt); P.aimHold = Math.max(0, P.aimHold - dt);
   if (P.hitT > 0) { P.hitT -= dt; }
-  if (P.mode === 'free') {
+  if (P.mode === 'free' && SWORD) swordFree(dt);
+  else if (SWORD && swordMode(dt)) { /* a sword move owns the hero */ }
+  else if (P.mode === 'free') {
     if (P.shot && P.shot.ph === 'draw' && (IN.stick || IN.mv.lengthSq() > .02)) { /* keep shooting while moving */ }
     const mvL = IN.mv.length(), aiming = !!P.shot || P.aimHold > 0, spd = aiming ? 3.7 : 5.4;
     P.pos.addScaledVector(IN.mv, spd * dt);
@@ -530,11 +653,11 @@ function updHero(dt) {
     lay('lo', loco, { fade: .18, ts }); if (!P.shot && P.hitT <= 0) upToLoco(loco);
   } else if (P.mode === 'dodge') {
     const D = P.dodge; D.t += dt; const k = clamp(D.t / .4, 0, 1); P.pos.copy(D.from).addScaledVector(D.dir, 3.6 * (1 - (1 - k) ** 2.2));
-    if (D.t >= .4) { P.mode = 'free'; dust(P.pos, 4, .5); lay('lo', 'Ranged_Bow_Idle', { fade: .12 }); upToLoco('Ranged_Bow_Idle', .12); }
+    if (D.t >= .4) { P.mode = 'free'; dust(P.pos, 4, .5); lay('lo', IDLE, { fade: .12 }); upToLoco(IDLE, .12); }
   } else if (P.mode === 'pose') {
     const c = LY.up && LY.up.getClip(); if (c && ONCE.test(P.pose) && LY.up.time >= c.duration - .02) { P.poseWait += dt; if (P.poseWait > .7) { P.poseWait = 0; both(P.pose, { restart: true, fade: 0, once: true }); } }
   }
-  updShot(dt);
+  if (SWORD) updSword(dt); else updShot(dt);
   // stay inside the clearing, never inside a dummy or a monster
   const L = Math.hypot(P.pos.x, P.pos.z); if (L > ARENA) P.pos.multiplyScalar(ARENA / L);
   if (P.mode !== 'pose') for (const o of [...DUM, ...MON]) { if (o.dead) continue; const dx = P.pos.x - o.pos.x, dz = P.pos.z - o.pos.z, d = Math.hypot(dx, dz), m = o.r + .32; if (d < m && d > 1e-4) { P.pos.x = o.pos.x + dx / d * m; P.pos.z = o.pos.z + dz / d * m; } }
@@ -571,7 +694,7 @@ function frame() {
   updCam(dt); renderer.render(scene, camera); drawUI(dt);
 }
 function tick(dt) {
-  NOW += dt;
+  NOW += dt; if (HS > 0) { HS -= dt; dt *= .12; }
   if (P.ready) {
     readMove(); if (IN.mouse.has) screenToGround(IN.mouse.x, IN.mouse.y, IN.mouse.g);
     updHero(dt); HERO.mixer.update(dt); updString();
@@ -588,7 +711,18 @@ function txt(s, x, y, size, color, align = 'center', weight = 800, stroke = 'rgb
 function bar(x, y, w, h, f, c1, c2) { rr(x, y, w, h, h / 2); ui.fillStyle = 'rgba(20,14,8,.75)'; ui.fill(); if (f > 0) { rr(x + 2, y + 2, Math.max(h - 4, (w - 4) * f), h - 4, (h - 4) / 2); const g = ui.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, c1); g.addColorStop(1, c2); ui.fillStyle = g; ui.fill(); } }
 function icon(k, x, y, r) {
   ui.save(); ui.translate(x, y); ui.strokeStyle = '#fff8e6'; ui.fillStyle = '#fff8e6'; ui.lineCap = 'round'; ui.lineJoin = 'round'; ui.lineWidth = r * .1;
-  if (k === 'atk') { ui.beginPath(); ui.arc(-r * .55, 0, r * .6, -1.1, 1.1); ui.stroke(); ui.lineWidth = r * .04; ui.beginPath(); ui.moveTo(-r * .55 + Math.cos(-1.1) * r * .6, Math.sin(-1.1) * r * .6); ui.lineTo(-r * .55 + Math.cos(1.1) * r * .6, Math.sin(1.1) * r * .6); ui.stroke();
+  if (SWORD && k === 'atk') {   // a big sword
+    ui.lineWidth = r * .16; ui.beginPath(); ui.moveTo(-r * .2, r * .2); ui.lineTo(r * .48, -r * .48); ui.stroke(); ui.beginPath(); ui.moveTo(r * .48, -r * .48); ui.lineTo(r * .6, -r * .6); ui.lineWidth = r * .08; ui.stroke();
+    ui.lineWidth = r * .1; ui.beginPath(); ui.moveTo(-r * .42, r * .02); ui.lineTo(-r * .02, r * .42); ui.stroke(); ui.beginPath(); ui.moveTo(-r * .24, r * .24); ui.lineTo(-r * .48, r * .48); ui.stroke(); ui.beginPath(); ui.arc(-r * .52, r * .52, r * .08, 0, TAU); ui.fill(); }
+  else if (SWORD && k === 's1') {   // a blade coming down on the ground
+    ui.lineWidth = r * .1; ui.beginPath(); ui.moveTo(-r * .55, r * .42); ui.lineTo(r * .55, r * .42); ui.stroke(); ui.beginPath(); ui.moveTo(0, -r * .55); ui.lineTo(0, r * .18); ui.stroke();
+    ui.beginPath(); ui.moveTo(0, r * .34); ui.lineTo(-r * .14, r * .1); ui.lineTo(r * .14, r * .1); ui.closePath(); ui.fill(); ui.lineWidth = r * .06;
+    for (const a of [-2.5, -2.0, -1.15, -.65]) { ui.beginPath(); ui.moveTo(Math.cos(a) * r * .22, r * .42 + Math.sin(a) * r * .22); ui.lineTo(Math.cos(a) * r * .42, r * .42 + Math.sin(a) * r * .42); ui.stroke(); } }
+  else if (SWORD && k === 's2') {   // a whirl
+    ui.lineWidth = r * .1; for (const a0 of [0, Math.PI]) { ui.beginPath(); ui.arc(0, 0, r * .45, a0 + .3, a0 + 2.5); ui.stroke(); const a = a0 + 2.5, x1 = Math.cos(a) * r * .45, y1 = Math.sin(a) * r * .45;
+      ui.beginPath(); ui.moveTo(x1 + Math.cos(a + 2.4) * r * .2, y1 + Math.sin(a + 2.4) * r * .2); ui.lineTo(x1, y1); ui.lineTo(x1 + Math.cos(a - .9) * r * .2, y1 + Math.sin(a - .9) * r * .2); ui.stroke(); }
+    ui.beginPath(); ui.arc(0, 0, r * .1, 0, TAU); ui.fill(); }
+  else if (k === 'atk') { ui.beginPath(); ui.arc(-r * .55, 0, r * .6, -1.1, 1.1); ui.stroke(); ui.lineWidth = r * .04; ui.beginPath(); ui.moveTo(-r * .55 + Math.cos(-1.1) * r * .6, Math.sin(-1.1) * r * .6); ui.lineTo(-r * .55 + Math.cos(1.1) * r * .6, Math.sin(1.1) * r * .6); ui.stroke();
     ui.lineWidth = r * .07; ui.beginPath(); ui.moveTo(-r * .45, 0); ui.lineTo(r * .5, 0); ui.stroke(); ui.beginPath(); ui.moveTo(r * .62, 0); ui.lineTo(r * .4, -r * .14); ui.lineTo(r * .4, r * .14); ui.closePath(); ui.fill(); }
   else if (k === 'dodge') { for (const o of [-.22, .18]) { ui.beginPath(); ui.moveTo(o * r - r * .18, -r * .32); ui.lineTo(o * r + r * .14, 0); ui.lineTo(o * r - r * .18, r * .32); ui.stroke(); } }
   else if (k === 's1') { for (const [ox, oy] of [[-.32, -.1], [0, .12], [.32, -.06]]) { ui.lineWidth = r * .07; ui.beginPath(); ui.moveTo(ox * r, oy * r - r * .42); ui.lineTo(ox * r, oy * r + r * .22); ui.stroke(); ui.beginPath(); ui.moveTo(ox * r, oy * r + r * .36); ui.lineTo(ox * r - r * .1, oy * r + r * .16); ui.lineTo(ox * r + r * .1, oy * r + r * .16); ui.closePath(); ui.fill(); } }
@@ -620,9 +754,9 @@ function drawUI(dt) {
   bar(hx + 58 * S, hy + 8 * S, 190 * S, 18 * S, P.hp / P.max, '#ff8a6a', '#d23a28'); txt(`${Math.ceil(P.hp)} / ${P.max}`, hx + 153 * S, hy + 17.5 * S, 12 * S, '#fff', 'center', 800, 'rgba(60,10,0,.8)');
   bar(hx + 58 * S, hy + 30 * S, 160 * S, 11 * S, P.xp / needXp(), '#ffe27a', '#e3a21c'); txt(`ล่าได้ ${P.kills}`, hx + 226 * S, hy + 36 * S, 12 * S, '#fff2c8', 'left', 800);
   while (DPS.length && NOW - DPS[0][0] > 3) DPS.shift(); if (DPS.length) txt(`ดาเมจใส่หุ่น ${Math.round(DPS.reduce((s, q) => s + q[1], 0) / 3)} / วินาที`, hx, hy + 66 * S, 13 * S, '#fff2c8', 'left', 800);
-  txt('นักธนูเผ่า · ห้องทดลองตัวละคร', (SW - 250 * S) / 2 + 10 * S, SH - 14 * S, 12 * S, 'rgba(255,248,225,.75)', 'center', 600, 'rgba(0,0,0,.45)');
-  if (!IN.touchSeen) txt('คลิกพื้น / WASD เดิน · คลิกศัตรูยิง · Space กลิ้ง · Q ฝนธนู · E ทะลวง · R ยิงเอง', (SW - 250 * S) / 2 + 10 * S, SH - 34 * S, 12.5 * S, '#fff6dc', 'center', 600, 'rgba(0,0,0,.55)');
-  for (const [k, l, on] of [['moves', 'ดูท่าทั้งหมด', false], ['zoom', 'ซูม ' + (CAM.zi + 1), false], ['auto', AUTO.on ? 'ยิงเอง: เปิด' : 'ยิงเอง: ปิด', AUTO.on], ['snd', SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false]]) pill(k, l, on);
+  txt(HD.name + ' · ห้องทดลองตัวละคร', (SW - 250 * S) / 2 + 10 * S, SH - 14 * S, 12 * S, 'rgba(255,248,225,.75)', 'center', 600, 'rgba(0,0,0,.45)');
+  if (!IN.touchSeen) txt(SWORD ? 'คลิกพื้น / WASD เดิน · คลิกศัตรูฟัน (กดค้าง = คอมโบ) · Space กลิ้ง · Q กระโดดฟาด · E พายุดาบ · R ตีเอง' : 'คลิกพื้น / WASD เดิน · คลิกศัตรูยิง · Space กลิ้ง · Q ฝนธนู · E ทะลวง · R ยิงเอง', (SW - 250 * S) / 2 + 10 * S, SH - 34 * S, 12.5 * S, '#fff6dc', 'center', 600, 'rgba(0,0,0,.55)');
+  for (const [k, l, on] of [['moves', 'ดูท่าทั้งหมด', false], ['zoom', 'ซูม ' + (CAM.zi + 1), false], ['auto', (SWORD ? 'ตีเอง: ' : 'ยิงเอง: ') + (AUTO.on ? 'เปิด' : 'ปิด'), AUTO.on], ['snd', SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false], ['hero', 'ตัวละคร: ' + HD.name + '  ›', false]]) pill(k, l, on);
   // joystick
   if (IN.stick) { const s = IN.stick, R = 60 * S, dx = s.x - s.sx, dy = s.y - s.sy, L = Math.hypot(dx, dy), k = L > R ? R / L : 1;
     ui.beginPath(); ui.arc(s.sx, s.sy, R, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.12)'; ui.fill(); ui.lineWidth = 3 * S; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke();
@@ -630,10 +764,11 @@ function drawUI(dt) {
   else if (IN.touchSeen) { ui.beginPath(); ui.arc(110 * S, SH - 100 * S, 60 * S, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.1)'; ui.fill(); ui.lineWidth = 2.5; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke();
     ui.beginPath(); ui.arc(110 * S, SH - 100 * S, 24 * S, 0, TAU); ui.fillStyle = 'rgba(255,240,200,.35)'; ui.fill(); if (NOW < 12) txt('แตะค้างแล้วลาก ตรงซ้ายจอ = เดิน', 110 * S, SH - 175 * S, 13 * S, '#fff6dc', 'center', 800, 'rgba(0,0,0,.6)'); }
   // skill aiming (drag from the button)
-  if (IN.aim && !IN.aim.mouse) { const t = aimWorld(IN.aim); if (t) { const [x, y] = toScreen(t); const [px, py] = toScreen(P.pos); ui.setLineDash([8 * S, 8 * S]); ui.lineWidth = 3 * S; ui.strokeStyle = 'rgba(255,230,140,.8)'; ui.beginPath(); ui.moveTo(px, py); ui.lineTo(x, y); ui.stroke(); ui.setLineDash([]);
-    ui.beginPath(); ui.arc(x, y, (IN.aim.sk === 's1' ? 40 : 14) * S, 0, TAU); ui.strokeStyle = '#ffe07a'; ui.stroke(); } }
+  if (IN.aim && !IN.aim.mouse && !(SWORD && IN.aim.sk === 's2')) { const t = aimWorld(IN.aim); if (t) { const [x, y] = toScreen(t); const [px, py] = toScreen(P.pos); ui.setLineDash([8 * S, 8 * S]); ui.lineWidth = 3 * S; ui.strokeStyle = 'rgba(255,230,140,.8)'; ui.beginPath(); ui.moveTo(px, py); ui.lineTo(x, y); ui.stroke(); ui.setLineDash([]);
+    ui.beginPath(); ui.arc(x, y, (IN.aim.sk === 's1' ? (SWORD ? 34 : 40) : 14) * S, 0, TAU); ui.strokeStyle = '#ffe07a'; ui.stroke(); } }
   roundBtn('atk', '', ['#ffcf6a', '#c56a12'], 0, 1, IN.atkHeld); roundBtn('dodge', 'กลิ้ง', ['#9fe2ff', '#2d7fb8'], P.cd.dodge, P.cdMax.dodge);
-  roundBtn('s1', 'ฝนธนู', ['#ffe58a', '#d18a10'], P.cd.s1, P.cdMax.s1, IN.aim && IN.aim.sk === 's1'); roundBtn('s2', 'ทะลวง', ['#a8f2ff', '#1f8fae'], P.cd.s2, P.cdMax.s2, IN.aim && IN.aim.sk === 's2');
+  roundBtn('s1', SWORD ? 'กระโดดฟาด' : 'ฝนธนู', SWORD ? ['#ffc27a', '#c4421a'] : ['#ffe58a', '#d18a10'], P.cd.s1, P.cdMax.s1, IN.aim && IN.aim.sk === 's1');
+  roundBtn('s2', SWORD ? 'พายุดาบ' : 'ทะลวง', SWORD ? ['#cfe4ff', '#3a5fc0'] : ['#a8f2ff', '#1f8fae'], P.cd.s2, P.cdMax.s2, IN.aim && IN.aim.sk === 's2');
   if (LVUP.t > 0) { LVUP.t -= dt; const k = LVUP.t; ui.globalAlpha = Math.min(1, k * 2); txt('เลเวลอัพ!', SW / 2, SH * .26 - (2 - k) * 8 * S, 40 * S * (k > 1.8 ? 1 + (k - 1.8) * 2 : 1), '#ffe14a', 'center', 800, 'rgba(110,50,0,.9)'); txt(`Lv ${P.lv} · พลังโจมตี ${P.dmg}`, SW / 2, SH * .26 + 34 * S, 16 * S, '#fff3cf'); ui.globalAlpha = 1; }
   if (P.mode === 'dead') txt('ล้มแล้ว... กำลังฟื้น', SW / 2, SH * .4, 26 * S, '#ffd0c0');
 }
@@ -641,7 +776,7 @@ function drawGallery() {
   const cols = 3, bw = 104 * S, bh = 30 * S, gap = 6 * S, pad = 12 * S, rows = Math.ceil(MOVES.length / cols), pw = cols * bw + (cols - 1) * gap + pad * 2;
   const top = 12 * S, ph = Math.min(SH - 24 * S, 46 * S + rows * (bh + gap) + 50 * S), sc = Math.min(1, (ph - 96 * S) / (rows * (bh + gap)));
   rr(12 * S, top, pw, ph, 14 * S); ui.fillStyle = 'rgba(24,16,8,.82)'; ui.fill(); ui.lineWidth = 2; ui.strokeStyle = 'rgba(255,220,150,.6)'; ui.stroke();
-  txt('ท่าทั้งหมดของนักธนู (ฟรีจาก KayKit)', 12 * S + pw / 2, top + 22 * S, 15 * S, '#ffe9b0'); GAL = [];
+  txt('ท่าทั้งหมดของ' + HD.name + ' (ฟรีจาก KayKit)', 12 * S + pw / 2, top + 22 * S, 15 * S, '#ffe9b0'); GAL = [];
   MOVES.forEach(([k, th], i) => { const c = i % cols, r = (i / cols) | 0, x = 12 * S + pad + c * (bw + gap), y = top + 44 * S + r * (bh + gap) * sc, h = bh * sc;
     rr(x, y, bw, h, 8 * S); ui.fillStyle = P.pose === k ? 'rgba(255,196,64,.95)' : 'rgba(255,255,255,.1)'; ui.fill(); txt(th, x + bw / 2, y + h / 2 + 1, Math.min(14 * S, h * .5), P.pose === k ? '#3a2208' : '#fff3d2', 'center', 800, P.pose === k ? 'rgba(255,240,200,.5)' : 'rgba(0,0,0,.5)'); GAL.push({ k, x, y, w: bw, h }); });
   const cy = top + ph - 34 * S; rr(12 * S + pad, cy, pw - pad * 2, 26 * S, 13 * S); ui.fillStyle = 'rgba(255,120,80,.9)'; ui.fill(); txt('กลับไปเล่น', 12 * S + pw / 2, cy + 14 * S, 14 * S, '#fff'); GAL.push({ k: 'close', x: 12 * S + pad, y: cy, w: pw - pad * 2, h: 26 * S });
@@ -664,21 +799,28 @@ function natMat(mn) {
 }
 
 // ---------- loading
-const LOAD = { msg: 'กำลังโหลดนักธนู...', f: .05 };
+const LOAD = { msg: 'กำลังโหลด' + HD.name + '...', f: .05 };
 async function boot() {
   try { await document.fonts.load('800 20px Kanit', 'ก'); } catch (_) { }
   const ld = new THREE.GLTFLoader();
   try {
-    const parts = [ld.loadAsync('art/tribe3d/people/Knight.glb'), ld.loadAsync('art/grind3d/huntress.glb'), ld.loadAsync('art/grind3d/hero_anims.glb')]; let done = 0;
+    const parts = [ld.loadAsync('art/tribe3d/people/Knight.glb'), ld.loadAsync(HD.file), ld.loadAsync('art/grind3d/hero_anims.glb')]; let done = 0;
+    if (SWORD) parts.push(ld.loadAsync('art/tribe3d/people/weapons.glb'), new THREE.TextureLoader().loadAsync('art/tribe3d/people/tex_knigh_2.png'));
     parts.forEach(p => p.then(() => { LOAD.f = .1 + .8 * (++done / parts.length); }));
-    const [KN, HU, AN] = await Promise.all(parts);
+    const [KN, HU, AN, WP, WT] = await Promise.all(parts);
     for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');   // the joined move file renamed duplicate bones hips_1...
-    HERO = rigTripo(HU, KN.scene, AN.animations); setupString(HERO);
+    HERO = rigTripo(HU, KN.scene, AN.animations);
+    if (!SWORD) setupString(HERO);
+    else {   // the KayKit two-handed sword (obsidian / crimson / gold knight colours) in the right hand slot, as in the tribe game; horns / wings make the model taller than its body
+      const src = WP.scene.getObjectByName('sword_2handed_color'), bn = HERO.bone.handslotr; WT.flipY = false; WT.encoding = THREE.sRGBEncoding;
+      if (src && bn) { const sm = new THREE.MeshStandardMaterial({ map: WT, roughness: .45, metalness: scene.environment ? .4 : 0, envMapIntensity: .9 }), sw = src.clone();
+        sw.traverse(o => { if (o.isMesh) { o.material = sm; o.castShadow = true; } }); sw.scale.setScalar(HERO.k * .5); bn.add(sw); HERO.sword = sw; }
+      HERO.h /= 1.12; }
     HERO.root.scale.setScalar(HERO_H / HERO.h); scene.add(HERO.root);
     HERO.mixer = new THREE.AnimationMixer(HERO.root);
     for (const c of HERO.clips) { const up = new THREE.AnimationClip(c.name + '_up', c.duration, c.tracks.filter(t => !LOWER.test(t.name))), lo = new THREE.AnimationClip(c.name + '_lo', c.duration, c.tracks.filter(t => LOWER.test(t.name)));
       ACT[c.name] = { up: HERO.mixer.clipAction(up), lo: HERO.mixer.clipAction(lo) }; }
-    both('Ranged_Bow_Idle', { fade: 0 }); P.mode = 'free'; P.ready = true; HERO.mixer.update(0);
+    both(IDLE, { fade: 0 }); P.mode = 'free'; P.ready = true; HERO.mixer.update(0);
   } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
   // after she shows: the woods around the clearing, then the monsters
   const NAT = { MapleTree_1: [5.5, 7], MapleTree_3: [5.5, 7], NormalTree_2: [5, 6.5], NormalTree_4: [5, 6.5], PineTree_1: [6, 8], BirchTree_1: [5.5, 7], Bush_Large_Flowers: [1.1, 1.5], Bush_Flowers: [.8, 1.1], Bush_Small: [.6, .8], Flower_1_Clump: [.35, .5], Flower_3_Clump: [.35, .5], Flower_5_Clump: [.35, .5], Grass_Large: [.45, .7], Grass_Small: [.3, .45] };
@@ -702,7 +844,7 @@ async function boot() {
   place(['Flower_1_Clump', 'Flower_3_Clump', 'Flower_5_Clump', 'Grass_Large', 'Grass_Small'], 260, 4, ARENA + 8, 4);
   if (MAXMON > 0) await Promise.all(Object.entries(MDEF).map(([k, D]) => ld.loadAsync(D.file).then(g => { const b = new THREE.Box3().setFromObject(g.scene); D.src = { scene: g.scene, clips: g.animations, h: Math.max(.01, b.max.y - b.min.y) }; }).catch(e => console.warn('monster', k, e.message))));
 }
-window.GAME = { P, MON, DUM, FX, ARROWS, STR, IN, get HERO() { return HERO; }, LY, toScreen: (x, y, z) => toScreen(new V3(x, y, z)), sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { readMove(); tick(dt); } }, api: { dodge, castRain, castPierce, openGallery, closeGallery, setPose, fireAt: (x, z) => { P.aimDir.set(x - P.pos.x, 0, z - P.pos.z).normalize(); fireArrow(P.aimDir); }, spawn: spawnMon } };
+window.GAME = { P, MON, DUM, FX, ARROWS, STR, IN, get HERO() { return HERO; }, LY, toScreen: (x, y, z) => toScreen(new V3(x, y, z)), sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { readMove(); tick(dt); } }, SWD, HK, api: { dodge, castRain, castPierce, castSlam, castWhirl, swing: i => swing(i || 0, null), openGallery, closeGallery, setPose, fireAt: (x, z) => { P.aimDir.set(x - P.pos.x, 0, z - P.pos.z).normalize(); fireArrow(P.aimDir); }, spawn: spawnMon } };
 boot(); frame();
 </script>
 </body>
