@@ -208,7 +208,18 @@ function audioInit() {
   if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; } try { AU.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; }
   const F = { hit: 'impactSoft_medium_001', boom: 'impactSoft_heavy_000', coin: 'handleCoins', build: 'impactWood_heavy_000', lvl: 'jingles_HIT15', tick: 'click_002', slash: 'drawKnife1', hurt: 'impactPunch_medium_000' };
   for (const [k, f] of Object.entries(F)) fetch(`art/tribe3d/sfx/${f}.ogg`).then(r => r.arrayBuffer()).then(b => AU.ctx.decodeAudioData(b)).then(b => { AU.buf[k] = b; }).catch(() => { });
+  for (const [k, f] of Object.entries({ calm: 'music/day_jungleloop', battle: 'music/night_jungle_battle_loop', drums: 'music/raid_prehistoric_drums', win: 'sfx/jingles_STEEL02', lose: 'sfx/jingles_STEEL14' }))
+    fetch(`art/tribe3d/${f}.ogg`).then(r => r.arrayBuffer()).then(b => AU.ctx.decodeAudioData(b)).then(b => { AU.buf[k] = b; if (k === MUS.want) setMusic(k, true); }).catch(() => { });
 }
+// music: one looping track at a time, cross-faded (OpenGameArt CC0, see vendor/kenney-audio/NOTICE.md)
+const MUS = { cur: null, want: 'calm', src: null, gain: null };
+function setMusic(k, force) {
+  MUS.want = k; const C = AU.ctx; if (!C || (MUS.cur === k && !force)) return; const b = AU.buf[k]; if (!b) return;
+  const t = C.currentTime; if (MUS.src) { const g0 = MUS.gain, s0 = MUS.src; g0.gain.setTargetAtTime(0, t, .4); setTimeout(() => { try { s0.stop(); } catch (_) { } }, 2500); }
+  const g = C.createGain(); g.gain.setValueAtTime(0, t); g.gain.setTargetAtTime(SND.on ? .32 : 0, t, .6); g.connect(C.destination); const sN = C.createBufferSource(); sN.buffer = b; sN.loop = true; sN.connect(g); sN.start(t);
+  MUS.src = sN; MUS.gain = g; MUS.cur = k;
+}
+function jingle(k) { const C = AU.ctx, b = AU.buf[k]; if (!C || !b || !SND.on) return; if (MUS.gain) MUS.gain.gain.setTargetAtTime(.06, C.currentTime, .3); const g = C.createGain(); g.gain.value = .55; g.connect(C.destination); const sN = C.createBufferSource(); sN.buffer = b; sN.connect(g); sN.start(); }
 let SFXN = 0;
 function sfx(k, vol = 1, rate = 1) {
   const C = AU.ctx; if (!C || !SND.on || C.state !== 'running' || SFXN > 14) return; SFXN++; const g = C.createGain(); g.connect(C.destination); const t = C.currentTime;
@@ -422,22 +433,22 @@ const HEROES = {
 const HKEYS = ['archer', 'wing', 'demon', 'dark', 'hood'];
 // skills: aim 'spot' / 'line' = tap the button, then tap the ground (anywhere on the map); null = at once. pow = x hero attack per step
 const KITS = {
-  archer: [{ id: 'rain', name: 'ฝนธนู', aim: 'spot', cd: 12, pow: [1.1, 1.5, 2], r: [1.4, 1.6, 1.85], anim: 'Ranged_Bow_Release_Up' },
-    { id: 'pierce', name: 'ธนูทะลวง', aim: 'line', cd: 9, pow: [2.5, 3.5, 5], anim: 'Ranged_Bow_Release' },
-    { id: 'frost', name: 'ศรน้ำแข็ง', aim: 'spot', cd: 14, pow: [.8, 1.1, 1.5], r: [1.5, 1.7, 1.9], dur: [2, 3, 4], anim: 'Ranged_Bow_Release' },
-    { id: 'storm', name: 'พายุศร', aim: null, cd: 30, ult: true, dur: [4, 5, 6.5], anim: 'Cheer' }],
-  wing: [{ id: 'bash', name: 'กระแทกโล่', aim: null, cd: 10, pow: [2, 2.6, 3.4], dur: [1.2, 1.6, 2], anim: 'Q_Shield_OneShot' },
-    { id: 'dash', name: 'พุ่งโล่', aim: 'spot', cd: 11, pow: [2, 3, 4], anim: 'Q_Shield_Dash' },
-    { id: 'holy', name: 'แสงศักดิ์สิทธิ์', aim: 'spot', cd: 14, pow: [3, 4.5, 6], r: [1.5, 1.7, 1.9], anim: 'Q_Spell_Simple_Shoot' },
-    { id: 'wings', name: 'ปีกสวรรค์', aim: null, cd: 35, ult: true, pow: [6, 8, 11], dur: [6, 7, 8], anim: 'Melee_1H_Attack_Jump_Chop' }],
-  demon: [{ id: 'spin', name: 'พายุดาบ', aim: null, cd: 12, pow: [.8, 1.1, 1.4], anim: 'Melee_2H_Attack_Spinning' },
-    { id: 'wave', name: 'คลื่นดาบ', aim: 'line', cd: 9, pow: [2.5, 3.5, 5], anim: 'Melee_2H_Attack_Slice' },
-    { id: 'chain', name: 'โซ่ปีศาจ', aim: 'spot', cd: 15, pow: [1, 1.3, 1.6], r: [1.6, 1.8, 2], dur: [1.5, 2, 2.6], anim: 'Q_Spell_Simple_Shoot' },
-    { id: 'giant', name: 'ดาบอสูร', aim: 'spot', cd: 35, ult: true, pow: [8, 11, 15], r: [2, 2.2, 2.5], anim: 'Melee_2H_Attack_Chop' }],
-  hood: [{ id: 'fire', name: 'ลูกไฟเวท', aim: 'spot', cd: 8, pow: [2, 2.8, 3.8], r: [1.3, 1.5, 1.7], anim: 'Q_Spell_Simple_Shoot' },
-    { id: 'bolt', name: 'สายฟ้าลูกโซ่', aim: null, cd: 10, pow: [1.6, 2.2, 3], n: [4, 5, 7], anim: 'Q_Spell_Simple_Shoot' },
-    { id: 'freeze', name: 'วงเวทเยือกแข็ง', aim: 'spot', cd: 15, pow: [.6, .8, 1], r: [1.6, 1.8, 2], dur: [1.5, 2, 2.6], anim: 'Q_Spell_Simple_Shoot' },
-    { id: 'meteor', name: 'อุกกาบาต', aim: 'spot', cd: 35, ult: true, pow: [9, 12, 16], r: [2.3, 2.5, 2.8], anim: 'Ranged_Magic_Summon' }],
+  archer: [{ id: 'rain', name: 'ฝนธนู', desc: 'ลูกธนูตกเป็นวง 3 ระลอก', aim: 'spot', cd: 12, pow: [1.1, 1.5, 2], r: [1.4, 1.6, 1.85], anim: 'Ranged_Bow_Release_Up' },
+    { id: 'pierce', name: 'ธนูทะลวง', desc: 'ยิงทะลุทุกตัวเป็นแนวยาว', aim: 'line', cd: 9, pow: [2.5, 3.5, 5], anim: 'Ranged_Bow_Release' },
+    { id: 'frost', name: 'ศรน้ำแข็ง', desc: 'ระเบิดน้ำแข็ง ทำให้มอนช้า', aim: 'spot', cd: 14, pow: [.8, 1.1, 1.5], r: [1.5, 1.7, 1.9], dur: [2, 3, 4], anim: 'Ranged_Bow_Release' },
+    { id: 'storm', name: 'พายุศร', desc: 'ไม้ตาย: ยิงเร็ว 3 เท่า ทีละ 3 ตัว', aim: null, cd: 30, ult: true, dur: [4, 5, 6.5], anim: 'Cheer' }],
+  wing: [{ id: 'bash', name: 'กระแทกโล่', desc: 'คลื่นกระแทกรอบตัว มอนมึน', aim: null, cd: 10, pow: [2, 2.6, 3.4], dur: [1.2, 1.6, 2], anim: 'Q_Shield_OneShot' },
+    { id: 'dash', name: 'พุ่งโล่', desc: 'พุ่งไปชนแล้วกลับฐาน', aim: 'spot', cd: 11, pow: [2, 3, 4], anim: 'Q_Shield_Dash' },
+    { id: 'holy', name: 'แสงศักดิ์สิทธิ์', desc: 'เสาแสงลงที่จุด ดาเมจเวท', aim: 'spot', cd: 14, pow: [3, 4.5, 6], r: [1.5, 1.7, 1.9], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'wings', name: 'ปีกสวรรค์', desc: 'ไม้ตาย: กระโดดทุบ ป้อมทุกป้อมยิงเร็วขึ้น', aim: null, cd: 35, ult: true, pow: [6, 8, 11], dur: [6, 7, 8], anim: 'Melee_1H_Attack_Jump_Chop' }],
+  demon: [{ id: 'spin', name: 'พายุดาบ', desc: 'หมุนฟันรอบตัว 5 ครั้ง', aim: null, cd: 12, pow: [.8, 1.1, 1.4], anim: 'Melee_2H_Attack_Spinning' },
+    { id: 'wave', name: 'คลื่นดาบ', desc: 'ฟันคลื่นพลังพุ่งเป็นแนว', aim: 'line', cd: 9, pow: [2.5, 3.5, 5], anim: 'Melee_2H_Attack_Slice' },
+    { id: 'chain', name: 'โซ่ปีศาจ', desc: 'ตรึงมอนในวงให้อยู่กับที่', aim: 'spot', cd: 15, pow: [1, 1.3, 1.6], r: [1.6, 1.8, 2], dur: [1.5, 2, 2.6], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'giant', name: 'ดาบอสูร', desc: 'ไม้ตาย: ดาบยักษ์ตกจากฟ้า', aim: 'spot', cd: 35, ult: true, pow: [8, 11, 15], r: [2, 2.2, 2.5], anim: 'Melee_2H_Attack_Chop' }],
+  hood: [{ id: 'fire', name: 'ลูกไฟเวท', desc: 'ลูกไฟระเบิดเป็นวง', aim: 'spot', cd: 8, pow: [2, 2.8, 3.8], r: [1.3, 1.5, 1.7], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'bolt', name: 'สายฟ้าลูกโซ่', desc: 'สายฟ้ากระโดดโดนหลายตัว', aim: null, cd: 10, pow: [1.6, 2.2, 3], n: [4, 5, 7], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'freeze', name: 'วงเวทเยือกแข็ง', desc: 'แช่แข็งมอนในวง', aim: 'spot', cd: 15, pow: [.6, .8, 1], r: [1.6, 1.8, 2], dur: [1.5, 2, 2.6], anim: 'Q_Spell_Simple_Shoot' },
+    { id: 'meteor', name: 'อุกกาบาต', desc: 'ไม้ตาย: อุกกาบาตตกใส่จุด', aim: 'spot', cd: 35, ult: true, pow: [9, 12, 16], r: [2.3, 2.5, 2.8], anim: 'Ranged_Magic_Summon' }],
 };
 const kitOf = k => KITS[HEROES[k].kit || k];
 let HERO = null;
@@ -628,21 +639,21 @@ function preloadWave(n) { if (n > NWAVE) return Promise.resolve(); return Promis
 async function startWave() {
   if (G.state !== 'play' || G.starting || G.queue.length || MON.length) return; const n = G.wave + 1; if (n > NWAVE) return;
   if (G.wave > 0 && G.build > 0) G.gold += Math.round(G.build);   // calling early pays the seconds left
-  G.starting = true; G.build = 0; await preloadWave(n); G.starting = false; G.wave = n; G.queue = waveList(n); G.spawnT = .5; BANNER.t = 2; BANNER.a = 'คลื่นที่ ' + n; BANNER.b = BOSSW[n] ? 'บอส: ' + MOBNAME[BOSSW[n]] : ''; preloadWave(n + 1); sfx('tick', .6);
+  G.starting = true; G.build = 0; await preloadWave(n); G.starting = false; G.wave = n; G.queue = waveList(n); G.spawnT = .5; setMusic('battle'); if (TUT.step === 3) TUT.step = 4; BANNER.t = 2; BANNER.a = 'คลื่นที่ ' + n; BANNER.b = BOSSW[n] ? 'บอส: ' + MOBNAME[BOSSW[n]] : ''; preloadWave(n + 1); sfx('tick', .6);
 }
 function updWaves(dt) {
   updCombo();
-  if (G.queue.length) { G.spawnT -= dt; if (G.spawnT <= 0) { const q = G.queue.shift(); const mm = spawnMon(q.k, q.hpMul, q.golden); if (q.golden && mm) { BANNER.t = 1.6; BANNER.a = 'ก็อบลินทองมาแล้ว!'; BANNER.b = 'ฆ่าให้ทันก่อนมันหนี'; BANNER.red = false; } G.spawnT = G.queue.length ? G.queue[0].t : 0; if (MOB[q.k].boss) { BANNER.t = 2.2; BANNER.a = 'บอสมาแล้ว!'; BANNER.b = MOBNAME[q.k]; BANNER.red = true; shake(.25); sfx('boom', .7, .6); } } }
+  if (G.queue.length) { G.spawnT -= dt; if (G.spawnT <= 0) { const q = G.queue.shift(); const mm = spawnMon(q.k, q.hpMul, q.golden); if (q.golden && mm) { BANNER.t = 1.6; BANNER.a = 'ก็อบลินทองมาแล้ว!'; BANNER.b = 'ฆ่าให้ทันก่อนมันหนี'; BANNER.red = false; } G.spawnT = G.queue.length ? G.queue[0].t : 0; if (MOB[q.k].boss) { BANNER.t = 2.2; BANNER.a = 'บอสมาแล้ว!'; BANNER.b = MOBNAME[q.k]; BANNER.red = true; shake(.25); sfx('boom', .7, .6); setMusic('drums'); } } }
   else if (G.wave > 0 && !MON.length && G.build <= 0 && !G.starting && G.state === 'play') {
-    if (G.wave >= NWAVE) { endGame(true); return; } G.build = 25; G.gold += 20 + G.wave * 4; BANNER.t = 1.8; BANNER.a = 'ผ่านคลื่นที่ ' + G.wave; BANNER.b = 'โบนัสทอง +' + (20 + G.wave * 4); BANNER.red = false; sfx('coin', .6); }
+    if (G.wave >= NWAVE) { endGame(true); return; } G.build = 25; G.gold += 20 + G.wave * 4; setMusic('calm'); if (TUT.step === 4) { TUT.step = 9; try { localStorage.setItem('guardtd_tut', '1'); } catch (_) { } } BANNER.t = 1.8; BANNER.a = 'ผ่านคลื่นที่ ' + G.wave; BANNER.b = 'โบนัสทอง +' + (20 + G.wave * 4); BANNER.red = false; sfx('coin', .6); }
   if (G.build > 0 && !G.queue.length && !MON.length && !G.starting) { G.build -= dt; if (G.build <= 0) { G.build = 0; startWave(); } }
 }
-function endGame(win) { G.state = win ? 'win' : 'lose'; BANNER.t = 0; G.menu = null; if (HERO) HERO.aim = -1; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
+function endGame(win) { G.state = win ? 'win' : 'lose'; BANNER.t = 0; jingle(win ? 'win' : 'lose'); G.menu = null; if (HERO) HERO.aim = -1; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
   try { const k = `guardtd_stars_${MAPK}_${G.hk}`; if (G.stars > (+localStorage.getItem(k) || 0)) localStorage.setItem(k, G.stars); } catch (_) { } if (G.wave > G.best) { G.best = win ? NWAVE : G.wave - 1; try { localStorage.setItem('guardtd_best', G.best); } catch (_) { } } if (HERO && win) uPlay(HERO.u, 'Cheer'); sfx(win ? 'lvl' : 'hurt', .7); }
 async function pickHero(hk) {
   G.state = 'load'; G.hk = hk; try { localStorage.setItem('guardtd_hero', hk); } catch (_) { }
   try { await loadHero(hk); await preloadWave(1); } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
-  G.state = 'play'; G.build = 0; BANNER.t = 2.6; BANNER.a = 'ปกป้องปราสาท!'; BANNER.b = 'แตะแท่นหินเพื่อสร้างป้อม · แตะพื้นเพื่อสั่งฮีโร่เดิน'; BANNER.red = false;
+  G.state = 'play'; G.build = 0; BANNER.t = 2.6; BANNER.a = 'ปกป้องปราสาท!'; BANNER.b = MAP.name + ' · แตะแท่นหินเพื่อสร้างป้อม'; setMusic('calm'); BANNER.red = false;
 }
 function goPage(o) { const p = new URLSearchParams(); p.set('map', o.map || MAPK); if (o.hero) p.set('hero', o.hero); if (o.menu) p.set('menu', '1'); if (G.px) p.set('px', '1'); if (Q.get('snd') === '0') p.set('snd', '0'); location.search = p.toString(); }
 function restart() { goPage({ hero: G.hk }); }
@@ -731,7 +742,7 @@ let SW = 800, SH = 450, DPR = 1, S = 1, BTN = {}, MENU = [];
 function layout() { S = clamp(Math.min(SW, SH) / 400, .8, 1.4);
   BTN = { wave: { rx: SW / 2 - 64 * S, ry: SH - 56 * S, w: 128 * S, h: 44 * S }, hero: { x: 46 * S, y: SH - 46 * S, r: 32 * S },
     sk: [{ x: SW - 150 * S, y: SH - 50 * S, r: 27 * S }, { x: SW - 140 * S, y: SH - 124 * S, r: 27 * S }, { x: SW - 66 * S, y: SH - 158 * S, r: 27 * S }, { x: SW - 60 * S, y: SH - 62 * S, r: 36 * S }] };
-  const tw = 86 * S, th = 30 * S; let tx = SW - 12 * S - tw; for (const k of ['snd', 'px', 'spd']) { BTN[k] = { rx: tx, ry: 10 * S, w: tw, h: th }; tx -= tw + 6 * S; } }
+  const tw = 86 * S, th = 30 * S; let tx = SW - 12 * S - tw; for (const k of ['snd', 'px', 'spd', 'pause']) { BTN[k] = { rx: tx, ry: 10 * S, w: k === 'pause' ? 56 * S : tw, h: th }; tx -= (k === 'spd' ? 56 * S : tw) + 6 * S; } }
 function rr(x, y, w, h, r) { ui.beginPath(); ui.moveTo(x + r, y); ui.arcTo(x + w, y, x + w, y + h, r); ui.arcTo(x + w, y + h, x, y + h, r); ui.arcTo(x, y + h, x, y, r); ui.arcTo(x, y, x + w, y, r); ui.closePath(); }
 function txt(s, x, y, size, color, align = 'center', weight = 800, stroke = 'rgba(28,16,6,.9)') { ui.font = `${weight} ${size}px Kanit, sans-serif`; ui.textAlign = align; ui.textBaseline = 'middle'; ui.lineJoin = 'round'; ui.lineWidth = Math.max(2, size * .22); ui.strokeStyle = stroke; ui.strokeText(s, x, y); ui.fillStyle = color; ui.fillText(s, x, y); }
 function bar(x, y, w, h, f, c1, c2) { rr(x, y, w, h, h / 2); ui.fillStyle = 'rgba(20,14,8,.75)'; ui.fill(); if (f > 0) { rr(x + 1.5, y + 1.5, Math.max(h - 3, (w - 3) * f), h - 3, (h - 3) / 2); const g = ui.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, c1); g.addColorStop(1, c2); ui.fillStyle = g; ui.fill(); } }
@@ -790,7 +801,7 @@ function drawUI(dt) {
   // top-left: lives, gold, wave
   rr(10 * S, 10 * S, 250 * S, 34 * S, 17 * S); ui.fillStyle = 'rgba(26,20,12,.72)'; ui.fill(); heart(30 * S, 27 * S, 9 * S); txt(String(G.lives), 46 * S, 28 * S, 17 * S, '#fff', 'left');
   coin(92 * S, 27 * S, 9 * S); txt(String(G.gold), 106 * S, 28 * S, 17 * S, '#ffd65a', 'left'); txt(`คลื่น ${G.wave}/${NWAVE}`, 200 * S, 28 * S, 15 * S, '#fff3d2');
-  pill(BTN.spd, 'เร็ว x' + G.speed, G.speed > 1); pill(BTN.px, G.px ? 'ภาพ: พิกเซล' : 'ภาพ: ปกติ', G.px); pill(BTN.snd, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false);
+  pill(BTN.spd, 'เร็ว x' + G.speed, G.speed > 1); pill(BTN.pause, 'พัก', G.paused); pill(BTN.px, G.px ? 'ภาพ: พิกเซล' : 'ภาพ: ปกติ', G.px); pill(BTN.snd, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false);
   // hero button + skill
   if (HERO) { const H = HERO, D = H.D, hb = BTN.hero; const done = roundBtn(hb, D.col, 0, 1, G.showRange); heroIcon(H.k, hb.x, hb.y, hb.r); done();
     txt(D.name + ' Lv ' + H.lv, hb.x + hb.r + 6 * S, hb.y - 16 * S, 12.5 * S, '#fff6dc', 'left'); bar(hb.x + hb.r + 6 * S, hb.y - 4 * S, 86 * S, 7 * S, H.lv >= MAXLV ? 1 : H.xp / needXp(), '#ffe27a', '#e3a21c');
@@ -801,7 +812,7 @@ function drawUI(dt) {
       for (let j = 0; j < 3; j++) { ui.beginPath(); ui.arc(b.x + (j - 1) * 8 * S, b.y + b.r + 6 * S, 3 * S, 0, TAU); ui.fillStyle = j < lv ? '#ffd34a' : 'rgba(0,0,0,.45)'; ui.fill(); }
       if (!ok && !canLearn(i)) txt(H.lv < skReq(i, 1) ? 'Lv' + skReq(i, 1) : '', b.x, b.y, 12 * S, '#fff');
       if (canLearn(i)) { const px = b.x + b.r * .72, py = b.y - b.r * .72, pr = 11 * S * (1 + .08 * Math.sin(NOW * 8)); ui.beginPath(); ui.arc(px, py, pr, 0, TAU); ui.fillStyle = '#3ad04a'; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = '#fff'; ui.stroke(); txt('+', px, py + 1, 15 * S, '#fff', 'center', 800, 'rgba(0,60,0,.8)'); } });
-    if (H.aim >= 0) txt('แตะพื้นที่จะใช้ "' + H.kit[H.aim].name + '"', SW / 2, SH - 72 * S, 15 * S, '#ffe9a0'); }
+    if (H.aim >= 0) { rr(SW / 2 - 150 * S, 52 * S, 300 * S, 28 * S, 14 * S); ui.fillStyle = 'rgba(26,20,12,.8)'; ui.fill(); txt('แตะพื้นที่จะใช้ "' + H.kit[H.aim].name + '"', SW / 2, 66 * S, 14 * S, '#ffe9a0'); } }
   // next wave
   if (G.state === 'play' && !G.queue.length && !MON.length && G.wave < NWAVE) { const b = BTN.wave, pulse = .5 + .5 * Math.sin(NOW * 5); rr(b.rx, b.ry, b.w, b.h, b.h / 2); const g = ui.createLinearGradient(0, b.ry, 0, b.ry + b.h); g.addColorStop(0, '#ff8a5a'); g.addColorStop(1, '#c8321e'); ui.fillStyle = g; ui.fill(); ui.lineWidth = 2 + pulse * 2; ui.strokeStyle = '#ffe9c0'; ui.stroke();
     txt(G.wave ? 'เริ่มคลื่นถัดไป' : 'เริ่มคลื่นแรก', b.rx + b.w / 2, b.ry + b.h / 2 - (G.wave ? 6 : 0) * S, 14 * S, '#fff'); if (G.wave && G.build > 0) txt(`อีก ${Math.ceil(G.build)} วิ · เรียกเร็ว +${Math.ceil(G.build)} ทอง`, b.rx + b.w / 2, b.ry + b.h / 2 + 11 * S, 9.5 * S, '#ffe9c0', 'center', 600); }
@@ -813,6 +824,8 @@ function drawUI(dt) {
   if (BANNER.t > 0) { BANNER.t -= dt; ui.globalAlpha = Math.min(1, BANNER.t * 2); txt(BANNER.a, SW / 2, SH * .26, 32 * S, BANNER.red ? '#ff6a4a' : '#ffe14a', 'center', 800, BANNER.red ? 'rgba(60,0,0,.9)' : 'rgba(110,50,0,.9)'); if (BANNER.b) txt(BANNER.b, SW / 2, SH * .26 + 30 * S, 15 * S, '#fff3cf'); ui.globalAlpha = 1; }
   else if (LVUP.t > 0) { LVUP.t -= dt; ui.globalAlpha = Math.min(1, LVUP.t * 2); txt('ฮีโร่เลเวลอัพ! Lv ' + HERO.lv, SW / 2, SH * .22, 22 * S, '#ffe14a'); ui.globalAlpha = 1; }
   if (G.menu) drawMenu();
+  drawTut(); if (TIP.t > 0) { TIP.t -= dt; ui.globalAlpha = Math.min(1, TIP.t * 3); const b = BTN.sk[1]; rr(SW - 330 * S, b.y - b.r - 62 * S, 300 * S, 30 * S, 12 * S); ui.fillStyle = 'rgba(26,20,12,.85)'; ui.fill(); txt(TIP.s, SW - 180 * S, b.y - b.r - 46 * S, 12.5 * S, '#fff3d2'); ui.globalAlpha = 1; }
+  if (G.paused) { ui.fillStyle = 'rgba(0,0,0,.35)'; ui.fillRect(0, 0, SW, SH); txt('พักเกม', SW / 2, SH * .42, 34 * S, '#fff'); txt('แตะที่ไหนก็ได้เพื่อเล่นต่อ', SW / 2, SH * .42 + 34 * S, 15 * S, '#fff3cf'); }
   if (FLASH.t > 0) { FLASH.t -= dt; ui.fillStyle = `rgba(255,40,30,${FLASH.t * .5})`; ui.fillRect(0, 0, SW, SH); }
   if (G.state === 'win' || G.state === 'lose') drawEnd();
 }
@@ -867,6 +880,25 @@ function drawTitle() {
   txt('เลือกแมพ แล้วเลือกฮีโร่ 1 ตัว ไปปกป้องปราสาท 20 คลื่น', SW / 2, y0 + ch + 14 * S, 12.5 * S, '#fff3cf', 'center', 600);
 }
 const MAPMSG = { t: 0, m: '' };
+// first game: point at a build spot, then the skill "+", then the wave button, then "use a skill"; remembered once wave 1 is cleared
+const TUT = { step: lsGet('guardtd_tut') ? 9 : 0 };
+function drawTut() {
+  if (G.state !== 'play' || TUT.step >= 9 || G.menu) return; let x, y, msg; const bob = Math.sin(NOW * 6) * 6 * S;
+  if (TUT.step === 0) { if (TOWERS.length) TUT.step = 1; else { const p = PADS.slice().sort((a, b) => a.c.distanceTo(HPAD.c) - b.c.distanceTo(HPAD.c))[0]; [x, y] = toScreen(_a.set(p.c.x, .2, p.c.z)); msg = 'แตะแท่นหินเพื่อสร้างป้อม'; } }
+  if (TUT.step === 1) { if (HERO && HERO.sk.some(v => v > 0)) TUT.step = 2; else { const b = BTN.sk[0]; x = b.x + b.r * .72; y = b.y - b.r * .72; msg = 'แตะ + เพื่อเรียนสกิลฮีโร่'; } }
+  if (TUT.step === 2) { if (G.wave > 0) TUT.step = 3; else { const b = BTN.wave; x = b.rx + b.w + 34 * S; y = b.ry + b.h / 2; msg = '← พร้อมแล้ว กดเริ่มคลื่น'; } }
+  if (TUT.step === 3 && G.wave > 0) TUT.step = 4;
+  if (TUT.step === 4) { const i = HERO ? HERO.sk.findIndex(v => v > 0) : -1; if (i < 0 || HERO.cdk[i] > 0) return; const b = BTN.sk[i]; x = b.x; y = b.y - b.r; msg = HERO.kit[i].aim ? 'แตะปุ่มสกิล แล้วแตะพื้นตรงมอน' : 'แตะปุ่มสกิลเพื่อใช้'; }
+  if (x == null) return;
+  if (TUT.step === 2) { const b = BTN.wave; rr(b.rx - 4 * S, b.ry - 4 * S, b.w + 8 * S, b.h + 8 * S, b.h / 2 + 4 * S); ui.lineWidth = (3 + Math.sin(NOW * 6)) * S; ui.strokeStyle = '#ffe14a'; ui.stroke(); }
+  else { ui.beginPath(); ui.arc(x, y, (22 + 4 * Math.sin(NOW * 6)) * S, 0, TAU); ui.lineWidth = 3 * S; ui.strokeStyle = '#ffe14a'; ui.stroke(); }
+  if (TUT.step !== 2) {
+  ui.fillStyle = '#ffe14a'; ui.beginPath(); ui.moveTo(x, y - 28 * S + bob); ui.lineTo(x - 10 * S, y - 46 * S + bob); ui.lineTo(x + 10 * S, y - 46 * S + bob); ui.closePath(); ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = 'rgba(60,30,0,.8)'; ui.stroke(); }
+  if (TUT.step === 2) { txt(msg, x - 18 * S, y, 15 * S, '#fff6c0', 'left', 800, 'rgba(60,30,0,.9)'); return; }
+  const tx = clamp(x, 110 * S, SW - 110 * S); txt(msg, tx, y - 60 * S + bob, 15 * S, '#fff6c0', 'center', 800, 'rgba(60,30,0,.9)');
+}
+// a short line about a skill (tap a skill you cannot use yet)
+const TIP = { t: 0, s: '' };
 function star(x, y, r, on) { ui.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr0 = i % 2 ? r * .45 : r; ui.lineTo(x + Math.cos(a) * rr0, y + Math.sin(a) * rr0); } ui.closePath(); ui.fillStyle = on ? '#ffd34a' : 'rgba(255,255,255,.2)'; ui.fill(); ui.lineWidth = 2.5 * S; ui.strokeStyle = on ? '#8a5a08' : 'rgba(0,0,0,.4)'; ui.stroke(); }
 function drawEnd() {
   ui.fillStyle = 'rgba(0,0,0,.45)'; ui.fillRect(0, 0, SW, SH); const win = G.state === 'win';
@@ -889,10 +921,10 @@ function tap(x, y) {
   if (G.state === 'win' || G.state === 'lose') { if (mb) { if (mb.k === 'again') restart(); else if (mb.k === 'next') goPage({ map: MAPKEYS[MAPKEYS.indexOf(MAPK) + 1], menu: true }); else goPage({ menu: true }); } return; }
   if (G.state !== 'play') return;
   if (mb && G.menu) { const t = G.menu.pad.tower; if (TDEF[mb.k]) { if (buildTower(G.menu.pad, mb.k)) G.menu = null; else sfx('tick', .4, .6); } else if (mb.k === 'up') { upgradeTower(t); } else if (mb.k === 'sell') { sellTower(t); G.menu = null; } return; }
-  if (inBtn(BTN.spd, x, y)) { G.speed = G.speed === 1 ? 2 : G.speed === 2 ? 3 : 1; return; } if (inBtn(BTN.px, x, y)) { setPx(!G.px); return; } if (inBtn(BTN.snd, x, y)) { SND.on = !SND.on; return; }
+  if (G.paused) { G.paused = false; return; } if (inBtn(BTN.pause, x, y)) { G.paused = true; return; } if (inBtn(BTN.spd, x, y)) { G.speed = G.speed === 1 ? 2 : G.speed === 2 ? 3 : 1; return; } if (inBtn(BTN.px, x, y)) { setPx(!G.px); return; } if (inBtn(BTN.snd, x, y)) { SND.on = !SND.on; if (MUS.gain && AU.ctx) MUS.gain.gain.setTargetAtTime(SND.on ? .32 : 0, AU.ctx.currentTime, .2); else if (SND.on) setMusic(MUS.want, true); return; }
   if (!G.queue.length && !MON.length && G.wave < NWAVE && inBtn(BTN.wave, x, y)) { startWave(); return; }
   if (HERO) { for (let i = 0; i < 4; i++) { const b = BTN.sk[i]; if (canLearn(i) && Math.hypot(x - (b.x + b.r * .72), y - (b.y - b.r * .72)) < 17 * S) { learnSkill(i); return; } }
-    for (let i = 0; i < 4; i++) if (inBtn(BTN.sk[i], x, y)) { G.menu = null; if (HERO.sk[i] > 0) { if (!castSkill(i)) sfx('tick', .3, .6); } else if (canLearn(i)) learnSkill(i); else sfx('tick', .3, .6); return; }
+    for (let i = 0; i < 4; i++) if (inBtn(BTN.sk[i], x, y)) { G.menu = null; const K = HERO.kit[i]; if (HERO.sk[i] > 0) { if (!castSkill(i)) { sfx('tick', .3, .6); TIP.t = 2; TIP.s = K.name + ': รอ ' + Math.ceil(HERO.cdk[i]) + ' วิ'; } } else if (canLearn(i)) learnSkill(i); else { sfx('tick', .3, .6); TIP.t = 2.5; TIP.s = K.name + ': ' + K.desc + ' (ต้อง Lv ' + skReq(i, 1) + ')'; } return; }
     if (inBtn(BTN.hero, x, y)) { G.menu = null; G.showRange = !G.showRange; return; } }
   const p = groundAt(x, y); if (!p) { G.menu = null; return; }
   if (HERO && HERO.aim >= 0) { const i = HERO.aim; HERO.aim = -1; castSkill(i, p); return; }
@@ -916,7 +948,7 @@ addEventListener('resize', resize);
 const LOAD = { msg: 'กำลังโหลด...', f: 0 }; let NOW = 0; const clock = new THREE.Clock();
 function frame() {
   requestAnimationFrame(frame); let dt = Math.min(.05, clock.getDelta()); NOW += dt; SFXN = 0;
-  if (G.state === 'play' || G.state === 'win' || G.state === 'lose') { const steps = G.state === 'play' ? G.speed : 1; for (let i = 0; i < steps; i++) tick(dt); } else if (HERO) HERO.u.mixer.update(dt);
+  if (G.paused && G.state === 'play') { } else if (G.state === 'play' || G.state === 'win' || G.state === 'lose') { const steps = G.state === 'play' ? G.speed : 1; for (let i = 0; i < steps; i++) tick(dt); } else if (HERO) HERO.u.mixer.update(dt);
   const sx = (Math.random() - .5) * CAM.shake, sy = (Math.random() - .5) * CAM.shake; CAM.shake = Math.max(0, CAM.shake - dt * .8); if (CAM.base) { camera.position.set(CAM.base.x + sx, CAM.base.y + sy, CAM.base.z); }
   updAmbient(dt); updScenery(dt);
   if (HPAD.flames) for (const f of HPAD.flames) f.scale.setScalar(.2 + .05 * Math.sin(NOW * 13 + f.position.x * 7) + .03 * Math.random());
