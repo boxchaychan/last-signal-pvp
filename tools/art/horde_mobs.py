@@ -31,6 +31,7 @@ OLDNAME = { 'kasa_obake': 'ร่มผี', 'tengu': 'นกเทงงู', '
   'phrai': 'ผีพราย', 'krahang': 'กระหัง', 'frost_wolf': 'หมาป่าน้ำแข็ง', 'sand_golem': 'โกเลมทราย', 'sand_scorpion': 'แมงป่องทราย', 'scarab': 'ด้วงทอง', 'cobra_priest': 'นักบวชงูเห่า', 'dwarf_berserker': 'คนแคระคลั่ง', 'khamot': 'ผีโขมด',
   'rokurokubi': 'ผีคอยาว', 'terracotta_archer': 'พลธนูดินเผา', 'toad_demon': 'ปีศาจคางคก', 'boss_chalawan': 'ชาละวัน', 'boss_sphinx': 'สฟิงซ์' }
 OLDFLY = {'wisp', 'kasa_obake', 'tengu', 'ice_wraith', 'krahang', 'khamot'}
+OLDSHOOT = {'goblin_archer', 'terracotta_archer', 'cobra_priest'}
 
 def cut(m):
     d = os.path.join(CAT, m['sprite']); A = json.load(open(os.path.join(d, m['id'] + '.atlas.json'))); S = A['scales']['2x']
@@ -53,7 +54,7 @@ def cut(m):
     al = sheet.getchannel('A').point(lambda v: 255 if v >= 115 else 0); q = sheet.convert('RGB').quantize(255, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
     q.paste(255, mask=al.point(lambda v: 255 - v)); pal = q.getpalette()[:765] + [0, 0, 0]; q.putpalette(pal); q.save(os.path.join(OUT, m['id'] + '.png'), optimize=True, transparency=255)
     return {'f': 'art/horde/mobs/' + m['id'] + '.png', 'w': w, 'h': h, 'fx': fx, 'fy': py - y0 + 1, 'n': n, 'rows': {a: j for j, (a, _) in enumerate(rows)}, 'px': 2, 'hw': m['heightWorld'], 'fly': m['motion'] == 'fly',
-            'name': m['nameTH'], 'tier': m['tier'], 'boss': m['kind'] == 'boss', 'el': m['element']}
+            'name': m['nameTH'], 'tier': m['tier'], 'boss': m['kind'] == 'boss', 'el': m['element'], 'role': m['role']}
 
 def main():
     C = json.load(open(os.path.join(CAT, 'catalog.json'))); by = {m['id']: m for m in C['monsters']}; idx = {}; maps = {}
@@ -67,7 +68,7 @@ def main():
     for f in sorted(os.listdir(OLD)):
         if not f.endswith('.json') or f == 'index.json': continue
         k = f[:-5]; J = json.load(open(os.path.join(OLD, f)))
-        idx[k] = {'f': 'art/action/mobs/' + k + '.png', 'w': J['w'], 'h': J['h'], 'fx': J['fx'], 'fy': J['fy'], 'n': J['n'], 'rows': J['rows'], 'px': 1, 'hw': J.get('size', J['h']), 'fly': k in OLDFLY, 'name': OLDNAME.get(k, k), 'boss': k.startswith('boss_')}
+        idx[k] = {'f': 'art/action/mobs/' + k + '.png', 'w': J['w'], 'h': J['h'], 'fx': J['fx'], 'fy': J['fy'], 'n': J['n'], 'rows': J['rows'], 'px': 1, 'hw': J.get('size', J['h']), 'fly': k in OLDFLY, 'name': OLDNAME.get(k, k), 'boss': k.startswith('boss_'), 'role': 'ranged' if k in OLDSHOOT else 'melee'}
     json.dump({'mobs': idx, 'maps': maps}, open(os.path.join(OUT, 'index.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
     tot = sum(os.path.getsize(os.path.join(OUT, f)) for f in os.listdir(OUT)); print(len(idx), 'monsters,', round(tot / 1e6, 1), 'MB in art/horde/mobs')
 if __name__ == '__main__': main()
