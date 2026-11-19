@@ -1,6 +1,6 @@
 // horde.html "ฝ่าฝูงอสูร" (3D horde survival). look = screenshots of the title, the shop, the missions, a fight with a shrine, the level-up cards, a boss, the result;
 // bot = the built-in simple player (?bot=1) plays a whole run with the game logic only (?norender=1) and prints how it went.
-// python3 -m http.server 8000 ; node tools/qa/horde_check.js look [out=/tmp/horde] [hero=archer] [map=forest]  |  node tools/qa/horde_check.js bot [hero] [map] [seconds=600]
+// python3 -m http.server 8000 ; node tools/qa/horde_check.js look [out=/tmp/horde] [hero=archer] [map=forest]  |  node tools/qa/horde_check.js bot [hero] [map] [seconds=600] [difficulty=1]
 const { chromium } = require('playwright');
 (async () => {
   const what = process.argv[2] || 'look', b = await chromium.launch(), errs = [];
@@ -24,13 +24,13 @@ const { chromium } = require('playwright');
     await pg.evaluate(() => { GAME.G.state = 'play'; GAME.finishRun(); }); await pg.waitForTimeout(1600); await pg.screenshot({ path: `${out}/9_end.png` });
     console.log(JSON.stringify({ r1, play, title: await pg.evaluate(() => { GAME.toTitle(); return new Promise(r => setTimeout(() => r(GAME.info()), 1500)); }) }));
   } else {
-    const hero = process.argv[3] || 'archer', map = process.argv[4] || 'forest', secs = +(process.argv[5] || 600);
+    const hero = process.argv[3] || 'archer', map = process.argv[4] || 'forest', secs = +(process.argv[5] || 600), dl = +(process.argv[6] || 1);   /* dl = difficulty 1..5 (1 = the easy one) */
     const pg = await b.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-    await pg.goto(`http://localhost:8000/horde.html?snd=0&norender=1&nopause=1&bot=1&unlock=1&hero=${hero}&map=${map}&go=1`, { waitUntil: 'domcontentloaded', timeout: 120000 }); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 180000 });
+    await pg.goto(`http://localhost:8000/horde.html?snd=0&norender=1&nopause=1&bot=1&unlock=1&dl=${dl}&hero=${hero}&map=${map}&go=1`, { waitUntil: 'domcontentloaded', timeout: 120000 }); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 180000 });
     const res = await pg.evaluate(async (secs) => { const G = GAME.G, out = []; let peak = 0, guard = 0;
       while (G.t < secs && guard++ < 4000 && (G.state === 'play' || G.state === 'levelup' || G.state === 'chest')) { GAME.sim(5); peak = Math.max(peak, GAME.aliveN()); if (guard % 6 === 0) { out.push(`${Math.round(G.t)}s lv${G.lv} hp${Math.round(GAME.HERO.hp)}/${GAME.HERO.max} a${GAME.aliveN()} k${G.kills}`); await new Promise(r => setTimeout(r, 0)); } }
-      return { out, state: G.state, t: Math.round(G.t), lv: G.lv, kills: G.kills, peak, won: G.won, res: G.result, weps: G.weps.map(w => w.k + w.lv + (w.evo ? '*' : '')), pas: G.pas.map(p => p.k + p.lv), dmg: Object.entries(GAME.STATS).map(([k, v]) => k + ':' + Math.round(v / 1000) + 'k').join(' '), taken: G.taken, boss: G.bossKills }; }, secs);
-    console.log(`${hero} @ ${map}: ${res.state} t=${res.t}s lv${res.lv} kills ${res.kills} peak ${res.peak} bosses ${res.boss} won=${res.won} taken ${res.taken}`); console.log(res.out.join(' | ')); console.log('weapons', res.weps.join(' '), '| passives', res.pas.join(' ')); console.log('damage', res.dmg); if (res.res) console.log('result', JSON.stringify(res.res));
+      return { out, state: G.state, t: Math.round(G.t), lv: G.lv, kills: G.kills, peak, won: G.won, res: G.result, weps: G.weps.map(w => w.k + w.lv + (w.evo ? '*' : '')), pas: G.pas.map(p => p.k + p.lv), dmg: Object.entries(GAME.STATS).map(([k, v]) => k + ':' + Math.round(v / 1000) + 'k').join(' '), taken: G.taken, boss: G.bossKills, dashes: G.dashes || 0, dodge: !!GAME.HERO.M.acts.Dodge_Forward_lo }; }, secs);
+    console.log(`${hero} @ ${map} dl${dl}: ${res.state} t=${res.t}s lv${res.lv} kills ${res.kills} peak ${res.peak} bosses ${res.boss} won=${res.won} taken ${res.taken} dashes ${res.dashes}${res.dodge ? '' : ' (NO dodge clip)'}`); console.log(res.out.join(' | ')); console.log('weapons', res.weps.join(' '), '| passives', res.pas.join(' ')); console.log('damage', res.dmg); if (res.res) console.log('result', JSON.stringify(res.res));
   }
   if (errs.length) console.log('ERRORS:\n' + [...new Set(errs)].slice(0, 12).join('\n')); else console.log('no errors'); await b.close();
 })();
