@@ -193,7 +193,7 @@ async function loadScenery(ld) {
   for (let row = 0; row < 3 && trees.length; row++) { const rad = ARENA + 1.6 + row * 2.6, n = Math.floor(TAU * rad / 2.5); for (let i = 0; i < n; i++) { const a = (i + R() * .7) / n * TAU, r = rad + R() * 1.4, nm = trees[R() * trees.length | 0]; put(nm, Math.cos(a) * r, Math.sin(a) * r, (3.4 + R() * 1.9) * (/Pine/.test(nm) ? 1.15 : 1) * (/Dead/.test(nm) ? .8 : 1), false, false); } }
   const inside = (min, max) => { for (let k = 0; k < 30; k++) { const a = R() * TAU, r = Math.sqrt(lerp(min * min, max * max, R())); return [Math.cos(a) * r, Math.sin(a) * r]; } };
   const scatter = (n, min, gap, f) => { for (let i = 0, tries = 0; i < n && tries < n * 12; tries++) { const [x, z] = inside(min, ARENA - .5); if (gap && !free(x, z, gap)) continue; f(x, z); if (gap) taken.push([x, z]); i++; } };
-  scatter(trees.length ? 16 : 0, 7, 5, (x, z) => { const nm = trees[R() * trees.length | 0]; put(nm, x, z, (3 + R() * 1.2) * (/Dead/.test(nm) ? .8 : 1), true, true); });
+  scatter(trees.length ? 8 : 0, 11, 7, (x, z) => { const nm = trees[R() * trees.length | 0]; put(nm, x, z, (2.5 + R() * .8) * (/Dead/.test(nm) ? .9 : 1), true, true); });   /* few and small: a crown must not hide the fight */
   scatter(34, 5, 2.6, (x, z) => put('rock' + (R() * 3 | 0), x, z, .5 + R() * .7, true, true));
   if (MAP.props === 'grave') { scatter(46, 4, 2.2, (x, z) => put(R() < .55 ? 'tomb_a' : R() < .6 ? 'tomb_b' : 'pillar', x, z, .8 + R() * .5, true, true)); scatter(14, 5, 3, (x, z) => put('lantern', x, z, 1.1, true, true)); }
   if (MAP.props === 'lava') { scatter(30, 4, 2.6, (x, z) => put('spike', x, z, 1 + R() * 1.1, true, true)); scatter(26, 4, 2.4, (x, z) => put('ember', x, z, .45 + R() * .3, true, false)); }
@@ -255,7 +255,7 @@ function spark(x, y, z, o = {}) { const { n = 6, color = 0xffe08a, spd = 3, up =
   for (let i = 0; i < n && PARTS.length < 520; i++) { const a = Math.random() * TAU, sp = spd * rnd(.3, 1); PARTS.push({ x, y, z, vx: Math.cos(a) * sp, vy: up * rnd(.3, 1.3), vz: Math.sin(a) * sp, t: 0, life: life * rnd(.7, 1.25), s: size * rnd(.7, 1.3), c: color, g: grav }); } }
 function updParts(dt) { for (let i = PARTS.length - 1; i >= 0; i--) { const p = PARTS[i]; p.t += dt; if (p.t >= p.life) { PARTS[i] = PARTS[PARTS.length - 1]; PARTS.pop(); continue; } p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; const d = Math.max(0, 1 - 3 * dt); p.vx *= d; p.vz *= d; if (p.y < .03) { p.y = .03; p.vy = 0; } } }
 const AIR = []; for (let i = 0; i < (TOUCH ? 36 : 60); i++) AIR.push({ x: rnd(-14, 14), y: rnd(.3, 3.5), z: rnd(-10, 10), ph: rnd(0, 9), s: rnd(.6, 1.3) });
-const CAM = { shake: 0, look: new V3(), dist: 15.5, dir: new V3(0, .8, .6).normalize(), over: null }, shake = a => { CAM.shake = Math.max(CAM.shake, a); };
+const CAM = { shake: 0, look: new V3(), dist: 15.5, zoom: clamp(+(() => { try { return localStorage.getItem('horde_zoom'); } catch (_) { return 0; } })() || 1, .7, 1.4), dir: new V3(0, .8, .6).normalize(), over: null }, shake = a => { CAM.shake = Math.max(CAM.shake, a); };
 
 /* ---------- sound (Kenney CC0 clips already in the repo + a few synthesized ones), music (OpenGameArt CC0) */
 const AU = { ctx: null, buf: {} }, SND = { on: Q.get('snd') !== '0' };
@@ -330,7 +330,7 @@ function spawnMon(k, x, z, o = {}) {
 function ringPos(d, a = Math.random() * TAU) { let x = HERO.pos.x + Math.cos(a) * d, z = HERO.pos.z + Math.sin(a) * d; const L = Math.hypot(x, z), mx = ARENA + 2.5; if (L > mx) { x *= mx / L; z *= mx / L; } return [x, z]; }
 const NUMS = []; function num(x, y, z, text, color, big) { if (NUMS.length > 46) { if (!big) return; NUMS.shift(); } NUMS.push({ x: x + rnd(-.2, .2), y, z, text: String(text), color, t: 0, big }); }
 function hitMon(m, dmg, o = {}) {
-  if (m.dead) return 0; let d = dmg * P.pow, crit = false; if (Math.random() < P.crit) { d *= P.critX; crit = true; } d = Math.max(1, Math.round(d * rnd(.9, 1.1)));
+  if (m.dead) return 0; let d = dmg * P.pow * (G.rage > 0 ? 1.5 : 1), crit = false; if (Math.random() < P.crit) { d *= P.critX; crit = true; } d = Math.max(1, Math.round(d * rnd(.9, 1.1)));
   m.hp -= d; m.flash = 1; G.dealt += d; if (o.w) STATS[o.w] = (STATS[o.w] || 0) + d;
   if (o.kb && !m.boss) { const dx = m.x - (o.fx !== undefined ? o.fx : HERO.pos.x), dz = m.z - (o.fz !== undefined ? o.fz : HERO.pos.z), L = Math.hypot(dx, dz) || 1, kk = o.kb / (m.elite ? 3 : 1); m.kx += dx / L * kk; m.kz += dz / L * kk; }
   if (o.slow) { m.slowT = Math.max(m.slowT, o.slowT || 2); m.slowK = Math.min(m.slowK, 1 - o.slow); } if (o.frz && !m.boss) m.frzT = Math.max(m.frzT, o.frz * (m.elite ? .4 : 1)); if (o.burn) { m.burnT = 3; m.burnD = Math.max(m.burnD || 0, o.burn); }
@@ -477,17 +477,20 @@ const HRING = new THREE.Mesh(GEO.plane, new THREE.MeshBasicMaterial({ map: TEX.d
 
 /* ---------- the player's numbers: hero + permanent upgrades (SAVE.up) + the passives picked in this run */
 const SAVEK = 'horde_save1';
-const SAVE = (() => { let s = null; try { s = JSON.parse(localStorage.getItem(SAVEK)); } catch (_) { } s = s || {}; s.coins = s.coins || 0; s.up = s.up || {}; s.best = s.best || {}; s.runs = s.runs || 0; s.kills = s.kills || 0; s.seen = s.seen || {}; return s; })();
+const SAVE = (() => { let s = null; try { s = JSON.parse(localStorage.getItem(SAVEK)); } catch (_) { } s = s || {}; s.coins = s.coins || 0; s.up = s.up || {}; s.best = s.best || {}; s.runs = s.runs || 0; s.kills = s.kills || 0; s.seen = s.seen || {}; s.clear = s.clear || {}; s.dl = s.dl || {}; s.hx = s.hx || {}; s.winH = s.winH || {}; s.claim = s.claim || {}; s.evos = s.evos || 0; s.bosses = s.bosses || 0; s.maxLv = s.maxLv || 0; return s; })();
 function save() { try { localStorage.setItem(SAVEK, JSON.stringify(SAVE)); } catch (_) { } }
 const P = {};
+/* difficulty levels of a map (the next opens when the one before is won there) and hero mastery (xp from every run: +2% damage and life per level, 20 levels) */
+const DIFFS = [null, { n: 'ง่าย', hp: .7, dmg: .7, rate: .9, coin: .8, c: '#7fd36a' }, { n: 'ปกติ', hp: 1, dmg: 1, rate: 1, coin: 1, c: '#6ab8ff' }, { n: 'ยาก', hp: 1.45, dmg: 1.3, rate: 1.15, coin: 1.5, c: '#ffb040' }, { n: 'โหด', hp: 2.1, dmg: 1.7, rate: 1.3, coin: 2.2, c: '#ff6a4a' }, { n: 'นรก', hp: 3.2, dmg: 2.2, rate: 1.5, coin: 3.2, c: '#d04aff' }];
+const dlOpen = (mk, L) => L <= 2 || (SAVE.clear[mk] || 0) >= L - 1 || Q.get('unlock') === '1', hlv = hk => Math.min(20, Math.floor(Math.sqrt((SAVE.hx[hk] || 0) / 25))), hxNeed = L => 25 * L * L;
 const pl = k => { const q = G.pas.find(p => p.k === k); return q ? q.lv : 0; }, up = k => SAVE.up[k] || 0;
 function recalc() {
   const D = HERO.D, b = D.bonus || {};
-  P.pow = (1 + .12 * pl('pow') + .05 * up('pow') + (b.pow || 0)) * (G.rage > 0 ? 1.5 : 1); P.cd = Math.max(.35, (1 - .07 * pl('haste') - .03 * up('cd') - (b.haste || 0))); P.area = 1 + .1 * pl('area') + .04 * up('area') + (b.area || 0);
+  P.pow = 1 + .12 * pl('pow') + .05 * up('pow') + (b.pow || 0) + .02 * hlv(HERO.k); P.cd = Math.max(.35, (1 - .07 * pl('haste') - .03 * up('cd') - (b.haste || 0))); P.area = 1 + .1 * pl('area') + .04 * up('area') + (b.area || 0);
   P.spd = D.spd * (1 + .08 * pl('speed') + .03 * up('spd')); P.magnet = 1.7 * (1 + .3 * pl('magnet') + .15 * up('magnet')); P.crit = .05 + .07 * pl('crit') + (b.crit || 0) + .02 * up('crit'); P.critX = 2;
   P.armor = 2 * pl('armor') + up('armor') + (b.armor || 0); P.regen = .5 * pl('regen') + .2 * up('regen') + (b.regen || 0); P.xp = 1 + .1 * pl('xp') + .05 * up('xp') + (b.xp || 0); P.gold = 1 + .2 * pl('luck') + .1 * up('gold');
   P.luck = 1 + .25 * pl('luck') + .1 * up('luck'); P.multi = pl('multi'); P.dur = 1 + .12 * pl('dur'); P.steal = (b.steal || 0) + pl('steal'); P.numMin = 0;
-  const max = Math.round(D.hp * (1 + .2 * pl('hp') + .1 * up('hp'))); if (HERO.max !== max) { HERO.hp = Math.min(max, (HERO.hp || max) + Math.max(0, max - (HERO.max || max))); HERO.max = max; }
+  const max = Math.round(D.hp * (1 + .2 * pl('hp') + .1 * up('hp') + .02 * hlv(HERO.k))); if (HERO.max !== max) { HERO.hp = Math.min(max, (HERO.hp || max) + Math.max(0, max - (HERO.max || max))); HERO.max = max; }
 }
 function healHero(v) { if (HERO.dead) return; HERO.hp = Math.min(HERO.max, HERO.hp + v); }
 function hurtHero(d, src) {
@@ -617,9 +620,9 @@ const ARROWM = (() => { const sh = new THREE.CylinderGeometry(.016, .016, .6, 5)
 const BLADEM = (() => { const g = new THREE.RingGeometry(.35, 1, 5, 1).rotateX(-Math.PI / 2), m = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: 0xe8fff4, side: THREE.DoubleSide, transparent: true, opacity: .9, fog: false }), 24); m.frustumCulled = false; m.count = 0; scene.add(m); return m; })();
 
 /* ---------- the run: state, levels, cards, chests */
-const G = { state: 'load', t: 0, lv: 1, xp: 0, need: 5, pend: 0, kills: 0, coins: 0, weps: [], pas: [], reroll: 0, skips: 0, revive: 0, hpMul: 1, spdMul: 1, dmgMul: 1, rateMul: 1, dealt: 0, taken: 0, boss: null, endless: false, pickN: 0, pickT: 0, cards: [], hk: null, endT: 0, rage: 0 };
+const G = { dl: 1, coinMul: 1, state: 'load', t: 0, lv: 1, xp: 0, need: 5, pend: 0, kills: 0, coins: 0, weps: [], pas: [], reroll: 0, skips: 0, revive: 0, hpMul: 1, spdMul: 1, dmgMul: 1, rateMul: 1, dealt: 0, taken: 0, boss: null, endless: false, pickN: 0, pickT: 0, cards: [], hk: null, endT: 0, rage: 0 };
 const FLASH = { r: 0, w: 0 }, NOTES = [], BANNER = { t: 0, a: '', b: '', red: false };
-function note(s, color = '#fff3d2') { const L = NOTES[NOTES.length - 1]; if (L && L.s === s) { L.t = Math.min(L.t, .3); return; } NOTES.push({ s, color, t: 0 }); if (NOTES.length > 4) NOTES.shift(); }
+function note(s, color = '#fff3d2') { const L = NOTES[NOTES.length - 1]; if (L && L.s === s) { L.t = Math.min(L.t, .3); return; } NOTES.push({ s, color, t: 0 }); if (NOTES.length > 3) NOTES.shift(); }
 function banner(a, b, red, t = 2.6) { BANNER.t = BANNER.max = t; BANNER.a = a; BANNER.b = b || ''; BANNER.red = !!red; }
 const needXp = lv => Math.round(5 + (lv - 1) * 5 + (lv - 1) * (lv - 1) * .35);
 function gainXp(v) { G.xp += v * P.xp; while (G.xp >= G.need) { G.xp -= G.need; G.lv++; G.need = needXp(G.lv); G.pend++; } }
@@ -634,7 +637,7 @@ function rollCards(n) {
   if (!out.length) out.push({ type: 'heal' }, { type: 'gold' }); return out;
 }
 function applyCard(c) {
-  if (c.type === 'w') { const W = G.weps.find(q => q.k === c.k); if (W) W.lv++; else addWeapon(c.k); } else if (c.type === 'evo') { const W = G.weps.find(q => q.k === c.k); if (W) { W.evo = true; banner('ปลุกพลัง!', WEAPONS[c.k].evo, false, 2.2); } }
+  if (c.type === 'w') { const W = G.weps.find(q => q.k === c.k); if (W) W.lv++; else addWeapon(c.k); } else if (c.type === 'evo') { const W = G.weps.find(q => q.k === c.k); if (W) { W.evo = true; SAVE.evos++; banner('ปลุกพลัง!', WEAPONS[c.k].evo, false, 2.2); } }
   else if (c.type === 'p') { const p = G.pas.find(q => q.k === c.k); if (p) p.lv++; else G.pas.push({ k: c.k, lv: 1 }); recalc(); } else if (c.type === 'heal') healHero(HERO.max * .3); else if (c.type === 'gold') G.coins += 25;
   SAVE.seen[c.k] = 1;
 }
@@ -660,7 +663,7 @@ function updDirector(dt) {
   const ph = Math.floor(G.t / 30); if (ph !== DIR.phase) { DIR.phase = ph; DIR.cur = DIR.next.length ? DIR.next : choosePhase(ph); DIR.next = []; DIR.cur.forEach(loadKind); }
   if (!DIR.next.length && G.t % 30 > 16) { DIR.next = choosePhase(ph + 1); DIR.next.forEach(loadKind); }
   const ready = DIR.cur.filter(k => KIND[k] && KIND[k].ok); if (!ready.length) return;
-  const min = G.t / 60, rate = (1.1 + min * .85 + min * min * .07 + (G.endless ? (min - 10) * .5 : 0)) * G.rateMul * (G.boss && G.boss.bi === 3 && !G.endless ? .5 : 1), cap = Math.round((TOUCH ? 200 : 270) * clamp(.3 + G.t / 400, .3, 1)), alive = aliveN();
+  const min = G.t / 60, rate = (1.7 + min * .8 + min * min * .07 + (G.endless ? (min - 10) * .5 : 0)) * G.rateMul * (G.boss && G.boss.bi === 3 && !G.endless ? .5 : 1), cap = Math.round((TOUCH ? 200 : 270) * clamp(.3 + G.t / 400, .3, 1)), alive = aliveN();
   DIR.acc += rate * dt; if (alive >= cap) DIR.acc = Math.min(DIR.acc, 2);
   while (DIR.acc >= 1 && alive < cap) { const k = pick(ready), n = Math.min(Math.floor(DIR.acc), 1 + (Math.random() * 3 | 0)), a = Math.random() * TAU; for (let i = 0; i < n; i++) { const [x, z] = ringPos(SPAWNR + rnd(0, 2.5), a + rnd(-.22, .22)); spawnMon(k, x, z); } DIR.acc -= n; if (n <= 0) break; }
   const sw = [90, 240, 390, 540][DIR.swarm] || (540 + (DIR.swarm - 3) * 120);
@@ -669,7 +672,23 @@ function updDirector(dt) {
   DIR.eliteT -= dt; if (DIR.eliteT <= 0) { DIR.eliteT = 60; const k = pick(ready), [x, z] = ringPos(SPAWNR); const m = spawnMon(k, x, z, { hp: 12 + min * 1.5, sc: 1.65, dmg: 1.6, xp: 8, elite: true, tint: [1.45, 1.2, .5] }); if (m) note('มอนหัวหน้าฝูงปรากฏ: ฆ่าแล้วได้หีบ', '#ffd86a'); }
   if (G.t >= DIR.nextBoss) { const bi = DIR.bossI++; DIR.nextBoss += 150; spawnBoss(bi); }
 }
-const BOSSHP = [650, 2400, 6500, 19000];
+const BOSSHP = [520, 2300, 6500, 19000];
+/* shrines: a glowing stone appears somewhere on the map every ~70 s; stand on it for 2 s to take its gift (an arrow at the screen edge points to it) */
+const SHRINES = [], SHTYPE = { rage: { n: 'แท่นพลัง', info: 'ดาเมจ +50% นาน 20 วิ', c: 0xff5a4a, h: '#ff8a7a' }, heal: { n: 'แท่นชีวิต', info: 'ฟื้นพลังชีวิตครึ่งหลอด', c: 0x6aff8a, h: '#9fe8a0' }, gold: { n: 'แท่นสมบัติ', info: 'ทองและดูดอัญมณีทั้งแมพ', c: 0xffd040, h: '#ffe08a' }, ice: { n: 'แท่นเวลา', info: 'มอนทั้งจอหยุดนิ่ง 5 วิ', c: 0x6ac8ff, h: '#9ad8ff' } };
+const SHGEO = mergeGeo([[new THREE.CylinderGeometry(.5, .62, .16, 8), '#8a8478', M4(0, .08, 0)], [new THREE.CylinderGeometry(.34, .42, .5, 6), '#a8a294', M4(0, .4, 0)], [new THREE.OctahedronGeometry(.2), '#fff6dc', M4(0, .95, 0, 1, 1.5, 1)]]);
+function spawnShrine() {
+  if (SHRINES.length >= 2) return; const k = pick(Object.keys(SHTYPE)), T = SHTYPE[k]; let x = 0, z = 0; for (let i = 0; i < 20; i++) { const a = Math.random() * TAU, d = rnd(9, 15); x = HERO.pos.x + Math.cos(a) * d; z = HERO.pos.z + Math.sin(a) * d; if (Math.hypot(x, z) < ARENA - 3 && !OBST.some(o => Math.hypot(o.x - x, o.z - z) < 1.3)) break; }
+  if (Math.hypot(x, z) >= ARENA - 3) return; const g = new THREE.Group(), st = new THREE.Mesh(SHGEO, VCM); st.castShadow = true; g.add(st); const d = new THREE.Mesh(GEO.plane, addMat(T.c, TEX.rune, .7)); d.scale.set(3.2, 1, 3.2); d.position.y = .06; g.add(d);
+  const c = new THREE.Mesh(GEO.col, addMat(T.c, null, .22)); c.scale.set(.28, 9, .28); c.position.y = 4.5; g.add(c); g.position.set(x, 0, z); scene.add(g); SHRINES.push({ k, T, x, z, g, d, p: 0, t: 0 }); note(T.n + 'ปรากฏ: ' + T.info, T.h); sfx('lvl', .3, 1.8);
+}
+function updShrines(dt) {
+  DIR.shrineT = (DIR.shrineT === undefined ? 35 : DIR.shrineT) - dt; if (DIR.shrineT <= 0) { DIR.shrineT = 70; spawnShrine(); }
+  for (let i = SHRINES.length - 1; i >= 0; i--) { const sh = SHRINES[i]; sh.t += dt; sh.d.rotation.y += dt * .7; const on = Math.hypot(HERO.pos.x - sh.x, HERO.pos.z - sh.z) < 1.6 && !HERO.dead; sh.p = clamp(sh.p + (on ? dt / 2 : -dt), 0, 1); sh.d.material.opacity = .5 + .4 * sh.p + .1 * Math.sin(NOW * 4);
+    if (sh.p >= 1) { const H = HERO.pos; column(sh, sh.T.c, 1, .8, 7); ring(sh, sh.T.c, .5, 9, .7); sfx('lvl', .7, 1.1); shake(.2); banner(sh.T.n, sh.T.info, false, 1.8);
+      if (sh.k === 'rage') G.rage = 20; else if (sh.k === 'heal') healHero(HERO.max * .5); else if (sh.k === 'gold') { for (let c = 0; c < 8; c++) drop('coin', sh.x + rnd(-1.5, 1.5), sh.z + rnd(-1.5, 1.5), Math.ceil(3 + G.t / 90)); for (const q of GEMS) q.pull = true; }
+      else for (const m of MON) if (!m.dead && Math.hypot(m.x - H.x, m.z - H.z) < 18) m.frzT = Math.max(m.frzT, m.boss ? 2 : 5);
+      scene.remove(sh.g); SHRINES.splice(i, 1); } else if (sh.t > 75) { scene.remove(sh.g); SHRINES.splice(i, 1); } }
+}
 function spawnBoss(bi) {
   const fin = bi === 3, L = [...MAP.boss, ...(MAP.extra || [])], k = bi < 4 ? MAP.boss[bi] : L[bi % L.length]; loadKind(k).then(() => { const K = KIND[k]; if (!K || !K.ok || G.state === 'title') return;
     const [x, z] = ringPos(SPAWNR - 1), m = spawnMon(k, x, z, { boss: true, bi: Math.min(3, bi), spd: bi >= 3 ? .95 : .85, dmg: .75 }); if (!m) return; m.hp = m.max = Math.round((bi < 4 ? BOSSHP[bi] : 19000 * Math.pow(1.6, bi - 3)) * G.hpMul); m.r = Math.max(m.r, .8); G.boss = m;
@@ -817,7 +836,7 @@ const fmtT = t => { t = Math.max(0, Math.floor(t)); return String(Math.floor(t /
 function drawUI(dt) {
   ui.setTransform(DPR, 0, 0, DPR, 0, 0); ui.clearRect(0, 0, SW, SH); HIT.length = 0;
   if (G.state === 'load') { ui.fillStyle = '#141a2a'; ui.fillRect(0, 0, SW, SH); txt('ฝ่าฝูงอสูร', SW / 2, SH * .4, 44 * S, '#ffe08a'); txt(LOAD.msg, SW / 2, SH * .56, 16 * S, '#cfd8f0', 'center', 600); bar(SW / 2 - 110 * S, SH * .64, 220 * S, 12 * S, LOAD.f, '#ffe08a', '#f09a1e'); return; }
-  if (G.state === 'title' || G.state === 'shop') { drawTitle(dt); if (G.state === 'shop') drawShop(); return; }
+  if (G.state === 'title' || G.state === 'shop' || G.state === 'quest') { drawTitle(dt); if (G.state === 'shop') drawShop(); else if (G.state === 'quest') drawQuest(); return; }
   drawHud(dt);
   if (G.state === 'levelup') drawCards(dt); else if (G.state === 'chest') drawChest(dt); else if (G.state === 'pause') drawPause(); else if (G.state === 'end') drawEnd(dt);
 }
@@ -854,6 +873,12 @@ function drawHud(dt) {
   NOTES.forEach((n, i) => { n.t += dt; ui.globalAlpha = clamp(Math.min(n.t * 5, (3 - n.t) * 2), 0, 1); txt(n.s, SW / 2, SH * .74 - (NOTES.length - 1 - i) * 19 * S, 13 * S, n.color, 'center', 600); ui.globalAlpha = 1; }); while (NOTES.length && NOTES[0].t > 3) NOTES.shift();
   if (BANNER.t > 0) { BANNER.t -= dt; const k = clamp(Math.min((BANNER.max - BANNER.t) * 4, BANNER.t * 2.5), 0, 1), y = SH * .34; ui.globalAlpha = k; const g = ui.createLinearGradient(0, 0, SW, 0), c = BANNER.red ? '120,10,10' : '20,30,70'; g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(.5, `rgba(${c},.82)`); g.addColorStop(1, `rgba(${c},0)`); ui.fillStyle = g; ui.fillRect(0, y - 34 * S, SW, 68 * S);
     ui.fillStyle = BANNER.red ? 'rgba(255,160,130,.8)' : 'rgba(255,233,168,.8)'; ui.fillRect(SW * .2, y - 34 * S, SW * .6, 1.5 * S); ui.fillRect(SW * .2, y + 33 * S, SW * .6, 1.5 * S); txt(BANNER.a, SW / 2, y - (BANNER.b ? 8 : 0) * S, 28 * S * (1 + (1 - k) * .3), BANNER.red ? '#ffd0c0' : '#ffe9a8'); if (BANNER.b) txt(BANNER.b, SW / 2, y + 19 * S, 15 * S, '#fff', 'center', 600); ui.globalAlpha = 1; }
+  /* pointers at the screen edge: shrines, chests, the boss */
+  const edge = (wx, wz, col, label) => { const [x, y] = toScreen(wx, .5, wz), m = 26 * S; if (x > m && x < SW - m && y > m + 30 * S && y < SH - m) return false; const a = Math.atan2(y - SH / 2, x - SW / 2), ex = clamp(x, m + 8 * S, SW - m - 8 * S), ey = clamp(y, m + 44 * S, SH - m - 8 * S);
+    ui.save(); ui.translate(ex, ey); ui.beginPath(); ui.arc(0, 0, 13 * S, 0, TAU); ui.fillStyle = 'rgba(10,14,30,.8)'; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = col; ui.stroke(); ui.rotate(a); ui.beginPath(); ui.moveTo(21 * S, 0); ui.lineTo(13 * S, -6 * S); ui.lineTo(13 * S, 6 * S); ui.closePath(); ui.fillStyle = col; ui.fill(); ui.restore(); txt(label, ex, ey + 1, 11 * S, col, 'center', 800, null); return true; };
+  for (const sh of SHRINES) { if (!edge(sh.x, sh.z, sh.T.h, 'แท่น') && sh.p > 0) { const [x, y] = toScreen(sh.x, 1.6, sh.z); ui.beginPath(); ui.arc(x, y, 15 * S, -Math.PI / 2, -Math.PI / 2 + TAU * sh.p); ui.lineWidth = 5 * S; ui.strokeStyle = sh.T.h; ui.stroke(); } }
+  for (const g of GEMS) if (g.kind === 'chest') edge(g.x, g.z, '#ffd060', 'หีบ'); if (G.boss && !G.boss.dead) edge(G.boss.x, G.boss.z, '#ff7a6a', 'บอส');
+  if (G.rage > 0) { const bx = SW / 2, by = SH - 30 * S; rr(bx - 70 * S, by - 11 * S, 140 * S, 22 * S, 11 * S); ui.fillStyle = 'rgba(90,14,10,.8)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = '#ff8a7a'; ui.stroke(); txt('พลังเดือด +50%  ' + Math.ceil(G.rage) + ' วิ', bx, by + 1, 11.5 * S, '#ffd0c0'); }
   /* the stick under the thumb */
   if (JOY.on && G.state === 'play') { ui.beginPath(); ui.arc(JOY.x0, JOY.y0, 46 * S, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.08)'; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke(); ui.beginPath(); ui.arc(JOY.x0 + INP.x * 40 * S, JOY.y0 + INP.z * 40 * S, 20 * S, 0, TAU); ui.fillStyle = 'rgba(255,240,200,.5)'; ui.fill(); }
   if (G.t < 6 && G.state === 'play') { ui.globalAlpha = clamp(6 - G.t, 0, 1); txt(TOUCH ? 'ลากนิ้วที่ไหนก็ได้เพื่อเดิน อาวุธยิงเอง' : 'เดินด้วย W A S D หรือลากเมาส์ อาวุธยิงเอง', SW / 2, SH * .82, 15 * S, '#fff6dc', 'center', 600); ui.globalAlpha = 1; }
@@ -901,11 +926,12 @@ function drawPause() {
 }
 function drawEnd(dt) {
   G.endA = (G.endA || 0) + dt; dim(.72); const E = G.result, w = Math.min(520 * S, SW - 24 * S), h = Math.min(330 * S, SH - 30 * S), x = SW / 2 - w / 2, y = SH / 2 - h / 2 + 10 * S; panel(x, y, w, h);
-  ribbon(SW / 2, y - 16 * S, 210 * S, 36 * S, E.win ? 'รอดแล้ว! ชนะ' : 'พ่ายแพ้', E.win ? ['#e8a81e', '#9a5a08'] : ['#d83a3a', '#8a1c1c']);
+  ribbon(SW / 2, y - 16 * S, 210 * S, 36 * S, E.win ? 'ชนะระดับ' + DIFFS[G.dl].n + '!' : 'พ่ายแพ้', E.win ? ['#e8a81e', '#9a5a08'] : ['#d83a3a', '#8a1c1c']);
   const lx = x + 18 * S, rows = [['เวลาที่รอด', fmtT(G.t)], ['มอนที่ฆ่า', String(G.kills)], ['เลเวล', String(G.lv)], ['บอสที่ล้ม', String(G.bossKills || 0)], ['ดาเมจรวม', fmtN(G.dealt)]];
   rows.forEach((r, i) => { const yy = y + 40 * S + i * 22 * S; txt(r[0], lx, yy, 12.5 * S, '#b8c4e0', 'left', 600, 'rgba(0,0,0,.6)', 2); txt(r[1], lx + w * .36, yy, 13.5 * S, '#fff6dc', 'right'); });
   const gy = y + 40 * S + rows.length * 22 * S + 8 * S; rr(lx, gy - 13 * S, w * .36, 44 * S, 9 * S); ui.fillStyle = 'rgba(8,10,22,.6)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = '#ffe9a8'; ui.stroke(); coinIc(lx + 18 * S, gy + 9 * S, 11 * S); txt('+' + Math.round(E.coins * clamp(G.endA / 1.2, 0, 1)), lx + 36 * S, gy + 3 * S, 19 * S, '#ffe08a', 'left'); txt('เก็บได้ ' + E.run + '  โบนัส ' + E.bonus, lx + 36 * S, gy + 21 * S, 9.5 * S, '#cfd8f0', 'left', 600, 'rgba(0,0,0,.6)', 2);
-  if (E.rec) txt('สถิติใหม่ของแมพนี้!', lx + w * .18, gy + 46 * S, 12 * S, '#9fe8a0', 'center', 600);
+  txt('ความชำนาญ +' + E.hx + (E.l1 > E.l0 ? '   เลเวลขึ้นเป็น ' + E.l1 + '!' : '   (Lv ' + E.l1 + ')'), lx, gy + 44 * S, 11 * S, E.l1 > E.l0 ? '#ffe14a' : '#cfd8f0', 'left', 600, 'rgba(0,0,0,.6)', 2);
+  if (E.rec) txt('สถิติใหม่ของแมพนี้!', lx, gy + 61 * S, 11.5 * S, '#9fe8a0', 'left', 600);
   txt('อาวุธในรอบนี้', x + w * .44, y + 34 * S, 11.5 * S, '#ffe9a8', 'left', 600, 'rgba(0,0,0,.6)', 2); loadout(x + w * .44, y + 46 * S, w * .56 - 18 * S);
   const by = y + h - 44 * S, bw = (w - 52 * S) / 3; button('again', x + 16 * S, by, bw, 32 * S, 'เล่นอีกครั้ง', { fn: () => startRun() }); button('home', x + 26 * S + bw, by, bw, 32 * S, 'หน้าหลัก', { c: BLUE, tc: '#fff', ts: 'rgba(0,20,60,.7)', fn: () => toTitle() });
   if (E.win) button('more', x + 36 * S + bw * 2, by, bw, 32 * S, 'เล่นต่อไม่มีจบ', { c: GREEN, tc: '#fff', ts: 'rgba(0,40,0,.7)', size: 12.5 * S, fn: goEndless }); else button('shop2', x + 36 * S + bw * 2, by, bw, 32 * S, 'ร้านอัปเกรด', { c: GREEN, tc: '#fff', ts: 'rgba(0,40,0,.7)', size: 12.5 * S, fn: () => { toTitle(); G.state = 'shop'; } });
@@ -926,6 +952,7 @@ const bestOf = (mk, hk) => (SAVE.best[mk] || {})[hk];
 function goPage(mk) { const p = new URLSearchParams(); p.set('map', mk); p.set('hero', G.hk); if (!SND.on) p.set('snd', '0'); if (Q.get('unlock') === '1') p.set('unlock', '1'); try { localStorage.setItem('horde_map', mk); } catch (_) { } location.search = p.toString(); }
 function logo(x, y, s) { ui.save(); ui.font = `800 ${s}px Kanit, sans-serif`; ui.textAlign = 'left'; ui.textBaseline = 'middle'; ui.lineJoin = 'round'; ui.shadowColor = 'rgba(0,0,0,.6)'; ui.shadowBlur = 10 * S; ui.shadowOffsetY = 4 * S; ui.lineWidth = s * .2; ui.strokeStyle = '#3a1404'; ui.strokeText('ฝ่าฝูงอสูร', x, y); ui.shadowColor = 'transparent'; ui.lineWidth = s * .09; ui.strokeStyle = '#ffe9a8'; ui.strokeText('ฝ่าฝูงอสูร', x, y);
   ui.fillStyle = grad(0, y - s * .5, 0, y + s * .5, '#fff2a8', '#ffb428', '#e0541a'); ui.fillText('ฝ่าฝูงอสูร', x, y); ui.restore(); }
+const MSG = { t: 0, s: '' };
 function drawTitle(dt) {
   const pad = 12 * S, lw = Math.min(250 * S, SW * .31), rw = Math.min(236 * S, SW * .29);
   let g = ui.createLinearGradient(0, 0, lw + 80 * S, 0); g.addColorStop(0, 'rgba(8,10,24,.82)'); g.addColorStop(1, 'rgba(8,10,24,0)'); ui.fillStyle = g; ui.fillRect(0, 0, lw + 80 * S, SH);
@@ -935,9 +962,12 @@ function drawTitle(dt) {
   /* coins + shop */
   const cw = 108 * S; rr(SW - pad - cw, 12 * S, cw, 30 * S, 15 * S); ui.fillStyle = 'rgba(10,14,30,.8)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = '#ffe9a8'; ui.stroke(); coinIc(SW - pad - cw + 17 * S, 27 * S, 9 * S); txt(String(SAVE.coins), SW - pad - 12 * S, 28 * S, 15 * S, '#ffe08a', 'right');
   button('shop', SW - pad - cw - 128 * S, 12 * S, 120 * S, 30 * S, 'ร้านอัปเกรด', { c: GREEN, tc: '#fff', ts: 'rgba(0,40,0,.7)', size: 13 * S, fn: () => { G.state = 'shop'; } });
-  button('snd', SW - pad - cw - 128 * S - 84 * S, 12 * S, 76 * S, 30 * S, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', { c: GREY, tc: '#fff', ts: 'rgba(0,0,0,.6)', size: 10.5 * S, fn: toggleSnd });
+  const qn = MISSIONS.filter(m => !SAVE.claim[m.id] && m.v() >= m.t).length; button('quest', SW - pad - cw - 128 * S - 104 * S, 12 * S, 96 * S, 30 * S, 'ภารกิจ', { c: BLUE, tc: '#fff', ts: 'rgba(0,20,60,.7)', size: 13 * S, fn: () => { G.state = 'quest'; G.qpage = 0; } });
+  if (qn) { const bx = SW - pad - cw - 128 * S - 12 * S; ui.beginPath(); ui.arc(bx, 15 * S, 9 * S, 0, TAU); ui.fillStyle = '#ff4a3a'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = '#fff'; ui.stroke(); txt(String(qn), bx, 15.5 * S, 10.5 * S, '#fff', 'center', 800, null); }
+  button('snd', SW - pad - cw - 128 * S - 104 * S - 78 * S, 12 * S, 70 * S, 30 * S, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', { c: GREY, tc: '#fff', ts: 'rgba(0,0,0,.6)', size: 10 * S, fn: toggleSnd });
   /* the hero's card */
   const D = HEROES[G.hk], WD = WEAPONS[D.start], hy = 82 * S, hh = SH - hy - 92 * S; panel(pad, hy, lw, hh);
+  { const L = hlv(G.hk), x1 = pad + lw - 14 * S, a = hxNeed(L), b2 = hxNeed(L + 1); txt('ชำนาญ Lv ' + L, x1, hy + 18 * S, 11 * S, '#ffe9a8', 'right', 800); bar(x1 - 74 * S, hy + 27 * S, 74 * S, 6 * S, L >= 20 ? 1 : ((SAVE.hx[G.hk] || 0) - a) / (b2 - a), '#ffe08a', '#f09a1e'); if (L) txt('พลัง +' + L * 2 + '%', x1, hy + 42 * S, 9.5 * S, '#9fe8a0', 'right', 600, 'rgba(0,0,0,.6)', 2); }
   txt(D.name, pad + 14 * S, hy + 22 * S, 20 * S, D.col[0], 'left'); txt(D.role, pad + 14 * S, hy + 43 * S, 11.5 * S, '#dfe6f8', 'left', 600, 'rgba(0,0,0,.6)', 2);
   let yy = hy + 62 * S; const stat = (label, f, c) => { txt(label, pad + 14 * S, yy + 4 * S, 10.5 * S, '#b8c4e0', 'left', 600, null); bar(pad + 82 * S, yy - 1 * S, lw - 98 * S, 9 * S, f, c, c); yy += 17 * S; };
   if (hh > 190 * S) { stat('พลังชีวิต', D.hp / 150, '#ff6a7a'); stat('ความเร็ว', (D.spd - 2.9) / .9, '#9fe8a0'); }
@@ -949,14 +979,18 @@ function drawTitle(dt) {
   const hr = 23 * S, hx0 = pad + hr + 2 * S, hy0 = SH - 54 * S; HKEYS.forEach((k, i) => { const x = hx0 + i * (hr * 2 + 8 * S), on = k === G.hk; if (on) { ui.beginPath(); ui.arc(x, hy0, hr + 5 * S, 0, TAU); ui.fillStyle = `rgba(255,225,120,${.3 + .15 * Math.sin(RT * 5)})`; ui.fill(); }
     ui.globalAlpha = on ? 1 : .8; heroIcon(k, x, hy0, on ? hr : hr * .88); ui.globalAlpha = 1; txt(HEROES[k].name, x, hy0 + hr + 12 * S, 9.5 * S, on ? '#ffe9a8' : '#cfd8f0', 'center', 600, 'rgba(0,0,0,.8)', 2.5); HIT.push({ x: x - hr - 4 * S, y: hy0 - hr - 4 * S, w: hr * 2 + 8 * S, h: hr * 2 + 26 * S, fn: () => selectHero(k), id: 'hero_' + k }); });
   /* maps */
-  const mx = SW - pad - rw, my = 54 * S, mh = Math.min(58 * S, (SH - my - 74 * S) / 4 - 6 * S); txt('เลือกแมพ', mx + 4 * S, my - 2 * S, 11.5 * S, '#ffe9a8', 'left', 600, 'rgba(0,0,0,.7)', 2);
-  MAPKEYS.forEach((k, i) => { const M0 = MAPS[k], y = my + 10 * S + i * (mh + 6 * S), on = k === MAPK, open = mapOpen(i); panel(mx, y, rw, mh, { r: 10 * S, rim: on ? undefined : 'rgba(170,190,230,.45)', fill: on ? grad(0, y, 0, y + mh, '#3a4a78', '#1c2644') : grad(0, y, 0, y + mh, '#1e2740', '#121828'), lw: on ? 2.6 : 1.5 });
+  const mx = SW - pad - rw, my = 54 * S, mh = Math.min(58 * S, (SH - my - 112 * S) / 4 - 5 * S); txt('เลือกแมพ', mx + 4 * S, my - 2 * S, 11.5 * S, '#ffe9a8', 'left', 600, 'rgba(0,0,0,.7)', 2);
+  MAPKEYS.forEach((k, i) => { const M0 = MAPS[k], y = my + 10 * S + i * (mh + 5 * S), on = k === MAPK, open = mapOpen(i); panel(mx, y, rw, mh, { r: 10 * S, rim: on ? undefined : 'rgba(170,190,230,.45)', fill: on ? grad(0, y, 0, y + mh, '#3a4a78', '#1c2644') : grad(0, y, 0, y + mh, '#1e2740', '#121828'), lw: on ? 2.6 : 1.5 });
     ui.globalAlpha = open ? 1 : .45; ui.beginPath(); ui.arc(mx + 24 * S, y + mh / 2, 14 * S, 0, TAU); ui.fillStyle = M0.icon; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = '#fff6dc'; ui.stroke(); txt(String(i + 1), mx + 24 * S, y + mh / 2 + 1, 14 * S, '#fff', 'center', 800, 'rgba(0,0,0,.6)', 3);
     txt(M0.name, mx + 46 * S, y + mh * .34, 13.5 * S, on ? '#ffe9a8' : '#fff6dc', 'left'); const bb = Object.values(SAVE.best[k] || {}).sort((a, c) => c.t - a.t)[0];
     txt(open ? (bb ? 'ดีที่สุด ' + fmtT(bb.t) + (bb.win ? ' ชนะแล้ว' : '') : M0.sub) : 'ปลดล็อก: รอด 5:00 ในแมพก่อนหน้า', mx + 46 * S, y + mh * .7, 9.5 * S, open ? (bb && bb.win ? '#9fe8a0' : '#b8c4e0') : '#ff9a8a', 'left', 600, 'rgba(0,0,0,.6)', 2);
-    for (let s = 0; s < 4; s++) star5(mx + rw - 12 * S - (3 - s) * 11 * S, y + mh * .32, 4.5 * S, s < Math.round(M0.diff * 2 - 1)); ui.globalAlpha = 1;
+    for (let s = 0; s < 5; s++) star5(mx + rw - 11 * S - (4 - s) * 10 * S, y + mh * .32, 4.2 * S, s < (SAVE.clear[k] || 0)); ui.globalAlpha = 1;
     HIT.push({ x: mx, y, w: rw, h: mh, fn: () => { if (!open) { sfx('tick', .4, .6); return; } if (k !== MAPK) goPage(k); }, id: 'map_' + k }); });
-  button('start', SW - pad - rw, SH - 58 * S, rw, 46 * S, 'เริ่มเกม', { size: 22 * S, off: G.heroLoading, fn: () => startRun() });
+  const dy = SH - 96 * S, dw = (rw - 4 * 4 * S) / 5; txt('ระดับ', mx + 2 * S, dy - 9 * S, 10 * S, '#ffe9a8', 'left', 600, 'rgba(0,0,0,.7)', 2); txt('ทอง x' + (MAP.diff * DIFFS[G.dl].coin).toFixed(1), mx + rw - 2 * S, dy - 9 * S, 10 * S, '#ffe08a', 'right', 600, 'rgba(0,0,0,.7)', 2);
+  for (let L = 1; L <= 5; L++) { const x = mx + (L - 1) * (dw + 4 * S), D0 = DIFFS[L], open = dlOpen(MAPK, L), on = G.dl === L; rr(x, dy, dw, 24 * S, 8 * S); ui.globalAlpha = open ? 1 : .4; ui.fillStyle = on ? D0.c : 'rgba(20,28,54,.9)'; ui.fill(); ui.lineWidth = (on ? 2.4 : 1.4) * S; ui.strokeStyle = on ? '#fff6dc' : D0.c; ui.stroke();
+    txt(D0.n, x + dw / 2, dy + 12.5 * S, 11 * S, on ? '#141a2a' : '#fff6dc', 'center', 800, on ? null : 'rgba(0,0,0,.6)', 2); ui.globalAlpha = 1; HIT.push({ x, y: dy, w: dw, h: 24 * S, fn: () => { if (!open) { sfx('tick', .4, .6); MSG.t = 2.5; MSG.s = 'ชนะระดับ ' + DIFFS[L - 1].n + ' ในแมพนี้ก่อน'; return; } G.dl = L; SAVE.dl[MAPK] = L; save(); sfx('tick', .5, 1.2); }, id: 'dl' + L }); }
+  if (MSG.t > 0) { MSG.t -= dt; ui.globalAlpha = clamp(MSG.t, 0, 1); txt(MSG.s, mx + rw / 2, dy - 26 * S, 11.5 * S, '#ff9a8a', 'center', 600); ui.globalAlpha = 1; }
+  button('start', SW - pad - rw, SH - 62 * S, rw, 46 * S, 'เริ่มเกม', { size: 22 * S, off: G.heroLoading, fn: () => startRun() });
 }
 function drawShop() {
   dim(.8); const cols = 5, rows = 3, w = Math.min(680 * S, SW - 20 * S), h = Math.min(350 * S, SH - 16 * S), x = SW / 2 - w / 2, y = SH / 2 - h / 2 + 8 * S; panel(x, y, w, h); ribbon(SW / 2, y - 14 * S, 190 * S, 30 * S, 'ร้านอัปเกรดถาวร', ['#3aa83a', '#0c5a1c']);
@@ -972,6 +1006,31 @@ function drawShop() {
     HIT.push({ x: cx, y: cy, w: gw, h: gh, fn: () => buy(it), id: 'buy_' + it.k }); });
   button('back', SW / 2 - 70 * S, y + h - 44 * S, 140 * S, 32 * S, 'กลับ', { c: BLUE, tc: '#fff', ts: 'rgba(0,20,60,.7)', fn: () => { G.state = 'title'; } });
 }
+/* missions: goals over many runs, each pays coins once */
+const MISSIONS = (() => { const bestT = k => Math.max(0, ...Object.values(SAVE.best[k] || {}).map(b => b.t)), anyWin = k => Object.values(SAVE.best[k] || {}).some(b => b.win) ? 1 : 0, L = [];
+  [[500, 100], [2000, 250], [10000, 600], [50000, 2000]].forEach(([t, r], i) => L.push({ id: 'k' + i, n: 'ฆ่ามอนรวม ' + t.toLocaleString() + ' ตัว', v: () => SAVE.kills, t, r }));
+  [[5, 100], [20, 300], [60, 800]].forEach(([t, r], i) => L.push({ id: 'r' + i, n: 'เล่นครบ ' + t + ' รอบ', v: () => SAVE.runs, t, r }));
+  MAPKEYS.forEach((k, i) => { L.push({ id: 's_' + k, n: 'รอด 5 นาทีใน' + MAPS[k].name, v: () => bestT(k), t: 300, r: 120 + i * 60, time: true }); L.push({ id: 'w_' + k, n: 'ชนะ' + MAPS[k].name, v: () => anyWin(k), t: 1, r: 350 + i * 150 }); });
+  HKEYS.forEach(k => L.push({ id: 'h_' + k, n: 'ชนะด้วย' + HEROES[k].name, v: () => SAVE.winH[k] || 0, t: 1, r: 300 }));
+  L.push({ id: 'e1', n: 'ปลุกพลังอาวุธครั้งแรก', v: () => SAVE.evos, t: 1, r: 150 }, { id: 'e2', n: 'ปลุกพลังอาวุธรวม 20 ครั้ง', v: () => SAVE.evos, t: 20, r: 600 }, { id: 'l1', n: 'ถึงเลเวล 25 ในรอบเดียว', v: () => SAVE.maxLv, t: 25, r: 200 }, { id: 'l2', n: 'ถึงเลเวล 45 ในรอบเดียว', v: () => SAVE.maxLv, t: 45, r: 500 },
+    { id: 'b1', n: 'ล้มบอสรวม 10 ตัว', v: () => SAVE.bosses, t: 10, r: 200 }, { id: 'b2', n: 'ล้มบอสรวม 60 ตัว', v: () => SAVE.bosses, t: 60, r: 800 },
+    { id: 'u1', n: 'ซื้ออัปเกรดถาวร 10 ขั้น', v: () => Object.values(SAVE.up).reduce((a, c) => a + c, 0), t: 10, r: 200 }, { id: 'u2', n: 'ซื้ออัปเกรดถาวร 35 ขั้น', v: () => Object.values(SAVE.up).reduce((a, c) => a + c, 0), t: 35, r: 800 },
+    { id: 'd3', n: 'ชนะระดับยาก', v: () => Math.max(0, ...Object.values(SAVE.clear)), t: 3, r: 500 }, { id: 'd5', n: 'ชนะระดับนรก', v: () => Math.max(0, ...Object.values(SAVE.clear)), t: 5, r: 2000 },
+    { id: 'm1', n: 'ความชำนาญฮีโร่ถึง Lv 5', v: () => Math.max(...HKEYS.map(hlv)), t: 5, r: 300 }, { id: 'm2', n: 'ความชำนาญฮีโร่ถึง Lv 15', v: () => Math.max(...HKEYS.map(hlv)), t: 15, r: 1500 }); return L; })();
+function drawQuest() {
+  dim(.8); const w = Math.min(690 * S, SW - 20 * S), h = Math.min(350 * S, SH - 16 * S), x = SW / 2 - w / 2, y = SH / 2 - h / 2 + 8 * S; panel(x, y, w, h); ribbon(SW / 2, y - 14 * S, 150 * S, 30 * S, 'ภารกิจ', ['#3a78d8', '#1a3a8a']);
+  rr(x + w - 124 * S, y + 10 * S, 110 * S, 26 * S, 13 * S); ui.fillStyle = 'rgba(8,10,22,.7)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = '#ffe9a8'; ui.stroke(); coinIc(x + w - 108 * S, y + 23 * S, 8 * S); txt(String(SAVE.coins), x + w - 22 * S, y + 24 * S, 14 * S, '#ffe08a', 'right');
+  const st = m => SAVE.claim[m.id] ? 2 : m.v() >= m.t ? 0 : 1, L = MISSIONS.slice().sort((a, b) => st(a) - st(b)), per = 10, pages = Math.ceil(L.length / per); G.qpage = clamp(G.qpage || 0, 0, pages - 1);
+  txt('ทำสำเร็จแล้วกดรับทอง  (' + L.filter(m => SAVE.claim[m.id]).length + ' / ' + L.length + ')', x + 16 * S, y + 23 * S, 11 * S, '#cfd8f0', 'left', 600, 'rgba(0,0,0,.6)', 2);
+  const gx = x + 12 * S, gy = y + 44 * S, gw = (w - 24 * S) / 2, gh = (h - 44 * S - 52 * S) / 5;
+  L.slice(G.qpage * per, G.qpage * per + per).forEach((m, i) => { const cx = gx + (i % 2) * gw, cy = gy + Math.floor(i / 2) * gh, s0 = st(m), v = Math.min(m.v(), m.t);
+    rr(cx + 3 * S, cy + 2.5 * S, gw - 6 * S, gh - 5 * S, 9 * S); ui.fillStyle = s0 === 0 ? 'rgba(60,84,40,.9)' : 'rgba(26,34,62,.85)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = s0 === 0 ? '#9fe8a0' : s0 === 2 ? 'rgba(170,190,230,.25)' : 'rgba(255,233,168,.5)'; ui.stroke(); ui.globalAlpha = s0 === 2 ? .5 : 1;
+    txt(m.n, cx + 14 * S, cy + gh * .34, Math.min(12.5 * S, gh * .3), '#fff6dc', 'left'); bar(cx + 14 * S, cy + gh * .6, gw * .4, 7 * S, v / m.t, '#8fe0ff', '#2a7ad8'); txt(m.time ? fmtT(v) + ' / ' + fmtT(m.t) : fmtN(v) + ' / ' + fmtN(m.t), cx + 20 * S + gw * .4, cy + gh * .64, 9.5 * S, '#cfd8f0', 'left', 600, 'rgba(0,0,0,.6)', 2);
+    if (s0 === 0) button('claim_' + m.id, cx + gw - 92 * S, cy + gh / 2 - 13 * S, 80 * S, 26 * S, 'รับ ' + m.r, { c: GREEN, tc: '#fff', ts: 'rgba(0,40,0,.7)', size: 12.5 * S, fn: () => { SAVE.claim[m.id] = 1; SAVE.coins += m.r; save(); sfx('coin', .8); sfx('lvl', .4, 1.4); } });
+    else { coinIc(cx + gw - 62 * S, cy + gh / 2, 7 * S); txt(s0 === 2 ? 'รับแล้ว' : String(m.r), cx + gw - 50 * S, cy + gh / 2 + 1, 12 * S, s0 === 2 ? '#9fe8a0' : '#ffe08a', 'left'); } ui.globalAlpha = 1; });
+  button('qprev', x + 16 * S, y + h - 44 * S, 90 * S, 32 * S, 'ก่อนหน้า', { c: GREY, tc: '#fff', ts: 'rgba(0,0,0,.6)', size: 12.5 * S, off: G.qpage <= 0, fn: () => { G.qpage--; } }); button('qnext', x + w - 106 * S, y + h - 44 * S, 90 * S, 32 * S, 'ถัดไป', { c: GREY, tc: '#fff', ts: 'rgba(0,0,0,.6)', size: 12.5 * S, off: G.qpage >= pages - 1, fn: () => { G.qpage++; } });
+  txt((G.qpage + 1) + ' / ' + pages, SW / 2 - 100 * S, y + h - 27 * S, 12 * S, '#cfd8f0', 'center', 600); button('back', SW / 2 - 60 * S, y + h - 44 * S, 120 * S, 32 * S, 'กลับ', { c: BLUE, tc: '#fff', ts: 'rgba(0,20,60,.7)', fn: () => { G.state = 'title'; } });
+}
 function toggleSnd() { SND.on = !SND.on; if (SND.on) { audioInit(); setMusic(MUS.want, true); } else if (MUS.gain) MUS.gain.gain.value = 0; }
 
 /* ---------- a run: start, end, rewards */
@@ -979,7 +1038,7 @@ function makeHero(M) { return { M, D: M.D, k: M.k, pos: new V3(), face: 0, hp: M
 async function selectHero(hk) { if (!HEROES[hk]) hk = 'archer'; if (G.heroLoading) return; G.hk = hk; G.heroLoading = true; sfx('tick', .5); try { const M = await loadHeroModel(hk); HERO = makeHero(M); showHero(M); try { localStorage.setItem('horde_hero', hk); } catch (_) { } } catch (e) { console.error(e); } G.heroLoading = false; }
 function clearRun() {
   MON.length = 0; for (const p of PROJ) if (p.mesh) { scene.remove(p.mesh); p.mesh.material.dispose(); } PROJ.length = 0; ZONES.length = 0; BUL.length = 0; for (const g of GEMS) if (g.spr) scene.remove(g.spr); GEMS.length = 0; PARTS.length = 0; NUMS.length = 0; NOTES.length = 0; TIMERS.length = 0;
-  for (const f of FX) { scene.remove(f.o); } FX.length = 0; for (const W of G.weps) { if (W.mesh) scene.remove(W.mesh, W.mesh2); } for (const k in STATS) delete STATS[k];
+  for (const f of FX) { scene.remove(f.o); } FX.length = 0; for (const sh of SHRINES) scene.remove(sh.g); SHRINES.length = 0; DIR.shrineT = 35; G.rage = 0; for (const W of G.weps) { if (W.mesh) scene.remove(W.mesh, W.mesh2); } for (const k in STATS) delete STATS[k];
   Object.assign(DIR, { cur: [], next: [], phase: -1, acc: 0, swarm: 0, eliteT: 45, bossI: 0, nextBoss: 150 });
   Object.assign(G, { t: 0, lv: 1, xp: 0, need: needXp(1), pend: 0, kills: 0, coins: 0, weps: [], pas: [], dealt: 0, taken: 0, boss: null, endless: false, pickN: 0, pickT: 0, cards: [], endT: 0, won: false, bossKills: 0, chest: null, result: null, endA: 0, paidT: 0, paidK: 0, paidB: 0 });
   BANNER.t = 0; FLASH.r = FLASH.w = 0;
@@ -987,36 +1046,41 @@ function clearRun() {
 const LOAD = { msg: 'กำลังโหลด...', f: 0 };
 async function startRun() {
   if (!HERO || G.heroLoading) return; audioInit(); clearRun(); const M = HERO.M; HERO = makeHero(M); showHero(M); G.state = 'load'; LOAD.msg = 'กำลังเรียกฝูงมอน...'; LOAD.f = .5;
-  G.seed = (Math.random() * 1e9) | 0; G.hpMul = MAP.diff; G.dmgMul = 1 + (MAP.diff - 1) * .55; G.spdMul = 1 + (MAP.diff - 1) * .06; G.rateMul = 1 + (MAP.diff - 1) * .12; G.reroll = 2 + up('reroll'); G.revive = up('revive'); G.pend = up('head');
+  const DF = DIFFS[G.dl]; G.seed = (Math.random() * 1e9) | 0; G.hpMul = MAP.diff * DF.hp; G.dmgMul = (1 + (MAP.diff - 1) * .55) * DF.dmg; G.spdMul = 1 + (MAP.diff - 1) * .06 + (G.dl - 2) * .03; G.rateMul = (1 + (MAP.diff - 1) * .12) * DF.rate; G.coinMul = MAP.diff * DF.coin; G.reroll = 2 + up('reroll'); G.revive = up('revive'); G.pend = up('head');
   addWeapon(HERO.D.start); BOT.fear = HERO.D.cls === 'sword' ? 2.6 : 7; recalc(); HERO.hp = HERO.max; DIR.cur = choosePhase(0); DIR.phase = 0; await Promise.all([...DIR.cur.map(loadKind), loadKind(MAP.boss[0])]); LOAD.f = 1;
   CAM.look.set(0, 0, 0); G.state = 'play'; setMusic(MAP.music === 'calm' ? 'battle' : MAP.music); banner(MAP.name, 'รอดให้ครบ 10 นาที', false, 2.4); SAVE.seen[HERO.D.start] = 1;
 }
 function finishRun(quit) {
-  const dt = G.t - G.paidT, win = G.won && !G.endless, bonus = Math.round((dt / 6 + (G.kills - G.paidK) / 40 + ((G.bossKills || 0) - G.paidB) * 25 + (win ? 150 : 0)) * MAP.diff * (P.gold || 1)), run = G.coins, coins = run + bonus;
+  const dt = G.t - G.paidT, win = G.won && !G.endless, bonus = Math.round((dt / 6 + (G.kills - G.paidK) / 40 + ((G.bossKills || 0) - G.paidB) * 25 + (win ? 150 : 0)) * G.coinMul * (P.gold || 1)), run = G.coins, coins = run + bonus;
+  const hx = Math.round((dt / 8 + (G.kills - G.paidK) / 40 + (win ? 60 : 0)) * DIFFS[G.dl].coin), l0 = hlv(G.hk); SAVE.hx[G.hk] = (SAVE.hx[G.hk] || 0) + hx; SAVE.bosses += (G.bossKills || 0) - G.paidB; SAVE.maxLv = Math.max(SAVE.maxLv, G.lv); if (win) { SAVE.clear[MAPK] = Math.max(SAVE.clear[MAPK] || 0, G.dl); SAVE.winH[G.hk] = (SAVE.winH[G.hk] || 0) + 1; }
   SAVE.coins += coins; SAVE.runs++; SAVE.kills += G.kills - G.paidK; const B = SAVE.best[MAPK] = SAVE.best[MAPK] || {}, old = B[G.hk], rec = !old || G.t > old.t || (win && !old.win); if (rec) B[G.hk] = { t: Math.round(G.t), kills: G.kills, lv: G.lv, win: !!(win || (old && old.win) || G.endless) }; save();
-  G.paidT = G.t; G.paidK = G.kills; G.paidB = G.bossKills || 0; G.coins = 0; G.result = { win, coins, run, bonus, rec: rec && !quit }; G.endA = 0; if (quit) { toTitle(); return; } G.state = 'end'; INP.x = INP.z = 0; JOY.on = false;
+  G.paidT = G.t; G.paidK = G.kills; G.paidB = G.bossKills || 0; G.coins = 0; G.result = { win, coins, run, bonus, rec: rec && !quit, hx, l0, l1: hlv(G.hk) }; G.endA = 0; if (quit) { toTitle(); return; } G.state = 'end'; INP.x = INP.z = 0; JOY.on = false;
 }
 function toTitle() { clearRun(); if (HERO) { const M = HERO.M; HERO = makeHero(M); showHero(M); } G.state = 'title'; setMusic('calm'); }
 function goEndless() { G.endless = true; G.won = false; G.state = 'play'; DIR.nextBoss = G.t + 120; DIR.bossI = 4; banner('โหมดไม่มีจบ', 'มอนแรงขึ้นเรื่อยๆ รอดให้นานที่สุด', true); setMusic('battle'); HERO.inv = 2; }
 
 /* ---------- input: one thumb anywhere = the stick; W A S D / arrows; taps on the painted buttons */
-const INP = { x: 0, z: 0 }, JOY = { on: false, id: -1, x0: 0, y0: 0 }, KEYS = {};
+const INP = { x: 0, z: 0 }, JOY = { on: false, id: -1, x0: 0, y0: 0 }, KEYS = {}, PTR = new Map(); let PINCH = null;
+function setZoom(z) { CAM.zoom = clamp(z, .7, 1.4); try { localStorage.setItem('horde_zoom', CAM.zoom.toFixed(2)); } catch (_) { } fitView(); }
+addEventListener('wheel', e => { if (G.state === 'play') setZoom(CAM.zoom * Math.exp(-e.deltaY * .0012)); }, { passive: true });
 function tap(x, y) { for (let i = HIT.length - 1; i >= 0; i--) { const h = HIT[i]; if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) { h.fn(); return true; } } return false; }
-uic.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); if (tap(e.clientX, e.clientY)) return; if (G.state === 'play') { JOY.on = true; JOY.id = e.pointerId; JOY.x0 = e.clientX; JOY.y0 = e.clientY; INP.x = INP.z = 0; try { uic.setPointerCapture(e.pointerId); } catch (_) { } } });
-uic.addEventListener('pointermove', e => { if (!JOY.on || e.pointerId !== JOY.id) return; const R = 40 * S; let dx = (e.clientX - JOY.x0) / R, dy = (e.clientY - JOY.y0) / R; const L = Math.hypot(dx, dy); if (L > 1) { dx /= L; dy /= L; if (L > 1.6) { JOY.x0 = e.clientX - dx * R * 1.6; JOY.y0 = e.clientY - dy * R * 1.6; } } INP.x = dx; INP.z = dy; });
-const joyEnd = e => { if (e.pointerId === JOY.id) { JOY.on = false; JOY.id = -1; INP.x = INP.z = 0; } }; uic.addEventListener('pointerup', joyEnd); uic.addEventListener('pointercancel', joyEnd); uic.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('keydown', e => { KEYS[e.code] = true; audioInit(); if (e.code === 'Escape' || e.code === 'KeyP') { if (G.state === 'play') G.state = 'pause'; else if (G.state === 'pause') G.state = 'play'; else if (G.state === 'shop') G.state = 'title'; }
+uic.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); PTR.set(e.pointerId, [e.clientX, e.clientY]); if (PTR.size === 2 && G.state === 'play') { const [a, b] = [...PTR.values()]; PINCH = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z: CAM.zoom }; JOY.on = false; INP.x = INP.z = 0; return; } if (tap(e.clientX, e.clientY)) return; if (G.state === 'play') { JOY.on = true; JOY.id = e.pointerId; JOY.x0 = e.clientX; JOY.y0 = e.clientY; INP.x = INP.z = 0; try { uic.setPointerCapture(e.pointerId); } catch (_) { } } });
+uic.addEventListener('pointermove', e => { if (PTR.has(e.pointerId)) PTR.set(e.pointerId, [e.clientX, e.clientY]); if (PINCH && PTR.size >= 2) { const [a, b] = [...PTR.values()]; setZoom(PINCH.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / PINCH.d); return; } if (!JOY.on || e.pointerId !== JOY.id) return; const R = 40 * S; let dx = (e.clientX - JOY.x0) / R, dy = (e.clientY - JOY.y0) / R; const L = Math.hypot(dx, dy); if (L > 1) { dx /= L; dy /= L; if (L > 1.6) { JOY.x0 = e.clientX - dx * R * 1.6; JOY.y0 = e.clientY - dy * R * 1.6; } } INP.x = dx; INP.z = dy; });
+const joyEnd = e => { PTR.delete(e.pointerId); if (PTR.size < 2) PINCH = null; if (e.pointerId === JOY.id) { JOY.on = false; JOY.id = -1; INP.x = INP.z = 0; } }; uic.addEventListener('pointerup', joyEnd); uic.addEventListener('pointercancel', joyEnd); uic.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('keydown', e => { KEYS[e.code] = true; audioInit(); if (e.code === 'Escape' || e.code === 'KeyP') { if (G.state === 'play') G.state = 'pause'; else if (G.state === 'pause') G.state = 'play'; else if (G.state === 'shop' || G.state === 'quest') G.state = 'title'; }
   if (G.state === 'levelup' && /^Digit[1-4]$/.test(e.code)) pickCard(+e.code.slice(5) - 1); if (G.state === 'title' && (e.code === 'Enter' || e.code === 'Space')) startRun(); });
 addEventListener('keyup', e => { KEYS[e.code] = false; }); addEventListener('blur', () => { for (const k in KEYS) KEYS[k] = false; if (G.state === 'play' && !Q.get('nopause')) G.state = 'pause'; });
 function keysInp() { if (JOY.on || BOT.on) return; const x = (KEYS.KeyD || KEYS.ArrowRight ? 1 : 0) - (KEYS.KeyA || KEYS.ArrowLeft ? 1 : 0), z = (KEYS.KeyS || KEYS.ArrowDown ? 1 : 0) - (KEYS.KeyW || KEYS.ArrowUp ? 1 : 0); INP.x = x; INP.z = z; }
 
 /* ---------- camera, loop, start */
-function resize() { SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); renderer.setPixelRatio(Math.min(DPR, TOUCH ? 1.5 : 2)); renderer.setSize(SW, SH, false); uic.width = SW * DPR; uic.height = SH * DPR; camera.aspect = SW / SH; camera.updateProjectionMatrix(); S = clamp(Math.min(SW, SH) / 400, .75, 1.5);
-  CAM.dist = SW < SH ? 24 : 15.5; camera.position.copy(CAM.dir).multiplyScalar(CAM.dist); camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); const rc = new THREE.Raycaster(), pl = new THREE.Plane(UP, 0), p = new V3(); let far = 10;
-  for (const [x, y] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { rc.setFromCamera(new THREE.Vector2(x, y), camera); if (rc.ray.intersectPlane(pl, p)) far = Math.max(far, p.length()); } SPAWNR = Math.min(19, far + 1.3); }
+function resize() { SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR; camera.aspect = SW / SH; camera.updateProjectionMatrix(); S = clamp(Math.min(SW, SH) / 400, .75, 1.5);
+  applyQ(); fitView(); }
+function fitView() {   /* how far the camera stands (zoom) and how far away monsters must appear to be off screen */
+  CAM.dist = (SW < SH ? 24 : 15.5) / CAM.zoom; camera.position.copy(CAM.dir).multiplyScalar(CAM.dist); camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); const rc = new THREE.Raycaster(), pl = new THREE.Plane(UP, 0), p = new V3(); let far = 10;
+  for (const [x, y] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { rc.setFromCamera(new THREE.Vector2(x, y), camera); if (rc.ray.intersectPlane(pl, p)) far = Math.max(far, p.length()); } SPAWNR = Math.min(24, far + 1.3); }
 addEventListener('resize', resize);
 function updCam(dt) {
-  if (G.state === 'title' || G.state === 'shop' || (G.state === 'load' && !G.t)) { CAM.look.set(0, 0, 0); const wide = SW / SH; camera.position.set(wide > 1.5 ? -.1 : 0, 1.3, wide > 1.5 ? 5.0 : 7.5); camera.lookAt(0, .78, 0); }
+  if (G.state === 'title' || G.state === 'shop' || G.state === 'quest' || (G.state === 'load' && !G.t)) { CAM.look.set(0, 0, 0); const wide = SW / SH; camera.position.set(wide > 1.5 ? -.1 : 0, 1.3, wide > 1.5 ? 5.0 : 7.5); camera.lookAt(0, .78, 0); }
   else { const H = HERO.pos; CAM.look.x = lerp(CAM.look.x, H.x, 1 - Math.exp(-dt * 9)); CAM.look.z = lerp(CAM.look.z, H.z, 1 - Math.exp(-dt * 9)); camera.position.copy(CAM.look).addScaledVector(CAM.dir, CAM.dist); camera.lookAt(CAM.look);
     if (CAM.shake > 0) { camera.position.x += (Math.random() - .5) * CAM.shake; camera.position.y += (Math.random() - .5) * CAM.shake; CAM.shake = Math.max(0, CAM.shake - dt * 1.2); } }
   camera.updateMatrixWorld(); CAMR.set(1, 0, 0).applyQuaternion(camera.quaternion); CAMU.set(0, 1, 0).applyQuaternion(camera.quaternion);
@@ -1034,13 +1098,16 @@ function botInp(dt) {
 function botPick() { if (G.state === 'levelup') { G.cardT = 1; let best = 0, bs = -1; G.cards.forEach((c, i) => { const s = (c.type === 'evo' ? 10 : c.type === 'w' ? (c.isNew ? 3 : 5) : c.type === 'p' ? (['pow', 'haste', 'area', 'hp', 'armor', 'multi'].includes(c.k) ? 4 : 2) : 0) + Math.random(); if (s > bs) { bs = s; best = i; } }); pickCard(best); } else if (G.state === 'chest') { G.state = 'play'; G.chest = null; } }
 function tick(dt) {
   NOW += dt; if (!HERO.dead && G.endT <= 0) G.t += dt; G.pickT -= dt; if (G.pickT <= 0) G.pickN = 0; if (BOT.on) botInp(dt); else keysInp();
-  regrid(); updHero(dt); if (!HERO.dead && G.endT <= 0) { updWeapons(dt); updDirector(dt); } updProj(dt); updMons(dt); updGems(dt); updParts(dt); updFx(dt); updTimers(dt);
+  regrid(); updHero(dt); if (G.rage > 0) G.rage -= dt; if (!HERO.dead && G.endT <= 0) { updWeapons(dt); updDirector(dt); updShrines(dt); } updProj(dt); updMons(dt); updGems(dt); updParts(dt); updFx(dt); updTimers(dt);
   if (G.endT > 0) { G.endT -= dt; if (G.endT <= 0) finishRun(); } else if (G.pend > 0 && !HERO.dead && G.state === 'play') openLevelUp();
 }
+const QL = { lv: clamp(+(Q.get('q') || 0), 0, 3), fixed: Q.has('q'), acc: 0, n: 0, wait: 5 };
+function applyQ() { const sh = QL.lv < 2; renderer.setPixelRatio(Math.min(DPR, TOUCH ? 1.5 : 2) * [1, .8, .8, .6][QL.lv]); renderer.setSize(SW, SH, false); if (renderer.shadowMap.enabled !== sh) { renderer.shadowMap.enabled = sh; sun.castShadow = sh; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); } }
+function watchFps(raw) { if (QL.fixed || QL.lv >= 3 || G.state !== 'play') return; if (QL.wait > 0) { QL.wait -= raw; return; } QL.acc += raw; QL.n++; if (QL.acc >= 3) { if (QL.n / QL.acc < 26) { QL.lv++; applyQ(); QL.wait = 3; } QL.acc = QL.n = 0; } }
 const clock = new THREE.Clock();
 function frame() {
-  requestAnimationFrame(frame); const dt = Math.min(.05, clock.getDelta()); RT += dt; SFXN = 0;
-  if (G.state === 'play') tick(dt); else if ((G.state === 'title' || G.state === 'shop') && HERO) { HERO.M.mixer.update(dt); HERO.M.T.root.position.set(0, 0, 0); HERO.M.T.root.rotation.y = .35 * Math.sin(RT * .5); HERO.M.T.root.visible = true; updString(HERO.M); HRING.position.set(0, .05, 0); }
+  requestAnimationFrame(frame); const raw = clock.getDelta(), dt = Math.min(.05, raw); RT += dt; SFXN = 0; if (!NORENDER && raw < 1) watchFps(raw);
+  if (G.state === 'play') tick(dt); else if ((G.state === 'title' || G.state === 'shop' || G.state === 'quest') && HERO) { HERO.M.mixer.update(dt); HERO.M.T.root.position.set(0, 0, 0); HERO.M.T.root.rotation.y = .35 * Math.sin(RT * .5); HERO.M.T.root.visible = true; updString(HERO.M); HRING.position.set(0, .05, 0); }
   if (BOT.on) botPick(); if (HERO) updCam(dt); if (!NORENDER) { if (HERO && G.state !== 'load') fillBatches(); else { GLOW.g.instanceCount = 0; GLOW.n = 0; } renderer.render(scene, camera); drawUI(dt); }
 }
 async function boot() {
@@ -1049,10 +1116,11 @@ async function boot() {
   try { LOAD.msg = 'กำลังสร้างแมพ...'; LOAD.f = .2; const [IDX] = await Promise.all([fetch('art/horde/mobs/index.json').then(r => r.json()), loadBase(ld), NORENDER ? null : loadScenery(ld)]); MOBS = IDX.mobs; LOAD.f = .7; LOAD.msg = 'กำลังเรียกฮีโร่...';
     let hk = Q.get('hero'); if (!HEROES[hk]) { try { hk = localStorage.getItem('horde_hero'); } catch (_) { } } await selectHero(HEROES[hk] ? hk : 'archer'); if (!HERO) throw new Error('hero');
   } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
+  G.dl = clamp(+Q.get('dl') || SAVE.dl[MAPK] || 1, 1, 5); while (G.dl > 1 && !dlOpen(MAPK, G.dl)) G.dl--;
   if (Q.get('go') === '1') startRun(); else { G.state = 'title'; setMusic('calm'); }
 }
 boot(); frame();
-window.GAME = { G, MON, PROJ, GEMS, FX, KIND, DIR, SAVE, P, WEAPONS, PASSIVES, HEROES, MAPS, MAPK, INP, BOT, STATS, HIT, get HERO() { return HERO; }, get MOBS() { return MOBS; }, startRun, selectHero, pickCard, applyCard, addWeapon, spawnMon, spawnBoss, loadKind, openChest, finishRun, toTitle, tap, recalc, aliveN, toScreen,
+window.GAME = { SHRINES, MISSIONS, spawnShrine, G, MON, PROJ, GEMS, FX, KIND, DIR, SAVE, P, WEAPONS, PASSIVES, HEROES, MAPS, MAPK, INP, BOT, STATS, HIT, get HERO() { return HERO; }, get MOBS() { return MOBS; }, startRun, selectHero, pickCard, applyCard, addWeapon, spawnMon, spawnBoss, loadKind, openChest, finishRun, toTitle, tap, recalc, aliveN, toScreen,
   info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures }),
   sim: (sec, dt = 1 / 30) => { let n = 0; for (let t = 0; t < sec; t += dt) { if (G.state !== 'play') { botPick(); if (G.state !== 'play') break; } tick(dt); n++; } return n; } };
 </script>
