@@ -78,9 +78,16 @@ let MAPK = Q.get('map'); if (!MAPS[MAPK]) MAPK = 'forest';   // one map for now 
 const MAP = MAPS[MAPK];
 // MAZE mode (owner 2026-11-19 "ทำแมพให้สวยกว่านี้ อาจได้เล่นคล้ายๆ green td"): an open field, towers on ANY tile, the monsters find their way round
 // them (a tower may never close the way: there is always a path); the cheap stone wall is for mazing. ?mode=road = the old road with build pads.
-const MAZE = Q.get('mode') !== 'road';
+// CIRCLE mode (owner 2026-11-19 "GREEN CIRCLE TD MEGA", picked "วิ่งวนไม่หยุด"): the default. Monsters come out of 2 portals onto a loop road
+// and run round it for ever; a new wave comes on a timer whether the last one is dead or not; the game is lost when more than LIMIT
+// monsters are on the map. Towers on any free tile inside or outside the loop, the hero on the dais in the middle.
+const MODE = ['maze', 'road', 'circle'].includes(Q.get('mode')) ? Q.get('mode') : 'circle';
+const MAZE = MODE === 'maze', CIRC = MODE === 'circle', LIMIT = 60, CGAP = 14, HRX = CIRC ? .7 : 0;   /* CGAP = seconds from the end of a wave's spawning to the next wave */
+if (CIRC) { const A = 6.6, B = 2.4, r = 1.6, P = [[-A, 0], [-A, -B + r]]; const arc = (cx, cz, a0) => { for (let k = 1; k <= 6; k++) { const a = a0 + k / 6 * Math.PI / 2; P.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r]); } };
+  arc(-A + r, -B + r, Math.PI); P.push([A - r, -B]); arc(A - r, -B + r, -Math.PI / 2); P.push([A, B - r]); arc(A - r, B - r, 0); P.push([-A + r, B]); arc(-A + r, B - r, Math.PI / 2); P.push([-A, 0]);
+  MAP.path = P.map(([x, z]) => [x + 9, z + 5]); }   /* a rounded-rectangle loop, clockwise on screen, starting at the left portal */
 if (MAZE) MAP.path = [[.3, 5], [16.6, 5]];   /* the straight line from the portal to the castle: fliers fly it over the towers */
-const HPK = n => MAP.hp * (MAZE ? 1 + .5 * clamp((n - 5) / 15, 0, 1) : 1);   /* monster life of wave n: in MAZE it grows to x1.5 by wave 20 (a built maze makes the walk much longer) */
+const HPK = n => MAP.hp * (MAZE ? 1 + .5 * clamp((n - 5) / 15, 0, 1) : CIRC ? 1 + .05 * Math.max(0, n - 5) : 1);   /* CIRCLE: towers get unlimited laps, so life grows a little faster */   /* monster life of wave n: in MAZE it grows to x1.5 by wave 20 (a built maze makes the walk much longer) */
 scene.background.setHex(MAP.sky); scene.fog = new THREE.Fog(MAP.sky, 26, 60); HEMI.color.setHex(MAP.hemi[0]); HEMI.groundColor.setHex(MAP.hemi[1]); sun.color.setHex(MAP.sun);
 const MW = 18, MH = 10, OX = -MW / 2, OZ = -MH / 2;
 const WP = MAP.path.map(([x, z]) => new V3(x + OX, 0, z + OZ));
@@ -90,6 +97,7 @@ function distToPath(x, z) { let best = 1e9; for (const q of SEG) { const px = x 
 const tileC = (i, j) => new V3(i + .5 + OX, 0, j + .5 + OZ);
 const ROAD = new Set(); for (let i = 0; i < MW; i++) for (let j = 0; j < MH; j++) { const c = tileC(i, j); if (distToPath(c.x, c.z) < .55) ROAD.add(i + ',' + j); }
 const CASTLE = new V3(WP[WP.length - 1].x + .55, 0, WP[WP.length - 1].z), CAVEP = new V3(WP[0].x - .1, 0, WP[0].z);
+const PORTS = CIRC ? [new V3(-7.75, 0, 0), new V3(7.75, 0, 0)] : [];   /* CIRCLE: the two portals (left = loop start, right = half way) */
 // build spots: tiles next to the road that cover the most road (picked by code, spread out)
 const PADS = []; if (!MAZE) {
   const cand = []; for (let i = 0; i < MW; i++) for (let j = 0; j < MH; j++) { if (ROAD.has(i + ',' + j)) continue; const c = tileC(i, j), d = distToPath(c.x, c.z); if (d < .9 || d > 1.6 || i < 1 || i > MW - 3) continue;
@@ -97,14 +105,14 @@ const PADS = []; if (!MAZE) {
     let cover = 0; const tp = new V3(); for (let s = 0; s < PATHLEN; s += .5) { pathAt(s, tp); if (tp.distanceTo(c) < 3.2) cover++; } cand.push({ i, j, c, cover }); }
   cand.sort((a, b) => b.cover - a.cover); for (const q of cand) { if (PADS.length >= 12) break; if (PADS.every(p => p.c.distanceTo(q.c) > 2.1)) PADS.push({ i: q.i, j: q.j, c: q.c, tower: null }); }
 }
-const HPAD = MAZE ? { i: 8, j: 4, c: tileC(8, 4), tower: null } : PADS.shift();   // the hero dais (owner: the hero stays in ONE slot)
+const HPAD = MAZE ? { i: 8, j: 4, c: tileC(8, 4), tower: null } : CIRC ? { c: new V3(0, 0, 0), tower: null } : PADS.shift();   // the hero dais (owner: the hero stays in ONE slot)
 // ---------- the maze grid (MAZE): tiles 1..15 x 1..8 are the field; the ring round it is scenery, except the gates (the portal left, the castle right).
 // DIST = walking distance to the castle gate for every tile (Dijkstra, 8 ways, no cutting round a tower's corner); monsters step to the neighbour nearest.
 const NC = MW * MH, INF = 1e9, BLK = new Uint8Array(NC), DIST = new Float32Array(NC), TMPB = new Uint8Array(NC), TMPD = new Float32Array(NC), cId = (i, j) => j * MW + i;
 const FI0 = 1, FI1 = 15, FJ0 = 1, FJ1 = 8, SPC = [cId(0, 4), cId(0, 5)], EXC = [cId(16, 4), cId(16, 5)];
 const inField = (i, j) => i >= FI0 && i <= FI1 && j >= FJ0 && j <= FJ1;
 const NB8 = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
-for (let c = 0; c < NC; c++) BLK[c] = inField(c % MW, c / MW | 0) ? 0 : 1; for (const c of [...SPC, ...EXC]) BLK[c] = 0; BLK[cId(HPAD.i, HPAD.j)] = 1;
+for (let c = 0; c < NC; c++) BLK[c] = inField(c % MW, c / MW | 0) ? 0 : 1; for (const c of [...SPC, ...EXC]) BLK[c] = 0; if (HPAD.i != null) BLK[cId(HPAD.i, HPAD.j)] = 1;
 const opn = (B, i, j) => i >= 0 && j >= 0 && i < MW && j < MH && !B[cId(i, j)];
 function nbs(B, c, f) { const i = c % MW, j = c / MW | 0; for (const [di, dj, w] of NB8) { if (!opn(B, i + di, j + dj)) continue; if (di && dj && (!opn(B, i + di, j) || !opn(B, i, j + dj))) continue; f(cId(i + di, j + dj), w); } }
 function flow(B = BLK, D = DIST) {   /* 180 tiles: a plain scan Dijkstra is fast enough */
@@ -116,7 +124,9 @@ function nextCell(c, D = DIST, B = BLK) { let best = c, bv = INF; nbs(B, c, (n, 
 const cellAt = (x, z) => cId(clamp(Math.floor(x - OX), 0, MW - 1), clamp(Math.floor(z - OZ), 0, MH - 1));
 function openNear(x, z) { let best = SPC[0], bd = 1e9; for (let c = 0; c < NC; c++) { if (BLK[c] || DIST[c] >= INF) continue; const d = Math.hypot(c % MW + .5 + OX - x, (c / MW | 0) + .5 + OZ - z); if (d < bd) { bd = d; best = c; } } return best; }
 if (MAZE) { flow(); for (let j = FJ0; j <= FJ1; j++) for (let i = FI0; i <= FI1; i++) if (!BLK[cId(i, j)]) PADS.push({ i, j, c: tileC(i, j), tower: null, cell: true }); }
+if (CIRC) for (let j = 1; j < MH - 1; j++) for (let i = 1; i < MW - 1; i++) { const c = tileC(i, j); if (distToPath(c.x, c.z) < .9 || Math.hypot(c.x, c.z) < 1 || PORTS.some(p => p.distanceTo(c) < 1.3)) continue; PADS.push({ i, j, c, tower: null, cell: true }); }
 const PADAT = {}; for (const p of PADS) if (p.cell) PADAT[cId(p.i, p.j)] = p;
+const aliveCount = () => { let n = 0; for (const m of MON) if (!m.dead) n += m.boss ? 5 : 1; return n; };   /* CIRCLE: a boss counts as 5 */
 function canBuild(pad) {   /* MAZE: the tile is free, no monster stands on it or walks to it, and the way from the portal (and from every monster) stays open */
   const c = cId(pad.i, pad.j); canBuild.why = 'way'; if (BLK[c] || pad.tower) return false;
   for (const m of MON) if (!m.dead && !m.fly && (m.tgt === c || (Math.abs(m.pos.x - pad.c.x) < .62 && Math.abs(m.pos.z - pad.c.z) < .62))) { canBuild.why = 'mon'; return false; }
@@ -136,13 +146,15 @@ const GPX = 96, groundTex = canvasTex(MW * GPX, MH * GPX, (g, W, H) => {
   g.lineWidth = 1.6; for (let i = 0; i < 26000; i++) { const x = R() * W, y = R() * H, l = 4 + R() * 9; g.strokeStyle = (R() < .5 ? MAP.grass[1] : MAP.grass[2]) + (R() < .5 ? 'aa' : '66'); g.beginPath(); g.moveTo(x, y); g.lineTo(x + (R() - .5) * 5, y - l); g.stroke(); }
   // the road: soft dark edge, dirt, lighter middle, ruts, pebbles, edge stones
   if (!MAZE) {
-  const road = (w, col, blur = 0) => { g.save(); g.filter = blur ? `blur(${blur}px)` : 'none'; g.strokeStyle = col; g.lineWidth = w * GPX; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); WP.forEach((p, i) => i ? g.lineTo(X(p.x), Z(p.z)) : g.moveTo(X(p.x) - GPX, Z(p.z))); g.stroke(); g.restore(); };
+  const road = (w, col, blur = 0) => { g.save(); g.filter = blur ? `blur(${blur}px)` : 'none'; g.strokeStyle = col; g.lineWidth = w * GPX; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); WP.forEach((p, i) => i ? g.lineTo(X(p.x), Z(p.z)) : g.moveTo(X(p.x) - (CIRC ? 0 : GPX), Z(p.z))); if (CIRC) g.closePath(); g.stroke(); g.restore(); };
   road(1.22, MAP.edge + '88', 14); road(1.0, MAP.road[1], 3); road(.9, MAP.road[0], 0); road(.45, MAP.road[2] + '66', 10);
   const inRoad = (x, y) => distToPath(x / GPX + OX, y / GPX + OZ) < .43;
   for (let i = 0; i < 2600; i++) { const x = R() * W, y = R() * H; if (!inRoad(x, y)) continue; g.fillStyle = R() < .5 ? MAP.road[1] + 'cc' : MAP.road[2] + 'cc'; g.beginPath(); g.ellipse(x, y, 1.5 + R() * 3.5, 1.2 + R() * 2.5, R() * 3, 0, TAU); g.fill(); }
   for (const off of [-.2, .2]) { g.save(); g.strokeStyle = MAP.road[1] + '66'; g.lineWidth = 5; g.setLineDash([30, 14]); g.beginPath(); for (let s = 0; s <= PATHLEN; s += .1) { const p = new V3(); pathAt(s, p, off); s ? g.lineTo(X(p.x), Z(p.z)) : g.moveTo(X(p.x), Z(p.z)); } g.stroke(); g.restore(); }
   for (let s = .3; s < PATHLEN; s += .27) for (const side of [-.5, .5]) { if (R() < .35) continue; const p = new V3(); pathAt(s, p, side * (1 + (R() - .5) * .12)); if (distToPath(p.x, p.z) < .44) continue; const x = X(p.x), y = Z(p.z), r = 5 + R() * 7;
     g.fillStyle = 'rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(x + 2, y + 3, r, r * .7, 0, 0, TAU); g.fill(); g.fillStyle = R() < .5 ? MAP.cliff[2] : MAP.cliff[0]; g.beginPath(); g.ellipse(x, y, r, r * .72, R() * 3, 0, TAU); g.fill(); g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.ellipse(x - r * .25, y - r * .25, r * .4, r * .25, 0, 0, TAU); g.fill(); }
+  if (CIRC) { for (const p of PADS) { g.fillStyle = (p.i + p.j) % 2 ? 'rgba(255,255,220,.07)' : 'rgba(0,40,0,.05)'; g.fillRect(X(OX + p.i), Z(OZ + p.j), GPX, GPX); g.strokeStyle = 'rgba(30,50,15,.13)'; g.lineWidth = 2; g.strokeRect(X(OX + p.i) + 1, Z(OZ + p.j) + 1, GPX - 2, GPX - 2); }   /* the build tiles read as a soft grid */
+    for (const q of PORTS) { const x = X(q.x), y = Z(q.z), gr = g.createRadialGradient(x, y, 8, x, y, GPX * 1.2); gr.addColorStop(0, 'rgba(60,20,80,.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - GPX * 1.5, y - GPX * 1.5, GPX * 3, GPX * 3); } }
   } else {   // MAZE: the field = a soft checker so the tiles read, thin grid lines, a ring of edge stones round it (open at the two gates), worn earth at the gates
     const fx0 = X(OX + FI0), fz0 = Z(OZ + FJ0), fw = (FI1 - FI0 + 1) * GPX, fh = (FJ1 - FJ0 + 1) * GPX;
     g.save(); g.filter = 'blur(10px)'; g.fillStyle = MAP.edge + '66'; g.fillRect(fx0 - 14, fz0 - 14, fw + 28, fh + 28); g.restore();
@@ -158,9 +170,9 @@ const GPX = 96, groundTex = canvasTex(MW * GPX, MH * GPX, (g, W, H) => {
     for (const [x, y, c0] of [[X(OX + .6), Z(0), 'rgba(60,20,80,.6)'], [X(OX + 16.3), Z(0), MAP.road[1] + 'cc']]) { const gr = g.createRadialGradient(x, y, 8, x, y, GPX * 1.25); gr.addColorStop(0, c0); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - GPX * 1.5, y - GPX * 1.5, GPX * 3, GPX * 3); }
   }
   // bare earth under the build spots, cobbles in front of the castle, a dark rocky patch at the cave
-  for (const p of MAZE ? [HPAD] : [...PADS, HPAD]) { const x = X(p.c.x), y = Z(p.c.z), gr = g.createRadialGradient(x, y, 10, x, y, GPX * .75); gr.addColorStop(0, MAP.road[1] + 'aa'); gr.addColorStop(1, MAP.road[1] + '00'); g.fillStyle = gr; g.fillRect(x - GPX, y - GPX, GPX * 2, GPX * 2); }
-  { const x = X(CASTLE.x - .4), y = Z(CASTLE.z); for (let i = 0; i < 160; i++) { const a = R() * TAU, d = Math.sqrt(R()) * GPX * 1.5; g.fillStyle = R() < .5 ? MAP.cliff[2] : MAP.cliff[0]; g.fillRect(x + Math.cos(a) * d - 7, y + Math.sin(a) * d - 5, 13 + R() * 6, 9 + R() * 4); g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(x + Math.cos(a) * d - 7, y + Math.sin(a) * d + 4, 13, 2); } }
-  if (!MAZE) { const x = X(CAVEP.x + .3), y = Z(CAVEP.z), gr = g.createRadialGradient(x, y, 10, x, y, GPX * 1.6); gr.addColorStop(0, 'rgba(40,30,25,.55)'); gr.addColorStop(1, 'rgba(40,30,25,0)'); g.fillStyle = gr; g.fillRect(x - GPX * 2, y - GPX * 2, GPX * 4, GPX * 4); }
+  for (const p of MAZE || CIRC ? [HPAD] : [...PADS, HPAD]) { const x = X(p.c.x), y = Z(p.c.z), gr = g.createRadialGradient(x, y, 10, x, y, GPX * .75); gr.addColorStop(0, MAP.road[1] + 'aa'); gr.addColorStop(1, MAP.road[1] + '00'); g.fillStyle = gr; g.fillRect(x - GPX, y - GPX, GPX * 2, GPX * 2); }
+  if (!CIRC) { const x = X(CASTLE.x - .4), y = Z(CASTLE.z); for (let i = 0; i < 160; i++) { const a = R() * TAU, d = Math.sqrt(R()) * GPX * 1.5; g.fillStyle = R() < .5 ? MAP.cliff[2] : MAP.cliff[0]; g.fillRect(x + Math.cos(a) * d - 7, y + Math.sin(a) * d - 5, 13 + R() * 6, 9 + R() * 4); g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(x + Math.cos(a) * d - 7, y + Math.sin(a) * d + 4, 13, 2); } }
+  if (!MAZE && !CIRC) { const x = X(CAVEP.x + .3), y = Z(CAVEP.z), gr = g.createRadialGradient(x, y, 10, x, y, GPX * 1.6); gr.addColorStop(0, 'rgba(40,30,25,.55)'); gr.addColorStop(1, 'rgba(40,30,25,0)'); g.fillStyle = gr; g.fillRect(x - GPX * 2, y - GPX * 2, GPX * 4, GPX * 4); }
   if (MAP.flowers) for (let i = 0; i < 700; i++) { const x = R() * W, y = R() * H; if (MAZE ? inField(x / GPX | 0, y / GPX | 0) || Math.abs(y / GPX + OZ) < 1.2 : distToPath(x / GPX + OX, y / GPX + OZ) < .7) continue; g.fillStyle = ['#fff6d8', '#ffd94a', '#ff9ec0', '#d8e8ff', '#ffb070'][R() * 5 | 0]; g.beginPath(); g.arc(x, y, 2 + R() * 1.8, 0, TAU); g.fill(); }
   // darker grass toward the cliff edge (depth)
   const eg = 46; for (const [x0, y0, x1, y1] of [[0, 0, 0, eg], [0, H, 0, H - eg]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(20,30,10,.35)'); gr.addColorStop(1, 'rgba(20,30,10,0)'); g.fillStyle = gr; g.fillRect(0, Math.min(y0, y1), W, eg); }
@@ -195,7 +207,7 @@ const WATER = new THREE.ShaderMaterial({ uniforms: { t: { value: 0 }, c0: { valu
       float fog = smoothstep(14.0, 40.0, length(vW.xz)); gl_FragColor = vec4(mix(col, fogc, fog), 1.0); }` });
 { const sea = new THREE.Mesh(new THREE.PlaneGeometry(160, 160).rotateX(-Math.PI / 2), WATER); sea.position.y = -.85; scene.add(sea); }
 // build pads: round stone platforms with a darker rim
-if (!MAZE) { const rimG = new THREE.CylinderGeometry(.47, .5, .08, 10), topG = new THREE.CylinderGeometry(.42, .44, .06, 10), rm = new THREE.MeshLambertMaterial({ color: 0x5e584e }), tm = new THREE.MeshLambertMaterial({ color: 0x847c6e });
+if (!MAZE && !CIRC) { const rimG = new THREE.CylinderGeometry(.47, .5, .08, 10), topG = new THREE.CylinderGeometry(.42, .44, .06, 10), rm = new THREE.MeshLambertMaterial({ color: 0x5e584e }), tm = new THREE.MeshLambertMaterial({ color: 0x847c6e });
   for (const p of PADS) { const e = new THREE.Mesh(rimG, rm); e.position.set(p.c.x, .04, p.c.z); const s = new THREE.Mesh(topG, tm); s.position.set(p.c.x, .09, p.c.z); s.rotation.y = .3; e.receiveShadow = s.receiveShadow = true; e.castShadow = true; scene.add(e, s); p.slab = s; } }
 { const c = HPAD.c, st = new THREE.Mesh(new THREE.CylinderGeometry(.5, .56, .2, 20), new THREE.MeshLambertMaterial({ color: 0x8a8070 })); st.position.set(c.x, .1, c.z); st.receiveShadow = st.castShadow = true;
   const top = new THREE.Mesh(new THREE.CylinderGeometry(.44, .44, .04, 20), new THREE.MeshLambertMaterial({ color: 0xb8a070 })); top.position.set(c.x, .21, c.z); top.receiveShadow = true;
@@ -308,6 +320,7 @@ function spawnMon(k, hpMul, golden) {
   if (golden) { m.golden = true; m.spd = 2.3; m.hp = m.max = Math.round(70 * hpMul); m.gold = 60 + G.wave * 6; m.mat.uniforms.tint.value.setRGB(1.5, 1.2, .35); }
   m.fs = 0; m.vel = new V3();   /* fs = how far along the road / the fliers' line; s = "how far along" for the towers (bigger = nearer the castle) */
   if (MAZE && !m.fly) { m.pos.set(OX + .15, 0, rnd(-.35, .35)); m.ox = rnd(-.18, .18); m.oz = rnd(-.18, .18); m.tgt = DIST[SPC[0]] <= DIST[SPC[1]] ? SPC[0] : SPC[1]; m.s = 1000 - DIST[m.tgt] - 1; }
+  else if (CIRC) { m.s0 = (G.side = 1 - (G.side || 0)) * PATHLEN / 2; pathAt(m.s0, m.pos, m.side); m.s = 0; ring(m.pos, 0xb050ff, .2, .8, .35); }   /* the two portals take turns */
   else { pathAt(0, m.pos, m.side); if (MAZE) m.s = 1000 - PATHLEN; }
   MON.push(m); return m;
 }
@@ -348,6 +361,8 @@ function updMon(m, dt) {
     m.slowT -= dt; const sp = m.spd * (m.slowT > 0 ? m.slowK : 1); setRow(m, 'walk'); m.fr += dt * 9 * sp / 1.1;
     _s0.copy(m.pos);
     if (MAZE && !m.fly) { if (mazeStep(m, sp * dt)) { leak(m); return; } m.vel.subVectors(m.pos, _s0).divideScalar(Math.max(dt, 1e-4)); mzWatch(m, dt); }
+    else if (CIRC) { if (!isFinite(m.fs)) m.fs = 0; m.fs += sp * dt; pathAt((m.s0 + m.fs) % PATHLEN, m.pos, m.side); m.s = m.fs;   /* round and round; the towers shoot the one that has run longest */
+      if (m.golden && m.fs >= PATHLEN) { BANNER.t = 1.6; BANNER.a = 'ก็อบลินทองหนีไปแล้ว'; BANNER.b = 'รอบหน้าฆ่าให้ทันนะ'; BANNER.red = false; scene.remove(m.mesh, m.blob); m.mat.dispose(); MON.splice(MON.indexOf(m), 1); return; } }
     else { if (!isFinite(m.fs)) m.fs = 0; m.fs += sp * dt; pathAt(m.fs, m.pos, m.side); m.s = MAZE ? 1000 - (PATHLEN - m.fs) : m.fs; if (m.fs >= PATHLEN) { leak(m); return; } }
     // the side the card faces = where it walks ON SCREEN
     _s0.project(camera); _s1.copy(m.pos).project(camera); if (Math.abs(_s1.x - _s0.x) > 1e-5) m.flip = _s1.x < _s0.x;
@@ -374,7 +389,7 @@ function bossSkill(m, dt) {
   if (m.nskill % 2) { ring(m.pos, 0xff3a2a, .4, 3, .6); disc(m.pos, 0xff2a1a, 2.8, .5, .7); shake(.2); sfx('boom', .7, .5); let n = 0;
     for (const t of TOWERS.filter(q => !q.D.wall && q.pad.c.distanceTo(m.pos) < 3).sort((a, b) => a.pad.c.distanceTo(m.pos) - b.pad.c.distanceTo(m.pos)).slice(0, 4)) { t.stunT = 2.5; n++; }   /* the 4 nearest (a maze packs towers close) */ num(monPt(m, 1.2), n ? 'คำราม! ป้อมมึน' : 'คำราม!', '#ff8a7a'); }
   else { if ((m.calls = (m.calls || 0) + 1) > 4) return; const pool = G.wave >= 10 ? T2 : T1, k = pool.find(q => SHEET[q] && SHEET[q].ok); if (!k) return; num(new V3(m.pos.x, m.S.top + .5, m.pos.z), 'เรียกลูกน้อง!', '#ff8a7a'); ring(m.pos, 0xb040ff, .3, 1.5, .5);
-    for (let i = 0; i < 3; i++) { const q = spawnMon(k, Math.pow(1.16, Math.min(G.wave, 10) - 1) * Math.pow(1.15, Math.max(0, G.wave - 10)) * HPK(G.wave) * .6); if (q) { q.gold = 1; if (MAZE) mzNear(q, m); else { q.fs = q.s = Math.max(0, m.s - .4 - i * .45); pathAt(q.s, q.pos, q.side); } dust(q.pos, 4); } } }
+    for (let i = 0; i < 3; i++) { const q = spawnMon(k, Math.pow(1.16, Math.min(G.wave, 10) - 1) * Math.pow(1.15, Math.max(0, G.wave - 10)) * HPK(G.wave) * .6); if (q) { q.gold = 1; if (MAZE) mzNear(q, m); else if (CIRC) { q.s0 = m.s0; q.fs = q.s = Math.max(0, m.fs - .4 - i * .45); pathAt((q.s0 + q.fs) % PATHLEN, q.pos, q.side); } else { q.fs = q.s = Math.max(0, m.s - .4 - i * .45); pathAt(q.s, q.pos, q.side); } dust(q.pos, 4); } } }
 }
 // kill combos: kills close together count up; a big combo pays a little gold
 function comboKill() { G.combo = (NOW - (G.comboT || -9) < 1.3) ? (G.combo || 0) + 1 : 1; G.comboT = NOW; if (G.combo >= 3) COMBO.t = 1.2, COMBO.n = G.combo;
@@ -449,7 +464,7 @@ function wallsRedo() {
 }
 const CBASE = new THREE.BoxGeometry(.92, .08, .92);   /* MAZE: a square stone floor under every tower */
 function buildTower(pad, k) {
-  const D = TDEF[k], c = D.cost[0], old = pad.tower; if (G.gold < c || (old && (!old.D.wall || D.wall))) return false;
+  const D = TDEF[k], c = D.cost[0], old = pad.tower; if (!D) return false; if (G.gold < c || (old && (!old.D.wall || D.wall))) return false;
   if (MAZE && !old && !canBuild(pad)) { TIP.t = 2.2; TIP.s = canBuild.why === 'mon' ? 'มีมอนเดินอยู่ตรงนี้ รอให้ผ่านไปก่อน' : 'สร้างตรงนี้ไม่ได้: ต้องเหลือทางให้มอนเดิน'; return false; }
   G.gold -= c; if (old) { scene.remove(old.g); TOWERS.splice(TOWERS.indexOf(old), 1); } else if (MAZE) setBlock(pad, 1);
   const t = { k, D, pad, lv: 0, g: new THREE.Group(), cd: rnd(0, .3), spent: c + (old ? old.spent : 0), unit: null, target: null, shotAt: -1 };
@@ -499,7 +514,7 @@ function shoot(type, from, tg, dmg, o = {}) {
   else { mesh = new THREE.Mesh(new THREE.SphereGeometry(.11, 10, 8), AM.bomb); mesh.castShadow = true; }
   mesh.position.copy(from); scene.add(mesh);
   const p = { type, mesh, tg, dmg, o, from: from.clone(), t: 0, dur: type === 'bomb' ? .8 : 0, land: null, spd: type === 'bolt' ? 9 : type === 'hbolt' ? 12 : 16 };
-  if (type === 'bomb') { p.land = new V3(); if (MAZE && !tg.fly) p.land.copy(tg.pos).addScaledVector(tg.vel, tg.fight || tg.stunT > 0 ? 0 : .8); else { const lead = tg.spd * (tg.slowT > 0 ? tg.slowK : 1) * .8; pathAt(Math.min(PATHLEN, tg.fs + (tg.fight ? 0 : lead)), p.land, tg.side); } }
+  if (type === 'bomb') { p.land = new V3(); if (MAZE && !tg.fly) p.land.copy(tg.pos).addScaledVector(tg.vel, tg.fight || tg.stunT > 0 ? 0 : .8); else { const lead = tg.stunT > 0 || tg.fight ? 0 : tg.spd * (tg.slowT > 0 ? tg.slowK : 1) * .8; if (CIRC) pathAt((tg.s0 + tg.fs + lead) % PATHLEN, p.land, tg.side); else pathAt(Math.min(PATHLEN, tg.fs + lead), p.land, tg.side); } }
   PROJ.push(p);
 }
 function updProj(dt) {
@@ -625,6 +640,7 @@ async function loadHero(hk) {
   }
   T.root.scale.setScalar(HERO_TILES / T.h); scene.add(T.root);
   const mixer = new THREE.AnimationMixer(T.root), acts = {}; for (const c of T.clips) acts[c.name] = mixer.clipAction(c);
+  if (CIRC && D.cls === 'sword' && !D.circ) { D.range += HRX; D.circ = true; }   /* the loop runs 2.4 from the dais: sword heroes reach a little further here */
   const base = new V3(HPAD.c.x, .23, HPAD.c.z), near = new V3(); let bd = 1e9; for (let s0 = 0; s0 < PATHLEN; s0 += .25) { const p = new V3(); pathAt(s0, p); const d = p.distanceTo(base); if (d < bd) { bd = d; near.copy(p); } }
   const rest = Math.atan2(near.x - base.x, near.z - base.z);
   HERO = { k: hk, D, T, u: { mixer, acts, cur: null }, pos: base.clone(), base, face: rest, rest, lv: 1, xp: 0, pts: 1, dmg: D.dmg, cd: 0, busy: 0, combo: 0, mode: 'idle', aim: -1, buffT: 0, jump: null,
@@ -696,7 +712,7 @@ function castSkill(i, at) {
     case 'frost': after(.18, () => { fxSheet('frost_burst', c, { size: R * 2.6, dur: 1.4, opacity: .85 }); disc(c, 0x9fe0ff, R, .9); ring(c, 0xcff4ff, .3, R, .5); burst(new V3(c.x, .3, c.z), { n: 22, color: 0xcff4ff, spd: R * 2.2, up: 3, size: .3, life: .6 }); sfx('zap', .5, .6);
       hitIn(c, R, P, { slow: .65, slowT: T, num: true, color: '#9fe0ff' }); }); break;
     case 'storm': H.buffT = T; fxSheet('arrow_storm', H.base, { size: 2.8, dur: 1.5, loop: T, y: .25, opacity: .85 }); ring(H.pos, 0x9fe8ff, .3, 2, .6); column(H.pos, 0x9fe8ff, .9); sfx('lvl', .4, 1.6); break;
-    case 'bash': after(.3, () => { ring(H.pos, 0xffe07a, .3, 2.4, .5); disc(H.pos, 0xffc23a, 2.2, .4); shake(.12); sfx('boom', .5, 1.2); hitIn(H.pos, 2.3, P, { stun: T, num: true, color: '#ffe14a' }); }); break;
+    case 'bash': after(.3, () => { ring(H.pos, 0xffe07a, .3, 2.4 + HRX, .5); disc(H.pos, 0xffc23a, 2.2 + HRX, .4); shake(.12); sfx('boom', .5, 1.2); hitIn(H.pos, 2.3 + HRX, P, { stun: T, num: true, color: '#ffe14a' }); }); break;
     case 'dash': { const to = c.clone().sub(H.base); if (to.length() > 5) to.setLength(5); to.add(H.base); H.busy = 1; const hit = new Set();
       H.jump = { from: H.base.clone(), to, t: 0, dur: .9, back: true, hitK: .45, hit: () => { ring(to, 0xffe07a, .3, 1.5, .4); shake(.1); sfx('boom', .45, 1.3); hitIn(to, 1.4, P * .5, { stun: .6 }); } };
       const tick = () => { if (!H.jump) return; for (const m of MON) if (!m.dead && !hit.has(m) && m.pos.distanceTo(H.pos) < .9) { hit.add(m); hitMon(m, P, { num: true, color: '#ffe14a', stun: .5 }); } after(.03, tick); }; tick(); break; }
@@ -704,7 +720,7 @@ function castSkill(i, at) {
     case 'wings': H.busy = 1.3; uPlay(A, 'Q_NinjaJump_Start', true, 1); after(.45, () => uPlay(A, K.anim, true, 1.2));
       H.jump = { from: H.base.clone(), to: H.base.clone(), t: 0, dur: 1.1, h: 2.4, hitK: .85, hit: () => { ring(H.base, 0xffe07a, .5, 3.8, .7); disc(H.base, 0xffd34a, 3.5, .6); column(H.base, 0xfff2a0, 1); shake(.3); sfx('boom', .7, .9);
         hitIn(H.base, 3.6, P, { stun: 1, num: true, color: '#ffe14a' }); for (const t of TOWERS) { t.buffT = T; ring(t.pad.c, 0xffe07a, .2, .9, .6); } BANNER.t = 1.5; BANNER.a = 'ป้อมทุกป้อมโจมตีเร็วขึ้น!'; BANNER.b = T + ' วินาที'; BANNER.red = false; } }; break;
-    case 'spin': H.busy = 1.5; for (let j = 0; j < 5; j++) after(.15 + j * .26, () => { ring(H.pos, 0xff5a4a, .4, 2.4, .3, .8); sfx('slash', .5, 1 + j * .05); hitIn(H.pos, 2.4, P, { num: j === 4, color: '#ff9a8a' }); }); break;
+    case 'spin': H.busy = 1.5; for (let j = 0; j < 5; j++) after(.15 + j * .26, () => { ring(H.pos, 0xff5a4a, .4, 2.4 + HRX, .3, .8); sfx('slash', .5, 1 + j * .05); hitIn(H.pos, 2.4 + HRX, P, { num: j === 4, color: '#ff9a8a' }); }); break;
     case 'wave': after(.3, () => { const m = new THREE.Mesh(new THREE.RingGeometry(.5, .85, 24, 1, Math.PI * .15, Math.PI * .7).rotateX(-Math.PI / 2).rotateY(Math.PI / 2 + Math.PI), addMat(0xff4a3a, null, .95)); lineShot(H.pos.clone(), c, m, P, { len: 9, spd: 11, w: .75, trail: 0xff6a4a, color: '#ff9a8a', y: .35 }); sfx('slash', .8, .7); shake(.08); }); break;
     case 'chain': disc(c, 0x9a3aff, R, T + .3, .8); ring(c, 0xc07aff, .2, R, .5); sfx('zap', .6, .5);
       for (const m of MON) if (!m.dead && m.pos.distanceTo(c) < R) { hitMon(m, P, { num: true, color: '#d0a0ff', stun: m.boss ? 0 : T, slow: m.boss ? .5 : 0, slowT: T, magic: true }); bolt3(new V3(c.x, .2, c.z), new V3(m.pos.x, .5, m.pos.z), 0xb070ff); } break;
@@ -729,7 +745,7 @@ function castSkill(i, at) {
 // ---------- game state, waves
 const G = { state: 'title', gold: MAP.gold, lives: 20, wave: 0, kills: 0, build: 0, queue: [], spawnT: 0, speed: 1, menu: null, select: false, best: 0, px: Q.get('px') === '1', hk: null };
 // progress (owner: "ทำไปเรื่อยๆ"): best stars per map and hero; a map opens when the one before it was won
-const BESTK = h => `guardtd_best${MAZE ? 'mz' : ''}_${MAPK}_${h}`;   /* best wave per map, hero and mode */
+const BESTK = h => `guardtd_best${MAZE ? 'mz' : CIRC ? 'ci' : ''}_${MAPK}_${h}`;   /* best wave per map, hero and mode */
 const lsGet = k => { try { return +localStorage.getItem(k) || 0; } catch (_) { return 0; } };
 const mapStars = m => Math.max(0, ...['archer', 'wing', 'demon', 'dark', 'hood'].map(h => lsGet(`guardtd_stars_${m}_${h}`)), m === 'forest' ? lsGet('guardtd_stars_archer') : 0);
 const mapOpen = m => Q.get('unlock') === '1' || MAPKEYS.indexOf(m) <= 0 || mapStars(MAPKEYS[MAPKEYS.indexOf(m) - 1]) > 0;
@@ -743,25 +759,27 @@ function waveList(n) {   // wave n (1..20): count, which monsters, life multipli
 }
 function preloadWave(n) { if (n > NWAVE) return Promise.resolve(); return Promise.all([...new Set(waveList(n).map(q => q.k))].map(loadSheet)); }
 async function startWave() {
-  if (G.state !== 'play' || G.starting || G.queue.length || MON.length) return; const n = G.wave + 1; if (n > NWAVE) return;
+  if (G.state !== 'play' || G.starting || G.queue.length || (!CIRC && MON.length)) return; const n = G.wave + 1; if (n > NWAVE) return;
   if (G.wave > 0 && G.build > 0) G.gold += Math.round(G.build);   // calling early pays the seconds left
-  G.starting = true; G.build = 0; await preloadWave(n); G.starting = false; G.wave = n; G.queue = waveList(n); G.spawnT = .5; setMusic('battle'); if (TUT.step === 3) TUT.step = 4; BANNER.t = 2; BANNER.a = 'คลื่นที่ ' + n; BANNER.b = BOSSW[n] ? 'บอส: ' + MOBNAME[BOSSW[n]] : ''; preloadWave(n + 1); sfx('tick', .6);
+  G.starting = true; G.build = 0; await preloadWave(n); G.starting = false; G.wave = n; G.queue = waveList(n); if (CIRC && n >= 2 && TUT.step === 4) { TUT.step = 9; try { localStorage.setItem('guardtd_tut', '1'); } catch (_) { } } G.spawnT = .5; setMusic('battle'); if (TUT.step === 3) TUT.step = 4; BANNER.t = 2; BANNER.a = 'คลื่นที่ ' + n; BANNER.b = BOSSW[n] ? 'บอส: ' + MOBNAME[BOSSW[n]] : ''; preloadWave(n + 1); sfx('tick', .6);
 }
 function updWaves(dt) {
   updCombo();
-  if (G.queue.length) { G.spawnT -= dt; if (G.spawnT <= 0) { const q = G.queue.shift(); const mm = spawnMon(q.k, q.hpMul, q.golden); if (q.golden && mm) { BANNER.t = 1.6; BANNER.a = 'ก็อบลินทองมาแล้ว!'; BANNER.b = 'ฆ่าให้ทันก่อนมันหนี'; BANNER.red = false; } G.spawnT = G.queue.length ? G.queue[0].t : 0; if (MOB[q.k].boss) { BANNER.t = 2.2; BANNER.a = 'บอสมาแล้ว!'; BANNER.b = MOBNAME[q.k]; BANNER.red = true; shake(.25); sfx('boom', .7, .6); setMusic('drums'); } } }
+  if (G.queue.length) { G.spawnT -= dt; if (G.spawnT <= 0) { const q = G.queue.shift(); if (CIRC && !G.queue.length) { G.build = CGAP; G.gold += 8 + Math.min(G.wave, 30) * 2; } const mm = spawnMon(q.k, q.hpMul, q.golden); if (q.golden && mm) { BANNER.t = 1.6; BANNER.a = 'ก็อบลินทองมาแล้ว!'; BANNER.b = 'ฆ่าให้ทันก่อนมันหนี'; BANNER.red = false; } G.spawnT = G.queue.length ? G.queue[0].t : 0; if (MOB[q.k].boss) { BANNER.t = 2.2; BANNER.a = 'บอสมาแล้ว!'; BANNER.b = MOBNAME[q.k]; BANNER.red = true; shake(.25); sfx('boom', .7, .6); setMusic('drums'); } } }
+  else if (CIRC) { if (G.wave > 0 && G.build > 0 && !G.starting && G.state === 'play') { G.build -= dt; if (G.build <= 0) { G.build = 0; startWave(); } } }
   else if (G.wave > 0 && !MON.length && G.build <= 0 && !G.starting && G.state === 'play') {
     if (G.wave >= NWAVE) { endGame(true); return; } G.build = 12; G.gold += 20 + Math.min(G.wave, 30) * 3; setMusic('calm'); if (TUT.step === 4) { TUT.step = 9; try { localStorage.setItem('guardtd_tut', '1'); } catch (_) { } } BANNER.t = 1.8; BANNER.a = 'ผ่านคลื่นที่ ' + G.wave; BANNER.b = 'โบนัสทอง +' + (20 + G.wave * 4); BANNER.red = false; sfx('coin', .6); }
-  if (G.build > 0 && !G.queue.length && !MON.length && !G.starting) { G.build -= dt; if (G.build <= 0) { G.build = 0; startWave(); } }
+  if (!CIRC && G.build > 0 && !G.queue.length && !MON.length && !G.starting) { G.build -= dt; if (G.build <= 0) { G.build = 0; startWave(); } }
+  if (CIRC && G.state === 'play') { G.alive = aliveCount(); if (G.alive > LIMIT) endGame(false); }
 }
 function endGame(win) { G.state = win ? 'win' : 'lose'; G.rec = G.wave - 1; try { const kb = BESTK(G.hk); G.newRec = G.rec > lsGet(kb); if (G.newRec) localStorage.setItem(kb, G.rec); } catch (_) { } BANNER.t = 0; jingle(win ? 'win' : 'lose'); G.menu = null; if (HERO) HERO.aim = -1; G.stars = win ? (G.lives >= 18 ? 3 : G.lives >= 10 ? 2 : 1) : 0;
   try { const k = `guardtd_stars_${MAPK}_${G.hk}`; if (G.stars > (+localStorage.getItem(k) || 0)) localStorage.setItem(k, G.stars); } catch (_) { } if (G.wave > G.best) { G.best = win ? NWAVE : G.wave - 1; try { localStorage.setItem('guardtd_best', G.best); } catch (_) { } } if (HERO && win) uPlay(HERO.u, 'Cheer'); sfx(win ? 'lvl' : 'hurt', .7); }
 async function pickHero(hk) {
   G.state = 'load'; G.hk = hk; try { localStorage.setItem('guardtd_hero', hk); } catch (_) { }
   try { await loadHero(hk); await preloadWave(1); } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
-  G.state = 'play'; G.build = 0; BANNER.t = 2.6; BANNER.a = 'ปกป้องปราสาท!'; BANNER.b = MAZE ? 'สร้างป้อม + กำแพง ต้อนมอนให้เดินอ้อมยาวๆ' : MAP.name + ' · แตะแท่นหินเพื่อสร้างป้อม'; setMusic('calm'); BANNER.red = false;
+  G.state = 'play'; G.build = 0; BANNER.t = 2.6; BANNER.a = CIRC ? 'ล้างมอนให้ทัน!' : 'ปกป้องปราสาท!'; BANNER.b = CIRC ? 'มอนวิ่งวนรอบแมพ · อย่าให้ล้นเกิน ' + LIMIT + ' ตัว' : MAZE ? 'สร้างป้อม + กำแพง ต้อนมอนให้เดินอ้อมยาวๆ' : MAP.name + ' · แตะแท่นหินเพื่อสร้างป้อม'; setMusic('calm'); BANNER.red = false;
 }
-function goPage(o) { const p = new URLSearchParams(); p.set('map', o.map || MAPK); if ((o.mode || (MAZE ? 'maze' : 'road')) === 'road') p.set('mode', 'road'); if (o.hero) p.set('hero', o.hero); if (o.menu) p.set('menu', '1'); if (G.px) p.set('px', '1'); if (Q.get('snd') === '0') p.set('snd', '0'); location.search = p.toString(); }
+function goPage(o) { const p = new URLSearchParams(); p.set('map', o.map || MAPK); if ((o.mode || MODE) !== 'circle') p.set('mode', o.mode || MODE); if (o.hero) p.set('hero', o.hero); if (o.menu) p.set('menu', '1'); if (G.px) p.set('px', '1'); if (Q.get('snd') === '0') p.set('snd', '0'); location.search = p.toString(); }
 function restart() { goPage({ hero: G.hk }); }
 
 // ---------- floating numbers + coins (drawn on the overlay)
@@ -797,12 +815,12 @@ async function loadScenery(ld) {
     const b = new THREE.Box3().setFromObject(g.scene); SRC[n] = { parts, h: b.max.y - b.min.y }; }).catch(() => { })));
   // where things may stand: not on the road, the build spots, the castle square or the cave camp
   const fieldOut = (x, z) => Math.max(OX + FI0 - x, x - (OX + FI1 + 1), OZ + FJ0 - z, z - (OZ + FJ1 + 1));   /* MAZE: > 0 = outside the field */
-  const keep = (x, z, room) => sdIsland(x, z) < -.25 && (MAZE ? fieldOut(x, z) > .1 + room * .2 && !(Math.abs(z) < 1.5 && (x < OX + 1.6 || x > OX + 15.5)) : distToPath(x, z) > .55 + room && [...PADS, HPAD].every(p => Math.hypot(p.c.x - x, p.c.z - z) > .62 + room)) && Math.hypot(x - CASTLE.x, z - CASTLE.z) > 1.7 + room && Math.hypot(x - CAVEP.x, z - CAVEP.z) > 1.4 + room;
+  const keep = (x, z, room) => sdIsland(x, z) < -.25 && (CIRC ? distToPath(x, z) > .6 + room * .5 && !PADAT[cellAt(x, z)] && Math.max(Math.abs(x) - (MW / 2 - 1), Math.abs(z) - (MH / 2 - 1)) > .05 + room * .2 && PORTS.every(p => Math.hypot(p.x - x, p.z - z) > 1.25 + room * .3) : MAZE ? fieldOut(x, z) > .1 + room * .2 && !(Math.abs(z) < 1.5 && (x < OX + 1.6 || x > OX + 15.5)) : distToPath(x, z) > .55 + room && [...PADS, HPAD].every(p => Math.hypot(p.c.x - x, p.c.z - z) > .62 + room)) && Math.hypot(x - CASTLE.x, z - CASTLE.z) > 1.7 + room && Math.hypot(x - CAVEP.x, z - CAVEP.z) > 1.4 + room;
   const R = rng(MAPK.length * 13 + 3), q = new THREE.Quaternion(), per = {}, taken = [];
   const put = (nm, x, z, h) => { const S0 = SRC[nm]; if (!S0) return; const sc = h / S0.h; q.setFromAxisAngle(UP, R() * TAU); (per[nm] = per[nm] || []).push(new THREE.Matrix4().compose(new V3(x, 0, z), q, new V3(sc, sc, sc))); };
   const trees = MAP.trees.filter(n => SRC[n]);
   // trees: a thick wood along the back (far) edge and the sides, small groves inside, only bushes along the front edge (they would hide the road)
-  if (MAZE) for (let i = 0; i < 900 && trees.length; i++) { const x = rnd(OX + .2, -OX - .2), z = rnd(OZ + .2, -OZ - .8); if (!keep(x, z, .3) || taken.some(t => Math.hypot(t[0] - x, t[1] - z) < .7) || R() > .8) continue;
+  if (MAZE || CIRC) for (let i = 0; i < 900 && trees.length; i++) { const x = rnd(OX + .2, -OX - .2), z = rnd(OZ + .2, -OZ - (CIRC ? 1.3 : .8)); if (!keep(x, z, .3) || taken.some(t => Math.hypot(t[0] - x, t[1] - z) < .7) || R() > .8) continue;
     const back = z < OZ + 1, nm = trees[R() * trees.length | 0]; put(nm, x, z, (back ? rnd(.95, 1.3) : rnd(1.35, 1.9)) * (/Pine/.test(nm) ? 1.12 : 1)); taken.push([x, z]); }
   else for (let i = 0; i < 900 && trees.length; i++) { const x = rnd(OX + .2, -OX - .2), z = rnd(OZ + .2, -OZ - .2), front = z > -OZ - 2.2, edge = Math.min(x - OX, -OX - x, z - OZ);
     const p = edge < 1 ? .9 : edge < 2 ? .35 : .05; if (front || R() > p || !keep(x, z, edge < 1 ? .35 : .85) || taken.some(t => Math.hypot(t[0] - x, t[1] - z) < .75)) continue;
@@ -815,25 +833,27 @@ async function loadScenery(ld) {
   for (const [nm, list] of Object.entries(per)) for (const pt of SRC[nm].parts) { const im = new THREE.InstancedMesh(pt.geo, pt.mat, list.length); list.forEach((M, i) => im.setMatrixAt(i, M));
     im.castShadow = !/Grass|Flower/.test(nm); im.receiveShadow = true; if (pt.mat.userData.depth) im.customDepthMaterial = pt.mat.userData.depth; scene.add(im); }
   // the castle: the Quaternius wonder on a cobbled square, banners and torches
-  if (CAS) { const c = fit(CAS, 2.3); c.position.x += CASTLE.x + .45; c.position.z += CASTLE.z; c.rotation.y = -Math.PI / 2; shadowy(c); scene.add(c);
+  if (CAS && !CIRC) { const c = fit(CAS, 2.3); c.position.x += CASTLE.x + .45; c.position.z += CASTLE.z; c.rotation.y = -Math.PI / 2; shadowy(c); scene.add(c);
     for (const dz of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.04, .05, 1.2, 6), new THREE.MeshLambertMaterial({ color: 0x5a3a20 })); p.position.set(CASTLE.x - .55, .6, CASTLE.z + dz * (MAZE ? 1.2 : .95)); p.castShadow = true;
       const fl = new THREE.Mesh(new THREE.PlaneGeometry(.42, .3), new THREE.MeshLambertMaterial({ color: 0xc8302a, side: THREE.DoubleSide })); fl.position.set(CASTLE.x - .34, 1.05, CASTLE.z + dz * (MAZE ? 1.2 : .95)); fl.userData.flag = true; scene.add(p, fl); FLAGS.push(fl);
       torch(new V3(CASTLE.x - .75, 0, CASTLE.z + dz * (MAZE ? 1.4 : .55))); } }
   // the cave camp: the cave, a campfire, a tent, wood, a signpost, torches
   const add = (src, size, x, z, ry = 0, axis = 'xz') => { if (!src) return null; const o = fit(src.clone(), size, axis); o.position.x += x; o.position.z += z; o.rotation.y = ry; shadowy(o); scene.add(o); return o; };
-  { // the monsters' cave, built from boulders: a rock arch round a dark mouth with an ember glow inside
-    const rk = ROCKS.filter(Boolean), cx = CAVEP.x - .25, cz = CAVEP.z;
-    const mouth = new THREE.Mesh(new THREE.CircleGeometry(.62, 24, 0, Math.PI), MAZE ? PORTAL : new THREE.MeshBasicMaterial({ map: canvasTex(128, 64, g => { const gr = g.createRadialGradient(64, 64, 4, 64, 64, 64); gr.addColorStop(0, '#000'); gr.addColorStop(.7, '#140a08'); gr.addColorStop(1, 'rgba(20,10,8,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 64); }), transparent: true, depthWrite: false }));
-    mouth.position.set(cx + .05, 0, cz); mouth.rotation.y = Math.PI / 2; scene.add(mouth);
-    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: MAZE ? 0xb050ff : 0xff5a20, blending: THREE.AdditiveBlending, transparent: true, opacity: .55, depthWrite: false })); glow.position.set(cx + .15, .28, cz); glow.scale.set(.9, .55, 1); scene.add(glow); TORCHES.push(Object.assign(glow, { userData: { base: .9 } }));
-    if (rk.length) for (let i = 0; i <= 8; i++) { const a = Math.PI * i / 8, x = cx - .1 + (i % 2) * .08, z = cz + Math.cos(a) * .78, y = Math.sin(a) * .72; const o = add(rk[i % rk.length], rnd(.42, .6), x, z, R() * TAU); if (o) o.position.y += y - .15; }
-    if (rk.length) for (let i = 0; i < 6; i++) add(rk[i % rk.length], rnd(.5, .9), cx - .55 - R() * .3, cz + rnd(-1.2, 1.2), R() * TAU); }
+  const arch = (cx, cz, dir) => { // the monsters' cave, built from boulders: a rock arch round a dark mouth (MAZE / CIRCLE: a purple portal); dir = the way it faces on x
+    const rk = ROCKS.filter(Boolean);
+    const mouth = new THREE.Mesh(new THREE.CircleGeometry(.62, 24, 0, Math.PI), MAZE || CIRC ? PORTAL : new THREE.MeshBasicMaterial({ map: canvasTex(128, 64, g => { const gr = g.createRadialGradient(64, 64, 4, 64, 64, 64); gr.addColorStop(0, '#000'); gr.addColorStop(.7, '#140a08'); gr.addColorStop(1, 'rgba(20,10,8,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 64); }), transparent: true, depthWrite: false }));
+    mouth.position.set(cx + .05 * dir, 0, cz); mouth.rotation.y = dir * Math.PI / 2; scene.add(mouth);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: MAZE || CIRC ? 0xb050ff : 0xff5a20, blending: THREE.AdditiveBlending, transparent: true, opacity: .55, depthWrite: false })); glow.position.set(cx + .15 * dir, .28, cz); glow.scale.set(.9, .55, 1); scene.add(glow); TORCHES.push(Object.assign(glow, { userData: { base: .9 } }));
+    if (rk.length) for (let i = 0; i <= 8; i++) { const a = Math.PI * i / 8, x = cx + (-.1 + (i % 2) * .08) * dir, z = cz + Math.cos(a) * .78, y = Math.sin(a) * .72; const o = add(rk[i % rk.length], rnd(.42, .6), x, z, R() * TAU); if (o) o.position.y += y - .15; }
+    if (rk.length) for (let i = 0; i < 6; i++) add(rk[i % rk.length], rnd(.5, .9), cx - (.55 + R() * .3) * dir, cz + rnd(-1.2, 1.2), R() * TAU); };
+  if (CIRC) for (const p of PORTS) arch(p.x - .25 * Math.sign(-p.x), p.z, Math.sign(-p.x)); else arch(CAVEP.x - .25, CAVEP.z, 1);
   const side = CAVEP.z > 0 ? -1 : 1;   // the free side of the road at the cave
-  if (MAZE) { torch(new V3(CAVEP.x + .45, 0, -1.3)); torch(new V3(CAVEP.x + .45, 0, 1.3)); for (let i = 0; i < 14; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: 0xc070ff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.userData.ph = i / 14; sp.scale.setScalar(.12); scene.add(sp); PSPARK.push(sp); } }
+  if (MAZE || CIRC) for (const [px, dir] of CIRC ? PORTS.map(p => [p.x, Math.sign(-p.x)]) : [[CAVEP.x, 1]]) { if (MAZE) { torch(new V3(px + .45, 0, -1.3)); torch(new V3(px + .45, 0, 1.3)); } else { torch(new V3(px + .3 * dir, 0, -1.05)); torch(new V3(px + .3 * dir, 0, 1.05)); }
+    for (let i = 0; i < 14; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.soft, color: 0xc070ff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.userData.ph = i / 14; sp.userData.bx = px - .15 * dir; sp.userData.dir = dir; sp.scale.setScalar(.12); scene.add(sp); PSPARK.push(sp); } }
   else { add(FIRE, .55, CAVEP.x + .9, CAVEP.z + side * 1.15); add(TENT, .9, CAVEP.x + .1, CAVEP.z + side * 1.55, .6); add(WOOD, .45, CAVEP.x + 1.6, CAVEP.z + side * 1.25, 1.2); add(SIGN, .55, CAVEP.x + 1.3, CAVEP.z - side * .7, 0, 'y');
   torch(new V3(CAVEP.x + .55, 0, CAVEP.z - .62)); torch(new V3(CAVEP.x + .55, 0, CAVEP.z + .62)); fireAt(new V3(CAVEP.x + .9, .2, CAVEP.z + side * 1.15), .5); }
   // short fences along a few road bends
-  if (FENCE && !MAZE) for (let k = 1; k < SEG.length - 1; k += 2) { const s = SEG[k]; for (let t = .8; t < s.L - .8; t += .5) { const p = s.a.clone().addScaledVector(s.d, t), n = new V3(-s.d.z, 0, s.d.x);
+  if (FENCE && !MAZE && !CIRC) for (let k = 1; k < SEG.length - 1; k += 2) { const s = SEG[k]; for (let t = .8; t < s.L - .8; t += .5) { const p = s.a.clone().addScaledVector(s.d, t), n = new V3(-s.d.z, 0, s.d.x);
       for (const sd of [-1, 1]) { const x = p.x + n.x * .62 * sd, z = p.z + n.z * .62 * sd; if (!keep(x, z, -.3) && distToPath(x, z) < .6) continue; if ([...PADS, HPAD].some(q2 => Math.hypot(q2.c.x - x, q2.c.z - z) < .75) || sdIsland(x, z) > -.2) continue;
         if (R() < .45) add(FENCE, .5, x, z, Math.atan2(s.d.x, s.d.z) + Math.PI / 2); } } }
   // rocks along the shore, half in the water
@@ -850,7 +870,7 @@ function fireAt(p, s = .3) { const f = new THREE.Sprite(new THREE.SpriteMaterial
 function torch(p) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(.03, .04, .55, 6), new THREE.MeshLambertMaterial({ color: 0x4a3420 })); pole.position.set(p.x, .27, p.z); pole.castShadow = true; scene.add(pole);
   const cup = new THREE.Mesh(new THREE.CylinderGeometry(.07, .04, .08, 8), new THREE.MeshLambertMaterial({ color: 0x3a3030 })); cup.position.set(p.x, .57, p.z); scene.add(cup); fireAt(new V3(p.x, .7, p.z), .24); }
 function updScenery(dt) { PORTAL.uniforms.t.value += dt;
-  for (const sp of PSPARK) { const k = (sp.userData.ph + NOW * .35) % 1, a = sp.userData.ph * 37; sp.position.set(CAVEP.x - .15 + Math.sin(a) * .1 + k * .3, .1 + k * 1.1, Math.cos(a) * .45 * (1 - k * .5)); sp.material.opacity = Math.sin(k * Math.PI) * .9; }
+  for (const sp of PSPARK) { const k = (sp.userData.ph + NOW * .35) % 1, a = sp.userData.ph * 37; sp.position.set(sp.userData.bx + (Math.sin(a) * .1 + k * .3) * sp.userData.dir, .1 + k * 1.1, Math.cos(a) * .45 * (1 - k * .5)); sp.material.opacity = Math.sin(k * Math.PI) * .9; }
   for (const f of TORCHES) f.scale.setScalar(f.userData.base * (1 + .18 * Math.sin(NOW * 13 + f.position.x * 7) + .1 * Math.random()));
   for (const fl of FLAGS) { fl.rotation.y = .25 * Math.sin(NOW * 3 + fl.position.z); } }
 
@@ -917,7 +937,11 @@ function drawUI(dt) {
   for (let i = NUMS.length - 1; i >= 0; i--) { const n = NUMS[i]; n.t += dt; if (n.t > .9) { NUMS.splice(i, 1); continue; } const [x, y, ok] = toScreen(_a.set(n.p.x, n.p.y + n.t * .9, n.p.z)); if (!ok) continue; ui.globalAlpha = Math.min(1, (1 - n.t / .9) * 3); if (n.coin) coin(x - 12 * S, y, 5 * S); txt(n.text, x + (n.coin ? 2 * S : 0), y, (n.coin ? 13 : 16) * S, n.color, n.coin ? 'left' : 'center'); ui.globalAlpha = 1; }
   if (HERO) { const [x, y, ok] = toScreen(_a.set(HERO.base.x, 1.5, HERO.base.z)); if (ok) txt('Lv ' + HERO.lv, x, y, 11 * S, '#fff8d0'); }
   // top-left: lives, gold, wave
-  rr(10 * S, 10 * S, 250 * S, 34 * S, 17 * S); ui.fillStyle = 'rgba(26,20,12,.72)'; ui.fill(); heart(30 * S, 27 * S, 9 * S); txt(String(G.lives), 46 * S, 28 * S, 17 * S, '#fff', 'left'); if (G.lives < 20 && G.gold >= 100) { ui.beginPath(); ui.arc(70 * S, 18 * S, 7 * S, 0, TAU); ui.fillStyle = '#3ad04a'; ui.fill(); txt('+', 70 * S, 18.5 * S, 11 * S, '#fff', 'center', 800, 'rgba(0,60,0,.8)'); }
+  rr(10 * S, 10 * S, 250 * S, 34 * S, 17 * S); ui.fillStyle = 'rgba(26,20,12,.72)'; ui.fill();
+  if (CIRC) { const n = G.alive || 0, f = clamp(n / LIMIT, 0, 1), col = f > .8 ? '#ff4a3a' : f > .55 ? '#ffaa3a' : '#8fdc6a'; bar(18 * S, 19 * S, 64 * S, 16 * S, f, col, col); txt(n + '/' + LIMIT, 50 * S, 27.5 * S, 11.5 * S, '#fff', 'center', 800);   /* monsters on the map / the limit */
+    txt('มอนบนแมพ ห้ามเกิน ' + LIMIT, 14 * S, 54 * S, 11 * S, f > .8 && NOW % .6 < .3 ? '#ff8a7a' : '#fff3d2', 'left', 700);
+    if (f > .8 && G.state === 'play') { ui.lineWidth = 10 * S; ui.strokeStyle = `rgba(255,40,30,${.25 + .2 * Math.sin(NOW * 8)})`; ui.strokeRect(0, 0, SW, SH); } }
+  else { heart(30 * S, 27 * S, 9 * S); txt(String(G.lives), 46 * S, 28 * S, 17 * S, '#fff', 'left'); } if (!CIRC && G.lives < 20 && G.gold >= 100) { ui.beginPath(); ui.arc(70 * S, 18 * S, 7 * S, 0, TAU); ui.fillStyle = '#3ad04a'; ui.fill(); txt('+', 70 * S, 18.5 * S, 11 * S, '#fff', 'center', 800, 'rgba(0,60,0,.8)'); }
   coin(92 * S, 27 * S, 9 * S); txt(String(G.gold), 106 * S, 28 * S, 17 * S, '#ffd65a', 'left'); txt(`คลื่น ${G.wave}`, 200 * S, 28 * S, 15 * S, '#fff3d2');
   pill(BTN.spd, 'เร็ว x' + G.speed, G.speed > 1); pill(BTN.pause, 'พัก', G.paused); pill(BTN.zoom, CAM.zoom > 1.05 ? 'ซูม ' + CAM.zoom.toFixed(1) : 'ซูม', CAM.zoom > 1.05); pill(BTN.px, G.px ? 'ภาพ: พิกเซล' : 'ภาพ: ปกติ', G.px); pill(BTN.snd, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', false);
   // hero button + skill
@@ -932,10 +956,10 @@ function drawUI(dt) {
       if (canLearn(i)) { const px = b.x + b.r * .72, py = b.y - b.r * .72, pr = 11 * S * (1 + .08 * Math.sin(NOW * 8)); ui.beginPath(); ui.arc(px, py, pr, 0, TAU); ui.fillStyle = '#3ad04a'; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = '#fff'; ui.stroke(); txt('+', px, py + 1, 15 * S, '#fff', 'center', 800, 'rgba(0,60,0,.8)'); } });
     if (H.aim >= 0) { rr(SW / 2 - 150 * S, 52 * S, 300 * S, 28 * S, 14 * S); ui.fillStyle = 'rgba(26,20,12,.8)'; ui.fill(); txt('แตะพื้นที่จะใช้ "' + H.kit[H.aim].name + '"', SW / 2, 66 * S, 14 * S, '#ffe9a0'); } }
   // next wave
-  if (G.state === 'play' && !G.queue.length && !MON.length && G.wave < NWAVE) { const b = BTN.wave, pulse = .5 + .5 * Math.sin(NOW * 5); rr(b.rx, b.ry, b.w, b.h, b.h / 2); const g = ui.createLinearGradient(0, b.ry, 0, b.ry + b.h); g.addColorStop(0, '#ff8a5a'); g.addColorStop(1, '#c8321e'); ui.fillStyle = g; ui.fill(); ui.lineWidth = 2 + pulse * 2; ui.strokeStyle = '#ffe9c0'; ui.stroke();
-    txt(G.wave ? 'เริ่มคลื่นถัดไป' : 'เริ่มคลื่นแรก', b.rx + b.w / 2, b.ry + b.h / 2 - (G.wave ? 6 : 0) * S, 14 * S, '#fff'); if (G.wave && G.build > 0) txt(`อีก ${Math.ceil(G.build)} วิ · เรียกเร็ว +${Math.ceil(G.build)} ทอง`, b.rx + b.w / 2, b.ry + b.h / 2 + 11 * S, 9.5 * S, '#ffe9c0', 'center', 600); }
+  if (G.state === 'play' && !G.queue.length && (CIRC || !MON.length) && G.wave < NWAVE) { const b = BTN.wave, pulse = .5 + .5 * Math.sin(NOW * 5); rr(b.rx, b.ry, b.w, b.h, b.h / 2); const g = ui.createLinearGradient(0, b.ry, 0, b.ry + b.h); g.addColorStop(0, '#ff8a5a'); g.addColorStop(1, '#c8321e'); ui.fillStyle = g; ui.fill(); ui.lineWidth = 2 + pulse * 2; ui.strokeStyle = '#ffe9c0'; ui.stroke();
+    txt(G.wave ? (CIRC ? 'เรียกคลื่นถัดไป' : 'เริ่มคลื่นถัดไป') : 'เริ่มคลื่นแรก', b.rx + b.w / 2, b.ry + b.h / 2 - (G.wave ? 6 : 0) * S, 14 * S, '#fff'); if (G.wave && G.build > 0) txt(`อีก ${Math.ceil(G.build)} วิ · เรียกเร็ว +${Math.ceil(G.build)} ทอง`, b.rx + b.w / 2, b.ry + b.h / 2 + 11 * S, 9.5 * S, '#ffe9c0', 'center', 600); }
   else if (G.queue.length || MON.length) { BTN.wave.hide = true; }
-  if (G.state === 'play' && !G.queue.length && !MON.length && G.wave < NWAVE && !G.starting) drawPreview();
+  if (G.state === 'play' && !G.queue.length && (CIRC || !MON.length) && G.wave < NWAVE && !G.starting) drawPreview();
   for (const t of TOWERS) if (t.stunT > 0) { const [x, y, ok] = toScreen(_a.set(t.pad.c.x, 1.6, t.pad.c.z)); if (ok) txt('มึน!', x, y + Math.sin(NOW * 8) * 2 * S, 13 * S, '#ffe14a'); }
   if (COMBO.t > 0) { COMBO.t -= dt; ui.globalAlpha = Math.min(1, COMBO.t * 3); const k = 1 + Math.max(0, COMBO.t - 1) * 1.5; txt(COMBO.paid ? `คอมโบ ${COMBO.n}! +${COMBO.paid} ทอง` : `คอมโบ x${COMBO.n}`, SW / 2, 66 * S, 20 * S * k, COMBO.n >= 10 ? '#ff9a4a' : '#ffe14a'); ui.globalAlpha = 1; if (COMBO.t <= 0) COMBO.paid = 0; }
   // the build / tower menu
@@ -949,7 +973,8 @@ function drawUI(dt) {
 }
 function drawPreview() {   // what the next wave brings (owner: fun = plan the towers): monster pictures, how many, their traits
   const L = waveList(G.wave + 1), kinds = []; for (const q of L) { const e = kinds.find(z => z.k === q.k && !!z.golden === !!q.golden); if (e) e.n++; else kinds.push({ k: q.k, n: 1, golden: q.golden }); }
-  const sz = 38 * S, gap = 6 * S, W = kinds.length * (sz + gap) - gap, x0 = SW / 2 - W / 2, y0 = SH - 56 * S - sz - 30 * S;
+  let sz = 38 * S, gap = 6 * S, W = kinds.length * (sz + gap) - gap, x0 = SW / 2 - W / 2, y0 = SH - 56 * S - sz - 30 * S;
+  if (CIRC) { const b = BTN.wave, xa = b.rx + b.w + 22 * S, xb = BTN.sk[0].x - BTN.sk[0].r - 14 * S; sz = clamp((xb - xa - gap * (kinds.length - 1)) / kinds.length, 18 * S, 34 * S); W = kinds.length * (sz + gap) - gap; x0 = xa; y0 = SH - 10 * S - sz; }   /* beside the wave button: the loop's front road stays in view */
   rr(x0 - 10 * S, y0 - 18 * S, W + 20 * S, sz + 30 * S, 10 * S); ui.fillStyle = 'rgba(26,20,12,.72)'; ui.fill(); txt('คลื่นถัดไป', x0 + W / 2, y0 - 8 * S, 11 * S, '#ffe9b0');
   kinds.forEach((q, i) => { const x = x0 + i * (sz + gap), y = y0 + 2 * S, Sh = SHEET[q.k], D = MOB[q.k];
     rr(x, y, sz, sz, 6 * S); ui.fillStyle = D.boss ? 'rgba(160,30,20,.55)' : q.golden ? 'rgba(200,150,20,.5)' : 'rgba(255,255,255,.1)'; ui.fill();
@@ -990,7 +1015,7 @@ function routePts(D, B) { const pts = []; let c = D[SPC[0]] <= D[SPC[1]] ? SPC[0
   for (let k = 0; k < NC && D[c] > 0; k++) { pts.push(tileC(c % MW, c / MW | 0)); c = nextCell(c, D, B); } pts.push(tileC(c % MW, c / MW | 0)); return pts; }
 const _rm = new THREE.Matrix4(), _rq = new THREE.Quaternion(), _rv = new V3(), _r1 = new V3(1, 1, 1);
 function updRoute(dt) {
-  if (!MAZE) return; const M = G.state === 'play' ? G.menu : null, alt = M && M.pad.cell && !M.pad.tower ? cId(M.pad.i, M.pad.j) : -1; ROUTE.t -= dt;
+  if (!MAZE) { const M = G.state === 'play' ? G.menu : null; SELM.visible = !!(M && M.pad.cell); if (SELM.visible) { SELM.position.x = M.pad.c.x; SELM.position.z = M.pad.c.z; SELM.material.color.setHex(M.pad.tower ? 0xffe07a : 0xffffff); SELM.material.opacity = .65 + .3 * Math.sin(NOW * 6); } return; } const M = G.state === 'play' ? G.menu : null, alt = M && M.pad.cell && !M.pad.tower ? cId(M.pad.i, M.pad.j) : -1; ROUTE.t -= dt;
   if (ROUTE.dirty || alt !== ROUTE.alt || (alt >= 0 && ROUTE.t <= 0)) { ROUTE.dirty = false; ROUTE.alt = alt; ROUTE.t = .3; let pts;
     if (alt >= 0) { ROUTE.bad = !canBuild(M.pad); pts = ROUTE.bad ? routePts(DIST, BLK) : routePts(TMPD, TMPB); } else { ROUTE.bad = false; pts = routePts(DIST, BLK); }
     ROUTE.pts = pts; ROUTE.cum = [0]; for (let k = 1; k < pts.length; k++) ROUTE.cum.push(ROUTE.cum[k - 1] + pts[k].distanceTo(pts[k - 1])); ROUTE.len = ROUTE.cum[ROUTE.cum.length - 1] || 0; }
@@ -1013,8 +1038,8 @@ function drawTitle() {
       if (open) { const st = mapStars(m); for (let j = 0; j < 3; j++) star(x + 18 * S + j * 15 * S, my + 29 * S, 6 * S, j < st); txt(['ง่าย', 'ปานกลาง', 'ยาก'][i], x + mw - 10 * S, my + 29 * S, 10.5 * S, on ? '#5a3a08' : '#e8d2a8', 'right', 700, 'rgba(0,0,0,.2)'); }
       else txt('ล็อก: ชนะแมพก่อนหน้า', x + 10 * S, my + 29 * S, 10.5 * S, '#9a8a70', 'left', 700); });
     if (MAPMSG.t > 0) { MAPMSG.t -= 1 / 60; txt('ชนะ ' + MAPS[MAPKEYS[MAPKEYS.indexOf(MAPMSG.m) - 1]].name + ' ก่อน แล้วแมพนี้จะเปิด', SW / 2, my + mh + 12 * S, 13 * S, '#ffb0a0'); } }
-  if (Q.get('maps') !== '1') { const bw = 168 * S, bh = 27 * S, y = 81 * S;   // the two modes (MAZE = towers anywhere, road = the old build pads)
-    [['maze', 'เขาวงกต (สร้างตรงไหนก็ได้)'], ['road', 'ทางเดิน (แท่นหิน)']].forEach(([m, l], i) => { const x = SW / 2 + (i ? 6 * S : -bw - 6 * S), on = (m === 'maze') === MAZE; MENU.push({ k: 'mode:' + m, x, y, w: bw, h: bh });
+  if (Q.get('maps') !== '1') { const bw = 150 * S, bh = 27 * S, y = 81 * S;   // the three modes (circle = the default, maze = towers anywhere + walls, road = the old build pads)
+    [['circle', 'วิ่งวน (วงกลม)'], ['maze', 'เขาวงกต'], ['road', 'ทางเดิน (แท่นหิน)']].forEach(([m, l], i) => { const x = SW / 2 - bw * 1.5 - 8 * S + i * (bw + 8 * S), on = m === MODE; MENU.push({ k: 'mode:' + m, x, y, w: bw, h: bh });
       rr(x, y, bw, bh, bh / 2); ui.fillStyle = on ? 'rgba(255,196,64,.92)' : 'rgba(26,20,12,.7)'; ui.fill(); ui.lineWidth = (on ? 2.5 : 1.5) * S; ui.strokeStyle = on ? '#fff' : 'rgba(255,230,170,.6)'; ui.stroke();
       txt(l, x + bw / 2, y + bh / 2, 12.5 * S, on ? '#3a2208' : '#fff3d2', 'center', 800, on ? 'rgba(255,240,200,.5)' : 'rgba(0,0,0,.6)'); }); }
   const NH = HKEYS.length, cw = Math.min(170 * S, (SW - 40 * S - 12 * S * (NH - 1)) / NH), ch = Math.min(220 * S, SH - 150 * S), gap = 12 * S, x0 = SW / 2 - (cw * NH + gap * (NH - 1)) / 2, y0 = 116 * S;
@@ -1031,7 +1056,7 @@ const MAPMSG = { t: 0, m: '' };
 const TUT = { step: lsGet('guardtd_tut') ? 9 : 0 };
 function drawTut() {
   if (G.state !== 'play' || TUT.step >= 9 || G.menu) return; let x, y, msg; const bob = Math.sin(NOW * 6) * 6 * S;
-  if (TUT.step === 0) { if (TOWERS.length) TUT.step = 1; else { const p = MAZE ? PADAT[cId(4, 3)] : PADS.slice().sort((a, b) => a.c.distanceTo(HPAD.c) - b.c.distanceTo(HPAD.c))[0]; [x, y] = toScreen(_a.set(p.c.x, .2, p.c.z)); msg = MAZE ? 'แตะพื้นตรงไหนก็ได้ เพื่อสร้างป้อม' : 'แตะแท่นหินเพื่อสร้างป้อม'; } }
+  if (TUT.step === 0) { if (TOWERS.length) TUT.step = 1; else { const p = MAZE ? PADAT[cId(4, 3)] : PADS.slice().sort((a, b) => a.c.distanceTo(HPAD.c) - b.c.distanceTo(HPAD.c))[0]; [x, y] = toScreen(_a.set(p.c.x, .2, p.c.z)); msg = MAZE || CIRC ? 'แตะพื้นตรงไหนก็ได้ เพื่อสร้างป้อม' : 'แตะแท่นหินเพื่อสร้างป้อม'; } }
   if (TUT.step === 1) { if (HERO && HERO.sk.some(v => v > 0)) TUT.step = 2; else { const b = BTN.sk[0]; x = b.x + b.r * .72; y = b.y - b.r * .72; msg = 'แตะ + เพื่อเรียนสกิลฮีโร่'; } }
   if (TUT.step === 2) { if (G.wave > 0) TUT.step = 3; else { const b = BTN.wave; x = b.rx + b.w + 34 * S; y = b.ry + b.h / 2; msg = '← พร้อมแล้ว กดเริ่มคลื่น'; } }
   if (TUT.step === 3 && G.wave > 0) TUT.step = 4;
@@ -1049,7 +1074,7 @@ const TIP = { t: 0, s: '' };
 function star(x, y, r, on) { ui.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr0 = i % 2 ? r * .45 : r; ui.lineTo(x + Math.cos(a) * rr0, y + Math.sin(a) * rr0); } ui.closePath(); ui.fillStyle = on ? '#ffd34a' : 'rgba(255,255,255,.2)'; ui.fill(); ui.lineWidth = 2.5 * S; ui.strokeStyle = on ? '#8a5a08' : 'rgba(0,0,0,.4)'; ui.stroke(); }
 function drawEnd() {
   ui.fillStyle = 'rgba(0,0,0,.45)'; ui.fillRect(0, 0, SW, SH); const win = G.state === 'win';
-  txt(win ? 'ชนะ! ปราสาทปลอดภัย' : 'ปราสาทแตกแล้ว...', SW / 2, SH * .32, 32 * S, win ? '#ffe14a' : '#ff8a7a');
+  txt(win ? 'ชนะ! ปราสาทปลอดภัย' : CIRC ? 'มอนล้นแมพแล้ว...' : 'ปราสาทแตกแล้ว...', SW / 2, SH * .32, 32 * S, win ? '#ffe14a' : '#ff8a7a');
   if (!win) { txt(`ไปได้ถึงคลื่นที่ ${G.rec}`, SW / 2, SH * .32 - 44 * S, 24 * S, '#ffe14a'); txt(G.newRec ? 'สถิติใหม่!' : 'สถิติ ' + lsGet(BESTK(G.hk)) + ' คลื่น', SW / 2, SH * .32 + 56 * S, 15 * S, G.newRec ? '#9fff9a' : '#fff3cf'); }
   if (win) for (let i = 0; i < 3; i++) star(SW / 2 + (i - 1) * 46 * S, SH * .32 - 50 * S - (i === 1 ? 8 * S : 0), 18 * S, i < G.stars); txt(`ผ่าน ${G.wave - (win ? 0 : 1)} คลื่น · ล่าได้ ${G.kills} ตัว`, SW / 2, SH * .32 + 34 * S, 15 * S, '#fff3cf');
   const bw = 150 * S, bh = 40 * S, y = SH * .55, nx = win && MAPKEYS.indexOf(MAPK) < MAPKEYS.length - 1; (nx ? [['again', 'เล่นอีกครั้ง', SW / 2 - bw * 1.5 - 12 * S], ['next', 'แมพถัดไป ›', SW / 2 - bw / 2], ['title', 'เปลี่ยนฮีโร่', SW / 2 + bw / 2 + 12 * S]] : [['again', 'เล่นอีกครั้ง', SW / 2 - bw - 8 * S], ['title', 'เปลี่ยนฮีโร่', SW / 2 + 8 * S]]).forEach(([k, l, x]) => { MENU.push({ k, x, y, w: bw, h: bh }); rr(x, y, bw, bh, bh / 2); ui.fillStyle = k === 'again' ? '#f0a020' : k === 'next' ? '#3ab04a' : 'rgba(255,255,255,.18)'; ui.fill(); txt(l, x + bw / 2, y + bh / 2, 15 * S, '#fff'); });
@@ -1058,7 +1083,7 @@ function drawEnd() {
 // ---------- input
 const RAY = new THREE.Raycaster(), PL = new THREE.Plane(new V3(0, 1, 0), 0), _n = new THREE.Vector2();
 function groundAt(x, y) { _n.set(x / SW * 2 - 1, -(y / SH) * 2 + 1); RAY.setFromCamera(_n, camera); const p = new V3(); return RAY.ray.intersectPlane(PL, p) ? p : null; }
-function padAt(p) { if (!p) return null; if (MAZE) { const i = Math.floor(p.x - OX), j = Math.floor(p.z - OZ); return inField(i, j) ? PADAT[cId(i, j)] || null : null; } let best = null, bd = .62; for (const q of PADS) { const d = Math.max(Math.abs(q.c.x - p.x), Math.abs(q.c.z - p.z)); if (d < bd) { bd = d; best = q; } } return best; }
+function padAt(p) { if (!p) return null; if (CIRC) return PADAT[cellAt(p.x, p.z)] || null; if (MAZE) { const i = Math.floor(p.x - OX), j = Math.floor(p.z - OZ); return inField(i, j) ? PADAT[cId(i, j)] || null : null; } let best = null, bd = .62; for (const q of PADS) { const d = Math.max(Math.abs(q.c.x - p.x), Math.abs(q.c.z - p.z)); if (d < bd) { bd = d; best = q; } } return best; }
 const inBtn = (b, x, y) => b && (b.r ? Math.hypot(x - b.x, y - b.y) < b.r * 1.1 : x >= b.rx && x <= b.rx + b.w && y >= b.ry && y <= b.ry + b.h);
 uic.addEventListener('contextmenu', e => e.preventDefault());
 uic.addEventListener('pointermove', e => { if (G.menu && (!G.menu.pad.tower || G.menu.pad.tower.D.wall)) { const b = MENU.find(q => e.clientX >= q.x && e.clientX <= q.x + q.w && e.clientY >= q.y && e.clientY <= q.y + q.h); G.menu.hover = b && TDEF[b.k] ? b.k : null; } });
@@ -1066,7 +1091,7 @@ const PTR = new Map(); let PINCH = null;
 function onUI(x, y) {   // true = the point is on the overlay (menus, buttons): tap it at once
   if (G.state !== 'play' || G.paused) return true; if (MENU.some(q => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h)) return true;
   if (x < 80 * S && y < 46 * S) return true; for (const k of ['spd', 'pause', 'px', 'snd', 'zoom', 'hero']) if (inBtn(BTN[k], x, y)) return true;
-  if (!G.queue.length && !MON.length && G.wave < NWAVE && inBtn(BTN.wave, x, y)) return true;
+  if (!G.queue.length && (CIRC || !MON.length) && G.wave < NWAVE && inBtn(BTN.wave, x, y)) return true;
   if (BTN.sk && BTN.sk.some(b => inBtn(b, x, y) || Math.hypot(x - (b.x + b.r * .72), y - (b.y - b.r * .72)) < 17 * S)) return true; return false;
 }
 uic.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); const x = e.clientX, y = e.clientY;
@@ -1082,13 +1107,13 @@ uic.addEventListener('pointerup', ptrEnd); uic.addEventListener('pointercancel',
 uic.addEventListener('wheel', e => { e.preventDefault(); zoomAt(CAM.zoom * (e.deltaY > 0 ? .88 : 1.14), e.clientX, e.clientY); }, { passive: false });
 function tap(x, y) {
   const mb = MENU.find(q => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h);
-  if (G.state === 'title') { if (mb && mb.k.startsWith('mode:')) { const md = mb.k.slice(5); if ((md === 'maze') !== MAZE) goPage({ menu: true, mode: md }); return; } if (mb && mb.k.startsWith('hero:')) pickHero(mb.k.slice(5)); else if (mb && mb.k.startsWith('map:')) { const m = mb.k.slice(4); if (!mapOpen(m)) { sfx('tick', .4, .6); MAPMSG.t = 2; MAPMSG.m = m; } else if (m !== MAPK) goPage({ map: m, menu: true }); } return; }
+  if (G.state === 'title') { if (mb && mb.k.startsWith('mode:')) { const md = mb.k.slice(5); if (md !== MODE) goPage({ menu: true, mode: md }); return; } if (mb && mb.k.startsWith('hero:')) pickHero(mb.k.slice(5)); else if (mb && mb.k.startsWith('map:')) { const m = mb.k.slice(4); if (!mapOpen(m)) { sfx('tick', .4, .6); MAPMSG.t = 2; MAPMSG.m = m; } else if (m !== MAPK) goPage({ map: m, menu: true }); } return; }
   if (G.state === 'win' || G.state === 'lose') { if (mb) { if (mb.k === 'again') restart(); else if (mb.k === 'next') goPage({ map: MAPKEYS[MAPKEYS.indexOf(MAPK) + 1], menu: true }); else goPage({ menu: true }); } return; }
   if (G.state !== 'play') return;
   if (mb && G.menu) { const t = G.menu.pad.tower; if (TDEF[mb.k]) { if (buildTower(G.menu.pad, mb.k)) G.menu = null; else sfx('tick', .4, .6); } else if (mb.k === 'up') { upgradeTower(t); } else if (mb.k === 'sell') { sellTower(t); G.menu = null; } return; }
   if (G.paused) { G.paused = false; return; }
-  if (x < 80 * S && y < 46 * S) { if (G.lives < 20 && G.gold >= 100) { G.gold -= 100; G.lives++; sfx('build', .6, 1.3); ring(CASTLE, 0x9fff9a, .3, 2, .5); num(new V3(CASTLE.x, 1.8, CASTLE.z), '+1 ชีวิต', '#9fff9a'); } else { TIP.t = 2; TIP.s = G.lives >= 20 ? 'ปราสาทเต็มแล้ว' : 'ซ่อมปราสาท +1 ชีวิต ใช้ 100 ทอง'; sfx('tick', .3, .6); } return; } if (inBtn(BTN.pause, x, y)) { G.paused = true; return; } if (inBtn(BTN.zoom, x, y)) { zoomAt(CAM.zoom < 1.3 ? 1.6 : CAM.zoom < 2 ? 2.3 : 1); return; } if (inBtn(BTN.spd, x, y)) { G.speed = G.speed === 1 ? 2 : G.speed === 2 ? 3 : 1; return; } if (inBtn(BTN.px, x, y)) { setPx(!G.px); return; } if (inBtn(BTN.snd, x, y)) { SND.on = !SND.on; if (MUS.gain && AU.ctx) MUS.gain.gain.setTargetAtTime(SND.on ? .32 : 0, AU.ctx.currentTime, .2); else if (SND.on) setMusic(MUS.want, true); return; }
-  if (!G.queue.length && !MON.length && G.wave < NWAVE && inBtn(BTN.wave, x, y)) { startWave(); return; }
+  if (x < 80 * S && y < 46 * S && !CIRC) { if (G.lives < 20 && G.gold >= 100) { G.gold -= 100; G.lives++; sfx('build', .6, 1.3); ring(CASTLE, 0x9fff9a, .3, 2, .5); num(new V3(CASTLE.x, 1.8, CASTLE.z), '+1 ชีวิต', '#9fff9a'); } else { TIP.t = 2; TIP.s = G.lives >= 20 ? 'ปราสาทเต็มแล้ว' : 'ซ่อมปราสาท +1 ชีวิต ใช้ 100 ทอง'; sfx('tick', .3, .6); } return; } if (inBtn(BTN.pause, x, y)) { G.paused = true; return; } if (inBtn(BTN.zoom, x, y)) { zoomAt(CAM.zoom < 1.3 ? 1.6 : CAM.zoom < 2 ? 2.3 : 1); return; } if (inBtn(BTN.spd, x, y)) { G.speed = G.speed === 1 ? 2 : G.speed === 2 ? 3 : 1; return; } if (inBtn(BTN.px, x, y)) { setPx(!G.px); return; } if (inBtn(BTN.snd, x, y)) { SND.on = !SND.on; if (MUS.gain && AU.ctx) MUS.gain.gain.setTargetAtTime(SND.on ? .32 : 0, AU.ctx.currentTime, .2); else if (SND.on) setMusic(MUS.want, true); return; }
+  if (!G.queue.length && (CIRC || !MON.length) && G.wave < NWAVE && inBtn(BTN.wave, x, y)) { startWave(); return; }
   if (HERO) { for (let i = 0; i < 4; i++) { const b = BTN.sk[i]; if (canLearn(i) && Math.hypot(x - (b.x + b.r * .72), y - (b.y - b.r * .72)) < 17 * S) { learnSkill(i); return; } }
     for (let i = 0; i < 4; i++) if (inBtn(BTN.sk[i], x, y)) { G.menu = null; const K = HERO.kit[i]; if (HERO.sk[i] > 0) { if (!castSkill(i)) { sfx('tick', .3, .6); TIP.t = 2; TIP.s = K.name + ': รอ ' + Math.ceil(HERO.cdk[i]) + ' วิ'; } } else if (canLearn(i)) learnSkill(i); else { sfx('tick', .3, .6); TIP.t = 2.5; TIP.s = K.name + ': ' + K.desc + ' (ต้อง Lv ' + skReq(i, 1) + ')'; } return; }
     if (inBtn(BTN.hero, x, y)) { G.menu = null; G.showRange = !G.showRange; return; } }
@@ -1156,7 +1181,7 @@ function platformTop(s, k, H) {   // cast rays down at the middle from heights b
   return best;
 }
 setPx(G.px); boot(); frame();
-window.GAME = { info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures }), castSkill, learnSkill, canLearn, HPAD, MAZE, WDLOG, canBuild, DIST, BLK, PADAT, cId, ROUTE, SPC, flow, endGameT: w => endGame(w), MAPK, camZoom: () => CAM.zoom, closeCam: (x, z, d = 4) => { CAM.override = { pos: new V3(x, d * .8, z + d * .6), look: new V3(x, .4, z) }; camera.position.copy(CAM.override.pos); camera.lookAt(x, .4, z); }, zoomAt, G, MON, TOWERS, PADS, PROJ, FX, get HERO() { return HERO; }, TDEF, HEROES, KITS, buildTower, upgradeTower, sellTower, startWave, pickHero, setPx, tap, toScreen: (x, y, z) => toScreen(new V3(x, y, z)),
+window.GAME = { info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures }), castSkill, learnSkill, canLearn, HPAD, MAZE, CIRC, MODE, LIMIT, aliveCount, WDLOG, canBuild, DIST, BLK, PADAT, cId, ROUTE, SPC, flow, endGameT: w => endGame(w), MAPK, camZoom: () => CAM.zoom, closeCam: (x, z, d = 4) => { CAM.override = { pos: new V3(x, d * .8, z + d * .6), look: new V3(x, .4, z) }; camera.position.copy(CAM.override.pos); camera.lookAt(x, .4, z); }, zoomAt, G, MON, TOWERS, PADS, PROJ, FX, get HERO() { return HERO; }, TDEF, HEROES, KITS, buildTower, upgradeTower, sellTower, startWave, pickHero, setPx, tap, toScreen: (x, y, z) => toScreen(new V3(x, y, z)),
   sim: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) { NOW += dt; tick(dt); } } };
 </script>
 </body>

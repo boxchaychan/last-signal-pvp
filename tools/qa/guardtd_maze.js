@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
   const out = process.argv[2] || '/tmp/maze', hero = process.argv[3] || 'archer'; require('fs').mkdirSync(out, { recursive: true });
   const b = await chromium.launch(); const errs = []; const pg = await (await b.newContext({ viewport: { width: 844, height: 390 } })).newPage();
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-  await pg.goto('http://localhost:8000/guardtd.html?snd=0&hero=' + hero); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 120000 });
+  await pg.goto('http://localhost:8000/guardtd.html?snd=0&mode=maze&hero=' + hero); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 120000 });
   await pg.waitForTimeout(1500); await pg.screenshot({ path: `${out}/m1_start.png` });
   // a wall line with a gap: the arrows must go round it
   const r1 = await pg.evaluate(() => { const G = GAME.G; G.gold = 99999; const P = (i, j) => GAME.PADAT[GAME.cId(i, j)]; let ok = 0;
