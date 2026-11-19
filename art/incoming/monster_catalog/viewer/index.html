@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monster Catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f4ec; --panel: #fffdf8; --ink: #2b2620; --muted: #7a7166; --line: #e6dfd2;
+    --accent: #b8432f; --accent-soft: #f6e3dc; --ok: #3f7d4e; --warn: #b7791f; --warn-soft: #fbf0d9;
+    --stage: #efe9dc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1d1b18; --panel: #262320; --ink: #ece6dc; --muted: #a49a8c; --line: #3a3530;
+      --accent: #e0785f; --accent-soft: #3d2a24; --ok: #7cc08d; --warn: #e4b45a; --warn-soft: #3a3020; --stage: #2f2b26; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Sarabun", system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 16px 10px; }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  h1 { margin: 0 0 2px; font-size: 22px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px;
+    padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .chip b { color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.on b { color: #ffe9e2; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+  .bar input[type=search], .bar select { font: inherit; font-size: 14px; padding: 5px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--panel); color: var(--ink); }
+  .bar input[type=search] { flex: 1 1 200px; min-width: 0; }
+  .bar label { font-size: 13px; color: var(--muted); display: flex; gap: 4px; align-items: center; cursor: pointer; }
+  .count { margin-left: auto; font-size: 13px; color: var(--muted); }
+  main { padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer;
+    transition: transform .12s, box-shadow .12s; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+  .card canvas { display: block; width: 100%; height: 130px; background: var(--stage); }
+  .card .info { padding: 8px 10px 10px; }
+  .name { font-weight: 700; font-size: 15px; line-height: 1.25; }
+  .en { color: var(--muted); font-size: 12px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--stage); color: var(--ink); }
+  .tag.boss { background: var(--accent); color: #fff; }
+  .tag.game { background: var(--ok); color: #fff; }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .stars { color: var(--warn); letter-spacing: -1px; font-size: 12px; }
+  .empty { color: var(--muted); text-align: center; padding: 60px 0; }
+  dialog { border: none; border-radius: 16px; padding: 0; width: min(720px, calc(100vw - 32px)); background: var(--panel); color: var(--ink);
+    box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  dialog::backdrop { background: rgba(20,16,12,.55); }
+  .dlg-stage { background: var(--stage); position: relative; }
+  .dlg-stage canvas { display: block; width: 100%; height: min(360px, 55vh); }
+  .close { position: absolute; top: 10px; right: 10px; border: none; background: var(--panel); color: var(--ink); width: 32px; height: 32px;
+    border-radius: 50%; font-size: 18px; cursor: pointer; }
+  .dlg-body { padding: 14px 18px 18px; }
+  .anims { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 10px; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; font-size: 14px; margin: 10px 0; }
+  .facts span { color: var(--muted); font-size: 12px; display: block; }
+  .note { border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-top: 8px; }
+  .note.warn { background: var(--warn-soft); color: var(--warn); }
+  .note.game { background: var(--accent-soft); }
+  code { font-size: 12px; color: var(--muted); }
+  @media (max-width: 520px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } .card canvas { height: 110px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Monster Catalog</h1>
+    <div class="sub">288 ตัว · ภาพเคลื่อนไหวจาก sprite จริง (2x) · ชื่อ/ธาตุ/tier เป็นค่าแนะนำ · กดการ์ดเพื่อดูท่า attack / skill</div>
+    <div class="chips" id="biomes"></div>
+    <div class="bar">
+      <input type="search" id="q" placeholder="ค้นหา ชื่อไทย / อังกฤษ / id">
+      <select id="tier"><option value="">ทุก tier</option></select>
+      <select id="el"><option value="">ทุกธาตุ</option></select>
+      <select id="role"><option value="">ทุกบทบาท</option></select>
+      <select id="kind"><option value="">มอน + บอส</option><option value="mob">มอน</option><option value="boss">บอส</option></select>
+      <label><input type="checkbox" id="clean"> เฉพาะ art ไม่มีปัญหา</label>
+      <label><input type="checkbox" id="game"> อยู่ในเกมแล้ว</label>
+      <span class="count" id="count"></span>
+    </div>
+  </div>
+</header>
+<main class="wrap"><div class="grid" id="grid"></div><div class="empty" id="empty" hidden>ไม่พบมอนที่ตรงเงื่อนไข</div></main>
+
+<dialog id="dlg">
+  <div class="dlg-stage"><canvas id="big"></canvas><button class="close" id="close" aria-label="ปิด">×</button></div>
+  <div class="dlg-body" id="detail"></div>
+</dialog>
+
+<script src="data.js"></script>
+<script>
+const { biomes, monsters } = window.CATALOG;
+const TH = {
+  el: { neutral: "ไร้ธาตุ", water: "น้ำ", earth: "ดิน", fire: "ไฟ", wind: "ลม", poison: "พิษ", holy: "ศักดิ์สิทธิ์", shadow: "มืด", ghost: "โกสต์", undead: "อันเดด" },
+  role: { melee: "ประชิด", tank: "แทงก์", swift: "ว่องไว", ranged: "ระยะไกล", caster: "เวท", summoner: "อัญเชิญ", passive: "เฉื่อย" },
+  size: { small: "เล็ก", medium: "กลาง", large: "ใหญ่" },
+  aggro: { aggressive: "ตีก่อน", passive: "ไม่ตีก่อน" },
+  anim: { idle: "ยืน", walk: "เดิน", attack: "โจมตี", skill: "สกิล" },
+  type: { dragon: "มังกร", insect: "แมลง", construct: "หุ่น", fish: "ปลา", humanoid: "มนุษย์", demon: "ปีศาจ", beast: "สัตว์", undead: "อันเดด",
+    reptile: "สัตว์เลื้อยคลาน", plant: "พืช", bird: "นก", slime: "สไลม์", elemental: "ธาตุ", object: "วัตถุ", spirit: "วิญญาณ", fairy: "ภูต" }
+};
+const TIER_LV = ["", "Lv 1–20", "Lv 20–40", "Lv 40–60", "Lv 60–80", "Lv 80+"];
+const stars = (t) => "★".repeat(t) + "☆".repeat(5 - t);
+const hasIssue = (m) => !!(m.issues && (Array.isArray(m.issues) ? m.issues.length : String(m.issues).length));
+const issueText = (m) => Array.isArray(m.issues) ? m.issues.join(" · ") : String(m.issues);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// ---- sprite pages (loaded on demand, shared) ----
+const pageCache = new Map();
+function page(src) {
+  let img = pageCache.get(src);
+  if (!img) { img = new Image(); img.src = src; pageCache.set(src, img); }
+  return img;
+}
+/** Union box of every frame of one animation in cell space, so the art does not jump while it plays. */
+function animBox(anim) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [, , , w, h, ox, oy] of anim.f) { x0 = Math.min(x0, ox); y0 = Math.min(y0, oy); x1 = Math.max(x1, ox + w); y1 = Math.max(y1, oy + h); }
+  return { x0, y0, w: x1 - x0, h: y1 - y0 };
+}
+function drawFrame(ctx, m, anim, box, i, pad) {
+  const c = ctx.canvas, dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const [p, sx, sy, w, h, ox, oy] = anim.f[i];
+  const img = page(m.pages[p]);
+  if (!img.complete || !img.naturalWidth) return;
+  const s = Math.min((W - pad * 2) / box.w, (H - pad * 2) / box.h, 1.6);
+  const left = (W - box.w * s) / 2, top = (H - box.h * s) / 2;
+  // ground shadow under the feet
+  ctx.fillStyle = "rgba(0,0,0,.10)";
+  ctx.beginPath(); ctx.ellipse(W / 2, top + box.h * s - 2, box.w * s * 0.32, Math.max(3, box.h * s * 0.05), 0, 0, Math.PI * 2); ctx.fill();
+  ctx.drawImage(img, sx, sy, w, h, left + (ox - box.x0) * s, top + (oy - box.y0) * s, w * s, h * s);
+}
+const defaultAnim = (m) => m.anims.walk ? "walk" : m.anims.idle ? "idle" : Object.keys(m.anims)[0];
+
+// ---- filters ----
+const state = { biome: "", q: "", tier: "", el: "", role: "", kind: "", clean: false, game: false };
+const $ = (id) => document.getElementById(id);
+function fillSelect(id, values, label) {
+  for (const v of values) { const o = document.createElement("option"); o.value = v; o.textContent = label(v); $(id).appendChild(o); }
+}
+fillSelect("tier", [1, 2, 3, 4, 5], (t) => `${stars(t)} ${TIER_LV[t]}`);
+fillSelect("el", Object.keys(TH.el), (v) => TH.el[v]);
+fillSelect("role", Object.keys(TH.role), (v) => TH.role[v]);
+
+function renderBiomes() {
+  const el = $("biomes"); el.innerHTML = "";
+  const all = [{ key: "", th: "ทั้งหมด" }, ...biomes];
+  for (const b of all) {
+    const n = b.key ? monsters.filter((m) => m.biome === b.key).length : monsters.length;
+    const btn = document.createElement("button");
+    btn.className = "chip" + (state.biome === b.key ? " on" : "");
+    btn.innerHTML = `${esc(b.th)}<b>${n}</b>`;
+    btn.onclick = () => { state.biome = b.key; renderBiomes(); renderGrid(); };
+    el.appendChild(btn);
+  }
+}
+function matches(m) {
+  if (state.biome && m.biome !== state.biome) return false;
+  if (state.tier && m.tier !== +state.tier) return false;
+  if (state.el && m.el !== state.el) return false;
+  if (state.role && m.role !== state.role) return false;
+  if (state.kind && m.kind !== state.kind) return false;
+  if (state.clean && (hasIssue(m) || (m.fit && m.fit !== "ok"))) return false;
+  if (state.game && !m.inGame) return false;
+  if (state.q) {
+    const q = state.q.toLowerCase();
+    if (![m.th, m.en, m.id, m.inGame].some((s) => s && s.toLowerCase().includes(q))) return false;
+  }
+  return true;
+}
+
+// ---- grid with animated cards (only visible cards animate) ----
+const live = new Set();
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) e.isIntersecting ? live.add(e.target._card) : live.delete(e.target._card);
+}, { rootMargin: "100px" });
+
+function renderGrid() {
+  const grid = $("grid");
+  for (const c of grid.querySelectorAll("canvas")) io.unobserve(c);
+  live.clear(); grid.innerHTML = "";
+  const list = monsters.filter(matches).sort((a, b) => a.tier - b.tier || (a.kind === "boss") - (b.kind === "boss") || a.h - b.h);
+  $("count").textContent = `${list.length} ตัว`;
+  $("empty").hidden = list.length > 0;
+  for (const m of list) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const tags = [
+      m.kind === "boss" ? `<span class="tag boss">บอส</span>` : "",
+      m.inGame ? `<span class="tag game">ในเกม: ${esc(m.inGame)}</span>` : "",
+      `<span class="tag">${TH.el[m.el] || m.el}</span>`,
+      `<span class="tag">${TH.role[m.role] || m.role}</span>`,
+      hasIssue(m) ? `<span class="tag warn">⚠ art</span>` : "",
+      m.fit && m.fit !== "ok" ? `<span class="tag warn">biome?</span>` : ""
+    ].join("");
+    card.innerHTML = `<canvas></canvas><div class="info"><div class="name">${esc(m.th)}</div>
+      <div class="en">${esc(m.en)} · <span class="stars">${stars(m.tier)}</span></div><div class="tags">${tags}</div></div>`;
+    const canvas = card.querySelector("canvas");
+    const name = defaultAnim(m);
+    const c = { m, ctx: canvas.getContext("2d"), anim: m.anims[name], box: animBox(m.anims[name]), i: 0, t: 0 };
+    canvas._card = c;
+    m.pages.forEach(page);
+    io.observe(canvas);
+    card.onclick = () => openDetail(m);
+    grid.appendChild(card);
+  }
+}
+
+// ---- detail dialog ----
+let big = null;
+function openDetail(m) {
+  const name = defaultAnim(m);
+  const buttons = Object.keys(m.anims).map((a) =>
+    `<button class="chip${a === name ? " on" : ""}" data-a="${a}">${TH.anim[a] || a} <b>${m.anims[a].f.length} เฟรม</b></button>`).join("");
+  const biome = biomes.find((b) => b.key === m.biome);
+  $("detail").innerHTML = `
+    <div class="name" style="font-size:20px">${esc(m.th)} <span class="en" style="font-size:14px">${esc(m.en)}</span></div>
+    <code>${esc(m.id)}</code>
+    <div class="anims">${buttons}</div>
+    <div>${esc(m.desc)}</div>
+    <div class="facts">
+      <div><span>Tier</span><span class="stars" style="display:inline">${stars(m.tier)}</span> ${TIER_LV[m.tier]}</div>
+      <div><span>Biome</span>${esc(biome ? biome.th : m.biome)}</div>
+      <div><span>ประเภท</span>${esc(TH.type[m.type] || m.type)}</div>
+      <div><span>ธาตุ</span>${esc(TH.el[m.el] || m.el)}</div>
+      <div><span>บทบาท</span>${esc(TH.role[m.role] || m.role)} · ${esc(TH.aggro[m.aggro] || m.aggro)}</div>
+      <div><span>ขนาด</span>${esc(TH.size[m.size] || m.size)} (${m.h})</div>
+      <div><span>ตระกูล</span>${esc(m.family)}</div>
+      <div><span>ประเภทมอน</span>${m.kind === "boss" ? "บอส" : "มอนปกติ"}</div>
+    </div>
+    ${m.inGame ? `<div class="note game">อยู่ในเกมแล้วในชื่อ <b>${esc(m.inGame)}</b></div>` : ""}
+    ${hasIssue(m) ? `<div class="note warn">⚠ ปัญหา art: ${esc(issueText(m))}</div>` : ""}
+    ${m.fit && m.fit !== "ok" ? `<div class="note warn">biome: ${esc(m.fit)}</div>` : ""}`;
+  const canvas = $("big");
+  big = { m, ctx: canvas.getContext("2d"), anim: m.anims[name], box: animBox(m.anims[name]), i: 0, t: 0, big: true };
+  for (const b of $("detail").querySelectorAll("[data-a]")) {
+    b.onclick = () => {
+      for (const x of $("detail").querySelectorAll("[data-a]")) x.classList.toggle("on", x === b);
+      big.anim = m.anims[b.dataset.a]; big.box = animBox(big.anim); big.i = 0; big.t = 0;
+    };
+  }
+  $("dlg").showModal();
+}
+$("close").onclick = () => $("dlg").close();
+$("dlg").addEventListener("click", (e) => { if (e.target === $("dlg")) $("dlg").close(); });
+$("dlg").addEventListener("close", () => { big = null; });
+
+// ---- one animation loop for everything ----
+let last = performance.now();
+function tick(now) {
+  const dt = now - last; last = now;
+  const step = (c, pad) => {
+    c.t += dt;
+    const ms = c.anim.ms * (c.big ? 1.4 : 1.6);
+    while (c.t >= ms) { c.t -= ms; c.i = (c.i + 1) % c.anim.f.length; }
+    drawFrame(c.ctx, c.m, c.anim, c.box, c.i, pad);
+  };
+  for (const c of live) step(c, 10);
+  if (big) step(big, 24);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// ---- inputs ----
+$("q").oninput = (e) => { state.q = e.target.value.trim(); renderGrid(); };
+for (const id of ["tier", "el", "role", "kind"]) $(id).onchange = (e) => { state[id] = e.target.value; renderGrid(); };
+$("clean").onchange = (e) => { state.clean = e.target.checked; renderGrid(); };
+$("game").onchange = (e) => { state.game = e.target.checked; renderGrid(); };
+renderBiomes(); renderGrid();
+</script>
+</body>
+</html>
