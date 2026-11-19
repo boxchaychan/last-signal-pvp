@@ -27,11 +27,13 @@ const { chromium } = require('playwright');
       const spots = GAME.PADS.slice().sort((a, c) => cover(c) - cover(a)); let nt = 0, peak = 0;
       const spend = () => { for (let k = 0; k < 4; k++) GAME.learnSkill(k); const T = GAME.TOWERS, want = mix[nt % mix.length];
         if (G.gold >= GAME.TDEF[want].cost[0] && (T.length < 4 || G.gold > 150 || T.every(t => t.lv >= 1))) { const s = spots.find(p => !p.tower); if (s && GAME.buildTower(s, want)) nt++; }
-        for (const t of T.slice().sort((a, c) => a.lv - c.lv)) if (t.lv < 3 && G.gold >= t.D.cost[t.lv + 1] + 20) GAME.upgradeTower(t); };
+        for (const t of T.slice().sort((a, c) => a.lv - c.lv)) if (t.lv < 3 && G.gold >= t.D.cost[t.lv + 1] + 20) GAME.upgradeTower(t);
+        if (!spots.some(p => !p.tower) && T.every(t => t.lv >= 3)) for (let g = 0; g < 20; g++) { const t = T.slice().sort((a, c) => GAME.starCost(a) - GAME.starCost(c))[0], hc = GAME.trainCost();   /* the gold sinks: stars + hero training, cheapest first */
+          if (hc <= GAME.starCost(t)) { if (!GAME.trainHero()) break; } else if (G.gold >= GAME.starCost(t)) GAME.upgradeTower(t); else break; } };
       let t = 0; await GAME.startWave();
       while (G.state === 'play' && G.wave <= maxw && t < 6000) { while (G.starting) await new Promise(r => setTimeout(r, 20)); GAME.sim(.5); t += .5; spend(); peak = Math.max(peak, GAME.aliveCount());
         if ((t * 2) % 6 === 0) { const m = GAME.MON.filter(q => !q.dead).sort((a, c) => c.s - a.s)[0]; if (m) for (let k = 0; k < 4; k++) GAME.castSkill(k, m.pos.clone()); }
-        if (!out.length || out[out.length - 1][0] !== G.wave) out.push([G.wave, Math.round(t), GAME.aliveCount(), G.gold, GAME.TOWERS.length, GAME.TOWERS.reduce((s, q) => s + q.lv, 0), GAME.HERO.lv]); }
+        if (!out.length || out[out.length - 1][0] !== G.wave) out.push([G.wave, Math.round(t), GAME.aliveCount(), G.gold, GAME.TOWERS.length, GAME.TOWERS.reduce((s, q) => s + q.lv + (q.star || 0), 0), GAME.HERO.lv + '/' + (GAME.HERO.train || 0)]); }
       return { out, state: G.state, wave: G.wave, peak, t };
     }, maxw);
     console.log(`circle ${hero} -> ${res.state} at wave ${res.wave} (${res.t} s, peak ${res.peak})`); console.log(res.out.map(r => `w${r[0]}@${r[1]}s:a${r[2]} g${r[3]} t${r[4]}/${r[5]} h${r[6]}`).join('  '));
