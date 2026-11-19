@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch(); const errs = [];
   for (let gi = 0; gi < games; gi++) {
     const pg = await b.newPage(); pg.on('pageerror', e => errs.push(e.message));
-    await pg.goto(`http://localhost:8000/guardtd.html?snd=0&norender=1&maxw=40&map=${map}&hero=${hero}`); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 120000 });
+    await pg.goto(`http://localhost:8000/guardtd.html?snd=0&norender=1&maxw=40&mode=road&map=${map}&hero=${hero}`); await pg.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 120000 });
     const res = await pg.evaluate(async (useSkill) => {
       const G = GAME.G, out = []; const mix = ['archer', 'mage', 'bomb', 'archer', 'knight', 'mage', 'archer', 'bomb', 'mage', 'archer', 'knight'];
       const spend = () => { for (let k = 0; k < 4; k++) GAME.learnSkill(k);
