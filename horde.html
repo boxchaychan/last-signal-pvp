@@ -366,7 +366,7 @@ const CARDU = { camR: { value: CAMR }, camU: { value: CAMU }, amb: { value: new 
 function loadKind(k) {
   if (KIND[k]) return KIND[k].p; const I = MOBS[k], K = KIND[k] = { k, I, ok: false, n: 0 }; if (!I) { K.p = Promise.resolve(); return K.p; }
   const sc = PXW / I.px; K.hgt = I.hw * PXW * (I.boss ? 1.25 : 1); K.bsc = I.boss ? 1.25 : 1; K.rad = clamp(K.hgt * .3, .2, 1.2); K.cols = I.n; K.rows = Object.keys(I.rows).length; K.fly = !!I.fly;
-  const hp = Math.pow(I.hw / 60, 1.6), fast = clamp(1.75 - I.hw / 140, .8, 1.7) * (I.fly ? 1.12 : 1); const role = I.boss ? 'boss' : I.role || 'melee'; K.shoot = role === 'ranged' || role === 'caster'; K.st = { hp: hp * (role === 'tank' ? 1.4 : K.shoot ? .8 : 1), spd: fast * (role === 'swift' ? 1.18 : role === 'tank' ? .9 : 1), dmg: Math.pow(I.hw / 60, .8), xp: Math.max(1, Math.round(Math.pow(I.hw / 60, 1.3) * (role === 'tank' || K.shoot ? 1.3 : 1))) };
+  const hp = Math.pow(I.hw / 60, 1.6), fast = clamp(1.75 - I.hw / 140, .8, 1.7) * (I.fly ? 1.12 : 1); const role = I.boss ? 'boss' : I.role || 'melee'; K.shoot = role === 'ranged' || role === 'caster'; K.swift = role === 'swift'; K.st = { hp: hp * (role === 'tank' ? 1.4 : K.shoot ? .8 : 1), spd: fast * (role === 'swift' ? 1.18 : role === 'tank' ? .9 : 1), dmg: Math.pow(I.hw / 60, .8), xp: Math.max(1, Math.round(Math.pow(I.hw / 60, 1.3) * (role === 'tank' || K.shoot ? 1.3 : 1))) };
   if (NORENDER) { K.ok = true; K.p = Promise.resolve(); return K.p; }
   K.p = TL.loadAsync(I.f).then(t => { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.encoding = THREE.LinearEncoding;   /* raw colours: the card shader writes them as they are */
     const cap = I.boss ? 6 : KCAP, g = new THREE.InstancedBufferGeometry(), p = new THREE.PlaneGeometry(I.w * sc, I.h * sc); p.translate((I.w / 2 - I.fx) * sc, (I.fy - I.h / 2) * sc, 0);   /* foot point at the origin */
@@ -420,7 +420,7 @@ function killMon(m) {
 }
 /* ---------- pickups: xp gems (blue 1+, green 5+, pink 25+, gold 100+), coins, hearts, magnets, bombs, chests */
 const GEMS = [], GEMN = 420, DROPC = { xp: 0x4ac8ff, coin: 0xffc832, heart: 0xff5a6a, magnet: 0xb48cff, bomb: 0xff9a3a, chest: 0xffd060 };
-const GEMM = new THREE.InstancedMesh(new THREE.OctahedronGeometry(.13), new THREE.MeshPhongMaterial({ flatShading: true, shininess: 90, emissive: 0x222222 }), GEMN); GEMM.frustumCulled = false; GEMM.setColorAt(0, new THREE.Color(1, 1, 1)); GEMM.count = 0; GEMM.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(GEMM);
+const GEMM = new THREE.InstancedMesh(new THREE.OctahedronGeometry(.13), new THREE.MeshPhongMaterial({ flatShading: true, shininess: 120, specular: 0xffffff, emissive: 0x303038 }), GEMN); GEMM.frustumCulled = false; GEMM.setColorAt(0, new THREE.Color(1, 1, 1)); GEMM.count = 0; GEMM.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(GEMM);
 function drop(kind, x, z, v) {
   const L = Math.hypot(x, z); if (L > ARENA - .3) { x *= (ARENA - .3) / L; z *= (ARENA - .3) / L; } { const q0 = { x, z }; pushOut(q0, .25, 0); x = q0.x; z = q0.z; }
   if (kind === 'xp' && GEMS.length > GEMN - 30) { const g = GEMS[Math.random() * GEMS.length | 0]; if (g.kind === 'xp') { g.v += v; return; } }   /* too many on the ground: grow another gem instead */
@@ -806,6 +806,8 @@ function updMons(dt) {
       if (m.frzT <= 0) { let fx = -dx / d, fz = -dz / d; const R0 = Math.hypot(m.x, m.z); if (R0 > ARENA - 4) { const k = (R0 - ARENA + 4) / 4, tx = -m.z / R0, tz = m.x / R0, sgn = fx * tx + fz * tz > 0 ? 1 : -1; fx = fx * (1 - k) + (tx * sgn - m.x / R0 * .6) * k; fz = fz * (1 - k) + (tz * sgn - m.z / R0 * .6) * k; } const L = Math.hypot(fx, fz) || 1, sp2 = m.spd * m.slowK * (d < 3 ? 1.15 : 1); m.x += fx / L * sp2 * dt; m.z += fz / L * sp2 * dt; m.flip = fx > 0 ? -1 : 1; }
       pushOut(m, m.r * .4, 0); if (m.kx || m.kz) { m.x += m.kx * dt; m.z += m.kz * dt; const f = Math.exp(-7 * dt); m.kx *= f; m.kz *= f; } const R1 = Math.hypot(m.x, m.z); if (R1 > ARENA - .5) { m.x *= (ARENA - .5) / R1; m.z *= (ARENA - .5) / R1; } m.fr += dt * 10; if (Math.random() < dt * 6) spark(m.x, .5, m.z, { n: 1, color: 0xffd040, spd: 1, up: 2, size: .22, life: .4 }); continue; }
     const sp = m.frzT > 0 ? 0 : m.spd * m.slowK, reach = m.r + .36; m.row = 0;
+    if (m.K.swift && !m.elite && m.frzT <= 0) { if (m.lunge > 0) { m.lunge -= dt; m.x += m.lx * m.spd * 3.3 * dt; m.z += m.lz * m.spd * 3.3 * dt; busy = true; }
+      else if (m.windT > 0) { m.windT -= dt; busy = true; if (m.windT <= 0) { m.lunge = .36; m.lx = dx / d; m.lz = dz / d; } } else { m.lT = (m.lT === undefined ? 1.5 + m.seed * .4 : m.lT) - dt; if (m.lT <= 0 && d < 5.5 && d > 1.6) { m.windT = .45; m.lT = 3.6 + m.seed * .3; } } }
     if (!busy) { if (m.K.shoot && !m.elite && d < 6.5 && d > 2.2) { if (d < 4.5) { m.x -= dx / d * sp * .5 * dt; m.z -= dz / d * sp * .5 * dt; } if (m.K.rows > 1 && m.atkT < .45) m.row = 1;
         if (m.atkT <= 0 && m.frzT <= 0 && !HERO.dead && BUL.length < 46) { m.atkT = 2.8 + Math.random(); BUL.push({ x: m.x, z: m.z, vx: dx / d * 4.3, vz: dz / d * 4.3, t: 0, life: 3.2, dmg: Math.round(m.dmg * .8) }); } }
       else if (d > reach) { m.x += dx / d * sp * dt; m.z += dz / d * sp * dt; } }
@@ -822,13 +824,13 @@ function fillBatches() {
   for (const k in KIND) KIND[k].n = 0; let bn = 0; const B = BLOBS.a.array;
   for (const m of MON) { const K = m.K; if (!K.mesh || K.n >= K.cap) continue; const i = K.n++ * 4, sc = m.sc * (m.dead ? Math.max(0, 1 - m.deadT / .16) : 1), Pp = K.aPos.array, F = K.aFr.array, T = K.aTint.array;
     Pp[i] = m.x; Pp[i + 1] = m.y; Pp[i + 2] = m.z; Pp[i + 3] = sc; F[i] = Math.floor(m.fr) % K.cols; F[i + 1] = K.rows > 1 ? m.row : 0; F[i + 2] = m.flip; F[i + 3] = m.dead ? 1 : m.flash * .85;
-    if (m.frzT > 0) { T[i] = .6; T[i + 1] = .9; T[i + 2] = 1.5; } else if (m.tint) { T[i] = m.tint[0]; T[i + 1] = m.tint[1]; T[i + 2] = m.tint[2]; } else if (m.burnT > 0) { T[i] = 1.3; T[i + 1] = .82; T[i + 2] = .62; } else if (m.slowT > 0) { T[i] = .78; T[i + 1] = .92; T[i + 2] = 1.2; } else { T[i] = T[i + 1] = T[i + 2] = 1; }
+    if (m.frzT > 0) { T[i] = .6; T[i + 1] = .9; T[i + 2] = 1.5; } else if (m.windT > 0) { const b = Math.floor(NOW * 18) % 2 ? 1.9 : 1.1; T[i] = b; T[i + 1] = b * .8; T[i + 2] = b * .8; } else if (m.tint) { T[i] = m.tint[0]; T[i + 1] = m.tint[1]; T[i + 2] = m.tint[2]; } else if (m.burnT > 0) { T[i] = 1.3; T[i + 1] = .82; T[i + 2] = .62; } else if (m.slowT > 0) { T[i] = .78; T[i + 1] = .92; T[i + 2] = 1.2; } else { T[i] = T[i + 1] = T[i + 2] = 1; }
     if (bn < BLOBN && !m.dead) { const j = bn++ * 4, s = m.r * 2.5 * (m.K.fly ? .7 : 1); B[j] = m.x; B[j + 1] = m.z; B[j + 2] = s; B[j + 3] = s * .62; } }
   for (const k in KIND) { const K = KIND[k]; if (!K.mesh) continue; K.mesh.geometry.instanceCount = K.n; K.mesh.visible = K.n > 0; if (K.n) { K.aPos.needsUpdate = K.aFr.needsUpdate = K.aTint.needsUpdate = true; } }
   BLOBS.g.instanceCount = bn; BLOBS.a.needsUpdate = true;
   /* gems + coins */
   let gn = 0, cn = 0; for (const g of GEMS) { const bob = g.y + .06 * Math.sin(NOW * 4 + g.x * 3);
-    if (g.kind === 'xp' && gn < GEMN) { const s = g.v >= 100 ? 1.9 : g.v >= 25 ? 1.5 : g.v >= 5 ? 1.2 : .9; _e.set(0, NOW * 2 + g.x, 0); _m4.compose(_v.set(g.x, bob, g.z), _q.setFromEuler(_e), _s.set(s, s * 1.3, s)); GEMM.setMatrixAt(gn, _m4); GEMM.setColorAt(gn, _col.setHex(g.v >= 100 ? 0xffc832 : g.v >= 25 ? 0xff4a8a : g.v >= 5 ? 0x4aff7a : 0x3ab8ff)); gn++; if (g.v >= 5) glow(g.x, bob, g.z, .5 * s, g.v >= 100 ? 0xffc832 : g.v >= 25 ? 0xff4a8a : 0x4aff7a, .35); }
+    if (g.kind === 'xp' && gn < GEMN) { const s = g.v >= 100 ? 1.9 : g.v >= 25 ? 1.5 : g.v >= 5 ? 1.2 : .9; _e.set(.55, NOW * 2 + g.x, .3); _m4.compose(_v.set(g.x, bob, g.z), _q.setFromEuler(_e), _s.set(s, s * 1.3, s)); GEMM.setMatrixAt(gn, _m4); GEMM.setColorAt(gn, _col.setHex(g.v >= 100 ? 0xffc832 : g.v >= 25 ? 0xff4a8a : g.v >= 5 ? 0x4aff7a : 0x3ab8ff)); gn++; if (g.v >= 5) glow(g.x, bob, g.z, .5 * s, g.v >= 100 ? 0xffc832 : g.v >= 25 ? 0xff4a8a : 0x4aff7a, .35); }
     else if (g.kind === 'coin' && cn < 90) { _e.set(0, NOW * 3 + g.z, 0); _m4.compose(_v.set(g.x, bob, g.z), _q.setFromEuler(_e), _s.set(1, 1, 1)); COINM.setMatrixAt(cn++, _m4); }
     else if (g.kind !== 'xp' && g.kind !== 'coin') { if (!g.spr) { g.spr = iconSprite(g.kind); scene.add(g.spr); } g.spr.position.set(g.x, bob + .25, g.z); glow(g.x, bob + .2, g.z, 1.3, DROPC[g.kind], .3 + .15 * Math.sin(NOW * 5)); } }
   GEMM.count = gn; GEMM.instanceMatrix.needsUpdate = true; if (GEMM.instanceColor) GEMM.instanceColor.needsUpdate = true; COINM.count = cn; COINM.instanceMatrix.needsUpdate = true;
@@ -941,7 +943,7 @@ function drawHud(dt) {
   /* life bars of elites */
   for (const m of MON) if (m.elite && !m.dead) { const [x, y, ok] = toScreen(m.x, m.K.hgt * m.sc / m.K.bsc + .25, m.z); if (ok) bar(x - 22 * S, y, 44 * S, 6 * S, m.hp / m.max, '#ffd86a', '#d88a1a'); }
   if (FLASH.r > 0) { const g = ui.createRadialGradient(SW / 2, SH / 2, SH * .35, SW / 2, SH / 2, SH * .95); g.addColorStop(0, 'rgba(255,0,0,0)'); g.addColorStop(1, `rgba(255,20,10,${FLASH.r})`); ui.fillStyle = g; ui.fillRect(0, 0, SW, SH); FLASH.r = Math.max(0, FLASH.r - dt * 1.6); }
-  if (H.hp / H.max < .3 && !H.dead) { const g = ui.createRadialGradient(SW / 2, SH / 2, SH * .4, SW / 2, SH / 2, SH); g.addColorStop(0, 'rgba(255,0,0,0)'); g.addColorStop(1, `rgba(255,20,10,${.25 + .15 * Math.sin(RT * 6)})`); ui.fillStyle = g; ui.fillRect(0, 0, SW, SH); }
+  if (H.hp / H.max < .3 && !H.dead) { const g = ui.createRadialGradient(SW / 2, SH / 2, SH * .55, SW / 2, SH / 2, SH * 1.1); g.addColorStop(0, 'rgba(255,0,0,0)'); g.addColorStop(1, `rgba(255,20,10,${.2 + .12 * Math.sin(RT * 6)})`); ui.fillStyle = g; ui.fillRect(0, 0, SW, SH); }
   if (FLASH.w > 0) { ui.fillStyle = `rgba(255,250,230,${FLASH.w})`; ui.fillRect(0, 0, SW, SH); FLASH.w = Math.max(0, FLASH.w - dt * 1.5); }
   /* the xp bar across the top */
   const xh = 13 * S; ui.fillStyle = 'rgba(8,10,22,.85)'; ui.fillRect(0, 0, SW, xh); ui.fillStyle = grad(0, 0, 0, xh, '#8fe0ff', '#2a7ad8'); ui.fillRect(0, 0, SW * clamp(G.xp / G.need, 0, 1), xh); ui.fillStyle = 'rgba(255,255,255,.3)'; ui.fillRect(0, 0, SW * clamp(G.xp / G.need, 0, 1), xh * .4); ui.fillStyle = '#ffe9a8'; ui.fillRect(0, xh, SW, 1.5 * S);
@@ -975,6 +977,15 @@ function drawHud(dt) {
   for (const m of MON) if (m.run && !m.dead) { edge(m.x, m.z, '#ffd040', 'ทอง'); const [x, y, ok] = toScreen(m.x, 1.5, m.z); if (ok) bar(x - 24 * S, y, 48 * S, 6 * S, m.life / 17, '#ffe08a', '#d88a1a'); }
   for (const g of GEMS) if (g.kind === 'chest') edge(g.x, g.z, '#ffd060', 'หีบ'); if (G.boss && !G.boss.dead) edge(G.boss.x, G.boss.z, '#ff7a6a', 'บอส');
   if (G.rage > 0) { const bx = SW / 2, by = SH - 30 * S; rr(bx - 70 * S, by - 11 * S, 140 * S, 22 * S, 11 * S); ui.fillStyle = 'rgba(90,14,10,.8)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = '#ff8a7a'; ui.stroke(); txt('พลังเดือด +50%  ' + Math.ceil(G.rage) + ' วิ', bx, by + 1, 11.5 * S, '#ffd0c0'); }
+  { const r = 36 * S, cx = SW - pad - r, cy = SH - pad - r, k = r / (ARENA + 1), X = x => cx + x * k, Y = z => cy + z * k; ui.save(); ui.beginPath(); ui.arc(cx, cy, r, 0, TAU); ui.fillStyle = 'rgba(10,14,30,.6)'; ui.fill(); ui.clip();
+    ui.beginPath(); for (let i = 0; i <= 40; i++) { const a = i / 40 * TAU, q = ringR(a); ui.lineTo(X(Math.cos(a) * q), Y(Math.sin(a) * q)); } for (const sA of PATHS.spokes) { ui.moveTo(X(Math.cos(sA) * 2), Y(Math.sin(sA) * 2)); ui.lineTo(X(Math.cos(sA) * ringR(sA)), Y(Math.sin(sA) * ringR(sA))); } ui.lineWidth = 2 * S; ui.strokeStyle = 'rgba(255,233,168,.2)'; ui.stroke();
+    ui.fillStyle = POOLKIND[1]; ui.globalAlpha = .75; for (const p of POOLS) { ui.beginPath(); ui.arc(X(p.x), Y(p.z), Math.max(1.5, p.r * k), 0, TAU); ui.fill(); } ui.globalAlpha = 1;
+    ui.fillStyle = 'rgba(255,90,70,.75)'; for (const m of MON) if (!m.dead && !m.boss && !m.run) ui.fillRect(X(m.x) - 1, Y(m.z) - 1, m.elite ? 3.5 : 2, m.elite ? 3.5 : 2);
+    const dot = (x, z, c, q) => { ui.beginPath(); ui.arc(X(x), Y(z), q * S, 0, TAU); ui.fillStyle = c; ui.fill(); ui.lineWidth = 1; ui.strokeStyle = 'rgba(0,0,0,.6)'; ui.stroke(); }, bl = .6 + .4 * Math.sin(RT * 7);
+    for (const sh of SHRINES) dot(sh.x, sh.z, sh.T.h, 3.2 * bl + 1); for (const g of GEMS) if (g.kind !== 'xp' && g.kind !== 'coin') dot(g.x, g.z, g.kind === 'chest' ? '#ffd060' : g.kind === 'heart' ? '#ff5a6a' : '#b48cff', 2.6);
+    for (const m of MON) if (!m.dead && m.run) dot(m.x, m.z, '#ffe14a', 3.4 * bl + 1); if (G.boss && !G.boss.dead) dot(G.boss.x, G.boss.z, '#ff3a2a', 4.6);
+    ui.translate(X(H.pos.x), Y(H.pos.z)); ui.rotate(-H.face + Math.PI); ui.beginPath(); ui.moveTo(0, -5 * S); ui.lineTo(3.6 * S, 4 * S); ui.lineTo(0, 2 * S); ui.lineTo(-3.6 * S, 4 * S); ui.closePath(); ui.fillStyle = '#fff'; ui.fill(); ui.lineWidth = 1.2; ui.strokeStyle = '#141a2a'; ui.stroke(); ui.restore();
+    ui.beginPath(); ui.arc(cx, cy, r, 0, TAU); ui.lineWidth = 2 * S; ui.strokeStyle = 'rgba(255,233,168,.75)'; ui.stroke(); }
   /* the stick under the thumb */
   if (JOY.on && G.state === 'play') { ui.beginPath(); ui.arc(JOY.x0, JOY.y0, 46 * S, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.08)'; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke(); ui.beginPath(); ui.arc(JOY.x0 + INP.x * 40 * S, JOY.y0 + INP.z * 40 * S, 20 * S, 0, TAU); ui.fillStyle = 'rgba(255,240,200,.5)'; ui.fill(); }
   if (G.t < 6 && G.state === 'play') { ui.globalAlpha = clamp(6 - G.t, 0, 1); txt(TOUCH ? 'ลากนิ้วที่ไหนก็ได้เพื่อเดิน อาวุธยิงเอง' : 'เดินด้วย W A S D หรือลากเมาส์ อาวุธยิงเอง', SW / 2, SH * .82, 15 * S, '#fff6dc', 'center', 600); ui.globalAlpha = 1; }
@@ -1021,7 +1032,8 @@ function drawPause() {
   button('snd', x + w - 92 * S, y + 10 * S, 78 * S, 22 * S, SND.on ? 'เสียง: เปิด' : 'เสียง: ปิด', { c: GREY, tc: '#fff', ts: 'rgba(0,0,0,.6)', size: 10.5 * S, fn: toggleSnd });
 }
 function drawEnd(dt) {
-  G.endA = (G.endA || 0) + dt; dim(.72); const E = G.result, w = Math.min(520 * S, SW - 24 * S), h = Math.min(330 * S, SH - 30 * S), x = SW / 2 - w / 2, y = SH / 2 - h / 2 + 10 * S; panel(x, y, w, h);
+  G.endA = (G.endA || 0) + dt; dim(.72); if (G.result.win) { if (!G.conf) G.conf = Array.from({ length: 70 }, () => ({ x: Math.random(), y: -Math.random(), v: .18 + Math.random() * .25, a: Math.random() * 6, w: Math.random() * 2 - 1, c: pick(['#ffd34a', '#ff6a7a', '#6ac0ff', '#9fe8a0', '#c89aff', '#fff6dc']) })); for (const c of G.conf) { c.y += c.v * dt; c.a += dt * 4; if (c.y > 1.05) c.y = -.05; ui.save(); ui.translate(c.x * SW + Math.sin(c.a * .7 + c.w * 3) * 18 * S, c.y * SH); ui.rotate(c.a); ui.fillStyle = c.c; ui.fillRect(-4 * S, -2 * S * Math.cos(c.a * 1.3), 8 * S, 4 * S * Math.cos(c.a * 1.3)); ui.restore(); } }
+  const E = G.result, w = Math.min(520 * S, SW - 24 * S), h = Math.min(330 * S, SH - 30 * S), x = SW / 2 - w / 2, y = SH / 2 - h / 2 + 10 * S; panel(x, y, w, h);
   ribbon(SW / 2, y - 16 * S, 210 * S, 36 * S, E.win ? 'ชนะระดับ' + DIFFS[G.dl].n + '!' : 'พ่ายแพ้', E.win ? ['#e8a81e', '#9a5a08'] : ['#d83a3a', '#8a1c1c']);
   const lx = x + 18 * S, rows = [['เวลาที่รอด', fmtT(G.t)], ['มอนที่ฆ่า', String(G.kills)], ['เลเวล', String(G.lv)], ['บอสที่ล้ม', String(G.bossKills || 0)], ['ดาเมจรวม', fmtN(G.dealt)]];
   rows.forEach((r, i) => { const yy = y + 40 * S + i * 22 * S; txt(r[0], lx, yy, 12.5 * S, '#b8c4e0', 'left', 600, 'rgba(0,0,0,.6)', 2); txt(r[1], lx + w * .36, yy, 13.5 * S, '#fff6dc', 'right'); });
@@ -1152,7 +1164,7 @@ function clearRun() {
   MON.length = 0; for (const p of PROJ) if (p.mesh) { scene.remove(p.mesh); p.mesh.material.dispose(); } PROJ.length = 0; ZONES.length = 0; BUL.length = 0; for (const g of GEMS) if (g.spr) scene.remove(g.spr); GEMS.length = 0; PARTS.length = 0; NUMS.length = 0; NOTES.length = 0; TIMERS.length = 0;
   for (const f of FX) { scene.remove(f.o); } FX.length = 0; PFXN = 0; for (const sh of SHRINES) scene.remove(sh.g); SHRINES.length = 0; DIR.shrineT = 35; G.rage = 0; for (const W of G.weps) { if (W.mesh) scene.remove(W.mesh, W.mesh2); } for (const k in STATS) delete STATS[k];
   Object.assign(DIR, { cur: [], next: [], phase: -1, acc: 0, swarm: 0, eliteT: 45, bossI: 0, nextBoss: 150, mimT: 70 }); CAM.focus = null;
-  Object.assign(G, { t: 0, lv: 1, xp: 0, need: needXp(1), pend: 0, kills: 0, coins: 0, weps: [], pas: [], dealt: 0, taken: 0, boss: null, endless: false, pickN: 0, pickT: 0, cards: [], endT: 0, won: false, bossKills: 0, chest: null, relic: null, mk: {}, streak: 0, streakT: 0, streakPop: 0, slow: 0, best: 0, result: null, endA: 0, paidT: 0, paidK: 0, paidB: 0 });
+  Object.assign(G, { t: 0, lv: 1, xp: 0, need: needXp(1), pend: 0, kills: 0, coins: 0, weps: [], pas: [], dealt: 0, taken: 0, boss: null, endless: false, pickN: 0, pickT: 0, cards: [], endT: 0, won: false, bossKills: 0, chest: null, relic: null, mk: {}, streak: 0, streakT: 0, streakPop: 0, slow: 0, best: 0, conf: null, result: null, endA: 0, paidT: 0, paidK: 0, paidB: 0 });
   BANNER.t = 0; FLASH.r = FLASH.w = 0;
 }
 const LOAD = { msg: 'กำลังโหลด...', f: 0 };
