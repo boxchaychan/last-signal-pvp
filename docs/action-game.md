@@ -1996,3 +1996,11 @@ Owner: "ใส่เข้าเกม tribe3d.html: 1. Ultimate Fantasy RTS = �
   - dark: violet circle, shadow tendrils round the hole, particles that spiral in; the end = shock ring, six violet beams, a ring of sparks flying out.
   - hood: orange circle under him and the spell rising into the sky; each meteor leaves burning ground with flames; the giant last one flashes the screen and shakes it hard.
   - Checks: pictures of all five on the graveyard and the forest, 5 bot games (no errors; archer snow died 2:53, demon graveyard 5:19, the others reached the last boss), look check, click test.
+- Batch 9 (2026-11-20, owner: "เพิ่มลูกเล่นอีก"): more to play with round the ultimates.
+  - Ultimate ranks: from level 6 a level-up card "ท่าไม้ตาย" can come (type `u`, weight 1.7, two upgrades): rank 2 = +35% damage, +10% area, gauge +15% faster; rank 3 "ร่างตื่น" = again, and 2.75 s after the move a burst round the hero (circle + shock + beam, 1.2 x damage). Small gold stars by the portrait show the rank. `G.ultLv`, `UB()`, `UA()`, `UCH()`.
+  - Ultimate crystal (`star` pickup, purple star): elites drop it 40% of the time, bosses always; +35% gauge; arrow at the screen edge "ผลึก".
+  - Ready and waiting: sparks in the hero's colour rise round him while the gauge is full and the crowd is not near yet.
+  - Monsters killed by an ultimate are thrown into the air away from the blast, tumbling (the card flips side to side), pale, and shrink at the end (`m.lx / m.lz / m.lvy`, 0.75 s).
+  - สังหารหมู่: 12 or more kills within 3.4 s of a cast = a big gold word under the hero with the count, coins (count / 8, grows with time) and xp; best count saved (`SAVE.massBest`), mission "สังหารหมู่ 50 ตัวในครั้งเดียว".
+  - Hit-stop: on big finishers (end of the arrow storm, the demon's blast, the black hole burst, the giant meteor, the rank-3 burst) the world almost stops for 0.07-0.09 s (`G.stop`).
+  - Checks: 5 ten-minute bot games (all reached the last boss, ultimates 16-23 a game, 4-15% of the damage), look check, click test, pictures of the card / crystal / massacre word / rank-3 burst.
