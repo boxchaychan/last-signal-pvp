@@ -712,7 +712,10 @@ const findN = (r, n) => { let f = null; r.traverse(o => { if (o.name === n && !f
 const pxTex = f => { const t = TL.load(f); t.magFilter = t.minFilter = THREE.NearestFilter; t.encoding = THREE.sRGBEncoding; return t; };
 /* TEST: ?px=sword = the dark horned knight on both sides; ?px=knight = the black plate knight for us, the dark horned knight for the enemy */
 const PXT = Q.get('px') === 'sword' || Q.get('px') === 'knight' ? pxTex('art/war/sword_test.png') : null, PXK = Q.get('px') === 'knight' ? pxTex('art/war/knight_a.png') : null;
-function pxCard(team) {   /* TEST: a camera-facing pixel card; the enemy's is mirrored */
+/* pixel soldiers by kind (TEST, ?px=knight, our side): picture, its size in pixels, where the body is (0..1 across), pixels per world unit */
+const PXU = Q.get('px') === 'knight' ? { spear: { t: pxTex('art/war/spear_a.png'), w: 109, h: 77, cx: .4, ppu: 80 } } : {};
+function pxCard(team, key) {   /* TEST: a camera-facing pixel card; the enemy's is mirrored */
+  const U = team === 0 && PXU[key]; if (U) { const t = U.t.clone(); t.needsUpdate = true; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false })); sp.center.set(U.cx, 1 / U.h); sp.scale.set(U.w / U.ppu, U.h / U.ppu, 1); return sp; }
   const t = (team === 0 && PXK ? PXK : PXT).clone(); t.needsUpdate = true; if (team) { t.repeat.x = -1; t.offset.x = 1; t.wrapS = THREE.RepeatWrapping; }
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false })); sp.center.set(.5, 3 / 96); sp.scale.set(1.0, 1.0, 1); return sp; }
 function makeMan(T, team) {
@@ -720,7 +723,7 @@ function makeMan(T, team) {
   const hue = T.hue ? T.hue[team] : TEAMHUE[team], mk = team + '|' + hue; if (!B.mono && !B.mat[mk]) B.mat[mk] = teamMat(B.mat.base, team, hue); const MT = B.mono ? null : B.mat[mk];
   r.traverse(o => { if (o.isMesh) { if (MT) o.material = MT; o.castShadow = true; o.frustumCulled = false; } });
   for (const [w, bn, s] of T.weap || []) { const b = findN(r, bn), src = WEAP[w]; if (!b || !src) continue; const c = src.clone(); c.traverse(o => { if (o.isMesh) { if (KKW.has(w) && MT) o.material = MT; o.castShadow = true; } }); if (s) c.scale.multiplyScalar(s); b.add(c); }
-  r.scale.setScalar(B.k * (T.sc || 1)); g.add(r); if (PXT && (T === TYPES.shield || T === TYPES.spear)) { r.visible = false; g.add(pxCard(team)); }
+  r.scale.setScalar(B.k * (T.sc || 1)); g.add(r); if (PXT && (T === TYPES.shield || T === TYPES.spear)) { r.visible = false; g.add(r.card = pxCard(team, T === TYPES.spear ? 'spear' : 'shield')); }
   const u = { g, r, mixer: new THREE.AnimationMixer(r), acts: {}, cur: null, clips: B.clips };
   if (T.horse && HORSE) { const h = THREE.SkeletonUtils.clone(HORSE.scene); h.scale.setScalar(HORSE.k * 1.05); if (!HORSE.along) h.rotation.y = Math.PI / 2; g.add(h); u.horse = { r: h, mixer: new THREE.AnimationMixer(h), acts: {}, cur: null, clips: HORSE.clips }; r.position.y = HORSE.h * .62; r.position.z = -.04; }
   scene.add(g); return u;
@@ -747,7 +750,7 @@ function addSquad(team, key, c, r, o = {}) {
   const sq = { id: ++SQID, team, key, T, hk: o.hk, bk: o.bk, c, r, x: tileX(c), z: tileZ(r), face: team ? -Math.PI / 2 : Math.PI / 2, lv: o.lv || 1, cd: rnd(.1, .6), tg: null, retg: 0, men: [], dead: false, shield: 0, stun: 0, gauge: .3, dealt: 0, moving: false, charged: false, rad: T.rad || .5, buff: 1 };
   sqStats(sq);
   if (key === 'gen') { const M = HCACHE[o.hk]; showGen(M); const u = { M, g: M.T.root, x: sq.x, z: sq.z, ox: 0, oz: 0, alive: true, atkT: 0, deadT: 0 }; sq.men.push(u); play(u, M.idle); }
-  else { const n = T.n, offs = OFF[n]; for (let i = 0; i < n; i++) { const u = makeMan(T, team); Object.assign(u, { ox: offs[i][0], oz: offs[i][1], alive: true, atkT: 0, deadT: 0, x: sq.x, z: sq.z }); u.mixer.update(rnd(0, 2)); play(u, T.idle); if (u.horse) hplay(u, 'Idle'); sq.men.push(u); } }
+  else { const n = T.n, offs = OFF[n]; for (let i = 0; i < n; i++) { const u = makeMan(T, team); Object.assign(u, { ox: offs[i][0], oz: offs[i][1], alive: true, atkT: 0, deadT: 0, x: sq.x, z: sq.z }); u.mixer.update(rnd(0, 2)); play(u, T.idle); if (u.r.card && i) u.r.card.visible = false; if (u.r.card && !i) { u.ox = 0; u.oz = 0; } if (u.horse) hplay(u, 'Idle'); sq.men.push(u); } }
   sq.disc = new THREE.Mesh(GEO.plane, DISCM[team]); sq.disc.scale.setScalar(key === 'boss' ? 2.2 : 1.35); sq.disc.renderOrder = 1; scene.add(sq.disc);
   placeMen(sq, 0); SQ.push(sq); return sq;
 }
