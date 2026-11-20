@@ -2,7 +2,7 @@
 
 The owner speaks Thai and is not a programmer: reply in Thai, short and plain.
 
-NEWEST (2026-11-20, latest): the TIGER hero goes 3D: `docs/codex/pixmap/TIGER3D.md` ("ทำรูปเสือ 3D" = front / back / left / right pictures of the painted tiger with a short tail, for Tripo image-to-3D).
+NEWEST (2026-11-20, latest): the TIGER hero goes 3D: `docs/codex/pixmap/TIGER3D.md` ("ทำรูปเสือ 3D" = T-pose front / back / side pictures of the painted tiger, flat 2D drawings, short tail, for Tripo image-to-3D).
 Older the same day: the pixel map `pixmap.html` (3D map drawn as pixel art + a 2D pixel TIGER hero). Picture jobs: `docs/codex/pixmap/TIGER.md` ("ทำเฟรมเสือวิ่ง", "ทำเฟรมเสือยืน", "ทำเฟรมเสือฟัน"; on hold: the owner now wants the tiger in 3D, not 8-bit).
 
 Older (2026-11-17): the 3D level-grinding game `grind3d.html` (chibi archer hero, three.js). Picture jobs for it: `docs/codex/grind3d/ART.md`
@@ -21,7 +21,7 @@ Who does what:
 - Keep each file under about 10 MB. When you stop, switch the folder back with `git checkout main`.
 
 ## Where the briefs are
-- `docs/codex/pixmap/TIGER3D.md`: NEWEST, 4 views of the painted tiger (short curled tail) for Tripo 3D (branch `codex/tiger-3d-views`, pictures in `art/incoming/tiger_3d_views/`).
+- `docs/codex/pixmap/TIGER3D.md`: NEWEST, T-pose front / back / side of the painted tiger (2D drawings, short curled tail) for Tripo 3D (branch `codex/tiger-3d-views`, pictures in `art/incoming/tiger_3d_views/`).
 - `docs/codex/pixmap/TIGER.md`: on hold, frames of the 8-bit tiger for the pixel map (run / idle / claw attack; branch `codex/tiger-frames`, pictures in `art/incoming/tiger_frames/`).
 - `docs/codex/grind3d/ART.md`: NEWEST, the 3D grinding game: skill icons, tileable ground textures, a new chibi hero design for Tripo, first-map concepts.
 - `docs/codex/action/ARCHER.md`: (side game) move sheets of the archer, painted 2D, one sheet per move ("ทำท่านักธนู" = next 2 todo rows; branch `codex/archer-moves`, pictures in `art/incoming/archer/`).
