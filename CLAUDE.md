@@ -39,7 +39,10 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Per champion: GPT big-pixel 3-view sheet (free) → PixelLab redraw B at body 128 (1 credit; say the cost, the owner's "เทส" / "เจน" is the go-ahead) → for the bag game only the SIDE view is used, so clips are ordered east only: character 4 + idle 1 + attack combo 4 + hurt 1 + death 1 ≈ 12 credits, only on "เจน".
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
-## NEWEST (owner 2026-11-20, latest of all): army tactics `war.html` "ศึกแม่ทัพ"
+## NEWEST (owner 2026-11-20, latest of all): pixel-art 3D map `pixmap.html` "แมพพิกเซล"
+- A 3D desert / oasis map drawn as pixel art like the owner's clip (low-res render + depth outline + texel-snapped orthographic camera), all made in code; the game type comes later (horde or level grinding). Notes: the PIXMAP section at the end of `docs/action-game.md`; start there on "แมพพิกเซล". The army game `war.html` is paused (owner "ไม่ทำจัดทัพ").
+
+## NEWEST (owner 2026-11-20): army tactics `war.html` "ศึกแม่ทัพ"
 - Auto-battler on a 10 x 6 board ("จัดยูนิต แล้วปล่อยมันสู้ และมีแม่ทัพ", genre from the owner's picture): drag squads (8 KayKit kinds, one merged skinned mesh a soldier, team hue in the shader) and generals (the 5 horde heroes: aura + big skill) onto your 4 columns, press fight, everyone fights alone. 4 chapters x 5 stages (horde's 4 map looks, Quaternius monster bosses), stars, gold, camp upgrades. Notes: the WAR section at the end of `docs/action-game.md`; start there on "เกมจัดทัพ" / "แม่ทัพ". Checks `node tools/qa/war_check.js look|camp`.
 
 ## NEWEST (owner 2026-11-19 night): horde survival `horde.html` "ฝ่าฝูงอสูร"
