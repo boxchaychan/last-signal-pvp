@@ -472,8 +472,9 @@ const TIGER = HK !== 'ranger' && !A3 ? (() => { const t = new THREE.TextureLoade
   return { sp, sh, t, flip: 1, ghost }; })() : null;
 /* dragon frames from Codex's sheets (tools/art/blue_sheet_cut.py -> art/pixmap/dragon/<move>.png + .json): idle when standing, walk side / front / back
    by the direction on screen; the side sheets face right and are mirrored for left */
-const DANIM = HK === 'dragon' ? (() => { const A = {}; for (const k of ['idle', 'walk_side', 'walk_front', 'walk_back', 'attack1', 'attack2', 'attack3', 'skill_dash', 'hurt', 'death', 'run']) fetch('art/pixmap/dragon/' + k + '.json').then(r => r.json()).then(j => {
-  new THREE.TextureLoader().load('art/pixmap/dragon/' + k + '.png', t => { t.encoding = THREE.sRGBEncoding; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.wrapS = THREE.RepeatWrapping; A[k] = Object.assign(j, { t }); }); }).catch(() => { }); return A; })() : null;
+const DANIM = HK === 'dragon' ? (() => { const A = {}; for (const k of ['idle', 'walk_side', 'walk_front', 'walk_back', 'attack1', 'attack2', 'attack3', 'skill_dash', 'hurt', 'death', 'run']) { const f = k === 'walk_side' && Q.get('walk') === 'codex' ? 'walk_side_codex' : k;   /* ?walk=codex = Codex's side walk (the default is the owner's video walk with our head) */
+  fetch('art/pixmap/dragon/' + f + '.json').then(r => r.json()).then(j => {
+  new THREE.TextureLoader().load('art/pixmap/dragon/' + f + '.png', t => { t.encoding = THREE.sRGBEncoding; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.wrapS = THREE.RepeatWrapping; A[k] = Object.assign(j, { t }); }); }).catch(() => { }); } return A; })() : null;
 /* the Sky Huntress (owner 2026-11-21 "ลองเอานักธนูใส่ไป"): Codex's 15 painted sheets, already cut for the side game into ONE picture
    art/sidegame/archer.webp (15 rows x 12 frames, facing right, foot point fx / fy; tools/art/archer_cut.py); side view only, mirrored for left */
 const AANIM = A2 ? (() => { const A = {}; fetch('art/sidegame/archer.json').then(r => r.json()).then(j => new THREE.TextureLoader().load('art/sidegame/archer.webp', t => {
@@ -493,7 +494,7 @@ function animHero(T, ix, iy) { if (AANIM) return AANIM.j ? animArcher(T) : false
   if (HERO.moving) { if (Math.abs(iy) > Math.abs(ix) * 1.15) { HANIM.dir = iy > 0 ? 'front' : 'back'; } else HANIM.dir = 'side'; k = 'walk_' + HANIM.dir; }
   const j = A[k] || A.idle; if (!j) return false; const fps = j.fps || (k === 'idle' ? 10 : j.seq ? 12 : 15), fr = j.seq ? j.seq[Math.floor(RT * fps) % j.seq.length] : Math.floor(RT * fps) % j.n,   /* json seq = the frames to play */ mir = k === 'walk_front' || k === 'walk_back' ? 1 : T.flip;
   if (T.sp.material.map !== j.t) { T.sp.material.map = j.t; T.sp.material.needsUpdate = true; }
-  j.t.repeat.x = mir / j.n; j.t.offset.x = (mir > 0 ? fr : fr + 1) / j.n; T.sp.scale.set(j.w * PXK, j.h * PXK, 1); T.sp.center.set(.5, (j.h - j.foot) / j.h); return true; }
+  j.t.repeat.x = mir / j.n; j.t.offset.x = (mir > 0 ? fr : fr + 1) / j.n; T.sp.scale.set(j.w * PXK * (j.sc || 1), j.h * PXK * (j.sc || 1), 1); T.sp.center.set(.5, (j.h - j.foot) / j.h); return true; }
 for (const o of scene.children) if (o.isMesh || o.isPoints) o.scale.setScalar(WS);   /* the whole built map, scaled round the origin */
 function shadowBox() { const SR = LOOK3D ? Math.max(24, CAM.vh * 1.35) : 26 * WS; Object.assign(sun.shadow.camera, { left: -SR, right: SR, top: SR, bottom: -SR, far: 200 }); sun.shadow.camera.updateProjectionMatrix(); }   /* 3D look: just round the view (sharper, and props far away skip the shadow pass) */
 shadowBox(); addEventListener('resize', shadowBox);
