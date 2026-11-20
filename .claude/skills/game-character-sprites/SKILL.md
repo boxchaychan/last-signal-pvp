@@ -25,3 +25,10 @@ Only when the owner says "เจน"; quote the credits first (character 4, run 
 
 ## Colour punch (owner rule 2026-11-14)
 Every pixel sprite that goes into a game: `python3 tools/art/pixel_punch.py orig.png out.png 1.0 24` (32 colours for sheets with effects). Keep the original (e.g. `art/sidegame/orig/`). Before / after example: `art/incoming/hood/punch_compare_map1.png`.
+
+## Small pixel hero from a painted picture (lessons 2026-11-20, owner: "ทำอะไรก็จำไว้ดิ")
+What worked for the pixmap tiger (65 x 78 px in the game), in this order:
+1. The owner's painted GPT character first (free), then the SAME character as GPT "8 bit pixel art" (owner's tip: the words "8 bit" make GPT draw clean big pixels), SIMPLER: big head, big clear eyes, fewer fur tufts / claws / stripes. Ask GPT for a standing idle pose for a walker; a leaping / attack picture stays leaping.
+2. Snap GPT's picture to its own grid free with `tools/art/gptpx.py`. CHECK the printed grid: x and y must match (GPT's blocks are square). If they differ (e.g. x 15.3 / y 12.3), force the range: `GPTPX_GRID=12.1,12.6`.
+3. Tidy with PixelLab `image_to_pixelart` faithful TRUE, `init_image_strength` ~220, output = the snapped size (1 credit): same design, cleaner face. Cut its opaque background by a border flood fill, then `pixel_punch.py`.
+Failures to avoid: PixelLab redraw B (faithful false, strength 0) of a DETAILED painting at 40-66 px = mush (face / eyes lost); a code downscale of a painting = muddy. Before showing: put the result next to the reference / the previous version yourself and look; reply in Thai.
