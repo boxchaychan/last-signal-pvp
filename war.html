@@ -716,13 +716,14 @@ const PXT = Q.get('px') === 'sword' || Q.get('px') === 'knight' ? pxTex('art/war
 const PXU = Q.get('px') !== 'knight' ? {} : { shield: { t: pxTex('art/war/shield_a.png'), w: 92, h: 82, cx: .45, ppu: 80 },
   axe: Q.get('axe') === 'sword' ? { t: pxTex('art/war/sword_a.png'), w: 119, h: 83, cx: .45, ppu: 86 } : { t: pxTex('art/war/axe_a.png'), w: 117, h: 71, cx: .32, ppu: 81 },   /* the berserker; &axe=sword = the greatsword knight */
   rogue: { t: pxTex('art/war/rogue_a.png'), w: 126, h: 88, cx: .48, ppu: 99 }, heal: { t: pxTex('art/war/heal_a.png'), w: 103, h: 86, cx: .5, ppu: 95 }, mage: { t: pxTex('art/war/mage_a.png'), w: 112, h: 88, cx: .5, ppu: 95 }, archer: { t: pxTex('art/war/xbow_a.png'), w: 108, h: 89, cx: .42, ppu: 87 }, cav: { t: pxTex('art/war/cav_a.png'), w: 126, h: 90, cx: .5, ppu: 84 },   /* greatsword knight in the axe slot, crossbow in the archer slot */
-  spear: Q.get('spear') === 'rd' ? { t: pxTex('art/war/spear_rd.png'), w: 120, h: 79, cx: .4, ppu: 86 } : Q.get('spear') === 'pl' ? { t: pxTex('art/war/spear_pl.png'), w: 112, h: 96, cx: .47, ppu: 92 } : { t: pxTex('art/war/spear_a.png'), w: 109, h: 77, cx: .4, ppu: 80 } };   /* &spear=pl = the PixelLab spear knight (text only), &spear=rd = PixelLab's redraw of the GPT one; shield = the owner's GPT shield knight */
+  spear: Q.get('spear') === 'rd' ? { t: pxTex('art/war/spear_rd.png'), w: 120, h: 79, cx: .4, ppu: 86 } : Q.get('spear') === 'pl' ? { t: pxTex('art/war/spear_pl.png'), w: 112, h: 96, cx: .47, ppu: 92 } : { t: pxTex('art/war/spear_a.png'), w: 109, h: 77, cx: .4, ppu: 80, atk: { t: pxTex('art/war/spear_thrust.png'), n: 9, w: 168, h: 132, cx: (10 + 109 * .4) / 168, cy: 8 / 132 } } };   /* atk = a PixelLab attack clip (9 frames) played instead of the code move */   /* &spear=pl = the PixelLab spear knight (text only), &spear=rd = PixelLab's redraw of the GPT one; shield = the owner's GPT shield knight */
 function cardMat(t) {   /* a pixel card's material: uFlash = 0..1 turns every pixel white (the hit flash) */
   const m = new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false, transparent: true }); m.userData.flash = { value: 0 };
   m.onBeforeCompile = sh => { sh.uniforms.uFlash = m.userData.flash; sh.fragmentShader = 'uniform float uFlash;\n' + sh.fragmentShader.replace('#include <output_fragment>', '#include <output_fragment>\n gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), uFlash);'); };
   m.customProgramCacheKey = () => 'pxflash'; return m; }
 function pxCard(team, key) {   /* TEST: a camera-facing pixel card; the enemy's is mirrored */
-  const U = team === 0 && PXU[key]; if (U) { const t = U.t.clone(); t.needsUpdate = true; const sp = new THREE.Sprite(cardMat(t)); sp.center.set(U.cx, 1 / U.h); sp.scale.set(U.w / U.ppu, U.h / U.ppu, 1); sp.userData.s0 = sp.scale.clone(); return sp; }
+  const U = team === 0 && PXU[key]; if (U) { const t = U.t.clone(); t.needsUpdate = true; const sp = new THREE.Sprite(cardMat(t)); sp.center.set(U.cx, 1 / U.h); sp.scale.set(U.w / U.ppu, U.h / U.ppu, 1); sp.userData.s0 = sp.scale.clone(); sp.userData.U = U; sp.userData.still = t;
+    if (U.atk) { const a = U.atk.t.clone(); a.needsUpdate = true; a.repeat.set(1 / U.atk.n, 1); sp.userData.atkT = a; } return sp; }
   const t = (team === 0 && PXK ? PXK : PXT).clone(); t.needsUpdate = true; if (team) { t.repeat.x = -1; t.offset.x = 1; t.wrapS = THREE.RepeatWrapping; }
   const sp = new THREE.Sprite(cardMat(t)); sp.center.set(.5, 3 / 96); sp.scale.set(1.0, 1.0, 1); sp.userData.s0 = sp.scale.clone(); return sp; }
 function makeMan(T, team) {
@@ -881,6 +882,7 @@ function cardAnim(u, sq, dt) {
   const c = u.r.card, s0 = c.userData.s0, M = c.material; if (!c.visible && u.alive) return; const ph = u.ph || (u.ph = Math.random() * 9), t = NOW + ph;
   let y = 0, z = 0, rot = 0, sx = 1, sy = 1;
   if (u.flash > 0) { u.flash = Math.max(0, u.flash - dt * 7); } M.userData.flash.value = u.flash > 0 ? Math.min(1, u.flash * 1.4) : 0;
+  if (!u.alive && c.userData.still && M.map !== c.userData.still) { M.map = c.userData.still; c.center.set(c.userData.U.cx, 1 / c.userData.U.h); }
   if (!u.alive) {   /* dying: a fall to the side and a fade; thrown away when he was in the air or the blow was big */
     const k = u.deadT; if (u.fly) { const T0 = Math.min(k, 1.2); z = -T0 * 2.4; y = Math.max(0, T0 * 4.2 - 9 * T0 * T0 * .5) + (u.fly.y0 || 0); rot = u.fly.spin * T0; }
     else { const e = Math.min(1, k / .35); rot = (sq.team ? -1 : 1) * e * 1.35; z = -e * .18; y = Math.sin(Math.min(1, k / .35) * Math.PI) * .12; sy = 1 - .1 * e; }
@@ -889,6 +891,9 @@ function cardAnim(u, sq, dt) {
   if (u.win) { y = Math.abs(Math.sin(t * 6)) * .22; sy = 1 + .06 * Math.sin(t * 12); }
   else if (sq.moving || sq.leapT) { y = Math.abs(Math.sin(t * 11)) * .07; rot = Math.sin(t * 11) * .07; sy = 1 - .04 * Math.abs(Math.cos(t * 11)); }
   else { sy = 1 + .028 * Math.sin(t * 2.6); sx = 1 - .014 * Math.sin(t * 2.6); }
+  const UD = c.userData, clip = UD.U && UD.U.atk && UD.atkT;
+  if (clip && u.atkA) { const A = u.atkA, C = UD.U.atk; A.t += dt; const k = A.t / A.dur; if (k >= 1) { u.atkA = null; M.map = UD.still; c.center.set(UD.U.cx, 1 / UD.U.h); }
+    else { if (M.map !== UD.atkT) { M.map = UD.atkT; c.center.set(C.cx, C.cy); } UD.atkT.offset.x = Math.min(C.n - 1, Math.floor(k * C.n)) / C.n; c.position.set(0, 0, 0); M.rotation = 0; c.scale.set(C.w / UD.U.ppu, C.h / UD.U.ppu, 1); M.userData.flash.value = u.flash > 0 ? Math.min(1, u.flash * 1.4) : 0; return; } }
   if (u.atkA) { const A = u.atkA; A.t += dt; const k = A.t / A.dur; if (k >= 1) u.atkA = null; else {
     if (A.kind === 'thrust') { const w = k < .3 ? -k / .3 * .1 : k < .45 ? -.1 + (k - .3) / .15 * .55 : .45 * (1 - (k - .45) / .55); z += w; rot -= (k < .3 ? .08 : 0); sx *= 1 + Math.max(0, w) * .25; }
     else if (A.kind === 'swing' || A.kind === 'smash') { const big = A.kind === 'smash' ? 1.4 : 1; if (k < .35) { rot += -.28 * big * k / .35; z -= .1 * k / .35; y += .05 * k / .35 * big; } else if (k < .5) { const e = (k - .35) / .15; rot += (-.28 + .62 * e) * big; z += -.1 + .32 * e; y += .05 * big * (1 - e); } else { const e = (k - .5) / .5; rot += .34 * big * (1 - e); z += .22 * (1 - e); sy *= 1 - .08 * (1 - e) * big; sx *= 1 + .06 * (1 - e) * big; } }
