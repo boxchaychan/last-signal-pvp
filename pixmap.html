@@ -11,7 +11,7 @@
      Keys: WASD / arrows walk, P pixel on / off, + / - pixel size. Notes: last section of docs/action-game.md -->
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #1a1410; touch-action: none; -webkit-user-select: none; user-select: none; }
-  #gl { position: fixed; left: 0; top: 0; image-rendering: pixelated; }
+  #gl { position: fixed; left: 0; top: 0; image-rendering: -moz-crisp-edges; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated; will-change: transform; }
   #ui { position: fixed; inset: 0; width: 100%; height: 100%; }
 </style>
 </head>
@@ -115,7 +115,7 @@ function groundH(x, z) {   /* height under a point (stairs ramp up toward their 
 
 /* ---------- renderer, low-res target + edge pass */
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
-const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false }); renderer.outputEncoding = THREE.sRGBEncoding; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false }); renderer.outputEncoding = THREE.sRGBEncoding; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.BasicShadowMap;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xf3d29c); scene.fog = null;
 const camera = new THREE.OrthographicCamera(-10, 10, 6, -6, 1, 300);
 const YAW = +(Q.get('yaw') || 24) * Math.PI / 180, PITCH = +(Q.get('pitch') || 40) * Math.PI / 180, CDIR = new V3(Math.sin(YAW) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(YAW) * Math.cos(PITCH));
@@ -132,7 +132,7 @@ const postMat = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tD: 
       float far = max(max(dl, dr), max(du, dd)) - d;   /* a neighbour much farther = this texel is the edge of something nearer */
       vec3 col = c.rgb; float lum = dot(col, vec3(.3, .59, .11)); col = mix(vec3(lum), col, .78); col = mix(col, vec3(1., .93, .84), .14);   /* softer, warmer, paler like the clip */
       if (far > edge) col *= vec3(.74, .46, .42);   /* warm red-brown outline */
-      col = floor(col * 15. + .5) / 15.;   /* fewer shades */
+      col = floor(col * 12. + .5) / 12.;   /* fewer shades */
       gl_FragColor = vec4(col, 1.); }` });
 postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
 let SW = 800, SH = 450, DPR = 1;
@@ -153,7 +153,8 @@ const kPix = (x, y) => KS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.f
 { const g = gcv.getContext('2d'), r = rng(5);
   for (let j = 0; j < NS; j++) for (let i = 0; i < NS; i++) { const s = sid(i, j), k = KS[s], lv = LS[s], n = fbm(i / 22, j / 22);
     g.fillStyle = k === 4 ? '#6aa2a8' : k === 1 ? (lv === 0 ? (n > .5 ? '#a9cb7c' : '#9dc372') : (n > .5 ? '#b3d184' : '#a5c879')) : k === 3 ? '#e4b892' : k === 2 ? '#6aa2a8' : (lv >= 2 ? (n > .5 ? '#f8e3c8' : '#f3d9bc') : n > .5 ? '#fae8cf' : '#f5dec2'); g.fillRect(i * PP, j * PP, PP, PP); }
-  for (let i = 0; i < 1400; i++) { const x = r() * gcv.width, y = r() * gcv.height, rad = 5 + r() * 22, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? 'rgba(110,160,80,.3)' : 'rgba(190,220,140,.3)') : (r() < .5 ? 'rgba(255,248,230,.28)' : 'rgba(236,190,150,.2)'); g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill(); }
+  for (let i = 0; i < 700; i++) { const cx = r() * gcv.width, cy = r() * gcv.height, rad = 4 + r() * 14, k = kPix(cx, cy); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#8fb862' : '#b6d68a') : (r() < .5 ? '#fbeedb' : '#efd2b4');   /* flat patches with a checker-dither rim */
+    for (let y = -rad; y <= rad; y += 2) for (let x = -rad; x <= rad; x += 2) { const d = Math.hypot(x, y) / rad + (vn((cx + x) / 6, (cy + y) / 6) - .5) * .5; if (d > 1 || (d > .75 && ((x + y) / 2 & 1))) continue; if (kPix(cx + x, cy + y) !== k) continue; g.fillRect((cx + x) & ~1, (cy + y) & ~1, 2, 2); } }
   for (let y = 0; y < gcv.height; y += 2) for (let x = 0; x < gcv.width; x += 2) { if (kPix(x, y) !== 0) continue; const v = fbm(x / 150 + 2, y / 150 + 9, 3) * 10, f = v - Math.floor(v);   /* dune lines, broken */
     if (f < .05 && vn(x / 10, y / 10) > .36) { g.fillStyle = 'rgba(226,128,98,.85)'; g.fillRect(x, y, 2, 2); } }
   for (let i = 0; i < 4200; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#7aa856' : '#c8e09a') : (r() < .6 ? '#e8bea0' : '#fff8ec'); g.fillRect(x | 0, y | 0, 2, 2); }
@@ -163,7 +164,7 @@ const kPix = (x, y) => KS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.f
     if (LS[sid(i, j + 1)] < lv || LS[sid(i + 1, j)] < lv) { g.fillStyle = 'rgba(255,246,228,.75)'; g.fillRect(i * PP, j * PP, PP, PP); }
     if (LS[sid(i, j - 1)] > lv || LS[sid(i - 1, j)] > lv) { g.fillStyle = 'rgba(190,120,100,.22)'; g.fillRect(i * PP, j * PP, PP, PP); } }
 }
-const gtex = new THREE.CanvasTexture(gcv); gtex.encoding = THREE.sRGBEncoding; gtex.magFilter = THREE.NearestFilter; gtex.minFilter = THREE.LinearMipMapLinearFilter; gtex.anisotropy = 4;
+const gtex = new THREE.CanvasTexture(gcv); gtex.encoding = THREE.sRGBEncoding; gtex.magFilter = THREE.NearestFilter; gtex.minFilter = THREE.NearestFilter; gtex.generateMipmaps = false;
 
 /* ---------- terrain mesh from the pieces (runs merged): tops, cliff walls in rock bands, water, waterfalls; stairs from the cells */
 const TIMEU = { value: 0 }, FOAMS = [];
@@ -305,7 +306,8 @@ function updCam(dt) {
   _r.set(1, 0, 0).applyQuaternion(camera.quaternion); _u.set(0, 1, 0).applyQuaternion(camera.quaternion);
   const tw = vh / PX.bh, pr = camera.position.dot(_r), pu = camera.position.dot(_u), dr = Math.round(pr / tw) * tw - pr, du = Math.round(pu / tw) * tw - pu;
   camera.position.addScaledVector(_r, dr).addScaledVector(_u, du); camera.updateMatrixWorld();
-  glc.style.transform = `translate(${(-PX.m + dr / tw * PX.T).toFixed(2)}px, ${(-PX.m - du / tw * PX.T).toFixed(2)}px)`;
+  const dpx = devicePixelRatio || 1, snapD = v => Math.round(v * dpx) / dpx;   /* whole device pixels only: a part-pixel move makes the browser smooth the picture */
+  glc.style.transform = `translate(${snapD(-PX.m + dr / tw * PX.T)}px, ${snapD(-PX.m - du / tw * PX.T)}px)`;
   sun.position.copy(CAM.look).addScaledVector(SUNDIR, 60); sun.target.position.copy(CAM.look);
 }
 
