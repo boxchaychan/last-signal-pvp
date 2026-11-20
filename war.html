@@ -717,10 +717,14 @@ const PXU = Q.get('px') !== 'knight' ? {} : { shield: { t: pxTex('art/war/shield
   axe: Q.get('axe') === 'sword' ? { t: pxTex('art/war/sword_a.png'), w: 119, h: 83, cx: .45, ppu: 86 } : { t: pxTex('art/war/axe_a.png'), w: 117, h: 71, cx: .32, ppu: 81 },   /* the berserker; &axe=sword = the greatsword knight */
   rogue: { t: pxTex('art/war/rogue_a.png'), w: 126, h: 88, cx: .48, ppu: 99 }, heal: { t: pxTex('art/war/heal_a.png'), w: 103, h: 86, cx: .5, ppu: 95 }, mage: { t: pxTex('art/war/mage_a.png'), w: 112, h: 88, cx: .5, ppu: 95 }, archer: { t: pxTex('art/war/xbow_a.png'), w: 108, h: 89, cx: .42, ppu: 87 }, cav: { t: pxTex('art/war/cav_a.png'), w: 126, h: 90, cx: .5, ppu: 84 },   /* greatsword knight in the axe slot, crossbow in the archer slot */
   spear: Q.get('spear') === 'rd' ? { t: pxTex('art/war/spear_rd.png'), w: 120, h: 79, cx: .4, ppu: 86 } : Q.get('spear') === 'pl' ? { t: pxTex('art/war/spear_pl.png'), w: 112, h: 96, cx: .47, ppu: 92 } : { t: pxTex('art/war/spear_a.png'), w: 109, h: 77, cx: .4, ppu: 80 } };   /* &spear=pl = the PixelLab spear knight (text only), &spear=rd = PixelLab's redraw of the GPT one; shield = the owner's GPT shield knight */
+function cardMat(t) {   /* a pixel card's material: uFlash = 0..1 turns every pixel white (the hit flash) */
+  const m = new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false, transparent: true }); m.userData.flash = { value: 0 };
+  m.onBeforeCompile = sh => { sh.uniforms.uFlash = m.userData.flash; sh.fragmentShader = 'uniform float uFlash;\n' + sh.fragmentShader.replace('#include <output_fragment>', '#include <output_fragment>\n gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), uFlash);'); };
+  m.customProgramCacheKey = () => 'pxflash'; return m; }
 function pxCard(team, key) {   /* TEST: a camera-facing pixel card; the enemy's is mirrored */
-  const U = team === 0 && PXU[key]; if (U) { const t = U.t.clone(); t.needsUpdate = true; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false })); sp.center.set(U.cx, 1 / U.h); sp.scale.set(U.w / U.ppu, U.h / U.ppu, 1); return sp; }
+  const U = team === 0 && PXU[key]; if (U) { const t = U.t.clone(); t.needsUpdate = true; const sp = new THREE.Sprite(cardMat(t)); sp.center.set(U.cx, 1 / U.h); sp.scale.set(U.w / U.ppu, U.h / U.ppu, 1); sp.userData.s0 = sp.scale.clone(); return sp; }
   const t = (team === 0 && PXK ? PXK : PXT).clone(); t.needsUpdate = true; if (team) { t.repeat.x = -1; t.offset.x = 1; t.wrapS = THREE.RepeatWrapping; }
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false })); sp.center.set(.5, 3 / 96); sp.scale.set(1.0, 1.0, 1); return sp; }
+  const sp = new THREE.Sprite(cardMat(t)); sp.center.set(.5, 3 / 96); sp.scale.set(1.0, 1.0, 1); sp.userData.s0 = sp.scale.clone(); return sp; }
 function makeMan(T, team) {
   const B = BODY[T.body], r = THREE.SkeletonUtils.clone(B.scene), g = new THREE.Group();
   const hue = T.hue ? T.hue[team] : TEAMHUE[team], mk = team + '|' + hue; if (!B.mono && !B.mat[mk]) B.mat[mk] = teamMat(B.mat.base, team, hue); const MT = B.mono ? null : B.mat[mk];
@@ -790,7 +794,7 @@ function hurt(sq, dmg, src, o = {}) {
   if (sq.dead || dmg <= 0) return 0; let d = dmg * (1 - Math.min(.7, sq.arm + G.aura[sq.team].arm)); if (o.proj && sq.T.proj) d *= 1 - sq.T.proj; if (src) d *= vsMul(src, sq); if (sq.key === 'boss' && o.skill) d *= .6;
   const crit = !o.noCrit && Math.random() < .08; if (crit) d *= 1.6; d *= rnd(.92, 1.08);
   if (sq.shield > 0) { const a = Math.min(sq.shield, d); sq.shield -= a; d -= a; if (a > 0 && Math.random() < .3) glow(sq.x, .7, sq.z, 1, 0xffd060, .7); }
-  sq.hp -= d; sq.hitT = .12; if (src) { src.dealt += d; if (src.key === 'gen') src.gauge = Math.min(1, src.gauge + d / (src.atk * 40)); const st = G.aura[src.team].steal; if (st && !src.dead) src.hp = Math.min(src.max, src.hp + d * st); }
+  sq.hp -= d; sq.hitT = .12; cardHit(sq, d, Object.assign({ crit, src }, o)); if (src) { src.dealt += d; if (src.key === 'gen') src.gauge = Math.min(1, src.gauge + d / (src.atk * 40)); const st = G.aura[src.team].steal; if (st && !src.dead) src.hp = Math.min(src.max, src.hp + d * st); }
   if (sq.key === 'gen') sq.gauge = Math.min(1, sq.gauge + d / sq.max * .5);
   const big = o.skill || crit || d > 60; num(sq.x, (sq.key === 'boss' ? 2 : sq.key === 'gen' ? 1.5 : 1.0), sq.z, Math.round(d), sq.team ? (crit ? '#ffd34a' : o.skill ? '#ffe9a0' : '#fffaf0') : '#ff8a7a', big);
   const n = sq.men.length, want = sq.hp <= 0 ? 0 : Math.ceil(sq.hp / sq.max * n - 1e-6); let al = sq.men.filter(u => u.alive);
@@ -800,7 +804,7 @@ function hurt(sq, dmg, src, o = {}) {
   return d;
 }
 function killMan(u, sq) {
-  u.alive = false; u.deadT = 0; const d = play(u, u.M ? 'Death_A' : sq.key === 'boss' ? 'Death' : 'Death_A', true, u.M ? 1 : 1.1); if (u.horse) { hplay(u, 'Death'); const a = u.horse.cur; if (a) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; } }
+  u.alive = false; u.deadT = 0; if (u.r && u.r.card) { u.flash = 1; if (u.air || (sq.hp <= 0 && u.kb > .3)) u.fly = { spin: (Math.random() < .5 ? -1 : 1) * 7, y0: 0 }; } const d = play(u, u.M ? 'Death_A' : sq.key === 'boss' ? 'Death' : 'Death_A', true, u.M ? 1 : 1.1); if (u.horse) { hplay(u, 'Death'); const a = u.horse.cur; if (a) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; } }
   spark(u.x, .5, u.z, { n: 6, color: sq.team ? 0xffb090 : 0xa0c8ff, spd: 2, up: 2, size: .25, life: .4 }); sfx('hurt', .25, rnd(.9, 1.2));
 }
 function heal(sq, v, src) { if (sq.dead) return; const h = Math.min(sq.max - sq.hp, v); if (h <= 0) return; sq.hp += h; num(sq.x, 1.1, sq.z, '+' + Math.round(h), '#8af07a'); const n = sq.men.length, want = Math.ceil(sq.hp / sq.max * n - 1e-6);
@@ -811,14 +815,14 @@ function strike(sq) {
   const T = sq.T, tg = sq.tg, al = sq.men.filter(u => u.alive); if (!al.length || !tg) return;
   const share = sq.key === 'gen' || sq.key === 'boss' ? 1 : Math.pow(al.length / sq.men.length, .75); let dmg = sq.atk * share;
   if (sq.key !== 'gen' && sq.key !== 'boss') { if (!T.shoot && !T.healer) dmg *= G.aura[sq.team].melee; if (sq.key === 'mage') dmg *= G.aura[sq.team].mage; }
-  al.forEach((u, i) => { const nm = (sq.key === 'gen' ? sq.T.atks : T.atks)[(sq.swing + i) % T.atks.length]; after(i * .07, () => { if (!u.alive || sq.dead) return; u.atkT = play(u, nm, true, sq.key === 'gen' ? 1.25 : 1.15) * .9; }); });
+  al.forEach((u, i) => { const nm = (sq.key === 'gen' ? sq.T.atks : T.atks)[(sq.swing + i) % T.atks.length]; after(i * .07, () => { if (!u.alive || sq.dead) return; u.atkT = play(u, nm, true, sq.key === 'gen' ? 1.25 : 1.15) * .9; if (u.r && u.r.card) u.atkA = { t: 0, dur: .55, kind: CARDK[sq.key] || 'swing' }; }); });
   sq.swing = (sq.swing || 0) + 1;
   after((T.hitAt || .3) + .05, () => {
     if (sq.dead || !tg) return;
     if (T.healer) { if (!tg.dead) { heal(tg, sq.atk * share * 1.1, sq); column({ x: tg.x, z: tg.z }, 0x8af0a0, .5, .4, 1.6); for (const u of al) if (u.alive) shot('heal', u, tg, 0); sfx('chime', .25, 1.3); } return; }
     if (T.shoot) { for (const u of al) if (u.alive) shot(T.shoot, u, tg, dmg / al.length, sq); sfx(T.shoot === 'fire' ? 'whoosh' : 'twang', .35, rnd(.9, 1.15)); return; }
     if (tg.dead) return; let d = dmg; if (T.charge && !sq.charged) { sq.charged = true; d *= T.charge; tg.stun = Math.max(tg.stun, .5); const dx = tg.x - sq.x, dz = tg.z - sq.z, L = Math.hypot(dx, dz) || 1; tg.x += dx / L * .35; tg.z += dz / L * .35; decal('shock', tg.x, tg.z, 2.2, 0xffe0a0, 0xffffff, { life: .35, y: .06 }); shake(.08); sfx('boom', .4, 1.4); }
-    hurt(tg, d, sq); const hx = (sq.x + tg.x) / 2, hz = (sq.z + tg.z) / 2; spark(hx, .6, hz, { n: 5, color: sq.team ? 0xffa070 : 0xfff0b0, spd: 2.4, up: 1.5, size: .22, life: .3 }); sfx('hit', .35, rnd(.85, 1.2));
+    hurt(tg, d, sq, { charge: d > dmg * 1.5 }); const hx = (sq.x + tg.x) / 2, hz = (sq.z + tg.z) / 2; spark(hx, .6, hz, { n: 5, color: sq.team ? 0xffa070 : 0xfff0b0, spd: 2.4, up: 1.5, size: .22, life: .3 }); sfx('hit', .35, rnd(.85, 1.2));
     if (sq.key === 'gen' || T.cleave) { const a = Math.atan2(tg.x - sq.x, tg.z - sq.z); decal('swoosh', sq.x, sq.z, sq.key === 'gen' ? 2.4 : 1.9, sq.key === 'gen' ? GEN[sq.hk].c : 0xffd0a0, 0xffffff, { life: .26, rot: a, y: .5, dir: 1 });
       inCirc(tg.x, tg.z, T.cleave || .9, tg.team, q => { if (q !== tg) hurt(q, d * .5, sq); }); }
     if (sq.key === 'boss') { decal('shock', tg.x, tg.z, 2.4, 0xffc080, 0xffffff, { life: .35, y: .06 }); shake(.12); }
@@ -864,10 +868,41 @@ function separate() {
   for (const q of SQ) { q.x = clamp(q.x, -BW / 2 - .6, BW / 2 + .6); q.z = clamp(q.z, -BH / 2 - .1, BH / 2 + .1); }
 }
 /* soldiers' looks every frame: walk / idle / attack, fall and sink when dead */
+/* ---------- the pixel cards' moves, all in code from one still: breathe, walk bob, an attack by weapon (thrust / swing / shoot / cast),
+   white hit flash + a push back that grows with the blow, big blows throw the soldier into the air (spin, land, bounce), a fall when he dies
+   (thrown away when a big blow killed him), hops when the fight is won */
+const CARDK = { spear: 'thrust', cav: 'thrust', rogue: 'thrust', shield: 'swing', axe: 'smash', archer: 'shoot', mage: 'cast', heal: 'cast' };
+function cardHit(sq, d, o) {   /* called by hurt(): flash, push, maybe a throw */
+  const u = sq.men[0], c = u && u.r && u.r.card; if (!c || !c.visible) return; u.flash = 1; const f = d / sq.max, big = o.skill || o.charge || o.slam || (o.crit && f > .12);
+  const res = sq.key === 'shield' ? .45 : sq.key === 'cav' ? .7 : 1; u.kb = Math.min(.5, (.06 + f * 2.2) * res) * (big ? 1.8 : 1); u.kbT = 0;
+  if (big && !u.air) { u.air = { t: 0, vy: (2.6 + Math.min(2.5, f * 9)) * res, spin: (Math.random() < .5 ? -1 : 1) * (5 + Math.random() * 4) * res, bounce: 0 }; if (o.src) { const dx = sq.x - o.src.x, dz = sq.z - o.src.z, L = Math.hypot(dx, dz) || 1, p = (.45 + f * 2) * res; sq.x += dx / L * p; sq.z += dz / L * p * .6; } }
+}
+function cardAnim(u, sq, dt) {
+  const c = u.r.card, s0 = c.userData.s0, M = c.material; if (!c.visible && u.alive) return; const ph = u.ph || (u.ph = Math.random() * 9), t = NOW + ph;
+  let y = 0, z = 0, rot = 0, sx = 1, sy = 1;
+  if (u.flash > 0) { u.flash = Math.max(0, u.flash - dt * 7); } M.userData.flash.value = u.flash > 0 ? Math.min(1, u.flash * 1.4) : 0;
+  if (!u.alive) {   /* dying: a fall to the side and a fade; thrown away when he was in the air or the blow was big */
+    const k = u.deadT; if (u.fly) { const T0 = Math.min(k, 1.2); z = -T0 * 2.4; y = Math.max(0, T0 * 4.2 - 9 * T0 * T0 * .5) + (u.fly.y0 || 0); rot = u.fly.spin * T0; }
+    else { const e = Math.min(1, k / .35); rot = (sq.team ? -1 : 1) * e * 1.35; z = -e * .18; y = Math.sin(Math.min(1, k / .35) * Math.PI) * .12; sy = 1 - .1 * e; }
+    M.opacity = clamp(1 - (k - .9) / .7, 0, 1); c.visible = M.opacity > 0; c.position.set(0, y, z); M.rotation = rot; c.scale.set(s0.x * sx, s0.y * sy, 1); return; }
+  M.opacity = 1;
+  if (u.win) { y = Math.abs(Math.sin(t * 6)) * .22; sy = 1 + .06 * Math.sin(t * 12); }
+  else if (sq.moving || sq.leapT) { y = Math.abs(Math.sin(t * 11)) * .07; rot = Math.sin(t * 11) * .07; sy = 1 - .04 * Math.abs(Math.cos(t * 11)); }
+  else { sy = 1 + .028 * Math.sin(t * 2.6); sx = 1 - .014 * Math.sin(t * 2.6); }
+  if (u.atkA) { const A = u.atkA; A.t += dt; const k = A.t / A.dur; if (k >= 1) u.atkA = null; else {
+    if (A.kind === 'thrust') { const w = k < .3 ? -k / .3 * .1 : k < .45 ? -.1 + (k - .3) / .15 * .55 : .45 * (1 - (k - .45) / .55); z += w; rot -= (k < .3 ? .08 : 0); sx *= 1 + Math.max(0, w) * .25; }
+    else if (A.kind === 'swing' || A.kind === 'smash') { const big = A.kind === 'smash' ? 1.4 : 1; if (k < .35) { rot += -.28 * big * k / .35; z -= .1 * k / .35; y += .05 * k / .35 * big; } else if (k < .5) { const e = (k - .35) / .15; rot += (-.28 + .62 * e) * big; z += -.1 + .32 * e; y += .05 * big * (1 - e); } else { const e = (k - .5) / .5; rot += .34 * big * (1 - e); z += .22 * (1 - e); sy *= 1 - .08 * (1 - e) * big; sx *= 1 + .06 * (1 - e) * big; } }
+    else if (A.kind === 'shoot') { if (k > .3) { const e = (k - .3) / .7; z -= .14 * (1 - e) * (e < .15 ? e / .15 : 1); rot += .06 * (1 - e); } }
+    else { const e = Math.sin(Math.min(1, k) * Math.PI); y += .14 * e; sx *= 1 + .06 * e; sy *= 1 + .08 * e; if (Math.random() < .5) glow(u.x, .9 + y, u.z, .5, sq.key === 'heal' ? 0xffe070 : 0xff5a30, .7); } } }
+  if (u.kb > 0) { u.kbT += dt; const e = Math.max(0, 1 - u.kbT / .3); z -= u.kb * Math.sin(Math.min(1, u.kbT / .08) * Math.PI / 2) * e; rot += (sq.team ? -1 : 1) * -.25 * u.kb * e; if (e <= 0) u.kb = 0; }
+  if (u.air) { const A = u.air; A.t += dt; const h = A.vy * A.t - 9 * A.t * A.t; if (h > 0 || A.t < .05) { y += h; rot += A.spin * A.t; } else if (A.bounce === 0) { A.bounce = 1; A.t2 = 0; pfx('smoke/dust-puff', u.x, u.z, .8, { opacity: .6 }); sfx('hit', .3, .7); } if (A.bounce) { A.t2 += dt; const b = .22 * Math.sin(Math.min(1, A.t2 / .25) * Math.PI); y += b; sy *= 1 - .12 * Math.max(0, 1 - A.t2 / .2); if (A.t2 > .3) u.air = null; } }
+  c.position.set(0, y, z); M.rotation = (sq.team ? -1 : 1) * -rot; c.scale.set(s0.x * sx, s0.y * sy, 1);
+}
 function updMen(dt) {
   for (const sq of SQ) {
     placeMen(sq, dt);
     for (const u of sq.men) {
+      if (u.r && u.r.card) { if (!u.alive) u.deadT += dt; else u.g.visible = true; cardAnim(u, sq, dt); continue; }   /* pixel soldier: moves in code, the hidden 3D body is not animated */
       if (u.M) { u.M.mixer.update(dt); if (u.M.str) updString(u.M); } else { u.mixer.update(dt); if (u.horse) u.horse.mixer.update(dt); }
       if (!u.alive) { u.deadT += dt; if (u.deadT > 1.6 && !u.M) { u.g.position.y = -(u.deadT - 1.6) * .8; if (u.deadT > 2.6) u.g.visible = false; } continue; }
       u.g.visible = true; if (u.atkT > 0) { u.atkT -= dt; continue; }
@@ -881,7 +916,7 @@ function updFight(dt) {
   G.t += dt; for (const sq of SQ) if (!sq.dead) updSquad(sq, dt); separate(); updProj(dt);
   if (G.endT > 0) { G.endT -= dt; if (G.endT <= 0) finishFight(); return; }
   const a0 = alive(0).length, a1 = alive(1).length;
-  if (!a0 || !a1 || G.t > 120) { G.won = a1 === 0 || (a0 > 0 && power(0) > power(1)); G.endT = 2.2; setMusic('calm'); for (const sq of alive(G.won ? 0 : 1)) for (const u of sq.men) if (u.alive) { u.atkT = 9; play(u, u.M ? 'Cheer' : sq.key === 'boss' ? 'Yes' : 'Cheer', false); }
+  if (!a0 || !a1 || G.t > 120) { G.won = a1 === 0 || (a0 > 0 && power(0) > power(1)); G.endT = 2.2; setMusic('calm'); for (const sq of alive(G.won ? 0 : 1)) for (const u of sq.men) if (u.alive) { u.atkT = 9; u.win = true; play(u, u.M ? 'Cheer' : sq.key === 'boss' ? 'Yes' : 'Cheer', false); }
     banner(G.won ? 'ชนะ!' : 'พ่ายแพ้', G.won ? 'ทัพศัตรูแตกพ่าย' : 'ทัพเราแตกแล้ว', !G.won, 2); if (G.won) { sfx('fanfare', .6); } }
 }
 const power = team => SQ.reduce((s, q) => s + (q.team === team && !q.dead ? q.hp : 0), 0), powerMax = team => SQ.reduce((s, q) => s + (q.team === team ? q.max : 0), 0);
@@ -919,7 +954,7 @@ function castSkill(sq) {
 function updJump(sq, dt) { const J = sq.jump; if (!J) return; J.t += dt; const k = Math.min(1, J.t / J.dur); sq.x = lerp(J.fx, J.tx, k); sq.z = lerp(J.fz, J.tz, k); const u = sq.men[0]; if (u) u.g.position.y = Math.sin(k * Math.PI) * 1.8; if (k >= 1) { sq.jump = null; if (u) u.g.position.y = 0; decal('shock', sq.x, sq.z, 3, 0xff6a40, 0xffffff, { life: .4, y: .06, force: true }); pfx('impacts/ground-slam', sq.x, sq.z, 2.2); } }
 function bossSlam(sq) {
   const tg = sq.tg && !sq.tg.dead ? sq.tg : chooseTarget(sq); if (!tg) return; const x = tg.x, z = tg.z, R = 1.6; sq.stun = 1.3; const u = sq.men[0]; if (u) u.atkT = play(u, 'Weapon', true, .8) * .95 || 1.2;
-  warn({ x, z }, R, 1.2, () => { if (sq.dead) return; inCirc(x, z, R, 1 - sq.team, q => hurt(q, sq.atk * 1.15, sq, { noCrit: true })); pfx('impacts/ground-slam', x, z, 3); decal('shock', x, z, R * 2.6, BOSSES[sq.bk].c, 0xffffff, { life: .5, y: .07, force: true }); shake(.35); sfx('boom', .9, .55); }); sfx('roar', .5, 1);
+  warn({ x, z }, R, 1.2, () => { if (sq.dead) return; inCirc(x, z, R, 1 - sq.team, q => hurt(q, sq.atk * 1.15, sq, { noCrit: true, slam: true })); pfx('impacts/ground-slam', x, z, 3); decal('shock', x, z, R * 2.6, BOSSES[sq.bk].c, 0xffffff, { life: .5, y: .07, force: true }); shake(.35); sfx('boom', .9, .55); }); sfx('roar', .5, 1);
 }
 
 /* ---------- stages: the enemy army of a stage (same every time), the player's last formation, auto placing */
@@ -965,7 +1000,7 @@ async function setupStage(s, keepForm) {
   if (!keepForm) await loadForm(); drawBoard('prep');
 }
 function resetSquad(sq) { sq.x = tileX(sq.c); sq.z = tileZ(sq.r); sq.face = sq.team ? -Math.PI / 2 : Math.PI / 2; sqStats(sq); sq.dead = false; sq.tg = null; sq.gauge = .3; sq.shield = 0; sq.stun = 0; sq.charged = false; sq.jump = sq.leapT = null; sq.casting = 0; sq.dealt = 0; sq.cd = rnd(.1, .6);
-  for (const u of sq.men) { u.alive = true; u.deadT = 0; u.atkT = 0; u.g.visible = true; u.g.position.y = 0; if (u.M) { u.M.T.root.visible = true; play(u, u.M.idle); } else { play(u, sq.T.idle); if (u.horse) { hplay(u, 'Idle'); } } } placeMen(sq, 0); }
+  for (const u of sq.men) { u.alive = true; u.deadT = 0; u.atkT = 0; u.g.visible = true; u.g.position.y = 0; u.win = false; u.fly = u.air = u.atkA = null; u.kb = u.flash = 0; if (u.r && u.r.card) { const c = u.r.card; c.visible = u === sq.men[0]; c.material.opacity = 1; c.material.rotation = 0; c.position.set(0, 0, 0); c.scale.copy(c.userData.s0); } if (u.M) { u.M.T.root.visible = true; play(u, u.M.idle); } else { play(u, sq.T.idle); if (u.horse) { hplay(u, 'Idle'); } } } placeMen(sq, 0); }
 function startFight() {
   if (!SQ.some(q => q.team === 0)) { banner('ยังไม่มีทหาร', 'ลากการ์ดลงช่องสีฟ้า', true, 1.6); return; }
   saveForm(); G.state = 'fight'; G.t = 0; G.endT = 0; G.sel = null; drawBoard('fight'); setAuras(); setMusic(G.st % 5 === 4 ? 'drums' : 'battle'); audioInit(); sfx('roar', .4, 1.3);
