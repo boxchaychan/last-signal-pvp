@@ -7,7 +7,7 @@
    <out_prefix>.json  {"n", "w", "h", "foot": y of the ground line in the frame, "src"}
    <out_prefix>_preview.gif  for a quick look (half size, 12 fps)
 Cells are a fixed grid (the sheets keep it). The ground line: the darkest long row in the lower 25 %% of each cell; pixels on it with
-nothing of the figure just above are removed. frame_height (default: keep) resizes the strip (Lanczos) for the game.
+nothing of the figure just above are removed. frame_height (default: keep; or x<factor>) resizes the strip (Lanczos) for the game.
 """
 import sys, json
 import numpy as np
@@ -17,7 +17,8 @@ from scipy import ndimage as nd
 src, out = sys.argv[1], sys.argv[2]
 C = int(sys.argv[3]) if len(sys.argv) > 3 else 4
 Rn = int(sys.argv[4]) if len(sys.argv) > 4 else 4
-FH = int(sys.argv[5]) if len(sys.argv) > 5 else 0
+FA = sys.argv[5] if len(sys.argv) > 5 else '0'   # a height in px, or x<factor> (e.g. x0.6667) so every move of a character keeps one scale
+FH = 0 if FA.startswith('x') else int(FA); FK = float(FA[1:]) if FA.startswith('x') else 0
 a = np.array(Image.open(src).convert('RGB')).astype(float); H, W = a.shape[:2]; cw, ch = W / C, H / Rn
 r, g, b = a[..., 0], a[..., 1], a[..., 2]
 WHITE = a[:8, :8].min() > 225                                         # a sheet on white (Meta / ChatGPT often ignore the blue)
@@ -57,12 +58,12 @@ for c in cells:
 box[3] = max(box[3], foot + 2)
 frames = [Image.fromarray(c, 'RGBA').crop(tuple(box)) for c in cells]
 fw, fh = frames[0].size; footy = foot - box[1]
-if FH:
-    k = FH / fh; fw, fh = max(1, round(fw * k)), FH; footy = round(footy * k); frames = [f.resize((fw, fh), Image.LANCZOS) for f in frames]
+if FH or FK:
+    k = FK or FH / fh; FH = max(1, round(fh * k)); fw, fh = max(1, round(fw * k)), FH; footy = round(footy * k); frames = [f.resize((fw, fh), Image.LANCZOS) for f in frames]
 strip = Image.new('RGBA', (fw * len(frames), fh))
 for i, f in enumerate(frames): strip.alpha_composite(f, (i * fw, 0))
 strip.save(out + '.png')
-json.dump({'n': len(frames), 'w': fw, 'h': fh, 'foot': footy, 'src': src}, open(out + '.json', 'w'))
+json.dump({'n': len(frames), 'w': int(fw), 'h': int(fh), 'foot': int(footy), 'src': src}, open(out + '.json', 'w'))
 pv = [Image.alpha_composite(Image.new('RGBA', (fw, fh), (232, 214, 180, 255)), f).resize((max(1, fw // 2), max(1, fh // 2)), Image.LANCZOS).convert('P', palette=Image.ADAPTIVE, colors=255) for f in frames]
 pv[0].save(out + '_preview.gif', save_all=True, append_images=pv[1:], duration=83, loop=0, disposal=2)
 print(f'{len(frames)} frames {fw}x{fh}, foot at {footy} -> {out}.png')
