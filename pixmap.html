@@ -126,7 +126,7 @@ const YAW = +(Q.get('yaw') || 24) * Math.PI / 180, PITCH = +(Q.get('pitch') || 4
 scene.add(new THREE.HemisphereLight(0xfff6ec, 0xd8a890, .66));
 const sun = new THREE.DirectionalLight(0xfff2dc, .82); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 }); sun.shadow.bias = -.0008; sun.shadow.normalBias = .02; scene.add(sun, sun.target);
 const SUNDIR = new V3(-.55, 1, .35).normalize();
-const PX = { on: Q.get('px') !== '0', k: 0, T: 1, bw: 2, bh: 2, m: 0, size: +(Q.get('pxh') || 320) };
+const PX = { on: Q.get('px') !== '0', k: 0, T: 1, bw: 2, bh: 2, m: 0, size: +(Q.get('pxw') || 640) };   /* texels ACROSS the screen, like the clip (640 wide) */
 let rt = null; const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const postMat = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tD: { value: null }, px: { value: new THREE.Vector2(1, 1) }, edge: { value: .004 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
@@ -142,12 +142,12 @@ postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
 let SW = 800, SH = 450, DPR = 1;
 function resize() {
   SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR;
-  const dp = devicePixelRatio || 1; if (PX.on) { PX.k = Math.max(1, Math.round(SH * dp / PX.size)); PX.T = PX.k / dp; } else { PX.k = 1; PX.T = 1 / Math.min(2, dp); }
+  const dp = devicePixelRatio || 1; if (PX.on) { PX.k = Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)); PX.T = PX.k / dp; } else { PX.k = 1; PX.T = 1 / Math.min(2, dp); }
   PX.m = 2 * PX.T; PX.bw = Math.ceil((SW + 2 * PX.m) / PX.T); PX.bh = Math.ceil((SH + 2 * PX.m) / PX.T);
   renderer.setPixelRatio(1); renderer.setSize(PX.bw, PX.bh, false); glc.style.width = PX.bw * PX.T + 'px'; glc.style.height = PX.bh * PX.T + 'px';
   if (rt) rt.dispose(); rt = new THREE.WebGLRenderTarget(PX.bw, PX.bh, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter }); rt.texture.encoding = THREE.sRGBEncoding;
   rt.depthTexture = new THREE.DepthTexture(PX.bw, PX.bh); rt.depthTexture.type = THREE.UnsignedIntType; postMat.uniforms.tC.value = rt.texture; postMat.uniforms.tD.value = rt.depthTexture; postMat.uniforms.px.value.set(1 / PX.bw, 1 / PX.bh);
-  const kOn = Math.max(1, Math.round(SH * dp / PX.size)), Ton = kOn / dp; CAM.vh = Math.ceil((SH + 4 * Ton) / Ton) / 32 / (+(Q.get("zoom") || 1)); }
+  const kOn = Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)), Ton = kOn / dp; CAM.vh = Math.ceil((SH + 4 * Ton) / Ton) / 32 / (+(Q.get("zoom") || 1)); }
 const CAM = { vh: 17, look: new V3(N * .4, 0, N * .6) };
 addEventListener('resize', resize);
 
@@ -290,7 +290,7 @@ if (!TIGER) Promise.all([ld.loadAsync('art/tribe3d/people/Ranger.glb'), ld.loadA
   const bb = new THREE.Box3().setFromObject(r); r.scale.setScalar(1.25 / (bb.max.y - bb.min.y)); scene.add(r); HERO.root = r; HERO.mixer = new THREE.AnimationMixer(r);
   for (const c of A.animations) { for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.'); HERO.acts[c.name] = HERO.mixer.clipAction(c); } hplay('Idle'); });
 function hplay(n) { const a = HERO.acts[n]; if (!a || HERO.cur === a) return; a.reset().play(); if (HERO.cur) { HERO.cur.fadeOut(.15); a.fadeIn(.15); } HERO.cur = a; }
-const KEYS = {}; addEventListener('keydown', e => { KEYS[e.code] = true; if (e.code === 'KeyP') { PX.on = !PX.on; resize(); } if (e.code === 'Equal' || e.code === 'NumpadAdd') { PX.size = Math.max(120, PX.size - 30); resize(); } if (e.code === 'Minus' || e.code === 'NumpadSubtract') { PX.size = Math.min(420, PX.size + 30); resize(); } });
+const KEYS = {}; addEventListener('keydown', e => { KEYS[e.code] = true; if (e.code === 'KeyP') { PX.on = !PX.on; resize(); } if (e.code === 'Equal' || e.code === 'NumpadAdd') { PX.size = Math.max(240, PX.size - 80); resize(); } if (e.code === 'Minus' || e.code === 'NumpadSubtract') { PX.size = Math.min(1280, PX.size + 80); resize(); } });
 addEventListener('keyup', e => { KEYS[e.code] = false; });
 const JOY = { on: false, x0: 0, y0: 0, x: 0, y: 0 };
 uic.addEventListener('pointerdown', e => { JOY.on = true; JOY.x0 = JOY.x = e.clientX; JOY.y0 = JOY.y = e.clientY; }); addEventListener('pointermove', e => { if (JOY.on) { JOY.x = e.clientX; JOY.y = e.clientY; } }); addEventListener('pointerup', () => { JOY.on = false; });
