@@ -460,12 +460,13 @@ const HERO = { x: N * .27 + 3, z: N * .66 + 6.5, y: 0, face: 0, mixer: null, act
 /* hero card: [picture, width, height in map texels (1/32 unit), faces left, smooth]. Default = the dragon spear warrior, PAINTED 2D (Codex's base picture
    `art/incoming/dragon_moves/base_side.png` cut + 512 px tall, faces right; walk frames next), drawn smooth (linear filter); ?hero=tiger = the pixel tiger (?tiger=jump|stand|snap) */
 const HK = Q.get('hero') || 'dragon';
+const HS = +(Q.get('hs') || 1), MSZ = +(Q.get('ms') || HS);   /* size test (owner 2026-11-21 "เทียบ 70 60 50"): ?hs=.7 = hero at 70 %; monsters follow (?ms= on its own) */
 const TF = HK === 'dragon' ? ['art/pixmap/dragon_2d.png', 65, 90, false, true]
   : { jump: ['art/pixmap/tiger.png', 64, 64], stand: ['art/pixmap/tiger_stand.png', 52, 66], snap: ['art/pixmap/tiger8.png', 67, 79] }[Q.get('tiger')] || ['art/pixmap/tiger8_pl.png', 65, 78];   /* tiger default = the owner's GPT 8-bit standing tiger tidied by PixelLab */
 const TIGER = HK !== 'ranger' ? (() => { const t = new THREE.TextureLoader().load(TF[0]); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
   if (TF[4]) { t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.anisotropy = 4; } else { t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; }
   const sp = new THREE.Sprite(new THREE.SpriteMaterial(TF[4] ? { map: t, transparent: true, alphaTest: .04 } : { map: t, alphaTest: .5 })); sp.center.set(.5, TF[4] ? 0 : 1 / TF[2]); scene.add(sp);
-  const sh = new THREE.Mesh(new THREE.CircleGeometry(.42, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8a5a48, transparent: true, opacity: .35, depthWrite: false })); sh.scale.set(1, 1, .55); scene.add(sh);
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(.42 * HS, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8a5a48, transparent: true, opacity: .35, depthWrite: false })); sh.scale.set(1, 1, .55); scene.add(sh);
   const ghost = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, opacity: .32, depthTest: false, depthWrite: false, color: 0xffe0c8 })); ghost.renderOrder = 10; scene.add(ghost);   /* shows the hero through monsters / palms in front of him */
   return { sp, sh, t, flip: 1, ghost }; })() : null;
 /* dragon frames from Codex's sheets (tools/art/blue_sheet_cut.py -> art/pixmap/dragon/<move>.png + .json): idle when standing, walk side / front / back
@@ -473,7 +474,7 @@ const TIGER = HK !== 'ranger' ? (() => { const t = new THREE.TextureLoader().loa
 const DANIM = HK === 'dragon' ? (() => { const A = {}; for (const k of ['idle', 'walk_side', 'walk_front', 'walk_back', 'attack1', 'attack2', 'attack3', 'skill_dash', 'hurt', 'death', 'run']) fetch('art/pixmap/dragon/' + k + '.json').then(r => r.json()).then(j => {
   new THREE.TextureLoader().load('art/pixmap/dragon/' + k + '.png', t => { t.encoding = THREE.sRGBEncoding; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.wrapS = THREE.RepeatWrapping; A[k] = Object.assign(j, { t }); }); }).catch(() => { }); return A; })() : null;
 const HANIM = { k: 'idle', dir: 'side', t0: 0 };
-function animHero(T, ix, iy) { const A = DANIM; let k = 'idle', PXK = 3.1 / 256;   /* one picture pixel = the same world size in every strip (cut at one scale) */
+function animHero(T, ix, iy) { const A = DANIM; let k = 'idle', PXK = 3.1 / 256 * HS;   /* one picture pixel = the same world size in every strip (cut at one scale) */
   const act = HERO.dead ? { s: 'death', fr: Math.min(15, Math.floor(HERO.deadT * 14)) } : HERO.act ? { s: SK[HERO.act.k].strip, fr: Math.floor(HERO.act.f) } : HERO.hurtT > 0 ? { s: 'hurt', fr: Math.min(15, Math.floor((.45 - HERO.hurtT) * 30)) } : null;
   if (act && A[act.s]) { const j = A[act.s], fr = clamp(act.fr, 0, j.n - 1), mir = T.flip; if (T.sp.material.map !== j.t) { T.sp.material.map = j.t; T.sp.material.needsUpdate = true; }
     j.t.repeat.x = mir / j.n; j.t.offset.x = (mir > 0 ? fr : fr + 1) / j.n; T.sp.scale.set(j.w * PXK, j.h * PXK, 1); T.sp.center.set(.5 + (j.cx || 0) * mir, (j.h - j.foot) / j.h); return true; }
@@ -508,7 +509,7 @@ function updHero(dt) {
   for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (!wetAt(nx, nz) && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
   if (TIGER) { const T = TIGER, tw = 1 / 32 / (+(Q.get('zoom') || 1)), sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; const mr = T.flip * (TF[3] ? -1 : 1); T.t.repeat.x = mr; T.t.offset.x = mr > 0 ? 0 : 1;
-    const anim = DANIM && DANIM.idle, bob = HERO.moving && !anim ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(TF[1] * tw, TF[2] * tw, 1); if (anim) animHero(T, ix, iy); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
+    const anim = DANIM && DANIM.idle, bob = HERO.moving && !anim ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(TF[1] * tw * HS, TF[2] * tw * HS, 1); if (anim) animHero(T, ix, iy); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
     const p = new V3(HERO.x * WS, HERO.y * WS + bob, HERO.z * WS); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
     if (PX.on) { const pr = p.dot(R0), pu = p.dot(U0); p.addScaledVector(R0, Math.round(pr / tw) * tw - pr).addScaledVector(U0, Math.round(pu / tw) * tw - pu); } T.sp.position.copy(p);
     const G = T.ghost; if (G) { if (G.material.map !== T.sp.material.map) { G.material.map = T.sp.material.map; G.material.needsUpdate = true; } G.position.copy(p); G.scale.copy(T.sp.scale); G.center.copy(T.sp.center); G.visible = LOOK3D && !HERO.dead; } }
@@ -594,7 +595,7 @@ const MOBK = {
 const START_P = [HERO.x, HERO.z], PACKS = [], mobShG = new THREE.CircleGeometry(.5, 14).rotateX(-Math.PI / 2), mobShM = new THREE.MeshBasicMaterial({ color: 0x6a4030, transparent: true, opacity: .3, depthWrite: false });
 const NOMOBS = Q.get('mobs') === '0';
 if (!NOMOBS) fetch('art/horde/mobs/index.json').then(r => r.json()).then(async IX => { const TX = {}, TL = new THREE.TextureLoader();
-  await Promise.all(Object.keys(MOBK).map(async k => { const K = MOBK[k], I = IX.mobs[K.f]; if (!I) return; Object.assign(K, { w: I.w, ph: I.h, fx: I.fx, fy: I.fy, n: I.n }); const t = await TL.loadAsync(I.f).catch(() => null); if (!t) return;
+  await Promise.all(Object.keys(MOBK).map(async k => { const K = MOBK[k], I = IX.mobs[K.f]; if (!I) return; Object.assign(K, { w: I.w, ph: I.h, fx: I.fx, fy: I.fy, n: I.n, h: K.h * MSZ }); const t = await TL.loadAsync(I.f).catch(() => null); if (!t) return;
     t.encoding = THREE.sRGBEncoding; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.wrapS = THREE.RepeatWrapping; TX[k] = t; }));
   const zoneKinds = (x, z) => { const c = id(Math.floor(x), Math.floor(z)); if (SPOTS.temple && Math.hypot(x - SPOTS.temple[0], z - SPOTS.temple[1]) < 14) return ['mummy', 'mummy', 'golem']; if (K[c] === 1) return ['scorp', 'viper', 'wolf']; if (L[c] >= 2) return ['mummy', 'cactus', 'wolf']; return ['wolf', 'cactus', 'scorp', 'viper']; };
   const free = (x, z) => !wetAt(x, z) && K[id(Math.floor(x), Math.floor(z))] !== 3 && STAIR[id(Math.floor(x), Math.floor(z))] < 0 && !OBST.some(o => Math.hypot(o[0] - x, o[1] - z) < o[2] + .5);
@@ -660,11 +661,11 @@ function sparks(x, y, z, n, color) { for (let i = 0; i < n; i++) { const a = Mat
 function burst(x, y, z, n, color, sp = 1) { for (let i = 0; i < n; i++) { const a = Math.random() * TAU, s = (.5 + Math.random() * 1.6) * sp; part('big', x + Math.cos(a) * .2, y, z + Math.sin(a) * .2, Math.cos(a) * s, .6 + Math.random() * 1.6, Math.sin(a) * s, .35 + Math.random() * .35, i % 3 ? color : 0xffe080); } sparks(x, y, z, n / 2 | 0, 0xffd070); }
 function glow(x, y, z, size, color, life, op = .9) { const s = new THREE.Sprite(new THREE.SpriteMaterial(Object.assign({ map: dotTex, color, opacity: op * .55 }, ADD, { blending: THREE.NormalBlending }))); s.renderOrder = 2; s.position.set(x * WS, y * WS, z * WS); s.scale.setScalar(size * WS); scene.add(s); fxAdd(life, [s], k => { s.material.opacity = op * .55 * (1 - k); s.scale.setScalar(size * WS * (1 + k * .6)); }); }
 function trailFire(x, z) { const y = groundH(x, z); for (let i = 0; i < 2; i++) part('big', x + (Math.random() - .5) * .8, y + .2, z + (Math.random() - .5) * .8, 0, .8 + Math.random(), 0, .5 + Math.random() * .5, Math.random() < .5 ? 0xff6020 : 0xffa040); }
-function fxThrust(x, z, a, reach) { const y = groundH(x, z) + 1.25, ang = Math.atan2(a[1], a[0]), g = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+function fxThrust(x, z, a, reach) { const y = groundH(x, z) + 1.25 * HS, ang = Math.atan2(a[1], a[0]), g = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   for (const [w, c, op, add] of [[1.5, 0xff3a0a, .7, false], [.9, 0xff8a20, .95, false], [.28, 0xfff0b0, 1, true]]) { const m = fxMesh(g, c, x, y, z, op, swTex, add); m.rotation.y = -ang; fxAdd(.24, [m], k => { const L0 = reach * (0.5 + k * 1.05); m.scale.set(L0 * WS, 1, w * WS * (1 - k)); m.position.set((x + a[0] * L0 / 2 + a[0] * .5) * WS, y * WS, (z + a[1] * L0 / 2 + a[1] * .5) * WS); m.material.opacity = op * (1 - k); }); }
   glow(x + a[0] * (reach + .3), y, z + a[1] * (reach + .3), 2.6, 0xff8a30, .24); sparks(x + a[0] * reach, y, z + a[1] * reach, 14, 0xffe0a0);
   for (let i = 0; i < 9; i++) { const t = .3 + i / 9 * reach; part('big', x + a[0] * t, y - .1, z + a[1] * t, a[0] * 2.5, .3, a[1] * 2.5, .25 + Math.random() * .2, 0xff6a20); } }
-function fxArc(x, z, a, r, ang) { const c = Math.atan2(a[1], a[0]), y = groundH(x, z) + .9;
+function fxArc(x, z, a, r, ang) { const c = Math.atan2(a[1], a[0]), y = groundH(x, z) + .9 * HS;
   for (const [r0, r1, col, op, add] of [[r * .2, r * 1.12, 0xff3a0a, .75, false], [r * .5, r * 1.03, 0xff9024, .95, false], [r * .84, r * .99, 0xfff4c0, 1, true]]) { const m = fxMesh(arcGeo(r0, r1, 0, ang, 28), col, x, y, z, op, swTex, add); m.rotation.y = ang / 2 - c;   /* the swoosh runs across the front, its bright head at the end of the swing */ fxAdd(.28, [m], k => { m.material.opacity = op * (1 - k * k); m.scale.setScalar(WS * (1 + k * .18)); }); }
   for (let i = 0; i < 10; i++) { const t = c - ang / 2 + ang * i / 9; part('big', x + Math.cos(t) * r * .85, y, z + Math.sin(t) * r * .85, Math.cos(t) * .8, .5, Math.sin(t) * .8, .3 + Math.random() * .2, 0xff7a30); } }
 function fxSlam(x, z, r, enemy) { const y = groundH(x, z) + .06, col = enemy ? 0xffb080 : 0xff6a20;
