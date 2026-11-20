@@ -22,7 +22,8 @@ Who does what:
 - Keep each file under about 10 MB. When you stop, switch the folder back with `git checkout main`.
 
 ## Where the briefs are
-- `docs/codex/dragon/MONSTERS.md`: NEWEST, "ทำมอนทะเลทราย" = 5 desert monsters (scorpion, wolf, mummy, cactus, golem boss) in the dragon's painted 2D style: base + walk / attack / hurt-death sheets each (branch `codex/desert-monsters`).
+- `docs/codex/dragon/WALK_FIX.md`: NEWEST, "แก้ท่าเดินมังกร" = redo the 3 walks with LOW steps (no high knee), branch `codex/dragon-walk2`.
+- `docs/codex/dragon/MONSTERS.md`: "ทำมอนทะเลทราย" = 5 desert monsters (scorpion, wolf, mummy, cactus, golem boss) in the dragon's painted 2D style: base + walk / attack / hurt-death sheets each (branch `codex/desert-monsters`).
 - `docs/codex/dragon/CLASS2.md`: NEWEST, "ทำมังกรคลาส 2" = the dragon hero's human form: base, front / back, 8 move sheets (branch `codex/dragon-class2`).
 - `docs/codex/dragon/MOVES.md`: every move of the dragon spear warrior in one job (walk x3, idle, run, combo x3, skill, hurt, death; 16 frames each).
 - `docs/codex/dragon/WALK.md`: the dragon spear warrior's walk (16 frames x 3 directions, painted 2D).
