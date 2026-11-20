@@ -119,7 +119,7 @@ function groundH(x, z) {   /* height under a point (stairs ramp up toward their 
 
 /* ---------- renderer, low-res target + edge pass */
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
-const LOOK3D = Q.get('look') === '3d';   /* ?look=3d = the same map as plain 3D, the tiger stays a 2D pixel card */
+const LOOK3D = Q.get('look') !== 'px';   /* default (owner 2026-11-20 "กลับไปรันแมพ 3D นะ ตัวละคร 2D") = the map as plain 3D with a painted 2D hero card; ?look=px = the pixel-art look */
 const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: LOOK3D }); renderer.outputEncoding = THREE.sRGBEncoding; renderer.shadowMap.enabled = true; renderer.shadowMap.type = LOOK3D ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap; if (LOOK3D) { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05; }
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xf3d29c); scene.fog = null;
 const camera = LOOK3D ? new THREE.PerspectiveCamera(28, 1, 1, 400) : new THREE.OrthographicCamera(-10, 10, 6, -6, 1, 300);
@@ -277,10 +277,15 @@ const freeCell = (x, z) => { const c = id(Math.floor(x), Math.floor(z)); return 
 const HERO = { x: N * .27 + 3, z: N * .66 + 6.5, y: 0, face: 0, mixer: null, acts: {}, cur: null, root: null, moving: false };
 { let best = null, bd = 1e9; for (let z = 2; z < N - 2; z++) for (let x = 2; x < N - 2; x++) { const c = id(x, z); if (K[c] !== 0 || STAIR[c] >= 0) continue; let open = true; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (K[id(x + dx, z + dz)] !== 0 || L[id(x + dx, z + dz)] !== L[c]) open = false;
     const d = Math.hypot(x - (N * .27 + 9), z - (N * .66 + 1)); if (open && d < bd) { bd = d; best = [x + .5, z + .5]; } }
-  if (best) [HERO.x, HERO.z] = best; HERO.y = groundH(HERO.x, HERO.z); CAM.look.set(HERO.x, HERO.y, HERO.z); }
-const TF = { jump: ['art/pixmap/tiger.png', 64, 64], stand: ['art/pixmap/tiger_stand.png', 52, 66], snap: ['art/pixmap/tiger8.png', 67, 79] }[Q.get('tiger')] || ['art/pixmap/tiger8_pl.png', 65, 78];   /* default = the owner's GPT 8-bit standing tiger tidied by PixelLab; ?tiger=snap = the free snap, jump = the old leaping one */
-const TIGER = Q.get('hero') !== 'ranger' ? (() => { const t = new THREE.TextureLoader().load(TF[0]); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5 })); sp.center.set(.5, 1 / TF[2]); scene.add(sp);
+  if (best) [HERO.x, HERO.z] = best; HERO.y = groundH(HERO.x, HERO.z); CAM.look.set(HERO.x * WS, HERO.y * WS + .5, HERO.z * WS); }   /* world units: the camera starts on the hero (no fly-over) */
+/* hero card: [picture, width, height in map texels (1/32 unit), faces left, smooth]. Default = the dragon spear warrior, PAINTED 2D (owner's original
+   picture for now; Codex is drawing his move sheets), drawn smooth (linear filter); ?hero=tiger = the pixel tiger (?tiger=jump|stand|snap) */
+const HK = Q.get('hero') || 'dragon';
+const TF = HK === 'dragon' ? ['art/pixmap/dragon_2d.png', 79, 84, true, true]
+  : { jump: ['art/pixmap/tiger.png', 64, 64], stand: ['art/pixmap/tiger_stand.png', 52, 66], snap: ['art/pixmap/tiger8.png', 67, 79] }[Q.get('tiger')] || ['art/pixmap/tiger8_pl.png', 65, 78];   /* tiger default = the owner's GPT 8-bit standing tiger tidied by PixelLab */
+const TIGER = HK !== 'ranger' ? (() => { const t = new THREE.TextureLoader().load(TF[0]); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
+  if (TF[4]) { t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.anisotropy = 4; } else { t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial(TF[4] ? { map: t, transparent: true, alphaTest: .04 } : { map: t, alphaTest: .5 })); sp.center.set(.5, TF[4] ? 0 : 1 / TF[2]); scene.add(sp);
   const sh = new THREE.Mesh(new THREE.CircleGeometry(.42, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8a5a48, transparent: true, opacity: .35, depthWrite: false })); sh.scale.set(1, 1, .55); scene.add(sh); return { sp, sh, t, flip: 1 }; })() : null;
 for (const o of scene.children) if (o.isMesh || o.isPoints) o.scale.setScalar(WS);   /* the whole built map, scaled round the origin */
 Object.assign(sun.shadow.camera, { left: -26 * WS, right: 26 * WS, top: 26 * WS, bottom: -26 * WS, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
@@ -305,7 +310,7 @@ function updHero(dt) {
     HERO.face = Math.atan2(mx, mz); }
   for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (kAt(nx, nz) !== 2 && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
-  if (TIGER) { const T = TIGER, tw = 1 / 32 / (+(Q.get('zoom') || 1)), sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; T.t.repeat.x = T.flip; T.t.offset.x = T.flip > 0 ? 0 : 1;
+  if (TIGER) { const T = TIGER, tw = 1 / 32 / (+(Q.get('zoom') || 1)), sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; const mr = T.flip * (TF[3] ? -1 : 1); T.t.repeat.x = mr; T.t.offset.x = mr > 0 ? 0 : 1;
     const bob = HERO.moving ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(TF[1] * tw, TF[2] * tw, 1); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
     const p = new V3(HERO.x * WS, HERO.y * WS + bob, HERO.z * WS); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
     if (PX.on) { const pr = p.dot(R0), pu = p.dot(U0); p.addScaledVector(R0, Math.round(pr / tw) * tw - pr).addScaledVector(U0, Math.round(pu / tw) * tw - pu); } T.sp.position.copy(p); }
@@ -330,7 +335,7 @@ function updCam(dt) {
 
 /* ---------- the overlay: a small title, the keys, the joystick */
 function drawUI() { ui.setTransform(DPR, 0, 0, DPR, 0, 0); ui.clearRect(0, 0, SW, SH); if (Q.get('noui') === '1') return;
-  ui.font = '700 15px sans-serif'; ui.textAlign = 'left'; ui.lineWidth = 4; ui.strokeStyle = 'rgba(40,20,10,.8)'; ui.fillStyle = '#fff6e0'; const t = (LOOK3D ? 'แมพ 3D' : 'แมพพิกเซล') + '  ·  ' + (LOOK3D ? 'ภาพ 3D' : PX.on ? 'พิกเซล ' + PX.size : 'ภาพปกติ') + (TOUCH ? '  ·  ลากนิ้วเพื่อเดิน' : '  ·  WASD เดิน  P สลับ  +/- ขนาดเม็ด');
+  ui.font = '700 15px sans-serif'; ui.textAlign = 'left'; ui.lineWidth = 4; ui.strokeStyle = 'rgba(40,20,10,.8)'; ui.fillStyle = '#fff6e0'; const t = LOOK3D ? 'แมพ 3D' + (TOUCH ? '  ·  ลากนิ้วเพื่อเดิน' : '  ·  WASD เดิน') : 'แมพพิกเซล  ·  ' + (PX.on ? 'พิกเซล ' + PX.size : 'ภาพปกติ') + (TOUCH ? '  ·  ลากนิ้วเพื่อเดิน' : '  ·  WASD เดิน  P สลับ  +/- ขนาดเม็ด');
   ui.strokeText(t, 12, 22); ui.fillText(t, 12, 22);
   if (JOY.on) { ui.globalAlpha = .4; ui.beginPath(); ui.arc(JOY.x0, JOY.y0, 46, 0, TAU); ui.fillStyle = '#fff'; ui.fill(); ui.globalAlpha = .8; ui.beginPath(); ui.arc(clamp(JOY.x, JOY.x0 - 46, JOY.x0 + 46), clamp(JOY.y, JOY.y0 - 46, JOY.y0 + 46), 20, 0, TAU); ui.fill(); ui.globalAlpha = 1; } }
 const TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
