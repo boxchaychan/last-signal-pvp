@@ -707,12 +707,17 @@ async function loadBoss(bk) {
   const b = new THREE.Box3().setFromObject(sc), clips = {}; for (const c of g.animations) clips[c.name] = c; BODY[D.file] = { scene: sc, k: D.h / (b.max.y - b.min.y), clips, mono: true };
 }
 const findN = (r, n) => { let f = null; r.traverse(o => { if (o.name === n && !f) f = o; }); return f; };
+const PXT = Q.get('px') === 'sword' ? (() => { const t = TL.load('art/war/sword_test.png'); t.magFilter = t.minFilter = THREE.NearestFilter; t.encoding = THREE.sRGBEncoding; return t; })() : null;
+function pxCard(team) {   /* TEST: a camera-facing pixel card; the enemy's is mirrored */
+  const t = PXT.clone(); t.needsUpdate = true; if (team) { t.repeat.x = -1; t.offset.x = 1; t.wrapS = THREE.RepeatWrapping; }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false })); sp.center.set(.5, 3 / 96); sp.scale.set(1.0, 1.0, 1); return sp; }
 function makeMan(T, team) {
   const B = BODY[T.body], r = THREE.SkeletonUtils.clone(B.scene), g = new THREE.Group();
   const hue = T.hue ? T.hue[team] : TEAMHUE[team], mk = team + '|' + hue; if (!B.mono && !B.mat[mk]) B.mat[mk] = teamMat(B.mat.base, team, hue); const MT = B.mono ? null : B.mat[mk];
   r.traverse(o => { if (o.isMesh) { if (MT) o.material = MT; o.castShadow = true; o.frustumCulled = false; } });
   for (const [w, bn, s] of T.weap || []) { const b = findN(r, bn), src = WEAP[w]; if (!b || !src) continue; const c = src.clone(); c.traverse(o => { if (o.isMesh) { if (KKW.has(w) && MT) o.material = MT; o.castShadow = true; } }); if (s) c.scale.multiplyScalar(s); b.add(c); }
-  r.scale.setScalar(B.k * (T.sc || 1)); g.add(r); const u = { g, r, mixer: new THREE.AnimationMixer(r), acts: {}, cur: null, clips: B.clips };
+  r.scale.setScalar(B.k * (T.sc || 1)); g.add(r); if (PXT && (T === TYPES.shield || T === TYPES.spear)) { r.visible = false; g.add(pxCard(team)); }
+  const u = { g, r, mixer: new THREE.AnimationMixer(r), acts: {}, cur: null, clips: B.clips };
   if (T.horse && HORSE) { const h = THREE.SkeletonUtils.clone(HORSE.scene); h.scale.setScalar(HORSE.k * 1.05); if (!HORSE.along) h.rotation.y = Math.PI / 2; g.add(h); u.horse = { r: h, mixer: new THREE.AnimationMixer(h), acts: {}, cur: null, clips: HORSE.clips }; r.position.y = HORSE.h * .62; r.position.z = -.04; }
   scene.add(g); return u;
 }
