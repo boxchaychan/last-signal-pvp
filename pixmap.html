@@ -32,7 +32,8 @@ const vn = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi
 const fbm = (x, y, o = 4) => { let s = 0, a = .5, f = 1, n = 0; for (let i = 0; i < o; i++) { s += vn(x * f, y * f) * a; n += a; a *= .5; f *= 2.03; } return s / n; };
 
 /* ---------- the land: N x N cells, a level per cell (0 = oasis basin, 1 = desert floor, 2 = plateau, 3 = mesa), a kind per cell */
-const N = 72, LH = 1.35, L = new Int8Array(N * N), K = new Uint8Array(N * N), STAIR = new Int8Array(N * N).fill(-1);   /* K: 0 sand 1 grass 2 water 3 path; STAIR = direction to the upper cell */
+const N = +(Q.get('n') || (Q.get('look') === 'px' ? 72 : 112)), AREA = (N / 72) ** 2, LH = 1.35,   /* 3D look: a bigger map (owner "ขยายแมพออก"); ?n= */
+  L = new Int8Array(N * N), K = new Uint8Array(N * N), STAIR = new Int8Array(N * N).fill(-1);   /* K: 0 sand 1 grass 2 water 3 path; STAIR = direction to the upper cell */
 const id = (x, z) => z * N + x, inb = (x, z) => x >= 0 && z >= 0 && x < N && z < N;
 const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
@@ -148,22 +149,22 @@ function resize() {
   renderer.setPixelRatio(1); renderer.setSize(PX.bw, PX.bh, false); glc.style.width = PX.bw * PX.T + 'px'; glc.style.height = PX.bh * PX.T + 'px';
   if (rt) rt.dispose(); rt = new THREE.WebGLRenderTarget(PX.bw, PX.bh, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter }); rt.texture.encoding = THREE.sRGBEncoding;
   rt.depthTexture = new THREE.DepthTexture(PX.bw, PX.bh); rt.depthTexture.type = THREE.UnsignedIntType; postMat.uniforms.tC.value = rt.texture; postMat.uniforms.tD.value = rt.depthTexture; postMat.uniforms.px.value.set(1 / PX.bw, 1 / PX.bh);
-  const kOn = Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)), Ton = kOn / dp; CAM.vh = Math.ceil((SH + 4 * Ton) / Ton) / 32 / (+(Q.get("zoom") || (LOOK3D ? .62 : 1))); }   /* 3D look: a wider view (owner "กว้างกว่านี้") */
+  const kOn = Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)), Ton = kOn / dp; CAM.vh = Math.ceil((SH + 4 * Ton) / Ton) / 32 / (+(Q.get("zoom") || (LOOK3D ? .45 : 1))); }   /* 3D look: a wider view (owner "กว้างกว่านี้") */
 const CAM = { vh: 17, look: new V3(N * .4, 0, N * .6) };
 addEventListener('resize', resize);
 
 /* ---------- the ground picture: one canvas over the whole map (4 px a piece): pale sand, orange dune lines, specks, dry tufts, soft grass */
-const WS = +(Q.get('ws') || 1.5), TPX = Math.round(32 * WS), PP = TPX / SUB, GF = TPX / 16, gcv = document.createElement('canvas'); gcv.width = gcv.height = N * TPX;
+const WS = +(Q.get('ws') || 1.5), TPX = Math.min(Math.round(32 * WS), Math.floor(4096 / N / 4) * 4),   /* ground picture at most 4096 px (phones) */ PP = TPX / SUB, GF = TPX / 16, gcv = document.createElement('canvas'); gcv.width = gcv.height = N * TPX;
 const kPix = (x, y) => KS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))], lPix = (x, y) => LS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))];
 { const g = gcv.getContext('2d'), r = rng(5);
   for (let j = 0; j < NS; j++) for (let i = 0; i < NS; i++) { const s = sid(i, j), k = KS[s], lv = LS[s], n = fbm(i / 22, j / 22);
     g.fillStyle = k === 4 ? '#6aa2a8' : k === 1 ? (lv === 0 ? (n > .5 ? '#a9cb7c' : '#9dc372') : (n > .5 ? '#b3d184' : '#a5c879')) : k === 3 ? '#e4b892' : k === 2 ? '#6aa2a8' : (lv >= 2 ? (n > .5 ? '#f8e3c8' : '#f3d9bc') : n > .5 ? '#fae8cf' : '#f5dec2'); g.fillRect(i * PP, j * PP, PP, PP); }
-  for (let i = 0; i < 2800; i++) { const cx = r() * gcv.width, cy = r() * gcv.height, rad = (4 + r() * 14) * GF, k = kPix(cx, cy); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#8fb862' : '#b6d68a') : (r() < .5 ? '#fbeedb' : '#efd2b4');   /* flat patches with a checker-dither rim */
+  for (let i = 0; i < 2800 * AREA; i++) { const cx = r() * gcv.width, cy = r() * gcv.height, rad = (4 + r() * 14) * GF, k = kPix(cx, cy); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#8fb862' : '#b6d68a') : (r() < .5 ? '#fbeedb' : '#efd2b4');   /* flat patches with a checker-dither rim */
     for (let y = -rad; y <= rad; y += 2) for (let x = -rad; x <= rad; x += 2) { const d = Math.hypot(x, y) / rad + (vn((cx + x) / 6, (cy + y) / 6) - .5) * .5; if (d > 1 || (d > .75 && ((x + y) / 2 & 1))) continue; if (kPix(cx + x, cy + y) !== k) continue; g.fillRect((cx + x) & ~1, (cy + y) & ~1, 2, 2); } }
   if (!LOOK3D) for (let y = 0; y < gcv.height; y += 2) for (let x = 0; x < gcv.width; x += 2) { if (kPix(x, y) !== 0) continue; const v = fbm(x / (150 * GF) + 2, y / (150 * GF) + 9, 2) * 10, f = v - Math.floor(v);   /* dune lines, broken */
     if (f < .025 && vn(x / (10 * GF), y / (10 * GF)) > .36) { g.fillStyle = 'rgba(226,128,98,.85)'; g.fillRect(x, y, 2, 2); } }
-  for (let i = 0; i < 16800; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#7aa856' : '#c8e09a') : (r() < .6 ? '#e8bea0' : '#fff8ec'); g.fillRect(x | 0, y | 0, 2, 2); }
-  if (!LOOK3D) for (let i = 0; i < 3600; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.strokeStyle = k === 1 ? '#6f9e4c' : '#b9a46c'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 2, y - 4); g.moveTo(x, y); g.lineTo(x + 2, y - 4); g.moveTo(x, y); g.lineTo(x, y - 5); g.stroke(); }
+  for (let i = 0; i < 16800 * AREA; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#7aa856' : '#c8e09a') : (r() < .6 ? '#e8bea0' : '#fff8ec'); g.fillRect(x | 0, y | 0, 2, 2); }
+  if (!LOOK3D) for (let i = 0; i < 3600 * AREA; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.strokeStyle = k === 1 ? '#6f9e4c' : '#b9a46c'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 2, y - 4); g.moveTo(x, y); g.lineTo(x + 2, y - 4); g.moveTo(x, y); g.lineTo(x, y - 5); g.stroke(); }
   /* a light rim on every top edge (the sunlit lip of a cliff), a soft shade at the foot */
   for (let j = 1; j < NS - 1; j++) for (let i = 1; i < NS - 1; i++) { const s = sid(i, j), lv = LS[s]; if (KS[s] === 2) continue;
     if (LS[sid(i, j + 1)] < lv || LS[sid(i + 1, j)] < lv) { g.fillStyle = 'rgba(255,246,228,.75)'; g.fillRect(i * PP, j * PP, PP, PP); }
@@ -262,15 +263,15 @@ const PROPS = {}, OBST = [], OBR = { palm: .22, rock: .38, cactus: .2, ruin: 1.2
 const addProp = (kind, geo, x, z, s = 1, ry = R() * TAU) => { (PROPS[kind] = PROPS[kind] || { geo, m: [] }).m.push(M4(x, groundH(x, z), z, s, ry)); const r = OBR[kind.replace(/\d+$/, '')]; if (r) OBST.push([x, z, r * s]); };
 const freeCell = (x, z) => { const c = id(Math.floor(x), Math.floor(z)); return inb(Math.floor(x), Math.floor(z)) && kAt(x, z) < 2 && kAt(x - .35, z - .35) < 2 && kAt(x + .35, z + .35) < 2 && kAt(x, z) !== 3 && STAIR[c] < 0 && Math.floor(groundH(x - .35, z - .35)) === Math.floor(groundH(x + .35, z + .35)); };
 { const PG = [palm(1), palm(2), palm(3)], BG = [bush(4, true), bush(5, false), bush(6, true)], RG = [rock(7), rock(8)], CG = cactus(9), RU = ruin(10);
-  const palms = []; for (let i = 0, t = 0; i < 70 && t < 6000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z) || palms.some(p => Math.hypot(p[0] - x, p[1] - z) < 2.6)) continue;
+  const palms = []; for (let i = 0, t = 0; i < 70 * AREA && t < 6000 * AREA; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z) || palms.some(p => Math.hypot(p[0] - x, p[1] - z) < 2.6)) continue;
     let wn = 99; for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) if (inb(Math.floor(x) + dx, Math.floor(z) + dz) && K[id(Math.floor(x) + dx, Math.floor(z) + dz)] === 2) wn = Math.min(wn, Math.hypot(dx, dz));
     if ((K[c] === 1 && R() < .35) || (wn < 6 && R() < .15) || R() < .012) { addProp('palm' + (i % 3), PG[i % 3], x, z, .85 + R() * .4); palms.push([x, z]); i++; } }
-  for (let i = 0, t = 0; i < 420 && t < 14000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z)) continue; if (kAt(x, z) === 1 || R() < .22) { addProp('bush' + (i % 3), BG[i % 3], x, z, .8 + R() * .5); i++; } }
-  for (let i = 0, t = 0; i < 90 && t < 6000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2); if (!freeCell(x, z)) continue; addProp('rock' + (i % 2), RG[i % 2], x, z, .8 + R() * .8); i++; }
-  for (let i = 0, t = 0; i < 26 && t < 4000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z) || K[c] !== 0 || L[c] < 1) continue; addProp('cactus', CG, x, z, .9 + R() * .4); i++; }
-  for (let i = 0, t = 0; i < 4 && t < 4000; t++) { const x = 3 + R() * (N - 6), z = 3 + R() * (N - 6); if (![[-1.3, 0], [1.3, 0], [0, .6], [0, -.4]].every(([a, b]) => freeCell(x + a, z + b))) continue; addProp('ruin', RU, x, z, 1, R() * .3); i++; }
+  for (let i = 0, t = 0; i < 420 * AREA && t < 14000 * AREA; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z)) continue; if (kAt(x, z) === 1 || R() < .22) { addProp('bush' + (i % 3), BG[i % 3], x, z, .8 + R() * .5); i++; } }
+  for (let i = 0, t = 0; i < 90 * AREA && t < 6000 * AREA; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2); if (!freeCell(x, z)) continue; addProp('rock' + (i % 2), RG[i % 2], x, z, .8 + R() * .8); i++; }
+  for (let i = 0, t = 0; i < 26 * AREA && t < 4000 * AREA; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z) || K[c] !== 0 || L[c] < 1) continue; addProp('cactus', CG, x, z, .9 + R() * .4); i++; }
+  for (let i = 0, t = 0; i < 4 * AREA && t < 4000 * AREA; t++) { const x = 3 + R() * (N - 6), z = 3 + R() * (N - 6); if (![[-1.3, 0], [1.3, 0], [0, .6], [0, -.4]].every(([a, b]) => freeCell(x + a, z + b))) continue; addProp('ruin', RU, x, z, 1, R() * .3); i++; }
   const camp = [N * .27 + 6.5, N * .66 - 1]; for (const [a, b, s] of [[0, 0, 1], [2.4, 1.2, .8]]) if (freeCell(camp[0] + a, camp[1] + b)) addProp('tent', tent(), camp[0] + a, camp[1] + b, s, -.4);
-  for (let i = 0, t = 0; i < 6 && t < 4000; t++) { const x = 3 + R() * (N - 6), z = 3 + R() * (N - 6); if (!freeCell(x, z) || L[id(Math.floor(x), Math.floor(z))] < 1) continue; addProp('flag', flag(), x, z, 1, 0); i++; }
+  for (let i = 0, t = 0; i < 6 * AREA && t < 4000 * AREA; t++) { const x = 3 + R() * (N - 6), z = 3 + R() * (N - 6); if (!freeCell(x, z) || L[id(Math.floor(x), Math.floor(z))] < 1) continue; addProp('flag', flag(), x, z, 1, 0); i++; }
   for (const k in PROPS) { if (LOOK3D && k.startsWith('bush')) continue; const P = PROPS[k], im = new THREE.InstancedMesh(P.geo, VCM, P.m.length); P.m.forEach((m, i) => im.setMatrixAt(i, m)); im.castShadow = true; im.receiveShadow = true; scene.add(im); }
 }
 
@@ -288,7 +289,7 @@ if (LOOK3D) {
   const bushAt = [[], [], []]; for (let b = 0; b < 3; b++) for (const m of (PROPS['bush' + b] || { m: [] }).m) { const p = new V3(), q = new THREE.Quaternion(), sc = new V3(); m.decompose(p, q, sc); bushAt[(b + bushAt[0].length) % 3].push(at(p.x, p.z, sc.x)); }
   plant('Bush', bushAt[0], .95); plant('Bush_Flowers', bushAt[1], .95); plant('Bush_Large', bushAt[2], 1.05);
   const grass = [], dry = [], flow = [[], []];
-  for (let i = 0, t = 0; i < 1500 && t < 30000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2); if (!freeCell(x, z)) continue; const k = kAt(x, z);
+  for (let i = 0, t = 0; i < 1500 * AREA && t < 30000 * AREA; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2); if (!freeCell(x, z)) continue; const k = kAt(x, z);
     let wn = 99; for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (kAt(x + dx, z + dz) === 2) wn = Math.min(wn, Math.hypot(dx, dz));
     if (k === 1 || wn < 2.5) { grass.push(at(x, z, .8 + R() * .6)); if (R() < .16) flow[i & 1].push(at(x + .3, z + .2, .8 + R() * .5)); i++; } else if (R() < .25) { dry.push(at(x, z, .6 + R() * .5)); i++; } }
   plant('Grass_Large', grass, .42); plant('Grass_Small', dry, .3, 0xe0c27a); plant('Flower_3_Clump', flow[0], .45); plant('Flower_4_Clump', flow[1], .45);
@@ -308,8 +309,18 @@ const TIGER = HK !== 'ranger' ? (() => { const t = new THREE.TextureLoader().loa
   if (TF[4]) { t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.anisotropy = 4; } else { t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; }
   const sp = new THREE.Sprite(new THREE.SpriteMaterial(TF[4] ? { map: t, transparent: true, alphaTest: .04 } : { map: t, alphaTest: .5 })); sp.center.set(.5, TF[4] ? 0 : 1 / TF[2]); scene.add(sp);
   const sh = new THREE.Mesh(new THREE.CircleGeometry(.42, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8a5a48, transparent: true, opacity: .35, depthWrite: false })); sh.scale.set(1, 1, .55); scene.add(sh); return { sp, sh, t, flip: 1 }; })() : null;
+/* dragon frames from Codex's sheets (tools/art/blue_sheet_cut.py -> art/pixmap/dragon/<move>.png + .json): idle when standing, walk side / front / back
+   by the direction on screen; the side sheets face right and are mirrored for left */
+const DANIM = HK === 'dragon' ? (() => { const A = {}; for (const k of ['idle', 'walk_side', 'walk_front', 'walk_back']) fetch('art/pixmap/dragon/' + k + '.json').then(r => r.json()).then(j => {
+  new THREE.TextureLoader().load('art/pixmap/dragon/' + k + '.png', t => { t.encoding = THREE.sRGBEncoding; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.wrapS = THREE.RepeatWrapping; A[k] = Object.assign(j, { t }); }); }).catch(() => { }); return A; })() : null;
+const HANIM = { k: 'idle', dir: 'side', t0: 0 };
+function animHero(T, ix, iy) { const A = DANIM; let k = 'idle';
+  if (HERO.moving) { if (Math.abs(iy) > Math.abs(ix) * 1.15) { HANIM.dir = iy > 0 ? 'front' : 'back'; } else HANIM.dir = 'side'; k = 'walk_' + HANIM.dir; }
+  const j = A[k] || A.idle; if (!j) return false; const fps = k === 'idle' ? 10 : 15, fr = Math.floor(RT * fps) % j.n, mir = k === 'walk_front' || k === 'walk_back' ? 1 : T.flip;
+  if (T.sp.material.map !== j.t) { T.sp.material.map = j.t; T.sp.material.needsUpdate = true; }
+  j.t.repeat.x = mir / j.n; j.t.offset.x = (mir > 0 ? fr : fr + 1) / j.n; const hw = 3.1; T.sp.scale.set(hw * j.w / j.h, hw, 1); T.sp.center.set(.5, (j.h - j.foot) / j.h); return true; }
 for (const o of scene.children) if (o.isMesh || o.isPoints) o.scale.setScalar(WS);   /* the whole built map, scaled round the origin */
-Object.assign(sun.shadow.camera, { left: -26 * WS, right: 26 * WS, top: 26 * WS, bottom: -26 * WS, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
+{ const SR = (LOOK3D ? 36 : 26) * WS; Object.assign(sun.shadow.camera, { left: -SR, right: SR, top: SR, bottom: -SR, far: 200 }); } sun.shadow.camera.updateProjectionMatrix();
 const ld = new THREE.GLTFLoader();
 if (!TIGER) Promise.all([ld.loadAsync('art/tribe3d/people/Ranger.glb'), ld.loadAsync('art/tribe3d/people/anims.glb'), ld.loadAsync('art/tribe3d/people/weapons.glb')]).then(([g, A, W]) => {
   const r = g.scene; r.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (o.material.metalness !== undefined) { o.material.metalness = 0; o.material.roughness = .85; } } });
@@ -332,7 +343,7 @@ function updHero(dt) {
   for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (kAt(nx, nz) !== 2 && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
   if (TIGER) { const T = TIGER, tw = 1 / 32 / (+(Q.get('zoom') || 1)), sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; const mr = T.flip * (TF[3] ? -1 : 1); T.t.repeat.x = mr; T.t.offset.x = mr > 0 ? 0 : 1;
-    const bob = HERO.moving ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(TF[1] * tw, TF[2] * tw, 1); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
+    const anim = DANIM && DANIM.idle, bob = HERO.moving && !anim ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(TF[1] * tw, TF[2] * tw, 1); if (anim) animHero(T, ix, iy); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
     const p = new V3(HERO.x * WS, HERO.y * WS + bob, HERO.z * WS); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
     if (PX.on) { const pr = p.dot(R0), pu = p.dot(U0); p.addScaledVector(R0, Math.round(pr / tw) * tw - pr).addScaledVector(U0, Math.round(pu / tw) * tw - pu); } T.sp.position.copy(p); }
   if (HERO.root) { HERO.root.position.set(HERO.x * WS, HERO.y * WS, HERO.z * WS); HERO.root.rotation.y = HERO.face; hplay(HERO.moving ? 'Running_A' : 'Idle'); HERO.mixer.update(dt); }
@@ -343,7 +354,7 @@ const _r = new V3(), _u = new V3();
 function updCam(dt) {
   const T = new V3(clamp(HERO.x, 7, N - 7) * WS, HERO.y * WS + .5, clamp(HERO.z, 5, N - 4) * WS); CAM.look.lerp(T, 1 - Math.exp(-dt * 5));
   const vh = CAM.vh, vw = vh * PX.bw / PX.bh;
-  if (LOOK3D) { camera.aspect = SW / SH; camera.updateProjectionMatrix(); const d = vh / 2 / Math.tan(camera.fov * Math.PI / 360); camera.position.copy(CAM.look).addScaledVector(CDIR, d); camera.lookAt(CAM.look); camera.updateMatrixWorld(); sun.position.copy(CAM.look).addScaledVector(SUNDIR, 60); sun.target.position.copy(CAM.look); glc.style.transform = ''; return; }
+  if (LOOK3D) { camera.aspect = SW / SH; camera.updateProjectionMatrix(); const d = vh / 2 / Math.tan(camera.fov * Math.PI / 360); camera.position.copy(CAM.look).addScaledVector(CDIR, d); camera.lookAt(CAM.look); camera.updateMatrixWorld(); sun.position.copy(CAM.look).addScaledVector(SUNDIR, 80); sun.target.position.copy(CAM.look); if (scene.fog) { scene.fog.near = d * 1.15; scene.fog.far = d * 2.8; } glc.style.transform = ''; return; }
   camera.left = -vw / 2; camera.right = vw / 2; camera.top = vh / 2; camera.bottom = -vh / 2; camera.updateProjectionMatrix();
   camera.position.copy(CAM.look).addScaledVector(CDIR, 120); camera.lookAt(CAM.look); camera.updateMatrixWorld();
   _r.set(1, 0, 0).applyQuaternion(camera.quaternion); _u.set(0, 1, 0).applyQuaternion(camera.quaternion);
