@@ -74,7 +74,7 @@ let MAPK = Q.get('map'); if (!MAPS[MAPK]) { try { const s0 = JSON.parse(localSto
 const MAP = MAPS[MAPK], ARENA = 30, WORLD = 96;
 /* ---------- renderer, light, camera */
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
-const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: !TOUCH, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: !TOUCH && Q.get('look') !== 'px', powerPreference: 'high-performance' });
 renderer.outputEncoding = THREE.sRGBEncoding; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(MAP.sky); scene.fog = new THREE.Fog(MAP.fog[0], MAP.fog[1], MAP.fog[2]);
 const camera = new THREE.PerspectiveCamera(30, 1, .5, 160);
@@ -358,7 +358,11 @@ function updParts(dt) { for (let i = PARTS.length - 1; i >= 0; i--) { const p = 
 const AIR = []; for (let i = 0; i < (TOUCH ? 36 : 60); i++) AIR.push({ x: rnd(-14, 14), y: rnd(.3, 3.5), z: rnd(-10, 10), ph: rnd(0, 9), s: rnd(.6, 1.3) });
 const CAM = { shake: 0, look: new V3(), dist: 15.5, zoom: clamp(+(() => { try { return localStorage.getItem('war_zoom'); } catch (_) { return 0; } })() || 1, .7, 1.4), dir: new V3(0, .8, .6).normalize(), over: null }, shake = a => { CAM.shake = Math.max(CAM.shake, a); };
 /* ?cam=iso: an isometric look (board turned 45 degrees, diamond tiles, almost no perspective = a far camera with a narrow lens), our army top-left, the enemy bottom-right */
-const ISO = Q.get('cam') === 'iso'; if (ISO) { CAM.dir.set(+(Q.get('ix') || .55), +(Q.get('iy') || .66), +(Q.get('iz') || .835)).normalize(); camera.fov = 7; camera.far = 500; camera.updateProjectionMatrix(); scene.fog.near += 95; scene.fog.far += 95; }
+/* ?look=px: the 3D world drawn as pixel art (the owner's clip): rendered small (PXH texels tall) and blown up with hard pixels, a near-orthographic lens,
+   the camera snapped to whole texels (no shimmer) and the canvas moved by the left-over part of a texel (no judder). VIEW = where the 3D canvas sits on the screen */
+const PXL = Q.get('look') === 'px', PXH = +(Q.get('pxh') || 250), VIEW = { w: 800, h: 450, ox: 0, oy: 0, k: 1, bw: 0, bh: 0, m: 0 };
+const ISO = Q.get('cam') === 'iso'; if (PXL && Q.has('el')) { const e = +Q.get('el') * Math.PI / 180; CAM.dir.set(0, Math.sin(e), Math.cos(e)); }   /* ?el=33 = camera height in degrees (checks) */
+if (PXL && !ISO) { camera.fov = 7; camera.far = 500; camera.updateProjectionMatrix(); scene.fog.near += 95; scene.fog.far += 95; } if (ISO) { CAM.dir.set(+(Q.get('ix') || .55), +(Q.get('iy') || .66), +(Q.get('iz') || .835)).normalize(); camera.fov = 7; camera.far = 500; camera.updateProjectionMatrix(); scene.fog.near += 95; scene.fog.far += 95; }
 
 /* ---------- sound (Kenney CC0 clips already in the repo + a few synthesized ones), music (OpenGameArt CC0) */
 const AU = { ctx: null, buf: {} }, SND = { on: Q.get('snd') !== '0' };
@@ -558,7 +562,7 @@ function medal(k, x, y, r, col, o = {}) {   /* a round badge with the glyph */
 }
 function glyphC(k, r, c) { ui.save(); glyph(k, r); ui.restore(); }
 function heroIcon(k, x, y, r) { const D = HEROES[k]; medal(D.start, x, y, r, D.col[1], { rim: D.col[0] }); }
-function toScreen(x, y, z) { _g.set(x, y, z).project(camera); return [(_g.x + 1) / 2 * SW, (1 - _g.y) / 2 * SH, _g.z < 1]; }
+function toScreen(x, y, z) { _g.set(x, y, z).project(camera); return [(_g.x + 1) / 2 * VIEW.w + VIEW.ox, (1 - _g.y) / 2 * VIEW.h + VIEW.oy, _g.z < 1]; }
 const fmtT = t => { t = Math.max(0, Math.floor(t)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
 
 /* ======================================================================================================
@@ -1182,7 +1186,7 @@ function drawUI(dt) {
 
 /* ---------- input: taps on the drawn buttons; in prep, drag cards / squads onto tiles */
 const RC = new THREE.Raycaster(), PLANE = new THREE.Plane(UP, 0), _gp = new V3();
-function groundAt(px, py) { RC.setFromCamera(new THREE.Vector2(px / SW * 2 - 1, -(py / SH) * 2 + 1), camera); return RC.ray.intersectPlane(PLANE, _gp) ? { x: _gp.x, z: _gp.z } : null; }
+function groundAt(px, py) { RC.setFromCamera(new THREE.Vector2((px - VIEW.ox) / VIEW.w * 2 - 1, -((py - VIEW.oy) / VIEW.h) * 2 + 1), camera); return RC.ray.intersectPlane(PLANE, _gp) ? { x: _gp.x, z: _gp.z } : null; }
 const tileAt = p => p ? { c: Math.round(p.x / TS + (COLS - 1) / 2), r: Math.round(p.z / TS + (ROWS - 1) / 2) } : null;
 function squadAt(px, py) { let best = null, bd = 30 * S; for (const sq of SQ) { if (sq.dead) continue; const [x, y] = toScreen(sq.x, .5, sq.z), d = Math.hypot(x - px, y - py); if (d < bd) { bd = d; best = sq; } } return best; }
 const PTR = { down: false, x: 0, y: 0, sx: 0, sy: 0, hit: null, moved: false };
@@ -1224,14 +1228,22 @@ function fitCam() {
 }
 function updCam(dt) {
   const st = G.state, menu = st === 'title' || st === 'map' || st === 'camp' || st === 'load';
-  if (menu && ISO) { camera.position.copy(CAM.dir).multiplyScalar(118); camera.lookAt(0, 0, 0); CAM.look.set(0, 0, 0); }
+  if (menu && (ISO || PXL)) { camera.position.copy(CAM.dir).multiplyScalar(118); camera.lookAt(0, 0, 0); CAM.look.set(0, 0, 0); }
   else if (menu) { const a = Math.sin(RT * .08) * .55; camera.position.set(Math.sin(a) * 15, 8.5, Math.cos(a) * 15); camera.lookAt(0, 0, 0); CAM.look.set(0, 0, 0); }
   else { fitCam(); const f = 1 - Math.exp(-dt * 2.2); CAM.look.lerp(CAMF.look, f); CAM.dist = lerp(CAM.dist || CAMF.d, CAMF.d, f); camera.position.copy(CAM.look).addScaledVector(CAM.dir, CAM.dist); camera.lookAt(CAM.look);
     if (CAM.shake > 0) { camera.position.x += (Math.random() - .5) * CAM.shake; camera.position.y += (Math.random() - .5) * CAM.shake; CAM.shake = Math.max(0, CAM.shake - dt * 1.4); } }
   camera.updateMatrixWorld(); CAMR.set(1, 0, 0).applyQuaternion(camera.quaternion); CAMU.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  if (PXL && VIEW.bh) {   /* snap the camera to whole texels along its right / up; move the canvas by the rest */
+    const d = menu ? camera.position.length() : CAM.dist, tw = 2 * d * Math.tan(camera.fov * Math.PI / 360) / VIEW.bh, pr = camera.position.dot(CAMR), pu = camera.position.dot(CAMU);
+    const dr = Math.round(pr / tw) * tw - pr, du = Math.round(pu / tw) * tw - pu; camera.position.addScaledVector(CAMR, dr).addScaledVector(CAMU, du); camera.updateMatrixWorld();
+    const T = VIEW.w / VIEW.bw; VIEW.ox = -VIEW.m + dr / tw * T; VIEW.oy = -VIEW.m - du / tw * T; glc.style.transform = `translate(${VIEW.ox.toFixed(2)}px, ${VIEW.oy.toFixed(2)}px)`; }
   sun.position.copy(CAM.look).addScaledVector(SUNDIR, 40); sun.target.position.copy(CAM.look);
 }
-function resize() { SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR; camera.aspect = SW / SH; camera.updateProjectionMatrix(); S = clamp(Math.min(SW, SH) / 400, .75, 1.5); renderer.setPixelRatio(Math.min(DPR, TOUCH ? 1.5 : 2)); renderer.setSize(SW, SH, false); CAMF.key = ''; }
+function resize() { SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR; camera.aspect = SW / SH; camera.updateProjectionMatrix(); S = clamp(Math.min(SW, SH) / 400, .75, 1.5); if (PXL) {   /* whole device pixels per texel, a 2-texel margin round the screen for the sub-texel shift */
+    const dp = devicePixelRatio || 1, k = Math.max(1, Math.round(SH * dp / PXH)), T = k / dp, m = 2 * T, bw = Math.ceil((SW + 2 * m) / T), bh = Math.ceil((SH + 2 * m) / T);
+    renderer.setPixelRatio(1); renderer.setSize(bw, bh, false); Object.assign(glc.style, { width: bw * T + 'px', height: bh * T + 'px', imageRendering: 'pixelated', right: 'auto', bottom: 'auto' });
+    camera.aspect = bw / bh; camera.updateProjectionMatrix(); Object.assign(VIEW, { w: bw * T, h: bh * T, ox: -m, oy: -m, k, bw, bh, m }); }
+  else { renderer.setPixelRatio(Math.min(DPR, TOUCH ? 1.5 : 2)); renderer.setSize(SW, SH, false); Object.assign(VIEW, { w: SW, h: SH, ox: 0, oy: 0 }); } CAMF.key = ''; }
 addEventListener('resize', resize);
 Object.assign(sun.shadow.camera, { left: -13, right: 13, top: 11, bottom: -11 }); sun.shadow.camera.updateProjectionMatrix();
 
@@ -1255,7 +1267,7 @@ function frame() {
   requestAnimationFrame(frame); const raw = clock.getDelta(), dt = Math.min(.05, raw); RT += dt; SFXN = 0;
   if (G.state === 'fight') { let d = dt; if (G.stop > 0) { G.stop -= raw; d *= .06; } else if (G.slow > 0) { G.slow -= raw; d *= .4; } for (let i = 0; i < G.spd; i++) tick(d); }
   else if (G.state !== 'load' && G.state !== 'pause') { NOW += dt; updMen(dt); updFx(dt); updTimers(dt); updParts(dt); }
-  updCam(dt); TIMEU.value = RT; if (!NORENDER) { updPers(); fillBatches(); renderer.render(scene, camera); drawUI(dt); }
+  updCam(dt); TIMEU.value = RT; if (!NORENDER) { updPers(); fillBatches(); renderer.render(scene, camera); if (Q.get('noui') !== '1') drawUI(dt); else { ui.setTransform(DPR, 0, 0, DPR, 0, 0); ui.clearRect(0, 0, SW, SH); } }
 }
 async function boot() {
   resize(); try { await document.fonts.load('800 20px Kanit', 'ก'); } catch (_) { } try { G.spd = clamp(+localStorage.getItem('war_spd') || 1, 1, 3); G.auto = localStorage.getItem('war_auto') !== '0'; } catch (_) { }
@@ -1266,7 +1278,7 @@ async function boot() {
   G.state = Q.get('go') === 'prep' ? 'prep' : 'title'; setMusic('calm');
 }
 boot(); frame();
-window.GAME = { camInfo: () => ({ d: CAMF.d, dist: CAM.dist, look: CAMF.look.toArray(), fov: camera.fov }), tileScreen: (c, r) => toScreen(tileX(c), 0, tileZ(r)), typeOpen, genOpen, upCost, GKEYS, tickN: dt => { tick(dt); if (G.state === 'end') return 1; }, addSquad, clearSquads, G, SQ, SAVE, TYPES, GEN, BOSSES, CHAPTERS, PROJ, HIT, autoPlace, startFight, setupStage, goStage, castSkill, enemyPlan, cpMax, ensureGens, loadHeroModel, save, cleared, scene, camera,
+window.GAME = { play, camInfo: () => ({ d: CAMF.d, dist: CAM.dist, look: CAMF.look.toArray(), fov: camera.fov }), tileScreen: (c, r) => toScreen(tileX(c), 0, tileZ(r)), typeOpen, genOpen, upCost, GKEYS, tickN: dt => { tick(dt); if (G.state === 'end') return 1; }, addSquad, clearSquads, G, SQ, SAVE, TYPES, GEN, BOSSES, CHAPTERS, PROJ, HIT, autoPlace, startFight, setupStage, goStage, castSkill, enemyPlan, cpMax, ensureGens, loadHeroModel, save, cleared, scene, camera,
   info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles }), sim: (sec, dt = 1 / 30) => { let n = 0; for (let t = 0; t < sec && G.state === 'fight'; t += dt) { tick(dt); n++; } return n; } };
 </script>
 </body>
