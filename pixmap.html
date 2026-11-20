@@ -65,8 +65,17 @@ for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) { const c = id(x, z); if
   const pickd = []; for (let i = cand.length - 1; i > 0; i--) { const j = R() * (i + 1) | 0; [cand[i], cand[j]] = [cand[j], cand[i]]; }
   for (const s of cand) { if (pickd.some(p => Math.hypot(p[2] - s[2], p[3] - s[3]) < 9)) continue; pickd.push(s); STAIR[s[0]] = s[1]; K[s[0]] = 3; if (pickd.length > 14) break; } }
 const H = c => L[c] * LH;
+/* the drawn land is finer than the cells: SUB x SUB pieces a cell, each takes the level / kind of the cell at a slightly warped point, so cliff edges and
+   shores wander like a hand-drawn map; round the stairs nothing is warped (the steps need straight edges) */
+const SUB = 4, NS = N * SUB, LS = new Int8Array(NS * NS), KS = new Uint8Array(NS * NS), sid = (i, j) => j * NS + i;
+{ const nearSt = new Float32Array(N * N).fill(99);
+  for (let c = 0; c < N * N; c++) if (STAIR[c] >= 0) { const sx = c % N, sz = Math.floor(c / N); for (let z = sz - 4; z <= sz + 4; z++) for (let x = sx - 4; x <= sx + 4; x++) if (inb(x, z)) nearSt[id(x, z)] = Math.min(nearSt[id(x, z)], Math.max(Math.abs(x - sx), Math.abs(z - sz))); }
+  for (let j = 0; j < NS; j++) for (let i = 0; i < NS; i++) { const x = (i + .5) / SUB, z = (j + .5) / SUB, own = id(Math.floor(x), Math.floor(z)), w = clamp((nearSt[own] - 1.5) / 1.5, 0, 1) * .95;
+    const wx = (fbm(x / 4.5 + 31, z / 4.5 + 5, 3) - .5) * 2.2 * w, wz = (fbm(x / 4.5 + 3, z / 4.5 + 41, 3) - .5) * 2.2 * w, c = id(clamp(Math.floor(x + wx), 0, N - 1), clamp(Math.floor(z + wz), 0, N - 1)), s = sid(i, j);
+    if (STAIR[own] >= 0) { LS[s] = L[own]; KS[s] = 3; } else { LS[s] = L[c]; KS[s] = STAIR[c] >= 0 ? 0 : K[c]; } } }
+const subAt = (x, z) => sid(clamp(Math.floor(x * SUB), 0, NS - 1), clamp(Math.floor(z * SUB), 0, NS - 1)), kAt = (x, z) => KS[subAt(x, z)];
 function groundH(x, z) {   /* height under a point (stairs ramp up toward their upper cell) */
-  const cx = clamp(Math.floor(x), 0, N - 1), cz = clamp(Math.floor(z), 0, N - 1), c = id(cx, cz), base = H(c); if (STAIR[c] < 0) return base;
+  const cx = clamp(Math.floor(x), 0, N - 1), cz = clamp(Math.floor(z), 0, N - 1), c = id(cx, cz); if (STAIR[c] < 0) return LS[subAt(x, z)] * LH; const base = H(c);
   const [dx, dz] = DIRS[STAIR[c]], f = dx ? (dx > 0 ? x - cx : 1 - (x - cx)) : (dz > 0 ? z - cz : 1 - (z - cz)); return base + Math.floor(clamp(f, 0, .999) * 5) / 5 * LH + LH / 5; }
 
 /* ---------- renderer, low-res target + edge pass */
@@ -75,10 +84,10 @@ const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false }); ren
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xf3d29c); scene.fog = null;
 const camera = new THREE.OrthographicCamera(-10, 10, 6, -6, 1, 300);
 const YAW = +(Q.get('yaw') || 24) * Math.PI / 180, PITCH = +(Q.get('pitch') || 40) * Math.PI / 180, CDIR = new V3(Math.sin(YAW) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(YAW) * Math.cos(PITCH));
-scene.add(new THREE.HemisphereLight(0xfff4e6, 0xc49a7a, .62));
+scene.add(new THREE.HemisphereLight(0xfff6ec, 0xd8a890, .66));
 const sun = new THREE.DirectionalLight(0xfff2dc, .82); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 }); sun.shadow.bias = -.0008; sun.shadow.normalBias = .02; scene.add(sun, sun.target);
 const SUNDIR = new V3(-.55, 1, .35).normalize();
-const PX = { on: Q.get('px') !== '0', k: 0, T: 1, bw: 2, bh: 2, m: 0, size: +(Q.get('pxh') || 240) };
+const PX = { on: Q.get('px') !== '0', k: 0, T: 1, bw: 2, bh: 2, m: 0, size: +(Q.get('pxh') || 320) };
 let rt = null; const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const postMat = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tD: { value: null }, px: { value: new THREE.Vector2(1, 1) }, edge: { value: .004 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
@@ -86,7 +95,8 @@ const postMat = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tD: 
     void main(){ vec4 c = texture2D(tC, vUv); float d = texture2D(tD, vUv).x;
       float dl = texture2D(tD, vUv - vec2(px.x, 0.)).x, dr = texture2D(tD, vUv + vec2(px.x, 0.)).x, du = texture2D(tD, vUv + vec2(0., px.y)).x, dd = texture2D(tD, vUv - vec2(0., px.y)).x;
       float far = max(max(dl, dr), max(du, dd)) - d;   /* a neighbour much farther = this texel is the edge of something nearer */
-      vec3 col = c.rgb; if (far > edge) col *= vec3(.42, .36, .38);
+      vec3 col = c.rgb; float lum = dot(col, vec3(.3, .59, .11)); col = mix(vec3(lum), col, .78); col = mix(col, vec3(1., .93, .84), .14);   /* softer, warmer, paler like the clip */
+      if (far > edge) col *= vec3(.74, .46, .42);   /* warm red-brown outline */
       col = floor(col * 15. + .5) / 15.;   /* fewer shades */
       gl_FragColor = vec4(col, 1.); }` });
 postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
@@ -98,70 +108,81 @@ function resize() {
   renderer.setPixelRatio(1); renderer.setSize(PX.bw, PX.bh, false); glc.style.width = PX.bw * PX.T + 'px'; glc.style.height = PX.bh * PX.T + 'px';
   if (rt) rt.dispose(); rt = new THREE.WebGLRenderTarget(PX.bw, PX.bh, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter }); rt.texture.encoding = THREE.sRGBEncoding;
   rt.depthTexture = new THREE.DepthTexture(PX.bw, PX.bh); rt.depthTexture.type = THREE.UnsignedIntType; postMat.uniforms.tC.value = rt.texture; postMat.uniforms.tD.value = rt.depthTexture; postMat.uniforms.px.value.set(1 / PX.bw, 1 / PX.bh);
-  CAM.vh = 12 * (+(Q.get('zoom') || 1) > 0 ? 1 / (+(Q.get('zoom') || 1)) : 1); }
+  CAM.vh = 19 * (+(Q.get('zoom') || 1) > 0 ? 1 / (+(Q.get('zoom') || 1)) : 1); }
 const CAM = { vh: 17, look: new V3(N * .4, 0, N * .6) };
 addEventListener('resize', resize);
 
-/* ---------- the ground picture: one canvas over the whole map (16 px a cell): sand with dune lines and specks, grass, paths */
-const TPX = 16, gcv = document.createElement('canvas'); gcv.width = gcv.height = N * TPX;
+/* ---------- the ground picture: one canvas over the whole map (4 px a piece): pale sand, orange dune lines, specks, dry tufts, soft grass */
+const TPX = 16, PP = TPX / SUB, gcv = document.createElement('canvas'); gcv.width = gcv.height = N * TPX;
+const kPix = (x, y) => KS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))], lPix = (x, y) => LS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))];
 { const g = gcv.getContext('2d'), r = rng(5);
-  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) { const c = id(x, z), k = K[c], n = fbm(x / 6, z / 6);
-    g.fillStyle = k === 1 ? (L[c] === 0 ? '#8fb862' : '#9cc06a') : k === 3 ? '#d9a26a' : k === 2 ? '#3a7a8a' : (L[c] >= 2 ? (n > .5 ? '#f6dcb8' : '#f2d4ac') : n > .5 ? '#f8e2bc' : '#f3d8b0'); g.fillRect(x * TPX, z * TPX, TPX, TPX); }
-  /* soft blend of grass edges + light / dark patches */
-  for (let i = 0; i < 900; i++) { const x = r() * gcv.width, y = r() * gcv.height, rad = 6 + r() * 26, c = K[id(Math.floor(x / TPX), Math.floor(y / TPX))]; g.fillStyle = c === 1 ? (r() < .5 ? 'rgba(70,130,50,.35)' : 'rgba(160,200,90,.3)') : (r() < .5 ? 'rgba(255,240,200,.25)' : 'rgba(220,170,110,.18)'); g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill(); }
-  /* dune lines: iso-lines of a noise, thin orange-red, broken */
-  g.lineWidth = 1.6; g.strokeStyle = 'rgba(214,120,70,.75)';
-  for (let y = 0; y < gcv.height; y += 2) for (let x = 0; x < gcv.width; x += 2) { const c = id(Math.floor(x / TPX), Math.floor(y / TPX)); if (K[c] !== 0) continue; const v = fbm(x / 140 + 2, y / 140 + 9, 3) * 9, f = v - Math.floor(v);
-    if (f < .045 && vn(x / 9, y / 9) > .38) { g.fillStyle = 'rgba(214,118,72,.8)'; g.fillRect(x, y, 2, 2); } }
-  for (let i = 0; i < 2600; i++) { const x = r() * gcv.width, y = r() * gcv.height, c = K[id(Math.floor(x / TPX), Math.floor(y / TPX))]; if (c === 2) continue; g.fillStyle = c === 1 ? (r() < .5 ? '#5e9238' : '#a8d06a') : (r() < .6 ? '#d9a878' : '#fff0c8'); g.fillRect(x | 0, y | 0, 2, 2); }
-  for (let i = 0; i < 520; i++) { const x = r() * gcv.width, y = r() * gcv.height, c = K[id(Math.floor(x / TPX), Math.floor(y / TPX))]; if (c !== 0) continue; g.strokeStyle = '#9a8a4a'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 2, y - 4); g.moveTo(x, y); g.lineTo(x + 2, y - 4); g.moveTo(x, y); g.lineTo(x, y - 5); g.stroke(); }   /* dry grass tufts */
+  for (let j = 0; j < NS; j++) for (let i = 0; i < NS; i++) { const s = sid(i, j), k = KS[s], lv = LS[s], n = fbm(i / 22, j / 22);
+    g.fillStyle = k === 1 ? (lv === 0 ? (n > .5 ? '#a9cb7c' : '#9dc372') : (n > .5 ? '#b3d184' : '#a5c879')) : k === 3 ? '#e4b892' : k === 2 ? '#6aa2a8' : (lv >= 2 ? (n > .5 ? '#f8e3c8' : '#f3d9bc') : n > .5 ? '#fae8cf' : '#f5dec2'); g.fillRect(i * PP, j * PP, PP, PP); }
+  for (let i = 0; i < 1400; i++) { const x = r() * gcv.width, y = r() * gcv.height, rad = 5 + r() * 22, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? 'rgba(110,160,80,.3)' : 'rgba(190,220,140,.3)') : (r() < .5 ? 'rgba(255,248,230,.28)' : 'rgba(236,190,150,.2)'); g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill(); }
+  for (let y = 0; y < gcv.height; y += 2) for (let x = 0; x < gcv.width; x += 2) { if (kPix(x, y) !== 0) continue; const v = fbm(x / 150 + 2, y / 150 + 9, 3) * 10, f = v - Math.floor(v);   /* dune lines, broken */
+    if (f < .05 && vn(x / 10, y / 10) > .36) { g.fillStyle = 'rgba(226,128,98,.85)'; g.fillRect(x, y, 2, 2); } }
+  for (let i = 0; i < 4200; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#7aa856' : '#c8e09a') : (r() < .6 ? '#e8bea0' : '#fff8ec'); g.fillRect(x | 0, y | 0, 2, 2); }
+  for (let i = 0; i < 900; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.strokeStyle = k === 1 ? '#6f9e4c' : '#b9a46c'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 2, y - 4); g.moveTo(x, y); g.lineTo(x + 2, y - 4); g.moveTo(x, y); g.lineTo(x, y - 5); g.stroke(); }
+  /* a light rim on every top edge (the sunlit lip of a cliff), a soft shade at the foot */
+  for (let j = 1; j < NS - 1; j++) for (let i = 1; i < NS - 1; i++) { const s = sid(i, j), lv = LS[s]; if (KS[s] === 2) continue;
+    if (LS[sid(i, j + 1)] < lv || LS[sid(i + 1, j)] < lv) { g.fillStyle = 'rgba(255,246,228,.75)'; g.fillRect(i * PP, j * PP, PP, PP); }
+    if (LS[sid(i, j - 1)] > lv || LS[sid(i - 1, j)] > lv) { g.fillStyle = 'rgba(190,120,100,.22)'; g.fillRect(i * PP, j * PP, PP, PP); } }
 }
 const gtex = new THREE.CanvasTexture(gcv); gtex.encoding = THREE.sRGBEncoding; gtex.magFilter = THREE.NearestFilter; gtex.minFilter = THREE.LinearMipMapLinearFilter; gtex.anisotropy = 4;
 
-/* ---------- terrain mesh: tops (the ground picture), cliff walls in rock bands, stairs; water + waterfalls with small shaders */
-const TIMEU = { value: 0 };
+/* ---------- terrain mesh from the pieces (runs merged): tops, cliff walls in rock bands, water, waterfalls; stairs from the cells */
+const TIMEU = { value: 0 }, FOAMS = [];
 { const tp = [], tuv = [], wp = [], wc = [], col = new THREE.Color(), pushQ = (A, B, C, D, cc) => { for (const p of [A, B, C, A, C, D]) { wp.push(...p); wc.push(cc.r, cc.g, cc.b); } };
-  const BAND = ['#e9b384', '#d4956a', '#e3a77a', '#c3825c', '#dfa173'].map(h => new THREE.Color(h).convertSRGBToLinear()), LIP = new THREE.Color('#f7d6a6').convertSRGBToLinear();
-  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) { const c = id(x, z), y = H(c) - (K[c] === 2 ? .3 : 0);
-    if (STAIR[c] < 0) { for (const [a, b] of [[0, 0], [0, 1], [1, 1], [0, 0], [1, 1], [1, 0]]) { tp.push(x + a, y, z + b); tuv.push((x + a) / N, 1 - (z + b) / N); } }
-    for (let d = 0; d < 4; d++) { const [dx, dz] = DIRS[d], nx = x + dx, nz = z + dz; const ny = inb(nx, nz) ? H(id(nx, nz)) - (K[id(nx, nz)] === 2 ? .3 : 0) : -2; if (ny >= y - .01) continue;
-      if (inb(nx, nz) && STAIR[id(nx, nz)] >= 0 && DIRS[STAIR[id(nx, nz)]][0] === -dx && DIRS[STAIR[id(nx, nz)]][1] === -dz) continue;   /* the stairs climb this edge */
-      const ex = [[1, 0, 1, 1], [1, 1, 0, 1], [0, 1, 0, 0], [0, 0, 1, 0]][d], x0 = x + ex[0], z0 = z + ex[1], x1 = x + ex[2], z1 = z + ex[3];
-      const step = .27; let yy = y, bi = Math.floor(y / step);
-      while (yy > ny + 1e-3) { const y2 = Math.max(ny, Math.ceil((yy - step) / step - 1e-6) * step), lip = yy === y; col.copy(lip ? LIP : BAND[((bi % 5) + 5 + ((x * 7 + z * 3) % 2)) % 5]);
-        if (!lip) col.multiplyScalar(.94 + .12 * vn(x * 3 + d, yy * 5)); pushQ([x0, yy, z0], [x1, yy, z1], [x1, Math.max(y2, lip ? yy - .09 : y2), z1], [x0, Math.max(y2, lip ? yy - .09 : y2), z0], col);
-        if (lip && y2 < yy - .09) { col.copy(BAND[(bi + 1) % 5]); pushQ([x0, yy - .09, z0], [x1, yy - .09, z1], [x1, y2, z1], [x0, y2, z0], col); }
-        yy = y2; bi--; } } }
+  const BAND = ['#f0c6a4', '#dba284', '#e9b898', '#cc9274', '#e6b292', '#d79c7e'].map(h => new THREE.Color(h).convertSRGBToLinear()), LIP = new THREE.Color('#fbe8d0').convertSRGBToLinear();
+  const topY = s => LS[s] * LH - (KS[s] === 2 ? .3 : 0), q = 1 / SUB;
+  /* tops: runs along i */
+  for (let j = 0; j < NS; j++) { let i = 0; while (i < NS) { const s = sid(i, j); if (KS[s] === 3) { i++; continue; } const y = topY(s); let e = i + 1; while (e < NS && KS[sid(e, j)] !== 3 && topY(sid(e, j)) === y) e++;
+      const x0 = i * q, x1 = e * q, z0 = j * q, z1 = (j + 1) * q; for (const [x, z] of [[x0, z0], [x0, z1], [x1, z1], [x0, z0], [x1, z1], [x1, z0]]) { tp.push(x, y, z); tuv.push(x / N, 1 - z / N); } i = e; } }
+  /* walls: for each piece side whose neighbour is lower, bands from the top down to the neighbour; runs along the edge */
+  const wall = (x0, z0, x1, z1, y, ny, seed) => { const step = .27; let yy = y, bi = Math.floor(y / step);
+    while (yy > ny + 1e-3) { const lip = yy === y, y2 = Math.max(ny, Math.ceil((yy - step) / step - 1e-6) * step); col.copy(lip ? LIP : BAND[(((bi + seed) % 6) + 6) % 6]); if (!lip) col.multiplyScalar(.93 + .14 * vn(seed * 1.7, yy * 4));
+      const yb = lip ? Math.max(y2, yy - .08) : y2; pushQ([x0, yy, z0], [x1, yy, z1], [x1, yb, z1], [x0, yb, z0], col); if (lip && yb > y2) { col.copy(BAND[((bi + seed + 1) % 6 + 6) % 6]); pushQ([x0, yb, z0], [x1, yb, z1], [x1, y2, z1], [x0, y2, z0], col); } yy = y2; bi--; } };
+  const nbY = (i, j) => i < 0 || j < 0 || i >= NS || j >= NS ? -2 : topY(sid(i, j));
+  const stairEdge = (i, j, ni, nj) => { if (ni < 0 || nj < 0 || ni >= NS || nj >= NS) return false; const c = id(Math.floor(ni / SUB), Math.floor(nj / SUB)); if (STAIR[c] < 0) return false; const [dx, dz] = DIRS[STAIR[c]]; return Math.floor(i / SUB) - Math.floor(ni / SUB) === dx && Math.floor(j / SUB) - Math.floor(nj / SUB) === dz; };
+  for (const [di, dj] of [[0, 1], [0, -1]]) for (let j = 0; j < NS; j++) { let i = 0; while (i < NS) { const s = sid(i, j); if (KS[s] === 3) { i++; continue; } const y = topY(s), ny = nbY(i, j + dj);
+      if (ny >= y - .01 || stairEdge(i, j, i, j + dj)) { i++; continue; } let e = i + 1; while (e < NS && KS[sid(e, j)] !== 3 && topY(sid(e, j)) === y && nbY(e, j + dj) === ny && !stairEdge(e, j, e, j + dj)) e++;
+      const z = (dj > 0 ? j + 1 : j) * q; if (dj > 0) wall(i * q, z, e * q, z, y, ny, i * 7 + j); else wall(e * q, z, i * q, z, y, ny, i * 7 + j); i = e; } }
+  for (const [di, dj] of [[1, 0], [-1, 0]]) for (let i = 0; i < NS; i++) { let j = 0; while (j < NS) { const s = sid(i, j); if (KS[s] === 3) { j++; continue; } const y = topY(s), ny = nbY(i + di, j);
+      if (ny >= y - .01 || stairEdge(i, j, i + di, j)) { j++; continue; } let e = j + 1; while (e < NS && KS[sid(i, e)] !== 3 && topY(sid(i, e)) === y && nbY(i + di, e) === ny && !stairEdge(i, e, i + di, e)) e++;
+      const x = (di > 0 ? i + 1 : i) * q; if (di > 0) wall(x, e * q, x, j * q, y, ny, i + j * 5); else wall(x, j * q, x, e * q, y, ny, i + j * 5); j = e; } }
   const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.Float32BufferAttribute(tp, 3)); tg.setAttribute('uv', new THREE.Float32BufferAttribute(tuv, 2)); tg.computeVertexNormals();
   const tops = new THREE.Mesh(tg, new THREE.MeshLambertMaterial({ map: gtex })); tops.receiveShadow = true; tops.castShadow = true; scene.add(tops);
   const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(wp, 3)); wg.setAttribute('color', new THREE.Float32BufferAttribute(wc, 3)); wg.computeVertexNormals();
   const walls = new THREE.Mesh(wg, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); walls.receiveShadow = walls.castShadow = true; scene.add(walls);
-  /* stairs: five steps each */
-  const sp = [], sc = [], stc = new THREE.Color('#e8c08e').convertSRGBToLinear(), stc2 = new THREE.Color('#c9946a').convertSRGBToLinear(), box = (x0, y0, z0, x1, y1, z1) => { const P = (a, b, c) => [a, b, c];
+  /* stairs: five steps a stair cell */
+  const sp = [], sc = [], stc = new THREE.Color('#f0d2ae').convertSRGBToLinear(), stc2 = new THREE.Color('#d6a888').convertSRGBToLinear(), box = (x0, y0, z0, x1, y1, z1) => { const P = (a, b, c) => [a, b, c];
     const f = [[P(x0, y1, z0), P(x0, y1, z1), P(x1, y1, z1), P(x1, y1, z0), stc], [P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1), stc2], [P(x1, y0, z0), P(x0, y0, z0), P(x0, y1, z0), P(x1, y1, z0), stc2], [P(x1, y0, z1), P(x1, y0, z0), P(x1, y1, z0), P(x1, y1, z1), stc2], [P(x0, y0, z0), P(x0, y0, z1), P(x0, y1, z1), P(x0, y1, z0), stc2]];
     for (const [A, B, C, D, cc] of f) for (const p of [A, B, C, A, C, D]) { sp.push(...p); sc.push(cc.r, cc.g, cc.b); } };
   for (let c = 0; c < N * N; c++) { if (STAIR[c] < 0) continue; const x = c % N, z = Math.floor(c / N), y = H(c), [dx, dz] = DIRS[STAIR[c]];
     for (let s = 0; s < 5; s++) { const a = s / 5, h = y + (s + 1) * LH / 5; if (dx > 0) box(x + a, y - .02, z, x + 1, h, z + 1); else if (dx < 0) box(x, y - .02, z, x + 1 - a, h, z + 1); else if (dz > 0) box(x, y - .02, z + a, x + 1, h, z + 1); else box(x, y - .02, z, x + 1, h, z + 1 - a); } }
   const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); sg.setAttribute('color', new THREE.Float32BufferAttribute(sc, 3)); sg.computeVertexNormals();
   const stairs = new THREE.Mesh(sg, new THREE.MeshLambertMaterial({ vertexColors: true })); stairs.castShadow = stairs.receiveShadow = true; scene.add(stairs);
-  /* water: one quad per water cell at its level, a moving shader */
-  const qp = []; for (let c = 0; c < N * N; c++) { if (K[c] !== 2) continue; const x = c % N, z = Math.floor(c / N), y = H(c) - .12; for (const [a, b] of [[0, 0], [0, 1], [1, 1], [0, 0], [1, 1], [1, 0]]) qp.push(x + a, y, z + b); }
+  /* water surface (runs) + waterfall curtains on every water edge that drops a level */
+  const qp = [], fp = [];
+  for (let j = 0; j < NS; j++) { let i = 0; while (i < NS) { const s = sid(i, j); if (KS[s] !== 2) { i++; continue; } const y = LS[s] * LH - .12; let e = i + 1; while (e < NS && KS[sid(e, j)] === 2 && LS[sid(e, j)] === LS[s]) e++;
+      for (const [x, z] of [[i * q, j * q], [i * q, (j + 1) * q], [e * q, (j + 1) * q], [i * q, j * q], [e * q, (j + 1) * q], [e * q, j * q]]) qp.push(x, y, z); i = e; } }
+  for (let j = 1; j < NS - 1; j++) for (let i = 1; i < NS - 1; i++) { const s = sid(i, j); if (KS[s] !== 2) continue; const y = LS[s] * LH - .12;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const t = sid(i + di, j + dj); if (KS[t] !== 2 || LS[t] >= LS[s]) continue; const yb = LS[t] * LH - .12;
+      const ex = di ? (di > 0 ? i + 1 : i) * q : null, ez = dj ? (dj > 0 ? j + 1 : j) * q : null, A = di ? [ex, y, j * q] : [i * q, y, ez], B = di ? [ex, y, (j + 1) * q] : [(i + 1) * q, y, ez], C = [B[0], yb, B[2]], D = [A[0], yb, A[2]];
+      for (const p of [A, B, C, A, C, D]) fp.push(...p); if (Math.random() < .5) FOAMS.push([(A[0] + B[0]) / 2 + di * .15, yb + .05, (A[2] + B[2]) / 2 + dj * .15]); } }
   const qg = new THREE.BufferGeometry(); qg.setAttribute('position', new THREE.Float32BufferAttribute(qp, 3));
-  const water = new THREE.Mesh(qg, new THREE.ShaderMaterial({ uniforms: { t: TIMEU }, transparent: false,
+  const water = new THREE.Mesh(qg, new THREE.ShaderMaterial({ uniforms: { t: TIMEU },
     vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
     fragmentShader: `uniform float t; varying vec3 vW; float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
       float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1., 0.)), f.x), mix(h(i + vec2(0., 1.)), h(i + vec2(1., 1.)), f.x), f.y); }
       void main(){ vec2 p = vW.xz; float a = n(p * 1.3 + vec2(t * .35, t * .2)) * .6 + n(p * 3.1 - vec2(t * .3, -t * .4)) * .4;
-        vec3 col = mix(vec3(.10, .42, .55), vec3(.22, .66, .74), smoothstep(.35, .7, a)); col = mix(col, vec3(.85, .98, 1.), step(.76, a) * .8); gl_FragColor = vec4(col, 1.); }` }));
+        vec3 col = mix(vec3(.16, .50, .62), vec3(.32, .74, .80), smoothstep(.35, .7, a)); col = mix(col, vec3(.88, .98, 1.), step(.76, a) * .8); gl_FragColor = vec4(col, 1.); }` }));
   water.receiveShadow = true; scene.add(water);
-  /* waterfalls: a curtain on the drop edge with falling stripes, foam at the foot */
-  const fmat = new THREE.ShaderMaterial({ uniforms: { t: TIMEU }, side: THREE.DoubleSide,
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
-    fragmentShader: `uniform float t; varying vec2 vUv; float h(float x){ return fract(sin(x * 91.7) * 4375.5); }
-      void main(){ float col = floor(vUv.x * 10.), sp = .6 + h(col) * .8, s = fract(vUv.y * 2.5 + t * sp + h(col + 3.) * 5.); vec3 c = mix(vec3(.35, .78, .88), vec3(.92, 1., 1.), step(.62, s)); c = mix(c, vec3(1.), smoothstep(.15, 0., vUv.y) * .8); gl_FragColor = vec4(c, 1.); }` });
-  for (const F of FALLS) { const [ax, az] = F.a, [bx, bz] = F.b, dx = bx - ax, dz = bz - az, top = F.hi * LH - .12, bot = F.lo * LH - .12, w = 2.1;
-    const g = new THREE.PlaneGeometry(w, top - bot); const m = new THREE.Mesh(g, fmat); const ex = dx ? (dx > 0 ? ax + 1 : ax) : ax + w / 2, ez = dz ? (dz > 0 ? az + 1 : az) : az + w / 2;
-    m.position.set(dx ? ex + dx * .02 : ax + 1, (top + bot) / 2, dz ? ez + dz * .02 : az + 1); m.rotation.y = dx ? Math.PI / 2 : 0; scene.add(m); F.foam = [dx ? ex + dx * .4 : ax + 1, bot + .1, dz ? ez + dz * .4 : az + 1]; }
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3));
+  scene.add(new THREE.Mesh(fg, new THREE.ShaderMaterial({ uniforms: { t: TIMEU }, side: THREE.DoubleSide,
+    vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform float t; varying vec3 vW; float h(float x){ return fract(sin(x * 91.7) * 4375.5); }
+      void main(){ float c = floor((vW.x + vW.z) * 9.), sp = .7 + h(c) * .9, s = fract(vW.y * 1.6 + t * sp + h(c + 3.) * 5.); vec3 col = mix(vec3(.42, .80, .88), vec3(.94, 1., 1.), step(.6, s)); gl_FragColor = vec4(col, 1.); }` })));
 }
 
 /* ---------- props built in code: palms, bushes, rocks, cacti, ruins, tents, flags (one merged geometry per kind, instanced) */
@@ -173,16 +194,16 @@ function merge(list) {   /* [geometry, colour, matrix] -> one non-indexed geomet
   const o = new THREE.BufferGeometry(); o.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); o.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); o.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); return o; }
 const VCM = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
 function palm(seed) {   /* a curved ringed trunk + a crown of drooping fronds + coconuts */
-  const r = rng(seed), list = [], lean = .5 + r() * .5, n = 8, hgt = 2.8 + r() * 1.2; let px = 0, py = 0;
+  const r = rng(seed), list = [], lean = .35 + r() * .4, n = 8, hgt = 2.2 + r() * .9; let px = 0, py = 0;
   for (let i = 0; i < n; i++) { const k = i / n, x = Math.sin(k * 1.4) * lean, y = k * hgt, rad = lerp(.17, .1, k); list.push([new THREE.CylinderGeometry(rad * .92, rad, hgt / n + .02, 7), i % 2 ? '#9a6a3a' : '#7e5430', M4(x, y + hgt / n / 2, 0, 1, 0, 0, -Math.atan2(x - px, hgt / n) * .9)]); px = x; py = y; }
   const cx = Math.sin(1.4) * lean, cy = hgt;
-  for (let f = 0; f < 9; f++) { const a = f / 9 * TAU + r() * .3, len = 1.5 + r() * .5, seg = 6; let x = cx, y = cy, z = 0, pitch = .55 + r() * .2;
-    for (let s = 0; s < seg; s++) { const w = .34 * Math.sin((s + .6) / seg * Math.PI) + .05, dl = len / seg, nx = x + Math.cos(a) * Math.cos(pitch) * dl, nz = z + Math.sin(a) * Math.cos(pitch) * dl, ny = y + Math.sin(pitch) * dl;
+  for (let f = 0; f < 9; f++) { const a = f / 9 * TAU + r() * .3, len = .95 + r() * .35, seg = 6; let x = cx, y = cy, z = 0, pitch = .55 + r() * .2;
+    for (let s = 0; s < seg; s++) { const w = .2 * Math.sin((s + .6) / seg * Math.PI) + .03, dl = len / seg, nx = x + Math.cos(a) * Math.cos(pitch) * dl, nz = z + Math.sin(a) * Math.cos(pitch) * dl, ny = y + Math.sin(pitch) * dl;
       const g = new THREE.PlaneGeometry(w * 2, dl * 1.08).rotateX(-Math.PI / 2); const m = new THREE.Matrix4().compose(new V3((x + nx) / 2, (y + ny) / 2, (z + nz) / 2), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -a + Math.PI / 2, 0, 'YXZ')).multiply(new THREE.Quaternion().setFromAxisAngle(new V3(1, 0, 0), -pitch)), new V3(1, 1, 1));
-      list.push([g, s % 2 ? '#6cae4a' : '#5a9c3e', m]); x = nx; y = ny; z = nz; pitch -= .32; } }
+      list.push([g, s % 2 ? '#7cba5c' : '#68a84c', m]); x = nx; y = ny; z = nz; pitch -= .32; } }
   for (let i = 0; i < 3; i++) list.push([new THREE.SphereGeometry(.12, 6, 5), '#6a4a24', M4(cx + Math.cos(i * 2.1) * .16, cy - .12, Math.sin(i * 2.1) * .16)]);
   return merge(list); }
-function bush(seed, big) { const r = rng(seed), list = [], n = big ? 7 : 4; for (let i = 0; i < n; i++) { const s = (big ? .42 : .3) * (.7 + r() * .6); list.push([new THREE.IcosahedronGeometry(s, 0), i % 3 === 0 ? '#4f8a3c' : i % 3 === 1 ? '#66a248' : '#7cb658', M4((r() - .5) * (big ? .9 : .5), s * .8 + r() * .2, (r() - .5) * (big ? .9 : .5), 1, r() * 6, r() * 6)]); } return merge(list); }
+function bush(seed, big) { const r = rng(seed), list = [], n = big ? 7 : 4; for (let i = 0; i < n; i++) { const s = (big ? .3 : .2) * (.7 + r() * .6); list.push([new THREE.IcosahedronGeometry(s, 0), i % 3 === 0 ? '#5e9a4a' : i % 3 === 1 ? '#76b058' : '#8cc068', M4((r() - .5) * (big ? .6 : .35), s * .8 + r() * .15, (r() - .5) * (big ? .6 : .35), 1, r() * 6, r() * 6)]); } return merge(list); }
 function rock(seed) { const r = rng(seed), list = []; for (let i = 0; i < 3; i++) { const s = .22 + r() * .25; list.push([new THREE.DodecahedronGeometry(s, 0), i ? '#c89064' : '#b07a52', M4((r() - .5) * .6, s * .6, (r() - .5) * .6, 1, r() * 6, r(), r(), s * 2.6 > .5 ? .75 : 1)]); } return merge(list); }
 function cactus(seed) { const r = rng(seed), h = 1 + r() * .7, list = [[new THREE.CylinderGeometry(.14, .16, h, 7), '#5a9a44', M4(0, h / 2, 0)]];
   for (const sd of [-1, 1]) if (r() < .8) { const y = h * (.35 + r() * .3); list.push([new THREE.CylinderGeometry(.09, .09, .32, 6), '#5a9a44', M4(sd * .2, y, 0, 1, 0, 0, Math.PI / 2)], [new THREE.CylinderGeometry(.09, .09, .45, 6), '#64a84c', M4(sd * .34, y + .2, 0)]); } return merge(list); }
@@ -191,12 +212,12 @@ function ruin(seed) { const r = rng(seed), list = []; for (let i = 0; i < 4; i++
 function tent() { return merge([[new THREE.ConeGeometry(1, 1.4, 4).rotateY(Math.PI / 4), '#e8d2b0', M4(0, .7, 0)], [new THREE.ConeGeometry(1.03, .3, 4).rotateY(Math.PI / 4), '#b4562c', M4(0, .15, 0)], [new THREE.BoxGeometry(.3, .5, .05), '#4a3020', M4(0, .25, .72)]]); }
 function flag() { return merge([[new THREE.CylinderGeometry(.04, .05, 2.2, 5), '#e8e0d0', M4(0, 1.1, 0)], [new THREE.BoxGeometry(.7, .4, .03), '#e0302a', M4(.36, 1.95, 0)], [new THREE.CylinderGeometry(.18, .22, .14, 7), '#c8b49a', M4(0, .07, 0)]]); }
 const PROPS = {}; const addProp = (kind, geo, x, z, s = 1, ry = R() * TAU) => { (PROPS[kind] = PROPS[kind] || { geo, m: [] }).m.push(M4(x, groundH(x, z), z, s, ry)); };
-const freeCell = (x, z) => { const c = id(Math.floor(x), Math.floor(z)); return inb(Math.floor(x), Math.floor(z)) && K[c] !== 2 && STAIR[c] < 0 && Math.floor(groundH(x - .35, z - .35)) === Math.floor(groundH(x + .35, z + .35)); };
+const freeCell = (x, z) => { const c = id(Math.floor(x), Math.floor(z)); return inb(Math.floor(x), Math.floor(z)) && kAt(x, z) !== 2 && kAt(x - .35, z - .35) !== 2 && kAt(x + .35, z + .35) !== 2 && STAIR[c] < 0 && Math.floor(groundH(x - .35, z - .35)) === Math.floor(groundH(x + .35, z + .35)); };
 { const PG = [palm(1), palm(2), palm(3)], BG = [bush(4, true), bush(5, false), bush(6, true)], RG = [rock(7), rock(8)], CG = cactus(9), RU = ruin(10);
   const palms = []; for (let i = 0, t = 0; i < 70 && t < 6000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z) || palms.some(p => Math.hypot(p[0] - x, p[1] - z) < 2.6)) continue;
     let wn = 99; for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) if (inb(Math.floor(x) + dx, Math.floor(z) + dz) && K[id(Math.floor(x) + dx, Math.floor(z) + dz)] === 2) wn = Math.min(wn, Math.hypot(dx, dz));
     if ((K[c] === 1 && R() < .35) || (wn < 6 && R() < .15) || R() < .012) { addProp('palm' + (i % 3), PG[i % 3], x, z, .85 + R() * .4); palms.push([x, z]); i++; } }
-  for (let i = 0, t = 0; i < 190 && t < 9000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z)) continue; if (K[c] === 1 || R() < .18) { addProp('bush' + (i % 3), BG[i % 3], x, z, .8 + R() * .5); i++; } }
+  for (let i = 0, t = 0; i < 420 && t < 14000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z)) continue; if (kAt(x, z) === 1 || R() < .22) { addProp('bush' + (i % 3), BG[i % 3], x, z, .8 + R() * .5); i++; } }
   for (let i = 0, t = 0; i < 90 && t < 6000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2); if (!freeCell(x, z)) continue; addProp('rock' + (i % 2), RG[i % 2], x, z, .8 + R() * .8); i++; }
   for (let i = 0, t = 0; i < 26 && t < 4000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z) || K[c] !== 0 || L[c] < 1) continue; addProp('cactus', CG, x, z, .9 + R() * .4); i++; }
   for (let i = 0, t = 0; i < 4 && t < 4000; t++) { const x = 3 + R() * (N - 6), z = 3 + R() * (N - 6); if (![[-1.3, 0], [1.3, 0], [0, .6], [0, -.4]].every(([a, b]) => freeCell(x + a, z + b))) continue; addProp('ruin', RU, x, z, 1, R() * .3); i++; }
@@ -214,7 +235,7 @@ const ld = new THREE.GLTFLoader();
 Promise.all([ld.loadAsync('art/tribe3d/people/Ranger.glb'), ld.loadAsync('art/tribe3d/people/anims.glb'), ld.loadAsync('art/tribe3d/people/weapons.glb')]).then(([g, A, W]) => {
   const r = g.scene; r.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (o.material.metalness !== undefined) { o.material.metalness = 0; o.material.roughness = .85; } } });
   const bow = W.scene.children.find(c => c.name === 'bow_withString'); let hand = null; r.traverse(o => { if (o.name === 'handslotl' && !hand) hand = o; }); if (bow && hand) { const b = bow.clone(); b.traverse(o => { if (o.isMesh) o.castShadow = true; }); hand.add(b); }
-  const bb = new THREE.Box3().setFromObject(r); r.scale.setScalar(1.05 / (bb.max.y - bb.min.y)); scene.add(r); HERO.root = r; HERO.mixer = new THREE.AnimationMixer(r);
+  const bb = new THREE.Box3().setFromObject(r); r.scale.setScalar(1.25 / (bb.max.y - bb.min.y)); scene.add(r); HERO.root = r; HERO.mixer = new THREE.AnimationMixer(r);
   for (const c of A.animations) { for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.'); HERO.acts[c.name] = HERO.mixer.clipAction(c); } hplay('Idle'); });
 function hplay(n) { const a = HERO.acts[n]; if (!a || HERO.cur === a) return; a.reset().play(); if (HERO.cur) { HERO.cur.fadeOut(.15); a.fadeIn(.15); } HERO.cur = a; }
 const KEYS = {}; addEventListener('keydown', e => { KEYS[e.code] = true; if (e.code === 'KeyP') { PX.on = !PX.on; resize(); } if (e.code === 'Equal' || e.code === 'NumpadAdd') { PX.size = Math.max(120, PX.size - 30); resize(); } if (e.code === 'Minus' || e.code === 'NumpadSubtract') { PX.size = Math.min(420, PX.size + 30); resize(); } });
@@ -226,7 +247,7 @@ function updHero(dt) {
   if (JOY.on) { const dx = JOY.x - JOY.x0, dy = JOY.y - JOY.y0, l = Math.hypot(dx, dy); if (l > 8) { ix = dx / Math.max(l, 50); iy = dy / Math.max(l, 50); } }
   const l = Math.hypot(ix, iy); HERO.moving = l > .1; if (HERO.moving) { ix /= Math.max(1, l); iy /= Math.max(1, l);
     const fx = -Math.sin(YAW), fz = -Math.cos(YAW), rx = Math.cos(YAW), rz = -Math.sin(YAW), mx = rx * ix - fx * iy, mz = rz * ix - fz * iy, sp = 3.4 * dt;   /* screen up = away from the camera */
-    for (const [ax, az] of [[mx, mz], [mx, 0], [0, mz]]) { const nx = HERO.x + ax * sp, nz = HERO.z + az * sp; if (nx < 1 || nz < 1 || nx > N - 1 || nz > N - 1) continue; const c = id(Math.floor(nx), Math.floor(nz)); if (K[c] === 2) continue;
+    for (const [ax, az] of [[mx, mz], [mx, 0], [0, mz]]) { const nx = HERO.x + ax * sp, nz = HERO.z + az * sp; if (nx < 1 || nz < 1 || nx > N - 1 || nz > N - 1) continue; if (kAt(nx, nz) === 2) continue;
       const nh = groundH(nx, nz); if (Math.abs(nh - groundH(HERO.x, HERO.z)) > .35) continue; HERO.x = nx; HERO.z = nz; break; }
     HERO.face = Math.atan2(mx, mz); }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
@@ -255,13 +276,13 @@ const TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 
 /* ---------- glows: foam at the waterfalls, dust motes */
 const FOAM = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false }));
-{ const p = []; for (const F of FALLS) for (let i = 0; i < 40; i++) p.push(F.foam[0] + (Math.random() - .5) * 2, F.foam[1] + Math.random() * .3, F.foam[2] + (Math.random() - .5) * 1); FOAM.geometry.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); scene.add(FOAM); }
+{ const p = []; for (const F of FOAMS) for (let i = 0; i < 3; i++) p.push(F[0] + (Math.random() - .5) * .4, F[1] + Math.random() * .3, F[2] + (Math.random() - .5) * .4); FOAM.geometry.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); scene.add(FOAM); }
 
 const clock = new THREE.Clock(); let RT = 0;
 function frame() {
   requestAnimationFrame(frame); const dt = Math.min(.05, clock.getDelta()); RT += dt; TIMEU.value = RT;
   updHero(dt); updCam(dt);
-  { const P = FOAM.geometry.attributes.position; if (P) { for (let i = 0; i < P.count; i++) { let y = P.getY(i) + dt * .6; const F = FALLS[Math.floor(i / 40)]; if (y > F.foam[1] + .5) y = F.foam[1]; P.setY(i, y); } P.needsUpdate = true; } }
+  { const P = FOAM.geometry.attributes.position; if (P) { for (let i = 0; i < P.count; i++) { let y = P.getY(i) + dt * .6; const F = FOAMS[Math.floor(i / 3)]; if (y > F[1] + .45) y = F[1]; P.setY(i, y); } P.needsUpdate = true; } }
   if (PX.on) { renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.setRenderTarget(null); postMat.uniforms.edge.value = .5 / 300; renderer.render(postScene, postCam); }
   else { renderer.setRenderTarget(null); renderer.render(scene, camera); }
   drawUI();
