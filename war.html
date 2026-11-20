@@ -714,6 +714,7 @@ const pxTex = f => { const t = TL.load(f); t.magFilter = t.minFilter = THREE.Nea
 const PXT = Q.get('px') === 'sword' || Q.get('px') === 'knight' ? pxTex('art/war/sword_test.png') : null, PXK = Q.get('px') === 'knight' ? pxTex('art/war/knight_a.png') : null;
 /* pixel soldiers by kind (TEST, ?px=knight, our side): picture, its size in pixels, where the body is (0..1 across), pixels per world unit */
 const PXU = Q.get('px') !== 'knight' ? {} : { shield: { t: pxTex('art/war/shield_a.png'), w: 92, h: 82, cx: .45, ppu: 80 },
+  axe: { t: pxTex('art/war/sword_a.png'), w: 119, h: 83, cx: .45, ppu: 86 }, archer: { t: pxTex('art/war/xbow_a.png'), w: 108, h: 89, cx: .42, ppu: 87 }, cav: { t: pxTex('art/war/cav_a.png'), w: 126, h: 90, cx: .5, ppu: 84 },   /* greatsword knight in the axe slot, crossbow in the archer slot */
   spear: Q.get('spear') === 'rd' ? { t: pxTex('art/war/spear_rd.png'), w: 120, h: 79, cx: .4, ppu: 86 } : Q.get('spear') === 'pl' ? { t: pxTex('art/war/spear_pl.png'), w: 112, h: 96, cx: .47, ppu: 92 } : { t: pxTex('art/war/spear_a.png'), w: 109, h: 77, cx: .4, ppu: 80 } };   /* &spear=pl = the PixelLab spear knight (text only), &spear=rd = PixelLab's redraw of the GPT one; shield = the owner's GPT shield knight */
 function pxCard(team, key) {   /* TEST: a camera-facing pixel card; the enemy's is mirrored */
   const U = team === 0 && PXU[key]; if (U) { const t = U.t.clone(); t.needsUpdate = true; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5, fog: false })); sp.center.set(U.cx, 1 / U.h); sp.scale.set(U.w / U.ppu, U.h / U.ppu, 1); return sp; }
@@ -724,9 +725,9 @@ function makeMan(T, team) {
   const hue = T.hue ? T.hue[team] : TEAMHUE[team], mk = team + '|' + hue; if (!B.mono && !B.mat[mk]) B.mat[mk] = teamMat(B.mat.base, team, hue); const MT = B.mono ? null : B.mat[mk];
   r.traverse(o => { if (o.isMesh) { if (MT) o.material = MT; o.castShadow = true; o.frustumCulled = false; } });
   for (const [w, bn, s] of T.weap || []) { const b = findN(r, bn), src = WEAP[w]; if (!b || !src) continue; const c = src.clone(); c.traverse(o => { if (o.isMesh) { if (KKW.has(w) && MT) o.material = MT; o.castShadow = true; } }); if (s) c.scale.multiplyScalar(s); b.add(c); }
-  r.scale.setScalar(B.k * (T.sc || 1)); g.add(r); if (PXT && (T === TYPES.shield || T === TYPES.spear)) { r.visible = false; g.add(r.card = pxCard(team, T === TYPES.spear ? 'spear' : 'shield')); }
+  r.scale.setScalar(B.k * (T.sc || 1)); g.add(r); const tk = TKEYS.find(k => TYPES[k] === T); if (PXT && ((team === 0 && PXU[tk]) || ['shield', 'spear', 'axe'].includes(tk))) { r.visible = false; g.add(r.card = pxCard(team, tk)); }
   const u = { g, r, mixer: new THREE.AnimationMixer(r), acts: {}, cur: null, clips: B.clips };
-  if (T.horse && HORSE) { const h = THREE.SkeletonUtils.clone(HORSE.scene); h.scale.setScalar(HORSE.k * 1.05); if (!HORSE.along) h.rotation.y = Math.PI / 2; g.add(h); u.horse = { r: h, mixer: new THREE.AnimationMixer(h), acts: {}, cur: null, clips: HORSE.clips }; r.position.y = HORSE.h * .62; r.position.z = -.04; }
+  if (T.horse && HORSE) { const h = THREE.SkeletonUtils.clone(HORSE.scene); if (r.card) h.visible = false; h.scale.setScalar(HORSE.k * 1.05); if (!HORSE.along) h.rotation.y = Math.PI / 2; g.add(h); u.horse = { r: h, mixer: new THREE.AnimationMixer(h), acts: {}, cur: null, clips: HORSE.clips }; r.position.y = HORSE.h * .62; r.position.z = -.04; }
   scene.add(g); return u;
 }
 function play(u, name, once, ts = 1) {
