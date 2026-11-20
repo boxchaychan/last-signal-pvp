@@ -2,7 +2,7 @@
 
 The owner speaks Thai and is not a programmer: reply in Thai, short and plain.
 
-NEWEST (2026-11-20, latest of all): the DRAGON spear warrior in painted 2D: ALL moves in one go = `docs/codex/dragon/MOVES.md` ("ทำท่ามังกรทั้งหมด": 12 sheets of 16 frames, branch `codex/dragon-moves`, pictures in `art/incoming/dragon_moves/`); walk only = `docs/codex/dragon/WALK.md` ("ทำท่าเดินมังกร" = 16-frame walk sheets, side / front / back, blue background; branch `codex/dragon-walk`, pictures in `art/incoming/dragon_walk/`).
+NEWEST (2026-11-20, latest of all): the DRAGON spear warrior in painted 2D: ALL moves in one go = `docs/codex/dragon/MOVES.md` ("ทำท่ามังกรทั้งหมด": 12 sheets of 16 frames, branch `codex/dragon-moves`, pictures in `art/incoming/dragon_moves/`); then "ทำมอนทะเลทราย" (`docs/codex/dragon/MONSTERS.md`) and "ทำมังกรคลาส 2" (`docs/codex/dragon/CLASS2.md`); walk only = `docs/codex/dragon/WALK.md` ("ทำท่าเดินมังกร" = 16-frame walk sheets, side / front / back, blue background; branch `codex/dragon-walk`, pictures in `art/incoming/dragon_walk/`).
 Earlier the same day: the TIGER hero goes 3D: `docs/codex/pixmap/TIGER3D.md` ("ทำรูปเสือ 3D" = T-pose front / back / side pictures of the painted tiger, flat 2D drawings, short tail, for Tripo image-to-3D).
 Older the same day: the pixel map `pixmap.html` (3D map drawn as pixel art + a 2D pixel TIGER hero). Picture jobs: `docs/codex/pixmap/TIGER.md` ("ทำเฟรมเสือวิ่ง", "ทำเฟรมเสือยืน", "ทำเฟรมเสือฟัน"; on hold: the owner now wants the tiger in 3D, not 8-bit).
 
@@ -22,7 +22,9 @@ Who does what:
 - Keep each file under about 10 MB. When you stop, switch the folder back with `git checkout main`.
 
 ## Where the briefs are
-- `docs/codex/dragon/MOVES.md`: NEWEST, every move of the dragon spear warrior in one job (walk x3, idle, run, combo x3, skill, hurt, death; 16 frames each).
+- `docs/codex/dragon/MONSTERS.md`: NEWEST, "ทำมอนทะเลทราย" = 5 desert monsters (scorpion, wolf, mummy, cactus, golem boss) in the dragon's painted 2D style: base + walk / attack / hurt-death sheets each (branch `codex/desert-monsters`).
+- `docs/codex/dragon/CLASS2.md`: NEWEST, "ทำมังกรคลาส 2" = the dragon hero's human form: base, front / back, 8 move sheets (branch `codex/dragon-class2`).
+- `docs/codex/dragon/MOVES.md`: every move of the dragon spear warrior in one job (walk x3, idle, run, combo x3, skill, hurt, death; 16 frames each).
 - `docs/codex/dragon/WALK.md`: the dragon spear warrior's walk (16 frames x 3 directions, painted 2D).
 - `docs/codex/pixmap/TIGER3D.md`: NEWEST, T-pose front / back / side of the painted tiger (2D drawings, short curled tail) for Tripo 3D (branch `codex/tiger-3d-views`, pictures in `art/incoming/tiger_3d_views/`).
 - `docs/codex/pixmap/TIGER.md`: on hold, frames of the 8-bit tiger for the pixel map (run / idle / claw attack; branch `codex/tiger-frames`, pictures in `art/incoming/tiger_frames/`).
