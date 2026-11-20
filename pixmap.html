@@ -64,15 +64,50 @@ for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) { const c = id(x, z); if
       const [px, pz] = [-dz, dx]; if (L[id(x + px, z + pz)] === L[c] && L[id(x - px, z - pz)] === L[c] && L[id(x - dx, z - dz)] === L[c]) cand.push([c, d, x, z]); } } }
   const pickd = []; for (let i = cand.length - 1; i > 0; i--) { const j = R() * (i + 1) | 0; [cand[i], cand[j]] = [cand[j], cand[i]]; }
   for (const s of cand) { if (pickd.some(p => Math.hypot(p[2] - s[2], p[3] - s[3]) < 9)) continue; pickd.push(s); STAIR[s[0]] = s[1]; K[s[0]] = 3; if (pickd.length > 14) break; } }
+const BRIDGES = [];
+/* every part of the land must be walkable from every other (a level-grinding map): label the walkable areas (same level, or joined by stairs),
+   then join each loose area to the main one with new stairs (one level apart) or a wooden bridge over the river (K 4 = bridge, same level both banks) */
+function areas() { const A = new Int32Array(N * N).fill(-1); let n = 0; const sizes = [];
+  for (let c0 = 0; c0 < N * N; c0++) { if (A[c0] >= 0 || K[c0] === 2) continue; const st = [c0]; A[c0] = n; let sz = 0;
+    while (st.length) { const c = st.pop(); sz++; const x = c % N, z = Math.floor(c / N);
+      for (let d = 0; d < 4; d++) { const [dx, dz] = DIRS[d], nx = x + dx, nz = z + dz; if (!inb(nx, nz)) continue; const u = id(nx, nz); if (A[u] >= 0 || K[u] === 2) continue;
+        const same = L[u] === L[c], up = STAIR[c] === d && L[u] === L[c] + 1, down = STAIR[u] >= 0 && DIRS[STAIR[u]][0] === -dx && DIRS[STAIR[u]][1] === -dz && L[c] === L[u] + 1; if (same || up || down) { A[u] = n; st.push(u); } } }
+    sizes.push(sz); n++; } return { A, sizes }; }
+for (let pass = 0; pass < 40; pass++) {
+  const { A, sizes } = areas(); let main = 0; sizes.forEach((s, i) => { if (s > sizes[main]) main = i; });
+  const loose = sizes.map((s, i) => i).filter(i => i !== main && sizes[i] >= 4); if (!loose.length) break; let joined = false;
+  for (const a of loose) { let done = false;
+    for (let c = 0; c < N * N && !done; c++) { if (A[c] !== a) continue; const x = c % N, z = Math.floor(c / N);
+      for (let d = 0; d < 4 && !done; d++) { const [dx, dz] = DIRS[d], [px, pz] = [-dz, dx];
+        /* a stair from a lower cell up to a cell one level higher, in the other area */
+        for (const [lo, hi, dir] of [[c, id(x + dx, z + dz), d], [id(x + dx, z + dz), c, (d + 2) % 4]]) { if (!inb(x + dx, z + dz) || !inb(x - dx, z - dz)) continue; const lx = lo % N, lz = Math.floor(lo / N);
+          if (A[hi] < 0 || A[lo] < 0 || A[hi] === A[lo] || L[hi] !== L[lo] + 1 || K[lo] === 2 || K[hi] === 2 || STAIR[lo] >= 0) continue;
+          const [ddx, ddz] = DIRS[dir]; if (!inb(lx - ddx, lz - ddz) || L[id(lx - ddx, lz - ddz)] !== L[lo] || K[id(lx - ddx, lz - ddz)] === 2) continue;
+          STAIR[lo] = dir; K[lo] = 3; done = true; break; }
+        /* a bridge: up to 4 water cells in a straight line to a land cell of the same level in another area */
+        if (!done) for (let len = 1; len <= 4; len++) { const ex = x + dx * (len + 1), ez = z + dz * (len + 1); if (!inb(ex, ez)) break; let ok = true;
+          for (let k = 1; k <= len; k++) { const w = id(x + dx * k, z + dz * k); if (K[w] !== 2 || L[w] !== L[c]) { ok = false; break; } } if (!ok) break;
+          const e = id(ex, ez); if (K[e] !== 2 && A[e] >= 0 && A[e] !== a && L[e] === L[c]) { for (let k = 1; k <= len; k++) { K[id(x + dx * k, z + dz * k)] = 4; BRIDGES.push([x + dx * k, z + dz * k, d]); } done = true; break; } } } }
+    if (done) { joined = true; break; } }
+  if (!joined) break; }
+{ const { A, sizes } = areas(); let main = 0; sizes.forEach((v, i) => { if (v > sizes[main]) main = i; });   /* small areas nothing could reach: flatten them into the land round them */
+  for (let c = 0; c < N * N; c++) { if (A[c] < 0 || A[c] === main || sizes[A[c]] > 40) continue; const x = c % N, z = Math.floor(c / N); let best = null;
+    for (const [dx, dz] of DIRS) { const u = id(clamp(x + dx, 0, N - 1), clamp(z + dz, 0, N - 1)); if (A[u] === main) best = L[u]; } if (best !== null) L[c] = best; else L[c] = 1; } }
+/* a few bridges across the river anyway (short cuts): every ~14 river steps, straight across up to 4 water cells, both banks on the river's level */
+for (let i = 6; i < RIVER.length - 4; i += 14) { const [rx, rz] = RIVER[i], [nx, nz] = RIVER[i + 1], dx = nz - rz ? 1 : 0, dz = nx - rx ? 1 : 0;   /* across = perpendicular to the flow */
+  for (let o = -3; o <= 0; o++) { const sx = rx + dx * o, sz = rz + dz * o; if (!inb(sx, sz) || K[id(sx, sz)] === 2) continue; let len = 0; while (len < 5 && inb(sx + dx * (len + 1), sz + dz * (len + 1)) && K[id(sx + dx * (len + 1), sz + dz * (len + 1))] === 2) len++;
+    const e = id(sx + dx * (len + 1), sz + dz * (len + 1)), lv = L[id(sx, sz)]; if (len < 1 || len > 4 || !inb(sx + dx * (len + 1), sz + dz * (len + 1)) || K[e] === 2 || L[e] !== lv) continue;
+    let ok = true; for (let k = 1; k <= len; k++) if (L[id(sx + dx * k, sz + dz * k)] !== lv) ok = false; if (!ok) continue;
+    for (let k = 1; k <= len; k++) { K[id(sx + dx * k, sz + dz * k)] = 4; BRIDGES.push([sx + dx * k, sz + dz * k, dx ? 0 : 1]); } break; } }
 const H = c => L[c] * LH;
 /* the drawn land is finer than the cells: SUB x SUB pieces a cell, each takes the level / kind of the cell at a slightly warped point, so cliff edges and
    shores wander like a hand-drawn map; round the stairs nothing is warped (the steps need straight edges) */
 const SUB = 4, NS = N * SUB, LS = new Int8Array(NS * NS), KS = new Uint8Array(NS * NS), sid = (i, j) => j * NS + i;
 { const nearSt = new Float32Array(N * N).fill(99);
-  for (let c = 0; c < N * N; c++) if (STAIR[c] >= 0) { const sx = c % N, sz = Math.floor(c / N); for (let z = sz - 4; z <= sz + 4; z++) for (let x = sx - 4; x <= sx + 4; x++) if (inb(x, z)) nearSt[id(x, z)] = Math.min(nearSt[id(x, z)], Math.max(Math.abs(x - sx), Math.abs(z - sz))); }
+  for (let c = 0; c < N * N; c++) if (STAIR[c] >= 0 || K[c] === 4) { const sx = c % N, sz = Math.floor(c / N); for (let z = sz - 4; z <= sz + 4; z++) for (let x = sx - 4; x <= sx + 4; x++) if (inb(x, z)) nearSt[id(x, z)] = Math.min(nearSt[id(x, z)], Math.max(Math.abs(x - sx), Math.abs(z - sz))); }
   for (let j = 0; j < NS; j++) for (let i = 0; i < NS; i++) { const x = (i + .5) / SUB, z = (j + .5) / SUB, own = id(Math.floor(x), Math.floor(z)), w = clamp((nearSt[own] - 1.5) / 1.5, 0, 1) * .95;
     const wx = (fbm(x / 4.5 + 31, z / 4.5 + 5, 3) - .5) * 2.2 * w, wz = (fbm(x / 4.5 + 3, z / 4.5 + 41, 3) - .5) * 2.2 * w, c = id(clamp(Math.floor(x + wx), 0, N - 1), clamp(Math.floor(z + wz), 0, N - 1)), s = sid(i, j);
-    if (STAIR[own] >= 0) { LS[s] = L[own]; KS[s] = 3; } else { LS[s] = L[c]; KS[s] = STAIR[c] >= 0 ? 0 : K[c]; } } }
+    if (STAIR[own] >= 0) { LS[s] = L[own]; KS[s] = 3; } else if (K[own] === 4) { LS[s] = L[own]; KS[s] = 4; } else { LS[s] = L[c]; KS[s] = STAIR[c] >= 0 ? 0 : K[c]; } } }
 const subAt = (x, z) => sid(clamp(Math.floor(x * SUB), 0, NS - 1), clamp(Math.floor(z * SUB), 0, NS - 1)), kAt = (x, z) => KS[subAt(x, z)];
 function groundH(x, z) {   /* height under a point (stairs ramp up toward their upper cell) */
   const cx = clamp(Math.floor(x), 0, N - 1), cz = clamp(Math.floor(z), 0, N - 1), c = id(cx, cz); if (STAIR[c] < 0) return LS[subAt(x, z)] * LH; const base = H(c);
@@ -117,7 +152,7 @@ const TPX = 16, PP = TPX / SUB, gcv = document.createElement('canvas'); gcv.widt
 const kPix = (x, y) => KS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))], lPix = (x, y) => LS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))];
 { const g = gcv.getContext('2d'), r = rng(5);
   for (let j = 0; j < NS; j++) for (let i = 0; i < NS; i++) { const s = sid(i, j), k = KS[s], lv = LS[s], n = fbm(i / 22, j / 22);
-    g.fillStyle = k === 1 ? (lv === 0 ? (n > .5 ? '#a9cb7c' : '#9dc372') : (n > .5 ? '#b3d184' : '#a5c879')) : k === 3 ? '#e4b892' : k === 2 ? '#6aa2a8' : (lv >= 2 ? (n > .5 ? '#f8e3c8' : '#f3d9bc') : n > .5 ? '#fae8cf' : '#f5dec2'); g.fillRect(i * PP, j * PP, PP, PP); }
+    g.fillStyle = k === 4 ? '#6aa2a8' : k === 1 ? (lv === 0 ? (n > .5 ? '#a9cb7c' : '#9dc372') : (n > .5 ? '#b3d184' : '#a5c879')) : k === 3 ? '#e4b892' : k === 2 ? '#6aa2a8' : (lv >= 2 ? (n > .5 ? '#f8e3c8' : '#f3d9bc') : n > .5 ? '#fae8cf' : '#f5dec2'); g.fillRect(i * PP, j * PP, PP, PP); }
   for (let i = 0; i < 1400; i++) { const x = r() * gcv.width, y = r() * gcv.height, rad = 5 + r() * 22, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? 'rgba(110,160,80,.3)' : 'rgba(190,220,140,.3)') : (r() < .5 ? 'rgba(255,248,230,.28)' : 'rgba(236,190,150,.2)'); g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill(); }
   for (let y = 0; y < gcv.height; y += 2) for (let x = 0; x < gcv.width; x += 2) { if (kPix(x, y) !== 0) continue; const v = fbm(x / 150 + 2, y / 150 + 9, 3) * 10, f = v - Math.floor(v);   /* dune lines, broken */
     if (f < .05 && vn(x / 10, y / 10) > .36) { g.fillStyle = 'rgba(226,128,98,.85)'; g.fillRect(x, y, 2, 2); } }
@@ -134,7 +169,7 @@ const gtex = new THREE.CanvasTexture(gcv); gtex.encoding = THREE.sRGBEncoding; g
 const TIMEU = { value: 0 }, FOAMS = [];
 { const tp = [], tuv = [], wp = [], wc = [], col = new THREE.Color(), pushQ = (A, B, C, D, cc) => { for (const p of [A, B, C, A, C, D]) { wp.push(...p); wc.push(cc.r, cc.g, cc.b); } };
   const BAND = ['#f0c6a4', '#dba284', '#e9b898', '#cc9274', '#e6b292', '#d79c7e'].map(h => new THREE.Color(h).convertSRGBToLinear()), LIP = new THREE.Color('#fbe8d0').convertSRGBToLinear();
-  const topY = s => LS[s] * LH - (KS[s] === 2 ? .3 : 0), q = 1 / SUB;
+  const topY = s => LS[s] * LH - (KS[s] === 2 || KS[s] === 4 ? .3 : 0), q = 1 / SUB;
   /* tops: runs along i */
   for (let j = 0; j < NS; j++) { let i = 0; while (i < NS) { const s = sid(i, j); if (KS[s] === 3) { i++; continue; } const y = topY(s); let e = i + 1; while (e < NS && KS[sid(e, j)] !== 3 && topY(sid(e, j)) === y) e++;
       const x0 = i * q, x1 = e * q, z0 = j * q, z1 = (j + 1) * q; for (const [x, z] of [[x0, z0], [x0, z1], [x1, z1], [x0, z0], [x1, z1], [x1, z0]]) { tp.push(x, y, z); tuv.push(x / N, 1 - z / N); } i = e; } }
@@ -162,9 +197,14 @@ const TIMEU = { value: 0 }, FOAMS = [];
     for (let s = 0; s < 5; s++) { const a = s / 5, h = y + (s + 1) * LH / 5; if (dx > 0) box(x + a, y - .02, z, x + 1, h, z + 1); else if (dx < 0) box(x, y - .02, z, x + 1 - a, h, z + 1); else if (dz > 0) box(x, y - .02, z + a, x + 1, h, z + 1); else box(x, y - .02, z, x + 1, h, z + 1 - a); } }
   const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); sg.setAttribute('color', new THREE.Float32BufferAttribute(sc, 3)); sg.computeVertexNormals();
   const stairs = new THREE.Mesh(sg, new THREE.MeshLambertMaterial({ vertexColors: true })); stairs.castShadow = stairs.receiveShadow = true; scene.add(stairs);
+  { const bl = []; for (const [x, z, d] of BRIDGES) { const y = L[id(x, z)] * LH, along = DIRS[d][0] !== 0;   /* planks across the walking direction, two rails */
+      for (let k = 0; k < 5; k++) { const t = (k + .5) / 5; bl.push([new THREE.BoxGeometry(along ? .17 : 1, .08, along ? 1 : .17), k % 2 ? '#a8784c' : '#946640', new THREE.Matrix4().makeTranslation(along ? x + t : x + .5, y + .02, along ? z + .5 : z + t)]); }
+      for (const sd of [.08, .92]) { bl.push([new THREE.BoxGeometry(along ? 1 : .07, .07, along ? .07 : 1), '#7a5232', new THREE.Matrix4().makeTranslation(along ? x + .5 : x + sd, y + .32, along ? z + sd : z + .5)]);
+        bl.push([new THREE.BoxGeometry(.07, .34, .07), '#6a4628', new THREE.Matrix4().makeTranslation(along ? x + .5 : x + sd, y + .17, along ? z + sd : z + .5)]); } }
+    if (bl.length) { const bm = new THREE.Mesh(merge(bl), new THREE.MeshLambertMaterial({ vertexColors: true })); bm.castShadow = bm.receiveShadow = true; scene.add(bm); } }
   /* water surface (runs) + waterfall curtains on every water edge that drops a level */
   const qp = [], fp = [];
-  for (let j = 0; j < NS; j++) { let i = 0; while (i < NS) { const s = sid(i, j); if (KS[s] !== 2) { i++; continue; } const y = LS[s] * LH - .12; let e = i + 1; while (e < NS && KS[sid(e, j)] === 2 && LS[sid(e, j)] === LS[s]) e++;
+  for (let j = 0; j < NS; j++) { let i = 0; while (i < NS) { const s = sid(i, j); if (KS[s] !== 2 && KS[s] !== 4) { i++; continue; } const y = LS[s] * LH - .12; let e = i + 1; while (e < NS && (KS[sid(e, j)] === 2 || KS[sid(e, j)] === 4) && LS[sid(e, j)] === LS[s]) e++;
       for (const [x, z] of [[i * q, j * q], [i * q, (j + 1) * q], [e * q, (j + 1) * q], [i * q, j * q], [e * q, (j + 1) * q], [e * q, j * q]]) qp.push(x, y, z); i = e; } }
   for (let j = 1; j < NS - 1; j++) for (let i = 1; i < NS - 1; i++) { const s = sid(i, j); if (KS[s] !== 2) continue; const y = LS[s] * LH - .12;
     for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const t = sid(i + di, j + dj); if (KS[t] !== 2 || LS[t] >= LS[s]) continue; const yb = LS[t] * LH - .12;
@@ -211,8 +251,9 @@ function ruin(seed) { const r = rng(seed), list = []; for (let i = 0; i < 4; i++
   list.push([new THREE.BoxGeometry(2.6, .14, .7), '#bf9870', M4(0, .07, .5)]); return merge(list); }
 function tent() { return merge([[new THREE.ConeGeometry(1, 1.4, 4).rotateY(Math.PI / 4), '#e8d2b0', M4(0, .7, 0)], [new THREE.ConeGeometry(1.03, .3, 4).rotateY(Math.PI / 4), '#b4562c', M4(0, .15, 0)], [new THREE.BoxGeometry(.3, .5, .05), '#4a3020', M4(0, .25, .72)]]); }
 function flag() { return merge([[new THREE.CylinderGeometry(.04, .05, 2.2, 5), '#e8e0d0', M4(0, 1.1, 0)], [new THREE.BoxGeometry(.7, .4, .03), '#e0302a', M4(.36, 1.95, 0)], [new THREE.CylinderGeometry(.18, .22, .14, 7), '#c8b49a', M4(0, .07, 0)]]); }
-const PROPS = {}; const addProp = (kind, geo, x, z, s = 1, ry = R() * TAU) => { (PROPS[kind] = PROPS[kind] || { geo, m: [] }).m.push(M4(x, groundH(x, z), z, s, ry)); };
-const freeCell = (x, z) => { const c = id(Math.floor(x), Math.floor(z)); return inb(Math.floor(x), Math.floor(z)) && kAt(x, z) !== 2 && kAt(x - .35, z - .35) !== 2 && kAt(x + .35, z + .35) !== 2 && STAIR[c] < 0 && Math.floor(groundH(x - .35, z - .35)) === Math.floor(groundH(x + .35, z + .35)); };
+const PROPS = {}, OBST = [], OBR = { palm: .22, rock: .38, cactus: .2, ruin: 1.25, tent: .85, flag: .14 };
+const addProp = (kind, geo, x, z, s = 1, ry = R() * TAU) => { (PROPS[kind] = PROPS[kind] || { geo, m: [] }).m.push(M4(x, groundH(x, z), z, s, ry)); const r = OBR[kind.replace(/\d+$/, '')]; if (r) OBST.push([x, z, r * s]); };
+const freeCell = (x, z) => { const c = id(Math.floor(x), Math.floor(z)); return inb(Math.floor(x), Math.floor(z)) && kAt(x, z) < 2 && kAt(x - .35, z - .35) < 2 && kAt(x + .35, z + .35) < 2 && kAt(x, z) !== 3 && STAIR[c] < 0 && Math.floor(groundH(x - .35, z - .35)) === Math.floor(groundH(x + .35, z + .35)); };
 { const PG = [palm(1), palm(2), palm(3)], BG = [bush(4, true), bush(5, false), bush(6, true)], RG = [rock(7), rock(8)], CG = cactus(9), RU = ruin(10);
   const palms = []; for (let i = 0, t = 0; i < 70 && t < 6000; t++) { const x = 1 + R() * (N - 2), z = 1 + R() * (N - 2), c = id(Math.floor(x), Math.floor(z)); if (!freeCell(x, z) || palms.some(p => Math.hypot(p[0] - x, p[1] - z) < 2.6)) continue;
     let wn = 99; for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) if (inb(Math.floor(x) + dx, Math.floor(z) + dz) && K[id(Math.floor(x) + dx, Math.floor(z) + dz)] === 2) wn = Math.min(wn, Math.hypot(dx, dz));
@@ -250,6 +291,7 @@ function updHero(dt) {
     for (const [ax, az] of [[mx, mz], [mx, 0], [0, mz]]) { const nx = HERO.x + ax * sp, nz = HERO.z + az * sp; if (nx < 1 || nz < 1 || nx > N - 1 || nz > N - 1) continue; if (kAt(nx, nz) === 2) continue;
       const nh = groundH(nx, nz); if (Math.abs(nh - groundH(HERO.x, HERO.z)) > .35) continue; HERO.x = nx; HERO.z = nz; break; }
     HERO.face = Math.atan2(mx, mz); }
+  for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (kAt(nx, nz) !== 2 && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
   if (HERO.root) { HERO.root.position.set(HERO.x, HERO.y, HERO.z); HERO.root.rotation.y = HERO.face; hplay(HERO.moving ? 'Running_A' : 'Idle'); HERO.mixer.update(dt); }
 }
@@ -288,7 +330,7 @@ function frame() {
   drawUI();
 }
 resize(); frame();
-window.MAP = { N, L, K, STAIR, FALLS, RIVER, HERO, PX, CAM, scene, camera, renderer };
+window.MAP = { areas, BRIDGES, OBST, kAt, groundH, N, L, K, STAIR, FALLS, RIVER, HERO, PX, CAM, scene, camera, renderer };
 </script>
 </body>
 </html>
