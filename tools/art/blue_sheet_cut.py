@@ -20,13 +20,21 @@ Rn = int(sys.argv[4]) if len(sys.argv) > 4 else 4
 FH = int(sys.argv[5]) if len(sys.argv) > 5 else 0
 a = np.array(Image.open(src).convert('RGB')).astype(float); H, W = a.shape[:2]; cw, ch = W / C, H / Rn
 r, g, b = a[..., 0], a[..., 1], a[..., 2]
-blueness = np.clip(((b - np.maximum(r, g)) - 40) / 80, 0, 1)          # 1 = background blue, 0 = figure
+WHITE = a[:8, :8].min() > 225                                         # a sheet on white (Meta / ChatGPT often ignore the blue)
+if WHITE:   # background = near-white flooded from every cell border (white fur inside the outline stays)
+    near = (a.min(2) > 226) & (a.max(2) - a.min(2) < 26); blueness = np.zeros(a.shape[:2])
+    for i in range(C * Rn):
+        x0, y0 = int(round((i % C) * W / C)), int(round((i // C) * H / Rn)); x1, y1 = int(round((i % C + 1) * W / C)), int(round((i // C + 1) * H / Rn))
+        lb, n = nd.label(near[y0:y1, x0:x1]); e = set(np.unique(np.r_[lb[0], lb[-1], lb[:, 0], lb[:, -1]])) - {0}
+        blueness[y0:y1, x0:x1] = nd.gaussian_filter(np.isin(lb, list(e)).astype(float), .6)
+else:
+    blueness = np.clip(((b - np.maximum(r, g)) - 40) / 80, 0, 1)      # 1 = background blue, 0 = figure
 cells, lines = [], []
 for i in range(C * Rn):
     x0, y0 = int(round((i % C) * cw)), int(round((i // C) * ch)); x1, y1 = int(round((i % C + 1) * cw)), int(round((i // C + 1) * ch))
     c = a[y0:y1, x0:x1]; bl = blueness[y0:y1, x0:x1]; h, w = bl.shape
     fig = bl < .5
-    dark = c.max(2) < 80; lo = int(h * .75); cnt = dark[lo:].sum(1); ly = lo + int(np.argmax(cnt)) if cnt.max() > w * .3 else None
+    dark = c.max(2) < 80; lo = int(h * .75); cnt = dark[lo:].sum(1); ly = lo + int(np.argmax(cnt)) if cnt.max() > w * .3 and not WHITE else None
     if ly is not None:
         for y in range(ly - 3, min(h, ly + 4)):
             above = fig[max(0, y - 10):max(0, y - 4)].any(0); fig[y] &= above
@@ -34,9 +42,10 @@ for i in range(C * Rn):
     if fn:
         sz = nd.sum(fig, fl, range(1, fn + 1)); fig = np.isin(fl, np.where(sz > max(60, sz.max() * .004))[0] + 1)
     alpha = np.clip(1 - bl, 0, 1) * nd.binary_dilation(fig, iterations=1)
-    rgb = c.copy(); spill = np.clip(rgb[..., 2] - np.maximum(rgb[..., 0], rgb[..., 1]), 0, None) * (1 - alpha)   # take the blue out of soft edge pixels
-    rgb[..., 2] -= spill
-    cells.append(np.dstack([np.clip(rgb, 0, 255), alpha * 255]).astype(np.uint8)); lines.append(ly if ly is not None else h - 1)
+    rgb = c.copy()
+    if not WHITE: spill = np.clip(rgb[..., 2] - np.maximum(rgb[..., 0], rgb[..., 1]), 0, None) * (1 - alpha); rgb[..., 2] -= spill   # take the blue out of soft edge pixels
+    if ly is None: ys = np.where((alpha > .5).any(1))[0]; ly = int(ys.max()) if len(ys) else h - 1   # no ground line: the lowest pixel of the figure
+    cells.append(np.dstack([np.clip(rgb, 0, 255), alpha * 255]).astype(np.uint8)); lines.append(ly)
 hs, ws = min(c.shape[0] for c in cells), min(c.shape[1] for c in cells)
 cells = [c[:hs, :ws] for c in cells]
 foot = int(np.median(lines))
