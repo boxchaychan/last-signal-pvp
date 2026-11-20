@@ -277,8 +277,9 @@ const HERO = { x: N * .27 + 3, z: N * .66 + 6.5, y: 0, face: 0, mixer: null, act
 { let best = null, bd = 1e9; for (let z = 2; z < N - 2; z++) for (let x = 2; x < N - 2; x++) { const c = id(x, z); if (K[c] !== 0 || STAIR[c] >= 0) continue; let open = true; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (K[id(x + dx, z + dz)] !== 0 || L[id(x + dx, z + dz)] !== L[c]) open = false;
     const d = Math.hypot(x - (N * .27 + 9), z - (N * .66 + 1)); if (open && d < bd) { bd = d; best = [x + .5, z + .5]; } }
   if (best) [HERO.x, HERO.z] = best; HERO.y = groundH(HERO.x, HERO.z); CAM.look.set(HERO.x, HERO.y, HERO.z); }
-const TIGER = Q.get('hero') !== 'ranger' ? (() => { const t = new THREE.TextureLoader().load('art/pixmap/tiger.png'); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5 })); sp.center.set(.5, 2 / 64); scene.add(sp);
+const TF = Q.get('tiger') === 'stand' ? ['art/pixmap/tiger_stand.png', 52, 66] : ['art/pixmap/tiger.png', 64, 64];   /* ?tiger=stand = the standing test (52 x 66, muddy: owner "ดูไม่รู้เรื่อง") */
+const TIGER = Q.get('hero') !== 'ranger' ? (() => { const t = new THREE.TextureLoader().load(TF[0]); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5 })); sp.center.set(.5, 1 / TF[2]); scene.add(sp);
   const sh = new THREE.Mesh(new THREE.CircleGeometry(.42, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8a5a48, transparent: true, opacity: .35, depthWrite: false })); sh.scale.set(1, 1, .55); scene.add(sh); return { sp, sh, t, flip: 1 }; })() : null;
 for (const o of scene.children) if (o.isMesh || o.isPoints) o.scale.setScalar(WS);   /* the whole built map, scaled round the origin */
 Object.assign(sun.shadow.camera, { left: -26 * WS, right: 26 * WS, top: 26 * WS, bottom: -26 * WS, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
@@ -304,7 +305,7 @@ function updHero(dt) {
   for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (kAt(nx, nz) !== 2 && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
   if (TIGER) { const T = TIGER, tw = CAM.vh / PX.bh, sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; T.t.repeat.x = T.flip; T.t.offset.x = T.flip > 0 ? 0 : 1;
-    const bob = HERO.moving ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(64 * tw, 64 * tw, 1); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
+    const bob = HERO.moving ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(TF[1] * tw, TF[2] * tw, 1); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
     const p = new V3(HERO.x * WS, HERO.y * WS + bob, HERO.z * WS); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
     const pr = p.dot(R0), pu = p.dot(U0); p.addScaledVector(R0, Math.round(pr / tw) * tw - pr).addScaledVector(U0, Math.round(pu / tw) * tw - pu); T.sp.position.copy(p); }
   if (HERO.root) { HERO.root.position.set(HERO.x * WS, HERO.y * WS, HERO.z * WS); HERO.root.rotation.y = HERO.face; hplay(HERO.moving ? 'Running_A' : 'Idle'); HERO.mixer.update(dt); }
