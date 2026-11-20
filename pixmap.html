@@ -36,13 +36,17 @@ const N = 72, LH = 1.35, L = new Int8Array(N * N), K = new Uint8Array(N * N), ST
 const id = (x, z) => z * N + x, inb = (x, z) => x >= 0 && z >= 0 && x < N && z < N;
 const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
-  let n = fbm(x / 15 + 3.1, z / 15 + 7.7), lv = n > .61 ? 2 : n < .36 ? 0 : 1;
-  const back = (N * .3 - z) / (N * .3); if (back > 0) lv = Math.max(lv, n + back * .35 > .55 ? 2 : 1);   /* a high plateau along the back */
-  if (fbm(x / 9 + 11, z / 9 + 2) > .66 && lv >= 2) lv = 3;
+  let n = fbm(x / 24 + 3.1, z / 24 + 7.7, 3), lv = n > .66 ? 2 : 1;   /* broad, few rises: open ground to walk */
+  const back = (N * .2 - z) / (N * .2); if (back > 0) lv = Math.max(lv, n + back * .3 > .6 ? 2 : 1);   /* a plateau along the back */
+  if (fbm(x / 12 + 11, z / 12 + 2, 3) > .7 && lv >= 2) lv = 3;
   const ox = x - N * .27, oz = z - N * .66; if (ox * ox + oz * oz < 95) lv = 0;   /* the oasis basin */
   if (x < 2 || z < 2 || x > N - 3 || z > N - 3) lv = Math.max(lv, 1);
   L[id(x, z)] = lv;
 }
+for (let pass = 0; pass < 3; pass++) { const seen = new Uint8Array(N * N);   /* no small rises / pits: a patch of one level under 30 cells takes the level round it */
+  for (let c0 = 0; c0 < N * N; c0++) { if (seen[c0]) continue; const lv = L[c0], st = [c0], cells = []; seen[c0] = 1; const round = {};
+    while (st.length) { const c = st.pop(); cells.push(c); const x = c % N, z = Math.floor(c / N); for (const [dx, dz] of DIRS) { const nx = x + dx, nz = z + dz; if (!inb(nx, nz)) continue; const u = id(nx, nz); if (L[u] !== lv) { round[L[u]] = (round[L[u]] || 0) + 1; continue; } if (!seen[u]) { seen[u] = 1; st.push(u); } } }
+    if (cells.length < 30) { const to = Object.keys(round).sort((a, b) => round[b] - round[a])[0]; if (to !== undefined) for (const c of cells) L[c] = +to; } } }
 for (let it = 0; it < 3; it++) for (let z = 1; z < N - 1; z++) for (let x = 1; x < N - 1; x++) {   /* no single-cell spikes / holes */
   const c = L[id(x, z)], nb = DIRS.map(([dx, dz]) => L[id(x + dx, z + dz)]), same = nb.filter(v => v === c).length;
   if (same <= 1) { const cnt = {}; nb.forEach(v => cnt[v] = (cnt[v] || 0) + 1); L[id(x, z)] = +Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0]; } }
@@ -148,14 +152,14 @@ const CAM = { vh: 17, look: new V3(N * .4, 0, N * .6) };
 addEventListener('resize', resize);
 
 /* ---------- the ground picture: one canvas over the whole map (4 px a piece): pale sand, orange dune lines, specks, dry tufts, soft grass */
-const TPX = 32, PP = TPX / SUB, GF = TPX / 16, gcv = document.createElement('canvas'); gcv.width = gcv.height = N * TPX;
+const WS = +(Q.get('ws') || 1.5), TPX = Math.round(32 * WS), PP = TPX / SUB, GF = TPX / 16, gcv = document.createElement('canvas'); gcv.width = gcv.height = N * TPX;
 const kPix = (x, y) => KS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))], lPix = (x, y) => LS[sid(clamp(Math.floor(x / PP), 0, NS - 1), clamp(Math.floor(y / PP), 0, NS - 1))];
 { const g = gcv.getContext('2d'), r = rng(5);
   for (let j = 0; j < NS; j++) for (let i = 0; i < NS; i++) { const s = sid(i, j), k = KS[s], lv = LS[s], n = fbm(i / 22, j / 22);
     g.fillStyle = k === 4 ? '#6aa2a8' : k === 1 ? (lv === 0 ? (n > .5 ? '#a9cb7c' : '#9dc372') : (n > .5 ? '#b3d184' : '#a5c879')) : k === 3 ? '#e4b892' : k === 2 ? '#6aa2a8' : (lv >= 2 ? (n > .5 ? '#f8e3c8' : '#f3d9bc') : n > .5 ? '#fae8cf' : '#f5dec2'); g.fillRect(i * PP, j * PP, PP, PP); }
   for (let i = 0; i < 2800; i++) { const cx = r() * gcv.width, cy = r() * gcv.height, rad = (4 + r() * 14) * GF, k = kPix(cx, cy); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#8fb862' : '#b6d68a') : (r() < .5 ? '#fbeedb' : '#efd2b4');   /* flat patches with a checker-dither rim */
     for (let y = -rad; y <= rad; y += 2) for (let x = -rad; x <= rad; x += 2) { const d = Math.hypot(x, y) / rad + (vn((cx + x) / 6, (cy + y) / 6) - .5) * .5; if (d > 1 || (d > .75 && ((x + y) / 2 & 1))) continue; if (kPix(cx + x, cy + y) !== k) continue; g.fillRect((cx + x) & ~1, (cy + y) & ~1, 2, 2); } }
-  for (let y = 0; y < gcv.height; y += 2) for (let x = 0; x < gcv.width; x += 2) { if (kPix(x, y) !== 0) continue; const v = fbm(x / (150 * GF) + 2, y / (150 * GF) + 9, 3) * 10, f = v - Math.floor(v);   /* dune lines, broken */
+  for (let y = 0; y < gcv.height; y += 2) for (let x = 0; x < gcv.width; x += 2) { if (kPix(x, y) !== 0) continue; const v = fbm(x / (150 * GF) + 2, y / (150 * GF) + 9, 2) * 10, f = v - Math.floor(v);   /* dune lines, broken */
     if (f < .025 && vn(x / (10 * GF), y / (10 * GF)) > .36) { g.fillStyle = 'rgba(226,128,98,.85)'; g.fillRect(x, y, 2, 2); } }
   for (let i = 0; i < 16800; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.fillStyle = k === 1 ? (r() < .5 ? '#7aa856' : '#c8e09a') : (r() < .6 ? '#e8bea0' : '#fff8ec'); g.fillRect(x | 0, y | 0, 2, 2); }
   for (let i = 0; i < 3600; i++) { const x = r() * gcv.width, y = r() * gcv.height, k = kPix(x, y); if (k === 2) continue; g.strokeStyle = k === 1 ? '#6f9e4c' : '#b9a46c'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 2, y - 4); g.moveTo(x, y); g.lineTo(x + 2, y - 4); g.moveTo(x, y); g.lineTo(x, y - 5); g.stroke(); }
@@ -276,6 +280,8 @@ const HERO = { x: N * .27 + 3, z: N * .66 + 6.5, y: 0, face: 0, mixer: null, act
 const TIGER = Q.get('hero') !== 'ranger' ? (() => { const t = new THREE.TextureLoader().load('art/pixmap/tiger.png'); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5 })); sp.center.set(.5, 2 / 64); scene.add(sp);
   const sh = new THREE.Mesh(new THREE.CircleGeometry(.42, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8a5a48, transparent: true, opacity: .35, depthWrite: false })); sh.scale.set(1, 1, .55); scene.add(sh); return { sp, sh, t, flip: 1 }; })() : null;
+for (const o of scene.children) if (o.isMesh || o.isPoints) o.scale.setScalar(WS);   /* the whole built map, scaled round the origin */
+Object.assign(sun.shadow.camera, { left: -26 * WS, right: 26 * WS, top: 26 * WS, bottom: -26 * WS, far: 160 }); sun.shadow.camera.updateProjectionMatrix();
 const ld = new THREE.GLTFLoader();
 if (!TIGER) Promise.all([ld.loadAsync('art/tribe3d/people/Ranger.glb'), ld.loadAsync('art/tribe3d/people/anims.glb'), ld.loadAsync('art/tribe3d/people/weapons.glb')]).then(([g, A, W]) => {
   const r = g.scene; r.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (o.material.metalness !== undefined) { o.material.metalness = 0; o.material.roughness = .85; } } });
@@ -291,23 +297,23 @@ function updHero(dt) {
   let ix = (KEYS.KeyD || KEYS.ArrowRight ? 1 : 0) - (KEYS.KeyA || KEYS.ArrowLeft ? 1 : 0), iy = (KEYS.KeyS || KEYS.ArrowDown ? 1 : 0) - (KEYS.KeyW || KEYS.ArrowUp ? 1 : 0);
   if (JOY.on) { const dx = JOY.x - JOY.x0, dy = JOY.y - JOY.y0, l = Math.hypot(dx, dy); if (l > 8) { ix = dx / Math.max(l, 50); iy = dy / Math.max(l, 50); } }
   const l = Math.hypot(ix, iy); HERO.moving = l > .1; if (HERO.moving) { ix /= Math.max(1, l); iy /= Math.max(1, l);
-    const fx = -Math.sin(YAW), fz = -Math.cos(YAW), rx = Math.cos(YAW), rz = -Math.sin(YAW), mx = rx * ix - fx * iy, mz = rz * ix - fz * iy, sp = 3.4 * dt;   /* screen up = away from the camera */
+    const fx = -Math.sin(YAW), fz = -Math.cos(YAW), rx = Math.cos(YAW), rz = -Math.sin(YAW), mx = rx * ix - fx * iy, mz = rz * ix - fz * iy, sp = 2.5 * dt;   /* screen up = away from the camera */
     for (const [ax, az] of [[mx, mz], [mx, 0], [0, mz]]) { const nx = HERO.x + ax * sp, nz = HERO.z + az * sp; if (nx < 1 || nz < 1 || nx > N - 1 || nz > N - 1) continue; if (kAt(nx, nz) === 2) continue;
       const nh = groundH(nx, nz); if (Math.abs(nh - groundH(HERO.x, HERO.z)) > .35) continue; HERO.x = nx; HERO.z = nz; break; }
     HERO.face = Math.atan2(mx, mz); }
   for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (kAt(nx, nz) !== 2 && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
   if (TIGER) { const T = TIGER, tw = CAM.vh / PX.bh, sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; T.t.repeat.x = T.flip; T.t.offset.x = T.flip > 0 ? 0 : 1;
-    const bob = HERO.moving ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(64 * tw, 64 * tw, 1); T.sh.position.set(HERO.x, HERO.y + .03, HERO.z);
-    const p = new V3(HERO.x, HERO.y + bob, HERO.z); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
+    const bob = HERO.moving ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(64 * tw, 64 * tw, 1); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
+    const p = new V3(HERO.x * WS, HERO.y * WS + bob, HERO.z * WS); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
     const pr = p.dot(R0), pu = p.dot(U0); p.addScaledVector(R0, Math.round(pr / tw) * tw - pr).addScaledVector(U0, Math.round(pu / tw) * tw - pu); T.sp.position.copy(p); }
-  if (HERO.root) { HERO.root.position.set(HERO.x, HERO.y, HERO.z); HERO.root.rotation.y = HERO.face; hplay(HERO.moving ? 'Running_A' : 'Idle'); HERO.mixer.update(dt); }
+  if (HERO.root) { HERO.root.position.set(HERO.x * WS, HERO.y * WS, HERO.z * WS); HERO.root.rotation.y = HERO.face; hplay(HERO.moving ? 'Running_A' : 'Idle'); HERO.mixer.update(dt); }
 }
 
 /* ---------- camera: orthographic at a fixed angle, follows the walker, snapped to whole texels; the canvas moves by the rest */
 const _r = new V3(), _u = new V3();
 function updCam(dt) {
-  const T = new V3(clamp(HERO.x, 9, N - 9), HERO.y + .5, clamp(HERO.z, 7, N - 5)); CAM.look.lerp(T, 1 - Math.exp(-dt * 5));
+  const T = new V3(clamp(HERO.x, 7, N - 7) * WS, HERO.y * WS + .5, clamp(HERO.z, 5, N - 4) * WS); CAM.look.lerp(T, 1 - Math.exp(-dt * 5));
   const vh = CAM.vh, vw = vh * PX.bw / PX.bh; camera.left = -vw / 2; camera.right = vw / 2; camera.top = vh / 2; camera.bottom = -vh / 2; camera.updateProjectionMatrix();
   camera.position.copy(CAM.look).addScaledVector(CDIR, 120); camera.lookAt(CAM.look); camera.updateMatrixWorld();
   _r.set(1, 0, 0).applyQuaternion(camera.quaternion); _u.set(0, 1, 0).applyQuaternion(camera.quaternion);
@@ -327,7 +333,7 @@ const TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 
 /* ---------- glows: foam at the waterfalls, dust motes */
 const FOAM = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false }));
-{ const p = []; for (const F of FOAMS) for (let i = 0; i < 3; i++) p.push(F[0] + (Math.random() - .5) * .4, F[1] + Math.random() * .3, F[2] + (Math.random() - .5) * .4); FOAM.geometry.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); scene.add(FOAM); }
+{ const p = []; for (const F of FOAMS) for (let i = 0; i < 3; i++) p.push(F[0] + (Math.random() - .5) * .4, F[1] + Math.random() * .3, F[2] + (Math.random() - .5) * .4); FOAM.geometry.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); FOAM.scale.setScalar(WS); scene.add(FOAM); }
 
 const clock = new THREE.Clock(); let RT = 0;
 function frame() {
