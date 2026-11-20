@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- glb_view.html?f=<glb path>[&f2=<second glb, drawn as a second row>][&g=1]: one GLB from the side / front / back / top with a 0.05 grid (x / y / z read-out), for checking a model before editing it -->
+<html><head><meta charset="utf-8"><title>glb view</title><style>body{margin:0;background:#222;color:#fff;font:12px sans-serif}</style></head><body>
+<canvas id="c"></canvas>
+<script src="../../vendor/threejs/three.min.js"></script><script src="../../vendor/threejs/GLTFLoader.js"></script>
+<script>
+const Q = new URLSearchParams(location.search), T = +(Q.get('t') || 360), G = Q.get('g') === '1';
+const ALLV = [['side +x', [1, 0, 0]], ['side -x', [-1, 0, 0]], ['front +z', [0, 0, 1]], ['top', [0, 1, 0]], ['3/4', [.8, .35, .5]], ['3/4 back', [.6, .35, -.7]]];
+const VIEWS = (Q.get('v') || '0123').split('').map(i => ALLV[+i]);   /* ?v=045 = side, 3/4, 3/4 back */
+const FILES = [Q.get('f'), Q.get('f2')].filter(Boolean), cv = document.getElementById('c'); cv.width = T * VIEWS.length; cv.height = (T + 20) * FILES.length;
+FILES.forEach((f, row) => new THREE.GLTFLoader().load(f, gl => {
+  const x = cv.getContext('2d'); x.save(); x.translate(0, row * (T + 20));
+  const R = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); R.setSize(T, T); R.outputEncoding = THREE.sRGBEncoding;
+  const sc = new THREE.Scene(); sc.background = new THREE.Color(0x3a3a3a); sc.add(new THREE.HemisphereLight(0xffffff, 0x555555, 1.2)); const d = new THREE.DirectionalLight(0xffffff, .7); d.position.set(2, 3, 2); sc.add(d); sc.add(gl.scene);
+  const bb = new THREE.Box3().setFromObject(gl.scene), c = bb.getCenter(new THREE.Vector3()), s = Math.max(...bb.getSize(new THREE.Vector3()).toArray()) * .56;
+  window.BOX = { min: bb.min.toArray(), max: bb.max.toArray() };
+  VIEWS.forEach(([lab, v], i) => { const cam = new THREE.OrthographicCamera(-s, s, s, -s, .01, 100); cam.position.copy(c).addScaledVector(new THREE.Vector3(...v), 10); if (v[1] && !v[0] && !v[2]) cam.up.set(0, 0, -1); cam.lookAt(c); R.render(sc, cam); x.drawImage(R.domElement, i * T, 20);
+    if (G) { const k = T / (2 * s); x.font = '10px sans-serif';
+      const ax = v[0] ? [2, 1] : v[2] ? [0, 1] : [0, 2], sg = v[0] > 0 ? [-1, 1] : v[0] < 0 ? [1, 1] : v[2] ? [1, 1] : [1, 1];   /* screen right / up axes */
+      const cs = c.toArray(); for (let a = 0; a < 2; a++) { const h0 = cs[ax[a]]; for (let g = Math.ceil((h0 - s) / .05) * .05; g < h0 + s; g += .05) { const p = (g - h0) * k * sg[a];
+        x.strokeStyle = a ? 'rgba(255,255,0,.25)' : 'rgba(0,255,255,.25)'; x.beginPath(); if (a) { const yy = 20 + T / 2 - p * (v[1] ? -1 : 1); x.moveTo(i * T, yy); x.lineTo(i * T + T, yy); x.stroke(); x.fillStyle = '#ff0'; x.fillText(g.toFixed(2), i * T + 2, yy - 1); }
+        else { const xx = i * T + T / 2 + p; x.moveTo(xx, 20); x.lineTo(xx, 20 + T); x.stroke(); x.fillStyle = '#0ff'; x.fillText(g.toFixed(2), xx + 1, T + 16); } } } }
+    x.fillStyle = '#fff'; x.font = '13px sans-serif'; x.fillText(lab, i * T + 4, 14); });
+  x.restore(); if (row === FILES.length - 1) document.title = 'ready';
+}));
+</script></body></html>
