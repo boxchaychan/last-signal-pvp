@@ -502,7 +502,7 @@ const ld = new THREE.GLTFLoader();
 /* ---------- the 3D huntress (owner 2026-11-21 "เอาตัวธนูที่ 3D"): the owner's Tripo model from grind3d (art/grind3d/huntress.glb, split into body / bow / string,
    rigged by tools/blender/tripo_parts_rig.py), re-bound here onto the KayKit skeleton (rigTripo, same as grind3d) so the free KayKit bow moves play
    (art/grind3d/hero_anims.glb). The Tripo string is hidden and redrawn as 2 rods to a nock that follows her right hand while she draws. ?hero=archer2d = the painted card */
-const H3 = A3 ? { ready: false, acts: {}, cur: null, spin: 0 } : null;
+const H3 = A3 ? { ready: false, acts: {}, cur: null, spin: 0 } : null, RUN_TS = +(Q.get('runts') || .96);   /* Run_Bow's feet cover 3.92 units/s at 3.2 tall, she moves 3.75 */
 function rigTripo(gl, kscene, clips) {
   let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
   const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
@@ -526,10 +526,13 @@ function rigTripo(gl, kscene, clips) {
   return { root: r, h: bb.max.y - bb.min.y, meshes, bone, clips: mine }; }
 const PULL = { Ranged_Bow_Draw: [.2, .4, 9, 9], Ranged_Bow_Draw_Up: [.2, .4, 9, 9], Ranged_Bow_Aiming_Idle: [-1, 0, 9, 9], Ranged_Bow_Release: [-1, 0, .2, .27], Ranged_Bow_Release_Up: [-1, 0, .2, .27] };   /* [pull starts, full, lets go, straight] as clip fractions */
 const pullAt = (name, f) => { const p = PULL[name]; if (!p) return 0; let v = p[0] < 0 ? 1 : clamp((f - p[0]) / (p[1] - p[0]), 0, 1); if (f >= p[2]) v *= 1 - clamp((f - p[2]) / (p[3] - p[2]), 0, 1); return v; };
-if (A3) Promise.all([ld.loadAsync('art/tribe3d/people/Knight.glb'), ld.loadAsync('art/grind3d/huntress.glb'), ld.loadAsync('art/grind3d/hero_anims.glb')]).then(([KN, HU, AN]) => {
+if (A3) Promise.all([ld.loadAsync('art/tribe3d/people/Knight.glb'), ld.loadAsync('art/grind3d/huntress.glb'), ld.loadAsync('art/grind3d/hero_anims.glb')]).then(async ([KN, HU, AN]) => {
   for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');
+  try { const UJ = await fetch('art/grind3d/ual_anims.json').then(r => r.json()); for (const c of UJ.clips) AN.animations.push(THREE.AnimationClip.parse(c)); } catch (e) { console.warn('ual', e.message); }   /* + Quaternius UAL moves (CC0) already retargeted onto the KayKit skeleton for grind3d: nicer runs */
   const T = rigTripo(HU, KN.scene, AN.animations); Object.assign(H3, T); scene.add(H3.root); H3.mixer = new THREE.AnimationMixer(H3.root);
   for (const c of T.clips) H3.acts[c.name] = H3.mixer.clipAction(c);
+  { const LOWER = /^(root|hips|upperleg|lowerleg|foot|toes)/, L = H3.acts.Q_Sprint_Loop && H3.acts.Q_Sprint_Loop.getClip(), U = H3.acts.Running_HoldingBow && H3.acts.Running_HoldingBow.getClip();   /* the pretty run (owner "เอาท่าวิ่งสวยๆ"): Quaternius sprint legs (lean, long stride) + the KayKit bow-holding arms, one clip */
+    if (L && U) { const k = L.duration / U.duration; H3.acts.Run_Bow = H3.mixer.clipAction(new THREE.AnimationClip('Run_Bow', L.duration, [...L.tracks.filter(t => LOWER.test(t.name)).map(t => t.clone()), ...U.tracks.filter(t => !LOWER.test(t.name)).map(t => { const c = t.clone(); c.times = c.times.map(x => x * k); return c; })])); } }
   const sm = T.meshes.string; if (sm) { const pos = sm.geometry.attributes.position, v = new V3(); let top = null, bot = null; for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); if (!top || v.y > top.y) top = v.clone(); if (!bot || v.y < bot.y) bot = v.clone(); }
     H3.root.updateMatrixWorld(true); const inv = T.bone.handl.matrixWorld.clone().invert(); H3.sa = top.applyMatrix4(inv); H3.sb = bot.applyMatrix4(inv); sm.visible = false;
     const rm = new THREE.MeshBasicMaterial({ color: 0xe6f7ff }), cg = new THREE.CylinderGeometry(1, 1, 1, 5); H3.rods = [new THREE.Mesh(cg, rm), new THREE.Mesh(cg, rm)]; H3.rods.forEach(o => scene.add(o));
@@ -550,7 +553,7 @@ function upd3(dt) { if (!H3 || !H3.ready) return; const A = HERO.act; let want =
       else play3(up ? 'Ranged_Bow_Release_Up' : 'Ranged_Bow_Release', { once: true, restart: true, ts: 1.3, fade: .06 }); }
     want = null; H3.spin = A.k === 'a3' && next >= 0 ? TAU * clamp((A.t - A.ph0) / Math.max(.15, tFire), 0, 1) : 0; }
   else if (HERO.hurtT > 0) { want = 'Hit_A'; o = { once: true }; }
-  else if (HERO.moving) { want = H3.acts.Running_HoldingBow ? 'Running_HoldingBow' : 'Running_A'; o = { ts: clamp(1.15 / HS, .7, 2) }; }   /* the KayKit run's feet cover ~3.25 units/s at this size; she moves 3.75: played x1.15 so the feet do not slide */
+  else if (HERO.moving) { const rk = Q.get('run'); want = rk && H3.acts[rk] ? rk : H3.acts.Run_Bow ? 'Run_Bow' : 'Running_HoldingBow'; o = { ts: clamp((want === 'Run_Bow' ? RUN_TS : 1.15) / HS, .6, 2.2) }; }   /* run speed matched to her movement (no sliding feet); ?run=<clip> to try another */
   if (want) { play3(want, o); H3.spin = 0; }
   const face = HERO.act ? Math.atan2(HERO.aim[0], HERO.aim[1]) : HERO.face; let d = face - (H3.face ?? face); d = Math.atan2(Math.sin(d), Math.cos(d)); H3.face = (H3.face ?? face) + d * (1 - Math.exp(-dt * 16));
   H3.root.position.set(HERO.x * WS, HERO.y * WS, HERO.z * WS); H3.root.rotation.y = H3.face + H3.spin; H3.mixer.update(dt);
@@ -659,6 +662,9 @@ function updCombat(dt) {
     if (A.k[0] === 'a' && HERO.buf > 0 && A.f >= S.cancel && HERO.step < 3) { HERO.buf = 0; autoAim(ARCHER ? 10 : 5.5); const n = HERO.step + 1; startAct('a' + n); HERO.step = n; }
     else if (A.f >= endStep(S) && (!S.spears || A.rained)) { HERO.act = null; if (A.k[0] === 'a') { HERO.stepT = COMBO_KEEP; if (HERO.step >= 3) HERO.step = 0; if (HERO.buf > 0) { HERO.buf = 0; heroAttack(); } } } }
   if (!HERO.act && Object.values(HELD).includes('atk')) heroAttack(); else if (HERO.act && HERO.act.k[0] === 'a' && Object.values(HELD).includes('atk')) HERO.buf = BUF;   /* hold the button = keep comboing */
+  if (HERO.moving && !HERO.act && !HERO.dead && (HERO.dustT = (HERO.dustT || 0) - dt) <= 0) { HERO.dustT = .2; HERO.dustS = -(HERO.dustS || 1);   /* a little sand at each step */
+    const m = HERO.mv || [1, 0], gy = groundH(HERO.x, HERO.z), wet = kAt(HERO.x, HERO.z) === 1, col = wet ? 0xb8c890 : 0xd2ad80;
+    for (let i = 0; i < 3; i++) part('dust', HERO.x - m[0] * .25 - m[1] * .18 * HERO.dustS + (Math.random() - .5) * .2, gy + .08, HERO.z - m[1] * .25 + m[0] * .18 * HERO.dustS + (Math.random() - .5) * .2, -m[0] * .8 + (Math.random() - .5) * .6, .35 + Math.random() * .3, -m[1] * .8 + (Math.random() - .5) * .6, .45 + Math.random() * .25, col); }
   updMobs(dt); updArrows(dt);
   for (const t of TXT) t.t += dt; for (let i = TXT.length - 1; i >= 0; i--) if (TXT[i].t > .95) TXT.splice(i, 1);
 }
@@ -735,14 +741,15 @@ const PART = (() => { const mk = (n, size, add) => { const g = new THREE.BufferG
       vertexShader: 'attribute float alpha; attribute float psize; uniform float uS; varying vec3 vC; varying float vA; void main(){ vC = color; vA = alpha; vec4 mv = modelViewMatrix * vec4(position, 1.); gl_PointSize = psize * uS / -mv.z; gl_Position = projectionMatrix * mv; }',
       fragmentShader: 'uniform sampler2D map; varying vec3 vC; varying float vA; void main(){ float a = texture2D(map, gl_PointCoord).a * vA; if (a < .01) discard; gl_FragColor = vec4(vC, a); }' });
     const pts = new THREE.Points(g, mat); pts.frustumCulled = false; pts.renderOrder = add ? 6 : 5; scene.add(pts); return { pts, n, i: 0, size, life: new Float32Array(n), max: new Float32Array(n), v: new Float32Array(n * 3), c0: new Float32Array(n * 3) }; };
-  return { big: mk(1100, 1.15, false), small: mk(900, .32, true) }; })();
+  return { big: mk(1100, 1.15, false), small: mk(900, .32, true), dust: mk(400, .75, false) }; })();
 function part(pool, x, y, z, vx, vy, vz, life, color) { const P = PART[pool], i = P.i; P.i = (P.i + 1) % P.n; const pa = P.pts.geometry.attributes.position.array; pa[i * 3] = x * WS; pa[i * 3 + 1] = y * WS; pa[i * 3 + 2] = z * WS; P.v[i * 3] = vx * WS; P.v[i * 3 + 1] = vy * WS; P.v[i * 3 + 2] = vz * WS; P.life[i] = P.max[i] = life;
   const c = new THREE.Color(color); P.c0[i * 3] = c.r; P.c0[i * 3 + 1] = c.g; P.c0[i * 3 + 2] = c.b; }
 function updParts(dt) { PSCALE.value = (LOOK3D ? PX.bh / 2 / Math.tan(camera.fov * Math.PI / 360) : PX.bh / 2 / (CAM.vh / 2)); for (const k in PART) { const P = PART[k], G = P.pts.geometry.attributes, pa = G.position.array, ca = G.color.array, al = G.alpha.array, ps = G.psize.array, big = k === 'big';
     for (let i = 0; i < P.n; i++) { if (P.life[i] <= 0) { al[i] = 0; continue; } P.life[i] -= dt; const f = Math.max(0, P.life[i] / P.max[i]);
-      pa[i * 3] += P.v[i * 3] * dt; pa[i * 3 + 1] += P.v[i * 3 + 1] * dt; pa[i * 3 + 2] += P.v[i * 3 + 2] * dt; if (big) { P.v[i * 3 + 1] += 1.6 * dt; P.v[i * 3] *= .97; P.v[i * 3 + 2] *= .97; } else P.v[i * 3 + 1] -= 9 * dt;
+      pa[i * 3] += P.v[i * 3] * dt; pa[i * 3 + 1] += P.v[i * 3 + 1] * dt; pa[i * 3 + 2] += P.v[i * 3 + 2] * dt; if (big) { P.v[i * 3 + 1] += 1.6 * dt; P.v[i * 3] *= .97; P.v[i * 3 + 2] *= .97; } else if (k === 'dust') { const dr = Math.exp(-dt * 4); P.v[i * 3] *= dr; P.v[i * 3 + 1] *= dr; P.v[i * 3 + 2] *= dr; } else P.v[i * 3 + 1] -= 9 * dt;
       if (big) { const r = P.c0[i * 3], g = P.c0[i * 3 + 1], b = P.c0[i * 3 + 2], hot = clamp((f - .55) / .45, 0, 1), ash = clamp((.35 - f) / .35, 0, 1), cold = b > r;   /* white-hot -> its colour -> dark red-brown smoke */
         ca[i * 3] = lerp(lerp(r, cold ? .1 : .42, ash), 1, hot * .7); ca[i * 3 + 1] = lerp(lerp(g, cold ? .3 : .16, ash), .95, hot * .7); ca[i * 3 + 2] = lerp(lerp(b, cold ? .65 : .1, ash), cold ? 1 : .7, hot * .7); al[i] = Math.min(1, f * 3) * .95; ps[i] = P.size * WS * (.55 + (1 - f) * .7); }
+      else if (k === 'dust') { ca[i * 3] = P.c0[i * 3]; ca[i * 3 + 1] = P.c0[i * 3 + 1]; ca[i * 3 + 2] = P.c0[i * 3 + 2]; al[i] = Math.min(1, f * 1.6) * .6; ps[i] = P.size * WS * (.6 + (1 - f) * 1.1); }   /* soft sand puffs that grow and fade */
       else { ca[i * 3] = P.c0[i * 3]; ca[i * 3 + 1] = P.c0[i * 3 + 1]; ca[i * 3 + 2] = P.c0[i * 3 + 2]; al[i] = f; ps[i] = P.size * WS; } }
     G.position.needsUpdate = G.color.needsUpdate = G.alpha.needsUpdate = G.psize.needsUpdate = true; } }
 function sparks(x, y, z, n, color) { for (let i = 0; i < n; i++) { const a = Math.random() * TAU, s = 2 + Math.random() * 4; part('small', x, y, z, Math.cos(a) * s, 1.5 + Math.random() * 4, Math.sin(a) * s, .25 + Math.random() * .25, color); } }
