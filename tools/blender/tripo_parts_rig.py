@@ -132,7 +132,7 @@ MODELS = {
     DROP={9, 20, 44, 45, 46, 49, 54, 35, 151, 152, 8, 21,   # 35 / 151 / 152 = her own eyes + lash, they sat on the base's face (doubled eyes)
           101, 102, 103, 111, 114, 115, 116, 136, 137, 155, 156, 162, 164, 169, 183, 184, 194},
     MESH={k: 'quiver' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)},
-    BOWX=.185, STRIP_SKIN=[5, 7], BODY_NAME='wolf', DEFAULT='auto', FACES={}, SHOULDER=[],
+    BOWX=.185, STRIP_SKIN=[5, 7, (1, (-.14, .14, .6, .79, -.02, .2))], BODY_NAME='wolf', DEFAULT='auto', FACES={}, SHOULDER=[],   # (1, box): the hood also carried her forehead / temple skin + brows: cut where her face is
     FIT=dict(src=(-.015, 0, .03), dst=(0, 0, .05), scale=(1, 1, 1)),
     PUSH_OUT=('art/incoming/basebody/tripo_base_v1_tex.glb', ['tripo_part_0', 'tripo_part_2', 'tripo_part_3', 'tripo_part_4', 'tripo_part_8',
               'tripo_part_5', 'tripo_part_7', 'tripo_part_6'], .004),
@@ -187,14 +187,19 @@ IMG = {n: part_images(o) for n, o in parts.items()}
 
 # ---- skin faces off parts that Tripo fused with a bit of her body (bracer + forearm + hand): sample the texture at each face's UV middle
 def is_skin(c): r, g, b = c[0] * 255, c[1] * 255, c[2] * 255; return r > 170 and 100 < g < 215 and 60 < b < 185 and 20 < r - g < 100 and g - b > 5
-for n in CFG.get('STRIP_SKIN', []):
+def is_dark(c): return max(c[0], c[1], c[2]) < .22
+for item in CFG.get('STRIP_SKIN', []):   # n = skin faces anywhere; (n, box) = skin OR near-black faces whose middle is in the box (game coords)
+    n, box = (item, None) if isinstance(item, int) else item
     if n not in parts or not IMG[n][0]: continue
     o = parts[n]; img = IMG[n][0]; W_, H_ = img.size; px = np.empty(W_ * H_ * 4, np.float32); img.pixels.foreach_get(px); px = px.reshape(H_, W_, 4)
-    uvl = o.data.uv_layers.active.data; kill = []
+    uvl = o.data.uv_layers.active.data; kill = []; mw = o.matrix_world
     for f in o.data.polygons:
+        if box:
+            w = mw @ f.center; gx, gy, gz = w.x, w.z, -w.y
+            if not (box[0] <= gx <= box[1] and box[2] <= gy <= box[3] and box[4] <= gz <= box[5]): continue
         u = sum(uvl[li].uv.x for li in f.loop_indices) / f.loop_total; v = sum(uvl[li].uv.y for li in f.loop_indices) / f.loop_total
         c = px[min(H_ - 1, max(0, int(v * H_))), min(W_ - 1, max(0, int(u * W_)))]   # Blender pixels: row 0 = bottom = uv.y 0
-        if is_skin(c): kill.append(f.index)
+        if is_skin(c) or (box and is_dark(c)): kill.append(f.index)
     bm = bmesh.new(); bm.from_mesh(o.data); bm.faces.ensure_lookup_table(); bmesh.ops.delete(bm, geom=[bm.faces[i] for i in kill], context='FACES'); bm.to_mesh(o.data); bm.free()
     print('skin faces cut from part', n, len(kill))
 # ---- outfit models: move the parts from their own body's joints onto another body's (game units, before x10), then push them outside that body
