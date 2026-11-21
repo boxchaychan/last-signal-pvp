@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>มังกรเดิน · ดัดภาพ</title>
+<!--
+  Test (owner 2026-11-21 "ลองอะงั้น"): the painted dragon (art/incoming/dragon_moves/base_side.png, background removed ->
+  art/incoming/dragon_mesh/dragon_side_cut_full.png) walks by MESH DEFORMATION, like Spine / DragonBones: the whole picture is one
+  triangle grid, bones bend it like rubber, so the joints have no seams and the lines never change (no redrawing per frame).
+  Below the crotch the two legs are split into their own grid parts (back leg drawn first). Bones + weights + walk cycle are made in code.
+  URL: ?mode=walk|idle, ?grid=1 shows the mesh, ?spd=0.5..2
+-->
+<style>
+  @font-face { font-family: Kanit; font-weight: 600; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B; }
+  @font-face { font-family: Kanit; font-weight: 600; src: url(art/gem/font/kanit-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #6f8fa6; font-family: Kanit, sans-serif; touch-action: none; user-select: none; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ui { position: fixed; left: 8px; top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  #ui button { font: 600 15px Kanit, sans-serif; padding: 6px 12px; border-radius: 10px; border: 2px solid #1b1208; background: #f3e2bd; color: #1b1208; box-shadow: 0 3px 0 #1b1208; }
+  #ui button.on { background: #ffcf5a; }
+  #note { position: fixed; left: 8px; bottom: 8px; color: #fff; font-size: 13px; text-shadow: 0 1px 2px #000; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ui">
+  <button id="bWalk">เดิน</button><button id="bIdle">ยืนหายใจ</button>
+  <button id="bSlow">ช้า</button><button id="bGrid">ตาข่าย</button><button id="bOld">เทียบภาพทีละเฟรม</button>
+</div>
+<div id="note">ภาพเดียว ดัดด้วยกระดูก · ไม่มีวาดใหม่ทุกเฟรม</div>
+<script src="vendor/threejs/three.min.js"></script>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const IMG = 'art/incoming/dragon_mesh/dragon_side_cut_full.png', W = 1221, H = 1289;   // image px; bbox (223, 122, 975, 1166)
+const CX = 660, FOOT = 1162;                     // image point at world (0, 0)
+const wx = u => u - CX, wy = v => FOOT - v;
+const CELL = 10, U0 = 220, U1 = 980, V0 = 118, V1 = 1170;
+const CROTCH = 990, SPLIT = 657, LEGU0 = 540, LEGU1 = 822;
+const sm = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+
+const cv = document.getElementById('cv');
+const R = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); R.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x6f8fa6);
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
+function resize() {
+  const w = innerWidth, h = innerHeight; R.setSize(w, h, false);
+  const viewH = 1250, viewW = viewH * w / h; cam.left = -viewW / 2; cam.right = viewW / 2; cam.top = viewH - 120; cam.bottom = -130; cam.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+// ground: a strip with marks that scroll at the walk speed
+const ground = new THREE.Group(); scene.add(ground);
+ground.add(new THREE.Mesh(new THREE.PlaneGeometry(6000, 130), new THREE.MeshBasicMaterial({ color: 0x5d7a3c })).translateY(-65));
+ground.add(new THREE.Mesh(new THREE.PlaneGeometry(6000, 10), new THREE.MeshBasicMaterial({ color: 0x3f5a28 })).translateY(-3));
+const marks = new THREE.Group(); ground.add(marks);
+for (let i = -30; i <= 30; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(40, 8), new THREE.MeshBasicMaterial({ color: 0x86a35a })); m.position.set(i * 160, -40 - (i & 1) * 34, 0); marks.add(m); }
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .25 }));
+shadow.scale.set(230, 22, 1); shadow.position.set(20, 2, 0); scene.add(shadow);
+
+// ---------- bones (pivot points in image px) ----------
+const BDEF = [   // name, parent, u, v
+  ['root', -1, CX, FOOT], ['hips', 0, 660, 965], ['chest', 1, 680, 860], ['head', 2, 740, 620], ['hair', 3, 700, 450],
+  ['cape', 2, 600, 650], ['cape2', 5, 470, 860], ['arm', 2, 600, 790],
+  ['thighL', 1, 603, 992], ['shinL', 8, 598, 1062], ['thighR', 1, 722, 992], ['shinR', 10, 726, 1062],
+];
+const BI = {}; BDEF.forEach((b, i) => { BI[b[0]] = i; });
+const bones = BDEF.map(([n, p, u, v]) => { const b = new THREE.Bone(); b.name = n; return b; });
+BDEF.forEach(([n, p, u, v], i) => {
+  if (p < 0) bones[i].position.set(wx(u), wy(v), 0);
+  else { bones[p].add(bones[i]); bones[i].position.set(u - BDEF[p][2], -(v - BDEF[p][3]), 0); }
+});
+const rest = bones.map(b => b.position.clone());
+
+// ---------- weights ----------
+function bodyWeights(u, v) {
+  const w = new Float32Array(BDEF.length);
+  const chest = sm((945 - v) / 120); w[BI.hips] = 1 - chest; w[BI.chest] = chest;
+  const move = (from, to, f) => { const d = w[from] * f; w[from] -= d; w[to] += d; };
+  if (u > 470) move(BI.chest, BI.head, sm((650 - v) / 70));
+  move(BI.head, BI.hair, sm((480 - v) / 130) * sm((790 - u) / 120));
+  if (u < 860) { const c = sm((588 - u) / 80) * sm((v - 560) / 60); for (const k of [BI.hips, BI.chest, BI.head]) move(k, BI.cape, c); }
+  move(BI.cape, BI.cape2, sm((500 - u) / 110) * sm((v - 760) / 140));
+  if (u > 560 && u < 680 && v > 800 && v < 930) move(BI.chest, BI.arm, sm(1 - Math.hypot(u - 620, v - 870) / 70));   // the free fist
+  if (u > 845) { w.fill(0); w[BI.chest] = 1; }   // the spear stays straight in the hand
+  if (v > 935 && u > LEGU0 && u < LEGU1) {   // pants top follow the legs a little: no fold at the crotch
+    const f = sm((v - 935) / (CROTCH - 935)) * .55, side = u < SPLIT ? 'L' : 'R';
+    for (let k = 0; k < w.length; k++) w[k] *= 1 - f; w[BI['thigh' + side]] += f;
+  }
+  return w;
+}
+function legWeights(u, v, side) {
+  const w = new Float32Array(BDEF.length), t = sm((v - 1040) / 40);
+  w[BI['shin' + side]] = t; w[BI['thigh' + side]] = 1 - t;
+  const h = sm((CROTCH + 25 - v) / 35) * .45; if (h > 0) { for (let k = 0; k < w.length; k++) w[k] *= 1 - h; w[BI.hips] += h; }
+  return w;
+}
+const top4 = w => { const idx = [...w.keys()].sort((a, b) => w[b] - w[a]).slice(0, 4); let s = 0; for (const i of idx) s += w[i]; return [idx, idx.map(i => s ? w[i] / s : 0)]; };
+
+// ---------- the mesh: one grid over the picture, legs split below the crotch ----------
+async function build() {
+  const img = new Image(); img.src = IMG; await img.decode();
+  const c2 = document.createElement('canvas'); c2.width = W; c2.height = H; const g2 = c2.getContext('2d'); g2.drawImage(img, 0, 0);
+  const A = g2.getImageData(0, 0, W, H).data, alphaAt = (u, v) => A[(Math.min(H - 1, v | 0) * W + Math.min(W - 1, u | 0)) * 4 + 3];
+  const cellFull = (u, v) => { for (let y = v; y < v + CELL; y += 2) for (let x = u; x < u + CELL; x += 2) if (alphaAt(x, y) > 8) return true; return false; };
+  const P = [], UV = [], SI = [], SW = [], VMAP = new Map(), IDX = { L: [], R: [], B: [] };
+  const vert = (u, v, region) => {
+    const key = (v <= CROTCH || region === 'B' ? 'B' : region) + ':' + u + ':' + v;   // the legs share the crotch row with the body, below it they are apart
+    if (VMAP.has(key)) return VMAP.get(key);
+    const r = key[0], w = r === 'B' ? bodyWeights(u, v) : legWeights(u, v, r), [ix, ws] = top4(w);
+    P.push(wx(u), wy(v), 0); UV.push(u / W, 1 - v / H); SI.push(...ix); SW.push(...ws);
+    const n = P.length / 3 - 1; VMAP.set(key, n); return n;
+  };
+  for (let v = V0; v < V1; v += CELL) for (let u = U0; u < U1; u += CELL) {
+    if (!cellFull(u, v)) continue;
+    const cu = u + CELL / 2, cvv = v + CELL / 2, region = (cvv > CROTCH && cu > LEGU0 && cu < LEGU1) ? (cu < SPLIT ? 'L' : 'R') : 'B';
+    const a = vert(u, v, region), b = vert(u + CELL, v, region), c = vert(u + CELL, v + CELL, region), d = vert(u, v + CELL, region);
+    IDX[region].push(a, d, b, b, d, c);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+  geo.setIndex([...IDX.L, ...IDX.R, ...IDX.B]);   // drawing order: back leg, front leg, then the body over both
+  const tex = new THREE.Texture(img); tex.needsUpdate = true; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+  const mesh = new THREE.SkinnedMesh(geo, mat); mesh.frustumCulled = false;
+  mesh.add(bones[0]); mesh.bind(new THREE.Skeleton(bones)); scene.add(mesh);
+  const wire = new THREE.SkinnedMesh(geo, new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: .35, depthTest: false }));
+  wire.frustumCulled = false; wire.bind(mesh.skeleton, mesh.bindMatrix); wire.visible = Q.get('grid') === '1'; wire.renderOrder = 2; scene.add(wire);
+  return { mesh, wire, tris: geo.index.count / 3, verts: P.length / 3 };
+}
+
+// ---------- the old frame-by-frame walk (Codex, art/pixmap/dragon/walk_side.*) next to it, for comparing ----------
+const OLD = { on: false, frames: null, mesh: null, i: 0 };
+async function loadOld() {
+  const js = await fetch('art/pixmap/dragon/walk_side.json').then(r => r.json()).catch(() => null); if (!js) return;
+  const tex = await new THREE.TextureLoader().loadAsync('art/pixmap/dragon/walk_side.png'); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+  OLD.js = js; OLD.tex = tex;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false })); m.visible = false; scene.add(m); OLD.mesh = m;
+}
+
+// ---------- animation ----------
+const S = { mode: Q.get('mode') === 'idle' ? 'idle' : 'walk', spd: +(Q.get('spd') || 1), t: 0, slow: false };
+const LEG = 170, AMP = .34, FREQ = .95;   // leg length (px), swing (rad), steps per second per leg
+function pose(t) {
+  bones.forEach((b, i) => { b.position.copy(rest[i]); b.rotation.set(0, 0, 0); });
+  const p = t * Math.PI * 2 * FREQ, B = n => bones[BI[n]];
+  if (S.mode === 'walk') {
+    const aL = AMP * Math.sin(p), aR = -aL;
+    B('thighL').rotation.z = aL; B('thighR').rotation.z = aR;
+    B('shinL').rotation.z = -.62 * Math.max(0, Math.cos(p)) * sm(Math.sin(p) + .9);    // the swinging leg folds its knee
+    B('shinR').rotation.z = -.62 * Math.max(0, -Math.cos(p)) * sm(-Math.sin(p) + .9);
+    B('hips').position.y += -LEG * (1 - Math.cos(AMP * Math.sin(p))) + 3;   // body dips when the legs are apart: the planted foot stays on the ground
+    B('hips').position.x += 3 * Math.cos(2 * p);
+    B('chest').rotation.z = -.035 + .018 * Math.sin(2 * p + .6);
+    B('head').rotation.z = .025 * Math.sin(2 * p + 1.6);
+    B('hair').rotation.z = .05 * Math.sin(2 * p - .9);
+    B('cape').rotation.z = .045 + .035 * Math.sin(2 * p - 1.3);
+    B('cape2').rotation.z = .07 * Math.sin(2 * p - 2.2);
+    B('arm').rotation.z = .2 * Math.sin(p);
+    marks.position.x = -((t * 2 * LEG * Math.sin(AMP) * 2 * FREQ) % 160);
+  } else {
+    const b = Math.sin(t * 2.2);
+    B('hips').position.y += -2 + 2 * b; B('chest').rotation.z = -.012 * b; B('head').rotation.z = .02 * Math.sin(t * 2.2 - .7);
+    B('hair').rotation.z = .035 * Math.sin(t * 1.7 - 1); B('cape').rotation.z = .02 + .025 * Math.sin(t * 1.5 - 1); B('cape2').rotation.z = .04 * Math.sin(t * 1.5 - 2);
+    marks.position.x = 0;
+  }
+}
+
+let M = null, last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now; S.t += dt * S.spd * (S.slow ? .35 : 1);
+  pose(S.t);
+  if (OLD.on && OLD.js) {   // uniform strip: n frames of w x h, feet at "foot"; plays "seq" at "fps"
+    const J = OLD.js, seq = J.seq || [...Array(J.n).keys()], i = seq[Math.floor(S.t * J.fps) % seq.length], TW = J.n * J.w, k = 1040 / J.foot * .82;
+    OLD.tex.repeat.set(J.w / TW, 1); OLD.tex.offset.set(i * J.w / TW, 0);
+    OLD.mesh.scale.set(J.w * k, J.h * k, 1); OLD.mesh.position.set(330, (J.h / 2 - (J.h - J.foot)) * k, 0);
+  }
+  R.render(scene, cam); requestAnimationFrame(frame);
+}
+const btn = id => document.getElementById(id);
+function ui() { btn('bWalk').classList.toggle('on', S.mode === 'walk'); btn('bIdle').classList.toggle('on', S.mode === 'idle'); btn('bSlow').classList.toggle('on', S.slow);
+  btn('bGrid').classList.toggle('on', !!(M && M.wire.visible)); btn('bOld').classList.toggle('on', OLD.on); }
+btn('bWalk').onclick = () => { S.mode = 'walk'; ui(); };
+btn('bIdle').onclick = () => { S.mode = 'idle'; ui(); };
+btn('bSlow').onclick = () => { S.slow = !S.slow; ui(); };
+btn('bGrid').onclick = () => { if (M) M.wire.visible = !M.wire.visible; ui(); };
+btn('bOld').onclick = () => { OLD.on = !OLD.on; if (OLD.mesh) OLD.mesh.visible = OLD.on; M.mesh.position.x = OLD.on ? -330 : 0; M.wire.position.x = M.mesh.position.x; ui(); };
+build().then(m => { M = m; window.DM = { S, M, pose, bones }; ui(); requestAnimationFrame(frame); });
+loadOld();
+</script>
+</body>
+</html>
