@@ -144,7 +144,7 @@ function groundH(x, z) {   /* height under a point (stairs ramp up toward their 
 
 /* ---------- renderer, low-res target + edge pass */
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
-const LOOK3D = Q.get('look') !== 'px', PIX3D = Q.get('look') === 'pix3d' || (!Q.get('look') && Q.get('hero') === 'eagle'), PXS = +(Q.get('pxs') || 2);   /* pix3d (owner 2026-11-21 "เอาแมพ 3D ทำเป็นพิกเซลสวยๆ ... พิกเซล 3D"): the big smooth 3D map drawn as pixel art: orthographic camera snapped to whole texels, rendered small (1 texel = PXS device pixels = the eagle's pixel), outlined, fewer shades */   /* default (owner 2026-11-20 "กลับไปรันแมพ 3D นะ ตัวละคร 2D") = the map as plain 3D with a painted 2D hero card; ?look=px = the pixel-art look */
+const LOOK3D = Q.get('look') !== 'px', PIX3D = Q.get('look') === 'pix3d' || (!Q.get('look') && Q.get('hero') === 'eagle'), PXS = +(Q.get('pxs') || 2), PXH = +(Q.get('pxh') || 200), WPT = .1375;   /* PXH = texels down the screen (?pxh= to try others; ?pxs= = fixed device pixels a texel, the old way); WPT = world units a texel (the proportions checked on 2026-11-21) */   /* pix3d (owner 2026-11-21 "เอาแมพ 3D ทำเป็นพิกเซลสวยๆ ... พิกเซล 3D"): the big smooth 3D map drawn as pixel art: orthographic camera snapped to whole texels, rendered small (1 texel = PXS device pixels = the eagle's pixel), outlined, fewer shades */   /* default (owner 2026-11-20 "กลับไปรันแมพ 3D นะ ตัวละคร 2D") = the map as plain 3D with a painted 2D hero card; ?look=px = the pixel-art look */
 const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: LOOK3D && !PIX3D }); renderer.outputEncoding = THREE.sRGBEncoding; renderer.shadowMap.enabled = true; renderer.shadowMap.type = LOOK3D && !PIX3D ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap; if (LOOK3D) { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = SMOOTH ? 1 : 1.05; }
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xf3d29c); scene.fog = null;
 const camera = LOOK3D && !PIX3D ? new THREE.PerspectiveCamera(28, 1, 1, 400) : new THREE.OrthographicCamera(-10, 10, 6, -6, 1, 300);
@@ -168,12 +168,12 @@ postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
 let SW = 800, SH = 450, DPR = 1;
 function resize() {
   SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR;
-  const dp = devicePixelRatio || 1; if (PX.on) { PX.k = PIX3D ? PXS : Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)); PX.T = PX.k / dp; } else { PX.k = 1; PX.T = 1 / Math.min(2, dp); }
+  const dp = devicePixelRatio || 1; if (PX.on) { PX.k = PIX3D ? (Q.get('pxs') ? PXS : Math.max(1, Math.round(SH * dp / PXH))) : Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)); PX.T = PX.k / dp; }   /* pix3d: about PXH texels down the screen on EVERY device (a phone with a sharp screen got 2 device pixels a texel = so fine it looked like plain 3D; owner "แมพยังไม่เป็น 3D พิกเซล") */ else { PX.k = 1; PX.T = 1 / Math.min(2, dp); }
   PX.m = LOOK3D && !PIX3D ? 0 : 2 * PX.T; if (LOOK3D && !PIX3D) glc.style.imageRendering = 'auto'; PX.bw = Math.ceil((SW + 2 * PX.m) / PX.T); PX.bh = Math.ceil((SH + 2 * PX.m) / PX.T);
   renderer.setPixelRatio(1); renderer.setSize(PX.bw, PX.bh, false); glc.style.width = PX.bw * PX.T + 'px'; glc.style.height = PX.bh * PX.T + 'px';
   if (rt) rt.dispose(); rt = new THREE.WebGLRenderTarget(PX.bw, PX.bh, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter }); rt.texture.encoding = THREE.sRGBEncoding;
   rt.depthTexture = new THREE.DepthTexture(PX.bw, PX.bh); rt.depthTexture.type = THREE.UnsignedIntType; postMat.uniforms.tC.value = rt.texture; postMat.uniforms.tD.value = rt.depthTexture; postMat.uniforms.px.value.set(1 / PX.bw, 1 / PX.bh);
-  const kOn = Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)), Ton = kOn / dp; CAM.vh = Math.ceil((SH + 4 * Ton) / Ton) / 32 / (+(Q.get("zoom") || (LOOK3D ? .45 : 1))); }   /* 3D look: a wider view (owner "กว้างกว่านี้") */
+  const kOn = Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)), Ton = kOn / dp; CAM.vh = PIX3D ? PX.bh * WPT * .45 / (+(Q.get('zoom') || .45)) : Math.ceil((SH + 4 * Ton) / Ton) / 32 / (+(Q.get("zoom") || (LOOK3D ? .45 : 1))); }   /* pix3d: a fixed world size per texel, so hero / palms / bridges keep the same proportions on every screen */   /* 3D look: a wider view (owner "กว้างกว่านี้") */
 const CAM = { vh: 17, look: new V3(N * .4, 0, N * .6) };
 addEventListener('resize', resize);
 
