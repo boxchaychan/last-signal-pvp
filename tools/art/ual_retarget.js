@@ -6,7 +6,10 @@
 // Hips height follows the source (scaled by leg length). Unmapped KayKit bones (wrists, hand slots, toes...) keep their rest rotation.
 const { chromium } = require('playwright'); const fs = require('fs');
 const OUT = process.argv[2] || 'art/grind3d/ual_anims.json';
-const PICK = {   // source file -> moves kept (name in the game = 'Q_' + name)
+const PICK = process.env.UAL_PICK === 'zombie' ? {   // zcity.html: UAL_PICK=zombie node tools/art/ual_retarget.js art/zcity/zombie_anims.json
+  'art/incoming/quaternius/ual/UAL1_Standard.glb': ['Death01', 'Hit_Chest', 'Sprint_Loop'],
+  'art/incoming/quaternius/ual/UAL2_Standard.glb': ['Zombie_Idle_Loop', 'Zombie_Scratch', 'Zombie_Walk_Fwd_Loop', 'Hit_Knockback'],
+} : {   // source file -> moves kept (name in the game = 'Q_' + name)
   'art/incoming/quaternius/ual/UAL1_Standard.glb': ['Idle_Loop', 'Sword_Idle', 'Sword_Attack', 'Spell_Simple_Enter', 'Spell_Simple_Idle_Loop', 'Spell_Simple_Shoot', 'Spell_Simple_Exit', 'Roll', 'Jog_Fwd_Loop', 'Sprint_Loop', 'Walk_Loop', 'Punch_Jab', 'Punch_Cross', 'Hit_Chest', 'Hit_Head', 'Death01', 'Jump_Start', 'Jump_Loop', 'Jump_Land', 'Dance_Loop', 'Crouch_Idle_Loop', 'Interact', 'Idle_Talking_Loop'],
   'art/incoming/quaternius/ual/UAL2_Standard.glb': ['Sword_Regular_A', 'Sword_Regular_B', 'Sword_Regular_C', 'Sword_Regular_Combo', 'Sword_Heavy_Combo', 'Sword_Dash', 'Sword_Block', 'Shield_Dash', 'Shield_OneShot', 'Idle_Shield_Loop', 'Idle_Shield_Break', 'Melee_Hook', 'OverhandThrow', 'Hit_Knockback', 'NinjaJump_Start', 'NinjaJump_Idle_Loop', 'NinjaJump_Land', 'Slide_Start', 'Slide_Loop', 'Slide_Exit', 'Idle_FoldArms_Loop', 'Yes', 'Zombie_Walk_Fwd_Loop'],
 };
