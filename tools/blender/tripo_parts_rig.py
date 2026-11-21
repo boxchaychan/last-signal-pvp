@@ -12,6 +12,7 @@
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/winged/raw.glb art/tribe3d/people/winged_knight.glb winged
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/darkknight/tripo_split_raw.glb art/grind3d/dark_knight.glb dark
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/hoodknight/tripo_split_raw.glb art/grind3d/hood_knight.glb hood
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/basebody/tripo_base_v1_tex.glb art/grind3d/base_girl.glb base   (tripo_base_v1.glb = the same split without texture: flat COLORS)
 # A new model: plot its parts first (front / side point plot, a grid render for the joints), then add an entry to MODELS.
 import bpy, bmesh, sys, json, math
 import numpy as np
@@ -89,6 +90,23 @@ MODELS = {
        'upperarmr': (-.105, .51, .065), 'lowerarmr': (-.215, .505, .065), 'wristr': (-.285, .505, .065), 'handr': (-.3, .505, .065), 'handslotr': (-.335, .5, .07),
        'upperlegl': (.06, .335, .06), 'lowerlegl': (.075, .19, .06), 'footl': (.085, .075, .05), 'toesl': (.085, .02, .15),
        'upperlegr': (-.06, .335, .06), 'lowerlegr': (-.075, .19, .06), 'footr': (-.085, .075, .05), 'toesr': (-.085, .02, .15)}),
+  # the BASE BODY (owner 2026-11-21 "ตัวเปล่า": one body for every hero, outfits worn on it): GPT turnaround -> Tripo multi-view, split: 36 parts,
+  # NO texture (flat colours per part from COLORS), 1.0 tall, A-pose (arms ~57 degrees down), faces +z, her left = +x. Separate meshes: body / hair / top / shorts
+  'base': dict(
+    ROLE={0: 'headblend', 1: 'rigid:head', 9: 'rigid:head', 2: 'heat:chest,upperarmr,lowerarmr,handr', 3: 'heat:chest,upperarml,lowerarml,handl',
+          4: 'heat:hips,upperlegl,lowerlegl,footl', 8: 'heat:hips,upperlegr,lowerlegr,footr', 5: 'heat:hips,spine,chest', 7: 'rigid:chest',
+          6: 'heat:hips,upperlegl,upperlegr'},
+    DEFAULT='auto', FACES={}, SHOULDER=[5], HB=(.6, .04),
+    MESH={1: 'hair', 9: 'hair', 13: 'hair', 14: 'hair', 15: 'hair', 16: 'hair', 17: 'hair', 18: 'hair', 19: 'hair', 20: 'hair', 22: 'hair', 24: 'hair', 25: 'hair',
+          5: 'top', 7: 'top', 6: 'shorts'},
+    COLORS={0: 'f0b48c', 2: 'f0b48c', 3: 'f0b48c', 4: 'f0b48c', 8: 'f0b48c', 1: '7a3e22', 9: '7a3e22', 5: '9a9aa2', 7: '9a9aa2', 6: '3c3c44',
+            10: '2a1810', 11: '2a1810', 12: 'c0605a', 21: '5a3020', 23: '5a3020', 26: 'd8342c', 27: 'd8342c', 28: 'd8342c', 29: 'd8342c',
+            30: 'b01818', 31: 'b01818', 32: '2a1810', 33: '2a1810', 34: 'ffffff', 35: 'ffffff', 'default': '7a3e22'},
+    J={'hips': (0, .41, .05), 'spine': (0, .47, .055), 'chest': (0, .55, .055), 'head': (0, .615, .045), 'top': (0, .91, .04),
+       'upperarml': (.065, .605, .035), 'lowerarml': (.14, .49, .042), 'wristl': (.195, .395, .05), 'handl': (.2, .385, .05), 'handslotl': (.222, .358, .05),
+       'upperarmr': (-.065, .605, .035), 'lowerarmr': (-.14, .49, .042), 'wristr': (-.195, .395, .05), 'handr': (-.2, .385, .05), 'handslotr': (-.222, .358, .05),
+       'upperlegl': (.055, .4, .055), 'lowerlegl': (.076, .21, .05), 'footl': (.095, .065, .045), 'toesl': (.105, .01, .13),
+       'upperlegr': (-.055, .4, .055), 'lowerlegr': (-.076, .21, .05), 'footr': (-.095, .065, .045), 'toesr': (-.105, .01, .13)}),
 }
 CFG = MODELS[MODEL]; ROLE, J = CFG['ROLE'], CFG['J']
 BONES = [('hips', 'spine', None), ('spine', 'chest', 'hips'), ('chest', 'head', 'spine'), ('head', 'top', 'chest'),
@@ -224,7 +242,7 @@ for n, o in parts.items():
     elif role == 'headblend':   # face + mane with the head; hanging braids blend down to the chest
         ws = []
         for v in o.data.vertices:
-            x, y, z = gpos(v.co); t = max(0, min(1, (y - .5) / .12)); ws.append({'head': t, 'chest': 1 - t})
+            x, y, z = gpos(v.co); hb = CFG.get('HB', (.5, .12)); t = max(0, min(1, (y - hb[0]) / hb[1])); ws.append({'head': t, 'chest': 1 - t})
         set_w(o, ws)
     else:   # auto
         ws = [None] * nv; auto_w(o, ws, islands(o)); set_w(o, ws)
@@ -243,7 +261,7 @@ for n in CFG['SHOULDER']:   # the shoulder of the body part follows the upper ar
                 for nm, ww in ws.items(): body.vertex_groups[nm].add([v.index], ww, 'REPLACE')
 
 # ---- one atlas for every part, packed in shelves: each part's own 0-1 UVs squeezed into its tile; sizes scaled so all fit
-AW = AH = 2048; PAD = 2
+AW = AH = 2048 if any(IMG[n][0] for n in parts) else 512; PAD = 2   # flat-colour models need only a small atlas
 SIZE = {n: (IMG[n][0].size[0] if IMG[n][0] else 32) for n in parts}
 area = sum(s * s for s in SIZE.values()); f = min(1, math.sqrt(.82 * AW * AH / max(1, area)))
 def packit(f):
@@ -268,6 +286,8 @@ def build_atlas(which, half):
     if which == 2: A[..., 0:3] = (1, .65, 0)   # rough, not metal
     for n, (x0, y0, sz) in SLOTS.items():
         img = IMG[n][which]
+        if img is None and which == 0 and 'COLORS' in CFG:   # no texture in the export: a flat colour tile (sRGB byte image = display values)
+            hx = CFG['COLORS'].get(n, CFG['COLORS'].get('default', '808080')); A[y0 // s:y0 // s + sz // s, x0 // s:x0 // s + sz // s, 0:3] = [int(hx[i:i + 2], 16) / 255 for i in (0, 2, 4)]; continue
         if img is None: continue
         t = tile(img, sz, half); A[y0 // s:y0 // s + t.shape[0], x0 // s:x0 // s + t.shape[1]] = t
     im = bpy.data.images.new('atlas_' + ('base', 'normal', 'rm')[which], AW // s, AH // s, alpha=False)
@@ -295,7 +315,8 @@ def join(objs, name):
     for q in bpy.data.objects: q.select_set(False)
     for q in objs: q.select_set(True)
     bpy.context.view_layer.objects.active = objs[0]; bpy.ops.object.join(); objs[0].name = name; objs[0].data.name = name; return objs[0]
-outs = [join([o for n, o in sorted(parts.items()) if role_of(n) not in ('bow', 'string')], 'body'),
+MESHN = CFG.get('MESH', {})
+outs = [join([o for n, o in sorted(parts.items()) if role_of(n) not in ('bow', 'string') and n not in MESHN], 'body')] + [join([o for n, o in sorted(parts.items()) if MESHN.get(n) == nm], nm) for nm in sorted(set(MESHN.values()))] + [
         join([o for n, o in sorted(parts.items()) if role_of(n) == 'bow'], 'bow'),
         join([o for n, o in sorted(parts.items()) if role_of(n) == 'string'], 'string')]
 outs = [o for o in outs if o]
