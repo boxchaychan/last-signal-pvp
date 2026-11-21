@@ -12,6 +12,7 @@
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/winged/raw.glb art/tribe3d/people/winged_knight.glb winged
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/darkknight/tripo_split_raw.glb art/grind3d/dark_knight.glb dark
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/hoodknight/tripo_split_raw.glb art/grind3d/hood_knight.glb hood
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/tribe3d/tripo/warrior_split_raw.glb art/grind3d/outfit_archer.glb base_archer_outfit
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/basebody/tripo_base_v1_tex.glb art/grind3d/base_girl.glb base   (tripo_base_v1.glb = the same split without texture: flat COLORS)
 # A new model: plot its parts first (front / side point plot, a grid render for the joints), then add an entry to MODELS.
 import bpy, bmesh, sys, json, math
@@ -22,6 +23,11 @@ MODEL = sys.argv[3] if len(sys.argv) > 3 else 'huntress'
 SC, VOXEL = 10, .06
 # Roles: 'headblend' (head, blending to chest down the braids), 'heat:<bones>', 'rigid:<bone>', 'mix:<bone>=<w>,<bone>=<w>' (rigid, shared),
 # 'bow' / 'string' (rigid on the left hand, own meshes), 'auto' (rigid on the nearest bone), 'drop'. Parts missing from ROLE take DEFAULT.
+MODELS_BASE_J = {'hips': (0, .41, .05), 'spine': (0, .47, .055), 'chest': (0, .55, .055), 'head': (0, .615, .045), 'top': (0, .91, .04),
+       'upperarml': (.065, .605, .035), 'lowerarml': (.14, .49, .042), 'wristl': (.195, .395, .05), 'handl': (.2, .385, .05), 'handslotl': (.222, .358, .05),
+       'upperarmr': (-.065, .605, .035), 'lowerarmr': (-.14, .49, .042), 'wristr': (-.195, .395, .05), 'handr': (-.2, .385, .05), 'handslotr': (-.222, .358, .05),
+       'upperlegl': (.055, .4, .055), 'lowerlegl': (.076, .21, .05), 'footl': (.095, .065, .045), 'toesl': (.105, .01, .13),
+       'upperlegr': (-.055, .4, .055), 'lowerlegr': (-.076, .21, .05), 'footr': (-.095, .065, .045), 'toesr': (-.105, .01, .13)}   # the base body (2026-11-21)
 MODELS = {
   # the "tribal female warrior" split on 2026-11-17 (game coords: y up, she looks at +z, her left hand +x, 0.97 tall)
   'huntress': dict(
@@ -102,11 +108,16 @@ MODELS = {
     COLORS={0: 'f0b48c', 2: 'f0b48c', 3: 'f0b48c', 4: 'f0b48c', 8: 'f0b48c', 1: '7a3e22', 9: '7a3e22', 5: '9a9aa2', 7: '9a9aa2', 6: '3c3c44',
             10: '2a1810', 11: '2a1810', 12: 'c0605a', 21: '5a3020', 23: '5a3020', 26: 'd8342c', 27: 'd8342c', 28: 'd8342c', 29: 'd8342c',
             30: 'b01818', 31: 'b01818', 32: '2a1810', 33: '2a1810', 34: 'ffffff', 35: 'ffffff', 'default': '7a3e22'},
-    J={'hips': (0, .41, .05), 'spine': (0, .47, .055), 'chest': (0, .55, .055), 'head': (0, .615, .045), 'top': (0, .91, .04),
-       'upperarml': (.065, .605, .035), 'lowerarml': (.14, .49, .042), 'wristl': (.195, .395, .05), 'handl': (.2, .385, .05), 'handslotl': (.222, .358, .05),
-       'upperarmr': (-.065, .605, .035), 'lowerarmr': (-.14, .49, .042), 'wristr': (-.195, .395, .05), 'handr': (-.2, .385, .05), 'handslotr': (-.222, .358, .05),
-       'upperlegl': (.055, .4, .055), 'lowerlegl': (.076, .21, .05), 'footl': (.095, .065, .045), 'toesl': (.105, .01, .13),
-       'upperlegr': (-.055, .4, .055), 'lowerlegr': (-.076, .21, .05), 'footr': (-.095, .065, .045), 'toesr': (-.105, .01, .13)}),
+    J=MODELS_BASE_J),
+  # OUTFIT TEST (owner 2026-11-21 "ลองเอาชุดธนูมาใส่ ... เอาแต่ชุด"): the huntress's armour / cape / fur skirt (warrior_split_raw parts 1 + 6; her arms,
+  # legs, boots and head are fused with skin, so they stay out) moved from her joints to the BASE body's joints (FIT), pushed outside the base's
+  # tank top / shorts (PUSH_OUT), weighted on the base joints, exported as one mesh "outfit" with its own atlas = worn on the base rig in the game
+  'base_archer_outfit': dict(
+    ROLE={1: 'heat:hips,spine,chest,upperlegl,upperlegr', 6: 'heat:hips,spine,chest'}, DEFAULT='drop', FACES={1: 12000, 6: 2000}, SHOULDER=[1],
+    MESH={1: 'outfit', 6: 'outfit'},
+    FIT=dict(src=(-.025, .37, .045), dst=(0, .41, .05), scale=(.765, .951, .92)),   # her hips -> base hips; shoulder width .17 -> .13, hips-shoulder .205 -> .195
+    PUSH_OUT=('art/incoming/basebody/tripo_base_v1_tex.glb', ['tripo_part_5', 'tripo_part_7', 'tripo_part_6'], .006),
+    J=MODELS_BASE_J),
 }
 CFG = MODELS[MODEL]; ROLE, J = CFG['ROLE'], CFG['J']
 BONES = [('hips', 'spine', None), ('spine', 'chest', 'hips'), ('chest', 'head', 'spine'), ('head', 'top', 'chest'),
@@ -147,6 +158,15 @@ def part_images(o):
     return base, norm, rm
 IMG = {n: part_images(o) for n, o in parts.items()}
 
+# ---- outfit models: move the parts from their own body's joints onto another body's (game units, before x10), then push them outside that body
+if 'FIT' in CFG:
+    F = CFG['FIT']; (cx, cy, cz), (dx, dy, dz), (sx, sy, sz) = F['src'], F['dst'], F['scale']
+    for n, o in parts.items():
+        o.parent = None; only(o); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        for v in o.data.vertices:
+            gx, gy, gz = v.co.x, v.co.z, -v.co.y
+            nx, ny, nz = dx + (gx - cx) * sx, dy + (gy - cy) * sy, dz + (gz - cz) * sz
+            v.co = Vector((nx, -nz, ny))
 # ---- geometry: x10, join seams, cap the cut holes, decimate when the part has a budget
 for n, o in parts.items():
     o.parent = None; only(o); o.scale = (SC, SC, SC); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
@@ -158,6 +178,20 @@ for n, o in parts.items():
     if fb and f0 > fb:
         d = o.modifiers.new('dec', 'DECIMATE'); d.ratio = fb / f0; bpy.ops.object.modifier_apply(modifier='dec')
 print('faces', sum(len(o.data.polygons) for o in parts.values()))
+if 'PUSH_OUT' in CFG:   # nothing of the outfit inside the body it is worn on (its tank top / shorts would poke through)
+    path, names, off = CFG['PUSH_OUT']; before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path); new = [o for o in bpy.data.objects if o not in before]; newn = [o.name for o in new]; tg = [o for o in new if o.type == 'MESH' and o.name.split('.')[0] in names]
+    for o in tg:
+        o.parent = None; only(o); o.scale = (SC, SC, SC); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    for q in bpy.data.objects: q.select_set(False)
+    for o in tg: o.select_set(True)
+    bpy.context.view_layer.objects.active = tg[0]; bpy.ops.object.join(); tgt = tg[0]
+    for n, o in parts.items():
+        only(o); m = o.modifiers.new('push', 'SHRINKWRAP'); m.target = tgt; m.wrap_method = 'NEAREST_SURFACEPOINT'; m.wrap_mode = 'OUTSIDE'; m.offset = off * SC
+        bpy.ops.object.modifier_apply(modifier='push')
+    print('pushed outside', tgt.name)
+    for nm in newn:
+        if nm in bpy.data.objects: bpy.data.objects.remove(bpy.data.objects[nm])
 
 # ---- armature at the model's joints
 arm = bpy.data.armatures.new('rig'); rig = bpy.data.objects.new('rig', arm); bpy.context.collection.objects.link(rig)
