@@ -8,6 +8,7 @@ Commit after EVERY picture so nothing is lost. Do not edit html, tools or CLAUDE
 
 ## Style lock (every picture)
 - Look at `art/incoming/dragon_moves/base_side.png` first (the hero) and `git show codex/desert-monsters:art/incoming/desert_monsters/mummy_base.png` (a monster). Match them: smooth PAINTED 2D, confident dark outline on foreground objects, rich saturated colour, soft cel shading, warm light. NOT pixel art, not photo, not 3D render.
+- HIGH FANTASY (owner: "ตัวละครขอดูแฟนซีมีสกิล"): magic is visible everywhere: glowing runes on the ruins, floating crystal shards, spirit flames, ornate gold armour details. Characters must look fancy, heroic and magical, never plain.
 - World: a golden-hour desert oasis with sandstone tomb ruins, turquoise water, palms, red and gold cloth, warm lanterns. Palette: amber, terracotta, cream sand, teal shadow accents, deep violet distance.
 - Light comes from the upper left in every picture.
 - No text, letters, numbers, logos, watermark, UI frames or characters unless the item asks for them.
@@ -36,6 +37,19 @@ Characters (same quality as the hero; side view facing RIGHT unless stated):
 13. `npc_elder.png` (1024 x 1024, magenta): a wise chibi old tortoise person with staff and gold jewellery, facing LEFT.
 14. `golem_base.png`: BOSS, sand-stone golem, gold tomb runes glowing orange, huge fists, heavy silhouette, 2 x the hero's height, plain flat white background.
 15-17. `golem_walk.png`, `golem_attack.png`, `golem_hurt_death.png`: same sheet rules as `docs/codex/dragon/MONSTERS.md`: 16 frames, 4 x 4, portrait 1024 x 1536, flat blue #0248BA, thin dark ground line in each cell, same size every frame, moving in place, never touching another cell. Attack = raises both fists, smashes the ground with a burst of sand. Death = cracks and crumbles into a pile of glowing rubble.
+
+Hero skills (do these right after the golem; they are the selling point, make them spectacular). The hero is exactly `art/incoming/dragon_moves/base_side.png`.
+Body sheets use the same 16-frame sheet rules as the golem (4 x 4, 1024 x 1536, flat blue #0248BA, ground line, same size, facing RIGHT). Draw only the hero and the flames touching him or his spear in these:
+17a. `hero_skill_dragon.png`: spirit-dragon strike: he crouches, spear blazes with gold runes, then a mighty forward thrust, holds, recovers.
+17b. `hero_skill_meteor.png`: leaps high in place, spins the spear overhead, plunges it into the ground, recovers.
+17c. `hero_skill_cyclone.png`: whirls the spear around his body in a full fiery spin, loopable in the middle, ends ready.
+17d. `hero_skill_ult.png`: ultimate: raises the spear to the sky, aura flares, his mane and cape blaze, slams the spear forward in a final pose.
+Effect sheets (1024 x 1024, strict 4 x 4 grid, 16 frames, PURE BLACK #000000 background, no character, bright glowing painted anime-style fire and magic in red, orange, gold and white, each frame inside its cell, fading out at the end):
+17e. `fx_dragon.png`: a huge fire-dragon spirit bursting to the RIGHT, head roaring, body trailing flame.
+17f. `fx_meteor.png`: seen from the side, a blazing impact on the ground: pillar of fire, shockwave ring, flying embers.
+17g. `fx_cyclone.png`: a looping tornado of flame and gold sparks around an empty centre.
+17h. `fx_ult.png`: a gigantic golden-red rune circle igniting, then an explosion of phoenix-like fire.
+17i. `fx_hit.png`: a compact sharp hit spark with gold and white shards.
 
 Interface art (cut-out, magenta):
 18. `icons.png` (1024 x 1024): a strict 4 x 4 grid of 16 painted game icons, each centred in its cell with a wide gap: spear thrust, spear sweep, fire leap, flame dash, red potion, blue potion, gold coin, turquoise gem, leather boots, gold ring, iron chest armour, flame spear, scroll, key, heart, star.
