@@ -126,7 +126,7 @@ MODELS = {
   # are dropped (the base body is used), skin faces are cut off the bracer + forearm parts, the bow (everything right of x .185) is its own mesh.
   'base_wolf_outfit': dict(
     ROLE={1: 'rigid:head', 0: 'heat:hips,spine,chest', 2: 'heat:hips,upperlegl,upperlegr', 3: 'heat:lowerlegl,footl', 4: 'heat:lowerlegr,footr',
-          11: 'heat:spine,chest', 5: 'rigid:lowerarml', 7: 'rigid:lowerarmr', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips',
+          11: 'heat:spine,chest', 5: 'rigid:lowerarml', 7: 'rigid:lowerarmr', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips', 157: 'string', 158: 'string',
           **{k: 'rigid:chest' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)}},
     # Tripo made TWO quivers: the short one high on her right shoulder (8) with the arrows poking out sideways (21 + bits) = dropped; the long
     # diagonal one (12 + fur rim 10 + its arrows) = its own mesh "quiver" (owner: "เอาออกอันเดียวพอ ของนักธนูค่อยใส่ หากอาชีพอื่นก็ไม่ต้องใส่")
@@ -145,7 +145,7 @@ MODELS = {
     ROLE={1: 'rigid:head', 9: 'headblend', 54: 'mix:chest=.5,head=.5', 0: 'heat:hips,spine,chest', 2: 'heat:hips,upperlegl,upperlegr',
           3: 'heat:upperlegl,lowerlegl,footl', 4: 'heat:upperlegr,lowerlegr,footr', 45: 'heat:hips,upperlegr,lowerlegr', 46: 'heat:hips,upperlegl,lowerlegl',
           44: 'heat:chest,upperarmr,lowerarmr', 49: 'heat:chest,upperarml,lowerarml', 5: 'heat:lowerarml,handl', 7: 'heat:lowerarmr,handr', 20: 'rigid:handl',
-          11: 'heat:spine,chest', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips',
+          11: 'heat:spine,chest', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips', 157: 'string', 158: 'string',   # 157 / 158 = the bowstring (left of BOWX, it was 'auto' and floated on another bone)
           **{k: 'rigid:chest' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)}},
     DROP={8, 21, 101, 102, 103, 111, 114, 115, 116, 136, 137, 155, 156, 162, 164, 169, 183, 184, 194},
     MESH={k: 'quiver' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)},
