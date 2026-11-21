@@ -14,6 +14,7 @@
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/hoodknight/tripo_split_raw.glb art/grind3d/hood_knight.glb hood
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/tribe3d/tripo/warrior_split_raw.glb art/grind3d/outfit_archer.glb base_archer_outfit
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/basebody/tripo_wolf_v1_tex_clean.glb art/grind3d/outfit_wolf.glb base_wolf_outfit
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/basebody/tripo_wolf_v1_tex_clean.glb art/grind3d/wolf_girl.glb wolf_full
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/basebody/tripo_base_v1_tex.glb art/grind3d/base_girl.glb base   (tripo_base_v1.glb = the same split without texture: flat COLORS)
 # A new model: plot its parts first (front / side point plot, a grid render for the joints), then add an entry to MODELS.
 import bpy, bmesh, sys, json, math
@@ -137,6 +138,19 @@ MODELS = {
     PUSH_OUT=('art/incoming/basebody/tripo_base_v1_tex.glb', ['tripo_part_0', 'tripo_part_2', 'tripo_part_3', 'tripo_part_4', 'tripo_part_8',
               'tripo_part_5', 'tripo_part_7', 'tripo_part_6'], .004),
     J=MODELS_BASE_J),
+  # WOLF GIRL as ONE whole character (owner 2026-11-21 "ไม่จำเป็นต้องเอาตัวมาถอดใส่ ... แต่ละตัวไปเลย, ชุดเป็นเซ็ตไปเลย"): the same textured, cleaned
+  # wolf split, this time WITH her own head / face / arms / thighs (no base body under it). Joints = the base's moved by her offset (the GPT guide
+  # lines gave her the base's proportions). The long quiver is its own mesh, the bow its own mesh, the short quiver dropped.
+  'wolf_full': dict(
+    ROLE={1: 'rigid:head', 9: 'headblend', 54: 'mix:chest=.5,head=.5', 0: 'heat:hips,spine,chest', 2: 'heat:hips,upperlegl,upperlegr',
+          3: 'heat:upperlegl,lowerlegl,footl', 4: 'heat:upperlegr,lowerlegr,footr', 45: 'heat:hips,upperlegr,lowerlegr', 46: 'heat:hips,upperlegl,lowerlegl',
+          44: 'heat:chest,upperarmr,lowerarmr', 49: 'heat:chest,upperarml,lowerarml', 5: 'heat:lowerarml,handl', 7: 'heat:lowerarmr,handr', 20: 'rigid:handl',
+          11: 'heat:spine,chest', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips',
+          **{k: 'rigid:chest' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)}},
+    DROP={8, 21, 101, 102, 103, 111, 114, 115, 116, 136, 137, 155, 156, 162, 164, 169, 183, 184, 194},
+    MESH={k: 'quiver' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)},
+    BOWX=.185, BODY_NAME='body', HB=(.6, .04), DEFAULT='auto', FACES={}, SHOULDER=[0],
+    J={k: (v[0] - .015, v[1], v[2] - .02) for k, v in MODELS_BASE_J.items()}),
 }
 CFG = MODELS[MODEL]; ROLE, J = CFG['ROLE'], CFG['J']
 BONES = [('hips', 'spine', None), ('spine', 'chest', 'hips'), ('chest', 'head', 'spine'), ('head', 'top', 'chest'),
