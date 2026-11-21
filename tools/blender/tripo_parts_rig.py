@@ -129,7 +129,8 @@ MODELS = {
           **{k: 'rigid:chest' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)}},
     # Tripo made TWO quivers: the short one high on her right shoulder (8) with the arrows poking out sideways (21 + bits) = dropped; the long
     # diagonal one (12 + fur rim 10 + its arrows) = its own mesh "quiver" (owner: "เอาออกอันเดียวพอ ของนักธนูค่อยใส่ หากอาชีพอื่นก็ไม่ต้องใส่")
-    DROP={9, 20, 44, 45, 46, 49, 54, 8, 21, 101, 102, 103, 111, 114, 115, 116, 136, 137, 155, 156, 162, 164, 169, 183, 184, 194},
+    DROP={9, 20, 44, 45, 46, 49, 54, 35, 151, 152, 8, 21,   # 35 / 151 / 152 = her own eyes + lash, they sat on the base's face (doubled eyes)
+          101, 102, 103, 111, 114, 115, 116, 136, 137, 155, 156, 162, 164, 169, 183, 184, 194},
     MESH={k: 'quiver' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)},
     BOWX=.185, STRIP_SKIN=[5, 7], BODY_NAME='wolf', DEFAULT='auto', FACES={}, SHOULDER=[],
     FIT=dict(src=(-.015, 0, .03), dst=(0, 0, .05), scale=(1, 1, 1)),
