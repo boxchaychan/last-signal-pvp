@@ -125,9 +125,12 @@ MODELS = {
   # are dropped (the base body is used), skin faces are cut off the bracer + forearm parts, the bow (everything right of x .185) is its own mesh.
   'base_wolf_outfit': dict(
     ROLE={1: 'rigid:head', 0: 'heat:hips,spine,chest', 2: 'heat:hips,upperlegl,upperlegr', 3: 'heat:lowerlegl,footl', 4: 'heat:lowerlegr,footr',
-          11: 'heat:spine,chest', 5: 'rigid:lowerarml', 7: 'rigid:lowerarmr', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips'},
-    DROP={9, 20, 44, 45, 46, 49, 54, 8, 10, 12, 21, 101, 102, 103, 111, 114, 115, 116, 129, 130, 131, 135, 136, 137, 138, 153, 154, 155, 156, 159, 160, 161,
-          162, 164, 165, 167, 168, 169, 170, 171, 172, 173, 174, 175, 183, 184, 188, 194},
+          11: 'heat:spine,chest', 5: 'rigid:lowerarml', 7: 'rigid:lowerarmr', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips',
+          **{k: 'rigid:chest' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)}},
+    # Tripo made TWO quivers: the short one high on her right shoulder (8) with the arrows poking out sideways (21 + bits) = dropped; the long
+    # diagonal one (12 + fur rim 10 + its arrows) = its own mesh "quiver" (owner: "เอาออกอันเดียวพอ ของนักธนูค่อยใส่ หากอาชีพอื่นก็ไม่ต้องใส่")
+    DROP={9, 20, 44, 45, 46, 49, 54, 8, 21, 101, 102, 103, 111, 114, 115, 116, 136, 137, 155, 156, 162, 164, 169, 183, 184, 194},
+    MESH={k: 'quiver' for k in (10, 12, 129, 130, 131, 135, 138, 153, 154, 159, 160, 161, 165, 167, 168, 170, 171, 172, 173, 174, 175, 188)},
     BOWX=.185, STRIP_SKIN=[5, 7], BODY_NAME='wolf', DEFAULT='auto', FACES={}, SHOULDER=[],
     FIT=dict(src=(-.015, 0, .03), dst=(0, 0, .05), scale=(1, 1, 1)),
     PUSH_OUT=('art/incoming/basebody/tripo_base_v1_tex.glb', ['tripo_part_0', 'tripo_part_2', 'tripo_part_3', 'tripo_part_4', 'tripo_part_8',
