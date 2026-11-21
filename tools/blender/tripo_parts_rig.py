@@ -13,6 +13,7 @@
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/darkknight/tripo_split_raw.glb art/grind3d/dark_knight.glb dark
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/grind3d/hoodknight/tripo_split_raw.glb art/grind3d/hood_knight.glb hood
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/tribe3d/tripo/warrior_split_raw.glb art/grind3d/outfit_archer.glb base_archer_outfit
+#   python3 tools/blender/tripo_parts_rig.py art/incoming/basebody/tripo_wolf_v1_tex_clean.glb art/grind3d/outfit_wolf.glb base_wolf_outfit
 #   python3 tools/blender/tripo_parts_rig.py art/incoming/basebody/tripo_base_v1_tex.glb art/grind3d/base_girl.glb base   (tripo_base_v1.glb = the same split without texture: flat COLORS)
 # A new model: plot its parts first (front / side point plot, a grid render for the joints), then add an entry to MODELS.
 import bpy, bmesh, sys, json, math
@@ -118,6 +119,20 @@ MODELS = {
     FIT=dict(src=(-.025, .37, .045), dst=(0, .41, .05), scale=(.765, .951, .92)),   # her hips -> base hips; shoulder width .17 -> .13, hips-shoulder .205 -> .195
     PUSH_OUT=('art/incoming/basebody/tripo_base_v1_tex.glb', ['tripo_part_5', 'tripo_part_7', 'tripo_part_6'], .006),
     J=MODELS_BASE_J),
+  # WOLF SET (owner 2026-11-21): GPT drew it ON the base guide lines -> Tripo multi-view + split 181 parts + texture; quiver / arrows dropped
+  # ("เอาลูกธนูข้างหลังออก") and their colour painted out of the pelt first (tools/art/glb_texclean.py -> tripo_wolf_v1_tex_clean.glb).
+  # Its body is the base's size already (neck at .55, boot tops at the knees): FIT only moves it. Her own head / upper arms / thighs / hand bits
+  # are dropped (the base body is used), skin faces are cut off the bracer + forearm parts, the bow (everything right of x .185) is its own mesh.
+  'base_wolf_outfit': dict(
+    ROLE={1: 'rigid:head', 0: 'heat:hips,spine,chest', 2: 'heat:hips,upperlegl,upperlegr', 3: 'heat:lowerlegl,footl', 4: 'heat:lowerlegr,footr',
+          11: 'heat:spine,chest', 5: 'rigid:lowerarml', 7: 'rigid:lowerarmr', 6: 'rigid:hips', 16: 'rigid:hips', 24: 'rigid:hips'},
+    DROP={9, 20, 44, 45, 46, 49, 54, 8, 10, 12, 21, 101, 102, 103, 111, 114, 115, 116, 129, 130, 131, 135, 136, 137, 138, 153, 154, 155, 156, 159, 160, 161,
+          162, 164, 165, 167, 168, 169, 170, 171, 172, 173, 174, 175, 183, 184, 188, 194},
+    BOWX=.185, STRIP_SKIN=[5, 7], BODY_NAME='wolf', DEFAULT='auto', FACES={}, SHOULDER=[],
+    FIT=dict(src=(-.015, 0, .03), dst=(0, 0, .05), scale=(1, 1, 1)),
+    PUSH_OUT=('art/incoming/basebody/tripo_base_v1_tex.glb', ['tripo_part_0', 'tripo_part_2', 'tripo_part_3', 'tripo_part_4', 'tripo_part_8',
+              'tripo_part_5', 'tripo_part_7', 'tripo_part_6'], .004),
+    J=MODELS_BASE_J),
 }
 CFG = MODELS[MODEL]; ROLE, J = CFG['ROLE'], CFG['J']
 BONES = [('hips', 'spine', None), ('spine', 'chest', 'hips'), ('chest', 'head', 'spine'), ('head', 'top', 'chest'),
@@ -134,11 +149,19 @@ parts = {}
 for o in list(bpy.data.objects):
     if o.type != 'MESH': continue
     n = int(o.name.split('_')[-1].split('.')[0]); role = ROLE.get(n, CFG['DEFAULT'])
+    if n in CFG.get('DROP', ()): role = 'drop'
     if role == 'drop': bpy.data.objects.remove(o)
     else: parts[n] = o
 for o in list(bpy.data.objects):
     if o.type != 'MESH': bpy.data.objects.remove(o)
-def role_of(n): return ROLE.get(n, CFG['DEFAULT'])
+BOWP = set()
+if 'BOWX' in CFG:   # every part whose middle is beyond BOWX (game x, her left) and has no role = the bow
+    for n, o in parts.items():
+        if n in ROLE: continue
+        ws = [o.matrix_world @ v.co for v in o.data.vertices]; cx = (min(w.x for w in ws) + max(w.x for w in ws)) / 2
+        if cx > CFG['BOWX']: BOWP.add(n)
+    print('bow parts', sorted(BOWP))
+def role_of(n): return 'bow' if n in BOWP else ROLE.get(n, CFG['DEFAULT'])
 print('parts kept', len(parts))
 
 def only(o):
@@ -158,6 +181,18 @@ def part_images(o):
     return base, norm, rm
 IMG = {n: part_images(o) for n, o in parts.items()}
 
+# ---- skin faces off parts that Tripo fused with a bit of her body (bracer + forearm + hand): sample the texture at each face's UV middle
+def is_skin(c): r, g, b = c[0] * 255, c[1] * 255, c[2] * 255; return r > 170 and 100 < g < 215 and 60 < b < 185 and 20 < r - g < 100 and g - b > 5
+for n in CFG.get('STRIP_SKIN', []):
+    if n not in parts or not IMG[n][0]: continue
+    o = parts[n]; img = IMG[n][0]; W_, H_ = img.size; px = np.empty(W_ * H_ * 4, np.float32); img.pixels.foreach_get(px); px = px.reshape(H_, W_, 4)
+    uvl = o.data.uv_layers.active.data; kill = []
+    for f in o.data.polygons:
+        u = sum(uvl[li].uv.x for li in f.loop_indices) / f.loop_total; v = sum(uvl[li].uv.y for li in f.loop_indices) / f.loop_total
+        c = px[min(H_ - 1, max(0, int(v * H_))), min(W_ - 1, max(0, int(u * W_)))]   # Blender pixels: row 0 = bottom = uv.y 0
+        if is_skin(c): kill.append(f.index)
+    bm = bmesh.new(); bm.from_mesh(o.data); bm.faces.ensure_lookup_table(); bmesh.ops.delete(bm, geom=[bm.faces[i] for i in kill], context='FACES'); bm.to_mesh(o.data); bm.free()
+    print('skin faces cut from part', n, len(kill))
 # ---- outfit models: move the parts from their own body's joints onto another body's (game units, before x10), then push them outside that body
 if 'FIT' in CFG:
     F = CFG['FIT']; (cx, cy, cz), (dx, dy, dz), (sx, sy, sz) = F['src'], F['dst'], F['scale']
@@ -187,6 +222,7 @@ if 'PUSH_OUT' in CFG:   # nothing of the outfit inside the body it is worn on (i
     for o in tg: o.select_set(True)
     bpy.context.view_layer.objects.active = tg[0]; bpy.ops.object.join(); tgt = tg[0]
     for n, o in parts.items():
+        if role_of(n) in ('bow', 'string'): continue
         only(o); m = o.modifiers.new('push', 'SHRINKWRAP'); m.target = tgt; m.wrap_method = 'NEAREST_SURFACEPOINT'; m.wrap_mode = 'OUTSIDE'; m.offset = off * SC
         bpy.ops.object.modifier_apply(modifier='push')
     print('pushed outside', tgt.name)
@@ -350,7 +386,7 @@ def join(objs, name):
     for q in objs: q.select_set(True)
     bpy.context.view_layer.objects.active = objs[0]; bpy.ops.object.join(); objs[0].name = name; objs[0].data.name = name; return objs[0]
 MESHN = CFG.get('MESH', {})
-outs = [join([o for n, o in sorted(parts.items()) if role_of(n) not in ('bow', 'string') and n not in MESHN], 'body')] + [join([o for n, o in sorted(parts.items()) if MESHN.get(n) == nm], nm) for nm in sorted(set(MESHN.values()))] + [
+outs = [join([o for n, o in sorted(parts.items()) if role_of(n) not in ('bow', 'string') and n not in MESHN], CFG.get('BODY_NAME', 'body'))] + [join([o for n, o in sorted(parts.items()) if MESHN.get(n) == nm], nm) for nm in sorted(set(MESHN.values()))] + [
         join([o for n, o in sorted(parts.items()) if role_of(n) == 'bow'], 'bow'),
         join([o for n, o in sorted(parts.items()) if role_of(n) == 'string'], 'string')]
 outs = [o for o in outs if o]
