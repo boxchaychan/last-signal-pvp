@@ -144,32 +144,32 @@ function groundH(x, z) {   /* height under a point (stairs ramp up toward their 
 
 /* ---------- renderer, low-res target + edge pass */
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
-const LOOK3D = Q.get('look') !== 'px';   /* default (owner 2026-11-20 "กลับไปรันแมพ 3D นะ ตัวละคร 2D") = the map as plain 3D with a painted 2D hero card; ?look=px = the pixel-art look */
-const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: LOOK3D }); renderer.outputEncoding = THREE.sRGBEncoding; renderer.shadowMap.enabled = true; renderer.shadowMap.type = LOOK3D ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap; if (LOOK3D) { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = SMOOTH ? 1 : 1.05; }
+const LOOK3D = Q.get('look') !== 'px', PIX3D = Q.get('look') === 'pix3d' || (!Q.get('look') && Q.get('hero') === 'eagle'), PXS = +(Q.get('pxs') || 2);   /* pix3d (owner 2026-11-21 "เอาแมพ 3D ทำเป็นพิกเซลสวยๆ ... พิกเซล 3D"): the big smooth 3D map drawn as pixel art: orthographic camera snapped to whole texels, rendered small (1 texel = PXS device pixels = the eagle's pixel), outlined, fewer shades */   /* default (owner 2026-11-20 "กลับไปรันแมพ 3D นะ ตัวละคร 2D") = the map as plain 3D with a painted 2D hero card; ?look=px = the pixel-art look */
+const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: LOOK3D && !PIX3D }); renderer.outputEncoding = THREE.sRGBEncoding; renderer.shadowMap.enabled = true; renderer.shadowMap.type = LOOK3D && !PIX3D ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap; if (LOOK3D) { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = SMOOTH ? 1 : 1.05; }
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xf3d29c); scene.fog = null;
-const camera = LOOK3D ? new THREE.PerspectiveCamera(28, 1, 1, 400) : new THREE.OrthographicCamera(-10, 10, 6, -6, 1, 300);
+const camera = LOOK3D && !PIX3D ? new THREE.PerspectiveCamera(28, 1, 1, 400) : new THREE.OrthographicCamera(-10, 10, 6, -6, 1, 300);
 const YAW = +(Q.get('yaw') || 24) * Math.PI / 180, PITCH = +(Q.get('pitch') || 40) * Math.PI / 180, CDIR = new V3(Math.sin(YAW) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(YAW) * Math.cos(PITCH));
 scene.add(new THREE.HemisphereLight(0xfff6ec, 0xd8a890, SMOOTH ? .52 : .66));   /* smooth 3D: less fill, more sun = deeper shade */
 const sun = new THREE.DirectionalLight(0xfff0d6, SMOOTH ? 1.02 : .82); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 }); sun.shadow.bias = -.0008; sun.shadow.normalBias = .02; scene.add(sun, sun.target);
 const SUNDIR = new V3(-.55, 1, .35).normalize();
-const PX = { on: Q.get('px') !== '0' && !LOOK3D, k: 0, T: 1, bw: 2, bh: 2, m: 0, size: +(Q.get('pxw') || 640) };   /* texels ACROSS the screen, like the clip (640 wide) */
+const PX = { on: (Q.get('px') !== '0' && !LOOK3D) || PIX3D, k: 0, T: 1, bw: 2, bh: 2, m: 0, size: +(Q.get('pxw') || 640) };   /* texels ACROSS the screen, like the clip (640 wide) */
 let rt = null; const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-const postMat = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tD: { value: null }, px: { value: new THREE.Vector2(1, 1) }, edge: { value: .004 } },
+const postMat = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tD: { value: null }, px: { value: new THREE.Vector2(1, 1) }, edge: { value: .004 }, sat: { value: PIX3D ? .95 : .78 }, warm: { value: PIX3D ? .05 : .14 }, shades: { value: PIX3D ? 18 : 12 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
-  fragmentShader: `uniform sampler2D tC, tD; uniform vec2 px; uniform float edge; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tC, tD; uniform vec2 px; uniform float edge, sat, warm, shades; varying vec2 vUv;
     void main(){ vec4 c = texture2D(tC, vUv); float d = texture2D(tD, vUv).x;
       float dl = texture2D(tD, vUv - vec2(px.x, 0.)).x, dr = texture2D(tD, vUv + vec2(px.x, 0.)).x, du = texture2D(tD, vUv + vec2(0., px.y)).x, dd = texture2D(tD, vUv - vec2(0., px.y)).x;
       float far = max(max(dl, dr), max(du, dd)) - d;   /* a neighbour much farther = this texel is the edge of something nearer */
-      vec3 col = c.rgb; float lum = dot(col, vec3(.3, .59, .11)); col = mix(vec3(lum), col, .78); col = mix(col, vec3(1., .93, .84), .14);   /* softer, warmer, paler like the clip */
+      vec3 col = c.rgb; float lum = dot(col, vec3(.3, .59, .11)); col = mix(vec3(lum), col, sat); col = mix(col, vec3(1., .93, .84), warm);   /* softer, warmer, paler like the clip */
       if (far > edge) col *= vec3(.74, .46, .42);   /* warm red-brown outline */
-      col = floor(col * 12. + .5) / 12.;   /* fewer shades */
+      col = floor(col * shades + .5) / shades;   /* fewer shades */
       gl_FragColor = vec4(col, 1.); }` });
 postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
 let SW = 800, SH = 450, DPR = 1;
 function resize() {
   SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR;
-  const dp = devicePixelRatio || 1; if (PX.on) { PX.k = Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)); PX.T = PX.k / dp; } else { PX.k = 1; PX.T = 1 / Math.min(2, dp); }
-  PX.m = LOOK3D ? 0 : 2 * PX.T; if (LOOK3D) glc.style.imageRendering = 'auto'; PX.bw = Math.ceil((SW + 2 * PX.m) / PX.T); PX.bh = Math.ceil((SH + 2 * PX.m) / PX.T);
+  const dp = devicePixelRatio || 1; if (PX.on) { PX.k = PIX3D ? PXS : Math.max(1, Math.round(Math.max(SW, SH) * dp / PX.size)); PX.T = PX.k / dp; } else { PX.k = 1; PX.T = 1 / Math.min(2, dp); }
+  PX.m = LOOK3D && !PIX3D ? 0 : 2 * PX.T; if (LOOK3D && !PIX3D) glc.style.imageRendering = 'auto'; PX.bw = Math.ceil((SW + 2 * PX.m) / PX.T); PX.bh = Math.ceil((SH + 2 * PX.m) / PX.T);
   renderer.setPixelRatio(1); renderer.setSize(PX.bw, PX.bh, false); glc.style.width = PX.bw * PX.T + 'px'; glc.style.height = PX.bh * PX.T + 'px';
   if (rt) rt.dispose(); rt = new THREE.WebGLRenderTarget(PX.bw, PX.bh, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter }); rt.texture.encoding = THREE.sRGBEncoding;
   rt.depthTexture = new THREE.DepthTexture(PX.bw, PX.bh); rt.depthTexture.type = THREE.UnsignedIntType; postMat.uniforms.tC.value = rt.texture; postMat.uniforms.tD.value = rt.depthTexture; postMat.uniforms.px.value.set(1 / PX.bw, 1 / PX.bh);
@@ -461,7 +461,7 @@ const HERO = { x: N * .27 + 3, z: N * .66 + 6.5, y: 0, face: 0, mixer: null, act
 /* hero card: [picture, width, height in map texels (1/32 unit), faces left, smooth]. Default = the dragon spear warrior, PAINTED 2D (Codex's base picture
    `art/incoming/dragon_moves/base_side.png` cut + 512 px tall, faces right; walk frames next), drawn smooth (linear filter); ?hero=tiger = the pixel tiger (?tiger=jump|stand|snap) */
 const HK = Q.get('hero') || 'dragon', A3 = HK === 'archer', A2 = HK === 'archer2d', EAGLE = HK === 'eagle';   /* eagle = the owner's painted eagle archer as a PixelLab Pro Flash pixel still (art/pixmap/eagle_pf.png), drawn at 2 screen pixels a sprite pixel (owner "ใช้ x2") */   /* archer = the 3D Tripo huntress, archer2d = the painted card */
-const HS = +(Q.get('hs') || 1), MSZ = +(Q.get('ms') || HS);   /* size test (owner 2026-11-21 "เทียบ 70 60 50"): ?hs=.7 = hero at 70 %; monsters follow (?ms= on its own) */
+const HS = +(Q.get('hs') || 1), MSZ = +(Q.get('ms') || (EAGLE ? .75 : HS));   /* the eagle is ~2.1 units tall at 1 texel a pixel: monsters at 75 % so a mummy is not a head taller than him */   /* size test (owner 2026-11-21 "เทียบ 70 60 50"): ?hs=.7 = hero at 70 %; monsters follow (?ms= on its own) */
 const TF = HK === 'dragon' ? ['art/pixmap/dragon_2d.png', 65, 90, false, true] : EAGLE ? ['art/pixmap/eagle8/south.png', 88, 88, false, false] : A2 ? ['art/incoming/archer/REF_sky_huntress_side.png', 59, 90, false, true]
   : { jump: ['art/pixmap/tiger.png', 64, 64], stand: ['art/pixmap/tiger_stand.png', 52, 66], snap: ['art/pixmap/tiger8.png', 67, 79] }[Q.get('tiger')] || ['art/pixmap/tiger8_pl.png', 65, 78];   /* tiger default = the owner's GPT 8-bit standing tiger tidied by PixelLab */
 const TIGER = HK !== 'ranger' && !A3 ? (() => { const t = new THREE.TextureLoader().load(TF[0]); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
@@ -589,8 +589,8 @@ function updHero(dt) {
     HERO.face = Math.atan2(mx, mz); HERO.mv = [mx, mz]; }
   for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (!wetAt(nx, nz) && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
-  if (TIGER) { const T = TIGER, tw = 1 / 32 / (+(Q.get('zoom') || 1)), sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; const mr = T.flip * (TF[3] ? -1 : 1); T.t.repeat.x = mr; T.t.offset.x = mr > 0 ? 0 : 1;
-    const anim = (DANIM && DANIM.idle) || (AANIM && AANIM.j) || E8, bob = HERO.moving && !anim ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; const pxw = EAGLE && LOOK3D ? 2 * CAM.vh / (SH * (devicePixelRatio || 1)) : tw; T.sp.scale.set(TF[1] * pxw * HS, TF[2] * pxw * HS, 1);
+  if (TIGER) { const T = TIGER, tw = PIX3D ? CAM.vh / PX.bh : 1 / 32 / (+(Q.get('zoom') || 1)), sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; const mr = T.flip * (TF[3] ? -1 : 1); T.t.repeat.x = mr; T.t.offset.x = mr > 0 ? 0 : 1;
+    const anim = (DANIM && DANIM.idle) || (AANIM && AANIM.j) || E8, bob = HERO.moving && !anim ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; const pxw = EAGLE && LOOK3D ? (PIX3D ? CAM.vh / PX.bh : 2 * CAM.vh / (SH * (devicePixelRatio || 1))) : tw;   /* pix3d: 1 sprite pixel = 1 map texel */ T.sp.scale.set(TF[1] * pxw * HS, TF[2] * pxw * HS, 1);
     if (E8) { const v = HERO.act ? HERO.aim : HERO.mv; if (v) HERO.e8 = eagleDir(v[0], v[1]); const walking = HERO.moving && !HERO.act, t = E8[(walking ? 'walk_' : '') + (HERO.e8 || 'south')]; if (T.sp.material.map !== t) { T.sp.material.map = t; T.sp.material.needsUpdate = true; }
       if (walking) { t.repeat.x = 1 / 8; t.offset.x = (Math.floor(RT * 11) % 8) / 8; } else { t.repeat.x = 1; t.offset.x = 0; } T.sp.center.set(.5, (walking ? 20.5 : 3.5) / 88); }   /* PixelLab's walk frames stand higher in their canvas (feet on row 67, the stills on row 84) */   /* walk frames at 11 fps; still picture when standing / shooting */   /* 8 directions: no mirroring */   /* eagle: 1 sprite pixel = 2 device pixels at the hero (crisp, owner "x2") */ if (anim && !E8) animHero(T, ix, iy); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
     const p = new V3(HERO.x * WS, HERO.y * WS + bob, HERO.z * WS); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
@@ -751,7 +751,7 @@ const PART = (() => { const mk = (n, size, add) => { const g = new THREE.BufferG
   return { big: mk(1100, 1.15, false), small: mk(900, .32, true), dust: mk(400, .75, false) }; })();
 function part(pool, x, y, z, vx, vy, vz, life, color) { const P = PART[pool], i = P.i; P.i = (P.i + 1) % P.n; const pa = P.pts.geometry.attributes.position.array; pa[i * 3] = x * WS; pa[i * 3 + 1] = y * WS; pa[i * 3 + 2] = z * WS; P.v[i * 3] = vx * WS; P.v[i * 3 + 1] = vy * WS; P.v[i * 3 + 2] = vz * WS; P.life[i] = P.max[i] = life;
   const c = new THREE.Color(color); P.c0[i * 3] = c.r; P.c0[i * 3 + 1] = c.g; P.c0[i * 3 + 2] = c.b; }
-function updParts(dt) { PSCALE.value = (LOOK3D ? PX.bh / 2 / Math.tan(camera.fov * Math.PI / 360) : PX.bh / 2 / (CAM.vh / 2)); for (const k in PART) { const P = PART[k], G = P.pts.geometry.attributes, pa = G.position.array, ca = G.color.array, al = G.alpha.array, ps = G.psize.array, big = k === 'big';
+function updParts(dt) { PSCALE.value = camera.isPerspectiveCamera ? PX.bh / 2 / Math.tan(camera.fov * Math.PI / 360) : PX.bh / CAM.vh * 120;   /* ortho: pixels a unit, times the camera distance the shader divides by */ for (const k in PART) { const P = PART[k], G = P.pts.geometry.attributes, pa = G.position.array, ca = G.color.array, al = G.alpha.array, ps = G.psize.array, big = k === 'big';
     for (let i = 0; i < P.n; i++) { if (P.life[i] <= 0) { al[i] = 0; continue; } P.life[i] -= dt; const f = Math.max(0, P.life[i] / P.max[i]);
       pa[i * 3] += P.v[i * 3] * dt; pa[i * 3 + 1] += P.v[i * 3 + 1] * dt; pa[i * 3 + 2] += P.v[i * 3 + 2] * dt; if (big) { P.v[i * 3 + 1] += 1.6 * dt; P.v[i * 3] *= .97; P.v[i * 3 + 2] *= .97; } else if (k === 'dust') { const dr = Math.exp(-dt * 4); P.v[i * 3] *= dr; P.v[i * 3 + 1] *= dr; P.v[i * 3 + 2] *= dr; } else P.v[i * 3 + 1] -= 9 * dt;
       if (big) { const r = P.c0[i * 3], g = P.c0[i * 3 + 1], b = P.c0[i * 3 + 2], hot = clamp((f - .55) / .45, 0, 1), ash = clamp((.35 - f) / .35, 0, 1), cold = b > r;   /* white-hot -> its colour -> dark red-brown smoke */
@@ -881,9 +881,10 @@ const _r = new V3(), _u = new V3();
 function updCam(dt) {
   const T = new V3(clamp(HERO.x, 7, N - 7) * WS, HERO.y * WS + .5, clamp(HERO.z, 5, N - 4) * WS); CAM.look.lerp(T, 1 - Math.exp(-dt * 5));
   const vh = CAM.vh, vw = vh * PX.bw / PX.bh;
-  if (LOOK3D) { camera.aspect = SW / SH; camera.updateProjectionMatrix(); const d = vh / 2 / Math.tan(camera.fov * Math.PI / 360); camera.position.copy(CAM.look).addScaledVector(CDIR, d); camera.lookAt(CAM.look); if (SHAKE.v > .001) { camera.position.x += (Math.random() - .5) * SHAKE.v; camera.position.y += (Math.random() - .5) * SHAKE.v * .6; } camera.updateMatrixWorld(); sun.position.copy(CAM.look).addScaledVector(SUNDIR, 80); sun.target.position.copy(CAM.look); if (scene.fog) { scene.fog.near = d * 1.15; scene.fog.far = d * 2.8; } glc.style.transform = ''; return; }
+  if (camera.isPerspectiveCamera) { camera.aspect = SW / SH; camera.updateProjectionMatrix(); const d = vh / 2 / Math.tan(camera.fov * Math.PI / 360); camera.position.copy(CAM.look).addScaledVector(CDIR, d); camera.lookAt(CAM.look); if (SHAKE.v > .001) { camera.position.x += (Math.random() - .5) * SHAKE.v; camera.position.y += (Math.random() - .5) * SHAKE.v * .6; } camera.updateMatrixWorld(); sun.position.copy(CAM.look).addScaledVector(SUNDIR, 80); sun.target.position.copy(CAM.look); if (scene.fog) { scene.fog.near = d * 1.15; scene.fog.far = d * 2.8; } glc.style.transform = ''; return; }
   camera.left = -vw / 2; camera.right = vw / 2; camera.top = vh / 2; camera.bottom = -vh / 2; camera.updateProjectionMatrix();
-  camera.position.copy(CAM.look).addScaledVector(CDIR, 120); camera.lookAt(CAM.look); camera.updateMatrixWorld();
+  camera.position.copy(CAM.look).addScaledVector(CDIR, 120); camera.lookAt(CAM.look); if (SHAKE.v > .001) { camera.position.x += Math.round((Math.random() - .5) * SHAKE.v * 8) / 8; } camera.updateMatrixWorld();
+  if (scene.fog) { scene.fog.near = 120 + vh * .35; scene.fog.far = 120 + vh * 1.7; }   /* pix3d: a little haze at the far top only */
   _r.set(1, 0, 0).applyQuaternion(camera.quaternion); _u.set(0, 1, 0).applyQuaternion(camera.quaternion);
   const tw = vh / PX.bh, pr = camera.position.dot(_r), pu = camera.position.dot(_u), dr = Math.round(pr / tw) * tw - pr, du = Math.round(pu / tw) * tw - pu;
   camera.position.addScaledVector(_r, dr).addScaledVector(_u, du); camera.updateMatrixWorld();
@@ -927,7 +928,7 @@ function updLife(dt) { if (!LOOK3D) return;
 const clock = new THREE.Clock(); let RT = 0;
 function frame() {
   requestAnimationFrame(frame); const dt = Math.min(.05, clock.getDelta()); RT += dt; TIMEU.value = RT;
-  if (window.MAP && MAP.paused) { renderer.render(scene, camera); drawUI(); return; }   /* checks: MAP.sim() steps the game, the loop only draws */
+  if (window.MAP && MAP.paused) { if (PX.on) { renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(postScene, postCam); } else renderer.render(scene, camera); drawUI(); return; }   /* checks: MAP.sim() steps the game, the loop only draws */
   HITSTOP.t -= dt; const cdt = HITSTOP.t > 0 ? dt * .07 : dt; SHAKE.v *= Math.exp(-dt * 9);
   updCombat(cdt); updHero(cdt); updCam(dt); updLife(dt); updFX(cdt);
   { const P = FOAM.geometry.attributes.position; if (P) { for (let i = 0; i < P.count; i++) { let y = P.getY(i) + dt * .6; const F = FOAMS[Math.floor(i / 3)]; if (y > F[1] + .45) y = F[1]; P.setY(i, y); } P.needsUpdate = true; } }
