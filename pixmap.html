@@ -460,9 +460,9 @@ const HERO = { x: N * .27 + 3, z: N * .66 + 6.5, y: 0, face: 0, mixer: null, act
   if (best) [HERO.x, HERO.z] = best; HERO.y = groundH(HERO.x, HERO.z); CAM.look.set(HERO.x * WS, HERO.y * WS + .5, HERO.z * WS); }   /* world units: the camera starts on the hero (no fly-over) */
 /* hero card: [picture, width, height in map texels (1/32 unit), faces left, smooth]. Default = the dragon spear warrior, PAINTED 2D (Codex's base picture
    `art/incoming/dragon_moves/base_side.png` cut + 512 px tall, faces right; walk frames next), drawn smooth (linear filter); ?hero=tiger = the pixel tiger (?tiger=jump|stand|snap) */
-const HK = Q.get('hero') || 'dragon', A3 = HK === 'archer', A2 = HK === 'archer2d';   /* archer = the 3D Tripo huntress, archer2d = the painted card */
+const HK = Q.get('hero') || 'dragon', A3 = HK === 'archer', A2 = HK === 'archer2d', EAGLE = HK === 'eagle';   /* eagle = the owner's painted eagle archer as a PixelLab Pro Flash pixel still (art/pixmap/eagle_pf.png), drawn at 2 screen pixels a sprite pixel (owner "ใช้ x2") */   /* archer = the 3D Tripo huntress, archer2d = the painted card */
 const HS = +(Q.get('hs') || 1), MSZ = +(Q.get('ms') || HS);   /* size test (owner 2026-11-21 "เทียบ 70 60 50"): ?hs=.7 = hero at 70 %; monsters follow (?ms= on its own) */
-const TF = HK === 'dragon' ? ['art/pixmap/dragon_2d.png', 65, 90, false, true] : A2 ? ['art/incoming/archer/REF_sky_huntress_side.png', 59, 90, false, true]
+const TF = HK === 'dragon' ? ['art/pixmap/dragon_2d.png', 65, 90, false, true] : EAGLE ? ['art/pixmap/eagle_pf.png', 64, 69, true, false] : A2 ? ['art/incoming/archer/REF_sky_huntress_side.png', 59, 90, false, true]
   : { jump: ['art/pixmap/tiger.png', 64, 64], stand: ['art/pixmap/tiger_stand.png', 52, 66], snap: ['art/pixmap/tiger8.png', 67, 79] }[Q.get('tiger')] || ['art/pixmap/tiger8_pl.png', 65, 78];   /* tiger default = the owner's GPT 8-bit standing tiger tidied by PixelLab */
 const TIGER = HK !== 'ranger' && !A3 ? (() => { const t = new THREE.TextureLoader().load(TF[0]); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping;
   if (TF[4]) { t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipMapLinearFilter; t.anisotropy = 4; } else { t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; }
@@ -585,7 +585,7 @@ function updHero(dt) {
   for (const [ox, oz, r] of OBST) { const dx = HERO.x - ox, dz = HERO.z - oz, rr = r + .25; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { const nx = ox + dx / d * rr, nz = oz + dz / d * rr; if (!wetAt(nx, nz) && Math.abs(groundH(nx, nz) - groundH(HERO.x, HERO.z)) < .35) { HERO.x = nx; HERO.z = nz; } } } }
   HERO.y = lerp(HERO.y, groundH(HERO.x, HERO.z), 1 - Math.exp(-dt * 18));
   if (TIGER) { const T = TIGER, tw = 1 / 32 / (+(Q.get('zoom') || 1)), sx = ix || 0; if (Math.abs(sx) > .1) T.flip = sx > 0 ? 1 : -1; const mr = T.flip * (TF[3] ? -1 : 1); T.t.repeat.x = mr; T.t.offset.x = mr > 0 ? 0 : 1;
-    const anim = (DANIM && DANIM.idle) || (AANIM && AANIM.j), bob = HERO.moving && !anim ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; T.sp.scale.set(TF[1] * tw * HS, TF[2] * tw * HS, 1); if (anim) animHero(T, ix, iy); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
+    const anim = (DANIM && DANIM.idle) || (AANIM && AANIM.j), bob = HERO.moving && !anim ? Math.abs(Math.sin(RT * 11)) * 3 * tw : 0; const pxw = EAGLE && LOOK3D ? 2 * CAM.vh / (SH * (devicePixelRatio || 1)) : tw; T.sp.scale.set(TF[1] * pxw * HS, TF[2] * pxw * HS, 1);   /* eagle: 1 sprite pixel = 2 device pixels at the hero (crisp, owner "x2") */ if (anim) animHero(T, ix, iy); T.sh.position.set(HERO.x * WS, HERO.y * WS + .03, HERO.z * WS);
     const p = new V3(HERO.x * WS, HERO.y * WS + bob, HERO.z * WS); camera.updateMatrixWorld(); const R0 = new V3(1, 0, 0).applyQuaternion(camera.quaternion), U0 = new V3(0, 1, 0).applyQuaternion(camera.quaternion);
     if (PX.on) { const pr = p.dot(R0), pu = p.dot(U0); p.addScaledVector(R0, Math.round(pr / tw) * tw - pr).addScaledVector(U0, Math.round(pu / tw) * tw - pu); } T.sp.position.copy(p);
     const G = T.ghost; if (G) { if (G.material.map !== T.sp.material.map) { G.material.map = T.sp.material.map; G.material.needsUpdate = true; } G.position.copy(p); G.scale.copy(T.sp.scale); G.center.copy(T.sp.center); G.visible = LOOK3D && !HERO.dead; } }
@@ -614,7 +614,7 @@ const SKA = {
   dash: { strip: 'skill_gale', ms: 50, hold: { 5: 200 }, fire: [6], dmg: 34, pierce: 99, big: 2, range: 13, cd: 4, shake: .4, name: 'ธนูพายุ', key: 'K' },
   rain: { strip: 'skill_rain', ms: 52, hold: { 5: 120 }, fire: [6], dmg: 10, n: 16, r: 3, range: 10, cd: 7, ring: 1.7, name: 'ฝนธนู', key: 'L' },
   ring: { strip: 'skill_wolf', ms: 58, hold: { 7: 320 }, fire: [8], dmg: 55, dist: 11, w: 1.6, cd: 14, shake: .6, name: 'วิญญาณหมาป่า', key: 'U' } };
-const ARCHER = A3 || A2, SK = ARCHER ? SKA : SKD, HNAME = A3 ? 'นักธนูเผ่า' : A2 ? 'นักธนูฟ้า' : 'มังกรหอกเพลิง';
+const ARCHER = A3 || A2 || EAGLE, SK = ARCHER ? SKA : SKD, HNAME = EAGLE ? 'นักธนูอินทรี' : A3 ? 'นักธนูเผ่า' : A2 ? 'นักธนูฟ้า' : 'มังกรหอกเพลิง';
 /* step of a move at time t: frames-per-second moves (the dragon) give a running frame number; ms moves (the archer) walk their held frames */
 function stepOf(S, t) { if (!S.ms) return t * S.fps; const n = S.seq ? S.seq.length : 12; let i = 0, r = t * 1000; while (i < n) { const d = (S.hold && S.hold[i]) || S.ms; if (r < d) return i + r / d; r -= d; i++; } return n; }
 const stepTime = (S, st) => { if (!S.ms) return st / S.fps; let t = 0; for (let i = 0; i < st; i++) t += ((S.hold && S.hold[i]) || S.ms) / 1000; return t; };
@@ -838,8 +838,9 @@ function fxWolf(S) { const a = [...HERO.aim], x0 = HERO.x, z0 = HERO.z, y = grou
 /* ---------- HUD + buttons (drawn on the UI canvas): HP / XP / level top-left, combo + 3 skills bottom-right with cooldown pies; damage numbers and monster bars */
 const BTN = [{ k: 'atk', r: 40, dx: 66, dy: 66 }, { k: 'dash', r: 27, dx: 150, dy: 46 }, { k: 'rain', r: 27, dx: 140, dy: 122 }, { k: 'ring', r: 27, dx: 70, dy: 154 }], HELD = {};
 const btnPos = b => [SW - b.dx - 8, SH - b.dy - 6];
+const NEXT_HERO = EAGLE ? ['dragon', 'มังกร'] : ARCHER ? ['eagle', 'นกอินทรี'] : ['archer', 'นักธนู'];   /* dragon -> archer -> eagle -> dragon */
 const SWAP = { w: 128, h: 30 }, swapPos = () => [SW - SWAP.w - 10, 10];   /* top right: switch hero (dragon <-> archer), keeps the other settings in the link */
-function btnDown(e) { { const [x, y] = swapPos(); if (e.clientX > x && e.clientX < x + SWAP.w && e.clientY > y && e.clientY < y + SWAP.h) { const q = new URLSearchParams(location.search); q.set('hero', ARCHER ? 'dragon' : 'archer'); location.search = q.toString(); return true; } }
+function btnDown(e) { { const [x, y] = swapPos(); if (e.clientX > x && e.clientX < x + SWAP.w && e.clientY > y && e.clientY < y + SWAP.h) { const q = new URLSearchParams(location.search); q.set('hero', NEXT_HERO[0]); location.search = q.toString(); return true; } }
   for (const b of BTN) { const [x, y] = btnPos(b); if (Math.hypot(e.clientX - x, e.clientY - y) < b.r + 8) { HELD[e.pointerId] = b.k; b.down = .12; if (b.k === 'atk') heroAttack(); else heroSkill(b.k); return true; } } return false; }
 function btnUp(e) { delete HELD[e.pointerId]; }
 function icon(k, x, y, s) { const g = ui; g.save(); g.translate(x, y); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#fff4dc'; g.fillStyle = '#fff4dc'; g.lineWidth = s * .12;
@@ -860,7 +861,7 @@ function drawHUD() { const g = ui;
   g.textAlign = 'left'; g.fillStyle = 'rgba(30,16,10,.55)'; g.beginPath(); g.roundRect ? g.roundRect(8, 8, 198, 50, 10) : g.rect(8, 8, 198, 50); g.fill();
   g.font = '800 15px sans-serif'; g.fillStyle = '#ffe9b8'; g.fillText('Lv ' + HERO.lv, 16, 27); g.font = '600 12px sans-serif'; g.fillStyle = '#f4dcc0'; g.fillText(HNAME, 62, 26);
   bar(16, 34, 182, 9, HERO.hp / HERO.max, '#e8463a'); g.font = '700 9px sans-serif'; g.fillStyle = '#fff'; g.fillText(Math.ceil(HERO.hp) + ' / ' + HERO.max, 20, 42); bar(16, 48, 182, 4, HERO.xp / xpNeed(HERO.lv), '#f2c84a');
-  { const [x, y] = swapPos(); g.fillStyle = 'rgba(30,16,10,.6)'; g.beginPath(); g.roundRect ? g.roundRect(x, y, SWAP.w, SWAP.h, 8) : g.rect(x, y, SWAP.w, SWAP.h); g.fill(); g.font = '700 12px sans-serif'; g.textAlign = 'center'; g.fillStyle = '#ffe9b8'; g.fillText('เปลี่ยนเป็น' + (ARCHER ? 'มังกร' : 'นักธนู'), x + SWAP.w / 2, y + 20); g.textAlign = 'left'; }
+  { const [x, y] = swapPos(); g.fillStyle = 'rgba(30,16,10,.6)'; g.beginPath(); g.roundRect ? g.roundRect(x, y, SWAP.w, SWAP.h, 8) : g.rect(x, y, SWAP.w, SWAP.h); g.fill(); g.font = '700 12px sans-serif'; g.textAlign = 'center'; g.fillStyle = '#ffe9b8'; g.fillText('เปลี่ยนเป็น' + NEXT_HERO[1], x + SWAP.w / 2, y + 20); g.textAlign = 'left'; }
   if (HERO.dead) { g.textAlign = 'center'; g.font = '800 22px sans-serif'; g.lineWidth = 5; g.strokeStyle = 'rgba(40,14,6,.85)'; g.fillStyle = '#ffd0c0'; g.strokeText('ล้มลงแล้ว... กลับไปที่ค่าย', SW / 2, SH / 2 - 40); g.fillText('ล้มลงแล้ว... กลับไปที่ค่าย', SW / 2, SH / 2 - 40); g.textAlign = 'left'; }
   for (const b of BTN) { const [x, y] = btnPos(b), cd = b.k === 'atk' ? 0 : HERO.cd[b.k] / SK[b.k].cd; b.down = Math.max(0, (b.down || 0) - 1 / 60); const r = b.r * (1 - b.down * .8);
     g.fillStyle = b.k === 'atk' ? 'rgba(200,60,30,.62)' : 'rgba(40,22,14,.58)'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.lineWidth = 2.5; g.strokeStyle = b.k === 'atk' ? 'rgba(255,200,140,.85)' : cd > 0 ? 'rgba(255,255,255,.25)' : 'rgba(255,170,90,.9)'; g.stroke();
