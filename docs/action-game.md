@@ -2292,3 +2292,6 @@ Owner: "ทำ vfx เป็นท่าเตะ": no new character sheet. A le
 
 ### DUNE: otter K = push kick that shoots water feet (2026-11-22, `?hero=otter&test=1&v=20`)
 Owner: "ท่าถีบ ไม่ได้กระโดด", "แบบ K มันพุ่งไป ให้เป็นเท้าก็ได้". K (ถีบคลื่น) no longer jumps or flies: the otter takes one small step, push-kicks on the spot (kick frames of `skill_spin`), and 3 feet of water (`otter_wkick`, `launchFoot`, `stepFeet`) shoot forward about 250, piercing the line; each foot hits each monster once, the last is bigger and pushes. Checked at 1280x720 and 740x360, both facing directions, no console errors. Not tried on a real phone.
+
+### DUNE: otter K pierces, L fists stronger (2026-11-22, `?hero=otter&test=1&v=21`)
+Owner: "k ขอแบบทะลุ, l ขอสีมันชัดกว่านี้ หมัดใหญ่กว่านี้นิดหน่อย". K: the water feet are bigger and faster, fly about 320, barely freeze or push on contact so they visibly pass through the whole line, and the splash comes out on the far side of each monster. L: `otter_water_fist.py` deepens the colour, firms the shape and adds a dark blue rim (raw picture unchanged); fists drawn about 20% bigger and stay solid longer. Checked at 1280x720 and 740x360, no console errors. Not tried on a real phone.
