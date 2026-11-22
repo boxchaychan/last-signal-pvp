@@ -2319,3 +2319,6 @@ Owner: "u เอารวบโดยน้ำวนรอบตัว แล้
 - R (หมัดคลื่นระเบิด, replaces the chain dash): .52 s charge with water wrapping the fist while the 5 orbs spiral into it, a giant water fist, then a water burst 150 ahead, 5 hits in a 300 wide area. Cannot be hit during the skill.
 - Meta was signed out in the app pane at the end of this work, so the orb was made in code; the owner must sign in again before the next Meta effect.
 - Checked at 1280x720 and 740x360, both directions, the dragon still plays and loads no otter art, no console errors. Not tried on a real phone.
+
+### DUNE: otter O = big water orbs (2026-11-22, `?hero=otter&test=1&v=27`)
+Owner: "o ให้ลูกแก้วน้ำใหญ่ขึ้น แล้วหมุนแทน". O no longer shows fists or feet: 5 water orbs grow to about 40 px and circle the otter, half behind and half in front (`spinOrb`, `drawFistRing`), dripping as they turn, and are flung outward on the last hit. The small floating orbs are hidden during O, and its hits no longer draw the wave splash on the target. Checked at 1280x720 and 740x360, both directions, the dragon still plays, no console errors. Not tried on a real phone.
