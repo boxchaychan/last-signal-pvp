@@ -2311,3 +2311,11 @@ Owner: "สกิล o ทำใหม่ ไม่สวย", "สกิล u �
 - O: the water whirl picture is gone from this skill. 6 water fists and feet (`otter_wfist`, `otter_wkick`) circle the otter, half behind and half in front (`drawFistRing`), and are flung outward on the last hit.
 - U: pulls non-boss monsters within 175 to one point in front of the otter (they stay inside their own patrol range), then a Meta geyser (`art/incoming/otter_fx/fx_w_geyser.mp4`, key `fx_w_geyser`) erupts, 3 hits, and the last throws them up. The geyser is drawn BEHIND monsters and the otter (`under`), so the fighters stay visible.
 - Checked at 1280x720 and 740x360, both directions, the dragon still plays and loads no otter art, no console errors. Not tried on a real phone.
+
+### DUNE: otter U whirlpool, new orb, R charged punch (2026-11-22, `?hero=otter&test=1&v=26`)
+Owner: "u เอารวบโดยน้ำวนรอบตัว แล้วรวบมาระเบิด", "ลูกแก้วน้ำสวยกว่านี้", "สกิล r ให้มีน้ำล้อมที่มือ แล้วต่อย แล้วระเบิดน้ำออกมา".
+- U: a whirlpool on the ground and a ring of water round the waist (half behind, half in front, `drawPullWhirl`) pull non-boss monsters within 190 in beside the otter, then the geyser erupts at the otter and throws them up.
+- Orb: painted in code (`tools/art/otter_orb.py`, 12 frames): clear glass ball, water turning inside, a shine that stays still, thin dark edge.
+- R (หมัดคลื่นระเบิด, replaces the chain dash): .52 s charge with water wrapping the fist while the 5 orbs spiral into it, a giant water fist, then a water burst 150 ahead, 5 hits in a 300 wide area. Cannot be hit during the skill.
+- Meta was signed out in the app pane at the end of this work, so the orb was made in code; the owner must sign in again before the next Meta effect.
+- Checked at 1280x720 and 740x360, both directions, the dragon still plays and loads no otter art, no console errors. Not tried on a real phone.

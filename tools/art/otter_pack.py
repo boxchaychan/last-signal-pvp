@@ -4,7 +4,7 @@
 
 Reads art/incoming/otter_fist/<move>.png, removes the blue and the ground line, makes every move the same body size by finding the
 head of the guard pose, stands the feet on one line, writes art/dune/otter/<move>.webp and adds otter_<move> to art/dune/sprites.json.
-Prints, for each move, the frame where the fist reaches furthest (use it as the hit frame). The water orb comes from side_ref.png.
+Prints, for each move, the frame where the fist reaches furthest (use it as the hit frame). The water orb is painted by tools/art/otter_orb.py.
 """
 import json, os
 import numpy as np, cv2
@@ -55,8 +55,4 @@ for name in MOVES:
     sp['otter_' + name] = {'src': p, 'n': 16, 'w': w, 'h': h, 'foot': h, 'cols': cols, 'cx': round((mid - x0) * k)}
     reach = [int(np.where((f[:int(l * .72), :, 3] > 60).any(0))[0].max()) for f, l in fr]
     print(f'{name}: head match {conf:.2f} scale {s:.2f} cell {w}x{h} {os.path.getsize(p) // 1024} KB, furthest fist on frame index {int(np.argmax(reach))}')
-r = np.array(Image.open(IN + 'side_ref.png').convert('RGB'))[505:690, 770:1000]; bg = (r.min(2) >= 238).astype(np.uint8); n, l = cv2.connectedComponents(bg, connectivity=4); e = set(np.unique(np.r_[l[0], l[-1], l[:, 0], l[:, -1]])) - {0}
-al = cv2.GaussianBlur((~np.isin(l, list(e)) * 255).astype(np.uint8), (0, 0), .8); ys, xs = np.where(al > 40); yb = ys.max() - 42  # the fingers under the orb are left out
-o = Image.fromarray(np.dstack([r, al]), 'RGBA').crop((xs.min(), ys.min(), xs.max() + 1, yb)).resize((64, 64), Image.LANCZOS); o.save(OUT + 'orb.webp', 'WEBP', quality=90, alpha_quality=95, method=6)
-sp['otter_orb'] = {'src': OUT + 'orb.webp', 'n': 1, 'w': 64, 'h': 64, 'cols': 1}
 json.dump(sp, open('art/dune/sprites.json', 'w'), separators=(',', ':'))
