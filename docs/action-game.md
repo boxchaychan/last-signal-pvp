@@ -2206,3 +2206,8 @@ Owner: "ใส่เข้าเกม tribe3d.html: 1. Ultimate Fantasy RTS = �
 - Engine decision (owner 2026-11-22 "ทำบนเว็บ"): the single-player side-scroller stays on the web (HTML + link testing), not Unity. No server for now ("เซิฟเวอไวก่อนเอาคนเดียว"). Grok is out: the free account has no video.
 - Side-scroller art in progress: branch `claude/dune-quest` (cut hero + monsters, tools), Codex art on `codex/dune-world` stopped at 16 of 29 pictures (`docs/codex/dune/WORLD.md`; missing golem death, 4 hero skills, 5 effects, icons, UI panel, title).
 
+## DUNE `dune.html` "ตำนานมังกรทราย" (owner 2026-11-22: single-player side-scroller, web, ONE map first, "ขออย่างเดียวให้สวย")
+- Hand-built golden-hour oasis map: camp with 2 NPCs (quests, shop), field with 10 floating platforms + ladders / ropes, 22 monsters in 4 kinds, a sealed tomb gate, golem boss with red ground warnings. Levels, gold, potions, weapon / armour upgrades, 3-hit combo, dash, 4 skills, browser save, keyboard + phone buttons.
+- Art: all painted by Codex for this game (`docs/codex/dune/WORLD.md`, branch `codex/dune-world`), cut by `tools/art/dune_world.py` + `dune_pack.py` into `art/dune/`.
+- The hero in this first version is the painted dragon (frame sheets). In progress: a new hero, the Eclipse Knight (`docs/codex/rig/HERO.md`), drawn whole in one rig-ready picture, with new eclipse-themed skills.
+- Checked at 1280 x 720 and 740 x 360 with touch buttons: loads, map, platforms, a skill, no console errors. Full playthrough and a real phone are NOT checked yet.
