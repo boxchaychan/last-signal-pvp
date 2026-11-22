@@ -201,7 +201,7 @@ W.init = function (canvas, seed) {
   const water = W.water = new THREE.Mesh(new THREE.PlaneGeometry(N * 7, N * 7), new THREE.ShaderMaterial({
     uniforms: W.waterU, transparent: true,
     vertexShader: 'varying vec3 p;void main(){vec4 w=modelMatrix*vec4(position,1.);p=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
-    fragmentShader: 'uniform float t,L,N;uniform sampler2D d;varying vec3 p;void main(){vec2 u=p.xz/N;float e=(u.x<0.||u.y<0.||u.x>1.||u.y>1.)?1.:texture2D(d,u).r;vec3 c=mix(vec3(.30,.80,.78),vec3(.07,.36,.58),smoothstep(.0,.5,e));float w=sin((p.x+p.z)*1.7+t*1.2)*sin((p.x-p.z)*1.3-t*.9);c+=.035*w;float f=smoothstep(.06,.0,e+.018*sin(p.x*2.6+t)*sin(p.z*2.2-t*.8));c=mix(c,vec3(.96,.98,.95),f*.55);gl_FragColor=vec4(c*L,mix(.74,.95,smoothstep(.0,.3,e)));}'
+    fragmentShader: 'uniform float t,L,N;uniform sampler2D d;varying vec3 p;float W_(vec2 q){return sin(q.x)*cos(q.y);}float H(vec2 q){mat2 r=mat2(.8,.6,-.6,.8);float a=W_(q*1.1+vec2(t*.7,t*.5));q=r*q;a+=.55*W_(q*2.3-vec2(t*.9,-t*.6));q=r*q;a+=.28*W_(q*4.7+vec2(-t*1.2,t*.8));return a;}void main(){vec2 u=p.xz/N,q=p.xz;float e=(u.x<0.||u.y<0.||u.x>1.||u.y>1.)?1.:texture2D(d,u).r,h=H(q);float dl=length(cameraPosition-p),nr=smoothstep(105.,16.,dl);vec3 n=normalize(vec3((h-H(q+vec2(.12,0.)))*nr,.42,(h-H(q+vec2(0.,.12)))*nr)),v=normalize(cameraPosition-p),s=normalize(vec3(-.48,.72,.5)),b=normalize(v+s);float sp=pow(max(dot(n,b),0.),120.)*.9*nr,fr=pow(1.-max(dot(n,v),0.),3.);vec3 c=mix(vec3(.36,.86,.78),vec3(.1,.57,.68),smoothstep(.0,.2,e));c=mix(c,vec3(.04,.27,.49),smoothstep(.18,.72,e));c=mix(c,vec3(.64,.84,.93),fr*.42);float f=smoothstep(.055,.012,e+.012*h)*(.58+.42*sin(e*120.-t*1.6));c=mix(c,vec3(.97,.99,.96),clamp(f,0.,1.)*.8);c=c*L+sp*vec3(1.,.95,.82)*L*L;gl_FragColor=vec4(c,mix(.74,.96,smoothstep(.0,.3,e)));}'
   }));
   water.rotation.x = -Math.PI / 2; water.position.set(N / 2, 0, N / 2); sc.add(water);
   /* bridges appear wherever people keep crossing a river */
@@ -264,7 +264,7 @@ W.findSpot = function (city, t, R0) {
 W.occupy = function (b) { if (inMap(b.door[0], b.door[1])) W.reserved[ci(b.door[0], b.door[1])] = 1; for (let a = b.x; a < b.x + b.w; a++) for (let c = b.z; c < b.z + b.d; c++) W.occ[ci(a, c)] = b.id; W.clearTrees(b.x, b.z, b.w, b.d); };
 W.placeInstance = function (b) {
   const A = W.inst(b.t, b.v); if (A.list.length >= MAX_INST) return; const im = A.im, i = A.list.length, cx = b.x + b.w / 2, cz = b.z + b.d / 2;
-  const o = new THREE.Object3D(); o.position.set(cx, W.h(cx, cz) + .02, cz); o.rotation.y = b.rot * Math.PI / 2; o.scale.set(b.sc || 1, 1, b.sc || 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.count = i + 1; im.instanceMatrix.needsUpdate = true; A.list.push(b.id); b._i = i; W.needShadow = true;
+  const o = new THREE.Object3D(); o.position.set(cx, W.h(cx, cz) + .02, cz); o.rotation.y = b.rot * Math.PI / 2; o.scale.set(b.sc || 1, W.heightK ? W.heightK(b) : 1, b.sc || 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.count = i + 1; im.instanceMatrix.needsUpdate = true; A.list.push(b.id); b._i = i; W.needShadow = true;
 };
 W.removeInstance = function (b) {
   const A = W.arch[b.t + b.v]; if (!A || b._i == null) return; const last = A.list.length - 1, m = new THREE.Matrix4();
@@ -272,7 +272,7 @@ W.removeInstance = function (b) {
 };
 W.addSite = function (b) {
   const g = W.geoFor(b.t, b.v), geo = new THREE.BufferGeometry(); for (const n of ['position', 'normal', 'color', 'aGlow']) geo.setAttribute(n, g.attributes[n]); geo.boundingSphere = g.boundingSphere; geo.setDrawRange(0, 0);
-  const cx = b.x + b.w / 2, cz = b.z + b.d / 2, y = W.h(cx, cz) + .02, gr = new THREE.Group(), mesh = new THREE.Mesh(geo, W.bmat); mesh.castShadow = mesh.receiveShadow = true; mesh.scale.set(b.sc || 1, 1, b.sc || 1); gr.add(mesh); gr.position.set(cx, y, cz); gr.rotation.y = b.rot * Math.PI / 2;
+  const cx = b.x + b.w / 2, cz = b.z + b.d / 2, y = W.h(cx, cz) + .02, gr = new THREE.Group(), mesh = new THREE.Mesh(geo, W.bmat); mesh.castShadow = mesh.receiveShadow = true; mesh.scale.set(b.sc || 1, W.heightK ? W.heightK(b) : 1, b.sc || 1); gr.add(mesh); gr.position.set(cx, y, cz); gr.rotation.y = b.rot * Math.PI / 2;
   const box = new THREE.Box3().setFromBufferAttribute(g.attributes.position), top = Math.max(.9, box.max.y + .15), pm = new THREE.MeshLambertMaterial({ color: 0xd8b24a }), pg = new THREE.CylinderGeometry(.035, .035, top, 5);
   for (const a of [-1, 1]) for (const e of [-1, 1]) { const p = new THREE.Mesh(pg, pm); p.position.set(a * (b.w / 2 - .08), top / 2, e * (b.d / 2 - .08)); gr.add(p); }
   const bar = new THREE.Mesh(new THREE.BoxGeometry(1, .09, .09), new THREE.MeshBasicMaterial({ color: 0xffd34d })); bar.position.y = top + .16; bar.scale.x = .001; gr.add(bar);

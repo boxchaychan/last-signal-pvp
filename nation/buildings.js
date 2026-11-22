@@ -38,6 +38,21 @@ MB.prototype.hip = function (x, y, z, w, h, d, c) {
   this.add(y, [[a, y, f], [b, y, f], R, [a, y, f], R, L, [b, y, e], [a, y, e], L, [b, y, e], L, R, [a, y, e], [a, y, f], L, [b, y, f], [b, y, e], R], c, 0); return this;
 };
 
+MB.prototype.roundGrid = function (cx, cz, r, y0, n, fh, o = {}) {
+  const segs = MOBILE ? 10 : 16, glass = o.glass || B_GLASS[0], lit = o.lit == null ? .34 : o.lit, taper = o.taper || 0; let hash = (o.seed || 3) * 6151;
+  for (let i = 0; i < n; i++) {
+    const R = r + taper * i + .014, y = y0 + fh * i + fh * .18, tp = y + fh * .62, D = [], L = [];
+    for (let j = 0; j < segs; j++) { const a = (j + .1) / segs * 6.2832, b = (j + .9) / segs * 6.2832, A = [cx + Math.cos(a) * R, y, cz + Math.sin(a) * R], B_ = [cx + Math.cos(b) * R, y, cz + Math.sin(b) * R], C = [cx + Math.cos(b) * R, tp, cz + Math.sin(b) * R], E = [cx + Math.cos(a) * R, tp, cz + Math.sin(a) * R]; hash = (hash * 31 + i + j) % 10007; (hash % 100 < lit * 100 ? L : D).push(A, C, B_, A, E, C); }
+    if (D.length) this.add(y, D, glass, .5); if (L.length) this.add(y, L, mixC(glass, LIT_GLASS, .4), 1);
+  } return this;
+};
+function altTower(m, v, lot) {
+  const k = v % 6, gl = B_GLASS[v % 4], c = [0xd9e1e6, 0xcdd6d2, 0xe0d7c9][v % 3]; lot(0xc4c0b8); m.box(0, .04, 0, 2.72, .56, 2.72, 0x59616b); m.grid(0, 0, 2.72, 2.72, .08, 1, .46, { glass: 0x78b2c6, lit: .95, step: .6, pw: .88, ph: .84 }); m.box(0, .6, 0, 2.84, .05, 2.84, 0xe8e4da);
+  if (k === 3) { m.cyl(0, .64, 0, 1.1, 9.1, c, 1.1, MOBILE ? 12 : 18); m.roundGrid(0, 0, 1.1, .7, 16, .56, { glass: gl, seed: v + 30 }); for (let i = 0; i <= 4; i++) m.cyl(0, .66 + i * 2.24, 0, 1.16, .05, 0xf0efe9, 1.16, MOBILE ? 12 : 18); m.cyl(0, 9.74, 0, 1.12, .55, 0x8fb4c2, .35, 14); m.cyl(0, 10.28, 0, .05, 1, 0xe7e9ea, .008, 5); }
+  else if (k === 4) { for (const [x, h, n] of [[-.62, 9.2, 16], [.62, 7.5, 13]]) { m.box(x, .64, 0, .98, h, 1.96, c); m.grid(x, 0, .98, 1.96, .7, n, .56, { glass: gl, seed: v + n, step: .32, pw: .76, ph: .68, frame: mixC(c, 0, .3) }); m.box(x, .64 + h, 0, 1.06, .08, 2.04, mixC(c, 0, .2)); m.box(x, .72 + h, -.3, .4, .28, .5, 0x9aa3ab); } m.box(0, 5.1, 0, .38, .42, .76, 0x8fc4d6, .5); m.box(0, 5.06, 0, .42, .05, .8, 0xe8e4da); m.box(0, 5.52, 0, .42, .05, .8, 0xe8e4da); }
+  else { let y = .64; for (const [w, n] of [[2.2, 8], [1.7, 6], [1.14, 4]]) { const h = n * .56 + .06; m.box(0, y, 0, w, h, w, c); m.grid(0, 0, w, w, y + .04, n, .56, { glass: gl, seed: v + n * 3, step: .34, pw: .76, ph: .68, frame: mixC(c, 0, .3) }); y += h; m.box(0, y, 0, w + .1, .07, w + .1, 0xf0efe9); y += .07; } m.cyl(0, y, 0, .3, .5, 0xcfd6da, .1, 8); m.cyl(0, y + .5, 0, .05, 1.2, 0xe7e9ea, .008, 5); }
+}
+
 function drawFancy(m, t, v) {
   const def = BT[t]; if (!def) return false; const W0 = def.s[0], D0 = def.s[1], wall = B_WALL[v % 8], roof = B_ROOF[(v * 3 + 1) % 8], acc = B_ACC[(v + 2) % 6], gl = B_GLASS[v % 4];
   const lot = (top, edge = 0xcfc8b8) => { m.box(0, -.7, 0, W0 - .04, .72, D0 - .04, edge); m.box(0, .02, 0, W0 - .17, .025, D0 - .17, top); };
@@ -77,6 +92,7 @@ function drawFancy(m, t, v) {
       const top = .46 + h * n; parapet(0, top, -.04, 2.28, 2.14, mixC(tone, 0, .14)); m.box(.5, top, -.42, .62, .42, .62, 0xaeb2b6); m.cyl(-.55, top, .3, .25, .45, 0x89a7b6, .25, 8); ac(-.3, top, -.6); ac(.1, top, .55); bush(-.98, 1, .12); bush(.98, 1, .12); break;
     }
     case 'tower': {
+      if (v % 6 >= 3) { altTower(m, v, lot); break; }
       lot(0xc4c0b8); const sh = [0xd7dfe4, 0xc7d0d8, 0xddd4c6, 0xbfd0cb][v % 4], n = 15 + v % 4, f = .54; m.box(0, .04, 0, 2.72, .62, 2.72, 0x5e6670); m.grid(0, 0, 2.72, 2.72, .1, 1, .5, { glass: 0x6fa6bc, lit: .9, step: .6, pw: .86, ph: .82 }); m.box(0, .66, 0, 2.86, .05, 2.86, 0xe8e4da);
       m.box(0, .7, 0, 2.14, f * n + .1, 2.14, sh); m.grid(0, 0, 2.14, 2.14, .74, n, f, { glass: gl, seed: 40 + v, step: .36, pw: .76, ph: .68, frame: mixC(sh, 0, .3) }); for (const a of [-1, 1]) for (const b of [-1, 1]) m.box(a * 1.05, .7, b * 1.05, .11, f * n + .16, .11, mixC(sh, 0, .18));
       const top = .8 + f * n; parapet(0, top, 0, 2.14, 2.14, mixC(sh, 0, .22)); if (v % 2) { m.box(0, top + .02, 0, 1.5, .05, 1.5, 0x4a4f57); m.cyl(0, top + .07, 0, .44, .012, 0xf3d04d, .44, 14); m.cyl(0, top + .08, 0, .34, .012, 0x4a4f57, .34, 14); } else { m.box(.2, top, -.1, 1.1, .5, 1, 0x9aa3ab); m.grid(.2, -.1, 1.1, 1, top + .06, 1, .4, { glass: gl, seed: 7, step: .3 }); m.box(.2, top + .5, -.1, .05, .85, .05, 0xe7e9ea); m.cyl(.2, top + 1.3, -.1, .05, .05, 0xf05040, .05, 6, 1); } break;
@@ -98,6 +114,7 @@ function drawFancy(m, t, v) {
       const top = .7 + f * n; parapet(0, top, 0, 2.2, 2.2, 0xdde2e4); m.box(0, top, 0, 1.2, .38, 1.2, 0x7c858d); ac(-.7, top, .6); ac(.7, top, .6); m.box(-1.2, .06, 1.25, .04, .4, .04, 0x59616b); bush(1.2, 1.2, .13); break;
     }
     case 'cbd': {
+      if (v % 4 === 2) { lot(0xc2bfb7); m.box(0, .04, 0, 2.8, .7, 2.8, 0x363f48); m.grid(0, 0, 2.8, 2.8, .08, 1, .62, { glass: 0x86c3d4, lit: 1, step: .6, pw: .9, ph: .86 }); m.cyl(0, .74, 0, 1.3, 7.6, 0x4f7f9c, 1.1, MOBILE ? 12 : 18); m.roundGrid(0, 0, 1.2, .8, 13, .56, { glass: 0x2a6685, seed: v + 5, taper: -.0145 }); m.cyl(0, 8.34, 0, 1.12, 2.5, 0x6fa6bf, .62, MOBILE ? 12 : 18); m.roundGrid(0, 0, .9, 8.4, 4, .55, { glass: 0x2a6685, seed: v + 6, taper: -.05 }); m.cyl(0, 10.84, 0, .62, 1.5, 0xb9d6e2, .03, 12); m.cyl(0, 12.3, 0, .05, 1.2, 0xe9ecee, .008, 5); break; }
       lot(0xc2bfb7); const c = [0x5d88a8, 0x68999f, 0x7690b4, 0x5e7e98][v % 4]; m.box(0, .04, 0, 2.8, .7, 2.8, 0x363f48); m.grid(0, 0, 2.8, 2.8, .08, 1, .62, { glass: 0x86c3d4, lit: 1, step: .6, pw: .9, ph: .86 }); m.box(0, .74, 0, 2.92, .05, 2.92, 0xe5e6e2);
       m.box(0, .78, 0, 2.4, 8.4, 2.4, c); m.grid(0, 0, 2.4, 2.4, .82, 15, .55, { glass: mixC(c, 0x18435e, .55), seed: 90 + v, step: .25, pw: .92, ph: .8, frame: mixC(c, 0xffffff, .22), lit: .66 }); m.box(0, 9.18, 0, 2.5, .1, 2.5, 0xe9edf0);
       m.box(0, 9.28, 0, 1.76, 4.5, 1.76, mixC(c, 0xffffff, .1)); m.grid(0, 0, 1.76, 1.76, 9.32, 8, .55, { glass: mixC(c, 0x18435e, .45), seed: 91 + v, step: .25, pw: .92, ph: .8, frame: mixC(c, 0xffffff, .28), lit: .66 }); m.box(0, 13.78, 0, 1.86, .08, 1.86, 0xe9edf0);

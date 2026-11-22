@@ -71,7 +71,7 @@ function redevelop() {
   L.sort((p, q) => p[0] - q[0]);
   for (const [, b, want] of L.slice(0, Math.min(5, st - 1))) {
     const biz = ['shop', 'market', 'workshop', 'office'].includes(b.t) || ((b.t === 'farm' || b.t === 'bigfarm') && b.id % 3 === 0), t = biz ? (want >= 5 && st >= 6 ? 'cbd' : want >= 3 && st >= 4 ? 'office' : null) : HOME_T[Math.min(want, 5)]; if (!t || t === b.t || BT[t].st > st) continue;
-    W.removeInstance(b); b.t = t; b.v = Math.random() * 6 | 0; b.vis = 1; b.done = false; b.prog = 0; b.sc = Math.min(1, b.w / BT[t].s[0], b.d / BT[t].s[1]); W.addSite(b);
+    W.removeInstance(b); b.t = t; b.v = Math.random() * 6 | 0; b.vis = 1; b.done = false; b.prog = 0; b.sc = Math.min(1, b.w / BT[t].s[0], b.d / BT[t].s[1]); W.paintPad(b); W.addSite(b);
   }
 }
 function maybeNewCity() {
