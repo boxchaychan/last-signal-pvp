@@ -23,6 +23,9 @@ Facing RIGHT, the arm nearest the viewer is the character's RIGHT arm and the fa
 One otter, full body, side view facing RIGHT, clean white background, picture size 1118 x 1407, same body size as `side_ref.png`, soles on the same line (y about 1290). Pose: a ready martial arts guard. Feet apart, knees slightly bent, weight low, front fist raised forward at chin height, rear fist pulled back at the waist. Scarf and tail trail to the left. Fully inside the picture.
 Put it beside `side_ref.png`. Redo it if the head, body, arms or legs change size or shape.
 
+## Feel: flowing like water (owner: "สกิลเน้นพลิ้วๆ")
+Every move is one unbroken flow, like a dancer or tai chi at high speed. No stiff stops and no held poses, except one short beat on the last hit of `attack3`. Arms travel in curves and spirals before they land. Hips turn in soft circles, feet glide and pivot on the balls of the feet. The end of each motion is already the start of the next. Scarf and tail lag two or three frames behind the body and draw long S-curves.
+
 ## 2. Move sheets
 Each `<name>.png`: landscape 1536 x 1024, exactly 16 frames, 4 columns x 4 rows, read left to right, top to bottom; cells 384 x 256.
 - Flat blue #0248BA background, no borders, one thin dark ground line at the same height near the bottom of every cell.
@@ -35,13 +38,13 @@ Each `<name>.png`: landscape 1536 x 1024, exactly 16 frames, 4 columns x 4 rows,
 
 3. `idle`: light bouncing guard, small weight shifts, scarf and tail sway, frame 16 flows into frame 1.
 4. `run`: fast low run, fists near the chest, arms pumping, scarf and tail flying, frame 16 flows into frame 1.
-5. `attack1`: quick straight jab with the front fist, snaps back.
-6. `attack2`: step and a strong straight punch with the rear fist, hips turning fully.
-7. `attack3`: heavy finisher: sink low, pull the fist to the hip, then drive forward with a big straight punch, whole body behind it, hold on impact, recover.
-8. `skill_dash`: very low fast step-in, shoulder forward, fist chambered, recovers to guard.
-9. `skill_flurry`: six fast alternating straight punches, left, right, left, right, left, right, with small quick steps forward so the feet never stop, then back to guard. Each punch is clearly a different frame group. The figure stays in the middle of its cell: the game moves it.
-10. `skill_upper`: crouch, then a rising uppercut that lifts the whole body off the ground, lands back on the ground line in guard.
-11. `skill_drop`: jump up and forward, gather the fist overhead in the air, dive down and smash the fist into the ground line, crouched on impact, springs back to guard. The figure stays in the middle of its cell: the game moves it.
+5. `attack1`: quick whipping punch with the front fist: the arm uncoils in a small curve, lands, and flows back in a circle.
+6. `attack2`: gliding step with a full hip turn, the rear fist spirals out from the waist into a punch, the body keeps turning through it.
+7. `attack3`: finisher: both arms draw one big circle while the body sinks low, the circle closes at the hip, then the whole body uncoils into a spiralling punch, one short beat on impact, and melts back to guard.
+8. `skill_dash`: very low gliding slip forward in a soft S-curve, body leaning and turning, scarf streaming, flows back to guard.
+9. `skill_flurry`: six fast alternating straight punches, left, right, left, right, left, right, with small quick gliding steps so the feet never stop and the hips sway in a figure eight, each punch rolling out of the last, then back to guard. Each punch is clearly a different frame group. The figure stays in the middle of its cell: the game moves it.
+10. `skill_upper`: sink and turn, then a spiralling rising uppercut that carries the whole body up in a corkscrew, floats at the top, lands softly on the ground line in guard.
+11. `skill_drop`: rise in a smooth arc, the body rolls over in the air gathering the fist, pours down and lands the fist on the ground line, then rolls straight up into guard. The figure stays in the middle of its cell: the game moves it.
 12. `skill_spin`: fast spinning backfists and spin kicks, body turning full circles on the balls of the feet, arms and one leg swinging wide, scarf and tail whipping round. Frames 4 to 13 loop smoothly.
 13. `hurt`: hit from the front, flinches back, guard drops, recovers.
 14. `death`: staggers, drops to the knees, falls on the ground and stays down (no return to standing).
