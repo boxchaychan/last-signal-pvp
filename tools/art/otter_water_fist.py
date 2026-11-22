@@ -18,6 +18,9 @@ for n in range(4):
     rgb = np.clip(q / np.maximum(al[..., None], .05), 0, 1)
     if not KICK:   # owner: the fists of skill L must read clearly on the bright sand: deeper colour, firmer shape, a dark blue rim
         g = rgb.mean(2, keepdims=True); rgb = np.clip(g + (rgb - g) * 1.55, 0, 1); rgb = np.clip((rgb - .5) * 1.22 + .45, 0, 1); al = np.clip(al * 1.4, 0, 1); rim = np.clip(cv2.GaussianBlur(al, (0, 0), 7) * 2.1 - al, 0, 1) * .85; out = al + rim * (1 - al); rgb = (rgb * al[..., None] + np.array([6, 26, 92], np.float32) / 255 * (rim * (1 - al))[..., None]) / np.maximum(out[..., None], 1e-3); al = out
+    if KICK:   # owner: the kick must be level ("ทำแนวนอน"): turn each leg so its knee and heel are at the same height
+        ys, xs = np.where(al > .55); x0, x1 = np.percentile(xs, [3, 97]); cx = [c for c in range(int(x0 + (x1 - x0) * .32), int(x0 + (x1 - x0) * .72), 4) if (xs == c).sum() > 8]; cy = [float(np.median(ys[xs == c])) for c in cx]; ang = float(np.degrees(np.arctan(np.polyfit(cx, cy, 1)[0])));   # slope of the shin only, not the swirl or the toes
+        h, w = al.shape; M = cv2.getRotationMatrix2D((w / 2, h / 2), ang, 1); pm = cv2.warpAffine(np.dstack([rgb * al[..., None], al]), M, (w, h), flags=cv2.INTER_CUBIC); al = np.clip(pm[..., 3], 0, 1); rgb = np.clip(pm[..., :3] / np.maximum(al[..., None], .05), 0, 1); print(f'kick {n}: turned {ang:.1f} degrees')
     im = Image.fromarray((np.dstack([rgb, al]) * 255).astype(np.uint8), 'RGBA'); im = im.crop(Image.fromarray(((al > .3) * 255).astype(np.uint8)).getbbox()); k = 118 / max(im.size); im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS)
     S.alpha_composite(im, (n * CELL + CELL - 5 - im.width, (CELL - im.height) // 2))
 S.save(OUT, 'WEBP', quality=90, alpha_quality=95, method=6)

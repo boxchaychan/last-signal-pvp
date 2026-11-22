@@ -2298,3 +2298,7 @@ Owner: "k ขอแบบทะลุ, l ขอสีมันชัดกว่
 
 ### DUNE: otter K = dash kick through the line (2026-11-22, `?hero=otter&test=1&v=22`)
 Owner: "k เอาแบบพุ่งเลย งั้นก็พุ่งเลย ทำทะลุ". The otter itself now dashes about 335 along the ground in the push-kick pose, with a foot of water (`otter_wkick`) in front and after-images behind. It does not stop on enemies: each monster it passes takes 3 hits, and it cannot be hit while dashing. The shooting-feet version was removed. Checked at 1280x720 and 740x360, both directions, no console errors. Not tried on a real phone.
+
+### DUNE: otter K level, water drops round the body (2026-11-22, `?hero=otter&test=1&v=23`)
+Owner: "ทำแนวนอน ดิงจะเฉียงทำไม", "ขอ vfx หยดน้ำรอบตัวเวลาโจมตีด้วย". K: each water leg is turned so its shin is level (`otter_water_fist.py kick`, raw picture unchanged) and the dash holds frame 11 of `skill_spin`, the flattest kick. Every basic punch and skill now throws small water drops all round the body (`bodyDrops`), drawn as stretched drops along their direction. Checked at 1280x720 and 740x360, no console errors. Not tried on a real phone.
+Open: the water whirl of O (`fx_w_spin` at .7) covers the otter almost completely.
