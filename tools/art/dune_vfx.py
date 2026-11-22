@@ -23,6 +23,7 @@ FX = {
     'fx_w_punch': ('../otter_fx/fx_w_punch', span(29, 46, 6) + span(54, 100, 5) + span(106, 152, 9), 6, 40),   # otter: water burst of a punch, it opens to the right
     'fx_w_crown': ('../otter_fx/fx_w_hit', span(20, 40, 8) + span(46, 130, 5) + span(136, 172, 10), 3, 34),      # otter: ground smash, splash crown and ring
     'fx_w_wave': ('../otter_fx/fx_w_wave', span(10, 30, 6) + span(36, 114, 7) + span(120, 176, 13), 0, 30),      # otter: the one long-range wave
+    'fx_w_geyser': ('../otter_fx/fx_w_geyser', span(14, 44, 7) + span(46, 62, 5) + span(70, 160, 8) + span(166, 204, 10), 0, 26),   # otter U: water gathers, then a geyser blows upward
     'fx_w_spin': ('../otter_fx/fx_w_spin', span(6, 40, 8) + span(44, 150, 16) + span(156, 186, 6), 0, 36),       # otter: water whirl
     'fx_lance': ('fx_lance', span(30, 62, 8) + span(66, 150, 12) + span(156, 196, 9), 0, 30),   # the ultimate: the tail leaves on the left, where the hero's hands are
 }

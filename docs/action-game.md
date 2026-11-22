@@ -2305,3 +2305,9 @@ The water whirl of O was fixed in the next entry.
 
 ### DUNE: otter O whirl small and clear (2026-11-22, `?hero=otter&test=1&v=24`)
 Owner: "ย่อน้ำวนเลย", "ทำให้ใสๆ ได้ไหม". `fx_w_spin` on O: scale .7 -> .56, drawn BEHIND the otter (`back`) at 52% opacity (`al`, new optional field of an effect), so the body and the background show through. The hit range did not change. Checked at 1280x720 and 740x360, the dragon still plays, no console errors. Not tried on a real phone.
+
+### DUNE: otter O = fist storm, U = pull and geyser (2026-11-22, `?hero=otter&test=1&v=25`)
+Owner: "สกิล o ทำใหม่ ไม่สวย", "สกิล u ให้มีระยะดูดใกล้ๆ มารวบ แล้วระเบิดขึ้น".
+- O: the water whirl picture is gone from this skill. 6 water fists and feet (`otter_wfist`, `otter_wkick`) circle the otter, half behind and half in front (`drawFistRing`), and are flung outward on the last hit.
+- U: pulls non-boss monsters within 175 to one point in front of the otter (they stay inside their own patrol range), then a Meta geyser (`art/incoming/otter_fx/fx_w_geyser.mp4`, key `fx_w_geyser`) erupts, 3 hits, and the last throws them up. The geyser is drawn BEHIND monsters and the otter (`under`), so the fighters stay visible.
+- Checked at 1280x720 and 740x360, both directions, the dragon still plays and loads no otter art, no console errors. Not tried on a real phone.
