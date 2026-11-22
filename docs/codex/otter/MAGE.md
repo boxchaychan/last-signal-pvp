@@ -11,11 +11,11 @@ Design = `art/incoming/otter_mage/otter_src.png`: brown otter head with round ea
 
 Style and body = `art/incoming/dragon_moves/base_side.png` and `art/incoming/dragon_moves/idle.png`: the same painted 2D style, thick dark outline, smooth cel shading. NOT pixel art.
 
-**The owner's otter is too tall and thin. Redraw it with the dragon's chibi body:** big head (about 42% of the height from soles to top of head), short thick legs, short thick arms, same foot size, same shoulder width and same chest size as the dragon. Do not simply squash the picture.
+**Keep the otter's body exactly as in the owner's picture (owner: "ไม่นะ เอาแบบนี้เลย"):** same head size compared with the body, same slim torso, same arm and leg length, same outfit. Do NOT turn it into the dragon's big-head chibi body. Only the overall size changes: the whole character is scaled to stand as tall as the dragon.
 
 ## 1. `base_side.png` (do this first)
 One standing otter, full body, side view facing RIGHT, clean white background, picture size 1221 x 1289 like the dragon's `base_side.png`, soles on the same line as the dragon's (y about 1166). Height from soles to the top of the ears = about 820 px, which is the dragon's height without its horns. Front hand held forward at chest height, palm up, with the water orb floating just above it (orb about as wide as the otter's face is tall). Back hand is a relaxed fist. Tail and scarf trail to the left.
-Put it beside the dragon and redo it if the head, body, arms or legs are bigger, smaller, taller or thinner. Attach this picture for every sheet below.
+Put it beside the owner's otter and the dragon. Redo it if its proportions differ from the owner's otter or its height differs from the dragon's. Attach this picture for every sheet below.
 
 ## 2. Move sheets
 Each `<name>.png`: landscape 1536 x 1024, exactly 16 frames, 4 columns x 4 rows, read left to right, top to bottom; cells 384 x 256.
