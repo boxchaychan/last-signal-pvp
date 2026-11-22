@@ -2301,4 +2301,7 @@ Owner: "k เอาแบบพุ่งเลย งั้นก็พุ่ง
 
 ### DUNE: otter K level, water drops round the body (2026-11-22, `?hero=otter&test=1&v=23`)
 Owner: "ทำแนวนอน ดิงจะเฉียงทำไม", "ขอ vfx หยดน้ำรอบตัวเวลาโจมตีด้วย". K: each water leg is turned so its shin is level (`otter_water_fist.py kick`, raw picture unchanged) and the dash holds frame 11 of `skill_spin`, the flattest kick. Every basic punch and skill now throws small water drops all round the body (`bodyDrops`), drawn as stretched drops along their direction. Checked at 1280x720 and 740x360, no console errors. Not tried on a real phone.
-Open: the water whirl of O (`fx_w_spin` at .7) covers the otter almost completely.
+The water whirl of O was fixed in the next entry.
+
+### DUNE: otter O whirl small and clear (2026-11-22, `?hero=otter&test=1&v=24`)
+Owner: "ย่อน้ำวนเลย", "ทำให้ใสๆ ได้ไหม". `fx_w_spin` on O: scale .7 -> .56, drawn BEHIND the otter (`back`) at 52% opacity (`al`, new optional field of an effect), so the body and the background show through. The hit range did not change. Checked at 1280x720 and 740x360, the dragon still plays, no console errors. Not tried on a real phone.
