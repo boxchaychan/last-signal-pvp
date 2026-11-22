@@ -65,6 +65,7 @@ function drawFancy(m, t, v) {
   const parapet = (x, y, z, w, d, c) => { m.box(x, y, z + d / 2 - .03, w, .09, .06, c); m.box(x, y, z - d / 2 + .03, w, .09, .06, c); m.box(x + w / 2 - .03, y, z, .06, .09, d, c); m.box(x - w / 2 + .03, y, z, .06, .09, d, c); };
   const balcony = (x, y, z, w) => { m.box(x, y, z, w, .035, .2, 0xf4f1e9); m.box(x, y + .035, z + .095, w, .13, .012, 0x8fb4c2); m.box(x, y + .165, z + .095, w, .014, .02, 0x59616b); };
 
+  if (W.hasAtlas && texBuilding(m, t, v, { lot, bush, tree, fence, ac, parapet })) return true;
   switch (t) {
     case 'hut': {
       lot(0x8cb561, 0xa78e64); m.box(.02, .04, .68, .3, .012, .6, 0xcdb88d); m.box(0, .04, -.05, 1.22, .48, 1.02, 0xb98f60);
@@ -123,4 +124,44 @@ function drawFancy(m, t, v) {
     default: return false;
   }
   return true;
+}
+
+/* ---------- painted fronts (Codex sheet) wrapped round the 3D blocks ---------- */
+W.atlasP = new Promise(res => { const im = new Image(); let late = false; im.onload = () => { if (!late) { W.atlasImg = im; W.hasAtlas = true; } res(); }; im.onerror = () => res(); im.src = 'art/nation/facades.webp?b=' + BUILD; setTimeout(() => { late = true; res(); }, 7000); });
+MB.prototype.tex = function (side, cx, cz, w, d, y0, y1, cell, o = {}) {
+  const span = side % 2 ? d : w, c = FACADE.cells[cell]; let u0 = c[0], u1 = c[2], top = c[1], bot = c[3];
+  if (o.slice && o.slice < 1) { const mid = (u0 + u1) / 2, hw = (u1 - u0) * o.slice / 2; u0 = mid - hw; u1 = mid + hw; }
+  if (o.vf && o.vf < 1) top = bot - (bot - c[1]) * o.vf;
+  const hr = Math.max(1, o.hrep || 1), tileW = span / hr, ratio = (bot - top) / (u1 - u0), vr = o.tile ? Math.max(1, Math.round((y1 - y0) / (tileW * ratio))) : 1;
+  if (vr > 1) { const trim = (bot - top) * .035; top += trim; bot -= trim; }
+  const a = u0 / FACADE.w, b = u1 / FACADE.w, vb = 1 - bot / FACADE.h, vt = 1 - top / FACADE.h, col = hex(o.tint || 0xffffff);
+  for (let i = 0; i < hr; i++) for (let j = 0; j < vr; j++) { const V = [], ya = y0 + (y1 - y0) * j / vr, yb = y0 + (y1 - y0) * (j + 1) / vr; rect(V, side, cx, cz, w / 2, d / 2, .007, -span / 2 + tileW * (i + .5), ya, tileW, yb); this.parts.push({ miny: ya + .001, verts: V, col, glow: 0, uvs: [a, vb, b, vb, b, vt, a, vb, b, vt, a, vt], flat: 1 }); }
+  return this;
+};
+function texBuilding(m, t, v, h) {
+  /* painted fronts look best at their natural size; tall glass towers stay clean and code-drawn */
+  if (t === 'tower' || t === 'office' || t === 'cbd' || t === 'mega') return false;
+  const tint = [0xffffff, 0xfff0df, 0xe6f1ff, 0xf1ffe6, 0xffe8e2, 0xeeeaff][v % 6], { lot, bush, tree, fence, ac, parapet } = h;
+  const wrap = (cx, cz, w, d, y0, y1, cell, top, o = {}) => { m.box(cx, y0, cz, w, y1 - y0, d, top); for (let s = 0; s < 4; s++) m.tex(s, cx, cz, w, d, y0, y1, cell, { tint: o.tint || tint, vf: cell >= 3 && cell <= 5 ? 0 : o.vf, tile: cell >= 3 && cell <= 5, hrep: cell === 5 ? 2 : 1, slice: s % 2 ? clamp(d / w, .3, 1) : clamp(w / d, .3, 1) }); };
+  const slab = (cx, y, cz, w, d, c = 0xe9e2d3) => m.box(cx, y, cz, w + .1, .07, d + .1, c);
+  switch (t) {
+    case 'house': { if (v % 3 === 1) return false; lot(0x86b45d); wrap(0, -.12, 1.68, 1.4, .04, 1.72, 0, 0xd9c6a6); slab(0, 1.72, -.12, 1.68, 1.4, 0xcdb896); fence(0, -.9, 1.7, 0); fence(-.9, 0, 1.75, 1); m.box(.42, .045, .75, .4, .012, .34, 0xd8cfbd); bush(-.74, .72); bush(.76, .7, .11); tree(.74, -.72, .85); return true; }
+    case 'row': { lot(0xc9c3b6); wrap(0, -.05, 3.76, 1.62, .04, 2.05, 1, 0xd9c7ae, { tint: 0xffffff }); parapet(0, 2.05, -.05, 3.76, 1.62, 0xcbb99f); ac(-1, 2.05, -.3); ac(.9, 2.05, .1); return true; }
+    case 'apt': { lot(0xc8c2b5); const y = 3.5 + v % 3 * .55; wrap(0, -.04, 2.3, 2.16, .04, y, 2, 0xe6d4b8); parapet(0, y, -.04, 2.3, 2.16, 0xd6c3a6); m.box(.5, y, -.42, .6, .42, .6, 0xb3b1aa); m.cyl(-.55, y, .3, .25, .45, 0x89a7b6, .25, 8); ac(-.3, y, -.6); bush(-1, 1.02, .12); bush(1, 1.02, .12); return true; }
+    case 'tower': {
+      const k = v % 6; if (k === 3) return false; lot(0xc4c0b8); m.box(0, .04, 0, 2.74, .62, 2.74, 0xd5c6ab); m.grid(0, 0, 2.74, 2.74, .1, 1, .5, { glass: 0x6fa6bc, lit: .9, step: .6, pw: .86, ph: .82, frame: 0 }); slab(0, .66, 0, 2.74, 2.74);
+      if (k === 4) { for (const [x, y] of [[-.62, 9.6], [.62, 7.8]]) { wrap(x, 0, 1, 2, .72, y, 3, 0xe6d6bd); slab(x, y, 0, 1, 2); m.box(x, y + .07, -.3, .4, .28, .5, 0x9aa3ab); } m.box(0, 5.1, 0, .3, .42, .78, 0x8fc4d6, .5); m.box(0, 5.06, 0, .32, .05, .82, 0xe8e4da); m.box(0, 5.52, 0, .32, .05, .82, 0xe8e4da); return true; }
+      if (k === 5) { let y = .72; for (const [w, n] of [[2.2, 4.4], [1.72, 3.3], [1.16, 2.2]]) { wrap(0, 0, w, w, y, y + n, 3, 0xe6d6bd, { vf: n / 7.6 + .12 }); y += n; slab(0, y, 0, w, w); y += .07; } m.cyl(0, y, 0, .3, .5, 0xcfd6da, .1, 8); m.cyl(0, y + .5, 0, .05, 1.2, 0xe7e9ea, .008, 5); return true; }
+      const y = 9 + k * .55; wrap(0, 0, 2.16, 2.16, .72, y, 3, 0xe6d6bd); parapet(0, y, 0, 2.16, 2.16, 0xd8c8ae); if (k === 1) { m.box(0, y + .02, 0, 1.5, .05, 1.5, 0x4a4f57); m.cyl(0, y + .07, 0, .44, .012, 0xf3d04d, .44, 14); m.cyl(0, y + .08, 0, .34, .012, 0x4a4f57, .34, 14); } else { m.box(.2, y, -.1, 1.1, .5, 1, 0xb5b0a6); m.box(.2, y + .5, -.1, .05, .85, .05, 0xe7e9ea); } return true;
+    }
+    case 'office': { lot(0xc8c4bb); m.box(0, .04, 0, 2.74, .54, 2.74, 0x3f4851); m.grid(0, 0, 2.74, 2.74, .08, 1, .46, { glass: 0x7cb6ca, lit: .95, step: .55, pw: .88, ph: .85, frame: 0 }); slab(0, .58, 0, 2.74, 2.74); const y = 6.4 + v % 3 * .6; wrap(0, 0, 2.22, 2.22, .64, y, 4, 0xdfe3e2); parapet(0, y, 0, 2.22, 2.22, 0xdde2e4); m.box(0, y, 0, 1.2, .38, 1.2, 0x7c858d); ac(-.7, y, .6); ac(.7, y, .6); bush(1.2, 1.2, .13); return true; }
+    case 'cbd': { if (v % 4 === 2) return false; lot(0xc2bfb7); m.box(0, .04, 0, 2.82, .7, 2.82, 0x363f48); m.grid(0, 0, 2.82, 2.82, .08, 1, .62, { glass: 0x86c3d4, lit: 1, step: .6, pw: .9, ph: .86, frame: 0 }); slab(0, .74, 0, 2.82, 2.82); wrap(0, 0, 2.42, 2.42, .8, 9.2, 5, 0xe9dcc2); slab(0, 9.2, 0, 2.42, 2.42); wrap(0, 0, 1.78, 1.78, 9.27, 13.8, 5, 0xe9dcc2); slab(0, 13.8, 0, 1.78, 1.78); if (v % 2) { m.hip(0, 13.87, 0, 1.78, 1.5, 1.78, 0x9fc6d8); m.cyl(0, 15.3, 0, .06, 1.5, 0xe9ecee, .01, 5); } else { m.box(0, 13.87, 0, .9, 1, .9, 0xd9c9aa); m.cyl(0, 14.87, 0, .1, 1.8, 0xe9ecee, .01, 5); } return true; }
+    case 'mega': { lot(0xbdbbb5); m.box(0, .04, 0, 3.72, .9, 3.72, 0x4f5862); m.grid(0, 0, 3.72, 3.72, .12, 1, .72, { glass: 0x78b2c6, lit: .95, step: .7, pw: .88, ph: .84, frame: 0 }); slab(0, .94, 0, 3.72, 3.72); wrap(0, 0, 3.02, 3.02, 1, 10.7, 5, 0xe9dcc2); slab(0, 10.7, 0, 3.02, 3.02); wrap(0, 0, 2.22, 2.22, 10.77, 17.1, 5, 0xe9dcc2); slab(0, 17.1, 0, 2.22, 2.22); wrap(0, 0, 1.32, 1.32, 17.17, 20.2, 5, 0xe9dcc2); m.cyl(0, 20.2, 0, .62, .5, 0xe2d5bb, .22, 8); m.cyl(0, 20.7, 0, .12, 3.1, 0xe9ecee, .012, 6); m.cyl(0, 23.76, 0, .05, .05, 0xf05040, .05, 6, 1); return true; }
+    case 'school': { lot(0xbfc7a0); wrap(0, -.28, 3.5, 1.9, .04, 2.1, 6, 0xd8b18f, { vf: .68, tint: 0xffffff }); parapet(0, 2.1, -.28, 3.5, 1.9, 0xd18f6c); m.box(1.6, .04, 1.1, .05, 1.7, .05, 0xdddddd); m.box(1.8, 1.48, 1.1, .36, .22, .03, 0x2f62b5); m.box(-.9, .045, 1.02, 1.5, .012, .62, 0xc2894f); bush(-1.75, 1.2, .13); bush(.3, 1.2, .12); return true; }
+    case 'hischool': { lot(0xbfc7a0); wrap(0, -.42, 4.5, 2.6, .04, 3.3, 6, 0xd8b18f, { tint: 0xffffff }); parapet(0, 3.3, -.42, 4.5, 2.6, 0xd18f6c); m.box(2.1, .04, 1.6, .05, 2.4, .05, 0xdddddd); m.box(2.3, 2.16, 1.6, .36, .22, .03, 0x2f62b5); m.box(-.6, .045, 1.45, 2.4, .012, .7, 0xc2894f); return true; }
+    case 'clinic': { lot(0xcdd6c4); wrap(0, -.08, 2.6, 1.56, .04, 1.5, 7, 0xe8e0d0, { vf: .5, tint: 0xffffff }); parapet(0, 1.5, -.08, 2.6, 1.56, 0x4fa66f); m.box(0, 1.08, .71, .34, .11, .03, 0x3fa863); m.box(0, .965, .71, .11, .34, .03, 0x3fa863); return true; }
+    case 'hospital': { lot(0xcdd6c4); wrap(0, -.2, 4.5, 3.2, .04, 4.6, 7, 0xeee7d8, { tint: 0xffffff }); parapet(0, 4.6, -.2, 4.5, 3.2, 0xd9d2c3); m.box(1.2, 4.6, -.2, 1.2, .05, 1.1, 0xd9d9d0); m.cyl(1.2, 4.65, -.2, .42, .02, 0xd63c35, .42, 10); m.box(0, 3.95, 1.42, .44, .14, .03, 0xd63c35); m.box(0, 3.8, 1.42, .14, .44, .03, 0xd63c35); return true; }
+    case 'medcenter': { lot(0xcdd6c4); for (const x of [-1.42, 1.42]) { wrap(x, -.5, 2.1, 2.5, .04, 7, 7, 0xeee7d8, { tint: 0xffffff }); parapet(x, 7, -.5, 2.1, 2.5, 0xd9d2c3); m.box(x, 6.45, .77, .44, .14, .03, 0xd63c35); m.box(x, 6.3, .77, .14, .44, .03, 0xd63c35); } m.box(0, 3, -.5, .9, .6, .8, 0xbfe3ee, .5); wrap(0, 1.15, 5.5, 1.4, .04, 1.3, 7, 0xeee7d8, { vf: .32, tint: 0xffffff }); return true; }
+    default: return false;
+  }
 }

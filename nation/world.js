@@ -35,21 +35,22 @@ class MB {
   build() {
     this.parts.sort((p, q) => p.miny - q.miny);
     let n = 0; for (const p of this.parts) n += p.verts.length;
-    const P = new Float32Array(n * 3), NR = new Float32Array(n * 3), C = new Float32Array(n * 3), G = new Float32Array(n); let i = 0;
+    const P = new Float32Array(n * 3), NR = new Float32Array(n * 3), C = new Float32Array(n * 3), G = new Float32Array(n), UVS = new Float32Array(n * 2); for (let q = 0; q < n; q++) { UVS[q * 2] = 8 / 1536; UVS[q * 2 + 1] = 1 - 8 / 1024; } let i = 0;
     let top = 0; for (const p of this.parts) for (const v of p.verts) top = Math.max(top, v[1]);
     for (const p of this.parts) {
       for (let j = 0; j < p.verts.length; j += 3) {
         const a = p.verts[j], b = p.verts[j + 1], c = p.verts[j + 2], ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
         let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
-        for (const v of [a, b, c]) {
+        let vi = j; for (const v of [a, b, c]) {
+          if (p.uvs) { UVS[i * 2] = p.uvs[vi * 2]; UVS[i * 2 + 1] = p.uvs[vi * 2 + 1]; vi++; }
           P[i * 3] = v[0]; P[i * 3 + 1] = v[1]; P[i * 3 + 2] = v[2]; NR[i * 3] = nx; NR[i * 3 + 1] = ny; NR[i * 3 + 2] = nz;
-          const sh = p.glow ? 1 : .8 + .2 * Math.min(1, (v[1] + .1) / Math.max(.8, top * .5));
+          const sh = p.glow || p.flat ? 1 : .8 + .2 * Math.min(1, (v[1] + .1) / Math.max(.8, top * .5));
           C[i * 3] = p.col[0] * sh; C[i * 3 + 1] = p.col[1] * sh; C[i * 3 + 2] = p.col[2] * sh; G[i] = p.glow; i++;
         }
       }
     }
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.BufferAttribute(NR, 3)); g.setAttribute('color', new THREE.BufferAttribute(C, 3)); g.setAttribute('aGlow', new THREE.BufferAttribute(G, 1));
+    g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.BufferAttribute(NR, 3)); g.setAttribute('color', new THREE.BufferAttribute(C, 3)); g.setAttribute('aGlow', new THREE.BufferAttribute(G, 1)); g.setAttribute('uv', new THREE.BufferAttribute(UVS, 2));
     g.computeBoundingSphere(); return g;
   }
 }
@@ -232,7 +233,8 @@ W.clearTrees = function (x, z, w, d) {
 W.initBuildMat = function () {
   W.nightU = { value: 0 };
   const mat = W.bmat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  mat.onBeforeCompile = s => { s.uniforms.uNight = W.nightU; s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nattribute float aGlow;varying float vGlow;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow=aGlow;'); s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;varying float vGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat gl=smoothstep(.2,.45,vGlow),lt=smoothstep(.75,.95,vGlow);float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.6);totalEmissiveRadiance+=gl*(1.-uNight)*(vec3(.06,.12,.18)+fr*vec3(.5,.62,.72))+lt*uNight*vec3(.98,.72,.37);'); };
+  if (W.hasAtlas) { const tx = new THREE.Texture(W.atlasImg); tx.anisotropy = MOBILE ? 2 : 8; tx.needsUpdate = true; mat.map = tx; }
+  mat.onBeforeCompile = s => { s.uniforms.uNight = W.nightU; s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nattribute float aGlow;varying float vGlow;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow=aGlow;'); s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;varying float vGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat gl=smoothstep(.2,.45,vGlow),lt=smoothstep(.75,.95,vGlow);float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.6);totalEmissiveRadiance+=gl*(1.-uNight)*(vec3(.06,.12,.18)+fr*vec3(.5,.62,.72))+lt*uNight*vec3(.98,.72,.37);\n#ifdef USE_MAP\nfloat wm=texture2D(map,vUv).a,rr=fract(sin(dot(floor(vUv*vec2(58.,44.)),vec2(12.9898,78.233)))*43758.5453);totalEmissiveRadiance+=wm*(smoothstep(.7,.74,rr)*uNight*vec3(.92,.66,.33)+(1.-uNight)*vec3(.025,.045,.065));\n#endif\n'); };
 };
 W.geoFor = function (t, v) { const key = t + v; if (!W['g_' + key]) { const m = new MB(); if (t === 'hall') drawHall(m, v); else drawB(m, t, v); W['g_' + key] = m.build(); } return W['g_' + key]; };
 W.inst = function (t, v) { const key = t + v; if (!W.arch[key]) { const im = new THREE.InstancedMesh(W.geoFor(t, v), W.bmat, MAX_INST); im.count = 0; im.castShadow = im.receiveShadow = true; im.frustumCulled = false; W.scene.add(im); W.arch[key] = { im, list: [] }; } return W.arch[key]; };
@@ -271,7 +273,7 @@ W.removeInstance = function (b) {
   if (b._i !== last) { A.im.getMatrixAt(last, m); A.im.setMatrixAt(b._i, m); A.list[b._i] = A.list[last]; const o = G.byId.get(A.list[b._i]); if (o) o._i = b._i; } A.list.pop(); A.im.count = last; A.im.instanceMatrix.needsUpdate = true; b._i = null; W.needShadow = true;
 };
 W.addSite = function (b) {
-  const g = W.geoFor(b.t, b.v), geo = new THREE.BufferGeometry(); for (const n of ['position', 'normal', 'color', 'aGlow']) geo.setAttribute(n, g.attributes[n]); geo.boundingSphere = g.boundingSphere; geo.setDrawRange(0, 0);
+  const g = W.geoFor(b.t, b.v), geo = new THREE.BufferGeometry(); for (const n of ['position', 'normal', 'color', 'aGlow', 'uv']) geo.setAttribute(n, g.attributes[n]); geo.boundingSphere = g.boundingSphere; geo.setDrawRange(0, 0);
   const cx = b.x + b.w / 2, cz = b.z + b.d / 2, y = W.h(cx, cz) + .02, gr = new THREE.Group(), mesh = new THREE.Mesh(geo, W.bmat); mesh.castShadow = mesh.receiveShadow = true; mesh.scale.set(b.sc || 1, W.heightK ? W.heightK(b) : 1, b.sc || 1); gr.add(mesh); gr.position.set(cx, y, cz); gr.rotation.y = b.rot * Math.PI / 2;
   const box = new THREE.Box3().setFromBufferAttribute(g.attributes.position), top = Math.max(.9, box.max.y + .15), pm = new THREE.MeshLambertMaterial({ color: 0xd8b24a }), pg = new THREE.CylinderGeometry(.035, .035, top, 5);
   for (const a of [-1, 1]) for (const e of [-1, 1]) { const p = new THREE.Mesh(pg, pm); p.position.set(a * (b.w / 2 - .08), top / 2, e * (b.d / 2 - .08)); gr.add(p); }

@@ -31,9 +31,9 @@ UI.init = function () {
 };
 UI.start = function (cont) {
   $('load').classList.remove('hide');
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
-      let ok = false; if (cont) ok = loadGame(); if (!ok) newGame(($('cname').value || 'นวรัฐ').trim().slice(0, 18) || 'นวรัฐ');
+      await W.atlasP; let ok = false; if (cont) ok = loadGame(); if (!ok) newGame(($('cname').value || 'นวรัฐ').trim().slice(0, 18) || 'นวรัฐ');
       W.onTap = UI.tap; $('title').classList.add('hide'); for (const q of ['top', 'dock', 'goal']) $(q).classList.remove('hide'); G.started = true; UI.speedBtn(); UI.hud(); if (!ok) UI.showIntro();
       if (G.friend) news('เพิ่ม ' + G.friend + ' เข้าตารางอันดับแล้ว แข่งกันเลย', 'good');
     } finally { $('load').classList.add('hide'); }
