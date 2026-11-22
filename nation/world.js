@@ -58,6 +58,7 @@ class MB {
 const WALLS = [0xe9dcc3, 0xd8c7a8, 0xc9d6d8, 0xe3b98f, 0xb9c8b0, 0xf0ece2], ROOFS = [0xb5533c, 0x7a4f35, 0x466a7d, 0x8c3f36, 0x5d6b4a, 0x54565f], GLASS = [0x8fc6d8, 0x6fa9c8, 0x9ad0c8];
 const CROPS = [0x7fbf3f, 0xd9c04a, 0x5da34a];
 function drawB(m, t, v) {
+  if (typeof drawFancy === 'function' && drawFancy(m, t, v)) return;
   const W_ = WALLS[v % WALLS.length], R_ = ROOFS[(v * 2 + 1) % ROOFS.length], Gl = GLASS[v % 3];
   m.box(0, -.7, 0, ...(() => { const s = BT[t].s; return [s[0] - .06, .74, s[1] - .06]; })(), t === 'farm' || t === 'bigfarm' || t === 'park' ? 0x6f8f3f : 0x9a917f);
   const door = (x, z, c = 0x5b3f2c, h = .42, w = .24) => m.box(x, .04, z, w, h, .05, c);
@@ -111,7 +112,7 @@ function drawHall(m, lv) { const f = Math.min(5, 1 + Math.floor(lv / 2)); m.box(
 
 /* ---------- the world object ---------- */
 const W = {
-  H: new Float32Array((N + 1) * (N + 1)), T: new Uint8Array(N * N), occ: new Int32Array(N * N), wear: new Float32Array(N * N), road: new Uint8Array(N * N), treeAt: new Map(),
+  H: new Float32Array((N + 1) * (N + 1)), T: new Uint8Array(N * N), occ: new Int32Array(N * N), wear: new Float32Array(N * N), road: new Uint8Array(N * N), reserved: new Uint8Array(N * N), treeAt: new Map(),
   cam: { x: 90, z: 90, dist: 26, yaw: .7, tDist: 26, tx: 90, tz: 90 }, agents: [], arch: {}, dirty: false, roadCount: 0, treeTotal: 1, treeLive: 1, sites: new Map(), start: null
 };
 
@@ -158,12 +159,12 @@ W.gen = function (seed) {
 W.h = function (x, z) { x = clamp(x, 0, N - .001); z = clamp(z, 0, N - .001); const a = x | 0, b = z | 0, f = x - a, e = z - b, q = (p, r) => W.H[p + r * (N + 1)]; return (q(a, b) * (1 - f) + q(a + 1, b) * f) * (1 - e) + (q(a, b + 1) * (1 - f) + q(a + 1, b + 1) * f) * e; };
 
 W.paintGround = function () {
-  const c = document.createElement('canvas'); c.width = c.height = TEX; const g = c.getContext('2d'), im = g.createImageData(TEX, TEX), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [122, 171, 78], g2: [96, 152, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] };
+  const c = document.createElement('canvas'); c.width = c.height = TEX; const g = c.getContext('2d'), im = g.createImageData(TEX, TEX), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [120, 162, 80], g2: [92, 142, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] };
   for (let y = 0; y < TEX; y++) for (let x = 0; x < TEX; x++) {
     const wx = x * k, wz = y * k, h = W.h(wx, wz), n = W.fbm(wx * .16, wz * .16), n2 = W.fbm(wx * .9 + 7, wz * .9), t = W.T[ci(Math.min(N - 1, wx | 0), Math.min(N - 1, wz | 0))]; let C;
     if (h < .1) { const m = clamp((h + .2) / .3); C = [pal.sea[0] + (pal.sand[0] - pal.sea[0]) * m, pal.sea[1] + (pal.sand[1] - pal.sea[1]) * m, pal.sea[2] + (pal.sand[2] - pal.sea[2]) * m]; }
-    else { const v = clamp((n - .36) / .28), base = [pal.g1[0] + (pal.g2[0] - pal.g1[0]) * v, pal.g1[1] + (pal.g2[1] - pal.g1[1]) * v, pal.g1[2] + (pal.g2[2] - pal.g1[2]) * v]; C = base; if (h < .2) { const m = clamp((h - .1) / .1); C = [pal.sand[0] + (base[0] - pal.sand[0]) * m, pal.sand[1] + (base[1] - pal.sand[1]) * m, pal.sand[2] + (base[2] - pal.sand[2]) * m]; } if (t === 4) C = [C[0] * .8 + pal.f[0] * .2, C[1] * .8 + pal.f[1] * .2, C[2] * .8 + pal.f[2] * .2]; if (h > 1.2) { const m = clamp((h - 1.2) / 1.6); C = [C[0] + (pal.hill[0] - C[0]) * m, C[1] + (pal.hill[1] - C[1]) * m, C[2] + (pal.hill[2] - C[2]) * m]; } if (h > 2.8) { const m = clamp((h - 2.8) / 1.5); C = [C[0] + (pal.rock[0] - C[0]) * m, C[1] + (pal.rock[1] - C[1]) * m, C[2] + (pal.rock[2] - C[2]) * m]; } if (h > 6.4) { const m = clamp((h - 6.4) / 1.4); C = [C[0] + (pal.snow[0] - C[0]) * m, C[1] + (pal.snow[1] - C[1]) * m, C[2] + (pal.snow[2] - C[2]) * m]; } }
-    const sh = .94 + n2 * .13, i = (x + y * TEX) * 4; d[i] = C[0] * sh; d[i + 1] = C[1] * sh; d[i + 2] = C[2] * sh; d[i + 3] = 255;
+    else { const v = clamp((n - .36) / .28), base = [pal.g1[0] + (pal.g2[0] - pal.g1[0]) * v, pal.g1[1] + (pal.g2[1] - pal.g1[1]) * v, pal.g1[2] + (pal.g2[2] - pal.g1[2]) * v]; C = base; if (h < .2) { const m = clamp((h - .1) / .1); C = [pal.sand[0] + (base[0] - pal.sand[0]) * m, pal.sand[1] + (base[1] - pal.sand[1]) * m, pal.sand[2] + (base[2] - pal.sand[2]) * m]; } if (t === 4) C = [C[0] * .8 + pal.f[0] * .2, C[1] * .8 + pal.f[1] * .2, C[2] * .8 + pal.f[2] * .2]; if (h > 1.2) { const m = clamp((h - 1.2) / 1.6); C = [C[0] + (pal.hill[0] - C[0]) * m, C[1] + (pal.hill[1] - C[1]) * m, C[2] + (pal.hill[2] - C[2]) * m]; } if (h > 2.8) { const m = clamp((h - 2.8) / 1.5); C = [C[0] + (pal.rock[0] - C[0]) * m, C[1] + (pal.rock[1] - C[1]) * m, C[2] + (pal.rock[2] - C[2]) * m]; } if (h > 8.6) { const m = clamp((h - 8.6) / 2.4) * .72 * clamp(n2 * 1.5); C = [C[0] + (pal.snow[0] - C[0]) * m, C[1] + (pal.snow[1] - C[1]) * m, C[2] + (pal.snow[2] - C[2]) * m]; } }
+    const hx = W.h(wx + .6, wz) - W.h(wx - .6, wz), hz = W.h(wx, wz + .6) - W.h(wx, wz - .6), sh = (.94 + n2 * .13) * clamp(1 + (-hx * .55 + hz * .45) * .34, .7, 1.18), i = (x + y * TEX) * 4; d[i] = C[0] * sh; d[i + 1] = C[1] * sh; d[i + 2] = C[2] * sh; d[i + 3] = 255;
   }
   g.putImageData(im, 0, 0); W.gctx = g; W.gcv = c; g.lineCap = 'round'; g.lineJoin = 'round';
   const tx = new THREE.CanvasTexture(c); tx.anisotropy = MOBILE ? 2 : 4; tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping; W.gtex = tx;
@@ -231,7 +232,7 @@ W.clearTrees = function (x, z, w, d) {
 W.initBuildMat = function () {
   W.nightU = { value: 0 };
   const mat = W.bmat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  mat.onBeforeCompile = s => { s.uniforms.uNight = W.nightU; s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nattribute float aGlow;varying float vGlow;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow=aGlow;'); s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;varying float vGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance+=vGlow*uNight*vec3(1.05,.82,.44);'); };
+  mat.onBeforeCompile = s => { s.uniforms.uNight = W.nightU; s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nattribute float aGlow;varying float vGlow;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow=aGlow;'); s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;varying float vGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat gl=smoothstep(.2,.45,vGlow),lt=smoothstep(.75,.95,vGlow);totalEmissiveRadiance+=gl*(1.-uNight)*vec3(.07,.13,.19)+lt*uNight*vec3(.92,.68,.34);'); };
 };
 W.geoFor = function (t, v) { const key = t + v; if (!W['g_' + key]) { const m = new MB(); if (t === 'hall') drawHall(m, v); else drawB(m, t, v); W['g_' + key] = m.build(); } return W['g_' + key]; };
 W.inst = function (t, v) { const key = t + v; if (!W.arch[key]) { const im = new THREE.InstancedMesh(W.geoFor(t, v), W.bmat, MAX_INST); im.count = 0; im.castShadow = im.receiveShadow = true; im.frustumCulled = false; W.scene.add(im); W.arch[key] = { im, list: [] }; } return W.arch[key]; };
@@ -239,7 +240,7 @@ W.inst = function (t, v) { const key = t + v; if (!W.arch[key]) { const im = new
 /* building placement */
 W.canPlace = function (x, z, w, d, soft) {
   if (x < 1 || z < 1 || x + w >= N - 1 || z + d >= N - 1) return false; let lo = 99, hi = -99;
-  for (let a = x; a < x + w; a++) for (let b = z; b < z + d; b++) { const c = ci(a, b), t = W.T[c]; if (t < 2 || t === 6 || W.occ[c] || W.road[c] >= (soft ? 3 : 2)) return false; const y = W.h(a + .5, b + .5); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+  for (let a = x; a < x + w; a++) for (let b = z; b < z + d; b++) { const c = ci(a, b), t = W.T[c]; if (t < 2 || t === 6 || W.occ[c] || W.reserved[c] || W.road[c] >= 2) return false; const y = W.h(a + .5, b + .5); lo = Math.min(lo, y); hi = Math.max(hi, y); }
   return hi - lo < .75 && lo > .06;
 };
 W.doorFor = function (x, z, w, d, cx, cz) {
@@ -260,7 +261,7 @@ W.findSpot = function (city, t, R0) {
   }
   return null;
 };
-W.occupy = function (b) { for (let a = b.x; a < b.x + b.w; a++) for (let c = b.z; c < b.z + b.d; c++) W.occ[ci(a, c)] = b.id; W.clearTrees(b.x, b.z, b.w, b.d); };
+W.occupy = function (b) { if (inMap(b.door[0], b.door[1])) W.reserved[ci(b.door[0], b.door[1])] = 1; for (let a = b.x; a < b.x + b.w; a++) for (let c = b.z; c < b.z + b.d; c++) W.occ[ci(a, c)] = b.id; W.clearTrees(b.x, b.z, b.w, b.d); };
 W.placeInstance = function (b) {
   const A = W.inst(b.t, b.v); if (A.list.length >= MAX_INST) return; const im = A.im, i = A.list.length, cx = b.x + b.w / 2, cz = b.z + b.d / 2;
   const o = new THREE.Object3D(); o.position.set(cx, W.h(cx, cz) + .02, cz); o.rotation.y = b.rot * Math.PI / 2; o.scale.set(b.sc || 1, 1, b.sc || 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.count = i + 1; im.instanceMatrix.needsUpdate = true; A.list.push(b.id); b._i = i; W.needShadow = true;

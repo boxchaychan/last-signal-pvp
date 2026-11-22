@@ -28,7 +28,7 @@ function finish(b, quiet) {
   if (!quiet) assignJobs();
 }
 /* a new door gets a worn path to the town, so roads link up by themselves */
-function connectDoor(b) { const C = G.cities[b.city]; if (!C || (b.t === 'hall')) return; const p = W.path(b.door[0], b.door[1], C.door[0], C.door[1], 1400); if (p) for (const c of p) W.walkOn(c % N, c / N | 0, 4.2); }
+function connectDoor(b) { const C = G.cities[b.city]; if (!C || (b.t === 'hall')) return; const p = W.path(b.door[0], b.door[1], C.door[0], C.door[1], 1400); if (p) { const w = 7.2 * (1 + (G.S.x.stage || 0) * 1.25); for (const c of p) W.walkOn(c % N, c / N | 0, w); } }
 function homes() { return G.blds.filter(b => b.done && BT[b.t] && BT[b.t].g.house); }
 function workplaces() { return G.blds.filter(b => b.done && JOB_N[b.t]); }
 
@@ -99,7 +99,7 @@ function planRoads() {
 }
 function finishRoad(c) { const S = G.S, t = Math.max(2, W.road[c] + 1); if (roadTarget(c) < t || W.occ[c]) return true; const cost = ROAD_COST[t] * Math.sqrt(S.tech); if (S.roadFund < cost) return false; S.roadFund -= cost; W.setRoad(c, t); G.roadDone = (G.roadDone || 0) + 1; return true; }
 function roadMonth() {
-  const S = G.S, x = S.x; planRoads(); const has = G.roadQ.length > 0, need = G.roadQ.reduce((q, c) => q + ROAD_COST[Math.max(2, W.road[c] + 1)] * Math.sqrt(S.tech), 0), pay = has ? Math.max(0, Math.min(S.treas, (x.rev || 0) * S.roadPct / 100, need - S.roadFund)) : 0; S.treas -= pay; S.roadFund += pay;
+  const S = G.S, x = S.x; if (!G.roadQ || G.roadQ.length < 12 || S.m % 4 === 0) planRoads(); const has = G.roadQ.length > 0, need = G.roadQ.reduce((q, c) => q + ROAD_COST[Math.max(2, W.road[c] + 1)] * Math.sqrt(S.tech), 0), pay = has ? Math.max(0, Math.min(S.treas, (x.rev || 0) * S.roadPct / 100, need - S.roadFund)) : 0; S.treas -= pay; S.roadFund += pay;
   G.crewN = has ? clamp(Math.ceil(S.roadFund / 13), 0, Math.min(8, Math.ceil((x.LF || 5) * .4))) : 0;
   const jobs = has ? Math.min((x.LF || 5) * .08, pay / 170) : 0; S.k.pub = Math.max(0, S.k.pub + jobs - (S.crewJobs || 0)); S.crewJobs = jobs; G.roadPaid = pay;
   let n = 0; const extra = Math.min(60, Math.floor(x.pop / 120)); while (G.roadQ.length > G.crewN + 2 && n++ < extra) { const c = G.roadQ.pop(); if (!finishRoad(c)) { G.roadQ.push(c); break; } }
