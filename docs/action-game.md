@@ -2348,3 +2348,6 @@ Owner: "เอา gpt แต่ r ดูทรงพลังหน่อย", "
 - R (`ultBurst`): a bigger water fist, a dome, four water columns one per hit, then the last hit: .2 s freeze, white flash, strong shake, enemies thrown up and forward, one huge column and a sharp splash, side splashes .1 s later.
 - Punch-through: `tools/art/otter_shock.py` paints torn shock rings, white water shards and flecks in code (`otter_g_shock`). It plays on each enemy on R's first and last beat, moving out of the enemy's back; with no enemy it plays in front of the otter.
 - Checked at 1280x720 and 740x360: all 7 skills hit in both directions, R throws enemies 131 forward and 131 up, the `wfx=2` link and the dragon load the right art, no console errors. Not tried on a real phone.
+
+### DUNE: fix for v=34 (2026-11-22, `?hero=otter&test=1&v=36`)
+Owner: "ทำไมเหมือนของเดิม". v=34 added `otter_g_shock` and `otter_g_burst` to `sprites.json` without raising `BUILD`, so browsers kept the cached list and those two effects never loaded. `BUILD` is now 26. Raise `BUILD` every time `sprites.json` changes.
