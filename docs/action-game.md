@@ -2237,3 +2237,11 @@ Owner: "เน้นหลายๆ ฮิตหน่อย" (Codex was rate-li
 
 ### DUNE: new skill icons from a Meta image (2026-11-22, `?v=13`)
 Owner: "เจนไอคอนเลย". One Meta image, 3 x 3 on black, weapons and fire only (no dragon), raw `art/incoming/dune_icons/skills_meta_v1.webp`; `tools/art/dune_skill_icons.py` -> `art/dune/env/skill_icons.webp` (0-6 = K L U I O P R, 7 = dash, 8 = spare spear head). In `dune.html` an icon number from 100 up means this sheet. The dash button lost its old dragon-head icon. Potions and shop keep `art/dune/env/icons.webp`. Checked at 1280x720 and 740x360, not on a real phone.
+
+### DUNE: living map, set 1 of 3 (2026-11-22, `?v=14`)
+Owner asked what the map still lacks, then "เอาชุดแรกก่อน". All code, no new art; `?live=0` = the old still map.
+- Palms, shrubs and tufts bend with one shared wind (`gust`, `swayImg`). The tent's own painted flag waves (cut out at run time, the picture file is unchanged) and the same flag flies on some tall columns (`drawFlags`).
+- Birds in the far sky (gone near the tomb), blowing sand at ground level (`drawDrift`, `drawWind`).
+- Colour by zone (`ZONES`: village, oasis, ruins, tomb, boss ground), tints scenery only, so characters stay clear.
+- Checked at 1280x720 and 740x360: all 7 skills, no console errors. Not tried on a real phone.
+- Still open from the map review: set 2 = own boss arena (Meta image, sky darkens, gate closes); set 3 = platforms in the last 30% of the map, fewer repeated statues, a chest on top that opens.
