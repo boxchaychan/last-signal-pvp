@@ -2334,3 +2334,6 @@ Owner sent a water-effects picture signed by another artist and said "เอา�
 
 ### DUNE: all otter water glows (2026-11-22, `?hero=otter&test=1&v=31`)
 Owner: "ให้มันเรืองหมดเลยดิ". The glowing cyan set is now the otter's default (`&wfx=1` = the old dark blue water, its files are kept). A soft cyan light (`halo()`) now sits behind the orbs, every water drop, the fists, the water on the fist and the charging orbs of R; the shock rings are cyan with a wide glow. The orbs keep the rich blue the owner chose. Checked at 1280x720 and 740x360: all 7 skills hit in both directions, drawing speed about the same as the old set (average 2.5-4.4 ms a frame against 2.2-3.5), the dragon loads no water art, no console errors. Not tried on a real phone.
+
+### DUNE: otter K and L glow (2026-11-22, `?hero=otter&test=1&v=32`)
+Owner: "k l ยังไม่เรืองแสงเลย". The water foot and the water fists fill their picture, so their halo had no room. They now have a brighter colour with no dark edge, a separate light sheet twice their size behind them (`otter_wfist_glow`, `otter_wkick_glow`, `glowCell()`), and a light additive pass that keeps the fist and foot shapes readable. Checked at 1280x720 and 740x360: K and L in both directions, all 7 skills hit, the dragon loads no water art, no console errors. Not tried on a real phone.
