@@ -12,7 +12,7 @@ function newState(name) {
     tax: { inc: 5, corp: 10, vat: 5 }, bud: { edu: .7, health: .7, safety: .5, infra: .7, welfare: .4, env: .4, defense: .2, rnd: .1, admin: .5 },
     k: K_ZERO(), P: .03, crime: .05, gini: .3, corr: .08, trust: 62, happy: 60, cpi: 1, pFood: 40, infl: .002, inflShock: 0, road: .35, hunger: 0, epi: 0,
     war: 0, tension: .05, rep: .3, drought: 0, tfrAdd: 0, transit: 0, forestBase: 1, forestAdj: 0, adj: { pol: 0, crime: 0, corr: 0, gini: 0, hq: 0 }, mods: [], later: [],
-    gdp: 700, x: {}, hist: [], stats: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, month: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, reclaims: [], landBonus: 0, roadPct: 20, roadFund: 0, crewJobs: 0, best: 0, lastEv: {}, evM: 0, term: 1, nextVote: 48, promise: null, stageMax: 0
+    gdp: 700, x: {}, hist: [], stats: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, month: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, reclaims: [], landBonus: 0, roadPct: 20, roadFund: 0, crewJobs: 0, best: 0, lastEv: {}, evM: 0, unrest: 6, unrestAdj: 0, stageMax: 0
   };
 }
 
@@ -84,6 +84,9 @@ function stepModel(S) {
   S.happy += (clamp(hapT, 3, 99) - S.happy) * .12;
   const debtRatio = S.debt / Math.max(gdp * 12, 1);
   S.trust += (clamp(24 + .68 * S.happy - 46 * S.corr - 8 * clamp(debtRatio - 1) + .14 * (S.rep * 100 - 30), 3, 98) - S.trust) * .05;
+  if (S.unrest == null) S.unrest = 6; S.unrestAdj = (S.unrestAdj || 0) * .96;
+  const unT = clamp(6 + Math.max(0, 52 - S.trust) * 1.15 + Math.max(0, 48 - S.happy) * .75 + S.hunger * 130 + u * 48 + Math.max(0, S.infl - .01) * 900 + (S.war > 0 ? 8 : 0) + Math.max(0, .3 - b.defense) * 14 + Math.max(0, taxLoad - 28) * 1.1 + S.corr * 18 - Math.min(1.4, b.safety * eff) * safeCov * 5 - Math.min(1.5, b.defense) * 5 - Math.min(1, k.admin) * 4 + S.unrestAdj, 0, 130);
+  S.unrest = clamp(S.unrest + (unT - S.unrest) * .07, 0, 100);
   S.rep = clamp(S.rep + (.45 * (S.trust / 100) + .15 * clamp(gdpPc / 1800) - .03 * (S.war > 0) - S.rep) * .006, .01, 1);
   S.tech *= 1 + (.004 + .022 * clamp(S.eduY / 12) * (1 - S.corr) + .018 * Math.min(1.6, b.rnd * eff) + .012 * Math.min(k.rnd, 2) + .05 * techE / Math.max(LF, 1) + .003 * Math.min(k.port + k.air, 4)) / 12 * (S.war > 0 ? .4 : 1) / (1 + S.tech / 9);
   S.tension = clamp(S.tension + (.05 + .02 * clamp(Math.log10(pop + 1) / 7) - .03 * Math.min(1.5, b.defense) - S.tension) * .012 + (S.war > 0 ? -.002 : 0), 0, 1);
@@ -105,7 +108,7 @@ function stepModel(S) {
   S.gdp = gdp; S.m++;
   const G1 = ageGroups(a);
   const x = S.x = { m: S.m, pop: G1.pop, kids: G1.kids, work: G1.work, old: G1.old, oldShare: G1.old / G1.pop, LF, emp, u, gdp, gdpPc, E_ag: E.ag, E_ind: E.ind, E_svc: E.svc, E_pub: E.pub, E_tech: techE, cleanW, clean, wr, pw, safeCov, hospCov, schoolCov, houseRatio, parkCov, foodMonths, foodOut, dirtyShare, cong, eduY: S.eduY, hq: S.hq, sick: S.sick, P: S.P, crime: S.crime, gini: S.gini, corr: S.corr, trust: S.trust, happy: S.happy, infl: S.infl, tech: S.tech, debtRatio, taxLoad, k, tfr, rep: S.rep, tension: S.tension, forest, army: k.army, treas: S.treas, rev, spend, interest, LE, A, war: S.war, hunger: S.hunger };
-  x.land = S.landBonus || 0; x.idx = devIndex(x); x.stage = stageOf(x.pop, x.idx); x.score = scoreOf(x); S.best = Math.max(S.best, x.score); S.stageMax = Math.max(S.stageMax, x.stage);
+  x.land = S.landBonus || 0; x.unrest = S.unrest; x.idx = devIndex(x); x.stage = stageOf(x.pop, x.idx); x.score = scoreOf(x); S.best = Math.max(S.best, x.score); S.stageMax = Math.max(S.stageMax, x.stage);
   return x;
 }
 
@@ -119,7 +122,7 @@ function applyFx(S, fx) {
     else if (q === 'food') S.food = Math.max(0, S.food + v * pop); else if (q === 'mat') S.mat = Math.max(0, S.mat + v); else if (q === 'rep') S.rep = clamp(S.rep + v);
     else if (q === 'infl') S.inflShock += v; else if (q === 'tech') S.tech += v; else if (q === 'tension') S.tension = clamp(S.tension + v); else if (q === 'forest') S.forestAdj += v;
     else if (q === 'priv') { S.priv = Math.max(0, S.priv + v * base); if (v < 0) S.shock = (S.shock || 0) + v * .12; } else if (q === 'war') S.war = Math.max(S.war, v); else if (q === 'epi') S.epi = Math.max(0, S.epi + v); else if (q === 'drought') S.drought = Math.max(S.drought, v);
-    else if (q === 'road') S.road = clamp(S.road + v); else if (q === 'cong') S.transit -= v; else if (q === 'tfr') S.tfrAdd += v;
+    else if (q === 'unrest') { S.unrest = clamp((S.unrest || 0) + v, 0, 100); S.unrestAdj = (S.unrestAdj || 0) + v * .6; } else if (q === 'road') S.road = clamp(S.road + v); else if (q === 'cong') S.transit -= v; else if (q === 'tfr') S.tfrAdd += v;
     else if (q === 'tax') { S.tax.inc = clamp(S.tax.inc + v, 0, 45); S.tax.vat = clamp(S.tax.vat + v, 0, 25); }
     else if (q === 'bud') { for (const r in S.bud) S.bud[r] = clamp(S.bud[r] * (1 + v), 0, 2); }
     else if (q === 'debt') { if (v < 0) S.debt *= Math.max(0, 1 + v); else { const n = v * base * 6; S.debt += n; S.treas += n * .5; } }
@@ -194,7 +197,7 @@ function forecast(S, years, patchKey) {
     mark('water', x.cleanW < .7 && x.pop > 20, 'น้ำสะอาดไม่พอ'); mark('food', x.hunger > .05, 'เริ่มมีคนอดอาหาร'); mark('jobs', x.u > .2, 'คนตกงานเกิน 20%'); mark('home', x.houseRatio < .85, 'ที่อยู่อาศัยไม่พอ เกิดสลัม');
     mark('smog', x.P > .4, 'มลพิษถึงระดับอันตราย'); mark('debt', x.debtRatio > 1, 'หนี้เกิน GDP เสี่ยงวิกฤต'); mark('old', x.oldShare > .2, 'เข้าสู่สังคมสูงวัย แรงงานลด'); mark('crime', x.crime > .28, 'อาชญากรรมพุ่ง');
     mark('doctor', x.hospCov < .5 && x.pop > 60, 'หมอและเตียงไม่พอ'); mark('school', x.schoolCov < .5 && x.pop > 40, 'เด็กครึ่งหนึ่งไม่ได้เรียน'); mark('infl', x.infl > .018, 'เงินเฟ้อสูง ของแพง'); mark('traffic', x.cong > .4, 'รถติดหนักทั้งเมือง');
-    mark('gap', x.gini > .48, 'ช่องว่างรวยจนกว้างมาก'); mark('leave', x.A < -.15, 'คนเริ่มย้ายออกจากประเทศ'); mark('birth', x.tfr < 1.5 && x.pop > 500, 'เด็กเกิดน้อยเกินไป'); mark('power', x.pw < .6 && x.pop > 100, 'ไฟฟ้าไม่พอ');
+    mark('gap', x.gini > .48, 'ช่องว่างรวยจนกว้างมาก'); mark('leave', x.A < -.15, 'คนเริ่มย้ายออกจากประเทศ'); mark('birth', x.tfr < 1.5 && x.pop > 500, 'เด็กเกิดน้อยเกินไป'); mark('power', x.pw < .6 && x.pop > 100, 'ไฟฟ้าไม่พอ'); mark('throne', x.unrest > 70, 'เสี่ยงถูกโค่นล้ม');
   }
   return { pts, warn: Object.values(warn).sort((p, q) => p.y - q.y), end: C.x };
 }

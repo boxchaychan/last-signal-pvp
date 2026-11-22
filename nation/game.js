@@ -226,15 +226,12 @@ function approve(f) {
 }
 function cancelProp() { G.prop = null; if (!G.sel) W.ring.visible = false; UI.closeProposal(); }
 
-/* ---------- election every 4 years ---------- */
-const PROMISES = { jobs: ['มีงานให้ทุกคน', x => x.u < .08], health: ['ทุกคนเข้าถึงหมอ', x => x.hospCov > .82], school: ['เด็กทุกคนได้เรียน', x => x.schoolCov > .82], cheap: ['ของไม่แพง', x => x.infl < .007], clean: ['เมืองสะอาดอากาศดี', x => x.P < .2 && x.clean > .85], safe: ['บ้านเมืองปลอดภัย', x => x.crime < .12] };
-function voteResult() {
-  const S = G.S, x = S.x; let bonus = 0, kept = null; if (S.promise) { kept = PROMISES[S.promise][1](x); bonus = kept ? 6 : -8; }
-  const you = clamp(S.trust * .56 + S.happy * .44 + bonus + (Math.random() - .5) * 5 - (S.term - 1) * .8, 4, 96); return { you, other: 100 - you, kept, win: you >= 50 };
-}
-function electionCheck() {
-  const S = G.S; if (S.m === S.nextVote - 6) UI.showPromise();
-  if (S.m >= S.nextVote) { const r = voteResult(); if (r.win) { S.term++; S.nextVote += 48; S.trust = clamp(S.trust + 3, 0, 100); S.promise = null; UI.showElection(r); } else UI.showElection(r); }
+/* ---------- the throne: no elections, but a ruler can still fall ---------- */
+function throneCheck() {
+  const S = G.S, u = S.unrest || 0;
+  if (u >= 100) { const army = S.bud.defense < .3; UI.showEnd(army ? 'กองทัพก่อรัฐประหาร' : 'ประชาชนลุกฮือโค่นล้มคุณ', army ? 'ทหารไม่พอใจจนยึดอำนาจจากคุณ' : 'ผู้คนทนไม่ไหวและบุกเข้าทำเนียบ ยุคของคุณจบลงแล้ว'); return; }
+  if (u >= 75 && !S.warn75) { S.warn75 = 1; news('บัลลังก์สั่นคลอน! ถ้าความไม่สงบถึง 100% คุณจะถูกโค่นล้ม', 'bad'); }
+  if (u < 60) S.warn75 = 0;
 }
 
 /* ---------- scores ---------- */
@@ -284,7 +281,7 @@ function monthTick() {
   if (S.m % 3 === 0) { S.hist.push([S.m, Math.round(x.pop), Math.round(x.idx), Math.round(x.gdpPc), Math.round(x.happy), x.score]); if (S.hist.length > 260) S.hist.splice(0, 2).length; }
   if (x.stage > before && x.stage === S.stageMax) UI.showStage(x.stage);
   if (x.pop < 1.2) { UI.showEnd('ประเทศร้างผู้คน', 'ไม่เหลือใครอยู่ในประเทศแล้ว'); return; }
-  electionCheck(); if (!G.over) nextProblem();
+  throneCheck(); if (!G.over) nextProblem();
   if (S.m % 4 === 0) { saveGame(); saveScore(); } UI.dirty = true;
 }
 function tick(dt) {
