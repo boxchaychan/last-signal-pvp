@@ -192,7 +192,7 @@ function eligible() {
   const S = G.S, x = S.x; return EV.filter(e => x.pop >= e.p && S.m >= (S.lastEv[e.id] != null ? S.lastEv[e.id] + e.cd * 12 : 0) && (() => { try { return e.when(x); } catch (q) { return false; } })());
 }
 function nextProblem() {
-  const S = G.S, gap = S.m < 24 ? 3 : clamp(5 - S.x.stage * .25, 3, 5); if (G.modal || S.m - S.evM < gap) return;
+  const S = G.S; if (G.modal) return; S.queue = S.queue || []; const due = S.queue.findIndex(q => q.m <= S.m); if (due >= 0) { const q = S.queue.splice(due, 1)[0], ev = EV.find(e => e.id === q.id); if (ev) { S.lastEv[ev.id] = S.m; S.evM = S.m; UI.showEvent(ev); return; } } const gap = S.m < 24 ? 3 : clamp(5 - S.x.stage * .25, 3, 5); if (S.m - S.evM < gap) return;
   const L = eligible(); if (!L.length) return; L.sort((p, q) => (S.lastEv[p.id] != null ? 1 : 0) - (S.lastEv[q.id] != null ? 1 : 0) || Math.random() - .5); const e = L[0]; S.lastEv[e.id] = S.m; S.evM = S.m; UI.showEvent(e);
 }
 function answerEvent(e, o) {
@@ -273,7 +273,7 @@ function newGame(name) {
 
 /* ---------- monthly + per-frame clock ---------- */
 function monthTick() {
-  const S = G.S; S.k.roadC = W.roadCount; S.forestBase = clamp(W.treeLive / W.treeTotal); S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 };
+  const S = G.S; if (typeof ensureCands === 'function') { ensureCands(S); recalcGov(S); } S.k.roadC = W.roadCount; S.forestBase = clamp(W.treeLive / W.treeTotal); S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 };
   const before = S.x.stage, x = stepModel(S); nationalWorks(S); roadMonth();
   for (let i = S.later.length - 1; i >= 0; i--) { const q = S.later[i]; if (q.m <= S.m) { applyFx(S, q.fx); if (q.news) news(q.news, q.fx.tr < 0 || q.fx.food < 0 ? 'bad' : 'good'); if (q.vis === 'flood') G.floodT = 14; S.later.splice(i, 1); } }
   if (S.grantWait && S.m >= S.grantWait.m) { const t = S.grantWait.t, ok = Math.random() < clamp(.42 + S.rep * .7 + (x.trust - 50) * .006, .15, .95); S.grantWait = null; if (ok) { S.treas += BT[t].c; news('ได้รับทุนสร้าง' + BT[t].n + ' แล้ว! สั่งสร้างได้เลย', 'good'); } else news('คำขอทุนสร้าง' + BT[t].n + ' ถูกปฏิเสธ', 'bad'); }

@@ -14,8 +14,9 @@ const UI = window.UI = { dirty: true, tab: null, cat: 'all', fYears: 10, fIf: 'n
 
 UI.toast = function (t, kind) { const d = document.createElement('div'); d.className = 'toast ' + kind; d.textContent = t; const T = $('toasts'); T.appendChild(d); while (T.children.length > 4) T.firstChild.remove(); setTimeout(() => d.remove(), 6500); };
 
-const DOCK = [['build', 'สั่งสร้าง'], ['budget', 'งบ/ภาษี'], ['country', 'ประเทศ'], ['future', 'อนาคต'], ['rank', 'อันดับ']];
-const TITLES = { build: 'สั่งสร้างของส่วนรวม', budget: 'งบประมาณและภาษี', country: 'สถานะประเทศ', future: 'จำลองอนาคต', rank: 'อันดับโลก' };
+const DOCK = [['build', 'สั่งสร้าง'], ['gov', 'รัฐบาล'], ['budget', 'งบ/ภาษี'], ['country', 'ประเทศ'], ['future', 'อนาคต'], ['rank', 'อันดับ']];
+IC.gov = IC.state;
+const TITLES = { gov: 'รัฐบาลของคุณ', build: 'สั่งสร้างของส่วนรวม', budget: 'งบประมาณและภาษี', country: 'สถานะประเทศ', future: 'จำลองอนาคต', rank: 'อันดับโลก' };
 UI.init = function () {
   $('dock').innerHTML = DOCK.map(d => '<button data-tab="' + d[0] + '">' + IC[d[0]] + '<span>' + d[1] + '</span></button>').join('');
   $('speed').innerHTML = [[0, IC.pause], [1, '1'], [3, '3'], [10, '10']].map(s => '<button data-sp="' + s[0] + '" aria-label="ความเร็ว ' + s[0] + '">' + s[1] + '</button>').join('');
@@ -58,6 +59,7 @@ UI.render = function () { const k = UI.tab; if (!k) return; const body = $('sbod
 UI.refresh = function () { if (!UI.tab) return; if (UI.tab === 'budget') { const d = $('bSum'); if (d) d.innerHTML = UI.budgetSum(); } else if (UI.tab !== 'future') UI.render(); };
 UI.sheetClick = function (e) {
   const q = e.target.closest('[data-a]'); if (!q) return; const a = q.dataset.a, v = q.dataset.v;
+  if (['gtab', 'mhire', 'mfire', 'lawlv'].includes(a)) { UI.govClick(a, v); return; }
   if (a === 'cat') { UI.cat = v; UI.render(); } else if (a === 'order') { UI.closeSheet(); proposeBuild(v); }
   else if (a === 'yrs') { UI.fYears = +v; UI.fRes = null; UI.render(); } else if (a === 'if') { UI.fIf = v; UI.fRes = null; UI.render(); } else if (a === 'run') { UI.fRes = forecast(G.S, UI.fYears, UI.fIf); UI.render(); }
   else if (a === 'borrow') { const n = Math.max(500, Math.round(G.S.gdp * 3)); G.S.debt += n; G.S.treas += n; news('กู้เงิน ' + fmt(n) + ' บาท'); UI.hud(); UI.render(); }
@@ -141,7 +143,7 @@ UI.tab_info = function () {
 const FX_X = { tax: ['ภาษี', 0], bud: ['งบรัฐ', 0], road: ['ถนน', 0], cong: ['รถติด', 1], tfr: ['อัตราเกิด', 0] };
 function fxChips(fx) {
   const o = []; for (const k in fx) {
-    const v = fx[k]; if (k === 'build') { o.push('<span class="n">สั่งสร้าง</span>'); continue; } if (k === 'later') { o.push('<span class="n">มีผลตามมาทีหลัง</span>'); continue; }
+    const v = fx[k]; if (k === 'build') { o.push('<span class="n">สั่งสร้าง</span>'); continue; } if (k === 'later' || k === 'next') { o.push('<span class="n">มีผลตามมาทีหลัง</span>'); continue; } if (k === 'fire') { o.push('<span class="n">ปลดรัฐมนตรี</span>'); continue; } if (k === 'loy') { o.push('<span class="g">รัฐมนตรีภักดีขึ้น</span>'); continue; }
     if (k === 'c') { const n = Math.abs(v) * Math.max(G.S.gdp, 700); o.push(v > 0 ? '<span class="r">ใช้เงิน ' + fmt(n) + '</span>' : '<span class="g">ได้เงิน ' + fmt(n) + '</span>'); continue; }
     const name = FX_N[k] || (FX_X[k] && FX_X[k][0]); if (!name) continue; const bad = FX_BAD[k] || (FX_X[k] && FX_X[k][1]), good = bad ? v < 0 : v > 0; o.push('<span class="' + (good ? 'g' : 'r') + '">' + name + (v > 0 ? ' ▲' : ' ▼') + '</span>');
   } return '<div class="fx">' + o.join('') + '</div>';
@@ -178,4 +180,3 @@ function frame(n) {
   if (G.floodT > 0) G.floodT -= dt * Math.max(G.speed, 1); W.water.position.y += ((G.floodT > 0 ? .3 : 0) - W.water.position.y) * Math.min(1, dt * 1.2);
   W.render(G.time, dt); hudT += dt; if (UI.dirty && hudT > .25) { hudT = 0; UI.dirty = false; UI.hud(); UI.refresh(); }
 }
-UI.init();
