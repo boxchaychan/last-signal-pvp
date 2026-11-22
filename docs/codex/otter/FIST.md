@@ -13,6 +13,12 @@ Two changes for the class only:
 - No water orb in the hands. The game draws the water chi on the fists and the water orbs that circle the body (the class resource), so never draw orbs in the frames.
 - The dark hand wraps cover the knuckles like a fighter's, with one small pale-cyan wave mark on the back of each fist.
 
+## Hands: check them in EVERY picture (owner: "มือกลับด้าน")
+Facing RIGHT, the arm nearest the viewer is the character's RIGHT arm and the far arm is the LEFT arm. Never mirror a hand.
+- Far (left) fist in guard: the viewer sees the PALM side: four curled fingers and the thumb folded across them. The wave mark is on the back of the hand, so it is NOT visible.
+- Near (right) fist in guard or at the waist: the viewer sees the BACK of the hand with the wave mark. The thumb is hidden on the far side.
+- In a straight punch the palm faces down: the near fist shows its little-finger side, the far fist shows its thumb side.
+
 ## 1. `base_side.png` (do this first)
 One otter, full body, side view facing RIGHT, clean white background, picture size 1118 x 1407, same body size as `side_ref.png`, soles on the same line (y about 1290). Pose: a ready martial arts guard. Feet apart, knees slightly bent, weight low, front fist raised forward at chin height, rear fist pulled back at the waist. Scarf and tail trail to the left. Fully inside the picture.
 Put it beside `side_ref.png`. Redo it if the head, body, arms or legs change size or shape.
