@@ -2322,3 +2322,6 @@ Owner: "u เอารวบโดยน้ำวนรอบตัว แล้
 
 ### DUNE: otter O = big water orbs (2026-11-22, `?hero=otter&test=1&v=27`)
 Owner: "o ให้ลูกแก้วน้ำใหญ่ขึ้น แล้วหมุนแทน". O no longer shows fists or feet: 5 water orbs grow to about 40 px and circle the otter, half behind and half in front (`spinOrb`, `drawFistRing`), dripping as they turn, and are flung outward on the last hit. The small floating orbs are hidden during O, and its hits no longer draw the wave splash on the target. Checked at 1280x720 and 740x360, both directions, the dragon still plays, no console errors. Not tried on a real phone.
+
+### DUNE: otter O hits harder (2026-11-22, `?hero=otter&test=1&v=28`)
+Owner: "ดูไม่แรงเลย". The 5 big orbs speed up while turning, pulse and shake the screen on contact with splashes behind the target, rush in to the body for a beat, then explode outward: a big crown splash at the otter, 5 smaller bursts round it, two rings, screen shake and flash, and a last hit about 3 times a normal tick over a 300 wide area that throws monsters up. Checked at 1280x720 and 740x360, both directions, the dragon still plays, no console errors. Not tried on a real phone.
