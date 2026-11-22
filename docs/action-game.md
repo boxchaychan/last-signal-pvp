@@ -2325,3 +2325,6 @@ Owner: "o ให้ลูกแก้วน้ำใหญ่ขึ้น แล
 
 ### DUNE: otter O hits harder (2026-11-22, `?hero=otter&test=1&v=28`)
 Owner: "ดูไม่แรงเลย". The 5 big orbs speed up while turning, pulse and shake the screen on contact with splashes behind the target, rush in to the body for a beat, then explode outward: a big crown splash at the otter, 5 smaller bursts round it, two rings, screen shake and flash, and a last hit about 3 times a normal tick over a 300 wide area that throws monsters up. Checked at 1280x720 and 740x360, both directions, the dragon still plays, no console errors. Not tried on a real phone.
+
+### DUNE: otter orbs smaller and blue (2026-11-22, `?hero=otter&test=1&v=29`)
+Owner: "เอาลูกแก้วเล็กลง ปรับสีให้เหมือนวอเตอร์บอลของ RO แต่หมุนรอบตัว" (colour feel only, the art is our own, painted by `tools/art/otter_orb.py`). The orb is now a nearly solid royal blue ball with a navy edge, so the sand no longer turns its middle grey-green. Size: idle about 10 px (was 13), skill O at most about 15 px (was 25), with a tighter orbit. Checked at 1280x720 and 740x360: all 7 skills hit in both directions, the dragon still plays and loads no otter art, no console errors. Not tried on a real phone.

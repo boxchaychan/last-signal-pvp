@@ -9,7 +9,7 @@ import numpy as np, cv2
 from PIL import Image
 
 CELL, SS, N = 96, 4, 12; S = CELL * SS; y, x = np.mgrid[0:S, 0:S].astype(np.float32); x = (x + .5) / S * 2 - 1; y = (y + .5) / S * 2 - 1; r = np.hypot(x, y); th = np.arctan2(y, x)
-NAVY, DEEP, BLUE, CYAN, PALE, WHITE = [np.array(c, np.float32) / 255 for c in ((10, 44, 128), (10, 92, 214), (20, 150, 245), (86, 224, 255), (196, 248, 255), (255, 255, 255))]
+NAVY, DEEP, BLUE, CYAN, PALE, WHITE = [np.array(c, np.float32) / 255 for c in ((6, 26, 118), (8, 50, 192), (16, 96, 242), (58, 168, 255), (168, 226, 255), (255, 255, 255))]   # owner: a rich saturated blue water ball
 def ss(a, b, v): q = np.clip((v - a) / (b - a), 0, 1); return q * q * (3 - 2 * q)
 def mix(rgb, col, k): return rgb * (1 - k[..., None]) + col * k[..., None]
 R = .86; ball = 1 - ss(R - .012, R + .012, r); u = np.clip(r / R, 0, 1)
@@ -17,7 +17,7 @@ sheet = np.zeros((CELL, CELL * N, 4), np.float32)
 for f in range(N):
     ph = f / N * 2 * np.pi
     rgb = mix(np.broadcast_to(CYAN, (S, S, 3)).copy(), BLUE, ss(.25, .72, u)); rgb = mix(rgb, DEEP, ss(.66, 1, u))            # clear blue in the middle, deep at the edge
-    al = .46 + .5 * ss(.3, .98, u)
+    al = .86 + .13 * ss(.3, .98, u)   # nearly solid, so the sand does not turn the middle grey-green
     arm = np.sin(2 * th + 6.0 * u - ph); band = ss(.12, .3, u) * (1 - ss(.74, .92, u))                                       # two soft arms of water turning inside
     rgb = mix(rgb, CYAN, ss(.05, .55, arm) * band * .9); al = al + ss(.05, .55, arm) * band * .3
     rgb = mix(rgb, PALE, ss(.62, .92, arm) * band); al = al + ss(.62, .92, arm) * band * .2
