@@ -122,13 +122,14 @@ function applyFx(S, fx) {
     else if (q === 'food') S.food = Math.max(0, S.food + v * pop); else if (q === 'mat') S.mat = Math.max(0, S.mat + v); else if (q === 'rep') S.rep = clamp(S.rep + v);
     else if (q === 'infl') S.inflShock += v; else if (q === 'tech') S.tech += v; else if (q === 'tension') S.tension = clamp(S.tension + v); else if (q === 'forest') S.forestAdj += v;
     else if (q === 'priv') { S.priv = Math.max(0, S.priv + v * base); if (v < 0) S.shock = (S.shock || 0) + v * .12; } else if (q === 'war') S.war = Math.max(S.war, v); else if (q === 'epi') S.epi = Math.max(0, S.epi + v); else if (q === 'drought') S.drought = Math.max(S.drought, v);
-    else if (q === 'next') { S.queue = S.queue || []; S.queue.push({ m: S.m + v[0], id: v[1] }); } else if (q === 'fire') { if (typeof govFire === 'function') govFire(S, v); } else if (q === 'loy') { if (typeof govLoy === 'function') govLoy(S, v); } else if (q === 'unrest') { S.unrest = clamp((S.unrest || 0) + v, 0, 100); S.unrestAdj = (S.unrestAdj || 0) + v * .6; } else if (q === 'road') S.road = clamp(S.road + v); else if (q === 'cong') S.transit -= v; else if (q === 'tfr') S.tfrAdd += v;
+    else if (q === 'geo') { if (typeof geoFx === 'function') geoFx(S, v); } else if (q === 'next') { S.queue = S.queue || []; S.queue.push({ m: S.m + v[0], id: v[1] }); } else if (q === 'fire') { if (typeof govFire === 'function') govFire(S, v); } else if (q === 'loy') { if (typeof govLoy === 'function') govLoy(S, v); } else if (q === 'unrest') { S.unrest = clamp((S.unrest || 0) + v, 0, 100); S.unrestAdj = (S.unrestAdj || 0) + v * .6; } else if (q === 'road') S.road = clamp(S.road + v); else if (q === 'cong') S.transit -= v; else if (q === 'tfr') S.tfrAdd += v;
     else if (q === 'tax') { S.tax.inc = clamp(S.tax.inc + v, 0, 45); S.tax.vat = clamp(S.tax.vat + v, 0, 25); }
     else if (q === 'bud') { for (const r in S.bud) S.bud[r] = clamp(S.bud[r] * (1 + v), 0, 2); }
     else if (q === 'debt') { if (v < 0) S.debt *= Math.max(0, 1 + v); else { const n = v * base * 6; S.debt += n; S.treas += n * .5; } }
     else if (q === 'pop') { const f = clamp(1 + v, .4, 1.3); for (let i = 15; i < 50; i++) S.age[i] *= f; }
     else if (q === 'later') S.later.push({ m: S.m + v[0], fx: v[1], news: v[2], vis: v[3] || '' });
   }
+  if (S.treas < 0) { S.debt += -S.treas * 1.02; S.treas = 0; }
 }
 
 /* What private people want to build next (they pay with private money). The same logic runs in the future forecast. */

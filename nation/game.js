@@ -58,7 +58,7 @@ function stepSites(dtM) {
 }
 function placeAuto(t, payer) {
   const S = G.S, def = BT[t]; if (S[payer] < def.c) return false; S[payer] -= def.c;
-  const weights = G.cities.map(c => Math.max(1, c.n)), tot = weights.reduce((p, q) => p + q, 0); let r = Math.random() * tot, cIdx = 0; for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) { cIdx = i; break; } }
+  const weights = G.cities.map(c => Math.max(4, Math.sqrt(c.n + 1))), tot = weights.reduce((p, q) => p + q, 0); let r = Math.random() * tot, cIdx = 0; for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) { cIdx = i; break; } }
   const A = W.arch[t + 0]; const noRoom = G.blds.length >= MAX_BLDS || (A && A.list.length > MAX_INST - 8);
   const spot = noRoom ? null : W.findSpot(G.cities[cIdx], t);
   if (!spot) { addGive(t); G.abstract++; return true; }
@@ -83,11 +83,11 @@ function redevelop() {
     W.removeInstance(b); b.t = t; b.v = Math.random() * 6 | 0; b.vis = 1; b.done = false; b.prog = 0; b.sc = Math.min(1, b.w / BT[t].s[0], b.d / BT[t].s[1]); W.paintPad(b); W.addSite(b);
   }
 }
-function maybeNewCity() {
-  const S = G.S, marks = [3000, 20000, 90000, 400000, 1500000, 4000000, 9000000, 18000000]; if (G.cities.length > marks.length || S.x.pop < marks[G.cities.length - 1]) return;
+function maybeNewCity(force) {
+  const S = G.S, marks = [3000, 20000, 90000, 400000, 1500000, 4000000, 9000000, 18000000]; if (G.cities.length > marks.length || (!force && S.x.pop < marks[G.cities.length - 1])) return;
   let best = null, bs = -1e9;
   for (let i = 0; i < 1400; i++) {
-    const x = 8 + Math.random() * (N - 16) | 0, z = 8 + Math.random() * (N - 16) | 0; if (!W.canPlace(x, z, 3, 3)) continue; const dd = Math.min(...G.cities.map(c => Math.hypot(c.x - x, c.z - z))); if (dd < 26) continue; let flat = 0, w = 0;
+    const x = 8 + Math.random() * (N - 16) | 0, z = 8 + Math.random() * (N - 16) | 0; if (!W.canPlace(x, z, 3, 3)) continue; const dd = Math.min(...G.cities.map(c => Math.hypot(c.x - x, c.z - z))); if (dd < (force ? 16 : 26)) continue; let flat = 0, w = 0;
     for (let a = -8; a <= 8; a += 2) for (let b = -8; b <= 8; b += 2) { if (!inMap(x + a, z + b)) continue; const t = W.T[ci(x + a, z + b)]; if (t === 3 || t === 4) flat++; else if (t === 1) w++; }
     const s = flat + Math.min(w, 5) * 2 - dd * .12; if (s > bs) { bs = s; best = { x, z }; }
   }
@@ -274,7 +274,7 @@ function newGame(name) {
 /* ---------- monthly + per-frame clock ---------- */
 function monthTick() {
   const S = G.S; if (typeof ensureCands === 'function') { ensureCands(S); recalcGov(S); } S.k.roadC = W.roadCount; S.forestBase = clamp(W.treeLive / W.treeTotal); S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 };
-  const before = S.x.stage, x = stepModel(S); nationalWorks(S); roadMonth();
+  const before = S.x.stage, x = stepModel(S); nationalWorks(S); roadMonth(); if (typeof geoTick === 'function') geoTick(S);
   for (let i = S.later.length - 1; i >= 0; i--) { const q = S.later[i]; if (q.m <= S.m) { applyFx(S, q.fx); if (q.news) news(q.news, q.fx.tr < 0 || q.fx.food < 0 ? 'bad' : 'good'); if (q.vis === 'flood') G.floodT = 14; S.later.splice(i, 1); } }
   if (S.grantWait && S.m >= S.grantWait.m) { const t = S.grantWait.t, ok = Math.random() < clamp(.42 + S.rep * .7 + (x.trust - 50) * .006, .15, .95); S.grantWait = null; if (ok) { S.treas += BT[t].c; news('ได้รับทุนสร้าง' + BT[t].n + ' แล้ว! สั่งสร้างได้เลย', 'good'); } else news('คำขอทุนสร้าง' + BT[t].n + ' ถูกปฏิเสธ', 'bad'); }
   autoGrowth(); redevelop(); if (S.m % 6 === 0) { maybeNewCity(); } syncAgents(); if (S.m % 3 === 0) assignJobs();

@@ -57,6 +57,7 @@ function recalcGov(S) {
     up += .05; add('corr', Math.max(-.006, g * .004)); add('unrest', (5 - m.lo) * .25); if (m.gr > gMax) { gMax = m.gr; gWho = p; }
     if (p === 'fin') add('rev', s * .012); else if (p === 'int') { add('crime', -s * .006); add('unrest', -(m.lo - 5) * .4); } else if (p === 'edu') add('edu', s * .018); else if (p === 'hea') add('hq', s * .9); else if (p === 'def') { add('army', s * .04); add('unrest', (5 - m.lo) * .6); loDef = m.lo; } else if (p === 'dip') { add('rep', s * .005); add('tension', -s * .004); }
   }
+  if (typeof geoMods === 'function') geoMods(S, add);
   L.upkeep = up; S.lawMod = L; S.govStat = { gMax, gWho, loDef };
 }
 function govFire(S, who) { const p = who === 'graft' ? S.govStat && S.govStat.gWho : who; if (!p || !S.gov[p]) return; const m = S.gov[p]; S.gov[p] = null; S.cands = S.cands || {}; S.cands[p] = []; ensureCands(S); recalcGov(S); if (typeof news === 'function') news('ปลด' + m.n + ' ออกจากรัฐมนตรี' + POSTS[p][0], 'bad'); }
@@ -112,4 +113,3 @@ UI.govClick = function (a, v) {
   else if (a === 'lawlv') { const [id, lv] = v.split(':'); S.laws = S.laws || {}; setLaw(S, id, +lv); }
   UI.hud(); UI.render();
 };
-UI.init();

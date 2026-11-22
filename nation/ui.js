@@ -14,9 +14,9 @@ const UI = window.UI = { dirty: true, tab: null, cat: 'all', fYears: 10, fIf: 'n
 
 UI.toast = function (t, kind) { const d = document.createElement('div'); d.className = 'toast ' + kind; d.textContent = t; const T = $('toasts'); T.appendChild(d); while (T.children.length > 4) T.firstChild.remove(); setTimeout(() => d.remove(), 6500); };
 
-const DOCK = [['build', 'สั่งสร้าง'], ['gov', 'รัฐบาล'], ['budget', 'งบ/ภาษี'], ['country', 'ประเทศ'], ['future', 'อนาคต'], ['rank', 'อันดับ']];
-IC.gov = IC.state;
-const TITLES = { gov: 'รัฐบาลของคุณ', build: 'สั่งสร้างของส่วนรวม', budget: 'งบประมาณและภาษี', country: 'สถานะประเทศ', future: 'จำลองอนาคต', rank: 'อันดับโลก' };
+const DOCK = [['build', 'สั่งสร้าง'], ['gov', 'รัฐบาล'], ['budget', 'งบ/ภาษี'], ['country', 'ประเทศ'], ['future', 'อนาคต'], ['world', 'โลก']];
+IC.gov = IC.state; IC.world = svg('<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.900 9h-3.500a15 15 0 0 0-1.800-6.600A8 8 0 0 1 19.900 11zM12 4c1 1 2.200 3.500 2.400 7H9.600C9.800 7.500 11 5 12 4zM4.100 13h3.500a15 15 0 0 0 1.800 6.600A8 8 0 0 1 4.100 13zm3.500-2H4.100a8 8 0 0 1 5.300-6.600A15 15 0 0 0 7.600 11zM12 20c-1-1-2.200-3.500-2.400-7h4.800c-.2 3.500-1.400 6-2.400 7zm2.600-.4a15 15 0 0 0 1.800-6.600h3.500a8 8 0 0 1-5.300 6.600z"/>');
+const TITLES = { world: 'โลกและเพื่อนบ้าน', gov: 'รัฐบาลของคุณ', build: 'สั่งสร้างของส่วนรวม', budget: 'งบประมาณและภาษี', country: 'สถานะประเทศ', future: 'จำลองอนาคต', rank: 'อันดับโลก' };
 UI.init = function () {
   $('dock').innerHTML = DOCK.map(d => '<button data-tab="' + d[0] + '">' + IC[d[0]] + '<span>' + d[1] + '</span></button>').join('');
   $('speed').innerHTML = [[0, IC.pause], [1, '1'], [3, '3'], [10, '10']].map(s => '<button data-sp="' + s[0] + '" aria-label="ความเร็ว ' + s[0] + '">' + s[1] + '</button>').join('');
@@ -60,6 +60,7 @@ UI.refresh = function () { if (!UI.tab) return; if (UI.tab === 'budget') { const
 UI.sheetClick = function (e) {
   const q = e.target.closest('[data-a]'); if (!q) return; const a = q.dataset.a, v = q.dataset.v;
   if (['gtab', 'mhire', 'mfire', 'lawlv'].includes(a)) { UI.govClick(a, v); return; }
+  if (['ctab', 'wtab', 'pact', 'wact', 'newcity'].includes(a)) { UI.geoClick(a, v); return; }
   if (a === 'cat') { UI.cat = v; UI.render(); } else if (a === 'order') { UI.closeSheet(); proposeBuild(v); }
   else if (a === 'yrs') { UI.fYears = +v; UI.fRes = null; UI.render(); } else if (a === 'if') { UI.fIf = v; UI.fRes = null; UI.render(); } else if (a === 'run') { UI.fRes = forecast(G.S, UI.fYears, UI.fIf); UI.render(); }
   else if (a === 'borrow') { const n = Math.max(500, Math.round(G.S.gdp * 3)); G.S.debt += n; G.S.treas += n; news('กู้เงิน ' + fmt(n) + ' บาท'); UI.hud(); UI.render(); }
