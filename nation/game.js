@@ -19,7 +19,16 @@ function makeB(t, spot, city, opt = {}) {
   return b;
 }
 function addGive(t, f = 1) { const g = (BT[t] || {}).g; if (g) for (const q in g) G.S.k[q] = (G.S.k[q] || 0) + g[q] * f; }
+const RECLAIM_R = 7.5, RECLAIM_BASE = BT.reclaim.c;
+function reclaimPrice() { BT.reclaim.c = Math.round(RECLAIM_BASE * (1 + (G.S.landBonus || 0) * .45)); BT.reclaim.m = 40 + (G.S.landBonus || 0) * 12; }
+function finishReclaim(b) {
+  const S = G.S, cx = b.x + 1.5, cz = b.z + 1.5; W.reclaim(cx, cz, RECLAIM_R); W.removeSite(b);
+  for (let a = b.x; a < b.x + b.w; a++) for (let c = b.z; c < b.z + b.d; c++) W.occ[ci(a, c)] = 0; W.reserved[ci(b.door[0], b.door[1])] = 0;
+  G.blds.splice(G.blds.indexOf(b), 1); G.byId.delete(b.id); const C = G.cities[b.city]; if (C) C.n = Math.max(0, C.n - 1); if (!S.reclaims) S.reclaims = []; S.reclaims.push([cx, cz]); S.landBonus = (S.landBonus || 0) + 1; applyFx(S, BT.reclaim.fx); reclaimPrice();
+  for (const a of W.agents) if (a.site === b.id) { a.site = 0; a.path = null; a.wait = .2; a.moving = false; a.carry = 0; } if (G.sel && G.sel.b === b && window.UI) UI.closeSheet(); news('ถมทะเลสำเร็จ เกาะใหญ่ขึ้นแล้ว!', 'good'); if (window.UI) UI.dirty = true;
+}
 function finish(b, quiet) {
+  if (b.t === 'reclaim') { finishReclaim(b); return; }
   b.done = true; b.prog = 1; W.removeSite(b); W.placeInstance(b); const wasVis = b.vis; if (!wasVis) addGive(b.t); const def = BT[b.t]; if (wasVis) { for (const a of W.agents) if (a.site === b.id) { a.site = 0; a.path = null; a.wait = .2; a.moving = false; a.carry = 0; } return; }
   if (def && def.fx && !quiet) applyFx(G.S, def.fx);
   connectDoor(b);
@@ -44,7 +53,7 @@ function stepSites(dtM) {
   const S = G.S; for (const b of G.blds) {
     if (b.done) continue; const def = BT[b.t]; b.f = buildFactors(b); const dp = b.vis ? dtM / 5 : b.f.sp * dtM / def.wk, use = b.vis ? 0 : dp * def.m; b.matOK = true;
     if (use > 0 && S.mat < use) { const miss = use - S.mat, cost = miss * 24, payer = b.pub ? 'treas' : 'priv'; if (S[payer] >= cost) { S[payer] -= cost; S.mat += miss; } else { b.matOK = false; b.f.mat = 0; b.f.sp = 0; continue; } }
-    S.mat = Math.max(0, S.mat - use); b.prog = Math.min(1, b.prog + dp); W.siteProgress(b, b.prog); if (b.prog >= 1) finish(b);
+    S.mat = Math.max(0, S.mat - use); b.prog = Math.min(1, b.prog + dp); W.siteProgress(b, b.prog); if (b.t === 'reclaim') { const st = Math.floor(b.prog * 4); if (st > (b.rs || 0) && st < 4) { b.rs = st; W.reclaim(b.x + 1.5, b.z + 1.5, RECLAIM_R * st / 4); } } if (b.prog >= 1) finish(b);
   }
 }
 function placeAuto(t, payer) {
@@ -196,10 +205,10 @@ function bestOfCat(t) { const st = G.S.x.stage; if (BT[t].st <= st) return t; co
 /* ---------- ordering a public project: the people choose the place, you approve the money ---------- */
 function proposeBuild(t, urgent) {
   let idx = 0, bs = 1e9; G.cities.forEach((c, i) => { const q = Math.hypot(c.x - W.cam.tx, c.z - W.cam.tz); if (q < bs) { bs = q; idx = i; } });
-  const spot = W.findSpot(G.cities[idx], t); if (!spot) { news('ไม่มีที่เหมาะสำหรับ' + BT[t].n, 'bad'); return; }
+  const land = t === 'reclaim', spot = land ? W.findCoast(G.cities[idx]) : W.findSpot(G.cities[idx], t); if (!spot) { news(land ? 'ไม่มีชายฝั่งที่ถมได้ใกล้เมืองนี้แล้ว' : 'ไม่มีที่เหมาะสำหรับ' + BT[t].n, 'bad'); return; }
   const cx = spot.x + spot.w / 2, cz = spot.z + spot.d / 2, H = homes().filter(b => Math.hypot(b.x - cx, b.z - cz) < 9).length, why = [];
-  if (H) why.push('ใกล้บ้าน ' + H + ' หลัง'); if (W.h(cx, cz) > .28) why.push('ที่สูง น้ำไม่ท่วม'); else why.push('ที่ราบ สร้างง่าย'); if (spot.rw) why.push('ใกล้แหล่งน้ำ'); if (W.road[ci(spot.door[0], spot.door[1])] >= 1) why.push('ติดทางเดิน');
-  G.prop = { t, spot, city: idx, why, urgent: !!urgent }; W.ring.visible = true; W.ring.scale.setScalar(Math.max(spot.w, spot.d) * .85); W.ring.position.set(cx, W.h(cx, cz) + .18, cz); W.fly(cx, cz, Math.min(W.cam.tDist, 24)); UI.showProposal(G.prop);
+  if (land) { why.push('ชายฝั่งใกล้เมือง'); why.push(W.h(cx, cz) > -.9 ? 'น้ำตื้น ถมง่าย' : 'น้ำค่อนข้างลึก'); if (H) why.push('ใกล้บ้าน ' + H + ' หลัง'); } else { if (H) why.push('ใกล้บ้าน ' + H + ' หลัง'); if (W.h(cx, cz) > .28) why.push('ที่สูง น้ำไม่ท่วม'); else why.push('ที่ราบ สร้างง่าย'); if (spot.rw) why.push('ใกล้แหล่งน้ำ'); if (W.road[ci(spot.door[0], spot.door[1])] >= 1) why.push('ติดทางเดิน'); }
+  G.prop = { t, spot, city: idx, why, urgent: !!urgent }; W.ring.visible = true; W.ring.scale.setScalar(land ? RECLAIM_R : Math.max(spot.w, spot.d) * .85); W.ring.position.set(cx, Math.max(.16, W.h(cx, cz) + .18), cz); W.fly(cx, cz, land ? Math.max(30, Math.min(W.cam.tDist, 44)) : Math.min(W.cam.tDist, 24)); UI.showProposal(G.prop);
 }
 const FUNDS = {
   treas: ['ใช้เงินคลัง', 'จ่ายเต็ม สร้างได้ทันที'],
@@ -208,7 +217,7 @@ const FUNDS = {
   grant: ['ขอทุนต่างประเทศ', 'ฟรี แต่รอหลายเดือน และอาจถูกปฏิเสธ'],
   ppp: ['ให้เอกชนลงทุน', 'รัฐไม่จ่าย แต่ประชาชนจ่ายค่าบริการและเหลื่อมล้ำขึ้น']
 };
-function fundOK(t, f) { const S = G.S, c = BT[t].c; if (f === 'treas') return S.treas >= c; if (f === 'labor') return S.treas >= c * .35 && c <= 3000; if (f === 'loan') return S.debt + c <= Math.max(S.gdp * 18, 1600); if (f === 'grant') return !S.grantWait; if (f === 'ppp') return S.priv >= c * .7 && ['water', 'power', 'life', 'clean'].includes(BT[t].cat); return false; }
+function fundOK(t, f) { const S = G.S, c = BT[t].c; if (f === 'treas') return S.treas >= c; if (f === 'labor') return S.treas >= c * .35 && c <= 3000; if (f === 'loan') return S.debt + c <= Math.max(S.gdp * 18, 1600); if (f === 'grant') return !S.grantWait; if (f === 'ppp') return S.priv >= c * .7 && ['water', 'power', 'life', 'clean', 'land'].includes(BT[t].cat); return false; }
 function approve(f) {
   const P = G.prop, S = G.S; if (!P || !fundOK(P.t, f)) return; const c = BT[P.t].c;
   if (f === 'treas') S.treas -= c; else if (f === 'labor') { S.treas -= c * .35; S.mods.push({ v: -1.5, u: S.m + 3 }); } else if (f === 'loan') S.debt += c; else if (f === 'ppp') { S.priv -= c * .7; applyFx(S, { hp: -2, gini: .006 }); }
@@ -245,16 +254,16 @@ function saveGame() {
 function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function loadGame() {
   let D; try { D = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return false; } if (!D || !D.S || D.S.v !== 1) return false;
-  G.seed = D.seed; W.init(document.getElementById('cv'), G.seed); G.S = D.S; G.nextId = D.nextId; G.cities = D.cities; G.cities.forEach(c => { c.n = 0; }); const keep = { ...G.S.k };
+  G.seed = D.seed; W.init(document.getElementById('cv'), G.seed); G.S = D.S; G.nextId = D.nextId; G.cities = D.cities; G.cities.forEach(c => { c.n = 0; }); const keep = { ...G.S.k }; for (const r of G.S.reclaims || []) W.reclaim(r[0], r[1], RECLAIM_R);
   for (const r of D.blds) { const b = { id: r[0], t: r[1], v: r[2], x: r[3], z: r[4], w: r[5], d: r[6], rot: r[7], door: [r[8], r[9]], city: r[10], prog: r[11], done: !!r[12], pub: !!r[13], fund: r[14], urgent: !!r[15], vis: r[16] ? 1 : 0, sc: r[17] || 1 }; G.blds.push(b); G.byId.set(b.id, b); W.occupy(b); G.cities[b.city].n++; if (b.done) W.placeInstance(b); else { W.addSite(b); W.siteProgress(b, b.prog); } }
-  G.S.k = keep; for (let i = 0; i < D.roads.length; i += 3) { W.road[D.roads[i]] = D.roads[i + 1]; W.wear[D.roads[i]] = D.roads[i + 2]; if (D.roads[i + 1] >= 2) W.roadCount++; } for (let i = 0; i < D.roads.length; i += 3) if (D.roads[i + 1]) W.paintRoad(D.roads[i] % N, D.roads[i] / N | 0);
+  G.S.k = keep; reclaimPrice(); for (const b of G.blds) if (b.t === 'reclaim' && b.prog > 0) { b.rs = Math.min(3, Math.floor(b.prog * 4)); if (b.rs) W.reclaim(b.x + 1.5, b.z + 1.5, RECLAIM_R * b.rs / 4); } for (let i = 0; i < D.roads.length; i += 3) { W.road[D.roads[i]] = D.roads[i + 1]; W.wear[D.roads[i]] = D.roads[i + 2]; if (D.roads[i + 1] >= 2) W.roadCount++; } for (let i = 0; i < D.roads.length; i += 3) if (D.roads[i + 1]) W.paintRoad(D.roads[i] % N, D.roads[i] / N | 0);
   const H = homes(); for (const p of D.ppl) { const a = newAgent(p[2], { sex: p[1] }); a.name = p[0]; a.shirt = p[3]; a.skin = p[4]; const h = H.length ? pick(H) : null; a.home = h ? h.id : 0; placeAgent(a, h); }
   assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
 }
 function newGame(name) {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
   G.seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0; const q = new URLSearchParams(location.search).get('seed'); if (q) G.seed = +q >>> 0;
-  W.init(document.getElementById('cv'), G.seed); const S = G.S = newState(name), st = W.start;
+  W.init(document.getElementById('cv'), G.seed); const S = G.S = newState(name), st = W.start; reclaimPrice();
   let hs = null; for (let r = 0; r < 18 && !hs; r++) for (let i = 0; i < 40 && !hs; i++) { const x = st.x + Math.round((Math.random() - .5) * r * 2), z = st.z + Math.round((Math.random() - .5) * r * 2); if (W.canPlace(x, z, 3, 3)) { const door = W.doorFor(x, z, 3, 3, x, z + 9); if (door) hs = { x, z, w: 3, d: 3, door }; } }
   if (!hs) hs = { x: st.x, z: st.z, w: 3, d: 3, door: [st.x + 1, st.z + 3, 0] };
   G.cities = [{ x: hs.x + 1.5, z: hs.z + 1.5, n: 0, name: name, door: [hs.door[0], hs.door[1]] }];

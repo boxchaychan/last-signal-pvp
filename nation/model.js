@@ -12,7 +12,7 @@ function newState(name) {
     tax: { inc: 5, corp: 10, vat: 5 }, bud: { edu: .7, health: .7, safety: .5, infra: .7, welfare: .4, env: .4, defense: .2, rnd: .1, admin: .5 },
     k: K_ZERO(), P: .03, crime: .05, gini: .3, corr: .08, trust: 62, happy: 60, cpi: 1, pFood: 40, infl: .002, inflShock: 0, road: .35, hunger: 0, epi: 0,
     war: 0, tension: .05, rep: .3, drought: 0, tfrAdd: 0, transit: 0, forestBase: 1, forestAdj: 0, adj: { pol: 0, crime: 0, corr: 0, gini: 0, hq: 0 }, mods: [], later: [],
-    gdp: 700, x: {}, hist: [], stats: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, month: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, roadPct: 20, roadFund: 0, crewJobs: 0, best: 0, lastEv: {}, evM: 0, term: 1, nextVote: 48, promise: null, stageMax: 0
+    gdp: 700, x: {}, hist: [], stats: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, month: { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }, reclaims: [], landBonus: 0, roadPct: 20, roadFund: 0, crewJobs: 0, best: 0, lastEv: {}, evM: 0, term: 1, nextVote: 48, promise: null, stageMax: 0
   };
 }
 
@@ -94,7 +94,7 @@ function stepModel(S) {
   const tfrBase = 1.45 + 4.1 * Math.exp(-S.eduY / 4.2), econ = clamp(1 - u * 1.7) * clamp(.45 + .55 * houseRatio / 1.02) * clamp(1 - S.hunger * 2.4) * (S.war > 0 ? .75 : 1) * clamp(.7 + .5 * gdpPc / 240, .55, 1.05) * (1 + (b.welfare - .6) * .12);
   const tfr = Math.max(.25, (tfrBase + S.tfrAdd) * econ), born = G0.fem * tfr / 30 / 12, noKid = Math.max(0, G0.fem * (tfrBase - tfr) / 30 / 12);
   const A = .28 + .45 * clamp(Math.log((gdpPc + 40) / 300), -1, 1) - 1.5 * Math.max(0, u - .06) + .25 * (safeCov - .7) + .25 * (hospCov - .5) + .15 * (schoolCov - .5) + .35 * clamp(houseRatio - 1, -.6, .2) + .35 * (S.happy - 55) / 45 - .9 * S.crime - .6 * S.P - 1.5 * S.hunger - (S.war > 0 ? .5 : 0);
-  const room = clamp((k.house * 1.1 - pop) / (pop * .05 + 2), .07, 1), inM = Math.max(0, A + (pop < 120 ? .12 : 0)) * (.85 + pop * .016 / (1 + pop / 3e6)) * clamp(1 - pop / 1.1e8) * room, outM = Math.max(0, -A) * pop * .024 + pop * Math.max(0, u - .2) * .022;
+  const room = clamp((k.house * 1.1 - pop) / (pop * .05 + 2), .07, 1), inM = Math.max(0, A + (pop < 120 ? .12 : 0)) * (.85 + pop * .016 / (1 + pop / 3e6)) * clamp(1 - pop / (1.1e8 + (S.landBonus || 0) * 1.5e6)) * room, outM = Math.max(0, -A) * pop * .024 + pop * Math.max(0, u - .2) * .022;
   for (let i = 90; i > 0; i--) { const mv = a[i - 1] / 12; a[i] += mv; a[i - 1] -= mv; }
   a[0] += born;
   for (let i = 20; i < 40; i++) a[i] += inM * .65 / 20;
@@ -105,7 +105,7 @@ function stepModel(S) {
   S.gdp = gdp; S.m++;
   const G1 = ageGroups(a);
   const x = S.x = { m: S.m, pop: G1.pop, kids: G1.kids, work: G1.work, old: G1.old, oldShare: G1.old / G1.pop, LF, emp, u, gdp, gdpPc, E_ag: E.ag, E_ind: E.ind, E_svc: E.svc, E_pub: E.pub, E_tech: techE, cleanW, clean, wr, pw, safeCov, hospCov, schoolCov, houseRatio, parkCov, foodMonths, foodOut, dirtyShare, cong, eduY: S.eduY, hq: S.hq, sick: S.sick, P: S.P, crime: S.crime, gini: S.gini, corr: S.corr, trust: S.trust, happy: S.happy, infl: S.infl, tech: S.tech, debtRatio, taxLoad, k, tfr, rep: S.rep, tension: S.tension, forest, army: k.army, treas: S.treas, rev, spend, interest, LE, A, war: S.war, hunger: S.hunger };
-  x.idx = devIndex(x); x.stage = stageOf(x.pop, x.idx); x.score = scoreOf(x); S.best = Math.max(S.best, x.score); S.stageMax = Math.max(S.stageMax, x.stage);
+  x.land = S.landBonus || 0; x.idx = devIndex(x); x.stage = stageOf(x.pop, x.idx); x.score = scoreOf(x); S.best = Math.max(S.best, x.score); S.stageMax = Math.max(S.stageMax, x.stage);
   return x;
 }
 

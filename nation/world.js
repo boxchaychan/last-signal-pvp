@@ -160,15 +160,18 @@ W.gen = function (seed) {
 W.h = function (x, z) { x = clamp(x, 0, N - .001); z = clamp(z, 0, N - .001); const a = x | 0, b = z | 0, f = x - a, e = z - b, q = (p, r) => W.H[p + r * (N + 1)]; return (q(a, b) * (1 - f) + q(a + 1, b) * f) * (1 - e) + (q(a, b + 1) * (1 - f) + q(a + 1, b + 1) * f) * e; };
 
 W.paintGround = function () {
-  const c = document.createElement('canvas'); c.width = c.height = TEX; const g = c.getContext('2d'), im = g.createImageData(TEX, TEX), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [120, 162, 80], g2: [92, 142, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] };
-  for (let y = 0; y < TEX; y++) for (let x = 0; x < TEX; x++) {
+  const c = document.createElement('canvas'); c.width = c.height = TEX; const g = c.getContext('2d'); W.gctx = g; W.gcv = c; W.paintRect(0, 0, TEX, TEX); g.lineCap = 'round'; g.lineJoin = 'round';
+  const tx = new THREE.CanvasTexture(c); tx.anisotropy = MOBILE ? 2 : 4; tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping; W.gtex = tx;
+};
+W.paintRect = function (x0, y0, x1, y1) {
+  const g = W.gctx, w = x1 - x0, h0 = y1 - y0, im = g.createImageData(w, h0), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [120, 162, 80], g2: [92, 142, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] };
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
     const wx = x * k, wz = y * k, h = W.h(wx, wz), n = W.fbm(wx * .16, wz * .16), n2 = W.fbm(wx * .9 + 7, wz * .9), t = W.T[ci(Math.min(N - 1, wx | 0), Math.min(N - 1, wz | 0))]; let C;
     if (h < .1) { const m = clamp((h + .2) / .3); C = [pal.sea[0] + (pal.sand[0] - pal.sea[0]) * m, pal.sea[1] + (pal.sand[1] - pal.sea[1]) * m, pal.sea[2] + (pal.sand[2] - pal.sea[2]) * m]; }
     else { const v = clamp((n - .36) / .28), base = [pal.g1[0] + (pal.g2[0] - pal.g1[0]) * v, pal.g1[1] + (pal.g2[1] - pal.g1[1]) * v, pal.g1[2] + (pal.g2[2] - pal.g1[2]) * v]; C = base; if (h < .2) { const m = clamp((h - .1) / .1); C = [pal.sand[0] + (base[0] - pal.sand[0]) * m, pal.sand[1] + (base[1] - pal.sand[1]) * m, pal.sand[2] + (base[2] - pal.sand[2]) * m]; } if (t === 4) C = [C[0] * .8 + pal.f[0] * .2, C[1] * .8 + pal.f[1] * .2, C[2] * .8 + pal.f[2] * .2]; if (h > 1.2) { const m = clamp((h - 1.2) / 1.6); C = [C[0] + (pal.hill[0] - C[0]) * m, C[1] + (pal.hill[1] - C[1]) * m, C[2] + (pal.hill[2] - C[2]) * m]; } if (h > 2.8) { const m = clamp((h - 2.8) / 1.5); C = [C[0] + (pal.rock[0] - C[0]) * m, C[1] + (pal.rock[1] - C[1]) * m, C[2] + (pal.rock[2] - C[2]) * m]; } if (h > 8.6) { const m = clamp((h - 8.6) / 2.4) * .72 * clamp(n2 * 1.5); C = [C[0] + (pal.snow[0] - C[0]) * m, C[1] + (pal.snow[1] - C[1]) * m, C[2] + (pal.snow[2] - C[2]) * m]; } }
-    const hx = W.h(wx + .6, wz) - W.h(wx - .6, wz), hz = W.h(wx, wz + .6) - W.h(wx, wz - .6), sh = (.94 + n2 * .13) * clamp(1 + (-hx * .55 + hz * .45) * .34, .7, 1.18), i = (x + y * TEX) * 4; d[i] = C[0] * sh; d[i + 1] = C[1] * sh; d[i + 2] = C[2] * sh; d[i + 3] = 255;
+    const hx = W.h(wx + .6, wz) - W.h(wx - .6, wz), hz = W.h(wx, wz + .6) - W.h(wx, wz - .6), sh = (.94 + n2 * .13) * clamp(1 + (-hx * .55 + hz * .45) * .34, .7, 1.18), i = ((x - x0) + (y - y0) * w) * 4; d[i] = C[0] * sh; d[i + 1] = C[1] * sh; d[i + 2] = C[2] * sh; d[i + 3] = 255;
   }
-  g.putImageData(im, 0, 0); W.gctx = g; W.gcv = c; g.lineCap = 'round'; g.lineJoin = 'round';
-  const tx = new THREE.CanvasTexture(c); tx.anisotropy = MOBILE ? 2 : 4; tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping; W.gtex = tx;
+  g.putImageData(im, x0, y0); W.dirty = true;
 };
 const ROAD_STYLE = [null, ['#b89f70', .26, 0], ['#a98a58', .42, 0], ['#8f8a7c', .52, '#6f6b60'], ['#4f5157', .68, '#34353a']];
 W.paintRoad = function (x, z) {
@@ -190,14 +193,14 @@ W.init = function (canvas, seed) {
   W.hemi = new THREE.HemisphereLight(0xdff2ff, 0x7c8a5a, .62); sc.add(W.hemi);
   const sun = W.sun = new THREE.DirectionalLight(0xfff2d8, .85); sun.castShadow = true; sun.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048); sun.shadow.bias = -.0012; sun.shadow.normalBias = .03; sc.add(sun, sun.target);
   /* terrain */
-  const gg = new THREE.BufferGeometry(), P = new Float32Array((N + 1) * (N + 1) * 3), UV = new Float32Array((N + 1) * (N + 1) * 2), I = new Uint32Array(N * N * 6);
+  const gg = W.groundGeo = new THREE.BufferGeometry(), P = new Float32Array((N + 1) * (N + 1) * 3), UV = new Float32Array((N + 1) * (N + 1) * 2), I = new Uint32Array(N * N * 6);
   for (let z = 0, j = 0; z <= N; z++) for (let x = 0; x <= N; x++, j++) { P[j * 3] = x; P[j * 3 + 1] = W.H[j]; P[j * 3 + 2] = z; UV[j * 2] = x / N; UV[j * 2 + 1] = 1 - z / N; }
   for (let z = 0, q = 0; z < N; z++) for (let x = 0; x < N; x++) { const a = x + z * (N + 1), b = a + 1, c = a + N + 1, d = c + 1; I[q++] = a; I[q++] = c; I[q++] = b; I[q++] = b; I[q++] = c; I[q++] = d; }
   gg.setAttribute('position', new THREE.BufferAttribute(P, 3)); gg.setAttribute('uv', new THREE.BufferAttribute(UV, 2)); gg.setIndex(new THREE.BufferAttribute(I, 1)); gg.computeVertexNormals();
   W.gtex.flipY = true; const ground = new THREE.Mesh(gg, new THREE.MeshLambertMaterial({ map: W.gtex })); ground.receiveShadow = true; sc.add(ground);
   /* sea and rivers */
   const dt = new Uint8Array((N + 1) * (N + 1) * 4); for (let z = 0; z <= N; z++) for (let x = 0; x <= N; x++) { const i = (x + z * (N + 1)) * 4, v = clamp(-W.H[x + z * (N + 1)] / 2.4) * 255; dt[i] = v; dt[i + 1] = v; dt[i + 2] = v; dt[i + 3] = 255; }
-  const depth = new THREE.DataTexture(dt, N + 1, N + 1, THREE.RGBAFormat); depth.magFilter = depth.minFilter = THREE.LinearFilter; depth.wrapS = depth.wrapT = THREE.ClampToEdgeWrapping; depth.needsUpdate = true;
+  const depth = new THREE.DataTexture(dt, N + 1, N + 1, THREE.RGBAFormat); depth.magFilter = depth.minFilter = THREE.LinearFilter; depth.wrapS = depth.wrapT = THREE.ClampToEdgeWrapping; depth.needsUpdate = true; W.depthData = dt; W.depthTex = depth;
   W.waterU = { t: { value: 0 }, d: { value: depth }, L: { value: 1 }, N: { value: N } };
   const water = W.water = new THREE.Mesh(new THREE.PlaneGeometry(N * 7, N * 7), new THREE.ShaderMaterial({
     uniforms: W.waterU, transparent: true,
@@ -274,15 +277,39 @@ W.removeInstance = function (b) {
 };
 W.addSite = function (b) {
   const g = W.geoFor(b.t, b.v), geo = new THREE.BufferGeometry(); for (const n of ['position', 'normal', 'color', 'aGlow', 'uv']) geo.setAttribute(n, g.attributes[n]); geo.boundingSphere = g.boundingSphere; geo.setDrawRange(0, 0);
-  const cx = b.x + b.w / 2, cz = b.z + b.d / 2, y = W.h(cx, cz) + .02, gr = new THREE.Group(), mesh = new THREE.Mesh(geo, W.bmat); mesh.castShadow = mesh.receiveShadow = true; mesh.scale.set(b.sc || 1, W.heightK ? W.heightK(b) : 1, b.sc || 1); gr.add(mesh); gr.position.set(cx, y, cz); gr.rotation.y = b.rot * Math.PI / 2;
+  const cx = b.x + b.w / 2, cz = b.z + b.d / 2, y = b.t === 'reclaim' ? .02 : W.h(cx, cz) + .02, gr = new THREE.Group(), mesh = new THREE.Mesh(geo, W.bmat); mesh.castShadow = mesh.receiveShadow = true; mesh.scale.set(b.sc || 1, W.heightK ? W.heightK(b) : 1, b.sc || 1); gr.add(mesh); gr.position.set(cx, y, cz); gr.rotation.y = b.rot * Math.PI / 2;
   const box = new THREE.Box3().setFromBufferAttribute(g.attributes.position), top = Math.max(.9, box.max.y + .15), pm = new THREE.MeshLambertMaterial({ color: 0xd8b24a }), pg = new THREE.CylinderGeometry(.035, .035, top, 5);
-  for (const a of [-1, 1]) for (const e of [-1, 1]) { const p = new THREE.Mesh(pg, pm); p.position.set(a * (b.w / 2 - .08), top / 2, e * (b.d / 2 - .08)); gr.add(p); }
+  if (b.t !== 'reclaim') for (const a of [-1, 1]) for (const e of [-1, 1]) { const p = new THREE.Mesh(pg, pm); p.position.set(a * (b.w / 2 - .08), top / 2, e * (b.d / 2 - .08)); gr.add(p); }
   const bar = new THREE.Mesh(new THREE.BoxGeometry(1, .09, .09), new THREE.MeshBasicMaterial({ color: 0xffd34d })); bar.position.y = top + .16; bar.scale.x = .001; gr.add(bar);
   const bbg = new THREE.Mesh(new THREE.BoxGeometry(Math.max(1, b.w * .8) + .08, .06, .06), new THREE.MeshBasicMaterial({ color: 0x24272c })); bbg.position.y = top + .16; bbg.position.z = -.03; gr.add(bbg);
   W.scene.add(gr); W.sites.set(b.id, { gr, geo, bar, total: g.attributes.position.count, bw: Math.max(1, b.w * .8) });
 };
 W.siteProgress = function (b, p) { const s = W.sites.get(b.id); if (!s) return; const n = Math.floor(s.total * p / 3) * 3; if (n !== s.geo.drawRange.count) s.geo.setDrawRange(0, n); s.bar.scale.x = Math.max(.001, p) * s.bw; s.bar.position.x = -s.bw / 2 * (1 - p); };
 W.removeSite = function (b) { const s = W.sites.get(b.id); if (!s) return; W.scene.remove(s.gr); s.geo.dispose(); s.gr.traverse(o => { if (o !== s.gr && o.geometry && o.geometry !== s.geo) o.geometry.dispose(); }); W.sites.delete(b.id); W.needShadow = true; };
+
+/* land reclamation: the sea bed really rises and the island gets bigger */
+W.findCoast = function (city) {
+  let best = null, bs = -1e9; const reach = Math.sqrt(city.n + 1) * 2.2 + 26;
+  for (let i = 0; i < 1100; i++) {
+    const a = Math.random() * 6.2832, r = 5 + Math.random() * reach, x = Math.round(city.x + Math.cos(a) * r), z = Math.round(city.z + Math.sin(a) * r); if (x < 12 || z < 12 || x > N - 13 || z > N - 13 || W.T[ci(x, z)] !== 0) continue;
+    let near = null, nd = 99; for (let p = -7; p <= 7; p++) for (let q = -7; q <= 7; q++) { const c = ci(x + p, z + q), t = W.T[c]; if (t >= 2 && t <= 4 && !W.occ[c]) { const dd = Math.hypot(p, q); if (dd < nd) { nd = dd; near = [x + p, z + q]; } } } if (!near || nd < 2.5) continue;
+    const s = -Math.hypot(x - city.x, z - city.z) * .5 + W.h(x + .5, z + .5) * 1.2 - Math.abs(nd - 4.5) * .8 + Math.random() * 1.5; if (s > bs) { bs = s; best = { x: x - 1, z: z - 1, w: 3, d: 3, door: [near[0], near[1], 0], rw: 1 }; }
+  }
+  return best;
+};
+W.reclaim = function (cx, cz, R) {
+  const pad = R * 1.25 + 4, x0 = Math.max(1, Math.floor(cx - pad)), x1 = Math.min(N - 1, Math.ceil(cx + pad)), z0 = Math.max(1, Math.floor(cz - pad)), z1 = Math.min(N - 1, Math.ceil(cz + pad)), pos = W.groundGeo.attributes.position, E = 2.6;
+  for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) {
+    const i = x + z * (N + 1), bump = W.fbm(x * .16 + cx * .37, z * .16 + cz * .41), rr = R * (.72 + bump * .62), f = clamp((rr + E - Math.hypot(x - cx, z - cz)) / E); if (f <= 0) continue;
+    const sm = f * f * (3 - 2 * f), y = W.H[i] + (.34 + bump * .1 - W.H[i]) * sm; if (y > W.H[i]) { W.H[i] = y; pos.setY(i, y); const q = i * 4, v = clamp(-y / 2.4) * 255; W.depthData[q] = v; W.depthData[q + 1] = v; W.depthData[q + 2] = v; }
+  }
+  pos.needsUpdate = true; W.groundGeo.computeVertexNormals(); W.depthTex.needsUpdate = true;
+  for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) { const c = ci(x, z), t = W.T[c]; if (t !== 0 && t !== 2) continue; const h = (W.H[x + z * (N + 1)] + W.H[x + 1 + z * (N + 1)] + W.H[x + (z + 1) * (N + 1)] + W.H[x + 1 + (z + 1) * (N + 1)]) / 4; W.T[c] = h < -.04 ? 0 : h < .1 ? 2 : 3; }
+  const p = TEX / N; W.paintRect(Math.max(0, Math.floor(x0 * p) - 2), Math.max(0, Math.floor(z0 * p) - 2), Math.min(TEX, Math.ceil(x1 * p) + 2), Math.min(TEX, Math.ceil(z1 * p) + 2));
+  if (W.paintPad && typeof G !== 'undefined') for (const b of G.blds) if (b.x + b.w >= x0 && b.x <= x1 && b.z + b.d >= z0 && b.z <= z1) W.paintPad(b);
+  for (let z = Math.max(0, z0 - 1); z <= Math.min(N - 1, z1); z++) for (let x = Math.max(0, x0 - 1); x <= Math.min(N - 1, x1); x++) if (W.road[ci(x, z)]) W.paintRoad(x, z);
+  W.needShadow = true; W.dirty = true;
+};
 
 /* roads grow from where people really walk */
 W.walkOn = function (x, z, weight) {

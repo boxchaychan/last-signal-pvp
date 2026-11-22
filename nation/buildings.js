@@ -121,6 +121,7 @@ function drawFancy(m, t, v) {
       m.box(0, 9.28, 0, 1.76, 4.5, 1.76, mixC(c, 0xffffff, .1)); m.grid(0, 0, 1.76, 1.76, 9.32, 8, .55, { glass: mixC(c, 0x18435e, .45), seed: 91 + v, step: .25, pw: .92, ph: .8, frame: mixC(c, 0xffffff, .28), lit: .66 }); m.box(0, 13.78, 0, 1.86, .08, 1.86, 0xe9edf0);
       if (v % 2) { m.hip(0, 13.86, 0, 1.76, 1.5, 1.76, 0x9fc6d8); m.cyl(0, 15.3, 0, .06, 1.5, 0xe9ecee, .01, 5); } else { m.box(0, 13.86, 0, .9, 1, .9, 0x88a0b0); m.grid(0, 0, .9, .9, 13.9, 2, .44, { glass: 0x2f6080, lit: .9, step: .22 }); m.cyl(0, 14.86, 0, .1, 1.8, 0xe9ecee, .01, 5); } break;
     }
+    case 'reclaim': { m.box(0, 0, 0, 2.7, .22, 1.5, 0x8a4b3a); m.box(0, .22, 0, 2.8, .05, 1.6, 0xe9e2d3); m.box(-.75, .27, .1, .85, .55, .9, 0xf0efe9); m.grid(-.75, .1, .85, .9, .3, 1, .46, { glass: 0x2f6080, step: .3 }); m.box(.55, .27, -.2, .16, 1.5, .16, 0xe2ab40); m.box(.2, 1.72, -.2, 1.5, .09, .09, 0xe2ab40); m.cyl(.85, .27, .35, .42, .38, 0xdcc48d, .06, 8); m.box(1.5, .12, .35, .9, .07, .07, 0x4c5158); break; }
     default: return false;
   }
   return true;
