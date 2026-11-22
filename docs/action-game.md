@@ -2245,3 +2245,16 @@ Owner asked what the map still lacks, then "เอาชุดแรกก่อ
 - Colour by zone (`ZONES`: village, oasis, ruins, tomb, boss ground), tints scenery only, so characters stay clear.
 - Checked at 1280x720 and 740x360: all 7 skills, no console errors. Not tried on a real phone.
 - Still open from the map review: set 2 = own boss arena (Meta image, sky darkens, gate closes); set 3 = platforms in the last 30% of the map, fewer repeated statues, a chest on top that opens.
+
+### DUNE: otter = chi fist class, skill design (2026-11-22, not built yet)
+Owner: "เอานากมาทำ", keep its body from the picture (`art/incoming/otter_fist/side_ref.png`, NOT the dragon's chibi body, only the same height), "คลาส หมัดปราณ", "ส่วนใหญ่ระยะประชิดถึงกลาง เน้นท่าโจมตี มีโมบิลิตี้ เคลื่อนไหวอยู่ตลอด ชดเชยระยะสั้นกลาง ไกลแค่สกิลเดียว". Codex brief: `docs/codex/otter/FIST.md`, model GPT-5.6 Sol medium. Base picture first, move sheets only after the owner has seen it in the game.
+Rules of the class: every basic punch steps forward; any skill can cancel the recovery of another; dash cooldown .7 s (dragon 1.25) and it passes through monsters; passive Flow = each hit gives a stack (max 5, +4% move and attack speed each), lost after 2 s without a hit.
+Range words as in the dragon table: near up to 150, middle up to 330. Damage and cooldown are first numbers, to tune when built.
+- K ก้าวสายน้ำ (Lv1): dash through a line, 260 far, 3 hits, cannot be hit while dashing. cd 3, x1.8. Sheet `skill_dash`.
+- L หมัดรัวกระแสน้ำ (Lv1): 8 punches, keeps walking forward and can be steered, reach 130. cd 5, x2.6. Sheet `skill_flurry`.
+- U หมัดเสยคลื่น (Lv2): rising uppercut, 3 hits, lifts monsters and carries the hero up 240 (reaches platforms). cd 5, x2.4. Sheet `skill_upper`.
+- I ทุบวังน้ำ (Lv3): leap 280 and smash, ring radius 130 pulls monsters in, 4 hits; also usable in the air straight after U. cd 6, x3. Sheet `skill_drop`.
+- O พายุหมัดหมุน (Lv4): spin radius 125, 10 hits, moves faster than running (300) and can be steered. cd 9, x4.2. Sheet `skill_spin`.
+- P หมัดคลื่นไกล (Lv5): THE ONLY LONG-RANGE SKILL: a punch sends a piercing water wave 640 far, 5 hits. cd 10, x2.6. Uses sheet `attack3`.
+- R ล่าเงาคลื่น (Lv7, ultimate): chain-dashes between up to 6 monsters within 340, 2 hits on each, then a heavy last punch. cd 26, x7.5. Uses sheets `skill_dash`, `skill_flurry`, `attack3`.
+Chains meant to feel good: K -> L, U -> I, O -> K.

@@ -1,7 +1,7 @@
 # Otter chi fist: new class of the desert side-scroller
 
 Owner phrases: "เอานากมาทำ", "เอาแบบนี้เลย" (keep the otter's own body from the picture, do not make it a big-head chibi), "ออกแบบให้อยู่ในคลาส หมัดปราณ".
-Class: **chi fist (หมัดปราณ)**. A bare-handed martial artist who fights near to middle range with fast punches. Water chi is its power. It never holds a staff, sword, spear or any other weapon.
+Class: **chi fist (หมัดปราณ)**. A bare-handed martial artist who fights near to middle range with fast attacks and is always on the move: footwork makes up for the short reach. Water chi is its power. It never holds a staff, sword, spear or any other weapon.
 
 Moves are drawn FRAMES (no bones) and must be as smooth and alive as `art/incoming/dragon_moves/attack2.png`.
 Branch `codex/otter-fist`, pictures in `art/incoming/otter_fist/`, plus `REPORT_TH.txt` (Thai, short). Commit and push after EVERY picture. Do not merge. Do not edit html, tools or CLAUDE.md.
@@ -33,9 +33,11 @@ Each `<name>.png`: landscape 1536 x 1024, exactly 16 frames, 4 columns x 4 rows,
 6. `attack2`: step and a strong straight punch with the rear fist, hips turning fully.
 7. `attack3`: heavy finisher: sink low, pull the fist to the hip, then drive forward with a big straight punch, whole body behind it, hold on impact, recover.
 8. `skill_dash`: very low fast step-in, shoulder forward, fist chambered, recovers to guard.
-9. `skill_flurry`: planted wide stance, six fast alternating straight punches, left, right, left, right, left, right, then back to guard. Each punch is clearly a different frame group.
+9. `skill_flurry`: six fast alternating straight punches, left, right, left, right, left, right, with small quick steps forward so the feet never stop, then back to guard. Each punch is clearly a different frame group. The figure stays in the middle of its cell: the game moves it.
 10. `skill_upper`: crouch, then a rising uppercut that lifts the whole body off the ground, lands back on the ground line in guard.
-11. `hurt`: hit from the front, flinches back, guard drops, recovers.
-12. `death`: staggers, drops to the knees, falls on the ground and stays down (no return to standing).
+11. `skill_drop`: jump up and forward, gather the fist overhead in the air, dive down and smash the fist into the ground line, crouched on impact, springs back to guard. The figure stays in the middle of its cell: the game moves it.
+12. `skill_spin`: fast spinning backfists and spin kicks, body turning full circles on the balls of the feet, arms and one leg swinging wide, scarf and tail whipping round. Frames 4 to 13 loop smoothly.
+13. `hurt`: hit from the front, flinches back, guard drops, recovers.
+14. `death`: staggers, drops to the knees, falls on the ground and stays down (no return to standing).
 
 Open each sheet beside `base_side.png` and the dragon's `art/incoming/dragon_moves/idle.png`. Redo it if the character changes, a weapon or orb appears, the size differs, a frame is cut off or touches another cell, or the motion jumps. Say in `REPORT_TH.txt` what still looks off.
