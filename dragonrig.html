@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>มังกร Rig</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<style>
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #e9dfc9; font: 600 14px Kanit, system-ui, sans-serif; color: #2a2118; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#top { position: fixed; left: calc(10px + env(safe-area-inset-left,0px)); top: 8px; display: flex; flex-direction: column; gap: 5px; }
+#top b { font-size: 18px; }
+#bar { position: fixed; left: 0; right: 0; bottom: calc(8px + env(safe-area-inset-bottom,0px)); display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; padding: 0 8px; }
+button { font: inherit; min-width: 58px; height: 38px; padding: 0 12px; color: #2a2118; background: #fff8ea; border: 1px solid rgba(42,33,24,.28); border-radius: 8px; cursor: pointer; }
+button.on { color: #fff; background: #3a3f4c; border-color: #3a3f4c; }
+.sep { width: 8px; }
+#view { display: flex; gap: 5px; flex-wrap: wrap; max-width: 300px; }
+#view button { height: 32px; min-width: 0; font-size: 13px; padding: 0 9px; }
+@media (max-height: 430px) { button { height: 33px; min-width: 48px; padding: 0 8px; font-size: 13px; } #view button { height: 28px; font-size: 12px; } #top b { font-size: 15px; } .sep { width: 2px; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top"><b>มังกร Rig</b><div id="view"><button id="vB">กระดูก</button><button id="vP">สีชิ้นส่วน</button><button id="vM">ตาข่าย</button></div></div>
+<div id="bar">
+  <button data-m="idle">ยืน</button><button data-m="walk">เดิน</button><button data-m="run">วิ่ง</button><button data-m="attack">โจมตี</button>
+  <span class="sep"></span><button id="fL">หันซ้าย</button><button id="fR">หันขวา</button><span class="sep"></span><button id="slow">ช้า 0.25x</button>
+</div>
+<script src="vendor/threejs/three.min.js"></script>
+<script>
+'use strict';
+/* The painted dragon as 25 layered parts on 48 bones. Pixels are the original picture (tools/art/dragon_rig_parts.py); moves are made in code. */
+const Q = new URLSearchParams(location.search), $ = id => document.getElementById(id);
+const CX = 660, FOOT = 1162, wx = x => x - CX, wy = y => FOOT - y, CELL = 8;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), sm = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }, lerp = (a, b, t) => a + (b - a) * t;
+const R = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true, alpha: false }); R.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); R.outputEncoding = THREE.LinearEncoding;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xe9dfc9);
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
+function resize() { const w = innerWidth, h = innerHeight; R.setSize(w, h, false); const vh = h < 430 ? 1420 : 1340, vw = vh * w / h; cam.left = -vw / 2; cam.right = vw / 2; cam.top = vh - (h < 430 ? 250 : 190); cam.bottom = cam.top - vh; cam.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+const world = new THREE.Group(); scene.add(world);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(9000, 420), new THREE.MeshBasicMaterial({ color: 0xd9c9a7 })); floor.position.y = -210; scene.add(floor);
+const line = new THREE.Mesh(new THREE.PlaneGeometry(9000, 5), new THREE.MeshBasicMaterial({ color: 0xb29b73 })); line.position.y = -3; scene.add(line);
+const marks = new THREE.Group(); scene.add(marks); for (let i = -36; i <= 36; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(i % 2 ? 54 : 26, 6), new THREE.MeshBasicMaterial({ color: 0xc5b28d })); m.position.set(i * 130, -42 - (i & 1) * 44, 0); marks.add(m); }
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({ color: 0x4b3a22, transparent: true, opacity: .2, depthTest: false })); shadow.scale.set(230, 20, 1); shadow.position.y = 1; scene.add(shadow);
+
+let RIG, B = {}, bones = [], mesh, wire, boneLines, CHAINS = [], tintU = { value: 0 };
+const S = { mode: QS('mode') || 'idle', flip: 1, slow: false, t: 0, at: 0, speed: 0, lastHead: 0 };
+function QS(k) { return Q.get(k); }
+
+function buildBones() {
+  RIG.bones.forEach(d => { const b = new THREE.Bone(); b.name = d.n; b.userData.d = d; B[d.n] = b; bones.push(b); });
+  RIG.bones.forEach(d => { const b = B[d.n]; if (d.p) { const p = B[d.p]; p.add(b); b.position.set(d.x - p.userData.d.x, -(d.y - p.userData.d.y), 0); } else b.position.set(wx(d.x), wy(d.y), 0); b.userData.rest = b.position.clone(); });
+  const SP = { curl: [9, 5.2, .9], horn_long: [13, 5.6, .42], horn_top: [14, 5.8, .36], ear: [18, 6, .24], spikes: [20, 6, .18], mane_top: [12, 5.4, .46], mane_low: [11, 5.2, .55], mane_dark: [10, 5, .6], mantle: [14, 5.6, .22], cape_red: [7, 3.6, .52], cape_tail: [6, 3.2, .78], flame: [5.5, 2.8, .95] };
+  for (const c in RIG.chains) { const n = RIG.chains[c].n, l = []; for (let i = 0; i < n; i++) l.push({ b: B[c + i], a: 0, v: 0 }); CHAINS.push({ c, l, k: SP[c][0], d: SP[c][1], amp: SP[c][2], ph: c.length * 1.7 }); }
+}
+function chainPts(c) { const n = RIG.chains[c].n, p = []; for (let i = 0; i < n; i++) { const d = B[c + i].userData.d; p.push([d.x, d.y]); } p.push(RIG.chains[c].end); return p; }
+function weightsFor(part, x, y) {
+  const b = part.bone;
+  if (RIG.chains[b]) {
+    const P = chainPts(b); let best = 1e12, si = 0, st = 0;
+    for (let i = 0; i < P.length - 1; i++) { const ax = P[i][0], ay = P[i][1], dx = P[i + 1][0] - ax, dy = P[i + 1][1] - ay, t = clamp(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy), 0, 1), q = (x - ax - dx * t) ** 2 + (y - ay - dy * t) ** 2; if (q < best) { best = q; si = i; st = t; } }
+    const n = P.length - 1; if (st > .68 && si < n - 1) { const f = sm((st - .68) / .64); return [[B[b + si], 1 - f], [B[b + (si + 1)], f]]; } if (st < .32 && si > 0) { const f = sm((.32 - st) / .64); return [[B[b + si], 1 - f], [B[b + (si - 1)], f]]; } return [[B[b + si], 1]];
+  }
+  if (part.name === 'torso') { const f = sm((y - 880) / 90); return f ? [[B.chest, 1 - f * .85], [B.hips, f * .85]] : [[B.chest, 1]]; }
+  if (b === 'thigh_b' || b === 'thigh_f') { const f = sm((1012 - y) / 52) * .72, s = b === 'thigh_b' ? 'shin_b' : 'shin_f', g = sm((y - 1040) / 34); const w = [[B[b], (1 - f) * (1 - g)], [B.hips, f]]; if (g) w.push([B[s], (1 - f) * g]); return w; }
+  if (b === 'shin_b' || b === 'shin_f') { const ft = b === 'shin_b' ? 'foot_b' : 'foot_f', f = sm((y - 1098) / 24); return f ? [[B[b], 1 - f], [B[ft], f]] : [[B[b], 1]]; }
+  return [[B[b], 1]];
+}
+async function build() {
+  const [rig, img] = await Promise.all([fetch('art/dragonrig/rig.json').then(r => r.json()), new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = 'art/dragonrig/atlas.webp'; })]); RIG = rig; buildBones();
+  const c = document.createElement('canvas'); c.width = RIG.w; c.height = RIG.h; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0); const A = g.getImageData(0, 0, RIG.w, RIG.h).data, alphaAt = (x, y) => A[(y * RIG.w + x) * 4 + 3];
+  const P = [], UV = [], SI = [], SW = [], T = [], I = [], index = new Map(bones.map((b, i) => [b, i]));
+  for (const p of RIG.parts) {
+    const V = new Map(), col = p.color.map(v => v / 255), solid = (u, v) => { for (let y = v; y <= Math.min(p.h - 1, v + CELL); y += 2) for (let x = u; x <= Math.min(p.w - 1, u + CELL); x += 2) if (alphaAt(p.ax + x, p.ay + y) > 3) return true; return false; };
+    const vert = (u, v) => { const k = u + ',' + v; if (V.has(k)) return V.get(k); const x = p.x + u, y = p.y + v, w = weightsFor(p, x, y).filter(q => q[1] > .001).sort((a, b) => b[1] - a[1]).slice(0, 4), s = w.reduce((q, e) => q + e[1], 0); P.push(wx(x), wy(y), 0); UV.push((p.ax + u) / RIG.w, 1 - (p.ay + v) / RIG.h); T.push(...col); for (let i = 0; i < 4; i++) { SI.push(w[i] ? index.get(w[i][0]) : 0); SW.push(w[i] ? w[i][1] / s : 0); } const n = P.length / 3 - 1; V.set(k, n); return n; };
+    for (let v = 0; v < p.h; v += CELL) for (let u = 0; u < p.w; u += CELL) { if (!solid(u, v)) continue; const u1 = Math.min(p.w, u + CELL), v1 = Math.min(p.h, v + CELL), a = vert(u, v), b = vert(u1, v), d = vert(u1, v1), e = vert(u, v1); I.push(a, e, b, b, e, d); }
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2)); geo.setAttribute('aTint', new THREE.Float32BufferAttribute(T, 3)); geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4)); geo.setIndex(I);
+  const tex = new THREE.Texture(c); tex.needsUpdate = true; tex.flipY = true; tex.premultiplyAlpha = false; tex.generateMipmaps = true; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.anisotropy = 4;
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+  mat.onBeforeCompile = s => { s.uniforms.uTint = tintU; s.vertexShader = 'attribute vec3 aTint; varying vec3 vTint;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vTint = aTint;'); s.fragmentShader = 'uniform float uTint; varying vec3 vTint;\n' + s.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n gl_FragColor.rgb = mix(gl_FragColor.rgb, vTint, uTint);'); };
+  mesh = new THREE.SkinnedMesh(geo, mat); mesh.frustumCulled = false; mesh.add(B.root); mesh.bind(new THREE.Skeleton(bones)); world.add(mesh);
+  wire = new THREE.SkinnedMesh(geo, new THREE.MeshBasicMaterial({ color: 0x0aa58c, wireframe: true, transparent: true, opacity: .3, depthTest: false })); wire.frustumCulled = false; wire.bind(mesh.skeleton, mesh.bindMatrix); wire.visible = false; wire.renderOrder = 3; world.add(wire);
+  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(bones.length * 6), 3)); boneLines = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xff3b30, depthTest: false, transparent: true })); boneLines.frustumCulled = false; boneLines.visible = false; boneLines.renderOrder = 5; world.add(boneLines);
+  buildTrail();
+}
+
+/* ---------- 2D forward kinematics + two-bone IK ---------- */
+function fk(b) { const p = b.parent && b.parent.isBone ? fk(b.parent) : { x: 0, y: 0, a: 0 }, c = Math.cos(p.a), s = Math.sin(p.a); return { x: p.x + c * b.position.x - s * b.position.y, y: p.y + s * b.position.x + c * b.position.y, a: p.a + b.rotation.z }; }
+function ik(up, lo, end, tx, ty, bend) {
+  up.rotation.z = lo.rotation.z = 0; const J = fk(up), base = J.a, r1 = Math.atan2(lo.position.y, lo.position.x), r2 = Math.atan2(end.position.y, end.position.x), L1 = lo.position.length(), L2 = end.position.length();
+  let dx = tx - J.x, dy = ty - J.y, d = clamp(Math.hypot(dx, dy), Math.abs(L1 - L2) + 1, L1 + L2 - .6); const ang = Math.atan2(dy, dx), A = Math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1)), a1 = ang + bend * A, kx = J.x + Math.cos(a1) * L1, ky = J.y + Math.sin(a1) * L1, a2 = Math.atan2(J.y + Math.sin(ang) * d - ky, J.x + Math.cos(ang) * d - kx);
+  up.rotation.z = a1 - r1 - base; lo.rotation.z = a2 - r2 - (base + up.rotation.z);
+}
+const worldTurn = (b, a) => { b.rotation.z = 0; b.rotation.z = a - fk(b).a; };
+
+/* ---------- moves ---------- */
+const ATK = [ /* t, bodyX, bodyY, chest, head, handX, handY, spear, frontFoot, backFoot, freeArm */
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [.17, -18, -16, .13, .03, -112, -8, -1.5, -4, -8, .55],
+  [.25, 46, -24, -.2, -.05, 84, -8, -1.57, 82, -2, -.72],
+  [.36, 50, -22, -.18, -.03, 70, -6, -1.57, 82, -2, -.62],
+  [.54, 26, -13, .14, .03, -44, 92, -.28, 46, -4, .52],
+  [.64, 62, -26, -.24, -.06, 74, -40, -2.25, 98, 8, -.75],
+  [.76, 64, -22, -.17, -.03, 64, -28, -2.38, 98, 8, -.55],
+  [.95, 38, -5, .19, .05, -12, 142, .26, 62, 0, .7],
+  [1.07, 92, -38, -.32, -.1, 90, -96, -2.02, 136, 34, -.9],
+  [1.28, 92, -33, -.27, -.06, 78, -84, -2.02, 136, 34, -.7],
+  [1.72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+], ATKT = 2.05;
+function atkAt(t) { t = Math.min(t, ATK[ATK.length - 1][0]); let i = 0; while (i < ATK.length - 2 && ATK[i + 1][0] <= t) i++; const a = ATK[i], b = ATK[i + 1], fast = b[0] - a[0] < .15, f = (t - a[0]) / (b[0] - a[0]), e = fast ? 1 - (1 - f) ** 3 : sm(f); return a.map((v, k) => lerp(v, b[k], e)); }
+function legPhase(p, S0, lift) { /* p 0..1: stance for 62 %, a low swing for the rest */ const st = .62; if (p < st) { const f = p / st; return { x: S0 - 2 * S0 * f, y: 0, tilt: 0 }; } const f = (p - st) / (1 - st), e = sm(f); return { x: -S0 + 2 * S0 * e, y: lift * Math.sin(f * Math.PI), tilt: .32 * Math.sin(f * Math.PI * 1.25) * (f < .7 ? -1 : .7) }; }
+const REST = {};
+function restWorld() { for (const k of ['foot_b', 'foot_f', 'hand_f']) REST[k] = fk(B[k]); }
+function pose(t) {
+  bones.forEach(b => { b.position.copy(b.userData.rest); b.rotation.set(0, 0, 0); }); if (!REST.foot_b) restWorld();
+  let M = { bx: 0, by: 0, chest: 0, head: 0, hx: 0, hy: 0, spear: 0, ff: { x: 0, y: 0, tilt: 0 }, bf: { x: 0, y: 0, tilt: 0 }, freeArm: 0, freeFore: 0, spd: 0, bounce: 0 };
+  const m = S.mode;
+  if (m === 'idle') { const b = Math.sin(t * 2.1); M.by = -7 + 4 * b; M.chest = -.012 * b; M.head = .018 * Math.sin(t * 2.1 - .7); M.hy = 3 * Math.sin(t * 2.1 - .5); M.spear = .012 * Math.sin(t * 1.5); M.freeArm = .03 * Math.sin(t * 2.1 - 1); }
+  else if (m === 'walk' || m === 'run') {
+    const run = m === 'run', fq = run ? 1.55 : .95, p = (t * fq) % 1, st = run ? 96 : 54, lift = run ? 58 : 19, q = (p + .5) % 1; M.ff = legPhase(p, st, lift); M.bf = legPhase(q, st, lift); const c = Math.cos(p * Math.PI * 4);
+    M.by = (run ? -30 : -14) + (run ? 11 : 4.5) * c; M.bx = (run ? 14 : 3) + 2 * Math.sin(p * Math.PI * 4); M.chest = (run ? -.17 : -.035) + .018 * Math.sin(p * Math.PI * 4 + .6); M.head = (run ? .1 : .012) + .022 * Math.sin(p * Math.PI * 4 + 1.5);
+    const sw = Math.sin(p * Math.PI * 2 + .35); M.freeArm = (run ? .28 : .04) + (run ? .72 : .34) * sw; M.freeFore = run ? .62 + .2 * sw : .12; M.hx = (run ? 34 : 3) + (run ? 12 : 5) * -sw; M.hy = (run ? -38 : 0) + (run ? 6 : 2.5) * c; M.spear = run ? -1.08 + .04 * sw : -.03 + .025 * sw; M.spd = run ? 410 : 165; M.bounce = c;
+    marks.position.x = -((t * fq * 2 * 2 * st * .62 / .62) % 260) * S.flip;
+  } else if (m === 'attack') {
+    const a = atkAt(S.at); M.bx = a[1]; M.by = a[2] - 4; M.chest = a[3]; M.head = a[4]; M.hx = a[5]; M.hy = a[6]; M.spear = a[7]; M.ff = { x: a[8], y: 0, tilt: 0 }; M.bf = { x: a[9], y: 0, tilt: 0 }; M.freeArm = a[10]; M.freeFore = Math.abs(a[10]) * .35; M.spd = a[1] * 2;
+  }
+  B.hips.position.x += M.bx; B.hips.position.y += M.by; B.chest.rotation.z = M.chest; B.head.rotation.z = M.head - M.chest * .55;
+  ik(B.thigh_f, B.shin_f, B.foot_f, REST.foot_f.x + M.ff.x, REST.foot_f.y + M.ff.y, 1); worldTurn(B.foot_f, M.ff.tilt);
+  ik(B.thigh_b, B.shin_b, B.foot_b, REST.foot_b.x + M.bf.x, REST.foot_b.y + M.bf.y, 1); worldTurn(B.foot_b, M.bf.tilt);
+  B.arm_n.rotation.z = M.freeArm; B.fore_n.rotation.z = M.freeFore; B.fist_n.rotation.z = M.freeFore * .4;
+  const hip = fk(B.hips), hx = REST.hand_f.x + M.hx + (hip.x - wx(660)) * .9, hy = REST.hand_f.y + M.hy + (hip.y - wy(965)) * .85; ik(B.arm_f, B.fore_f, B.hand_f, hx, hy, -1); worldTurn(B.hand_f, M.spear * .22); worldTurn(B.spear, M.spear);
+  return M;
+}
+let prevX = 0, prevY = 0, prevHead = 0;
+function cloth(dt, t, M) {
+  const h = fk(B.head), vx = dt ? (h.x - prevX) / dt : 0, vy = dt ? (h.y - prevY) / dt : 0, spin = dt ? (h.a - prevHead) / dt : 0; prevX = h.x; prevY = h.y; prevHead = h.a;
+  const speed = clamp((M.spd + vx * .45) / 410, -1.3, 1.5), lift = clamp(vy / 520, -.7, .7);
+  for (const c of CHAINS) {
+    const wind = Math.sin(t * 1.7 + c.ph) * .035 + Math.sin(t * 3.1 + c.ph * 2) * .014, drive = (-speed * .62 - lift * .34 - spin * .018) * c.amp;
+    c.l.forEach((s, i) => { const lag = (i + 1) / c.l.length, target = drive * (.55 + lag) + wind * (1 + i * .9) * (c.amp + .3); const sub = 2, st = dt / sub; for (let k = 0; k < sub; k++) { s.v += ((target - s.a) * c.k * c.k * .34 - s.v * c.d) * st; s.a += s.v * st; } s.a = clamp(s.a, -.95, .95); s.b.rotation.z = s.a * (i === 0 ? .65 : 1); });
+  }
+}
+
+/* ---------- a fiery trail behind the spear tip during attacks ---------- */
+let trail, TP = [];
+function buildTrail() {
+  const n = 18, g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 2 * 3), 3)); g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 2 * 4), 4)); const I = []; for (let i = 0; i < n - 1; i++) { const a = i * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } g.setIndex(I);
+  trail = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide })); trail.frustumCulled = false; trail.renderOrder = 2; world.add(trail); trail.n = n;
+}
+function updateTrail() {
+  const sp = fk(B.spear), c = Math.cos(sp.a), s = Math.sin(sp.a), on = S.mode === 'attack' && S.at < 1.42, tip = [sp.x - s * 548, sp.y + c * 548], mid = [sp.x - s * 405, sp.y + c * 405]; TP.unshift({ tip, mid, on }); if (TP.length > trail.n) TP.pop();
+  const P = trail.geometry.attributes.position, C = trail.geometry.attributes.color;
+  for (let i = 0; i < trail.n; i++) { const q = TP[Math.min(i, TP.length - 1)], f = (1 - i / (trail.n - 1)) ** 1.6 * (q.on ? 1 : 0); P.setXYZ(i * 2, q.tip[0], q.tip[1], 0); P.setXYZ(i * 2 + 1, q.mid[0], q.mid[1], 0); C.setXYZW(i * 2, 1, .72, .16, f * .9); C.setXYZW(i * 2 + 1, .92, .14, .05, 0); } P.needsUpdate = C.needsUpdate = true;
+}
+function drawBones() { if (!boneLines.visible) return; const P = boneLines.geometry.attributes.position; bones.forEach((b, i) => { const a = fk(b), p = b.parent && b.parent.isBone ? fk(b.parent) : a; P.setXYZ(i * 2, p.x, p.y, 0); P.setXYZ(i * 2 + 1, a.x, a.y, 0); }); P.needsUpdate = true; }
+
+let last = performance.now();
+function step(dt) {
+  S.t += dt; if (S.mode === 'attack') { S.at += dt; if (S.at >= ATKT) S.at = 0; } const M = pose(S.t); cloth(dt, S.t, M); updateTrail(); drawBones();
+  world.scale.x = S.flip; shadow.position.x = fk(B.hips).x * S.flip * .75; shadow.scale.x = 215 + Math.abs(M.ff.x - M.bf.x) * .35;
+}
+function frame(now) { const real = Math.min(.05, (now - last) / 1000); last = now; step(real * (S.slow ? .25 : 1)); R.render(scene, cam); requestAnimationFrame(frame); }
+function ui() { document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === S.mode)); $('fL').classList.toggle('on', S.flip < 0); $('fR').classList.toggle('on', S.flip > 0); $('slow').classList.toggle('on', S.slow); $('vB').classList.toggle('on', !!boneLines && boneLines.visible); $('vP').classList.toggle('on', tintU.value > 0); $('vM').classList.toggle('on', !!wire && wire.visible); }
+document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.mode = b.dataset.m; S.at = 0; marks.position.x = S.mode === 'walk' || S.mode === 'run' ? marks.position.x : 0; ui(); });
+$('fL').onclick = () => { S.flip = -1; ui(); }; $('fR').onclick = () => { S.flip = 1; ui(); }; $('slow').onclick = () => { S.slow = !S.slow; ui(); };
+$('vB').onclick = () => { boneLines.visible = !boneLines.visible; ui(); }; $('vP').onclick = () => { tintU.value = tintU.value ? 0 : .68; ui(); }; $('vM').onclick = () => { wire.visible = !wire.visible; ui(); };
+build().then(() => { ui(); pose(0); window.RIG_T = { S, step, pose, B, fk, parts: RIG.parts.length, bones: bones.length, ready: true }; requestAnimationFrame(frame); }).catch(e => { console.error(e); document.querySelector('#top b').textContent = 'โหลดไม่สำเร็จ ลองรีเฟรช'; });
+</script>
+</body>
+</html>

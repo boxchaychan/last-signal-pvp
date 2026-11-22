@@ -2196,3 +2196,10 @@ Owner: "ใส่เข้าเกม tribe3d.html: 1. Ultimate Fantasy RTS = �
 - Horde cost: all characters of a move borrow one of a few animated skeletons (`POSE`, `usePose`), so 100+ animated zombies are cheap.
 - Balance (bot playing in the page, 4 runs): a sensible builder dies on night 15-16, a player with only 1 house + 2 guns dies at the night 5 boss.
 - Checked in the browser at 1280 x 720 and 740 x 360: real taps to build / select, night fight, soldiers, boss, save + resume, game over, no console errors. NOT checked on a real phone. Open questions for the owner: more building or more fighting, one big city or levels.
+
+## DRAGON RIG `dragonrig.html` (owner 2026-11-22 "ลอง rig มังกร", after sharing a post + clip about AI skeletal rigging)
+- The painted dragon `art/incoming/dragon_moves/base_side.png` split into 25 layered parts on 48 bones, using the ORIGINAL pixels (no AI redraw, so the face cannot drift): `tools/art/dragon_rig_parts.py art/dragonrig` (hand seed lines + watershed on the outlines; colours under joints extended by code). Parts put back at rest differ from the picture on 0.04 % of pixels.
+- Page: idle, walk (low steps), run, 3-hit spear attack, face left / right, 0.25x, views for bones / part colours / mesh. Legs and the spear arm use 2-bone IK; hair, horns, mane, cape and tail flame are spring chains. Moves are code in `pose()` / `ATK`.
+- Checked in the browser at 1100 x 680 and 740 x 360. NOT on a real phone, NOT in a game yet. Limit: hidden areas are colour fill, not real drawing, so very large joint angles can show it; Codex can draw real hidden parts later if the owner wants.
+- Side-scroller art in progress: branch `claude/dune-quest` (cut hero + monsters, tools), Codex art on `codex/dune-world` stopped at 16 of 29 pictures (`docs/codex/dune/WORLD.md`; missing golem death, 4 hero skills, 5 effects, icons, UI panel, title).
+
