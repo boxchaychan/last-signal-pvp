@@ -17,7 +17,7 @@ for key, m in sp.items():
     src = f"art/dune/fx/{key}.webp"; a = np.array(Image.open(src).convert('RGB')).astype(np.float32) / 255; w, h, cols = m['w'], m['h'], m['cols']; S = np.zeros((a.shape[0], a.shape[1], 4), np.float32)
     for i in range(m['n']):
         x, y = (i % cols) * w, (i // cols) * h; c = a[y:y + h, x:x + w]; v = c.max(2); al = np.clip((v - .045) * 1.5, 0, 1) ** .82
-        if key == 'fx_thrust': e = np.clip(np.arange(w, dtype=np.float32) / (w * .34), 0, 1); al = al * (e * e * (3 - 2 * e))[None, :]   # its tail leaves the picture on the left: fade it out instead of a straight cut
+        if key in ('fx_thrust', 'fx_lance'): e = np.clip(np.arange(w, dtype=np.float32) / (w * .34), 0, 1); al = al * (e * e * (3 - 2 * e))[None, :]   # its tail leaves the picture on the left: fade it out instead of a straight cut
         col = np.clip(c / np.maximum(v[..., None], .04), 0, 1) * np.clip(v[..., None] * 1.15 + .12, 0, 1)   # the flame's own colour, not faded by black
         g = col.mean(2, keepdims=True); col = np.clip(g + (col - g) * 1.22, 0, 1)
         blur = cv2.GaussianBlur(al, (0, 0), max(1.5, w * .016)); rim = np.clip(blur * 1.9 - al, 0, 1) * .66

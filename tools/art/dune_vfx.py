@@ -17,6 +17,10 @@ FX = {
     'fx_thrust': ('fx_thrust', span(3, 24, 7) + span(30, 96, 5) + span(104, 152, 8) + span(158, 186, 6), 0, 22),   # the tail leaves on the left, where the hero's hands are
     'fx_spear_fall': ('fx_spear', span(56, 80, 9), 0, 22),                     # the whole spear; the game moves it down from the sky
     'fx_spear_burst': ('fx_spear', span(86, 158, 25), 0, 36),
+    'fx_slam': ('fx_slam', span(1, 24, 10) + span(30, 112, 7), 5, 26),         # ground strike: the burst and twin flames (feet of the flames go on the ground)
+    'fx_slam_ring': ('fx_slam', span(120, 182, 14), 3, 26),                    # its shock ring, placed separately so the ring lies on the ground
+    'fx_spin': ('fx_spin', span(8, 40, 8) + span(44, 132, 15) + span(150, 198, 7), 0, 34),   # spinning spear
+    'fx_lance': ('fx_lance', span(30, 62, 8) + span(66, 150, 12) + span(156, 196, 9), 0, 30),   # the ultimate: the tail leaves on the left, where the hero's hands are
 }
 def read(name):
     c = cv2.VideoCapture(RAW + name + '.mp4'); out = []
