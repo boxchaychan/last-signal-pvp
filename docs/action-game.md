@@ -2351,3 +2351,9 @@ Owner: "เอา gpt แต่ r ดูทรงพลังหน่อย", "
 
 ### DUNE: fix for v=34 (2026-11-22, `?hero=otter&test=1&v=36`)
 Owner: "ทำไมเหมือนของเดิม". v=34 added `otter_g_shock` and `otter_g_burst` to `sprites.json` without raising `BUILD`, so browsers kept the cached list and those two effects never loaded. `BUILD` is now 26. Raise `BUILD` every time `sprites.json` changes.
+
+### DUNE: otter R in three beats, no fountain (2026-11-22, `?hero=otter&test=1&v=37`)
+Owner pointed at the top move of a Pinterest clip by another artist ("ท่าบนคือ R เรา"; only its timing was studied, nothing was saved or copied) and then said "เอาเอฟเฟกต์น้ำพุออก".
+- R (`stepUlt`): .56 s gathering water with three crescents of water circling the body, .14 s of stillness in the low stance, then a flash dash of about 300 through the enemies that leaves a row of water crescents on the path (`ultArc`, `drawUltArcs`), afterimages and the giant water fist.
+- The burst lands .1 s later on the enemies behind the otter: dome, torn shock rings out of their backs, then the last hit (freeze, flash, enemies thrown, sharp splash). R has no fountain columns any more. U keeps its water column.
+- Checked at 1280x720 and 740x360: all 7 skills hit in both directions, the dragon loads no water art, no console errors. Not tried on a real phone.
