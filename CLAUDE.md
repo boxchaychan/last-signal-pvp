@@ -39,6 +39,8 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Per champion: GPT big-pixel 3-view sheet (free) → PixelLab redraw B at body 128 (1 credit; say the cost, the owner's "เทส" / "เจน" is the go-ahead) → for the bag game only the SIDE view is used, so clips are ordered east only: character 4 + idle 1 + attack combo 4 + hurt 1 + death 1 ≈ 12 credits, only on "เจน".
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
+## NEWEST (owner 2026-11-22, latest): `dune.html` "ตำนานสุริยคราส" = THE single-player painted side-scroller (web, one map first, no server yet; owner: "ขออย่างเดียวให้สวย"). Hero = the rigged Eclipse Knight. RIG RULE (owner): draw the whole character in ONE picture with limbs clear of the body, then cut every part from it. Notes: the DUNE section at the end of `docs/action-game.md`; start there on "เกมแนวข้าง".
+
 ## NEWEST (owner 2026-11-22): `dragonrig.html` = the painted dragon as a 2D skeletal rig (25 parts, 48 bones, original pixels). Notes: the DRAGON RIG section at the end of `docs/action-game.md`; start there on "rig มังกร".
 
 ## NEWEST (owner 2026-11-21, latest): `bag3d.html` "ศึกแชมเปี้ยน 3D" = the 2D backpack game `bag.html` with 3D fighters only (wolf hunter vs Quaternius monsters); notes: the BAG 3D section at the end of `docs/action-game.md`; start there on "กระเป๋า 3D". Card game concept (not built): the CARD GAME CONCEPT section.
