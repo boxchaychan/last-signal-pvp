@@ -112,7 +112,11 @@ const ATK = [ /* t, bodyX, bodyY, chest, head, handX, handY, spear, frontFoot, b
   [1.72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ], ATKT = 2.05;
 function atkAt(t) { t = Math.min(t, ATK[ATK.length - 1][0]); let i = 0; while (i < ATK.length - 2 && ATK[i + 1][0] <= t) i++; const a = ATK[i], b = ATK[i + 1], fast = b[0] - a[0] < .15, f = (t - a[0]) / (b[0] - a[0]), e = fast ? 1 - (1 - f) ** 3 : sm(f); return a.map((v, k) => lerp(v, b[k], e)); }
-function legPhase(p, S0, lift) { /* p 0..1: stance for 62 %, a low swing for the rest */ const st = .62; if (p < st) { const f = p / st; return { x: S0 - 2 * S0 * f, y: 0, tilt: 0 }; } const f = (p - st) / (1 - st), e = sm(f); return { x: -S0 + 2 * S0 * e, y: lift * Math.sin(f * Math.PI), tilt: .32 * Math.sin(f * Math.PI * 1.25) * (f < .7 ? -1 : .7) }; }
+function legPhase(p, S0, lift, d) { /* p 0..1: on the ground for d, then a low swing; the foot rolls heel -> toe so it never pops */
+  const TOE = .4, HEEL = .18, up = a => a > 0 ? a * 15 : -a * 25;
+  if (p < d) { const f = p / d, tilt = HEEL * (1 - sm(f / .2)) - TOE * sm((f - .68) / .32); return { x: S0 - 2 * S0 * f, y: up(tilt), tilt }; }
+  const f = (p - d) / (1 - d), e = sm(f), tilt = lerp(-TOE, HEEL, sm((f - .12) / .76)); return { x: -S0 + 2 * S0 * e, y: lerp(up(-TOE), up(HEEL), f) + lift * Math.sin(f * Math.PI), tilt };
+}
 const REST = {};
 function restWorld() { for (const k of ['foot_b', 'foot_f', 'hand_f']) REST[k] = fk(B[k]); }
 function pose(t) {
@@ -121,16 +125,18 @@ function pose(t) {
   const m = S.mode;
   if (m === 'idle') { const b = Math.sin(t * 2.1); M.by = -7 + 4 * b; M.chest = -.012 * b; M.head = .018 * Math.sin(t * 2.1 - .7); M.hy = 3 * Math.sin(t * 2.1 - .5); M.spear = .012 * Math.sin(t * 1.5); M.freeArm = .03 * Math.sin(t * 2.1 - 1); }
   else if (m === 'walk' || m === 'run') {
-    const run = m === 'run', fq = run ? 1.55 : .95, p = (t * fq) % 1, st = run ? 96 : 54, lift = run ? 58 : 19, q = (p + .5) % 1; M.ff = legPhase(p, st, lift); M.bf = legPhase(q, st, lift); const c = Math.cos(p * Math.PI * 4);
-    M.by = (run ? -30 : -14) + (run ? 11 : 4.5) * c; M.bx = (run ? 14 : 3) + 2 * Math.sin(p * Math.PI * 4); M.chest = (run ? -.17 : -.035) + .018 * Math.sin(p * Math.PI * 4 + .6); M.head = (run ? .1 : .012) + .022 * Math.sin(p * Math.PI * 4 + 1.5);
+    const run = m === 'run', fq = run ? 1.35 : .92, d = run ? .4 : .62, st = run ? 72 : 50, lift = run ? 46 : 16, p = (t * fq) % 1, q = (p + .5) % 1; M.ff = legPhase(p, st, lift, d); M.bf = legPhase(q, st, lift, d); const c = Math.cos((p - d / 2) * Math.PI * 4);
+    M.by = (run ? -39 : -15) + (run ? -7 : 4) * c; M.bx = (run ? 14 : 3) + 2 * Math.sin(p * Math.PI * 4); M.chest = (run ? -.17 : -.035) + .018 * Math.sin(p * Math.PI * 4 + .6); M.head = (run ? .1 : .012) + .022 * Math.sin(p * Math.PI * 4 + 1.5);
     const sw = Math.sin(p * Math.PI * 2 + .35); M.freeArm = (run ? .28 : .04) + (run ? .72 : .34) * sw; M.freeFore = run ? .62 + .2 * sw : .12; M.hx = (run ? 34 : 3) + (run ? 12 : 5) * -sw; M.hy = (run ? -38 : 0) + (run ? 6 : 2.5) * c; M.spear = run ? -1.08 + .04 * sw : -.03 + .025 * sw; M.spd = run ? 410 : 165; M.bounce = c;
-    marks.position.x = -((t * fq * 2 * 2 * st * .62 / .62) % 260) * S.flip;
+    marks.position.x = -((t * 2 * st * fq / d) % 260) * S.flip;
   } else if (m === 'attack') {
     const a = atkAt(S.at); M.bx = a[1]; M.by = a[2] - 4; M.chest = a[3]; M.head = a[4]; M.hx = a[5]; M.hy = a[6]; M.spear = a[7]; M.ff = { x: a[8], y: 0, tilt: 0 }; M.bf = { x: a[9], y: 0, tilt: 0 }; M.freeArm = a[10]; M.freeFore = Math.abs(a[10]) * .35; M.spd = a[1] * 2;
   }
   B.hips.position.x += M.bx; B.hips.position.y += M.by; B.chest.rotation.z = M.chest; B.head.rotation.z = M.head - M.chest * .55;
-  ik(B.thigh_f, B.shin_f, B.foot_f, REST.foot_f.x + M.ff.x, REST.foot_f.y + M.ff.y, 1); worldTurn(B.foot_f, M.ff.tilt);
-  ik(B.thigh_b, B.shin_b, B.foot_b, REST.foot_b.x + M.bf.x, REST.foot_b.y + M.bf.y, 1); worldTurn(B.foot_b, M.bf.tilt);
+  const G = S.g || 0, FC = (REST.foot_f.x + REST.foot_b.x) / 2 + 4, ffx = lerp(REST.foot_f.x, FC + 12, G), bfx = lerp(REST.foot_b.x, FC - 12, G);
+  B.thigh_f.position.x = lerp(B.thigh_f.userData.rest.x, B.thigh_f.userData.rest.x * .42, G); B.thigh_b.position.x = lerp(B.thigh_b.userData.rest.x, B.thigh_b.userData.rest.x * .42, G);
+  ik(B.thigh_f, B.shin_f, B.foot_f, ffx + M.ff.x, REST.foot_f.y + M.ff.y, 1); worldTurn(B.foot_f, M.ff.tilt);
+  ik(B.thigh_b, B.shin_b, B.foot_b, bfx + M.bf.x, REST.foot_b.y + M.bf.y, 1); worldTurn(B.foot_b, M.bf.tilt);
   B.arm_n.rotation.z = M.freeArm; B.fore_n.rotation.z = M.freeFore; B.fist_n.rotation.z = M.freeFore * .4;
   const hip = fk(B.hips), hx = REST.hand_f.x + M.hx + (hip.x - wx(660)) * .9, hy = REST.hand_f.y + M.hy + (hip.y - wy(965)) * .85; ik(B.arm_f, B.fore_f, B.hand_f, hx, hy, -1); worldTurn(B.hand_f, M.spear * .22); worldTurn(B.spear, M.spear);
   return M;
@@ -160,7 +166,7 @@ function drawBones() { if (!boneLines.visible) return; const P = boneLines.geome
 
 let last = performance.now();
 function step(dt) {
-  S.t += dt; if (S.mode === 'attack') { S.at += dt; if (S.at >= ATKT) S.at = 0; } const M = pose(S.t); cloth(dt, S.t, M); updateTrail(); drawBones();
+  S.g = lerp(S.g || 0, S.mode === 'walk' || S.mode === 'run' ? 1 : 0, 1 - Math.exp(-dt * 10)); S.t += dt; if (S.mode === 'attack') { S.at += dt; if (S.at >= ATKT) S.at = 0; } const M = pose(S.t); cloth(dt, S.t, M); updateTrail(); drawBones();
   world.scale.x = S.flip; shadow.position.x = fk(B.hips).x * S.flip * .75; shadow.scale.x = 215 + Math.abs(M.ff.x - M.bf.x) * .35;
 }
 function frame(now) { const real = Math.min(.05, (now - last) / 1000); last = now; step(real * (S.slow ? .25 : 1)); R.render(scene, cam); requestAnimationFrame(frame); }

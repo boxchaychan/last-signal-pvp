@@ -82,10 +82,19 @@ for i in range(1, len(PARTS) + 1):
     m = nd.binary_opening(lab == i, iterations=3) | ((lab == i) & (seeds == i))   # thin strands = an outline that leaked along a neighbour
     l, n = nd.label(m, structure=np.ones((3, 3)))
     if n:
-        ok = set(np.unique(l[(seeds == i) & m])) - {0}; ok.add(int(np.argmax(nd.sum(m, l, range(1, n + 1)))) + 1)
+        cs = nd.sum(m, l, range(1, n + 1)); ok = {int(q) for q in set(np.unique(l[(seeds == i) & m])) - {0} if cs[int(q) - 1] >= 800}; ok.add(int(np.argmax(cs)) + 1)   # a small loose island belongs to the neighbour it touches
         keep |= np.isin(l, list(ok))
 fig = alpha >= 16; idx = nd.distance_transform_edt(~keep, return_distances=False, return_indices=True)
 lab[fig] = lab[idx[0], idx[1]][fig]; lab[~fig] = 0
+for _ in range(2):   # a small island (a tip's outline) joins the part it actually touches
+    for i in range(1, len(PARTS) + 1):
+        l, n = nd.label(lab == i, structure=np.ones((3, 3)))
+        if n < 2: continue
+        cs = nd.sum(lab == i, l, range(1, n + 1))
+        for q in np.where(cs < 800)[0] + 1:
+            if q == int(np.argmax(cs)) + 1: continue
+            c = l == q; ring = nd.binary_dilation(c, iterations=2) & ~c; v = lab[ring]; v = v[(v > 0) & (v != i)]
+            if len(v): lab[c] = np.bincount(v).argmax()
 
 tiles = []; over = rgb.astype(float).copy()
 for i, (n, b, _, reach) in enumerate(PARTS):
@@ -96,9 +105,14 @@ for i, (n, b, _, reach) in enumerate(PARTS):
         if n in ('thigh_b', 'shin_b'): front &= ~np.isin(lab, [q + 1 for q, r in enumerate(PARTS) if r[0] in ('thigh_f', 'shin_f')])   # the back leg never hides pixels under the front leg: they would show as scraps when the legs part
         ext = nd.binary_dilation(m, iterations=reach, mask=m | front) & front
         ext = nd.binary_opening(ext | m, iterations=4) & ext                  # no thin spikes
+        ll, _ = nd.label(ext | m, structure=np.ones((3, 3))); ext &= np.isin(ll, list(set(np.unique(ll[m])) - {0}))   # no scraps cut off from the part
         core = nd.binary_erosion(m, iterations=4); core = core if core.sum() > 40 else m
         ni = nd.distance_transform_edt(~core, return_distances=False, return_indices=True)
         c[ext] = rgb[ni[0], ni[1]][ext]; soft = nd.gaussian_filter(c.astype(float), (2, 2, 0)); c[ext] = soft[ext].astype(np.uint8); a[ext] = 255
+    cl, cn = nd.label(a > 0, structure=np.ones((3, 3)))
+    if cn > 1:   # a few loose specks of the old background cut would float away from the body
+        cs = nd.sum(a > 0, cl, range(1, cn + 1)); drop = np.where(cs < max(140, cs.max() * .004))[0] + 1
+        if len(drop): print('  ', n, 'specks removed:', len(drop), int(cs[drop - 1].sum()), 'px'); a[np.isin(cl, drop)] = 0
     ys, xs = np.where(a > 0); x0, y0, x1, y1 = max(0, xs.min() - 2), max(0, ys.min() - 2), min(W, xs.max() + 3), min(H, ys.max() + 3)
     tiles.append({'name': n, 'bone': b, 'x': int(x0), 'y': int(y0), 'w': int(x1 - x0), 'h': int(y1 - y0), 'px': np.dstack([c, a])[y0:y1, x0:x1], 'color': [int(v) for v in col]})
 
