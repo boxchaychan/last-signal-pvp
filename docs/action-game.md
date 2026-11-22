@@ -2274,3 +2274,8 @@ Owner: "ปรับท่าตีธรรมดาหน่อย", then "ไ
 - `OTTER_COMBO`: the slow wind-up frames are skipped (first hit lands in about .12 s), the next punch can start right after the hit, hold the attack button to keep punching, 3 punches loop. The body glides forward during a punch and stops at the enemy.
 - Damage per punch lowered (.8 / .9 / 1.4) because the punches are faster. Orbs: +1 for every 2 punches that hit (full 5 in about 2 s of steady hitting).
 - Checked at 1280x720 and 740x360, no console errors. Not tried on a real phone.
+
+### DUNE: otter punch = water round the fist, skill test link (2026-11-22, `?v=17`)
+Owner: "ตีธรรมดาไม่เอาที่มีขีดพุ่ง ให้ต่อยเป็นน้ำออกมารอบหมัด". A small water whirl follows the real fist position frame by frame (`fist` in `OTTER_COMBO`, `drawFistWater`) and round drops fly out of it (`drip`). No streaks, spike stars, square sparks or splashes in front of basic punches. The blowing sand lines now stay at the feet for every hero, because they crossed the fists and read as streaks.
+Owner: "ปรับเลเวลให้สกิลใช้ได้หมด": `dune.html?hero=otter&test=1` = level 10, every skill open, 5 orbs at the start, MP always full, nothing is saved.
+Checked at 1280x720 and 740x360: all 7 skills hit, the dragon still plays, no console errors. Not tried on a real phone.
