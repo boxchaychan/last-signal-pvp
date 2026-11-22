@@ -2268,3 +2268,9 @@ The dragon stays the default; the otter has its own save (`dune_save_otter`) and
 - Water effects from Meta video (`art/incoming/otter_fx/*.mp4`, not in git): `fx_w_punch`, `fx_w_crown`, `fx_w_wave`, `fx_w_spin`, keys in `tools/art/dune_vfx.py`, then `dune_fx_solid.py` (blue rim for `fx_w_*`). Icons: `tools/art/otter_icons.py` -> `art/dune/env/otter_icons.webp`.
 - Code: `OTTER_SKILLS`, `OTTER_COMBO`, `stepOtter`, `startOtter`, orbs `gainOrb` / `drawOrbs`, long-range waves `stepWaves`.
 - Checked at 1280x720 and 740x360: all 7 otter skills, a simple bot kills the boss, the dragon still plays and loads no otter art, no console errors. Not tried on a real phone. Known weak spots from Codex: `skill_spin` reads as spinning kicks and punches rather than full turns, `skill_drop` stays near the ground in the frames (the game lifts it), `run` has a few bigger steps.
+
+### DUNE: otter basic punches reworked (2026-11-22, `?hero=otter&v=16`)
+Owner: "ปรับท่าตีธรรมดาหน่อย", then "ไม่เอาเป็นขีดพุ่งไป ไม่สวย". RULE for the otter: NO code-drawn streaks or spike stars from the fists (`swing` does nothing, no `impact`); only the drawn punch and a small water splash on the target.
+- `OTTER_COMBO`: the slow wind-up frames are skipped (first hit lands in about .12 s), the next punch can start right after the hit, hold the attack button to keep punching, 3 punches loop. The body glides forward during a punch and stops at the enemy.
+- Damage per punch lowered (.8 / .9 / 1.4) because the punches are faster. Orbs: +1 for every 2 punches that hit (full 5 in about 2 s of steady hitting).
+- Checked at 1280x720 and 740x360, no console errors. Not tried on a real phone.
