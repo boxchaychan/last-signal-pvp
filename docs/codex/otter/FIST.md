@@ -10,7 +10,7 @@ Branch `codex/otter-fist`, pictures in `art/incoming/otter_fist/`, plus `REPORT_
 Body and design = `art/incoming/otter_fist/side_ref.png` (from the owner's `art/incoming/otter_mage/otter_src.png`): same head, face, ears, same head size compared with the body, same slim torso, same arm and leg length, dark blue scarf with pale wave marks, sleeveless dark robe, teal knotted belt, white and blue wave panel, baggy dark trousers, wrapped shins, sandals, long brown tail. Keep all of it. Same painted 2D style, thick dark outline, smooth cel shading. NOT pixel art.
 
 Two changes for the class only:
-- No water orb in the hands. The game draws the water chi as an effect on the fists, so it can flare on every hit.
+- No water orb in the hands. The game draws the water chi on the fists and the water orbs that circle the body (the class resource), so never draw orbs in the frames.
 - The dark hand wraps cover the knuckles like a fighter's, with one small pale-cyan wave mark on the back of each fist.
 
 ## 1. `base_side.png` (do this first)
