@@ -2295,3 +2295,6 @@ Owner: "ท่าถีบ ไม่ได้กระโดด", "แบบ K �
 
 ### DUNE: otter K pierces, L fists stronger (2026-11-22, `?hero=otter&test=1&v=21`)
 Owner: "k ขอแบบทะลุ, l ขอสีมันชัดกว่านี้ หมัดใหญ่กว่านี้นิดหน่อย". K: the water feet are bigger and faster, fly about 320, barely freeze or push on contact so they visibly pass through the whole line, and the splash comes out on the far side of each monster. L: `otter_water_fist.py` deepens the colour, firms the shape and adds a dark blue rim (raw picture unchanged); fists drawn about 20% bigger and stay solid longer. Checked at 1280x720 and 740x360, no console errors. Not tried on a real phone.
+
+### DUNE: otter K = dash kick through the line (2026-11-22, `?hero=otter&test=1&v=22`)
+Owner: "k เอาแบบพุ่งเลย งั้นก็พุ่งเลย ทำทะลุ". The otter itself now dashes about 335 along the ground in the push-kick pose, with a foot of water (`otter_wkick`) in front and after-images behind. It does not stop on enemies: each monster it passes takes 3 hits, and it cannot be hit while dashing. The shooting-feet version was removed. Checked at 1280x720 and 740x360, both directions, no console errors. Not tried on a real phone.
