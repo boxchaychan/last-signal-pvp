@@ -20,6 +20,10 @@ FX = {
     'fx_slam': ('fx_slam', span(1, 24, 10) + span(30, 112, 7), 5, 26),         # ground strike: the burst and twin flames (feet of the flames go on the ground)
     'fx_slam_ring': ('fx_slam', span(120, 182, 14), 3, 26),                    # its shock ring, placed separately so the ring lies on the ground
     'fx_spin': ('fx_spin', span(8, 40, 8) + span(44, 132, 15) + span(150, 198, 7), 0, 34),   # spinning spear
+    'fx_w_punch': ('../otter_fx/fx_w_punch', span(29, 46, 6) + span(54, 100, 5) + span(106, 152, 9), 6, 40),   # otter: water burst of a punch, it opens to the right
+    'fx_w_crown': ('../otter_fx/fx_w_hit', span(20, 40, 8) + span(46, 130, 5) + span(136, 172, 10), 3, 34),      # otter: ground smash, splash crown and ring
+    'fx_w_wave': ('../otter_fx/fx_w_wave', span(10, 30, 6) + span(36, 114, 7) + span(120, 176, 13), 0, 30),      # otter: the one long-range wave
+    'fx_w_spin': ('../otter_fx/fx_w_spin', span(6, 40, 8) + span(44, 150, 16) + span(156, 186, 6), 0, 36),       # otter: water whirl
     'fx_lance': ('fx_lance', span(30, 62, 8) + span(66, 150, 12) + span(156, 196, 9), 0, 30),   # the ultimate: the tail leaves on the left, where the hero's hands are
 }
 def read(name):

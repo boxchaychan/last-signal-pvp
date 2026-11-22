@@ -10,11 +10,11 @@ import json, os
 import numpy as np, cv2
 from PIL import Image
 
-OUT = 'art/dune/fx_solid'; os.makedirs(OUT, exist_ok=True); RIM = np.array([74, 13, 5], float) / 255
+OUT = 'art/dune/fx_solid'; os.makedirs(OUT, exist_ok=True); FIRE_RIM = np.array([74, 13, 5], float) / 255; WATER_RIM = np.array([8, 30, 92], float) / 255
 sp = json.load(open('art/dune/sprites.json'))
 for key, m in sp.items():
     if not key.startswith('fx_'): continue
-    src = f"art/dune/fx/{key}.webp"; a = np.array(Image.open(src).convert('RGB')).astype(np.float32) / 255; w, h, cols = m['w'], m['h'], m['cols']; S = np.zeros((a.shape[0], a.shape[1], 4), np.float32)
+    RIM = WATER_RIM if key.startswith('fx_w_') else FIRE_RIM; src = f"art/dune/fx/{key}.webp"; a = np.array(Image.open(src).convert('RGB')).astype(np.float32) / 255; w, h, cols = m['w'], m['h'], m['cols']; S = np.zeros((a.shape[0], a.shape[1], 4), np.float32)
     for i in range(m['n']):
         x, y = (i % cols) * w, (i // cols) * h; c = a[y:y + h, x:x + w]; v = c.max(2); al = np.clip((v - .045) * 1.5, 0, 1) ** .82
         if key in ('fx_thrust', 'fx_lance'): e = np.clip(np.arange(w, dtype=np.float32) / (w * .34), 0, 1); al = al * (e * e * (3 - 2 * e))[None, :]   # its tail leaves the picture on the left: fade it out instead of a straight cut
