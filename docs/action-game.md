@@ -2234,3 +2234,6 @@ Owner: "เน้นหลายๆ ฮิตหน่อย" (Codex was rate-li
 - New effects from `art/incoming/dragon_vfx_meta/`: `fx_slam` + `fx_slam_ring` (I), `fx_spin` (O), `fx_lance` (R), cut by `tools/art/dune_vfx.py`, then ALWAYS `tools/art/dune_fx_solid.py`. Old `fx_meteor`, `fx_ult`, `fx_cyclone` stay for other uses.
 - Damage numbers stack per monster; hit-chain bonus now grows half as fast (many more hits). Loader no longer waits for ever on `decode()`.
 - Checked locally at 1280x720 and 740x360: all 7 skills, bot kills the boss, no console errors. Not tried on a real phone.
+
+### DUNE: new skill icons from a Meta image (2026-11-22, `?v=13`)
+Owner: "เจนไอคอนเลย". One Meta image, 3 x 3 on black, weapons and fire only (no dragon), raw `art/incoming/dune_icons/skills_meta_v1.webp`; `tools/art/dune_skill_icons.py` -> `art/dune/env/skill_icons.webp` (0-6 = K L U I O P R, 7 = dash, 8 = spare spear head). In `dune.html` an icon number from 100 up means this sheet. The dash button lost its old dragon-head icon. Potions and shop keep `art/dune/env/icons.webp`. Checked at 1280x720 and 740x360, not on a real phone.
