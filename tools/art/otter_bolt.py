@@ -2,7 +2,7 @@
 
   python tools/art/otter_bolt.py
 
-Reads art/incoming/otter_fx2/projectile_ref_v1.png (kept as it is; the owner said "p เปลี่ยนเป็นอันนี้", its source is unknown: replace it before a commercial release if it is someone else's work).
+Reads art/incoming/otter_fx2/projectile_ref_v1.png (kept as it is; the owner generated this picture themself and said "p เปลี่ยนเป็นอันนี้").
 Takes the shape from that picture, enlarges it, redraws its tones as clean flat layers, moves the tail in code and writes art/dune/fx_gpt/otter_g_bolt.webp (24 frames, flying right).
 """
 import json
