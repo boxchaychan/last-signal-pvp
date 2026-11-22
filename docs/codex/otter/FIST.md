@@ -1,7 +1,7 @@
 # Otter chi fist: new class of the desert side-scroller
 
 Owner phrases: "เอานากมาทำ", "เอาแบบนี้เลย" (keep the otter's own body from the picture, do not make it a big-head chibi), "ออกแบบให้อยู่ในคลาส หมัดปราณ".
-Class: **chi fist (หมัดปราณ)**. A bare-handed martial artist who fights near to middle range with fast attacks and is always on the move: footwork makes up for the short reach. Water chi is its power. It never holds a staff, sword, spear or any other weapon.
+Class: **chi fist (หมัดปราณ)**. A bare-handed martial artist who fights mainly at point-blank range, middle range second, with fast attacks, and is always on the move: footwork makes up for the short reach. Water chi is its power. It never holds a staff, sword, spear or any other weapon.
 
 Moves are drawn FRAMES (no bones) and must be as smooth and alive as `art/incoming/dragon_moves/attack2.png`.
 Branch `codex/otter-fist`, pictures in `art/incoming/otter_fist/`, plus `REPORT_TH.txt` (Thai, short). Commit and push after EVERY picture. Do not merge. Do not edit html, tools or CLAUDE.md.
