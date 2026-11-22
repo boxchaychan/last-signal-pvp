@@ -2279,3 +2279,10 @@ Owner: "ปรับท่าตีธรรมดาหน่อย", then "ไ
 Owner: "ตีธรรมดาไม่เอาที่มีขีดพุ่ง ให้ต่อยเป็นน้ำออกมารอบหมัด". A small water whirl follows the real fist position frame by frame (`fist` in `OTTER_COMBO`, `drawFistWater`) and round drops fly out of it (`drip`). No streaks, spike stars, square sparks or splashes in front of basic punches. The blowing sand lines now stay at the feet for every hero, because they crossed the fists and read as streaks.
 Owner: "ปรับเลเวลให้สกิลใช้ได้หมด": `dune.html?hero=otter&test=1` = level 10, every skill open, 5 orbs at the start, MP always full, nothing is saved.
 Checked at 1280x720 and 740x360: all 7 skills hit, the dragon still plays, no console errors. Not tried on a real phone.
+
+### DUNE: otter L = water fists, K = flying kick (2026-11-22, `?hero=otter&test=1&v=18`)
+Owner: "ท่า L คลื่นมันไม่สวย เอาเป็นหมัดน้ำรัวๆ", "K ทำท่ากระโดดเตะ".
+- L: 8 hits, each throws 2 to 3 fists made of water (Meta image `art/incoming/otter_fist/water_fists_meta_v1.webp`, `tools/art/otter_water_fist.py`, key `otter_wfist`, code `waterFists`). No waves on this skill.
+- K (now เตะเหินคลื่น): low flying kick up to about 255 far. It stops on the first enemy, 3 hits, then bounces back; if nothing is in reach it lands with a splash. It uses the kick frames of `skill_spin`, so the standing leg is not a true flying pose. A real `skill_kick` sheet is still to draw if the owner wants it.
+- Fixed a blue patch left between the otter's legs in every sheet (`otter_pack.py` now clears blue closed off by the ground line or by limbs).
+- Checked at 1280x720 and 740x360: all 7 skills hit, the dragon still plays, no console errors. Not tried on a real phone.

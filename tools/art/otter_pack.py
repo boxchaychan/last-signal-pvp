@@ -14,8 +14,12 @@ IN, OUT = 'art/incoming/otter_fist/', 'art/dune/otter/'; os.makedirs(OUT, exist_
 MOVES = ['idle', 'run', 'attack1', 'attack2', 'attack3', 'skill_dash', 'skill_flurry', 'skill_upper', 'skill_drop', 'skill_spin', 'hurt', 'death']
 BLUE = np.array([2, 72, 186]); K = .815   # standing body = 59 world units next to the dragon
 def cut(c):
-    bg = (np.abs(c.astype(int) - BLUE).max(2) < 46).astype(np.uint8); n, l = cv2.connectedComponents(bg, connectivity=4); e = set(np.unique(np.r_[l[0], l[-1], l[:, 0], l[:, -1]])) - {0}
-    al = (~np.isin(l, list(e)) * 255).astype(np.uint8); h = c.shape[0]; rows = (c.max(2) < 70)[int(h * .6):].sum(1); ly = int(h * .6) + int(np.argmax(rows)); al[ly - 1:] = 0
+    h = c.shape[0]; rows = (c.max(2) < 70)[int(h * .6):].sum(1); ly = int(h * .6) + int(np.argmax(rows)); d = np.abs(c.astype(int) - BLUE).max(2)
+    bg = (d < 46).astype(np.uint8); bg[ly - 2:] = 1   # the ground line must not close off the blue between the legs
+    n, l = cv2.connectedComponents(bg, connectivity=4); e = set(np.unique(np.r_[l[0], l[-1], l[:, 0], l[:, -1]])) - {0}; al = (~np.isin(l, list(e)) * 255).astype(np.uint8); al[ly - 1:] = 0
+    n, l, st, _ = cv2.connectedComponentsWithStats((d < 24).astype(np.uint8), 4)   # blue pockets closed in by an arm or a leg (the scarf is further from this blue)
+    for i in range(1, n):
+        if st[i, 4] >= 10: al[cv2.dilate((l == i).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0] = 0
     # keep the figure, drop specks left by the line
     n, l, st, _ = cv2.connectedComponentsWithStats((al > 40).astype(np.uint8), 8)
     if n > 1: al[~np.isin(l, [i for i in range(1, n) if st[i, 4] > 24])] = 0
