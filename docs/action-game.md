@@ -2289,3 +2289,6 @@ Owner: "ท่า L คลื่นมันไม่สวย เอาเป�
 
 ### DUNE: otter K = water kick VFX (2026-11-22, `?hero=otter&test=1&v=19`)
 Owner: "ทำ vfx เป็นท่าเตะ": no new character sheet. A leg made of water (Meta image `art/incoming/otter_fist/water_kicks_meta_v1.webp`, `python tools/art/otter_water_fist.py kick`, key `otter_wkick`) grows out of the foot during the flying kick, and each of the 3 hits throws one more water kick (`waterKick`), the last one bigger. Checked at 1280x720 and 740x360, no console errors. Not tried on a real phone.
+
+### DUNE: otter K = push kick that shoots water feet (2026-11-22, `?hero=otter&test=1&v=20`)
+Owner: "ท่าถีบ ไม่ได้กระโดด", "แบบ K มันพุ่งไป ให้เป็นเท้าก็ได้". K (ถีบคลื่น) no longer jumps or flies: the otter takes one small step, push-kicks on the spot (kick frames of `skill_spin`), and 3 feet of water (`otter_wkick`, `launchFoot`, `stepFeet`) shoot forward about 250, piercing the line; each foot hits each monster once, the last is bigger and pushes. Checked at 1280x720 and 740x360, both facing directions, no console errors. Not tried on a real phone.
