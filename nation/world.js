@@ -232,7 +232,7 @@ W.clearTrees = function (x, z, w, d) {
 W.initBuildMat = function () {
   W.nightU = { value: 0 };
   const mat = W.bmat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  mat.onBeforeCompile = s => { s.uniforms.uNight = W.nightU; s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nattribute float aGlow;varying float vGlow;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow=aGlow;'); s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;varying float vGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat gl=smoothstep(.2,.45,vGlow),lt=smoothstep(.75,.95,vGlow);totalEmissiveRadiance+=gl*(1.-uNight)*vec3(.07,.13,.19)+lt*uNight*vec3(.92,.68,.34);'); };
+  mat.onBeforeCompile = s => { s.uniforms.uNight = W.nightU; s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nattribute float aGlow;varying float vGlow;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow=aGlow;'); s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;varying float vGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat gl=smoothstep(.2,.45,vGlow),lt=smoothstep(.75,.95,vGlow);float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.6);totalEmissiveRadiance+=gl*(1.-uNight)*(vec3(.06,.12,.18)+fr*vec3(.5,.62,.72))+lt*uNight*vec3(.98,.72,.37);'); };
 };
 W.geoFor = function (t, v) { const key = t + v; if (!W['g_' + key]) { const m = new MB(); if (t === 'hall') drawHall(m, v); else drawB(m, t, v); W['g_' + key] = m.build(); } return W['g_' + key]; };
 W.inst = function (t, v) { const key = t + v; if (!W.arch[key]) { const im = new THREE.InstancedMesh(W.geoFor(t, v), W.bmat, MAX_INST); im.count = 0; im.castShadow = im.receiveShadow = true; im.frustumCulled = false; W.scene.add(im); W.arch[key] = { im, list: [] }; } return W.arch[key]; };
@@ -361,9 +361,9 @@ W.render = function (t, dt) {
   cam.position.set(C.x + Math.sin(C.yaw) * Math.cos(pitch) * C.dist, ground + Math.sin(pitch) * C.dist, C.z + Math.cos(C.yaw) * Math.cos(pitch) * C.dist); cam.lookAt(C.x, ground, C.z);
   W.waterU.t.value = t; const sz = clamp(C.dist * 1.1, 14, 92), sun = W.sun;
   if (W.needShadow || Math.hypot(C.x - sx0, C.z - sz0) > sz * .16 || Math.abs(C.dist - sd0) > sd0 * .12) {
-    if (t - shadowT > .22) { shadowT = t; sx0 = C.x; sz0 = C.z; sd0 = C.dist; W.needShadow = false; const sc = sun.shadow.camera; sc.left = sc.bottom = -sz; sc.right = sc.top = sz; sc.near = 1; sc.far = 260; sc.updateProjectionMatrix(); sun.target.position.set(C.x, 0, C.z); sun.position.set(C.x - 34, 62, C.z + 26); sun.target.updateMatrixWorld(); W.renderer.shadowMap.needsUpdate = true; }
+    if (t - shadowT > .22) { shadowT = t; sx0 = C.x; sz0 = C.z; sd0 = C.dist; W.needShadow = false; const sc = sun.shadow.camera; sc.left = sc.bottom = -sz; sc.right = sc.top = sz; sc.near = 1; sc.far = 260; sc.updateProjectionMatrix(); sun.target.position.set(C.x, 0, C.z); sun.position.set(C.x - 46, 54, C.z + 32); sun.target.updateMatrixWorld(); W.renderer.shadowMap.needsUpdate = true; }
   }
   if (W.dirty && t - (W._upT || 0) > .7) { W._upT = t; W.dirty = false; W.gtex.needsUpdate = true; }
   if (W.ring.visible) W.ring.material.opacity = .62 + Math.sin(t * 5) * .35;
-  W.renderer.render(W.scene, cam);
+  if (W.post) W.post(); else W.renderer.render(W.scene, cam);
 };
