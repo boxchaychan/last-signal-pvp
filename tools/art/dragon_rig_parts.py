@@ -17,8 +17,8 @@ SRC = 'art/incoming/dragon_moves/base_side.png'; CUT = 'art/incoming/dragon_mesh
 # name, parent, x, y (picture px)
 BONES = [
     ('root', None, 660, 1162), ('hips', 'root', 660, 965), ('chest', 'hips', 680, 860), ('head', 'chest', 735, 610),
-    ('thigh_b', 'hips', 600, 990), ('shin_b', 'thigh_b', 598, 1062), ('foot_b', 'shin_b', 590, 1132),
-    ('thigh_f', 'hips', 722, 990), ('shin_f', 'thigh_f', 726, 1062), ('foot_f', 'shin_f', 735, 1132),
+    ('thigh_b', 'hips', 604, 965), ('shin_b', 'thigh_b', 598, 1031), ('foot_b', 'shin_b', 590, 1096),
+    ('thigh_f', 'hips', 708, 965), ('shin_f', 'thigh_f', 712, 1031), ('foot_f', 'shin_f', 718, 1096),
     ('arm_n', 'chest', 642, 772), ('fore_n', 'arm_n', 612, 838), ('fist_n', 'fore_n', 610, 884),
     ('arm_f', 'chest', 770, 725), ('fore_f', 'arm_f', 825, 738), ('hand_f', 'fore_f', 880, 716), ('spear', 'hand_f', 908, 708),
 ]
@@ -96,8 +96,32 @@ for _ in range(2):   # a small island (a tip's outline) joins the part it actual
             c = l == q; ring = nd.binary_dilation(c, iterations=2) & ~c; v = lab[ring]; v = v[(v > 0) & (v != i)]
             if len(v): lab[c] = np.bincount(v).argmax()
 
+# NEW LEGS (owner "ออกแบบขาใหม่", picked design B): Codex's whole thigh / shin / boot replace the legs of the standing picture
+LEGS = 'art/incoming/dragon_legs/legs_b.png'; OLD = ('thigh_b', 'shin_b', 'thigh_f', 'shin_f'); KK = .27
+old_mask = np.isin(lab, [i + 1 for i, p in enumerate(PARTS) if p[0] in OLD]); pic_alpha = alpha.copy(); alpha = np.where(old_mask, 0, alpha); lab[old_mask] = 0; fig = alpha >= 16
+def kit_tiles():
+    k = np.array(Image.open(LEGS).convert('RGB')).astype(float); m = np.minimum(k[..., 0], k[..., 2]) - k[..., 1]; al = 1 - np.clip((m - 62) / 118, 0, 1); q = np.clip(al, .08, 1)[..., None]
+    c = np.clip((k - (1 - q) * np.array([255., 0, 255])) / q, 0, 255); edge = (al > 0) & (al < .98); c[edge, 2] = np.minimum(c[edge, 2], np.maximum(c[edge, 0], c[edge, 1]) * 1.04); art = np.dstack([c, al * 255]).astype(np.uint8)
+    l, n = nd.label(nd.binary_dilation(al > .5, iterations=4), structure=np.ones((3, 3))); boxes = sorted(nd.find_objects(l), key=lambda b: b[1].start)[:3]; bone = {b[0]: b for b in BONES}; out = []
+    PIV = [((250, 300), (250, 560)), ((730, 340), (730, 600)), ((1120, 420), None)]
+    for side, dark in (('b', True), ('f', False)):
+        for (nm, b, (p0, p1)) in zip(('thigh', 'shin', 'foot'), boxes, PIV):
+            name = f'{nm}_{side}'; j = bone[name]; ky = KK
+            if p1:
+                child = bone[{'thigh': 'shin', 'shin': 'foot'}[nm] + '_' + side]; ky = np.hypot(child[2] - j[2], child[3] - j[3]) / (p1[1] - p0[1])
+            a = art[b[0].start:b[0].stop, b[1].start:b[1].stop].copy(); w, h = max(1, round(a.shape[1] * KK)), max(1, round(a.shape[0] * ky))
+            im = np.array(Image.fromarray(a, 'RGBA').resize((w, h), Image.LANCZOS)).copy()
+            if dark: im[..., :3] = np.clip(im[..., :3] * np.array([.72, .70, .78]), 0, 255).astype(np.uint8)
+            x = int(round(j[2] - (p0[0] - b[1].start) * KK)); y = int(round(j[3] - (p0[1] - b[0].start) * ky))
+            col = [int(v) for v in np.array(colorsys.hsv_to_rgb(({'thigh': .95, 'shin': .55, 'foot': .3}[nm]), .75, .72 if dark else 1)) * 255]
+            out.append({'name': name, 'bone': name, 'x': x, 'y': y, 'w': w, 'h': h, 'px': im, 'color': col, 'kit': 1})
+    return out
+KIT = kit_tiles(); kit_done = False
 tiles = []; over = rgb.astype(float).copy()
 for i, (n, b, _, reach) in enumerate(PARTS):
+    if n in OLD:
+        if not kit_done: tiles.extend(KIT); kit_done = True
+        continue
     m = lab == i + 1; col = np.array(colorsys.hsv_to_rgb(i * .618 % 1, .8, 1)) * 255; over[m] = over[m] * .35 + col * .65
     a = np.where(m, alpha, 0).astype(np.uint8); c = rgb.copy()
     if reach:
@@ -126,10 +150,11 @@ atlas.save(f'{OUT}/atlas.webp', 'WEBP', quality=93, alpha_quality=100, method=6)
 Image.fromarray(over.astype(np.uint8)).crop((200, 100, 1000, 1190)).save(f'{OUT}/parts_map.png')
 rig = {'w': AW, 'h': AH, 'bones': [{'n': b[0], 'p': b[1], 'x': b[2], 'y': b[3]} for b in BONES],
        'chains': {c: {'n': len(p[1]) - 1, 'end': p[1][-1]} for c, p in CHAINS.items()},
-       'parts': [{k: t[k] for k in ('name', 'bone', 'x', 'y', 'w', 'h', 'ax', 'ay', 'color')} for t in tiles]}
+       'parts': [{**{k: t[k] for k in ('name', 'bone', 'x', 'y', 'w', 'h', 'ax', 'ay', 'color')}, **({'kit': 1} if t.get('kit') else {})} for t in tiles]}
 json.dump(rig, open(f'{OUT}/rig.json', 'w'), separators=(',', ':'))
 # the parts put back together at rest must equal the picture
 back = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-for t in tiles: back.alpha_composite(Image.fromarray(t['px'], 'RGBA'), (t['x'], t['y']))
+for t in tiles:
+    if not t.get('kit'): back.alpha_composite(Image.fromarray(t['px'], 'RGBA'), (t['x'], t['y']))
 b = np.array(back).astype(int); e = np.abs(b[..., :3] - rgb.astype(int)).max(2)[alpha > 200]
 print(len(tiles), 'parts', len(BONES), 'bones, atlas', AW, AH, os.path.getsize(f'{OUT}/atlas.webp') // 1024, 'KB; rest error: mean', round(float(e.mean()), 2), 'over 12:', round(float((e > 12).mean() * 100), 3), '%')
