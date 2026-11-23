@@ -23,12 +23,12 @@ function globeOf(S) { if (!S.g) S.g = { oil: 1, food: 1, rate: 3, dem: 1, ship: 
 const gNews = (t, k) => { if (typeof news === 'function') news(t, k); };
 function globeMonth(S) {
   const g = globeOf(S), x = S.x;
-  if (S.m >= g.next && g.on.length < 3) { const busy = g.on.map(q => q.id), L = WORLD_EV.filter(q => !busy.includes(q.id) && S.m - ((g.last || {})[q.id] || -240) > 90), e = L.length ? L[Math.random() * L.length | 0] : null; g.next = S.m + 18 + Math.random() * 20 | 0; if (e) { g.on.push({ id: e.id, st: 0, left: 4 + Math.random() * 6 | 0, len: e.len[0] + Math.random() * (e.len[1] - e.len[0]) | 0, real: Math.random() > .26 }); gNews('สัญญาณโลก: ' + e.sig); } }
+  if (S.m >= g.next && g.on.length < 2) { const e = pickStory(S, g); g.next = S.m + (e ? 34 + Math.random() * 40 : 8 + Math.random() * 8) | 0; if (e) { g.on.push({ id: e.id, st: 0, left: 4 + Math.random() * 6 | 0, len: e.len[0] + Math.random() * (e.len[1] - e.len[0]) | 0, real: Math.random() > .26 }); gNews('สัญญาณโลก: ' + e.sig); } }
   const T = { oil: 0, food: 0, rate: 0, dem: 0, ship: 0, parts: 0, fear: 0, rain: 0, rival: 0, shift: 0, auto: 0, epi: 0, unrest: 0, refugee: 0 };
   for (let i = g.on.length - 1; i >= 0; i--) {
-    const q = g.on[i], d = WORLD_EV.find(v => v.id === q.id); if (!d) { g.on.splice(i, 1); continue; } if (--q.left <= 0) {
-      if (q.st === 0 && !q.real) { gNews('สัญญาณนี้ไม่เกิดจริง: ' + d.n + ' ซาลงแล้ว', 'good'); g.log.unshift([S.m, d.n, 'ไม่เกิดจริง']); g.on.splice(i, 1); continue; }
-      q.st++; if (q.st > 3) { gNews('โลกคลี่คลาย: ' + d.n, 'good'); g.last = g.last || {}; g.last[d.id] = S.m; g.log.unshift([S.m, d.n, 'จบแล้ว']); g.log.length = Math.min(g.log.length, 8); g.on.splice(i, 1); continue; }
+    const q = g.on[i], d = WORLD_EV.find(v => v.id === q.id); if (!d) { g.on.splice(i, 1); continue; } if (q.st < 2) { const no = whyNot(S, d); if (no) { gNews(d.n + ' ไม่เกิดกับเรา เพราะ' + no, 'good'); g.on.splice(i, 1); continue; } } if (--q.left <= 0) {
+      if (q.st === 0 && !q.real) { gNews('สัญญาณนี้ซาลงแล้ว ยังไม่เกิด' + d.n, 'good'); g.on.splice(i, 1); continue; }
+      q.st++; if (q.st > 3) { gNews('โลกคลี่คลาย: ' + d.n, 'good'); g.on.splice(i, 1); histEnd(S, q, d); continue; } if (q.st === 2) histHit(S, q, d);
       q.left = Math.max(2, Math.round(q.len * [0, .3, .45, .25][q.st])); if (q.st === 1) gNews('ข่าวโลก: ' + d.n + ' กำลังลุกลาม ' + d.hit, 'bad');
     }
     const k = G_K[q.st]; for (const f in d.fx) T[f] += d.fx[f] * k;

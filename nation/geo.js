@@ -12,7 +12,7 @@ function provTick(S) {
     const sh = provShare(i), tgt = clamp(.3 + Math.sqrt(sh) * .34 + (i ? 0 : .12) + p.inv * .5 + clamp(Math.log10(S.x.gdpPc + 10) / 4) * .22); p.w += (tgt - p.w) * .012; p.inv *= .985; p.troops *= .97;
     const t = clamp((S.unrest || 0) + (avg - p.w) * 95 + (i ? 5 : -2) - p.troops * 22 - p.inv * 14, 0, 100); p.un += (t - p.un) * .07;
   });
-  if (!G.modal && S.m - (S.sepM || -99) > 30) { const i = P.findIndex((p, q) => q > 0 && p.un > 72); if (i > 0) { S.sepM = S.m; S.evM = S.m; const n = G.cities[i].name; UI.showEvent({ cat: 'จังหวัด', t: n + ' ประกาศจะแยกตัว', b: 'คนใน' + n + ' บอกว่าเมืองหลวงรวยอยู่ฝ่ายเดียว และพวกเขาถูกทอดทิ้งมานาน', o: [['ลงทุนพัฒนาจังหวัดนี้ครั้งใหญ่', { c: 1, geo: ['pinv', i, .5] }], ['ให้ปกครองตนเองบางส่วน', { tr: 2, corr: .006, geo: ['pcalm', i, 34] }], ['ส่งทหารเข้าควบคุม', { c: .3, tr: -6, rep: -.05, geo: ['ptroop', i, 1] }]] }); } }
+  if (!G.modal && S.m - (S.sepM || -99) > 72) { const i = P.findIndex((p, q) => q > 0 && p.un > 78); if (i > 0) { S.sepM = S.m; S.evM = S.m; const n = G.cities[i].name; UI.showEvent({ cat: 'จังหวัด', t: n + ' ประกาศจะแยกตัว', b: 'คนใน' + n + ' บอกว่าเมืองหลวงรวยอยู่ฝ่ายเดียว และพวกเขาถูกทอดทิ้งมานาน', o: [['ลงทุนพัฒนาจังหวัดนี้ครั้งใหญ่', { c: 1, geo: ['pinv', i, .5] }], ['ให้ปกครองตนเองบางส่วน', { tr: 2, corr: .006, geo: ['pcalm', i, 34] }], ['ส่งทหารเข้าควบคุม', { c: .3, tr: -6, rep: -.05, geo: ['ptroop', i, 1] }]] }); } }
 }
 
 /* ---------- neighbour countries ---------- */
