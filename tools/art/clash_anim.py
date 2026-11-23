@@ -62,6 +62,28 @@ MOVE['walk'].update({'hk_tank': 'marching forward to the right in place behind t
  'hk_blood': 'walking forward to the right in place, whip sword trailing, a looping walk cycle'})
 FRAMES = {'attack': 12, 'walk': 8}
 
+# alien tribe (owner 2026-11-23 picks from batch 4: a4_12 00 07 29 34 19 55 45; "เจนท่า")
+SUBJ.update({'ax_tank': 'a dark red armoured alien brute with big crab claws', 'ax_hunter': 'an alien hunter with a bone-white skull mask and an energy spear',
+ 'ax_hound': 'an eyeless black and toxic green alien hound with huge jaws', 'ax_assassin': 'a black cyborg alien assassin with two magenta energy blades',
+ 'ax_eye': 'a shadow tentacle horror with one huge glowing cyan eye', 'ax_priestess': 'a purple alien hive priestess with long antennae and a glowing staff',
+ 'ax_saucer': 'an alien riding a small spiked flying saucer', 'ax_tk': 'a purple telekinetic alien surrounded by floating rocks'})
+MOVE['attack'].update({'ax_tank': 'snaps forward to the right with both huge crab claws, then pulls back',
+ 'ax_hunter': 'lunges forward to the right and thrusts the energy spear, then pulls back to stance',
+ 'ax_hound': 'pounces forward to the right and snaps its huge jaws, then lands back',
+ 'ax_assassin': 'dashes forward to the right and slashes with both energy blades in a fast cross cut, then hops back',
+ 'ax_eye': 'the huge eye glows and fires a cyan beam forward to the right, tentacles writhing, then dims',
+ 'ax_priestess': 'raises the glowing staff and sends a pulse of purple energy forward to the right, then lowers it',
+ 'ax_saucer': 'the spiked saucer rams forward to the right, spinning its spikes, then pulls back',
+ 'ax_tk': 'raises both hands and hurls a floating rock forward to the right with a purple aura, then the rocks circle again'})
+MOVE['walk'].update({'ax_tank': 'stomping forward to the right in place on heavy legs, claws swaying, a looping walk cycle',
+ 'ax_hunter': 'stalking forward to the right in place, spear ready, a looping walk cycle',
+ 'ax_hound': 'running forward to the right in place on four legs, a looping run cycle',
+ 'ax_assassin': 'sneaking forward to the right in place, blades ready, a looping walk cycle',
+ 'ax_eye': 'slithering forward to the right in place on writhing tentacles, a looping crawl cycle',
+ 'ax_priestess': 'gliding forward to the right in place, robe swaying, staff in hand, a looping walk cycle',
+ 'ax_saucer': 'the saucer hovers and bobs in place, lights blinking, a looping hover cycle',
+ 'ax_tk': 'walking forward to the right in place, floating rocks circling around it, a looping walk cycle'})
+
 def prep(only=None):
     for k in (only or SUBJ):
         im = Image.open(os.path.join(ROOT, 'art/clash/units', k + '.png')).convert('RGBA'); w, h = im.size
