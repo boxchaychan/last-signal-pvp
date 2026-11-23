@@ -39,7 +39,10 @@ const BT = {
   techpark:  { n: 'เมืองเทคโนโลยี', s: [5, 5], c: 430000, m: 1600, wk: 2200, mw: 400, g: { tech: 1600 }, st: 6, cat: 'work', auto: 1 },
   well:      { n: 'บ่อน้ำสะอาด', s: [1, 1], c: 240, m: 3, wk: 2.5, mw: 3, g: { water: 30 }, st: 0, cat: 'water', d: 'น้ำสะอาดสำหรับ 30 คน ลดโรคจากน้ำ' },
   waterworks:{ n: 'การประปา', s: [4, 3], c: 14000, m: 70, wk: 80, mw: 30, g: { water: 3200, pub: 20 }, st: 3, cat: 'water', d: 'น้ำประปาสำหรับ 3,200 คน' },
-  dam:       { n: 'เขื่อน', s: [6, 3], c: 1200000, m: 5000, wk: 7000, mw: 900, g: { water: 150000, power: 50000, pub: 200 }, st: 5, cat: 'water', d: 'น้ำและไฟฟ้าจำนวนมาก แต่เสียป่าและที่ทำกิน', fx: { forest: -.03, tr: -2 } },
+  levee:     { n: 'คันกั้นน้ำ', s: [4, 2], c: 520, m: 6, wk: 6, mw: 5, g: { levee: 1 }, st: 0, cat: 'water', d: 'กั้นแม่น้ำไม่ให้ล้นตลิ่ง ยิ่งมากยิ่งรับน้ำได้สูง' },
+  reservoir: { n: 'อ่างเก็บน้ำ', s: [5, 4], c: 3200, m: 22, wk: 24, mw: 10, g: { hold: 90, water: 60 }, st: 1, cat: 'water', d: 'เก็บน้ำหน้าฝนไว้ใช้หน้าแล้ง ลดทั้งน้ำท่วมและภัยแล้ง' },
+  firest:    { n: 'สถานีดับเพลิง', s: [3, 3], c: 2400, m: 14, wk: 16, mw: 6, g: { fire: 1, pub: 4 }, st: 1, cat: 'safe', d: 'ดับไฟก่อนลามทั้งย่าน' },
+  dam:       { n: 'เขื่อน', s: [6, 3], c: 1200000, m: 5000, wk: 7000, mw: 900, g: { water: 150000, power: 50000, hold: 1500, pub: 200 }, st: 5, cat: 'water', d: 'น้ำและไฟฟ้าจำนวนมาก แต่เสียป่าและที่ทำกิน', fx: { forest: -.03, tr: -2 } },
   gen:       { n: 'เครื่องปั่นไฟชุมชน', s: [2, 2], c: 420, m: 4, wk: 3, mw: 3, g: { power: 50 }, st: 0, cat: 'power', d: 'ไฟฟ้าสำหรับ 50 คน งานได้ผลดีขึ้น' },
   coal:      { n: 'โรงไฟฟ้าถ่านหิน', s: [5, 4], c: 28000, m: 150, wk: 160, mw: 50, g: { power: 7000, dirty: 900, pub: 40 }, st: 3, cat: 'power', d: 'ไฟถูกและมาก แต่ทำให้อากาศเสีย' },
   solar:     { n: 'ฟาร์มโซลาร์', s: [6, 5], c: 140000, m: 500, wk: 500, mw: 120, g: { power: 14000, pub: 20 }, st: 4, cat: 'power', d: 'ไฟฟ้าสะอาด แต่ลงทุนแพง' },
@@ -62,7 +65,7 @@ const BT = {
   parliament:{ n: 'ทำเนียบผู้นำ', s: [5, 4], c: 700000, m: 2500, wk: 3000, mw: 500, g: { admin: 1, pub: 200 }, st: 5, cat: 'state', d: 'ศูนย์อำนาจของประเทศ ลดการโกงและทำให้บัลลังก์มั่นคงขึ้น' }
 };
 const CAT_N = { land: 'ขยายเกาะ', water: 'น้ำ', power: 'ไฟฟ้า', edu: 'การศึกษา', health: 'สุขภาพ', safe: 'ความปลอดภัย', clean: 'ขยะ', life: 'คุณภาพชีวิต', state: 'รัฐ' };
-const PUBLIC_ORDER = ['well', 'clinic', 'school', 'gen', 'police', 'trash', 'park', 'reclaim', 'waterworks', 'hospital', 'hischool', 'coal', 'solar', 'policehq', 'recycle', 'base', 'port', 'dam', 'univ', 'parliament', 'airport', 'medcenter', 'nuclear'];
+const PUBLIC_ORDER = ['well', 'levee', 'clinic', 'school', 'gen', 'police', 'trash', 'park', 'reservoir', 'firest', 'reclaim', 'waterworks', 'hospital', 'hischool', 'coal', 'solar', 'policehq', 'recycle', 'base', 'port', 'dam', 'univ', 'parliament', 'airport', 'medcenter', 'nuclear'];
 const BUDGET_N = { edu: ['การศึกษา', 2], health: ['สาธารณสุข', 2], safety: ['ตำรวจ / ยุติธรรม', .8], infra: ['ถนน / สาธารณูปโภค', 1.6], welfare: ['สวัสดิการ', 1.2], env: ['สิ่งแวดล้อม', .5], defense: ['กลาโหม', .7], rnd: ['วิจัย / เทคโนโลยี', .4], admin: ['ปราบโกง / บริหาร', .5] };
 
 /* Effects of an answer. c = cost in months of GDP, the rest moves one country number. */

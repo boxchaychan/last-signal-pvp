@@ -2,7 +2,7 @@
 /* ก่อร่างสร้างชาติ: joins the country model to the 3D world: buildings, workers, cities, problems, elections, saves. */
 const SAVE_KEY = 'nation_save_v1', SCORE_KEY = 'nation_scores_v1', MAX_BLDS = MOBILE ? 620 : 1150;
 const G = { S: null, blds: [], byId: new Map(), nextId: 1, cities: [], speed: 1, time: 0, dayT: 18, dayF: .15, sub: 0, seed: 0, prop: null, modal: false, over: false, news: [], pfBudget: 0, sel: null, started: false, abstract: 0 };
-const JOB_N = { farm: 'ชาวนา', bigfarm: 'เกษตรกร', lumber: 'คนตัดไม้', shop: 'พ่อค้าแม่ค้า', market: 'แม่ค้าในตลาด', workshop: 'ช่างในโรงงานเล็ก', factory: 'พนักงานโรงงาน', plant: 'วิศวกรนิคม', office: 'พนักงานออฟฟิศ', cbd: 'นักธุรกิจ', techpark: 'นักพัฒนาเทคโนโลยี', school: 'ครู', hischool: 'ครูมัธยม', univ: 'อาจารย์', clinic: 'พยาบาล', hospital: 'หมอ', medcenter: 'แพทย์เฉพาะทาง', police: 'ตำรวจ', policehq: 'ตำรวจ', base: 'ทหาร', trash: 'พนักงานเก็บขยะ', recycle: 'พนักงานรีไซเคิล', waterworks: 'ช่างประปา', dam: 'ช่างเขื่อน', coal: 'ช่างไฟฟ้า', solar: 'ช่างไฟฟ้า', nuclear: 'วิศวกรนิวเคลียร์', port: 'คนท่าเรือ', airport: 'พนักงานสนามบิน', parliament: 'ข้าราชการ' };
+const JOB_N = { farm: 'ชาวนา', bigfarm: 'เกษตรกร', lumber: 'คนตัดไม้', shop: 'พ่อค้าแม่ค้า', market: 'แม่ค้าในตลาด', workshop: 'ช่างในโรงงานเล็ก', factory: 'พนักงานโรงงาน', plant: 'วิศวกรนิคม', office: 'พนักงานออฟฟิศ', cbd: 'นักธุรกิจ', techpark: 'นักพัฒนาเทคโนโลยี', school: 'ครู', hischool: 'ครูมัธยม', univ: 'อาจารย์', clinic: 'พยาบาล', hospital: 'หมอ', medcenter: 'แพทย์เฉพาะทาง', police: 'ตำรวจ', policehq: 'ตำรวจ', base: 'ทหาร', trash: 'พนักงานเก็บขยะ', recycle: 'พนักงานรีไซเคิล', waterworks: 'ช่างประปา', reservoir: 'ช่างชลประทาน', firest: 'พนักงานดับเพลิง', dam: 'ช่างเขื่อน', coal: 'ช่างไฟฟ้า', solar: 'ช่างไฟฟ้า', nuclear: 'วิศวกรนิวเคลียร์', port: 'คนท่าเรือ', airport: 'พนักงานสนามบิน', parliament: 'ข้าราชการ' };
 const SHIRTS = [0xd9534f, 0x3f8fd8, 0xf0b93a, 0x3fae6e, 0x8e6bbf, 0xe07b39, 0xf2f0e6, 0x2f9fa8, 0xc9577f], SKINS = [0xf1c9a5, 0xe0ac7c, 0xc98f62, 0xa96f47];
 const CITY_NAMES = ['นครธารา', 'เมืองพนา', 'บูรพานคร', 'ศรีสมุทร', 'อุดรธานินทร์', 'ทักษิณบุรี', 'เวียงทอง', 'เมืองแก้ว', 'ภูผานคร'];
 const fmt = n => { const a = Math.abs(n), s = n < 0 ? '-' : ''; if (a >= 1e12) return s + (a / 1e12).toFixed(2) + ' ล้านล้าน'; if (a >= 1e9) return s + (a / 1e9).toFixed(2) + ' พันล้าน'; if (a >= 1e6) return s + (a / 1e6).toFixed(2) + ' ล้าน'; return s + Math.round(a).toLocaleString('en-US'); };
@@ -29,7 +29,7 @@ function finishReclaim(b) {
 }
 function finish(b, quiet) {
   if (b.t === 'reclaim') { finishReclaim(b); return; }
-  b.done = true; b.prog = 1; W.removeSite(b); W.placeInstance(b); const wasVis = b.vis; if (!wasVis) addGive(b.t); const def = BT[b.t]; if (wasVis) { for (const a of W.agents) if (a.site === b.id) { a.site = 0; a.path = null; a.wait = .2; a.moving = false; a.carry = 0; } return; }
+  b.done = true; b.prog = 1; W.removeSite(b); W.placeInstance(b); const wasVis = b.vis, fixed = G.S.r && G.S.r.dmg[b.id]; if (fixed) { for (const q in fixed.l) G.S.k[q] = (G.S.k[q] || 0) + fixed.l[q]; delete G.S.r.dmg[b.id]; news('ซ่อม' + BT[b.t].n + 'เสร็จแล้ว', 'good'); } if (!wasVis) addGive(b.t); const def = BT[b.t]; if (wasVis) { for (const a of W.agents) if (a.site === b.id) { a.site = 0; a.path = null; a.wait = .2; a.moving = false; a.carry = 0; } return; }
   if (def && def.fx && !quiet) applyFx(G.S, def.fx);
   connectDoor(b);
   if (!quiet && b.pub && def) { news('สร้าง' + def.n + 'เสร็จแล้ว', 'good'); if (window.UI) UI.dirty = true; }
@@ -44,14 +44,14 @@ function workplaces() { return G.blds.filter(b => b.done && JOB_N[b.t]); }
 /* who builds, and how fast: this is the list shown to the player */
 function buildFactors(b) {
   const S = G.S, x = S.x, def = BT[b.t], pop = x.pop || 10, LF = x.LF || 5, free = LF * clamp(.46 - Math.log10(pop + 1) * .055, .06, .46) + LF * (x.u || 0) * .6;
-  const act = G.blds.filter(q => !q.done).sort((p, q) => (q.urgent - p.urgent) || (p.id - q.id)); let left = Math.max(1.5, free), w = 0;
+  const act = G.blds.filter(q => !q.done && !waitOf(q)).sort((p, q) => (q.urgent - p.urgent) || (p.id - q.id)); let left = Math.max(1.5, free), w = 0;
   for (const q of act) { const n = Math.min(BT[q.t].mw * (q.fund === 'labor' ? 1.3 : 1), left); if (q === b) { w = n; break; } left -= n; if (left <= .05) break; }
   const skill = .72 + .4 * clamp((x.eduY || 2) / 10) + (S.tech - 1) * .06, mood = clamp(.5 + .65 * (x.happy || 60) / 100, .4, 1.1), rainy = S.m % 12 >= 5 && S.m % 12 <= 9, weather = (rainy ? .86 : 1) * (1 - S.drought * .1), road = .78 + .32 * S.road, crowd = w > 1 ? Math.pow(w, .88) / w : 1, mat = S.mat > 0 || b.matOK ? 1 : 0;
   return { w, skill, mood, weather, road, crowd, mat, rainy, sp: w * crowd * skill * mood * weather * road * mat * (b.fund === 'labor' ? .82 : 1) * (b.urgent ? 1.12 : 1) };
 }
 function stepSites(dtM) {
   const S = G.S; for (const b of G.blds) {
-    if (b.done) continue; const def = BT[b.t]; b.f = buildFactors(b); const dp = b.vis ? dtM / 5 : b.f.sp * dtM / def.wk, use = b.vis ? 0 : dp * def.m; b.matOK = true;
+    if (b.done) continue; if (waitOf(b)) { b.f = b.f || buildFactors(b); continue; } const def = BT[b.t]; b.f = buildFactors(b); const dp = b.vis ? dtM / 5 : b.f.sp * dtM / def.wk, use = b.vis ? 0 : dp * def.m; b.matOK = true;
     if (use > 0 && S.mat < use) { const miss = use - S.mat, cost = miss * 24, payer = b.pub ? 'treas' : 'priv'; if (S[payer] >= cost) { S[payer] -= cost; S.mat += miss; } else { b.matOK = false; b.f.mat = 0; b.f.sp = 0; continue; } }
     S.mat = Math.max(0, S.mat - use); b.prog = Math.min(1, b.prog + dp); W.siteProgress(b, b.prog); if (b.t === 'reclaim') { const st = Math.floor(b.prog * 4); if (st > (b.rs || 0) && st < 4) { b.rs = st; W.reclaim(b.x + 1.5, b.z + 1.5, RECLAIM_R * st / 4); } } if (b.prog >= 1) finish(b);
   }
@@ -74,7 +74,7 @@ function autoGrowth() {
 /* the old low-rise middle of a growing city is rebuilt taller */
 const RANK = { hut: 0, house: 1, row: 2, apt: 3, tower: 4, mega: 5, shop: 1, market: 2, workshop: 2, office: 4, cbd: 5, farm: 0, bigfarm: 1 };
 function redevelop() {
-  const S = G.S, st = S.x.stage; if (st < 3 || G.blds.filter(b => !b.done && b.vis).length >= 8) return;
+  const S = G.S, st = S.x.stage; if (st < 3 || G.blds.filter(b => !b.done && b.vis && !waitOf(b)).length >= 8) return;
   const best = st >= 7 ? 5 : st >= 5 ? 4 : st >= 4 ? 3 : 2, L = [];
   for (const b of G.blds) { if (!b.done || b.pub || RANK[b.t] == null) continue; const C = G.cities[b.city], R = Math.sqrt(C.n + 1) * 1.8 + 6, ratio = Math.hypot(b.x + b.w / 2 - C.x, b.z + b.d / 2 - C.z) / R, farm = b.t === 'farm' || b.t === 'bigfarm'; if (farm && (st < 5 || ratio > .42)) continue; const want = Math.max(0, best - (ratio < .34 ? 0 : ratio < .62 ? 1 : ratio < .9 ? 2 : 3)); if (want > RANK[b.t]) L.push([ratio - (want - RANK[b.t]) * .1, b, want]); }
   L.sort((p, q) => p[0] - q[0]);
@@ -165,7 +165,7 @@ function think(a) {
   a.carry = a.then === 'drop' ? 0 : a.carry; if (!a.moving) a.carry = 0;
   if (night && H) { agentGo(a, H.door, 'home'); return; }
   if (a.kid) { const s = G.blds.find(b => b.done && /school|univ/.test(b.t)); if (s && a.age >= 6 && Math.random() < .7) agentGo(a, s.door, 'school'); else wander(a, H ? H.door : G.cities[0].door, 3); return; }
-  const act = G.blds.filter(b => !b.done);
+  const act = G.blds.filter(b => !b.done && !waitOf(b));
   if (act.length && (!a.job || Math.random() < .42) && a.age < 66) {
     const counts = act.map(b => W.agents.filter(q => q.site === b.id).length), best = act.reduce((p, b, i) => { const s = (BT[b.t].mw - counts[i]) + (b.urgent ? 6 : 0); return s > p.s ? { s, b } : p; }, { s: -99, b: null });
     if (best.b && best.s > 0) { a.site = best.b.id; if (Math.random() < .45) agentGo(a, G.cities[best.b.city].door, 'store'); else agentGo(a, best.b.door, 'site'); return; }
@@ -217,10 +217,10 @@ const FUNDS = {
   grant: ['ขอทุนต่างประเทศ', 'ฟรี แต่รอหลายเดือน และอาจถูกปฏิเสธ'],
   ppp: ['ให้เอกชนลงทุน', 'รัฐไม่จ่าย แต่ประชาชนจ่ายค่าบริการและเหลื่อมล้ำขึ้น']
 };
-function fundOK(t, f) { const S = G.S, c = BT[t].c; if (f === 'treas') return S.treas >= c; if (f === 'labor') return S.treas >= c * .35 && c <= 3000; if (f === 'loan') return S.debt + c <= Math.max(S.gdp * 18, 1600); if (f === 'grant') return !S.grantWait; if (f === 'ppp') return S.priv >= c * .7 && ['water', 'power', 'life', 'clean', 'land'].includes(BT[t].cat); return false; }
+function fundOK(t, f) { const S = G.S, c = BT[t].c; if (f === 'levy' || f === 'print' || f.indexOf('cut:') === 0) { const w = moneyWays(c).find(q => q.f === f); return !!(w && w.ok); } if (f === 'treas') return S.treas >= c; if (f === 'labor') return S.treas >= c * .35 && c <= 3000; if (f === 'loan') return S.debt + c <= Math.max(S.gdp * 18, 1600); if (f === 'grant') return !S.grantWait; if (f === 'ppp') return S.priv >= c * .7 && ['water', 'power', 'life', 'clean', 'land'].includes(BT[t].cat); return false; }
 function approve(f) {
   const P = G.prop, S = G.S; if (!P || !fundOK(P.t, f)) return; const c = BT[P.t].c;
-  if (f === 'treas') S.treas -= c; else if (f === 'labor') { S.treas -= c * .35; S.mods.push({ v: -1.5, u: S.m + 3 }); } else if (f === 'loan') S.debt += c; else if (f === 'ppp') { S.priv -= c * .7; applyFx(S, { hp: -2, gini: .006 }); }
+  if (f === 'levy' || f === 'print' || f.indexOf('cut:') === 0) takeMoney(f, c); else if (f === 'treas') S.treas -= c; else if (f === 'labor') { S.treas -= c * .35; S.mods.push({ v: -1.5, u: S.m + 3 }); } else if (f === 'loan') S.debt += c; else if (f === 'ppp') { S.priv -= c * .7; applyFx(S, { hp: -2, gini: .006 }); }
   else if (f === 'grant') { S.grantWait = { t: P.t, m: S.m + 4 + (Math.random() * 5 | 0) }; news('ส่งคำขอทุนสร้าง' + BT[P.t].n + ' แล้ว รอผลหลายเดือน'); cancelProp(); return; }
   const b = makeB(P.t, P.spot, P.city, { fund: f, urgent: P.urgent }); news('อนุมัติ: ' + BT[P.t].n + ' ชาวเมืองกำลังไปสร้าง'); cancelProp(); UI.dirty = true; return b;
 }
@@ -275,14 +275,14 @@ function newGame(name) {
 /* ---------- monthly + per-frame clock ---------- */
 function monthTick() {
   const S = G.S; if (typeof ensureCands === 'function') { ensureCands(S); recalcGov(S); } S.k.roadC = W.roadCount; S.forestBase = clamp(W.treeLive / W.treeTotal); S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 };
-  const before = S.x.stage, x = stepModel(S); nationalWorks(S); roadMonth(); if (typeof geoTick === 'function') geoTick(S);
+  const before = S.x.stage, x = stepModel(S); realMonth(S); nationalWorks(S); roadMonth(); if (typeof geoTick === 'function') geoTick(S);
   for (let i = S.later.length - 1; i >= 0; i--) { const q = S.later[i]; if (q.m <= S.m) { applyFx(S, q.fx); if (q.news) news(q.news, q.fx.tr < 0 || q.fx.food < 0 ? 'bad' : 'good'); if (q.vis === 'flood') G.floodT = 14; S.later.splice(i, 1); } }
   if (S.grantWait && S.m >= S.grantWait.m) { const t = S.grantWait.t, ok = Math.random() < clamp(.42 + S.rep * .7 + (x.trust - 50) * .006, .15, .95); S.grantWait = null; if (ok) { S.treas += BT[t].c; news('ได้รับทุนสร้าง' + BT[t].n + ' แล้ว! สั่งสร้างได้เลย', 'good'); } else news('คำขอทุนสร้าง' + BT[t].n + ' ถูกปฏิเสธ', 'bad'); }
   autoGrowth(); redevelop(); if (W.townTick) W.townTick(S); if (S.m % 6 === 0) { maybeNewCity(); } syncAgents(); if (S.m % 3 === 0) assignJobs();
   if (S.m % 3 === 0) { S.hist.push([S.m, Math.round(x.pop), Math.round(x.idx), Math.round(x.gdpPc), Math.round(x.happy), x.score]); if (S.hist.length > 260) S.hist.splice(0, 2).length; }
   if (x.stage > before && x.stage === S.stageMax) UI.showStage(x.stage);
   if (x.pop < 1.2) { UI.showEnd('ประเทศร้างผู้คน', 'ไม่เหลือใครอยู่ในประเทศแล้ว'); return; }
-  throneCheck(); if (!G.over) nextProblem();
+  throneCheck(); if (!G.over) realNext(S);
   if (S.m % 4 === 0) { saveGame(); saveScore(); } UI.dirty = true;
 }
 function tick(dt) {

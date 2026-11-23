@@ -156,7 +156,7 @@ UI.showEvent = function (e) {
   $('modal').onclick = v => { const q = v.target.closest('[data-o]'); if (!q) return; $('modal').onclick = null; closeModal(); answerEvent(e, e.o[+q.dataset.o]); news('ตัดสินใจ: ' + e.o[+q.dataset.o][0]); UI.hud(); };
 };
 UI.showIntro = function () {
-  openModal('<span class="cat">ประกาศสถาปนา</span><h1>คุณคือเจ้าของประเทศ' + esc(G.S.name) + '</h1><div class="bd">แผ่นดินใหม่นี้มีคนเพียง 10 คน ทุกอย่างอยู่ในมือคุณ และไม่มีการเลือกตั้ง<br>• <b>คุณสั่ง</b> ว่าจะสร้างอะไรและใช้เงินอย่างไร<br>• <b>ชาวเมือง</b> จะเลือกที่และลงมือสร้างเอง ถนนต้องใช้งบรัฐจ้างคนสร้าง<br>• <b>ปัญหาจริง</b> จะเข้ามาเรื่อยๆ และทุกคำตอบมีผลตามมา<br>• <b>บัลลังก์</b> ถ้าคนโกรธหรือทหารไม่พอใจ คุณอาจถูกโค่นล้ม</div><button class="btn gold" style="width:100%" id="mGo">เริ่มปกครองประเทศ</button>', 'var(--gold)');
+  openModal('<span class="cat">ประกาศสถาปนา</span><h1>คุณคือเจ้าของประเทศ' + esc(G.S.name) + '</h1><div class="bd">แผ่นดินใหม่นี้มีคนเพียง 10 คน ทุกอย่างอยู่ในมือคุณ และไม่มีการเลือกตั้ง<br>• <b>คุณสั่ง</b> ว่าจะสร้างอะไรและใช้เงินอย่างไร<br>• <b>ชาวเมือง</b> จะเลือกที่และลงมือสร้างเอง ถนนต้องใช้งบรัฐจ้างคนสร้าง<br>• <b>ปัญหาเกิดจากเหตุจริง</b> ฝน ป่า และสิ่งที่คุณสร้าง ดูความเสี่ยงได้ที่เมนูเฝ้าระวัง<br>• <b>บัลลังก์</b> ถ้าคนโกรธหรือทหารไม่พอใจ คุณอาจถูกโค่นล้ม</div><button class="btn gold" style="width:100%" id="mGo">เริ่มปกครองประเทศ</button>', 'var(--gold)');
   $('mGo').onclick = () => closeModal();
 };
 UI.showStage = function (s) { openModal('<span class="cat">ก้าวใหม่ของชาติ</span><h1>' + esc(G.S.name) + ' เป็น' + STAGES[s].n + ' แล้ว!</h1><div class="bd">ปลดล็อก: ' + (PUBLIC_ORDER.filter(t => BT[t].st === s).map(t => BT[t].n).join(' · ') || 'ความท้าทายใหม่') + '</div><button class="btn gold" style="width:100%" id="mGo">ไปต่อ</button>', 'var(--gold)'); $('mGo').onclick = () => closeModal(); };
@@ -167,8 +167,8 @@ UI.showEnd = function (t, b) {
   $('mGo').onclick = () => location.replace(location.pathname);
 };
 UI.showProposal = function (P) {
-  if (UI.tab) { const keep = G.prop; UI.closeSheet(); G.prop = keep; W.ring.visible = true; } const d = BT[P.t], F = Object.keys(FUNDS); $('prop').classList.remove('hide');
-  $('prop').innerHTML = '<button class="x" id="pX">ยกเลิก</button><h4>' + d.n + '</h4> <span class="muted">' + fmt(d.c) + ' บาท · วัสดุ ' + fmt(d.m) + '</span><div class="why">ชาวเมืองเลือกจุดนี้: ' + P.why.join(' · ') + '</div><div class="funds">' + F.map(f => '<button class="fund" data-f="' + f + '" ' + (fundOK(P.t, f) ? '' : 'disabled') + '><b>' + FUNDS[f][0] + '</b><small>' + FUNDS[f][1] + '</small></button>').join('') + '</div>';
+  if (UI.tab) { const keep = G.prop; UI.closeSheet(); G.prop = keep; W.ring.visible = true; } const d = BT[P.t], ways = moneyWays(d.c).filter(q => !FUNDS[q.f]), F = Object.keys(FUNDS); $('prop').classList.remove('hide');
+  $('prop').innerHTML = '<button class="x" id="pX">ยกเลิก</button><h4>' + d.n + '</h4> <span class="muted">' + fmt(d.c) + ' บาท · วัสดุ ' + fmt(d.m) + '</span><div class="why">ชาวเมืองเลือกจุดนี้: ' + P.why.join(' · ') + '</div><div class="funds">' + F.map(f => '<button class="fund" data-f="' + f + '" ' + (fundOK(P.t, f) ? '' : 'disabled') + '><b>' + FUNDS[f][0] + '</b><small>' + FUNDS[f][1] + '</small></button>').join('') + ways.map(q => '<button class="fund" data-f="' + q.f + '" ' + (q.ok ? '' : 'disabled') + '><b>' + q.n + '</b><small>' + q.d + '</small></button>').join('') + '</div>';
   $('pX').onclick = () => cancelProp(); $('prop').querySelector('.funds').onclick = e => { const q = e.target.closest('[data-f]'); if (q && !q.disabled) { approve(q.dataset.f); UI.hud(); } };
 };
 UI.closeProposal = () => $('prop').classList.add('hide');
