@@ -12,7 +12,7 @@
   const final = mk({ t: { value: null }, b: { value: null }, c2: { value: null }, px: { value: new THREE.Vector2() }, tilt: { value: 0 }, night: { value: 0 } },
     'uniform sampler2D t,b,c2;uniform vec2 px;uniform float tilt,night;varying vec2 v;void main(){float k=smoothstep(.17,.52,abs(v.y-.5))*tilt;vec3 c=texture2D(t,v).rgb;' +
     (HQ ? 'if(k>.01){vec3 s=c;for(int i=0;i<8;i++){float a=float(i)*.7854+.39,r=mod(float(i),2.)<.5?3.2:5.6;s+=texture2D(t,v+vec2(cos(a),sin(a))*px*k*r).rgb;}c=s/9.;}' : '') +
-    'vec3 g=texture2D(b,v).rgb*.75+texture2D(c2,v).rgb*.65;c+=g*(.24+night*.34);c=clamp(c,0.,1.);c=mix(c,c*c*(3.-2.*c),.28);float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,1.02);c*=mix(vec3(1.03,1.,.94),vec3(.93,.98,1.1),night);c.g*=.985;float vg=1.-smoothstep(.34,.98,length((v-.5)*vec2(1.08,1.)));c*=mix(.84,1.,vg);gl_FragColor=vec4(clamp(c,0.,1.),1.);}');
+    'vec3 g=texture2D(b,v).rgb*.75+texture2D(c2,v).rgb*.65;c+=g*(.1+night*.34);c=clamp(c,0.,1.2);vec3 ac=(c*(2.51*c+.03))/(c*(2.43*c+.59)+.14);c=mix(c,clamp(ac,0.,1.),.42);float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,1.04);c*=mix(vec3(1.03,1.,.94),vec3(.93,.98,1.1),night);c.g*=.985;float vg=1.-smoothstep(.34,.98,length((v-.5)*vec2(1.08,1.)));c*=mix(.92,1.,vg);gl_FragColor=vec4(clamp(c,0.,1.),1.);}');
   const pass = (m, target) => { quad.material = m; W.renderer.setRenderTarget(target); W.renderer.render(scene, cam); };
   function free() { for (const q of [rt, a1, a2, b1, b2]) if (q) q.dispose(); rt = null; }
   function alloc(w, h) {
@@ -29,6 +29,6 @@
     bright.uniforms.t.value = rt.texture; bright.uniforms.th.value = .93 - night * .36; pass(bright, a1);
     const B = (src, dst, x, y) => { blur.uniforms.t.value = src.texture; blur.uniforms.d.value.set(x / src.width, y / src.height); pass(blur, dst); };
     B(a1, a2, 1, 0); B(a2, a1, 0, 1); B(a1, b1, 1, 0); B(b1, b2, 0, 1); B(b2, b1, 1.4, 0); B(b1, b2, 0, 1.4);
-    const u = final.uniforms; u.t.value = rt.texture; u.b.value = a1.texture; u.c2.value = b2.texture; u.px.value.set(1 / size.x, 1 / size.y); u.tilt.value = clamp(1.3 - W.cam.dist / 62, .12, 1) * (size.y / 720) * (W.fixPitch != null ? .4 : 1); u.night.value = night; pass(final, null);
+    const u = final.uniforms; u.t.value = rt.texture; u.b.value = a1.texture; u.c2.value = b2.texture; u.px.value.set(1 / size.x, 1 / size.y); u.tilt.value = clamp(1.3 - W.cam.dist / 62, .12, 1) * (size.y / 720) * (W.fixPitch != null ? .4 : .18); u.night.value = night; pass(final, null);
   };
 })();

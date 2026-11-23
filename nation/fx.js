@@ -9,15 +9,15 @@ W.initTrees = function (seed) {
   B.cyl(0, 0, 0, .08, .34, 0x6e4f33, .055, 5); B.cyl(0, .26, 0, .44, .36, 0xffffff, .5, 6); B.cyl(0, .62, 0, .5, .44, 0xf2f7ea, .08, 6); B.cyl(.22, .34, .12, .25, .3, 0xe8f2dd, .05, 5);
   P.cyl(0, 0, 0, .08, .3, 0x5f4630, .05, 5); P.cyl(0, .22, 0, .44, .56, 0xe3eedb, .14, 6); P.cyl(0, .58, 0, .34, .54, 0xf0f6e8, .08, 6); P.cyl(0, .98, 0, .2, .46, 0xffffff, 0, 6);
   L.cyl(0, 0, 0, .06, 1.02, 0x8a6b48, .035, 5); for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283, c = Math.cos(a), s = Math.sin(a), px = -s * .1, pz = c * .1, tip = [c * .62, .76, s * .62], A = [px, 1.02, pz], D = [-px, 1.02, -pz], M = [c * .32 + px * .9, 1.12, s * .32 + pz * .9], N2 = [c * .32 - px * .9, 1.12, s * .32 - pz * .9]; L.add(1, [A, M, D, D, M, N2, M, tip, N2, D, M, A, N2, M, D, N2, tip, M], 0xffffff, 0); }
-  const geos = [B.build(), P.build(), L.build()], lists = [[], [], []], mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) { const t = W.T[ci(x, z)], p = t === 4 ? .62 : t === 5 ? .32 : t === 3 ? .035 : t === 6 ? .05 : t === 2 ? .09 : 0; if (R() >= p || (Math.hypot(x - W.start.x, z - W.start.z) <= 10 && R() > .12)) continue; lists[t === 2 ? 2 : (t === 5 || t === 6 || R() < .22) ? 1 : 0].push([x, z]); }
-  const cap = MOBILE ? 2600 : 5200, total = lists[0].length + lists[1].length + lists[2].length, keep = Math.min(1, cap / Math.max(total, 1));
+  const geos = [W.treeGeo ? W.treeGeo(0) : B.build(), W.treeGeo ? W.treeGeo(1) : P.build(), L.build()], lists = [[], [], []], mat = W.treeMat || new THREE.MeshLambertMaterial({ vertexColors: true });
+  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) { const t = W.T[ci(x, z)], p = t === 4 ? .66 : t === 5 ? .62 : t === 3 ? .04 : t === 6 ? .3 : t === 2 ? .09 : 0; if (R() >= p || (Math.hypot(x - W.start.x, z - W.start.z) <= 10 && R() > .12)) continue; lists[t === 2 ? 2 : (t === 5 || t === 6 || R() < .22) ? 1 : 0].push([x, z]); }
+  const cap = MOBILE ? 3400 : 8200, total = lists[0].length + lists[1].length + lists[2].length, keep = Math.min(1, cap / Math.max(total, 1));
   const dummy = new THREE.Object3D(), C = new THREE.Color(); W.treeMeshes = []; let live = 0;
   lists.forEach((l0, sp) => {
     const l = l0.filter(() => R() < keep), im = new THREE.InstancedMesh(geos[sp], mat, Math.max(1, l.length)); im.castShadow = !MOBILE; im.frustumCulled = false; im.count = l.length;
     l.forEach((q, i) => {
       const px = q[0] + .2 + R() * .6, pz = q[1] + .2 + R() * .6, s = (sp === 2 ? .82 : .6) + R() * .48; dummy.position.set(px, W.h(px, pz) - .04, pz); dummy.rotation.y = R() * 6; dummy.scale.set(s, s * (.9 + R() * .42), s); dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix); const v = R();
-      if (sp === 0) { const au = R() < .07; au ? C.setRGB(.82 + v * .1, .56 + v * .14, .24) : C.setRGB(.34 + v * .2, .58 + v * .16, .25 + v * .08); } else if (sp === 1) C.setRGB(.2 + v * .1, .42 + v * .12, .29 + v * .08); else C.setRGB(.42 + v * .14, .68 + v * .1, .3); im.setColorAt(i, C);
+      if (sp === 0) { const au = R() < .07; au ? C.setRGB(.66 + v * .1, .5 + v * .1, .24) : C.setRGB(.3 + v * .15, .46 + v * .14, .22 + v * .08); } else if (sp === 1) C.setRGB(.2 + v * .08, .34 + v * .1, .25 + v * .06); else C.setRGB(.42 + v * .14, .68 + v * .1, .3); im.setColorAt(i, C);
       const c = ci(q[0], q[1]); if (!W.treeAt.has(c)) W.treeAt.set(c, []); W.treeAt.get(c).push(sp * 100000 + i); live++;
     }); W.scene.add(im); W.treeMeshes.push(im);
   }); W.treeTotal = W.treeLive = Math.max(1, live);
@@ -73,7 +73,7 @@ W.stepCars = function (dt, t) {
     if (W.road[q.c] < 2) { q.c = pick(W.roadCells); q.n = roadNext(q.c, -1); q.f = 0; } const ax = q.c % N + .5, az = (q.c / N | 0) + .5, bx = q.n % N + .5, bz = (q.n / N | 0) + .5, dx = bx - ax, dz = bz - az, l = Math.hypot(dx, dz) || 1;
     q.f += dt * q.sp * (W.road[q.c] >= 4 ? 1.3 : W.road[q.c] === 3 ? 1 : .68) / l; if (q.f >= 1) { const old = q.c; q.c = q.n; q.n = roadNext(q.c, old); q.f = 0; }
     const px = ax + dx * q.f - dz / l * .13, pz = az + dz * q.f + dx / l * .13, tg = Math.atan2(dx, dz); let d = tg - q.a; while (d > Math.PI) d -= 6.2832; while (d < -Math.PI) d += 6.2832; q.a += d * Math.min(1, dt * 9); const ty = W.T[ci(clamp(px | 0, 0, N - 1), clamp(pz | 0, 0, N - 1))] === 1 ? .2 : W.h(px, pz) + .03;
-    o.position.set(px, ty, pz); o.rotation.set(0, q.a, 0); o.scale.setScalar(1); o.updateMatrix(); W.carMesh.setMatrixAt(i, o.matrix);
+    o.position.set(px, ty, pz); o.rotation.set(0, q.a, 0); o.scale.setScalar(1.22); o.updateMatrix(); W.carMesh.setMatrixAt(i, o.matrix);
   }); W.carMesh.count = W.cars.length; W.carMesh.instanceMatrix.needsUpdate = true;
 };
 
@@ -84,6 +84,7 @@ W.initClouds = function () {
   for (let i = 0; i < 13; i++) W.cloudD.push({ x: Math.random() * (N + 80) - 40, z: Math.random() * (N + 80) - 40, y: 30 + Math.random() * 9, s: .9 + Math.random() * 1.5, r: Math.random() * 6, v: .25 + Math.random() * .4 });
 };
 W.stepClouds = function (dt) {
+  if (W.softClouds) { W.clouds.visible = false; W.softClouds(dt); return; }
   const op = clamp((W.cam.dist - 44) / 52) * .82; W.cloudMat.opacity = op; W.clouds.visible = op > .01; if (!W.clouds.visible) return; const o = W._o;
   W.cloudD.forEach((c, i) => { c.x += c.v * dt; if (c.x > N + 46) c.x = -46; o.position.set(c.x, c.y, c.z); o.rotation.set(0, c.r, 0); o.scale.set(c.s, c.s * .72, c.s); o.updateMatrix(); W.clouds.setMatrixAt(i, o.matrix); }); W.clouds.instanceMatrix.needsUpdate = true;
 };
