@@ -17,7 +17,7 @@ const INDT = ['mine', 'ricemill', 'sawmill', 'workshop', 'factory', 'steel', 'ma
 function econMonth(S) {
   const e = S.e, r = S.r, st = S.x.stage || 0; econSeed(S); if (e.temp && S.m >= e.temp.m) { e.temp = null; news('สัญญาจ้างงานรัฐหมดแล้ว คนกลุ่มนี้ต้องหางานใหม่', 'bad'); }
   if (e.lossM >= 9) { const L = G.blds.filter(b => b.done && INDT.includes(b.t)).sort((p, q) => BT[p.t].g.ind - BT[q.t].g.ind).slice(0, 1 + Math.floor(st / 2)); let n = 0; for (const b of L) if (ruin(b, true)) n++; e.lossM = 5; if (n) { assignJobs(); e.closed = (e.closed || 0) + n; news('โรงงานขาดทุนต่อเนื่อง ปิดกิจการ ' + n + ' แห่ง คนงานตกงาน', 'bad'); } else S.k.ind *= .992; }
-  if (e.margin > .2 && S.priv > 300) { let n = 0; for (const id in r.dmg) { const d = r.dmg[id]; if (!d.c || !d.w) continue; const b = G.byId.get(+id); if (!b) continue; const c = rCost(b); if (S.priv < c * 1.5) break; S.priv -= c; d.w = 0; if (++n >= 2) break; } }
+  if (e.margin > .2 && S.priv > 300) { let n = 0; for (const id in r.dmg) { const d = r.dmg[id]; if (!d.c || !d.w || d.gone) continue; const b = G.byId.get(+id); if (!b) continue; const c = rCost(b); if (S.priv < c * 1.5) break; S.priv -= c; d.w = 0; if (++n >= 2) break; } }
 }
 function econAct(S, k, v) {
   const e = S.e; if (k === 'train') { e.train = (e.train || 0) + v; news('เริ่มฝึกช่าง ' + fmt(v) + ' คน', 'good'); } else if (k === 'temp') { e.temp = { n: v, m: S.m + 12 }; news('รัฐจ้างงาน ' + fmt(v) + ' คน นาน 12 เดือน', 'good'); }

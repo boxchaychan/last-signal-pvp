@@ -23,7 +23,7 @@ function ruins(S, pubOnly) { const L = []; for (const id in S.r.dmg) { const b =
 /* ---------- weather and water, every month ---------- */
 function weather(S, r, x) {
   const mo = (S.m - 1) % 12; if (mo === 0) r.y = clamp(1 + (r.y - 1) * .4 + (Math.random() + Math.random() - 1) * .62, .52, 1.7);
-  let rain = RAIN_N[mo] * r.y * (.74 + Math.random() * .52); r.storm = 0;
+  let rain = RAIN_N[mo] * r.y * (1 + ((S.g && S.g.rain) || 0)) * (.74 + Math.random() * .52); r.storm = 0;
   if (mo >= 5 && mo <= 10 && Math.random() < .03 + Math.max(0, r.y - 1) * .07) { r.storm = 1 + Math.random(); rain *= 1.45 + r.storm * .55; }
   r.rain = rain; r.norm = RAIN_N[mo]; r.paved = clamp((G.blds.length + W.roadCount * .3) / 900); r.runoff = .24 + .5 * (1 - x.forest) + .22 * r.paved;
   let flow = rain * r.runoff; const cap = S.k.hold || 0, take = Math.min(flow * .85, Math.max(0, cap - r.res)); if (take > 0) { r.res += take; flow -= take; }
@@ -37,7 +37,7 @@ function disasters(S, r, x) {
   if (r.river > 1 && S.m >= 12 && S.m - r.floodM >= 5) {
     const sev = r.river - 1, reach = .09 + sev * .72, all = G.blds.filter(b => b.done && b.t !== 'hall' && b.t !== 'levee' && b.t !== 'reservoir'), L = all.filter(b => lowOf(b) < reach).sort((p, q) => lowOf(p) - lowOf(q)).slice(0, Math.max(3, Math.min(42, Math.floor(all.length * .45)))); r.floodM = S.m;
     if (!L.length) news('ฝนหนัก แม่น้ำล้นตลิ่ง แต่ยังไม่มีอาคารในแนวน้ำ', 'good');
-    else if (hit('flood', L, ['ฝนเดือนนี้ ' + Math.round(r.rain) + ' มม. (ปกติ ' + r.norm + ')', x.forest < .8 ? 'ป่าถูกถางเหลือ ' + pct(x.forest) + ' น้ำจึงไหลลงแม่น้ำเร็ว' : 'ป่ายังดี แต่ฝนมากเกินที่ดินจะรับไหว', S.k.levee ? 'คันกั้นน้ำ ' + S.k.levee + ' จุด ยังรับไม่พอ' : 'ยังไม่มีคันกั้นน้ำ', S.k.hold ? 'อ่างเก็บน้ำเต็มแล้ว' : 'ไม่มีอ่างหรือเขื่อนเก็บน้ำ', 'มีอาคารสร้างอยู่ในแนวน้ำ ' + L.length + ' หลัง'], sev)) { G.floodT = 7 + sev * 12; applyFx(S, { food: -Math.min(.8, .12 + sev * .5), sick: .008 + sev * .03, pop: -Math.min(.018, sev * .012), hp: -2 - sev * 4 }); return; }
+    else if (hit('flood', L, ['ฝนเดือนนี้ ' + Math.round(r.rain) + ' มม. (ปกติ ' + r.norm + ')', x.forest < .8 ? 'ป่าถูกถางเหลือ ' + pct(x.forest) + ' น้ำจึงไหลลงแม่น้ำเร็ว' : 'ป่ายังดี แต่ฝนมากเกินที่ดินจะรับไหว', S.k.levee ? 'คันกั้นน้ำ ' + S.k.levee + ' จุด ยังรับไม่พอ' : 'ยังไม่มีคันกั้นน้ำ', S.k.hold ? 'อ่างเก็บน้ำเต็มแล้ว' : 'ไม่มีอ่างหรือเขื่อนเก็บน้ำ', 'มีอาคารสร้างอยู่ในแนวน้ำ ' + L.length + ' หลัง'], sev)) { G.floodT = 7 + sev * 12; { const p0 = S.x.pop, dead = p0 * Math.min(.012, sev * .008); S.life = S.life || { dc: {} }; S.life.dc.disaster = (S.life.dc.disaster || 0) + dead; } applyFx(S, { food: -Math.min(.8, .12 + sev * .5), sick: .008 + sev * .03, pop: -Math.min(.018, sev * .012), hp: -2 - sev * 4 }); return; }
   }
   if (r.storm && S.m >= 18 && S.m - r.stormM >= 14 && wood.length) { r.stormM = S.m; const L = wood.sort(() => Math.random() - .5).sort((p, q) => (p.t === 'hut' ? 0 : 1) - (q.t === 'hut' ? 0 : 1)).slice(0, Math.min(12, Math.ceil(wood.length * .1 * r.storm))); if (L.length < 3) { const n = L.filter(b => ruin(b)).length; if (n) { assignJobs(); news('พายุพัดบ้านเสียหาย ' + n + ' หลัง เจ้าของกำลังซ่อม', 'bad'); } } else if (hit('storm', L, ['พายุเข้า ฝน ' + Math.round(r.rain) + ' มม. ในเดือนเดียว', 'บ้านไม้และกระท่อมมี ' + wood.length + ' หลัง ทนลมไม่ไหว'], r.storm)) { applyFx(S, { hp: -3 }); return; } }
   if (x.forest < .62 && r.rain > 260 && S.m >= 24 && S.m - r.slideM >= 30 && Math.random() < .35) { const L = G.blds.filter(b => b.done && b.t !== 'hall' && W.h(b.x + b.w / 2, b.z + b.d / 2) > .55).slice(0, 4); if (L.length) { r.slideM = S.m; if (hit('slide', L, ['ฝน ' + Math.round(r.rain) + ' มม. บนเขาที่ป่าถูกถาง', 'ป่าเหลือ ' + pct(x.forest) + ' ไม่มีรากไม้ยึดดิน', 'มีอาคารบนที่ลาดชัน ' + L.length + ' หลัง'], 1)) { applyFx(S, { pop: -.004, hp: -3 }); return; } } }
@@ -132,7 +132,7 @@ const shuffled = l => { const a = l.slice(); for (let i = a.length - 1; i > 0; i
 const causeBox = L => L && L.length ? '<div class="cause"><b>สาเหตุ</b>' + L.map(q => '<span>' + q + '</span>').join('') + '</div>' : '';
 function applyO(S, card, o) {
   const fx = Object.assign({}, o.fx); delete fx.corp; if (Object.keys(fx).length) applyFx(S, fx); const r = S.r; if (o.corp) S.tax.corp = clamp(S.tax.corp + o.corp, 0, 45); if (o.garb) r.garb *= o.garb;
-  if (o.rep) for (const i of o.ids) { const b = G.byId.get(i); if (b && r.dmg[i] && (o.rep === 'all' || b.pub)) startRepair(i); } if (o.b) orderBuild(o.b[0], o.b[1]); if (o.econ) econAct(S, o.econ[0], o.econ[1]);
+  if (o.rep) for (const i of o.ids) { const b = G.byId.get(i); if (b && r.dmg[i] && (o.rep === 'all' || b.pub)) startRepair(i); } if (o.b) orderBuild(o.b[0], o.b[1]); if (o.econ) econAct(S, o.econ[0], o.econ[1]); if (o.inv) investAct(S, o.inv[0], o.inv[1]);
   /* the same problem comes back only if it is still there, and each time it waits longer so other things can happen */
   if (card.id) { const n = r.n[card.id] || 0; r.cool[card.id] = S.m + Math.round((o.cool || 8) * (1 + Math.min(4, n) * .7)); r.p[card.id] = .5; r.n[card.id] = n + 1; } news('ตัดสินใจ: ' + o.n); UI.dirty = true;
 }

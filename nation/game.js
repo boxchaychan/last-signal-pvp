@@ -132,11 +132,12 @@ function assignJobs() {
 }
 function syncAgents() {
   const pop = Math.round(G.S.x.pop), want = Math.min(MAX_AGENTS, pop), H = homes();
+  for (let i = W.agents.length - 1; i >= 0; i--) { const a = W.agents[i]; if (a.age < 86 + a.id % 12) continue; if (pop <= 150) news(a.name + ' อายุ ' + Math.floor(a.age) + ' เสียชีวิต: ' + personCause(a), 'bad'); if (G.sel && G.sel.a === a) { G.sel = null; W.ring.visible = false; if (window.UI) UI.closeSheet(); } W.agents.splice(i, 1); }
   while (W.agents.length < want) {
     const r = Math.random(), age = r < .3 ? Math.random() * 15 : r < .9 ? 15 + Math.random() * 45 : 60 + Math.random() * 25, a = newAgent(age), h = H.length ? pick(H) : null; a.home = h ? h.id : 0; placeAgent(a, h);
     if (pop <= 60) news((age < 1 ? 'มีเด็กเกิดใหม่: ' : 'คนใหม่ย้ายเข้าเมือง: ') + a.name, 'good');
   }
-  while (W.agents.length > want) { const i = Math.random() * W.agents.length | 0, a = W.agents[i]; if (pop <= 60) news(a.name + (a.age > 58 ? ' เสียชีวิตแล้ว' : ' ย้ายออกจากเมือง'), 'bad'); if (G.sel && G.sel.a === a) { G.sel = null; W.ring.visible = false; if (window.UI) UI.closeSheet(); } W.agents.splice(i, 1); }
+  const mv = G.S.month || {}, deadShare = (mv.died || 0) / Math.max(.01, (mv.died || 0) + (mv.outM || 0)); while (W.agents.length > want) { const i = agentToGo(), a = W.agents[i], dead = Math.random() < deadShare; if (pop <= 150) news(dead ? a.name + ' อายุ ' + Math.floor(a.age) + ' เสียชีวิต: ' + personCause(a) : a.name + ' ย้ายออกจากเมือง', 'bad'); if (G.sel && G.sel.a === a) { G.sel = null; W.ring.visible = false; if (window.UI) UI.closeSheet(); } W.agents.splice(i, 1); }
   for (const a of W.agents) { a.age += 1 / 12; a.kid = a.age < 15; if (a.home && !G.byId.has(a.home)) a.home = 0; if (!a.home && H.length) a.home = pick(H).id; }
 }
 function agentGo(a, c, then) {
@@ -256,7 +257,7 @@ function loadGame() {
   G.S.k = keep; reclaimPrice(); for (const b of G.blds) if (b.t === 'reclaim' && b.prog > 0) { b.rs = Math.min(3, Math.floor(b.prog * 4)); if (b.rs) W.reclaim(b.x + 1.5, b.z + 1.5, RECLAIM_R * b.rs / 4); } for (let i = 0; i < D.roads.length; i += 3) { W.road[D.roads[i]] = D.roads[i + 1]; W.wear[D.roads[i]] = D.roads[i + 2]; if (D.roads[i + 1] >= 2) W.roadCount++; } for (let i = 0; i < D.roads.length; i += 3) if (D.roads[i + 1]) W.paintRoad(D.roads[i] % N, D.roads[i] / N | 0);
   if (W.plan) { for (let c = 0; c < N * N; c++) if (W.road[c] >= 2) W.plan[c] = 1; G.cities.forEach(c => W.planCity(c)); }
   const H = homes(); for (const p of D.ppl) { const a = newAgent(p[2], { sex: p[1] }); a.name = p[0]; a.shirt = p[3]; a.skin = p[4]; const h = H.length ? pick(H) : null; a.home = h ? h.id : 0; placeAgent(a, h); }
-  if (!G.S.e) G.S.e = econNew(); rOf(G.S); econSeed(G.S); assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
+  if (!G.S.e) G.S.e = econNew(); rOf(G.S); econSeed(G.S); globeOf(G.S); invOf(G.S); assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
 }
 function newGame(name) {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
@@ -269,13 +270,13 @@ function newGame(name) {
   for (const t of ['hut', 'hut', 'hut', 'farm', 'lumber']) { const sp = W.findSpot(G.cities[0], t, 7); if (sp) makeB(t, sp, 0, { instant: true }); else addGive(t); }
   const fam = [[62, 1], [41, 0], [38, 1], [12, 1], [9, 0], [34, 0], [31, 1], [6, 0], [27, 0], [3, 1]], H = homes(), lasts = [pick(LAST_NAMES), pick(LAST_NAMES), pick(LAST_NAMES)], who = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2];
   fam.forEach((f, i) => { const a = newAgent(f[0], { sex: f[1], last: lasts[who[i]] }), h = H[who[i]] || H[0]; a.home = h ? h.id : 0; placeAgent(a, h); });
-  stepModel(S); rOf(S); econSeed(S); S.m = 0; S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }; assignJobs(); W.fly(hs.x + 1.5, hs.z + 1.5, 24); W.needShadow = true;
+  stepModel(S); rOf(S); econSeed(S); globeOf(S); invOf(S); S.m = 0; S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }; assignJobs(); W.fly(hs.x + 1.5, hs.z + 1.5, 24); W.needShadow = true;
 }
 
 /* ---------- monthly + per-frame clock ---------- */
 function monthTick() {
   const S = G.S; if (typeof ensureCands === 'function') { ensureCands(S); recalcGov(S); } S.k.roadC = W.roadCount; S.forestBase = clamp(W.treeLive / W.treeTotal); S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 };
-  const before = S.x.stage, x = stepModel(S); realMonth(S); nationalWorks(S); roadMonth(); if (typeof geoTick === 'function') geoTick(S);
+  const before = S.x.stage, x = stepModel(S); realMonth(S); globeMonth(S); investMonth(S); nationalWorks(S); roadMonth(); if (typeof geoTick === 'function') geoTick(S);
   for (let i = S.later.length - 1; i >= 0; i--) { const q = S.later[i]; if (q.m <= S.m) { applyFx(S, q.fx); if (q.news) news(q.news, q.fx.tr < 0 || q.fx.food < 0 ? 'bad' : 'good'); if (q.vis === 'flood') G.floodT = 14; S.later.splice(i, 1); } }
   if (S.grantWait && S.m >= S.grantWait.m) { const t = S.grantWait.t, ok = Math.random() < clamp(.42 + S.rep * .7 + (x.trust - 50) * .006, .15, .95); S.grantWait = null; if (ok) { S.treas += BT[t].c; news('ได้รับทุนสร้าง' + BT[t].n + ' แล้ว! สั่งสร้างได้เลย', 'good'); } else news('คำขอทุนสร้าง' + BT[t].n + ' ถูกปฏิเสธ', 'bad'); }
   autoGrowth(); redevelop(); if (W.townTick) W.townTick(S); if (S.m % 6 === 0) { maybeNewCity(); } syncAgents(); if (S.m % 3 === 0) assignJobs();
