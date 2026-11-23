@@ -29,7 +29,7 @@ function finishReclaim(b) {
 }
 function finish(b, quiet) {
   if (b.t === 'reclaim') { finishReclaim(b); return; }
-  b.done = true; b.prog = 1; W.removeSite(b); W.placeInstance(b); const wasVis = b.vis, fixed = G.S.r && G.S.r.dmg[b.id]; if (fixed) { for (const q in fixed.l) G.S.k[q] = (G.S.k[q] || 0) + fixed.l[q]; delete G.S.r.dmg[b.id]; news('ซ่อม' + BT[b.t].n + 'เสร็จแล้ว', 'good'); } if (!wasVis) addGive(b.t); const def = BT[b.t]; if (wasVis) { for (const a of W.agents) if (a.site === b.id) { a.site = 0; a.path = null; a.wait = .2; a.moving = false; a.carry = 0; } return; }
+  b.done = true; b.prog = 1; W.removeSite(b); W.placeInstance(b); const wasVis = b.vis, fixed = G.S.r && G.S.r.dmg[b.id]; if (fixed) { for (const q in fixed.l) G.S.k[q] = (G.S.k[q] || 0) + fixed.l[q]; delete G.S.r.dmg[b.id]; news((fixed.c ? 'เปิดกิจการอีกครั้ง: ' : 'ซ่อมเสร็จแล้ว: ') + BT[b.t].n, 'good'); } if (!wasVis) addGive(b.t); const def = BT[b.t]; if (wasVis) { for (const a of W.agents) if (a.site === b.id) { a.site = 0; a.path = null; a.wait = .2; a.moving = false; a.carry = 0; } return; }
   if (def && def.fx && !quiet) applyFx(G.S, def.fx);
   connectDoor(b);
   if (!quiet && b.pub && def) { news('สร้าง' + def.n + 'เสร็จแล้ว', 'good'); if (window.UI) UI.dirty = true; }

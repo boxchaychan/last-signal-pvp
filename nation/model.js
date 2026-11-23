@@ -33,18 +33,17 @@ function stageOf(pop, idx) { let s = 0; for (let i = 0; i < STAGES.length; i++) 
 /* One game month for the whole country. */
 function stepModel(S) {
   const L = S.lawMod || {}, a = S.age, k = S.k, b = S.bud, t = S.tax, G0 = ageGroups(a), pop = G0.pop, m = S.stats && S.month;
-  const LF = Math.max(.5, G0.work * .82 + G0.old * .06), skill = clamp((S.eduY - 5) / 9);
+  const LF = Math.max(.5, G0.work * .82 + G0.old * .06), e = S.e || (S.e = econNew());
   const dem = clamp(.945 + .055 * Math.sin(S.m / 31) + .03 * Math.sin(S.m / 9.7) + (S.shock || 0), .55, 1.05); S.shock = (S.shock || 0) * .95;
-  const techE = Math.min(k.tech, LF * skill), oth = k.ag + (k.ind + k.svc) * dem + k.pub, othE = Math.min(oth, LF - techE), fill = oth > 0 ? othE / oth : 0;
-  const E = { ag: k.ag * fill, ind: k.ind * dem * fill, svc: k.svc * dem * fill, pub: k.pub * fill };
-  const emp = techE + othE, u = clamp(1 - emp / LF);
+  const M = laborMatch(S, LF, { ag: k.ag, svc: k.svc * dem, ind: k.ind * dem, pub: k.pub, tech: k.tech }), techE = M.tech, fill = M.fill, E = { ag: M.ag, ind: M.ind, svc: M.svc, pub: M.pub };
+  const emp = M.emp, u = clamp(1 - emp / LF);
   const pw = clamp(k.power / (pop * .7 + E.ind * .6 + techE + 1)), cleanW = clamp(k.water / pop), wr = clamp((k.water + 14) / (pop + 1)), clean = clamp((k.trash + 26) / (pop + 1));
   const safeCov = clamp((k.safe + 22) / (pop + 1)), hospCov = clamp(k.hosp / (pop + 1)), schoolCov = clamp(k.school / (G0.stu + 1)), houseRatio = k.house / pop, parkCov = clamp((k.park + 8) / (pop + 1));
   const dirtyShare = k.dirty * fill / (pop + 30), prevPc = S.gdp / pop, car = pop * clamp(prevPc / 1300);
   const cong = clamp(car / (k.roadC * 42 + 180) - .5 - S.transit);
   const trade = 1 + .05 * Math.min(k.port, 4) + .05 * Math.min(k.air, 3) + .08 * (S.rep - .35), pwF = .74 + .26 * pw;
   const prod = (.62 + S.eduY / 11) * S.tech * (.72 + .28 * S.road) * (1 - cong * .16) * (1 - S.sick * .7) * (S.war > 0 ? .85 : 1) * trade * (1 + (L.prod || 0));
-  const gdp = Math.max(1, prod * (E.ag * 190 + (E.ind * 330 + E.svc * 270 + techE * 950) * pwF + E.pub * 240)), gdpPc = gdp / pop;
+  const gdp = Math.max(1, prod * (E.ag * 190 + (E.ind * 330 * e.mul * (.2 + .8 * pw) / pwF + E.svc * 270 + techE * 950) * pwF + E.pub * 240)), gdpPc = gdp / pop;
   const eff = 1 - S.corr * .7;
   /* government money */
   const rev = gdp * (.62 * t.inc + .38 * t.corp + .7 * t.vat) / 100 * (1 - S.corr * .55) * (.72 + .28 * S.trust / 100) * (1 + (L.rev || 0));
@@ -53,7 +52,7 @@ function stepModel(S) {
   S.treas += rev - spend - interest;
   if (S.treas > gdp * 3 && S.debt > 0) { const pay = Math.min(S.debt, (S.treas - gdp * 3) * .3); S.debt -= pay; S.treas -= pay; }
   if (S.treas < 0) { S.debt += -S.treas * 1.02; S.treas = 0; S.trust -= .4; }
-  S.priv += (gdp * .38 * (1 - t.corp / 100) * .46 + gdp * .018 * S.rep) * Math.max(.2, 1 + (L.priv || 0));
+  S.priv += (gdp * .38 * (1 - t.corp / 100) * .46 + gdp * .018 * S.rep) * Math.max(.2, 1 + (L.priv || 0)) * econInvest(e);
   /* food + materials */
   const yieldF = (1 + (S.tech - 1) * .4) * (.72 + .28 * wr) * (1 - S.drought * .55) * (1 - S.P * .25) * (1 + (L.food || 0)), foodOut = E.ag * 3.2 * yieldF;
   S.food += foodOut - pop; let hungerNow = 0;
@@ -62,7 +61,7 @@ function stepModel(S) {
   const foodMonths = S.food / pop; S.pFood += (40 * clamp(1.6 / (foodMonths + .4), .7, 3) - S.pFood) * .3;
   S.mat = Math.min(S.mat + k.matp * fill, 3000 + pop * 2);
   /* prices */
-  const defGDP = (spend + interest - rev) / gdp, press = .0015 + Math.max(0, defGDP) * .012 + S.hunger * .02 + Math.max(0, 1 - houseRatio) * .003 + (S.war > 0 ? .006 : 0) + Math.max(0, .05 - u) * .02 + (L.infl || 0);
+  const defGDP = (spend + interest - rev) / gdp, press = .0015 + Math.max(0, defGDP) * .012 + S.hunger * .02 + Math.max(0, 1 - houseRatio) * .003 + (S.war > 0 ? .006 : 0) + Math.max(0, .05 - u) * .02 + Math.max(0, e.wg || 0) * .03 + (L.infl || 0);
   S.infl += (press + S.inflShock - S.infl) * .18; S.inflShock *= .85; S.cpi *= 1 + S.infl;
   /* slow things that build a country */
   for (const q in S.adj) S.adj[q] *= .975;
@@ -73,19 +72,19 @@ function stepModel(S) {
   S.sick += (clamp((.015 + .08 * (1 - cleanW) + .05 * (1 - clean) + .08 * S.P + .1 * S.hunger + Math.max(0, .85 - houseRatio) * .08) * (1 - S.hq / 160) + S.epi, .002, .6) - S.sick) * .25;
   const forest = clamp(S.forestBase + S.forestAdj + (L.forest || 0));
   S.P += (clamp(.02 + dirtyShare * .85 + (1 - clean) * .12 + clamp(car / (pop + 1)) * .1 - .12 * Math.min(1.4, b.env * eff) - .1 * (forest - .5) - parkCov * .03 + S.adj.pol + (L.pol || 0), .005, .95) - S.P) * .035;
-  S.gini += (clamp(.3 + .22 * (k.ind + k.tech * 1.2) / (LF + 5) * .45 - .12 * Math.min(1.4, b.welfare) + .16 * S.corr + .05 * Math.log(S.tech) + S.adj.gini + (L.gini || 0), .18, .75) - S.gini) * .025;
+  S.gini += (clamp(.3 + .22 * (k.ind + k.tech * 1.2) / (LF + 5) * .45 - .12 * Math.min(1.4, b.welfare) + .16 * S.corr + .05 * Math.log(S.tech) + .05 * (1 - clamp(e.w[0], .6, 1.4)) + S.adj.gini + (L.gini || 0), .18, .75) - S.gini) * .025;
   S.corr += (clamp(.055 + .036 * Math.log10(pop + 1) - .09 * b.admin - .04 * Math.min(1, k.admin) + S.adj.corr + (L.corr || 0), .01, .8) - S.corr) * .025;
   S.crime += (clamp(.03 + .55 * u + .25 * Math.max(0, S.gini - .3) + .25 * S.hunger + .1 * (1 - safeCov) - .08 * Math.min(1.5, b.safety * eff) * safeCov + S.adj.crime + (L.crime || 0), .005, .9) - S.crime) * .06;
   const taxLoad = t.inc + t.corp * .35 + t.vat * 1.1;
   const LE = clamp(44 + .36 * S.hq + 8 * clamp(Math.log((gdpPc + 1) / 120) / Math.log(20)) - 22 * S.P - 35 * S.hunger - 30 * S.epi - (S.war > 0 ? 3 : 0), 25, 90);
   /* happiness */
   S.mods = S.mods.filter(q => q.u > S.m); const modSum = S.mods.reduce((q, r) => q + r.v, 0);
-  const hapT = 100 * (.17 * clamp(1 - u * 3) + .14 * clamp(1 - S.hunger * 4) * clamp(foodMonths + .55) + .1 * clamp(.35 + .65 * cleanW) + .12 * clamp(.2 + .8 * S.hq / 75) + .08 * clamp(.3 + .7 * schoolCov) + .09 * clamp(1 - S.crime * 2.4) + .1 * clamp(houseRatio - .15) + .07 * clamp(Math.log((gdpPc + 20) / 90) / Math.log(18)) + .05 * clamp(1 - S.P * 2) + .04 * parkCov + .04 * clamp(S.road)) + modSum + (L.happy || 0) - (3 + ((S.x && S.x.stage) || 0) * 3.5 + Math.max(0, S.eduY - 5) * 1.5) - Math.max(0, taxLoad - 25) * .8 - Math.max(0, S.infl - .006) * 900 - (S.war > 0 ? 9 : 0);
+  const hapT = 100 * (.17 * clamp(1 - u * 3) + .14 * clamp(1 - S.hunger * 4) * clamp(foodMonths + .55) + .1 * clamp(.35 + .65 * cleanW) + .12 * clamp(.2 + .8 * S.hq / 75) + .08 * clamp(.3 + .7 * schoolCov) + .09 * clamp(1 - S.crime * 2.4) + .1 * clamp(houseRatio - .15) + .07 * clamp(Math.log((gdpPc + 20) / 90) / Math.log(18)) + .05 * clamp(1 - S.P * 2) + .04 * parkCov + .04 * clamp(S.road)) + modSum + clamp((e.wage - 1) * 14, -8, 7) + (L.happy || 0) - (3 + ((S.x && S.x.stage) || 0) * 3.5 + Math.max(0, S.eduY - 5) * 1.5) - Math.max(0, taxLoad - 25) * .8 - Math.max(0, S.infl - .006) * 900 - (S.war > 0 ? 9 : 0);
   S.happy += (clamp(hapT, 3, 99) - S.happy) * .12;
   const debtRatio = S.debt / Math.max(gdp * 12, 1);
   S.trust += (clamp(17 + .68 * S.happy - 46 * S.corr - 8 * clamp(debtRatio - 1) + .14 * (S.rep * 100 - 30) + (L.trust || 0), 3, 98) - S.trust) * .05;
   if (S.unrest == null) S.unrest = 6; S.unrestAdj = (S.unrestAdj || 0) * .96;
-  const stNow = (S.x && S.x.stage) || 0, why = { trust: Math.max(0, 52 - S.trust) * 1.15, mood: Math.max(0, 48 - S.happy) * .75, hunger: S.hunger * 130, jobs: u * 48, prices: Math.max(0, S.infl - .01) * 900, war: S.war > 0 ? 8 : 0, army: Math.max(0, .3 + stNow * .075 - b.defense) * 22, tax: Math.max(0, taxLoad - 28) * 1.1, corr: S.corr * 26, free: Math.max(0, S.eduY - 6) * 2.3, age: Math.min(16, S.m / 12 * .2), neglect: pop < 50 ? 0 : clamp((S.m - 72) / 120) * ((1 - cleanW) * 16 + (1 - hospCov) * 15 + (1 - schoolCov) * 11 + (1 - pw) * 8) };
+  const stNow = (S.x && S.x.stage) || 0, why = { wage: Math.max(0, .88 - e.w[0]) * 34, trust: Math.max(0, 52 - S.trust) * 1.15, mood: Math.max(0, 48 - S.happy) * .75, hunger: S.hunger * 130, jobs: u * 48, prices: Math.max(0, S.infl - .01) * 900, war: S.war > 0 ? 8 : 0, army: Math.max(0, .3 + stNow * .075 - b.defense) * 22, tax: Math.max(0, taxLoad - 28) * 1.1, corr: S.corr * 26, free: Math.max(0, S.eduY - 6) * 2.3, age: Math.min(16, S.m / 12 * .2), neglect: pop < 50 ? 0 : clamp((S.m - 72) / 120) * ((1 - cleanW) * 16 + (1 - hospCov) * 15 + (1 - schoolCov) * 11 + (1 - pw) * 8) };
   S.unWhy = why; let whySum = 0; for (const q in why) whySum += why[q];
   const unT = clamp(6 + whySum - Math.min(1.4, b.safety * eff) * safeCov * 5 - Math.min(1.5, b.defense) * 5 - Math.min(1, k.admin) * 4 + S.unrestAdj + (L.unrest || 0), 0, 130);
   S.unrest = clamp(S.unrest + (unT - S.unrest) * .07, 0, 100);
@@ -107,10 +106,11 @@ function stepModel(S) {
   let mvb = 0; for (let i = 18; i < 46; i++) mvb += a[i];
   if (mvb > 0) { const f = Math.min(.5, outM / mvb); for (let i = 18; i < 46; i++) a[i] *= 1 - f; }
   if (S.month) { const q = S.month; q.born += born; q.died += died; q.inM += inM; q.outM += Math.min(outM, mvb * .5); q.noKid += noKid; const r = S.stats; r.born += born; r.died += died; r.inM += inM; r.outM += Math.min(outM, mvb * .5); r.noKid += noKid; }
+  econStep(S, { pop, LF, E, M, pw, gdp, gdpPc, forest });
   S.gdp = gdp; S.m++;
   const G1 = ageGroups(a);
   const x = S.x = { m: S.m, pop: G1.pop, kids: G1.kids, work: G1.work, old: G1.old, oldShare: G1.old / G1.pop, LF, emp, u, gdp, gdpPc, E_ag: E.ag, E_ind: E.ind, E_svc: E.svc, E_pub: E.pub, E_tech: techE, cleanW, clean, wr, pw, safeCov, hospCov, schoolCov, houseRatio, parkCov, foodMonths, foodOut, dirtyShare, cong, eduY: S.eduY, hq: S.hq, sick: S.sick, P: S.P, crime: S.crime, gini: S.gini, corr: S.corr, trust: S.trust, happy: S.happy, infl: S.infl, tech: S.tech, debtRatio, taxLoad, k, tfr, rep: S.rep, tension: S.tension, forest, army: k.army, treas: S.treas, rev, spend, interest, LE, A, war: S.war, hunger: S.hunger };
-  x.land = S.landBonus || 0; x.unrest = S.unrest; x.gMax = S.govStat ? S.govStat.gMax : 0; x.loDef = S.govStat ? S.govStat.loDef : null; x.idx = devIndex(x); x.stage = stageOf(x.pop, x.idx); x.score = scoreOf(x); S.best = Math.max(S.best, x.score); S.stageMax = Math.max(S.stageMax, x.stage);
+  x.vac = e.vm + e.vh; x.wage = e.wage; x.margin = e.margin; x.land = S.landBonus || 0; x.unrest = S.unrest; x.gMax = S.govStat ? S.govStat.gMax : 0; x.loDef = S.govStat ? S.govStat.loDef : null; x.idx = devIndex(x); x.stage = stageOf(x.pop, x.idx); x.score = scoreOf(x); S.best = Math.max(S.best, x.score); S.stageMax = Math.max(S.stageMax, x.stage);
   return x;
 }
 
@@ -144,13 +144,15 @@ function autoPlan(S) {
   const foodNeed = pop * 1.08 - (x.foodOut || 0);
   if (foodNeed > 0 && (x.foodMonths || 0) < 3) { const t = tierPick(['farm', 'bigfarm'], st, foodNeed / 3, 'ag'); want(t, Math.min(maxN, Math.ceil(foodNeed / 3 / BT[t].g.ag))); }
   if (S.mat < 16 + pop * .03 && S.k.matp < pop * .25 + 2) want(tierPick(['lumber', 'workshop', 'factory', 'plant'], st, pop * .01, 'matp'));
-  const free = (S.k.ag + S.k.ind + S.k.svc + S.k.pub + S.k.tech) - (x.LF || 5);
+  const free = (S.k.ag + S.k.ind + S.k.svc + S.k.pub + S.k.tech) - (x.LF || 5), E0 = S.e || {};
+  if ((E0.idle || 0) > (x.LF || 5) * .05 && (E0.vm || 0) + (E0.vh || 0) > (x.LF || 5) * .03) { const t = tierPick(['shop', 'market'], st, E0.idle * .5, 'svc'); if (t) want(t, Math.min(maxN, Math.ceil(E0.idle * .5 / BT[t].g.svc))); }
   if (free < (x.LF || 5) * .03) {
     const need = (x.LF || 5) * 1.05 - (S.k.ag + S.k.ind + S.k.svc + S.k.pub + S.k.tech);
     const skilled = (x.eduY || 0) > 7 && st >= 6 && S.k.tech < (x.LF || 5) * clamp(((x.eduY || 0) - 5) / 9) * .6;
     let list = ['shop', 'market', 'office', 'cbd'], key = 'svc';
     if (skilled) { list = ['techpark']; key = 'tech'; } else if (st >= 2 && S.k.ind < S.k.svc * .9) { list = ['workshop', 'factory', 'plant']; key = 'ind'; }
-    const t = tierPick(list, st, need * .55, key); if (t) want(t, Math.min(maxN, Math.ceil(need / BT[t].g[key])));
+    const chain = !skilled && typeof econPick === 'function' ? econPick(S, st) : null; if (chain) want(chain, Math.min(maxN, Math.ceil(need / BT[chain].g.ind)));
+    else { const t = tierPick(list, st, need * .55, key); if (t) want(t, Math.min(maxN, Math.ceil(need / BT[t].g[key]))); }
   }
   return out.slice(0, maxN + 2);
 }
@@ -173,7 +175,7 @@ function nationalWorks(S) {
   }
   /* private companies and home builders at national scale */
   const jobs = k.ag + k.ind + k.svc + k.pub + k.tech, jobGap = x.LF * 1.05 - jobs, unit = 34 * Math.sqrt(S.tech);
-  if (jobGap > 0) { const add = Math.min(jobGap, jobs * .03), cost = add * unit; if (cost <= S.priv * .5) { const tc = clamp((x.eduY - 6) / 10) * .35, ic = .3 - clamp(S.tech / 12) * .12; k.tech += add * tc; k.ind += add * ic; k.dirty += add * ic * .7; k.svc += add * (1 - tc - ic); S.priv -= cost; } }
+  if (jobGap > 0) { const add = Math.min(jobGap, jobs * .03), cost = add * unit; if (cost <= S.priv * .5) { const tc = clamp((x.eduY - 6) / 10) * .35, ic = .3 - clamp(S.tech / 12) * .12; k.tech += add * tc; k.ind += add * ic; if (typeof econSpread === 'function') econSpread(k, add * ic, x.stage); k.dirty += add * ic * .7; k.svc += add * (1 - tc - ic); S.priv -= cost; } }
   const homeGap = pop * 1.12 - k.house; if (homeGap > 0) { const add = Math.min(homeGap, k.house * .03), cost = add * unit * .6; if (cost <= S.priv * .5) { k.house += add; S.priv -= cost; } }
 }
 
@@ -200,7 +202,7 @@ function forecast(S, years, patchKey) {
     mark('water', x.cleanW < .7 && x.pop > 20, 'น้ำสะอาดไม่พอ'); mark('food', x.hunger > .05, 'เริ่มมีคนอดอาหาร'); mark('jobs', x.u > .2, 'คนตกงานเกิน 20%'); mark('home', x.houseRatio < .85, 'ที่อยู่อาศัยไม่พอ เกิดสลัม');
     mark('smog', x.P > .4, 'มลพิษถึงระดับอันตราย'); mark('debt', x.debtRatio > 1, 'หนี้เกิน GDP เสี่ยงวิกฤต'); mark('old', x.oldShare > .2, 'เข้าสู่สังคมสูงวัย แรงงานลด'); mark('crime', x.crime > .28, 'อาชญากรรมพุ่ง');
     mark('doctor', x.hospCov < .5 && x.pop > 60, 'หมอและเตียงไม่พอ'); mark('school', x.schoolCov < .5 && x.pop > 40, 'เด็กครึ่งหนึ่งไม่ได้เรียน'); mark('infl', x.infl > .018, 'เงินเฟ้อสูง ของแพง'); mark('traffic', x.cong > .4, 'รถติดหนักทั้งเมือง');
-    mark('gap', x.gini > .48, 'ช่องว่างรวยจนกว้างมาก'); mark('leave', x.A < -.15, 'คนเริ่มย้ายออกจากประเทศ'); mark('birth', x.tfr < 1.5 && x.pop > 500, 'เด็กเกิดน้อยเกินไป'); mark('power', x.pw < .6 && x.pop > 100, 'ไฟฟ้าไม่พอ'); mark('throne', x.unrest > 70, 'เสี่ยงถูกโค่นล้ม');
+    mark('gap', x.gini > .48, 'ช่องว่างรวยจนกว้างมาก'); mark('leave', x.A < -.15, 'คนเริ่มย้ายออกจากประเทศ'); mark('birth', x.tfr < 1.5 && x.pop > 500, 'เด็กเกิดน้อยเกินไป'); mark('power', x.pw < .6 && x.pop > 100, 'ไฟฟ้าไม่พอ'); mark('skill', x.vac > x.LF * .1 && x.pop > 200, 'งานมี แต่คนทำไม่เป็น'); mark('loss', x.margin < 0 && x.E_ind > 20, 'โรงงานเริ่มขาดทุน'); mark('throne', x.unrest > 70, 'เสี่ยงถูกโค่นล้ม');
   }
   return { pts, warn: Object.values(warn).sort((p, q) => p.y - q.y), end: C.x };
 }

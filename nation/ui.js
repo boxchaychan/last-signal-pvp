@@ -74,8 +74,8 @@ UI.sheetInput = function (e) {
   const d = $('bSum'); if (d) d.innerHTML = UI.budgetSum();
 };
 UI.tab_build = function () {
-  const st = G.S.x.stage || 0, cats = ['all', 'land', 'water', 'power', 'edu', 'health', 'safe', 'clean', 'life', 'state']; let h = '<div class="chips">' + cats.map(c => '<button class="chip ' + (UI.cat === c ? 'on' : '') + '" data-a="cat" data-v="' + c + '">' + (c === 'all' ? 'ทั้งหมด' : CAT_N[c]) + '</button>').join('') + '</div>';
-  const L = PUBLIC_ORDER.filter(t => UI.cat === 'all' || BT[t].cat === UI.cat);
+  const st = G.S.x.stage || 0, cats = ['all', 'land', 'water', 'power', 'ind', 'edu', 'health', 'safe', 'clean', 'life', 'state']; let h = '<div class="chips">' + cats.map(c => '<button class="chip ' + (UI.cat === c ? 'on' : '') + '" data-a="cat" data-v="' + c + '">' + (c === 'all' ? 'ทั้งหมด' : CAT_N[c]) + '</button>').join('') + '</div>';
+  const L = PUBLIC_ORDER.filter(t => UI.cat === 'all' ? BT[t].cat !== 'ind' : BT[t].cat === UI.cat);
   h += L.map(t => { const d = BT[t], ok = d.st <= st, can = G.S.treas >= d.c; return '<button class="card ' + (ok ? '' : 'lock') + '" ' + (ok ? 'data-a="order" data-v="' + t + '"' : 'disabled') + '><span class="ic">' + IC[d.cat] + '</span><span class="tx"><b>' + d.n + '</b><small>' + (ok ? d.d : 'ปลดล็อกเมื่อเป็น' + STAGES[d.st].n) + '</small></span><span class="pr ' + (can ? '' : 'no') + '">' + fmt(d.c) + '<small>บาท</small></span></button>'; }).join('');
   return h + '<p class="muted">คุณสั่งว่าจะสร้างอะไร ชาวเมืองจะเลือกที่เหมาะเอง บ้าน ร้านค้า และโรงงานเอกชนจะเกิดเองเมื่อมีคนและเงินลงทุน</p>';
 };

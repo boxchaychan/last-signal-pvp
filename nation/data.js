@@ -28,7 +28,7 @@ const BT = {
   mega:      { n: 'ตึกระฟ้าที่พักอาศัย', s: [4, 4], c: 520000, m: 2200, wk: 3400, mw: 700, g: { house: 15000 }, st: 7, cat: 'home', auto: 1 },
   farm:      { n: 'ไร่นา', s: [5, 4], c: 150, m: 1, wk: 2, mw: 3, g: { ag: 4 }, st: 0, cat: 'work', auto: 1 },
   bigfarm:   { n: 'ฟาร์มใหญ่', s: [7, 6], c: 5200, m: 20, wk: 26, mw: 10, g: { ag: 70 }, st: 3, cat: 'work', auto: 1 },
-  lumber:    { n: 'ลานไม้', s: [3, 3], c: 130, m: 1, wk: 2, mw: 3, g: { ind: 3, matp: 1.5 }, st: 0, cat: 'work', auto: 1 },
+  lumber:    { n: 'ลานไม้', s: [3, 3], c: 130, m: 1, wk: 2, mw: 3, g: { ind: 3, wood: 3, matp: 1.5 }, st: 0, cat: 'work', auto: 1 },
   shop:      { n: 'ร้านค้า', s: [2, 2], c: 360, m: 4, wk: 4, mw: 3, g: { svc: 3 }, st: 0, cat: 'work', auto: 1 },
   workshop:  { n: 'โรงงานเล็ก', s: [3, 3], c: 1500, m: 10, wk: 10, mw: 6, g: { ind: 16, matp: 3, dirty: 10 }, st: 2, cat: 'work', auto: 1 },
   market:    { n: 'ตลาด', s: [4, 3], c: 2300, m: 14, wk: 14, mw: 8, g: { svc: 28 }, st: 2, cat: 'work', auto: 1 },
@@ -37,6 +37,11 @@ const BT = {
   cbd:       { n: 'ตึกธุรกิจ', s: [3, 3], c: 250000, m: 1000, wk: 1500, mw: 300, g: { svc: 3400 }, st: 6, cat: 'work', auto: 1 },
   plant:     { n: 'นิคมอุตสาหกรรม', s: [7, 6], c: 270000, m: 1400, wk: 1500, mw: 300, g: { ind: 2900, matp: 120, dirty: 2900 }, st: 6, cat: 'work', auto: 1 },
   techpark:  { n: 'เมืองเทคโนโลยี', s: [5, 5], c: 430000, m: 1600, wk: 2200, mw: 400, g: { tech: 1600 }, st: 6, cat: 'work', auto: 1 },
+  ricemill:  { n: 'โรงสีข้าว', s: [3, 3], c: 1200, m: 8, wk: 9, mw: 5, g: { ind: 10, mill: 10 }, st: 1, cat: 'ind', auto: 1, d: 'เอาข้าวที่เหลือมาสีขาย ต้องมีข้าวเกินจากที่คนกิน' },
+  sawmill:   { n: 'โรงเลื่อย', s: [3, 3], c: 1000, m: 6, wk: 8, mw: 5, g: { ind: 9, saw: 9, matp: 2.5 }, st: 1, cat: 'ind', auto: 1, d: 'แปรรูปไม้ส่งโรงงาน ยิ่งใช้มาก ป่ายิ่งหาย' },
+  mine:      { n: 'เหมืองแร่', s: [4, 3], c: 1800, m: 12, wk: 12, mw: 6, g: { ind: 14, ore: 14, dirty: 10 }, st: 2, cat: 'ind', auto: 1, d: 'ขุดแร่จากภูเขา แร่มีจำกัด และทำให้น้ำกับอากาศเสีย' },
+  steel:     { n: 'โรงเหล็ก', s: [5, 4], c: 38000, m: 190, wk: 190, mw: 55, g: { ind: 260, steelJ: 260, dirty: 400, matp: 10 }, st: 4, cat: 'ind', auto: 1, d: 'เปลี่ยนแร่เป็นเหล็ก ใช้ไฟมาก และมลพิษสูง' },
+  machine:   { n: 'โรงงานเครื่องจักร', s: [5, 4], c: 70000, m: 300, wk: 320, mw: 80, g: { ind: 420, mach: 420, dirty: 150 }, st: 5, cat: 'ind', auto: 1, d: 'ใช้เหล็กและช่างฝีมือ ได้สินค้าราคาสูง' },
   well:      { n: 'บ่อน้ำสะอาด', s: [1, 1], c: 240, m: 3, wk: 2.5, mw: 3, g: { water: 30 }, st: 0, cat: 'water', d: 'น้ำสะอาดสำหรับ 30 คน ลดโรคจากน้ำ' },
   waterworks:{ n: 'การประปา', s: [4, 3], c: 14000, m: 70, wk: 80, mw: 30, g: { water: 3200, pub: 20 }, st: 3, cat: 'water', d: 'น้ำประปาสำหรับ 3,200 คน' },
   levee:     { n: 'คันกั้นน้ำ', s: [4, 2], c: 520, m: 6, wk: 6, mw: 5, g: { levee: 1 }, st: 0, cat: 'water', d: 'กั้นแม่น้ำไม่ให้ล้นตลิ่ง ยิ่งมากยิ่งรับน้ำได้สูง' },
@@ -65,7 +70,7 @@ const BT = {
   parliament:{ n: 'ทำเนียบผู้นำ', s: [5, 4], c: 700000, m: 2500, wk: 3000, mw: 500, g: { admin: 1, pub: 200 }, st: 5, cat: 'state', d: 'ศูนย์อำนาจของประเทศ ลดการโกงและทำให้บัลลังก์มั่นคงขึ้น' }
 };
 const CAT_N = { land: 'ขยายเกาะ', water: 'น้ำ', power: 'ไฟฟ้า', edu: 'การศึกษา', health: 'สุขภาพ', safe: 'ความปลอดภัย', clean: 'ขยะ', life: 'คุณภาพชีวิต', state: 'รัฐ' };
-const PUBLIC_ORDER = ['well', 'levee', 'clinic', 'school', 'gen', 'police', 'trash', 'park', 'reservoir', 'firest', 'reclaim', 'waterworks', 'hospital', 'hischool', 'coal', 'solar', 'policehq', 'recycle', 'base', 'port', 'dam', 'univ', 'parliament', 'airport', 'medcenter', 'nuclear'];
+const PUBLIC_ORDER = ['well', 'levee', 'clinic', 'school', 'gen', 'police', 'trash', 'park', 'reservoir', 'firest', 'reclaim', 'waterworks', 'hospital', 'hischool', 'coal', 'solar', 'policehq', 'recycle', 'base', 'port', 'dam', 'univ', 'parliament', 'airport', 'medcenter', 'nuclear', 'ricemill', 'sawmill', 'mine', 'steel', 'machine'];
 const BUDGET_N = { edu: ['การศึกษา', 2], health: ['สาธารณสุข', 2], safety: ['ตำรวจ / ยุติธรรม', .8], infra: ['ถนน / สาธารณูปโภค', 1.6], welfare: ['สวัสดิการ', 1.2], env: ['สิ่งแวดล้อม', .5], defense: ['กลาโหม', .7], rnd: ['วิจัย / เทคโนโลยี', .4], admin: ['ปราบโกง / บริหาร', .5] };
 
 /* Effects of an answer. c = cost in months of GDP, the rest moves one country number. */

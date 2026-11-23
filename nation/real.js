@@ -12,19 +12,19 @@ function lowOf(b) {
   for (let p = -6; p < b.w + 6; p++) for (let q = -6; q < b.d + 6; q++) { const x = b.x + p, z = b.z + q; if (!inMap(x, z) || W.T[ci(x, z)] !== 1) continue; const dx = p < 0 ? -p : p >= b.w ? p - b.w + 1 : 0, dz = q < 0 ? -q : q >= b.d ? q - b.d + 1 : 0, dd = Math.hypot(dx, dz); if (dd < dw) dw = dd; }
   return b._lo = Math.max(0, W.h(b.x + b.w / 2, b.z + b.d / 2)) * .6 + dw * .045;
 }
-function ruin(b) {
+function ruin(b, closed) {
   const r = G.S.r, k = G.S.k; if (!b.done || b.t === 'hall' || !BT[b.t] || r.dmg[b.id]) return false; const l = {}, f = b.vis ? .4 : 1;
   for (const q in BT[b.t].g) { const a = Math.min(k[q] || 0, BT[b.t].g[q] * f); k[q] = (k[q] || 0) - a; l[q] = a; }
-  r.dmg[b.id] = { w: 1, l }; W.removeInstance(b); b.done = false; b.prog = .32; b.vis = 1; W.addSite(b); W.siteProgress(b, .32); return true;
+  r.dmg[b.id] = closed ? { w: 1, l, c: 1 } : { w: 1, l }; W.removeInstance(b); b.done = false; b.prog = .32; b.vis = 1; W.addSite(b); W.siteProgress(b, .32); return true;
 }
 function startRepair(id) { const d = G.S.r.dmg[id]; if (d) d.w = 0; }
-function ruins(S, pubOnly) { const L = []; for (const id in S.r.dmg) { const b = G.byId.get(+id); if (!b) { delete S.r.dmg[id]; continue; } if (S.r.dmg[id].w && (!pubOnly || b.pub)) L.push(b); } return L; }
+function ruins(S, pubOnly) { const L = []; for (const id in S.r.dmg) { const b = G.byId.get(+id); if (!b) { delete S.r.dmg[id]; continue; } if (S.r.dmg[id].w && !S.r.dmg[id].c && (!pubOnly || b.pub)) L.push(b); } return L; }
 
 /* ---------- weather and water, every month ---------- */
 function weather(S, r, x) {
   const mo = (S.m - 1) % 12; if (mo === 0) r.y = clamp(1 + (r.y - 1) * .4 + (Math.random() + Math.random() - 1) * .62, .52, 1.7);
   let rain = RAIN_N[mo] * r.y * (.74 + Math.random() * .52); r.storm = 0;
-  if (mo >= 5 && mo <= 10 && Math.random() < .045 + Math.max(0, r.y - 1) * .09) { r.storm = 1 + Math.random(); rain *= 1.45 + r.storm * .55; }
+  if (mo >= 5 && mo <= 10 && Math.random() < .03 + Math.max(0, r.y - 1) * .07) { r.storm = 1 + Math.random(); rain *= 1.45 + r.storm * .55; }
   r.rain = rain; r.norm = RAIN_N[mo]; r.paved = clamp((G.blds.length + W.roadCount * .3) / 900); r.runoff = .24 + .5 * (1 - x.forest) + .22 * r.paved;
   let flow = rain * r.runoff; const cap = S.k.hold || 0, take = Math.min(flow * .85, Math.max(0, cap - r.res)); if (take > 0) { r.res += take; flow -= take; }
   const use = Math.min(r.res, rain < 120 ? Math.max(18, cap * .14) : cap * .02); r.res -= use;
@@ -33,20 +33,20 @@ function weather(S, r, x) {
   const over = Math.max(0, x.pop - S.k.trash - 26); r.garb = over > 0 ? r.garb + over * .035 : Math.max(0, r.garb - x.pop * .05 - 1);
 }
 function disasters(S, r, x) {
-  const mo = (S.m - 1) % 12, wood = G.blds.filter(b => b.done && (b.t === 'hut' || b.t === 'house')), hit = (id, L, why, sev) => { const done = L.filter(ruin); if (!done.length) return false; r.hit.push({ id, ids: done.map(b => b.id), why, sev, at: [done[0].x, done[0].z] }); assignJobs(); return true; };
+  const mo = (S.m - 1) % 12, wood = G.blds.filter(b => b.done && (b.t === 'hut' || b.t === 'house')), hit = (id, L, why, sev) => { const done = L.filter(b => ruin(b)); if (!done.length) return false; r.hit.push({ id, ids: done.map(b => b.id), why, sev, at: [done[0].x, done[0].z] }); assignJobs(); return true; };
   if (r.river > 1 && S.m >= 12 && S.m - r.floodM >= 5) {
     const sev = r.river - 1, reach = .09 + sev * .72, all = G.blds.filter(b => b.done && b.t !== 'hall' && b.t !== 'levee' && b.t !== 'reservoir'), L = all.filter(b => lowOf(b) < reach).sort((p, q) => lowOf(p) - lowOf(q)).slice(0, Math.max(3, Math.min(42, Math.floor(all.length * .45)))); r.floodM = S.m;
     if (!L.length) news('ฝนหนัก แม่น้ำล้นตลิ่ง แต่ยังไม่มีอาคารในแนวน้ำ', 'good');
     else if (hit('flood', L, ['ฝนเดือนนี้ ' + Math.round(r.rain) + ' มม. (ปกติ ' + r.norm + ')', x.forest < .8 ? 'ป่าถูกถางเหลือ ' + pct(x.forest) + ' น้ำจึงไหลลงแม่น้ำเร็ว' : 'ป่ายังดี แต่ฝนมากเกินที่ดินจะรับไหว', S.k.levee ? 'คันกั้นน้ำ ' + S.k.levee + ' จุด ยังรับไม่พอ' : 'ยังไม่มีคันกั้นน้ำ', S.k.hold ? 'อ่างเก็บน้ำเต็มแล้ว' : 'ไม่มีอ่างหรือเขื่อนเก็บน้ำ', 'มีอาคารสร้างอยู่ในแนวน้ำ ' + L.length + ' หลัง'], sev)) { G.floodT = 7 + sev * 12; applyFx(S, { food: -Math.min(.8, .12 + sev * .5), sick: .008 + sev * .03, pop: -Math.min(.018, sev * .012), hp: -2 - sev * 4 }); return; }
   }
-  if (r.storm && S.m >= 18 && S.m - r.stormM >= 8 && wood.length) { r.stormM = S.m; const L = wood.sort(() => Math.random() - .5).sort((p, q) => (p.t === 'hut' ? 0 : 1) - (q.t === 'hut' ? 0 : 1)).slice(0, Math.min(12, Math.ceil(wood.length * .1 * r.storm))); if (hit('storm', L, ['พายุเข้า ฝน ' + Math.round(r.rain) + ' มม. ในเดือนเดียว', 'บ้านไม้และกระท่อมมี ' + wood.length + ' หลัง ทนลมไม่ไหว'], r.storm)) { applyFx(S, { hp: -3 }); return; } }
-  if (x.forest < .62 && r.rain > 260 && S.m >= 24 && S.m - r.slideM >= 14) { const L = G.blds.filter(b => b.done && b.t !== 'hall' && W.h(b.x + b.w / 2, b.z + b.d / 2) > .55).slice(0, 4); if (L.length) { r.slideM = S.m; if (hit('slide', L, ['ฝน ' + Math.round(r.rain) + ' มม. บนเขาที่ป่าถูกถาง', 'ป่าเหลือ ' + pct(x.forest) + ' ไม่มีรากไม้ยึดดิน', 'มีอาคารบนที่ลาดชัน ' + L.length + ' หลัง'], 1)) { applyFx(S, { pop: -.004, hp: -3 }); return; } } }
+  if (r.storm && S.m >= 18 && S.m - r.stormM >= 14 && wood.length) { r.stormM = S.m; const L = wood.sort(() => Math.random() - .5).sort((p, q) => (p.t === 'hut' ? 0 : 1) - (q.t === 'hut' ? 0 : 1)).slice(0, Math.min(12, Math.ceil(wood.length * .1 * r.storm))); if (L.length < 3) { const n = L.filter(b => ruin(b)).length; if (n) { assignJobs(); news('พายุพัดบ้านเสียหาย ' + n + ' หลัง เจ้าของกำลังซ่อม', 'bad'); } } else if (hit('storm', L, ['พายุเข้า ฝน ' + Math.round(r.rain) + ' มม. ในเดือนเดียว', 'บ้านไม้และกระท่อมมี ' + wood.length + ' หลัง ทนลมไม่ไหว'], r.storm)) { applyFx(S, { hp: -3 }); return; } }
+  if (x.forest < .62 && r.rain > 260 && S.m >= 24 && S.m - r.slideM >= 30 && Math.random() < .35) { const L = G.blds.filter(b => b.done && b.t !== 'hall' && W.h(b.x + b.w / 2, b.z + b.d / 2) > .55).slice(0, 4); if (L.length) { r.slideM = S.m; if (hit('slide', L, ['ฝน ' + Math.round(r.rain) + ' มม. บนเขาที่ป่าถูกถาง', 'ป่าเหลือ ' + pct(x.forest) + ' ไม่มีรากไม้ยึดดิน', 'มีอาคารบนที่ลาดชัน ' + L.length + ' หลัง'], 1)) { applyFx(S, { pop: -.004, hp: -3 }); return; } } }
   if ((mo >= 11 || mo <= 3) && S.m >= 20 && S.m - r.fireM >= 10 && wood.length >= 8) { const fire = S.k.fire || 0, p = clamp(.02 + wood.length * .0016, 0, .16) / (1 + fire * 1.2); if (Math.random() < p) { r.fireM = S.m; const s = pick(wood), L = wood.filter(b => Math.hypot(b.x - s.x, b.z - s.z) < 7).slice(0, Math.max(1, Math.ceil((3 + wood.length / 18) / (1 + fire)))); hit('fire', L, ['หน้าแล้ง อากาศแห้ง ฝนแทบไม่ตก', 'บ้านไม้ ' + wood.length + ' หลังปลูกติดกัน ไฟลามเร็ว', fire ? 'สถานีดับเพลิง ' + fire + ' แห่ง ไปถึงช้า' : 'ยังไม่มีสถานีดับเพลิง'], 1); } }
 }
 function repairTick(S, r) { let n = 0; const most = 2 + (S.x.stage || 0); for (const b of ruins(S)) { if (b.pub) continue; const c = rCost(b); if (S.priv < c * 1.5) break; S.priv -= c; startRepair(b.id); if (++n >= most) break; } }
 function plansTick(S, r) { for (let i = r.plans.length - 1; i >= 0; i--) { const p = r.plans[i], pay = Math.min(p.per, S.treas, S.debt); S.treas -= pay; S.debt -= pay; if (S.m >= p.m) { if (p.k === 'tax') S.tax.inc = Math.max(0, S.tax.inc - p.d); else S.bud[p.k] = clamp(S.bud[p.k] + p.d, 0, 2); r.plans.splice(i, 1); news('มาตรการหาเงิน 12 เดือนสิ้นสุดแล้ว'); } } }
 function realMonth(S) {
-  const r = rOf(S), x = S.x; if (!x.pop) return; weather(S, r, x); plansTick(S, r); repairTick(S, r); disasters(S, r, x);
+  const r = rOf(S), x = S.x; if (!x.pop) return; weather(S, r, x); plansTick(S, r); repairTick(S, r); disasters(S, r, x); econMonth(S);
   for (const id in RI) { const v = RI[id].g(S, x, r) || 0; r.p[id] = (r.p[id] || 0) + (v - (r.p[id] || 0)) * .4; }
 }
 
@@ -102,7 +102,7 @@ const RI = {
     o: (S, x) => [fixO(L_TRASH, 'trash', x.pop - S.k.trash, 'แก้ที่ต้นเหตุ แต่ใช้เงินและที่ดิน', 14), O('เผากลางแจ้ง', 'ถูกและเร็ว แต่อากาศเสีย', baseOf(S) * .05, { pol: .04, sick: .006 }, 7, { garb: .4 }), O('ขนไปทิ้งนอกเมือง', 'เมืองสะอาดขึ้น แต่ป่าและน้ำเสีย', baseOf(S) * .14, { pol: .02, forest: -.008 }, 8, { garb: .5 })] },
   house: { cat: 'ที่อยู่', n: 'ที่อยู่อาศัย', g: (S, x) => x.pop < 20 ? 0 : (1 - x.houseRatio) * 4.2, line: (S, x) => 'บ้านพอ ' + pct(clamp(x.houseRatio)) + ' ของคน', t: 'คนล้นบ้าน เริ่มเกิดสลัม', b: (S, x) => 'บ้านรองรับได้ ' + pct(clamp(x.houseRatio)) + ' ของคน หลายครอบครัวอยู่รวมกัน', why: (S, x) => ['คนเพิ่มเร็วกว่าบ้าน', 'เอกชนมีเงินสร้างบ้าน ' + fmt(S.priv)],
     o: (S, x) => { const t = tierPick(HOME_T, x.stage, x.pop * .05, 'house'), n = clamp(Math.ceil((x.pop - S.k.house) / BT[t].g.house), 1, 6); return [O('สร้างบ้านราคาถูก ' + n + ' หลัง', 'คนมีที่อยู่ แต่รัฐจ่ายเอง', BT[t].c * n, { hp: 2 }, 14, { b: [t, n] }), O('จำกัดคนย้ายเข้า', 'ไม่เสียเงิน แต่เศรษฐกิจโตช้าลง', 0, { pop: -.008, rep: -.01 }, 10), O('ปล่อยให้แออัด', 'ไม่เสียเงิน แต่โรคและอาชญากรรมตามมา', 0, { crime: .03, sick: .012, tr: -3, next: [9, 'slum_fire'] }, 9)]; } },
-  jobs: { cat: 'เศรษฐกิจ', n: 'งาน', g: (S, x) => x.pop < 25 ? 0 : x.u / .16, line: (S, x) => 'ตกงาน ' + pct(x.u), t: 'คนตกงานเพิ่มขึ้น', b: (S, x) => 'มีคนว่างงาน ' + fmt(x.LF * x.u) + ' คน หลายครอบครัวเริ่มเลื่อนการมีลูกและคิดย้ายออก', why: (S, x) => ['คนทำงานได้ ' + fmt(x.LF) + ' คน มีงาน ' + fmt(x.emp), 'เอกชนมีเงินลงทุน ' + fmt(S.priv)],
+  jobs: { cat: 'เศรษฐกิจ', n: 'งาน', g: (S, x) => x.pop < 25 ? 0 : x.u / .14, line: (S, x) => 'ตกงาน ' + pct(x.u), t: 'คนตกงานเพิ่มขึ้น', b: (S, x) => 'มีคนว่างงาน ' + fmt(x.LF * x.u) + ' คน หลายครอบครัวเริ่มเลื่อนการมีลูกและคิดย้ายออก', why: (S, x) => ['คนทำงานได้ ' + fmt(x.LF) + ' คน มีงาน ' + fmt(x.emp), 'เอกชนมีเงินลงทุน ' + fmt(S.priv)],
     o: S => [O('จ้างคนซ่อมถนนและขุดคลอง', 'มีงานทันที แต่หมดเงินแล้วงานก็หมด', baseOf(S) * .6, { hp: 4, road: .03 }, 10), O('ลดภาษีธุรกิจ 3%', 'ธุรกิจลงทุนเพิ่ม แต่รัฐเก็บเงินได้น้อยลง', 0, { corp: 1, priv: .3 }, 12, { corp: -3 }), O('ให้ตลาดปรับตัวเอง', 'ไม่เสียเงิน แต่คนจนลำบากและอาชญากรรมขึ้น', 0, { crime: .02, tr: -4 }, 7)] },
   food: { cat: 'อาหาร', n: 'อาหาร', g: (S, x) => (1.2 - x.foodMonths) / .6 + x.hunger * 5, line: (S, x) => 'ข้าวในยุ้งพอ ' + x.foodMonths.toFixed(1) + ' เดือน', t: 'อาหารกำลังจะหมด', b: (S, x) => 'ยุ้งฉางเหลือพอกินอีก ' + x.foodMonths.toFixed(1) + ' เดือน ราคาข้าวเริ่มพุ่ง', why: (S, x, r) => ['ผลิตได้ ' + fmt(x.foodOut) + ' คนกิน ' + fmt(x.pop) + ' ต่อเดือน', r.soil < .6 ? 'ฝนน้อย ผลผลิตตก' : 'นาไม่พอกับคนที่เพิ่มขึ้น'],
     o: (S, x) => [O('นำเข้าข้าวฉุกเฉิน', 'อิ่มทันที แต่แพงตามราคาตลาด', Math.max(baseOf(S) * .5, x.pop * S.pFood * .6), { food: 1.6 }, 8), O('ปันส่วนอาหาร', 'ไม่เสียเงิน แต่ทุกคนหิวและไม่พอใจ', 0, { food: .5, hp: -5, unrest: 3 }, 6), O('ปล่อยให้ราคาขึ้น', 'คนมีเงินยังซื้อได้ คนจนอดก่อน', 0, { gini: .012, infl: .012, tr: -3, next: [4, 'famine'] }, 8)] },
@@ -132,7 +132,7 @@ const shuffled = l => { const a = l.slice(); for (let i = a.length - 1; i > 0; i
 const causeBox = L => L && L.length ? '<div class="cause"><b>สาเหตุ</b>' + L.map(q => '<span>' + q + '</span>').join('') + '</div>' : '';
 function applyO(S, card, o) {
   const fx = Object.assign({}, o.fx); delete fx.corp; if (Object.keys(fx).length) applyFx(S, fx); const r = S.r; if (o.corp) S.tax.corp = clamp(S.tax.corp + o.corp, 0, 45); if (o.garb) r.garb *= o.garb;
-  if (o.rep) for (const i of o.ids) { const b = G.byId.get(i); if (b && r.dmg[i] && (o.rep === 'all' || b.pub)) startRepair(i); } if (o.b) orderBuild(o.b[0], o.b[1]);
+  if (o.rep) for (const i of o.ids) { const b = G.byId.get(i); if (b && r.dmg[i] && (o.rep === 'all' || b.pub)) startRepair(i); } if (o.b) orderBuild(o.b[0], o.b[1]); if (o.econ) econAct(S, o.econ[0], o.econ[1]);
   /* the same problem comes back only if it is still there, and each time it waits longer so other things can happen */
   if (card.id) { const n = r.n[card.id] || 0; r.cool[card.id] = S.m + Math.round((o.cool || 8) * (1 + Math.min(4, n) * .7)); r.p[card.id] = .5; r.n[card.id] = n + 1; } news('ตัดสินใจ: ' + o.n); UI.dirty = true;
 }
@@ -184,7 +184,7 @@ UI.sheetClick = function (e) {
   if (q && q.dataset.a === 'rrep') { const S = G.S, R = ruins(S), c = R.reduce((p, b) => p + rCost(b), 0); UI.closeSheet(); payOr(c, 'ซ่อมอาคาร ' + R.length + ' หลัง', () => { R.forEach(b => startRepair(b.id)); news('ส่งช่างไปซ่อม ' + R.length + ' หลัง', 'good'); }, () => closeModal()); return; }
   sheetClick0(e);
 };
-const hud0 = UI.hud; UI.hud = function () { hud0(); const S = G.S, r = S.r; if (!r) return; const n = Object.keys(RI).filter(id => (r.p[id] || 0) >= .7).length, R = Object.keys(r.dmg).length; $('goal').insertAdjacentHTML('beforeend', '<small class="wx">ฝน ' + Math.round(r.rain) + ' มม. · แม่น้ำ ' + pct(r.river) + (n ? ' · เสี่ยง ' + n + ' เรื่อง' : '') + (R ? ' · พัง ' + R + ' หลัง' : '') + '</small>'); };
+const hud0 = UI.hud; UI.hud = function () { hud0(); const S = G.S, r = S.r; if (!r) return; const n = Object.keys(RI).filter(id => (r.p[id] || 0) >= .7).length, R = Object.values(r.dmg).filter(d => !d.c).length; $('goal').insertAdjacentHTML('beforeend', '<small class="wx">ฝน ' + Math.round(r.rain) + ' มม. · แม่น้ำ ' + pct(r.river) + (n ? ' · เสี่ยง ' + n + ' เรื่อง' : '') + (R ? ' · พัง ' + R + ' หลัง' : '') + '</small>'); };
 
 /* ---------- rain you can see ---------- */
 (function () {
