@@ -99,11 +99,17 @@ Object.assign(UNITS, {   // the owner's picks (2026-11-23): human knights (tribe
   ax_saucer:  { n: 'ขี่จานหนาม', tribe: 'x', role: 'melee', hp: 140, dmg: 10, cd: 1.0, spd: 3.8, rng: .5, mass: 2.2, charge: true, fly: true, fxk: 'punchG' },
   ax_tk:      { n: 'พลังจิตยกหิน', tribe: 'x', role: 'mage', hp: 70, dmg: 9, cd: 1.6, spd: 1.9, rng: 6, mass: 1, proj: 'rock', aoe: .9, ifx: 'rocks' },
 });
+const SKILL = {   // automatic, no buttons (owner: "สกิลกดไม่ไหว มันหลายตัว")
+  hk_tank: { n: 'กำแพงโล่', cd: 0, p: .45, T: 3 }, hk_glaive: { n: 'กวาดวง', cd: 8, p: .8 }, hk_blood: { n: 'แส้รัด', cd: 9, p: 1 }, hk_bat: { n: 'ซุ่มโจมตี', cd: 0, p: 2 }, hk_ranger: { n: 'ธนูทะลุ', cd: 9, p: 1 },
+  hk_mage: { n: 'เยือกแข็ง', cd: 12 }, hk_banner: { n: 'ปลุกใจ', cd: 0 }, hk_rider: { n: 'ชาร์จซ้ำ', cd: 14 }, hk_samurai: { n: 'ชักดาบ', cd: 10, p: 1.3 },
+  ax_tank: { n: 'หนีบจับ', cd: 6 }, ax_hunter: { n: 'ล่าเหยื่อ', cd: 0, p: .4 }, ax_hound: { n: 'แค้นฝูง', cd: 0 }, ax_assassin: { n: 'วาร์ป', cd: 5 }, ax_eye: { n: 'จ้องสะกด', cd: 0, p: 2 },
+  ax_priestess: { n: 'รังฟื้นฟู', cd: 8, p: 20 }, ax_saucer: { n: 'ลำแสงดูด', cd: 7 }, ax_tk: { n: 'พายุหิน', cd: 7 },
+};
 const HITF = { m_saw: 5, m_shield: 4, a_wolf: 4, a_rhino: 5, e_psychic: 5, e_jelly: 4, h_spear: 3, h_archer: 8, d_imp: 6, d_brute: 5, g_angel: 2, hk_tank: 5, hk_glaive: 3, hk_blood: 3, hk_bat: 3, hk_ranger: 7, hk_mage: 5, hk_banner: 4, hk_rider: 5, hk_samurai: 6, ax_tank: 3, ax_hunter: 2, ax_hound: 8, ax_assassin: 2, ax_eye: 2, ax_priestess: 4, ax_saucer: 3, ax_tk: 4, g_titan: 5 };   // the frame where the blow lands
 const MATCHES = { old: { names: ['ทัพซ้าย', 'ทัพขวา'], sub: ['เครื่องจักร · สัตว์ · มนุษย์', 'เอเลี่ยน · ปีศาจ · พระเจ้า'], army: null },
   knights: { names: ['ทัพมนุษย์', 'ทัพเอเลี่ยน'], sub: ['อัศวิน 9 แบบ', 'เอเลี่ยนดุ 8 แบบ'], army: [
     [['hk_tank', 4], ['hk_rider', 5], ['hk_glaive', 8], ['hk_blood', 6], ['hk_samurai', 2], ['hk_bat', 8], ['hk_banner', 3], ['hk_mage', 6], ['hk_ranger', 12]],
-    [['ax_tank', 4], ['ax_saucer', 5], ['ax_hunter', 8], ['ax_hound', 14], ['ax_assassin', 8], ['ax_tk', 4], ['ax_priestess', 3], ['ax_eye', 6]]] } };
+    [['ax_tank', 4], ['ax_saucer', 5], ['ax_hunter', 10], ['ax_hound', 16], ['ax_assassin', 8], ['ax_tk', 4], ['ax_priestess', 3], ['ax_eye', 6]]] } };
 const MATCH = MATCHES[(location.search.match(/[?&]match=(\w+)/) || [])[1]] || MATCHES.knights;
 const ARMY0 = [   // front to back (the first test armies, ?match=old)
   [['m_shield', 3], ['a_rhino', 3], ['m_saw', 10], ['h_spear', 14], ['a_wolf', 16], ['h_archer', 14]],
@@ -122,7 +128,7 @@ function newBattle() {
       const D = UNITS[k], m = META[k], r = Math.max(.32, m.w * ART * .3), per = Math.min(n, D.mass >= 3 ? 3 : 8), cols = Math.ceil(n / per), gap = r * 2.5;
       for (let i = 0; i < n; i++) {
         const c = Math.floor(i / per), row = i % per, rowsHere = Math.min(per, n - c * per), z = (row - (rowsHere - 1) / 2) * Math.min(3.4, 24 / rowsHere) + rnd(-.3, .3);
-        units.push({ id: id++, k, D, side, x: dir * (x + c * gap) + rnd(-.2, .2), z, r, hp: D.hp, max: D.hp, cdT: rnd(0, D.cd), tgt: null, tT: rnd(0, .3), face: side ? -1 : 1, atkT: 0, hitT: 0, knock: 0, walk: rnd(0, 9), dead: false, deadT: 0, charging: !!D.charge, seed: rnd(0, 99), y: D.fly ? .9 : 0, pack: 0 });
+        units.push({ id: id++, k, D, side, x: dir * (x + c * gap) + rnd(-.2, .2), z, r, hp: D.hp, max: D.hp, cdT: rnd(0, D.cd), tgt: null, tT: rnd(0, .3), face: side ? -1 : 1, atkT: 0, hitT: 0, knock: 0, walk: rnd(0, 9), dead: false, deadT: 0, charging: !!D.charge, seed: rnd(0, 99), y: D.fly ? .9 : 0, pack: 0, skT: SKILL[k] ? rnd(2, SKILL[k].cd * .7 + 2) : 0, stealth: k === 'hk_bat', shots: 0, deaths: 0 });
       }
       x += cols * gap + .6;
     }
@@ -131,28 +137,59 @@ function newBattle() {
   return B;
 }
 const alive = s => B.units.filter(u => !u.dead && u.side === s);
+const aimable = o => !o.dead && !o.stealth && !(o.abT > 0);
 function pickTarget(u) {
   let best = null, bd = 1e9; const D = u.D;
-  if (D.target === 'back') { for (const o of B.units) if (!o.dead && o.side !== u.side && (o.D.role === 'ranged' || o.D.role === 'mage')) { const d = Math.hypot(o.x - u.x, o.z - u.z); if (d < bd && d < 16) { bd = d; best = o; } } if (best) return best; }
-  if (D.target === 'weak') { let bh = 1e9; for (const o of B.units) if (!o.dead && o.side !== u.side) { const d = Math.hypot(o.x - u.x, o.z - u.z); if (d < 9 && o.hp < bh) { bh = o.hp; best = o; } } if (best) return best; }
-  for (const o of B.units) if (!o.dead && o.side !== u.side) { const d = Math.hypot(o.x - u.x, o.z - u.z) - (o.D.fly && !u.D.fly && u.D.role !== 'ranged' && u.D.role !== 'mage' ? 1.5 : 0); if (d < bd) { bd = d; best = o; } }
+  if (D.target === 'back') { for (const o of B.units) if (aimable(o) && o.side !== u.side && (o.D.role === 'ranged' || o.D.role === 'mage')) { const d = Math.hypot(o.x - u.x, o.z - u.z); if (d < bd && d < 16) { bd = d; best = o; } } if (best) return best; }
+  if (D.target === 'weak') { let bh = 1e9; for (const o of B.units) if (aimable(o) && o.side !== u.side) { const d = Math.hypot(o.x - u.x, o.z - u.z); if (d < 9 && o.hp < bh) { bh = o.hp; best = o; } } if (best) return best; }
+  for (const o of B.units) if (aimable(o) && o.side !== u.side) { const d = Math.hypot(o.x - u.x, o.z - u.z) - (o.D.fly && !u.D.fly && u.D.role !== 'ranged' && u.D.role !== 'mage' ? 1.5 : 0); if (d < bd) { bd = d; best = o; } }
   return best;
 }
 function hurt(t, dmg, from, kind) {
-  if (t.dead) return; const d = dmg * (1 - (t.D.armor || 0)); t.hp -= d; t.hitT = .1; t.knock = from ? Math.sign(t.x - from.x) || 1 : 0; B.hits++;
+  if (t.dead || t.abT > 0) return; const d = dmg * (1 - (t.D.armor || 0)) * (t.shieldT > 0 ? SKILL.hk_tank.p : 1); t.hp -= d; t.hitT = .1; t.knock = from ? Math.sign(t.x - from.x) || 1 : 0; B.hits++;
   if (!MUTE && B.nums.length < 140) B.nums.push({ x: t.x + rnd(-.55, .55), y: t.y + META[t.k].h * ART + rnd(.1, .6), z: t.z, v: Math.max(1, Math.round(d)), l: kind === 'crit' ? .95 : .75, c: kind === 'crit' ? '#ffd25a' : '#ffffff', big: kind === 'crit' });
   if (from && from.D.leech && !from.dead) from.hp = Math.min(from.max, from.hp + d * from.D.leech);
-  if (t.hp <= 0) { t.dead = true; t.deadT = 0; if (!MUTE) deathFx(t); }
+  if (t.hp <= 0) { t.dead = true; t.deadT = 0; if (!MUTE) deathFx(t); onDeath(t); }
 }
 function strike(u, t) {
-  const D = u.D; let dmg = D.dmg * (1 + u.pack + aura(u));
+  const D = u.D; let dmg = D.dmg * (1 + u.pack + aura(u)) * (u.frenzyT > 0 ? 1.3 : 1);
+  if (u.stealth) { u.stealth = false; dmg *= SKILL.hk_bat.p; say(u); fx('crit', t.x, CHEST(t), t.z, u.face, 1.2); }
+  if (u.k === 'ax_hunter' && t.hp / t.max < SKILL.ax_hunter.p) { dmg *= 2; if (Math.random() < .5) say(u); }
   if (D.heal) { let best = null, bf = .92; for (const o of B.units) if (!o.dead && o.side === u.side && o !== u && o.hp / o.max < bf && Math.hypot(o.x - u.x, o.z - u.z) < D.healR) { bf = o.hp / o.max; best = o; } if (best) { best.hp = Math.min(best.max, best.hp + D.heal); fx('heal', best.x, best.y + .05, best.z); if (!MUTE && B.nums.length < 140) B.nums.push({ x: best.x, y: CHEST(best) + .5, z: best.z, v: D.heal, l: .75, c: '#9cff5a' }); return; } }
-  if (D.proj === 'beam') { hurt(t, dmg, u); if (!MUTE) { B.fx.push({ k: 'beam', a: u, b: t, l: .18, L: .18 }); fx('psyG', t.x, CHEST(t), t.z, 1, 1.6); } return; }
+  if (D.proj === 'beam') { hurt(t, dmg, u); if (u.k === 'ax_eye' && ++u.shots % SKILL.ax_eye.p === 0 && !t.dead) { t.stunT = 1; say(u); fx('stun', t.x, CHEST(t) + .7, t.z); } if (!MUTE) { B.fx.push({ k: 'beam', a: u, b: t, l: .18, L: .18 }); fx('psyG', t.x, CHEST(t), t.z, 1, 1.6); } return; }
   if (u.charging) { u.charging = false; dmg *= 2; for (const o of B.units) if (!o.dead && o.side !== u.side && Math.hypot(o.x - t.x, o.z - t.z) < 1.6) { hurt(o, dmg * .5, u); o.x += u.face * .9; } fx('slam', t.x, .05, t.z, u.face); fx('shock', t.x, .05, t.z, u.face); fx('rocks', t.x, .05, t.z, u.face); shake(.3); hitstop(.07); }
-  if (D.proj) { B.proj.push({ k: D.proj, side: u.side, from: u, tgt: t, x: u.x, y: u.y + .9, z: u.z, sx: u.x, sz: u.z, t: 0, T: Math.max(.25, Math.hypot(t.x - u.x, t.z - u.z) / (D.proj === 'arrow' ? 15 : D.proj === 'rock' ? 7 : 9)), dmg, aoe: D.aoe || 0, miss: D.proj === 'arrow' && Math.random() < .1, c: D.pc, ifx: D.ifx }); return; }
+  if (D.proj) { B.proj.push({ k: D.proj, side: u.side, from: u, tgt: t, x: u.x, y: u.y + .9, z: u.z, sx: u.x, sz: u.z, t: 0, T: Math.max(.25, Math.hypot(t.x - u.x, t.z - u.z) / (D.proj === 'arrow' ? 15 : D.proj === 'rock' ? 7 : 9)), dmg, aoe: D.aoe || 0, miss: D.proj === 'arrow' && Math.random() < .1, c: u.frost ? '#bfeaff' : D.pc, ifx: u.frost ? 'frost' : D.ifx, slow: u.frost ? .4 : 0 }); u.frost = false; return; }
   const crit = Math.random() < (D.crit || .1); hurt(t, dmg * (crit ? 1.6 : 1), u, crit ? 'crit' : ''); hitFx(u, t, crit);
   if (D.slam) { for (const o of B.units) if (!o.dead && o !== t && o.side !== u.side && !o.D.fly && Math.hypot(o.x - t.x, o.z - t.z) < D.slam) hurt(o, dmg * .6, u); fx('shock', t.x, .05, t.z, u.face); }
   if (D.cleave) for (const o of B.units) if (!o.dead && o !== t && o.side !== u.side && Math.hypot(o.x - t.x, o.z - t.z) < D.cleave) hurt(o, dmg * .5, u);
+}
+function foes(u, r, x = u.x, z = u.z) { const out = []; for (const o of B.units) if (aimable(o) && o.side !== u.side && Math.hypot(o.x - x, o.z - z) < r) out.push(o); return out; }
+function say(u) { if (MUTE || !SKILL[u.k] || B.fx.filter(f => f.k === 'txt').length > 7) return; B.fx.push({ k: 'txt', s: SKILL[u.k].n, x: u.x, y: CHEST(u) + 1.1, z: u.z, l: 1.1, L: 1.1, c: u.side ? '#c8ff9a' : '#bfe0ff' }); }
+function skill(u) {   // returns true when it fired (then the cooldown restarts)
+  const D = u.D, t = u.tgt, f = u.face;
+  switch (u.k) {
+    case 'hk_glaive': { const near = foes(u, 1.7); if (near.length < 2) return false; for (const o of near) hurt(o, D.dmg * SKILL[u.k].p, u); fx('shock', u.x, .05, u.z, f, 1.4); fx('slashW', u.x, CHEST(u), u.z, -f, 1.6); say(u); return true; }
+    case 'hk_blood': { const far = foes(u, 4.2).filter(o => Math.hypot(o.x - u.x, o.z - u.z) > 1.6); if (!far.length) return false; const o = far[0], d = Math.hypot(o.x - u.x, o.z - u.z); o.x = u.x + (o.x - u.x) / d * 1.1; o.z = u.z + (o.z - u.z) / d * 1.1; o.stunT = .4; hurt(o, D.dmg * SKILL[u.k].p, u); drain(o, u); fx('sparkR', o.x, CHEST(o), o.z); say(u); return true; }
+    case 'hk_ranger': { if (!t || !aimable(t)) return false; const dx = t.x - u.x, dz = t.z - u.z, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L, end = { x: u.x + ux * 12, y: .9, z: u.z + uz * 12 }; let n = 0;
+      for (const o of B.units) if (aimable(o) && o.side !== u.side) { const px = o.x - u.x, pz = o.z - u.z, along = px * ux + pz * uz, off = Math.abs(px * uz - pz * ux); if (along > 0 && along < 12 && off < .6) { hurt(o, D.dmg * SKILL[u.k].p, u); n++; } }
+      if (!MUTE) B.fx.push({ k: 'beam', a: u, b: end, l: .22, L: .22, c1: '#fff2c0', c2: '#ffffff' }); say(u); return n > 0; }
+    case 'hk_mage': u.frost = true; say(u); return true;
+    case 'hk_rider': { if (u.charging) return false; u.x -= f * 1.6; u.charging = true; fx('dust', u.x, .05, u.z, f); say(u); return true; }
+    case 'hk_samurai': { if (!t || Math.hypot(t.x - u.x, t.z - u.z) > 5) return false; const dx = t.x - u.x, dz = t.z - u.z, L = Math.hypot(dx, dz) || 1, go = Math.min(4.5, L + 1.4), sx = u.x, sz = u.z;
+      for (const o of B.units) if (aimable(o) && o.side !== u.side) { const px = o.x - sx, pz = o.z - sz, along = (px * dx + pz * dz) / L, off = Math.abs(px * dz - pz * dx) / L; if (along > 0 && along < go && off < .8) { hurt(o, D.dmg * SKILL[u.k].p, u, 'crit'); fx('slashW', o.x, CHEST(o), o.z, f, 1.8); } }
+      u.x = clamp(sx + dx / L * go, -BW / 2 + .8, BW / 2 - .8); u.z = clamp(sz + dz / L * go, -BD / 2 + .8, BD / 2 - .8); if (!MUTE) B.fx.push({ k: 'beam', a: { x: sx, y: .7, z: sz }, b: { x: u.x, y: .7, z: u.z }, l: .25, L: .25, c1: '#ffffff', c2: '#ffe0e0' }); say(u); return true; }
+    case 'ax_tank': { if (!t || !aimable(t) || Math.hypot(t.x - u.x, t.z - u.z) > D.rng + u.r + t.r + .3) return false; t.heldT = 2; hurt(t, D.dmg, u); fx('punchG', t.x, CHEST(t), t.z, f); fx('stun', t.x, CHEST(t) + .7, t.z); say(u); return true; }
+    case 'ax_assassin': { let best = null, bh = 1e9; for (const o of foes(u, 9)) if (o.hp < bh) { bh = o.hp; best = o; } if (!best) return false; fx('blink', u.x, .05, u.z); u.x = clamp(best.x - best.face * .9, -BW / 2 + .8, BW / 2 - .8); u.z = best.z; u.tgt = best; u.cdT = 0; fx('blink', u.x, .05, u.z); say(u); return true; }
+    case 'ax_priestess': { let n = 0; for (const o of B.units) if (!o.dead && o.side === u.side && o.hp < o.max && Math.hypot(o.x - u.x, o.z - u.z) < 4.5) { o.hp = Math.min(o.max, o.hp + SKILL[u.k].p); if (n++ < 8) fx('heal', o.x, o.y + .05, o.z); } if (!n) return false; ring(u.x, u.z, 4.5, '#9cff5a'); say(u); return true; }
+    case 'ax_saucer': { const v = foes(u, 3.2).filter(o => o.D.mass < 3); if (!v.length) return false; const o = v[0]; o.abT = 2; o.sw = null; if (!MUTE) B.fx.push({ k: 'beam', a: u, b: o, l: 2, L: 2, c1: '#9cff5a', c2: '#eaffd8', lift: true }); say(u); return true; }
+    case 'ax_tk': { const v = foes(u, D.rng + 1.5); if (!v.length) return false; for (let i = 0; i < 3; i++) { const o = v[Math.floor(Math.random() * v.length)]; B.proj.push({ k: 'rock', side: u.side, from: u, tgt: o, x: u.x, y: 1.4, z: u.z, sx: u.x, sz: u.z, t: -i * .12, T: .7, dmg: D.dmg, aoe: D.aoe, miss: false, ifx: 'rocks' }); } say(u); return true; }
+  }
+  return false;
+}
+function onDeath(t) {
+  for (const o of B.units) { if (o.dead || o.side !== t.side) continue; const d = Math.hypot(o.x - t.x, o.z - t.z);
+    if (o.k === 'hk_banner' && d < 4 && ++o.deaths >= 3) { o.deaths = 0; say(o); fx('rally', o.x, .05, o.z); for (const a of B.units) if (!a.dead && a.side === o.side && Math.hypot(a.x - o.x, a.z - o.z) < 4) a.hasteT = 4; }
+    if (t.k === 'ax_hound' && o.k === 'ax_hound' && d < 4) { o.frenzyT = 3; if (Math.random() < .3) say(o); } }
 }
 const aura = u => { for (const o of B.units) if (!o.dead && o !== u && o.side === u.side && o.D.aura && Math.abs(o.x - u.x) < 3.2 && Math.abs(o.z - u.z) < 3.2) return o.D.aura; return 0; };   // banner bearers rally the allies round them
 const traj = (p, k, out) => { out.x = p.sx + (p.tgt.x - p.sx) * k + (p.miss ? .9 * k : 0); out.z = p.sz + (p.tgt.z - p.sz) * k; out.y = .9 + Math.sin(k * Math.PI) * (p.k === 'arrow' ? 1.6 : p.k === 'rock' ? 1.2 : .5) - k * .5; return out; };
@@ -167,19 +204,26 @@ function step(dt) {
   if (!B || B.phase !== 'fight') return; B.t += dt;
   for (const u of B.units) {
     if (u.dead) { u.deadT += dt; continue; } const D = u.D;
-    u.cdT -= dt; u.atkT = Math.max(0, u.atkT - dt); u.hitT = Math.max(0, u.hitT - dt); u.tT -= dt;
+    for (const s2 of ['shieldT', 'slowT', 'hasteT', 'frenzyT', 'tauntT']) if (u[s2] > 0) u[s2] -= dt;
+    if (u.abT > 0) { u.abT -= dt; if (u.abT <= 0) { u.abT = 0; hurt(u, 12, null); fx('puff', u.x, .05, u.z); } continue; }   // abducted: floating, out of the fight
+    if (u.stunT > 0 || u.heldT > 0) { u.stunT -= dt; u.heldT -= dt; u.sw = null; continue; }
+    if (u.shieldT > 0 && (u.shFx = (u.shFx || 0) - dt) <= 0) { u.shFx = .9; fx('shieldB', u.x, .05, u.z); }
+    if (SKILL[u.k] && SKILL[u.k].cd && (u.skT -= dt) <= 0 && !u.sw && skill(u)) u.skT = SKILL[u.k].cd * rnd(.9, 1.1);
+    u.cdT -= u.hasteT > 0 ? dt * 1.45 : dt; u.atkT = Math.max(0, u.atkT - dt); u.hitT = Math.max(0, u.hitT - dt); u.tT -= dt;
     if (u.tgt && u.tgt.dead) u.tgt = null;
-    if (!u.tgt || u.tT <= 0) { u.tgt = pickTarget(u) || u.tgt; u.tT = .3 + rnd(0, .15); if (D.pack) { let n = 0; for (const o of B.units) if (!o.dead && o !== u && o.k === u.k && Math.abs(o.x - u.x) < 3 && Math.abs(o.z - u.z) < 3) n++; u.pack = Math.min(.3, n * .04); } }
+    if (u.tauntT > 0 && u.taunter && !u.taunter.dead) u.tgt = u.taunter;
+    else if (!u.tgt || u.tT <= 0 || !aimable(u.tgt)) { u.tgt = pickTarget(u) || (u.tgt && aimable(u.tgt) ? u.tgt : null); u.tT = .3 + rnd(0, .15); if (D.pack) { let n = 0; for (const o of B.units) if (!o.dead && o !== u && o.k === u.k && Math.abs(o.x - u.x) < 3 && Math.abs(o.z - u.z) < 3) n++; u.pack = Math.min(.3, n * .04); } }
     if (u.sw) { const w = u.sw; w.t += dt; if (!w.hit && w.t >= w.T * (HITF[u.k] || 4) / 12) { w.hit = true; if (!w.tgt.dead) strike(u, w.tgt); } if (w.t >= w.T) u.sw = null; else continue; }
     const t = u.tgt; if (!t) continue;
     const dx = t.x - u.x, dz = t.z - u.z, d = Math.hypot(dx, dz) || .01, reach = D.rng + u.r + t.r;
     if (Math.abs(dx) > .15) u.face = dx > 0 ? 1 : -1;
-    if (d > reach) { const sp = D.spd * (u.charging ? 2.2 : 1) * dt; u.x += dx / d * sp; u.z += dz / d * sp; u.walk += sp * 3.2; if (u.charging && (u.dustT = (u.dustT || 0) - dt) <= 0) { u.dustT = .12; fx('dust', u.x - u.face * .4, .05, u.z, u.face); } }
+    if (u.k === 'hk_tank' && !u.walled && u.hp < u.max * .5) { u.walled = true; u.shieldT = SKILL.hk_tank.T; say(u); for (const o of B.units) if (!o.dead && o.side !== u.side && Math.hypot(o.x - u.x, o.z - u.z) < 3.2) { o.tauntT = SKILL.hk_tank.T; o.taunter = u; } }
+    if (d > reach) { const sp = D.spd * (u.charging ? 2.2 : 1) * (u.slowT > 0 ? 1 - u.slowK : 1) * (u.frenzyT > 0 ? 1.4 : 1) * dt; u.x += dx / d * sp; u.z += dz / d * sp; u.walk += sp * 3.2; if (u.charging && (u.dustT = (u.dustT || 0) - dt) <= 0) { u.dustT = .12; fx('dust', u.x - u.face * .4, .05, u.z, u.face); } }
     else if (u.cdT <= 0 && !u.sw) { u.cdT = D.cd * rnd(.92, 1.08); u.sw = { t: 0, T: clamp(D.cd * .85, .38, .75), tgt: t, hit: false }; }
     u.x = clamp(u.x, -BW / 2 + .8, BW / 2 - .8); u.z = clamp(u.z, -BD / 2 + .8, BD / 2 - .8);
   }
-  for (let i = B.proj.length - 1; i >= 0; i--) { const p = B.proj[i]; p.t += dt; const tx = p.tgt.x, tz = p.tgt.z, k = clamp(p.t / p.T, 0, 1); traj(p, k, p);
-    if (k >= 1) { B.proj.splice(i, 1); if (p.miss) continue; if (p.aoe) { for (const o of B.units) if (!o.dead && o.side !== p.side && Math.hypot(o.x - tx, o.z - tz) < p.aoe) hurt(o, p.dmg, p.from); if (p.ifx === 'rocks') { fx('rocks', tx, .05, tz); fx('psyG', tx, .5, tz, 1, 1.6); shake(.08); } else fx(p.ifx || 'psy', tx, .7, tz, 1, 1.35); } else { hurt(p.tgt, p.dmg, p.from); fx('arrowHit', tx, CHEST(p.tgt), tz, tx >= p.sx ? 1 : -1); } } }
+  for (let i = B.proj.length - 1; i >= 0; i--) { const p = B.proj[i]; p.t += dt; if (p.t < 0) continue; const tx = p.tgt.x, tz = p.tgt.z, k = clamp(p.t / p.T, 0, 1); traj(p, k, p);
+    if (k >= 1) { B.proj.splice(i, 1); if (p.miss) continue; if (p.aoe) { for (const o of B.units) if (!o.dead && o.side !== p.side && Math.hypot(o.x - tx, o.z - tz) < p.aoe * (p.slow ? 1.5 : 1)) { hurt(o, p.dmg, p.from); if (p.slow) { o.slowT = 2.5; o.slowK = p.slow; } } if (p.ifx === 'rocks') { fx('rocks', tx, .05, tz); fx('psyG', tx, .5, tz, 1, 1.6); shake(.08); } else if (p.ifx === 'frost') fx('frost', tx, .05, tz); else fx(p.ifx || 'psy', tx, .7, tz, 1, 1.35); } else { hurt(p.tgt, p.dmg, p.from); fx('arrowHit', tx, CHEST(p.tgt), tz, tx >= p.sx ? 1 : -1); } } }
   separate();
   const a = alive(0).length, b = alive(1).length; if (!a || !b) { B.phase = 'over'; B.win = a ? 0 : b ? 1 : -1; if (!MUTE) onOver(); }
 }
@@ -196,6 +240,7 @@ const FXDEF = {
   puff: ['smoke/dust-puff', null], boom: ['explosions/small-explosion', null], feathers: ['holy/angel-feathers', null], flames: ['fire/ground-flames', null],
   slashW: ['melee/sword-combo', null], clawG: ['melee/shadow-claw', '#9cff5a'], thrustG: ['melee/spear-thrust', '#9cff5a'], punchG: ['impacts/punch-hit', '#9cff5a'], psyG: ['explosions/arcane-burst', '#9cff5a'],
   psyB: ['explosions/arcane-burst', '#6fb8ff'], heal: ['holy/holy-heal', '#9cff5a'], acidG: ['nature/acid-splash', '#9cff5a'],
+  shieldB: ['holy/shield-bubble', '#6fb8ff'], frost: ['ice/frost-nova', null], rally: ['status/power-up-aura', '#ffd25a'], blink: ['arcane/blink-out', '#9cff5a'], stun: ['status/stun-stars', null],
 };
 const FXS = {};
 async function loadFx() { await Promise.all(Object.entries(FXDEF).map(async ([k, [path, tint]]) => { try {
@@ -340,7 +385,7 @@ function draw(dt, now) {
   for (const k in KIND) KIND[k].n = 0; let sn = 0;
   for (const u of B.units) {
     if (u.dead && u.deadT > .6) continue; const K = KIND[u.k], i = K.n++; if (i >= K.cap) { K.n--; continue; }
-    const fly = u.D.fly ? .9 + .12 * Math.sin(now * 5 + u.seed) : 0; u.y = u.D.fly ? .9 : 0;
+    const fly = (u.D.fly ? .9 + .12 * Math.sin(now * 5 + u.seed) : 0) + (u.abT > 0 ? 1.4 * Math.min(1, (2 - u.abT) * 2) : 0); u.y = u.D.fly ? .9 : 0;
     let ox = 0, oy = 0, fc = 0, fr = 0; const A = K.A, moving = B.phase === 'fight' && u.tgt && !u.dead && !u.sw && Math.hypot(u.tgt.x - u.x, u.tgt.z - u.z) > u.D.rng + u.r + u.tgt.r;
     if (u.dead) { fc = u.fc || 0; fr = u.fr || 0; }
     else if (u.sw && A) fc = Math.min(A.atk - 1, Math.floor(u.sw.t / u.sw.T * A.atk));
@@ -349,7 +394,7 @@ function draw(dt, now) {
     if (!u.dead) { u.fc = fc; u.fr = fr; }
     if (u.hitT > 0 && u.knock) ox += u.knock * 2;
     if (u.dead) oy = -Math.round(u.deadT * 6);
-    K.aPos.setXYZW(i, u.x, fly, u.z, u.face); K.aOff.setXYZW(i, ox, oy, 0, 0); K.aFr.setXY(i, fc, fr); K.aFx.setXYZW(i, u.hitT > 0 ? .85 : 0, u.dead ? clamp(u.deadT / .6, 0, 1) : 0, shadeAt(u.x, u.z), 0);
+    K.aPos.setXYZW(i, u.x, fly, u.z, u.face); K.aOff.setXYZW(i, ox, oy, 0, 0); K.aFr.setXY(i, fc, fr); K.aFx.setXYZW(i, u.hitT > 0 ? .85 : 0, u.dead ? clamp(u.deadT / .6, 0, 1) : u.stealth ? .55 : 0, shadeAt(u.x, u.z), 0);
     if (!u.dead && sn < shadowB.cap) { const m = META[u.k]; shadowB.a.setXYZW(sn++, u.x + (u.D.fly ? .5 : 0), u.z + (u.D.fly ? .45 : 0), m.w * PXW * (u.D.fly ? .5 : .62), m.h * PXW * (u.D.fly ? .3 : 1)); }
   }
   for (const k in KIND) { const K = KIND[k]; K.mesh.geometry.instanceCount = K.n; if (K.n) K.aPos.needsUpdate = K.aOff.needsUpdate = K.aFx.needsUpdate = K.aFr.needsUpdate = true; }
@@ -364,8 +409,10 @@ function draw(dt, now) {
   for (let i = B.fx.length - 1; i >= 0; i--) { const f = B.fx[i]; f.l -= dt; if (f.l <= 0) { B.fx.splice(i, 1); continue; } const a = clamp(f.l / f.L, 0, 1);
     if (f.k === 'sheet') { const S = FXS[f.key]; f.t += dt * f.sp; if (f.t >= S.T) { B.fx.splice(i, 1); continue; } let fi = 0; while (fi < S.fr.length - 1 && S.fr[fi].end <= f.t) fi++; const F = S.fr[fi], [x, y] = proj(f.x, f.y, f.z), yy = y - S.pv[1] * P;
       if (f.face >= 0) o.drawImage(S.src, F.x, F.y, F.w, F.h, x - S.pv[0] * P, yy, F.w * P, F.h * P); else { o.save(); o.translate(x, 0); o.scale(-1, 1); o.drawImage(S.src, F.x, F.y, F.w, F.h, -S.pv[0] * P, yy, F.w * P, F.h * P); o.restore(); } continue; }
-    if (f.k === 'beam') { if (f.a.dead && f.b.dead) { B.fx.splice(i, 1); continue; } const [x1, y1] = proj(f.a.x + f.a.face * f.a.r, CHEST(f.a) + .15, f.a.z), [x2, y2] = proj(f.b.x, CHEST(f.b), f.b.z), n = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / P)); o.globalAlpha = a;
-      for (let s = 0; s <= n; s++) { const x = Math.round(x1 + (x2 - x1) * s / n), y = Math.round(y1 + (y2 - y1) * s / n); o.fillStyle = '#9cff5a'; o.fillRect(x - P, y - P, 2 * P, 2 * P); o.fillStyle = '#eaffd8'; o.fillRect(x - (P >> 1), y - (P >> 1), P, P); } o.globalAlpha = 1; continue; }
+    if (f.k === 'beam') { if ((f.a.dead && f.b.dead) || (f.lift && (f.a.dead || f.b.dead))) { B.fx.splice(i, 1); continue; } const pa = f.a.D ? [f.a.x + (f.lift ? 0 : f.a.face * f.a.r), CHEST(f.a) + .15, f.a.z] : [f.a.x, f.a.y, f.a.z], pb = f.b.D ? [f.b.x, CHEST(f.b) + (f.lift ? 1.2 : 0), f.b.z] : [f.b.x, f.b.y, f.b.z];
+      const [x1, y1] = proj(...pa), [x2, y2] = proj(...pb), n = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / P)); o.globalAlpha = f.lift ? .7 : a;
+      for (let s = 0; s <= n; s++) { const x = Math.round(x1 + (x2 - x1) * s / n), y = Math.round(y1 + (y2 - y1) * s / n); o.fillStyle = f.c1 || '#9cff5a'; o.fillRect(x - P, y - P, 2 * P, 2 * P); o.fillStyle = f.c2 || '#eaffd8'; o.fillRect(x - (P >> 1), y - (P >> 1), P, P); } o.globalAlpha = 1; continue; }
+    if (f.k === 'txt') { f.y += dt * .7; const [x, y] = proj(f.x, f.y, f.z), fsz = Math.max(11, Math.round(7 * DPR)); o.globalAlpha = clamp(f.l / f.L * 2, 0, 1); o.font = `800 ${fsz}px Kanit, sans-serif`; o.textAlign = 'center'; o.lineWidth = Math.max(2, DPR); o.strokeStyle = '#140c06'; o.strokeText(f.s, x, y); o.fillStyle = f.c; o.fillText(f.s, x, y); o.globalAlpha = 1; continue; }
     if (f.k === 'drain') { f.t += dt; if (f.t >= f.T || f.to.dead) { B.fx.splice(i, 1); continue; } if (f.t < 0) continue; const k = f.t / f.T, ty = CHEST(f.to), [x, y] = proj(f.x + (f.to.x - f.x) * k, f.y + (ty - f.y) * k + Math.sin(k * Math.PI) * .6, f.z + (f.to.z - f.z) * k); o.fillStyle = '#ff3048'; o.fillRect(x - P, y - P, 2 * P, 2 * P); o.fillStyle = '#ffb0b8'; o.fillRect(x - P, y - P, P, P); continue; }
     if (f.k === 'bit') { f.x += f.vx * dt; f.y += f.vy * dt; f.z += f.vz * dt; f.vy -= 10 * dt; if (f.y < 0) { f.y = 0; f.vy *= -.3; f.vx *= .6; } const [x, y] = proj(f.x, f.y, f.z); o.globalAlpha = a; o.fillStyle = f.c; o.fillRect(x, y, P * 2, P * 2); }
     else if (f.k === 'swoosh') { const [x, y] = proj(f.x, f.y, f.z), k = 1 - a; o.globalAlpha = a; o.fillStyle = f.c; for (let s = 0; s < 7; s++) { const t = (s / 6 - .5) * 2.2 + k * .8, r = 7 * P; o.fillRect(x + Math.round(Math.cos(t) * r) * f.face - P, y - Math.round(Math.sin(t) * r), P * 2, P * 2); } }
@@ -394,7 +441,7 @@ function input() {
   $('again').onclick = () => { newBattle(); $('ban').classList.add('hide'); $('go').classList.remove('hide'); };
 }
 async function boot() {
-  META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, ARMY, MATCH, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; } };
+  META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, ARMY, MATCH, SKILL, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; } };
   document.querySelector('.army.l b').textContent = MATCH.names[0]; document.querySelector('.army.r b').textContent = MATCH.names[1]; document.querySelector('.army.l small').textContent = MATCH.sub[0]; document.querySelector('.army.r small').textContent = MATCH.sub[1];
   if (NORENDER) { buildWorld(); window.CLASH.ready = true; return; }
   renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true }); renderer.setClearColor(0x1a140e);
