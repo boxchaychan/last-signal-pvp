@@ -36,10 +36,56 @@ MOVE = {
    'd_imp': 'flying in place, flapping its bat wings up and down, bobbing, a looping flight cycle',
    'g_angel': 'hovering in place, flapping its white wings, sword ready, a looping flight cycle',
    'h_archer': 'walking forward to the right in place, legs stepping, bow in hand, a looping walk cycle'}}
+# the human knights (owner 2026-11-23 "เอาไปเจนท่าเลยทั้งหมดที่พูดมา"): picks from batch 3 (k3_02 18 20 07 14 10) and batch 2 (33 32 44)
+SUBJ.update({'hk_tank': 'a small bronze knight with a tall tower shield and a short sword', 'hk_samurai': 'a small red samurai knight with a katana',
+ 'hk_bat': 'a small dark knight with a bat-wing helmet and two daggers', 'hk_ranger': 'a small hooded ranger knight with a longbow',
+ 'hk_mage': 'a small blue hooded mage knight with a crystal staff', 'hk_banner': 'a small knight captain holding a tall blue war banner',
+ 'hk_glaive': 'a small silver knight with a unicorn-horn helmet and a glaive', 'hk_rider': 'a small knight riding a brown horse, holding a lance',
+ 'hk_blood': 'a small crimson knight with a long whip sword'})
+MOVE['attack'].update({'hk_tank': 'bashes forward to the right with the tower shield and stabs with the short sword, then steps back to stance',
+ 'hk_samurai': 'swings the katana in a fast horizontal slash forward to the right, then returns to stance',
+ 'hk_bat': 'dashes forward to the right and slashes with both daggers in a quick cross cut, then hops back to stance',
+ 'hk_ranger': 'draws the longbow fully, aims to the right and releases an arrow, then lowers the bow',
+ 'hk_mage': 'raises the crystal staff and casts a blue magic bolt forward to the right, then lowers the staff',
+ 'hk_banner': 'swings the war banner forward to the right in a rallying sweep, the flag waving, then plants it again',
+ 'hk_glaive': 'swings the glaive in a wide forward arc to the right, then returns to stance',
+ 'hk_rider': 'the horse rears up and the knight thrusts the lance forward to the right, then the horse settles',
+ 'hk_blood': 'lashes the whip sword forward to the right in a long snaking strike, then pulls it back'})
+MOVE['walk'].update({'hk_tank': 'marching forward to the right in place behind the tower shield, legs stepping, a looping walk cycle',
+ 'hk_samurai': 'walking forward to the right in place, katana held ready, legs stepping, a looping walk cycle',
+ 'hk_bat': 'sneaking forward to the right in place, crouched low with daggers ready, a looping walk cycle',
+ 'hk_ranger': 'walking forward to the right in place, longbow in hand, legs stepping, a looping walk cycle',
+ 'hk_mage': 'walking forward to the right in place, robe swaying, staff in hand, a looping walk cycle',
+ 'hk_banner': 'marching forward to the right in place holding the banner upright, the flag waving, a looping walk cycle',
+ 'hk_glaive': 'marching forward to the right in place, glaive held upright, a looping walk cycle',
+ 'hk_rider': 'the horse gallops in place to the right, legs moving, rider bouncing, a looping gallop cycle',
+ 'hk_blood': 'walking forward to the right in place, whip sword trailing, a looping walk cycle'})
 FRAMES = {'attack': 12, 'walk': 8}
 
-def prep():
-    for k in SUBJ:
+# alien tribe (owner 2026-11-23 picks from batch 4: a4_12 00 07 29 34 19 55 45; "เจนท่า")
+SUBJ.update({'ax_tank': 'a dark red armoured alien brute with big crab claws', 'ax_hunter': 'an alien hunter with a bone-white skull mask and an energy spear',
+ 'ax_hound': 'an eyeless black and toxic green alien hound with huge jaws', 'ax_assassin': 'a black cyborg alien assassin with two magenta energy blades',
+ 'ax_eye': 'a shadow tentacle horror with one huge glowing cyan eye', 'ax_priestess': 'a purple alien hive priestess with long antennae and a glowing staff',
+ 'ax_saucer': 'an alien riding a small spiked flying saucer', 'ax_tk': 'a purple telekinetic alien surrounded by floating rocks'})
+MOVE['attack'].update({'ax_tank': 'snaps forward to the right with both huge crab claws, then pulls back',
+ 'ax_hunter': 'lunges forward to the right and thrusts the energy spear, then pulls back to stance',
+ 'ax_hound': 'pounces forward to the right and snaps its huge jaws, then lands back',
+ 'ax_assassin': 'dashes forward to the right and slashes with both energy blades in a fast cross cut, then hops back',
+ 'ax_eye': 'the huge eye glows and fires a cyan beam forward to the right, tentacles writhing, then dims',
+ 'ax_priestess': 'raises the glowing staff and sends a pulse of purple energy forward to the right, then lowers it',
+ 'ax_saucer': 'the spiked saucer rams forward to the right, spinning its spikes, then pulls back',
+ 'ax_tk': 'raises both hands and hurls a floating rock forward to the right with a purple aura, then the rocks circle again'})
+MOVE['walk'].update({'ax_tank': 'stomping forward to the right in place on heavy legs, claws swaying, a looping walk cycle',
+ 'ax_hunter': 'stalking forward to the right in place, spear ready, a looping walk cycle',
+ 'ax_hound': 'running forward to the right in place on four legs, a looping run cycle',
+ 'ax_assassin': 'sneaking forward to the right in place, blades ready, a looping walk cycle',
+ 'ax_eye': 'slithering forward to the right in place on writhing tentacles, a looping crawl cycle',
+ 'ax_priestess': 'gliding forward to the right in place, robe swaying, staff in hand, a looping walk cycle',
+ 'ax_saucer': 'the saucer hovers and bobs in place, lights blinking, a looping hover cycle',
+ 'ax_tk': 'walking forward to the right in place, floating rocks circling around it, a looping walk cycle'})
+
+def prep(only=None):
+    for k in (only or SUBJ):
         im = Image.open(os.path.join(ROOT, 'art/clash/units', k + '.png')).convert('RGBA'); w, h = im.size
         c = Image.new('RGBA', (C, C), (0, 0, 0, 0)); x = max(2, min(C - w - 2, 30 - w // 2)); c.paste(im, (x, FOOT - h), im)
         c.save(os.path.join(OUT, k + '_in.png')); print(k, 'at', x, FOOT - h)
@@ -68,6 +114,6 @@ def fetch():
 
 if __name__ == '__main__':
     cmd = sys.argv[1]
-    if cmd == 'prep': prep()
+    if cmd == 'prep': prep(sys.argv[2:] or None)
     elif cmd == 'go': go(sys.argv[2:])
     elif cmd == 'fetch': fetch()
