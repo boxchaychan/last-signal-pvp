@@ -1,13 +1,13 @@
 """clash.html batch 8 = COMMANDERS (owner 2026-11-23 "ตัวแรกฝั่งคนอยากทำลิโป้ ขี่ม้า ของคาสไรเดอร์": slots c8_00, c8_02, c8_10 = 3 different
 Lu Bu style mounted warlords for the human RIDER commander, described by look only: own design, no game's version copied); (owner 2026-11-23 "กำหนดตัวแปรชัยชนะ โดยเพิ่มแม่ทัพ" -> picked "เจนใหม่ด้วย PixelLab"):
 64 DIFFERENT army commanders for all 6 tribes (human 12, alien 11, animal 11, machine 10, demon 10, god 10), own designs, public-domain myths only.
-Slot = 40 px (bigger than the 25-39 px soldiers): the style pictures are 32 px fierce sprites from batches 3 / 4 / 6 / 7 padded onto a 40 x 40 canvas,
-because the style picture's size sets the slot size. 64 items at 33-42 px = 15 generations. Dry run by default; `--go` only after the owner says "เจน"."""
+Slot = 32 px, the SAME size as the soldiers (owner "เอาไม่ต้องใหญ่ มาพอๆกับทหาร"): the style pictures are 32 px fierce sprites from batches 3 / 4 / 6 / 7
+(the style picture's size sets the slot size). 64 items at 16-32 px = 10 generations. Dry run by default; `--go` only after the owner says "เจน"."""
 import json, base64, sys, os, io
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')); os.environ.setdefault('PL_KEY', 'proxy-injected')
 from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__)); R = os.path.join(HERE, '../..'); OUT = os.path.join(R, 'art/incoming/clash/batch8')
-K = 'fierce chibi army COMMANDER, grander and bigger than a soldier, heroic leader pose, bold silhouette, battle ready'
+K = 'fierce chibi army COMMANDER, heroic leader pose, ornate gear, bold silhouette, battle ready'
 CM = {
  'human': ['legendary ancient chinese warlord riding a red warhorse, two very long pheasant tail feathers on his helmet, crescent-bladed halberd raised, red and gold armour', 'knight commander on foot holding a tall war banner and a longsword, blue cape',
    'ancient chinese warlord charging on a dark red horse, halberd pointed forward, black and gold armour, two long pheasant feathers on his helmet, flowing red cape', 'paladin commander with a glowing holy hammer and a tower shield, white and gold armour',
@@ -44,12 +44,12 @@ assert len(items) == 64 and len(set(items)) == 64, (len(items), len(set(items)))
 SP = ['batch3/raw/k3_02', 'batch3/raw/k3_18', 'batch4/raw/a4_12', 'batch4/raw/a4_34', 'batch6/raw/p6_00', 'batch7/raw/m7_01', 'batch7/raw/m7_12', 'batch3/raw/k3_10']
 style = []
 for f in SP:
-    im = Image.open(os.path.join(R, 'art/incoming/clash', f + '.png')).convert('RGBA'); c = Image.new('RGBA', (40, 40), (0, 0, 0, 0)); c.paste(im, ((40 - im.width) // 2, 40 - im.height), im)
-    b = io.BytesIO(); c.save(b, 'PNG'); style.append({'type': 'base64', 'base64': base64.b64encode(b.getvalue()).decode(), 'format': 'png'})
+    im = Image.open(os.path.join(R, 'art/incoming/clash', f + '.png')).convert('RGBA'); assert im.size == (32, 32), im.size
+    b = io.BytesIO(); im.save(b, 'PNG'); style.append({'type': 'base64', 'base64': base64.b64encode(b.getvalue()).decode(), 'format': 'png'})
 args = {'description': f'tiny {K}, pixel art game sprite, side view facing right, full body, dark outline, bright colours', 'name': 'clash commanders batch 8',
         'view': 'sidescroller', 'style_images': style, 'item_descriptions': items}
 os.makedirs(OUT, exist_ok=True); json.dump(keys, open(os.path.join(OUT, 'keys.json'), 'w'), indent=1); json.dump(names, open(os.path.join(OUT, 'items.json'), 'w'), indent=1, ensure_ascii=False)
 if '--go' in sys.argv:
     from pl_rpc import call
     r = call('create_1_direction_object', args); print(r); open(os.path.join(OUT, 'submit.txt'), 'w').write(r)
-else: print(len(items), 'commanders, all different; style', len(style), 'x 40 px; dry run')
+else: print(len(items), 'commanders, all different; style', len(style), 'x 32 px; dry run')
