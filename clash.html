@@ -63,7 +63,7 @@ button:active { transform: translateY(1px); }
 const $ = id => document.getElementById(id), clamp = (v, a, b) => v < a ? a : v > b ? b : v, rnd = (a = 0, b = 1) => a + Math.random() * (b - a);
 const NORENDER = /[?&]norender=1/.test(location.search); let MUTE = NORENDER;   // MUTE: no effects / banner (headless runs)
 /* ---------- rules: every number to tune is here */
-const BW = 64, BD = 36;                       // board size in world units (x across, z toward the viewer)
+const BW = 64, BD = 36, EW = 140, ED = 96;   // EW x ED = the painted field round the fight area (forest ring)                       // board size in world units (x across, z toward the viewer)
 const ART = .06;                              // world units per art pixel at the default zoom (sprites snap to whole device pixels)
 const SUN = { x: -.55, y: .62, z: -.56 };     // direction TOWARD the sun: low, from the far left, so shadows fall to the near right
 const UNITS = {   // role: tank / melee / ranged / mage; fly = hovers; target: 'weak' (lowest HP near) or 'back' (ranged / mage first)
@@ -278,7 +278,7 @@ function onOver() {
 /* ---------- view */
 let renderer, scene, cam, W = 1, H = 1, DPR = 1, PIX = 1, PXW = ART, KIND = {}, shadowB, MASK = null;
 const TGT = new THREE.Vector3(0, 0, 1.2), VIEW = { zoom: 1, pol: .66 };   // pol = camera angle from straight down
-const fitDist = () => { const t = Math.tan(cam.fov * Math.PI / 360); return Math.max(BW * .58 / (t * cam.aspect), BD * Math.cos(VIEW.pol) * .66 / t); };
+const fitDist = () => { const t = Math.tan(cam.fov * Math.PI / 360); return Math.max(BW * .47 / (t * cam.aspect), BD * Math.cos(VIEW.pol) * .5 / t); };
 function placeCam() {
   const d = fitDist() * VIEW.zoom; cam.position.set(TGT.x, TGT.y + Math.cos(VIEW.pol) * d, TGT.z + Math.sin(VIEW.pol) * d); cam.lookAt(TGT); cam.updateMatrixWorld();
   const dpu = H * DPR / 2 / (d * Math.tan(cam.fov * Math.PI / 360));   // device pixels per world unit at the target
@@ -311,47 +311,39 @@ function makeKind(k) {
 function seeded(s) { return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
 function buildWorld() {
   const R = seeded(7), sd = { x: -SUN.x, z: -SUN.z }, sl = Math.hypot(sd.x, sd.z), L = sl / SUN.y; sd.x /= sl; sd.z /= sl;
-  const trees = [], rocks = [];
-  for (let i = 0; i < 95; i++) trees.push({ x: -BW / 2 + 1 + R() * (BW - 2), z: -BD / 2 + .9 + R() * R() * 4.2, s: .8 + R() * .7 });
-  for (let i = 0; i < 26; i++) { const sx = i % 2 ? 1 : -1; trees.push({ x: sx * (BW / 2 - .9 - R() * R() * 3), z: -BD / 2 + 4 + R() * (BD - 7), s: .75 + R() * .6 }); }
-  for (let i = 0; i < 10; i++) trees.push({ x: -BW / 2 + 2 + R() * (BW - 4), z: BD / 2 - 1 - R() * 1.5, s: .6 + R() * .4 });
+  // full-screen battlefield (owner 2026-11-23 "ไม่ต้องอยู่บนโต๊ะ ให้เป็นสนามรบเลย"): the fight area BW x BD sits inside a wider
+  // painted field EW x ED ringed by forest; past that a plain plane and haze, so there is no table and no board edge
+  const trees = [], rocks = [], near = (x, z, m) => Math.abs(x) < BW / 2 + m && Math.abs(z) < BD / 2 + m;
+  for (let n = 0; trees.length < 430 && n < 6000; n++) { const x = (R() - .5) * EW, z = (R() - .5) * ED; if (near(x, z, 1.5)) continue;
+    const out = Math.max(Math.abs(x) - BW / 2, (Math.abs(z) - BD / 2) * 1.3), clear = Math.sin(x * .21) * Math.cos(z * .27) > .55; if (clear || R() > Math.min(1, .25 + out * .09)) continue; trees.push({ x, z, s: .75 + R() * .75 }); }
   for (const [x, z, s] of [[-3, -9, 1.2], [4, 6, 1.1], [-14, 11, 1], [16, -6, 1.15], [0, 13, .9], [-20, -3, 1], [21, 9, .95]]) trees.push({ x, z, s });
   for (let i = 0; i < 14; i++) rocks.push({ x: -BW / 2 + 2 + R() * (BW - 4), z: -BD / 2 + 2 + R() * (BD - 4), s: .25 + R() * .45 });
-  // shadow mask (4 px a unit): pines + rocks, also read on the CPU to darken units standing in shade
-  const MW = BW * 4, MH = BD * 4, mc = document.createElement('canvas'); mc.width = MW; mc.height = MH; const m = mc.getContext('2d'); m.fillStyle = '#000';
-  const blob = (x, z, r) => { m.beginPath(); m.arc((x + BW / 2) * 4, (z + BD / 2) * 4, r * 4, 0, Math.PI * 2); m.fill(); };
-  for (const t of trees) { const h = 3.1 * t.s, r = .95 * t.s; for (let k = 0; k <= 14; k++) { const f = k / 14; blob(t.x + sd.x * h * L * f, t.z + sd.z * h * L * f, Math.max(.12, r * (1 - f * .9))); } }
+  for (let i = 0; i < 26; i++) { const x = (R() - .5) * EW, z = (R() - .5) * ED; if (!near(x, z, 0)) rocks.push({ x, z, s: .3 + R() * .7 }); }
+  // shadow mask (3 px a unit over the whole field): pines + rocks, also read on the CPU to darken units standing in shade
+  const MW = EW * 3, MH = ED * 3, mc = document.createElement('canvas'); mc.width = MW; mc.height = MH; const m = mc.getContext('2d'); m.fillStyle = '#000';
+  const blob = (x, z, r) => { m.beginPath(); m.arc((x + EW / 2) * 3, (z + ED / 2) * 3, r * 3, 0, Math.PI * 2); m.fill(); };
+  for (const t of trees) { const h = 3.1 * t.s, r = .95 * t.s; for (let k = 0; k <= 10; k++) { const f = k / 10; blob(t.x + sd.x * h * L * f, t.z + sd.z * h * L * f, Math.max(.12, r * (1 - f * .9))); } }
   for (const o of rocks) for (let k = 0; k <= 4; k++) blob(o.x + sd.x * o.s * L * k / 4, o.z + sd.z * o.s * L * k / 4, o.s * (1 - k * .15));
   const md = m.getImageData(0, 0, MW, MH).data; MASK = { w: MW, h: MH, a: new Float32Array(MW * MH) }; for (let i = 0; i < MW * MH; i++) MASK.a[i] = md[i * 4 + 3] / 255;
   if (NORENDER) return;
-  // ground picture: olive grass, sandy checker patches, grey-brown dirt, tufts, then the shadows
-  const GW = 1024, GH = 576, gc = document.createElement('canvas'); gc.width = GW; gc.height = GH; const g = gc.getContext('2d'), sx = GW / BW;
+  // ground picture: olive grass, worn battle ground in the middle, sandy checker patches, grey-brown dirt, tufts, darker forest floor, the shadows
+  const PX = 12, GW = EW * PX, GH = ED * PX, gc = document.createElement('canvas'); gc.width = GW; gc.height = GH; const g = gc.getContext('2d'), cx0 = GW / 2, cy0 = GH / 2;
   g.fillStyle = '#8e8f3c'; g.fillRect(0, 0, GW, GH);
-  for (let i = 0; i < 900; i++) { const x = R() * GW, y = R() * GH, r = 6 + R() * 40; g.fillStyle = `hsla(${58 + R() * 16},${38 + R() * 14}%,${33 + R() * 10}%,.18)`; g.beginPath(); g.ellipse(x, y, r * 1.4, r, 0, 0, 7); g.fill(); }
+  for (let i = 0; i < 2600; i++) { const x = R() * GW, y = R() * GH, r = 6 + R() * 46; g.fillStyle = `hsla(${58 + R() * 16},${38 + R() * 14}%,${33 + R() * 10}%,.18)`; g.beginPath(); g.ellipse(x, y, r * 1.4, r, 0, 0, 7); g.fill(); }
+  const fl = g.createRadialGradient(cx0, cy0, BD * PX * .45, cx0, cy0, Math.max(GW, GH) * .62); fl.addColorStop(0, 'rgba(60,70,20,0)'); fl.addColorStop(1, 'rgba(40,55,18,.5)'); g.fillStyle = fl; g.fillRect(0, 0, GW, GH);
+  const worn = g.createRadialGradient(cx0, cy0, 0, cx0, cy0, BW * PX * .42); worn.addColorStop(0, 'rgba(176,150,96,.28)'); worn.addColorStop(1, 'rgba(176,150,96,0)'); g.save(); g.scale(1, .62); g.translate(0, cy0 / .62 - cy0); g.fillStyle = worn; g.fillRect(0, 0, GW, GH / .62); g.restore();
   const patch = (cx, cy, r, col, chk) => { g.save(); g.beginPath(); for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2, rr = r * (.7 + .45 * Math.sin(t * 3 + cx) * Math.cos(t * 2 + cy) + R() * .15); g.lineTo(cx + Math.cos(t) * rr * 1.5, cy + Math.sin(t) * rr); } g.closePath(); g.fillStyle = col; g.fill(); if (chk) { g.clip(); g.fillStyle = chk; for (let y = cy - r * 2; y < cy + r * 2; y += 8) for (let x = cx - r * 2; x < cx + r * 2; x += 8) if (((x - cx + y - cy) / 8 & 1) === 0) g.fillRect(Math.round(x), Math.round(y), 8, 8); } g.restore(); };
-  for (let i = 0; i < 9; i++) patch(R() * GW, R() * GH, 20 + R() * 45, '#cf9a62', '#c48d57');
-  for (let i = 0; i < 12; i++) patch(R() * GW, R() * GH, 12 + R() * 30, 'rgba(110,98,78,.55)');
-  for (let i = 0; i < 2600; i++) { const x = Math.round(R() * GW), y = Math.round(R() * GH); g.fillStyle = R() < .5 ? '#6f7a2c' : '#a6a64a'; g.fillRect(x, y, 2, 3); }
+  for (let i = 0; i < 18; i++) patch(R() * GW, R() * GH, 24 + R() * 60, '#cf9a62', '#c48d57');
+  for (let i = 0; i < 24; i++) patch(R() * GW, R() * GH, 14 + R() * 40, 'rgba(110,98,78,.55)');
+  for (let i = 0; i < 9000; i++) { const x = Math.round(R() * GW), y = Math.round(R() * GH); g.fillStyle = R() < .5 ? '#6f7a2c' : '#a6a64a'; g.fillRect(x, y, 2, 3); }
   const sc = document.createElement('canvas'); sc.width = MW; sc.height = MH; const s = sc.getContext('2d'), si = s.createImageData(MW, MH);
   for (let i = 0; i < MW * MH; i++) { si.data[i * 4] = 32; si.data[i * 4 + 1] = 42; si.data[i * 4 + 2] = 92; si.data[i * 4 + 3] = MASK.a[i] * 120; }
   s.putImageData(si, 0, 0); g.imageSmoothingEnabled = true; g.drawImage(sc, 0, 0, GW, GH);
-  const vg = g.createRadialGradient(GW / 2, GH / 2, GH * .3, GW / 2, GH / 2, GW * .62); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(30,20,0,.28)'); g.fillStyle = vg; g.fillRect(0, 0, GW, GH);
+  const edge = g.createRadialGradient(cx0, cy0, Math.min(GW, GH) * .42, cx0, cy0, Math.max(GW, GH) * .58); edge.addColorStop(0, 'rgba(84,98,46,0)'); edge.addColorStop(1, 'rgba(84,98,46,1)'); g.fillStyle = edge; g.fillRect(0, 0, GW, GH);
   const gt = new THREE.CanvasTexture(gc); gt.anisotropy = 4;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(BW, BD), new THREE.MeshLambertMaterial({ map: gt })); ground.rotation.x = -Math.PI / 2; scene.add(ground);
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(BW, 1.4, BD), new THREE.MeshLambertMaterial({ color: 0x5a3f26 })); slab.position.y = -.71; scene.add(slab);
-  // table, frame, back wall, pots
-  const wc = document.createElement('canvas'); wc.width = 512; wc.height = 512; const w = wc.getContext('2d'); w.fillStyle = '#7a4a28'; w.fillRect(0, 0, 512, 512);
-  for (let y = 0; y < 512; y += 64) { w.fillStyle = `hsl(24,${40 + R() * 10}%,${24 + R() * 8}%)`; w.fillRect(0, y, 512, 62); for (let i = 0; i < 40; i++) { w.fillStyle = 'rgba(40,20,8,.25)'; w.fillRect(R() * 512, y + R() * 60, 40 + R() * 120, 2); } w.fillStyle = '#2a170a'; w.fillRect(0, y + 62, 512, 2); }
-  const wt = new THREE.CanvasTexture(wc); wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(5, 5);
-  const table = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshLambertMaterial({ map: wt })); table.rotation.x = -Math.PI / 2; table.position.y = -1.42; scene.add(table);
-  const wood = new THREE.MeshLambertMaterial({ color: 0x8a5530 });
-  for (const [x, z, sx2, sz2] of [[0, -BD / 2 - .55, BW + 2.2, 1.1], [0, BD / 2 + .55, BW + 2.2, 1.1], [-BW / 2 - .55, 0, 1.1, BD], [BW / 2 + .55, 0, 1.1, BD]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(sx2, 2, sz2), wood); b.position.set(x, -.45, z); scene.add(b); }
-  const wt2 = wt.clone(); wt2.needsUpdate = true; wt2.repeat.set(6, 2); const wall = new THREE.Mesh(new THREE.PlaneGeometry(240, 60), new THREE.MeshLambertMaterial({ map: wt2, color: 0x9a7a60 })); wall.position.set(0, 20, -BD / 2 - 16); scene.add(wall);
-  const shelf = new THREE.Mesh(new THREE.BoxGeometry(150, 1.2, 9), wood); shelf.position.set(0, 4.5, -BD / 2 - 11.5); scene.add(shelf);
-  const LEAF = c => new THREE.MeshLambertMaterial({ color: c }), flat = geo => { const n = geo.toNonIndexed(); n.computeVertexNormals(); return n; };
-  const pot = (x, y, z, s, leaf) => { const p = new THREE.Mesh(new THREE.CylinderGeometry(1.5 * s, 1.1 * s, 2.4 * s, 10), new THREE.MeshLambertMaterial({ color: 0x2f5a6a })); p.position.set(x, y + 1.2 * s, z); scene.add(p);
-    for (let i = 0; i < 9; i++) { const l = new THREE.Mesh(flat(new THREE.ConeGeometry(.55 * s, 4.2 * s, 4)), LEAF(leaf)); const a = i / 9 * Math.PI * 2; l.position.set(x + Math.cos(a) * .9 * s, y + 3.6 * s, z + Math.sin(a) * .9 * s); l.rotation.set(Math.sin(a) * .7, 0, -Math.cos(a) * .7); scene.add(l); } };
-  pot(-26, 5.1, -BD / 2 - 11.5, 1.5, 0x3d7a34); pot(27, 5.1, -BD / 2 - 11.5, 1.4, 0xb86a2a); pot(-44, -1.4, -BD / 2 - 4, 1.8, 0x4a8a3a); pot(45, -1.4, -BD / 2 - 3, 1.7, 0x3d7a34);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(EW, ED), new THREE.MeshLambertMaterial({ map: gt })); ground.rotation.x = -Math.PI / 2; scene.add(ground);
+  const far = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshLambertMaterial({ color: 0x54622e })); far.rotation.x = -Math.PI / 2; far.position.y = -.03; scene.add(far);
+  const flat = geo => { const n = geo.toNonIndexed(); n.computeVertexNormals(); return n; };
   // pines: one instanced mesh for the leaves (3 stacked cones, flat shaded), one for trunks
   const cones = [[1.0, 1.5, 1.05], [.78, 1.3, 1.85], [.52, 1.1, 2.55]].map(([r, h, y]) => { const c = new THREE.ConeGeometry(r, h, 7); c.translate(0, y, 0); return flat(c); });
   const merged = new THREE.BufferGeometry(), pos = []; for (const c of cones) pos.push(...c.attributes.position.array); merged.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); merged.computeVertexNormals();
@@ -370,7 +362,7 @@ function buildWorld() {
     fragmentShader: `varying vec2 vU; void main(){ vec2 q = floor(vU * vec2(6.0, 10.0)) / vec2(6.0, 10.0); if (dot(q, q) > .9) discard; gl_FragColor = vec4(.08, .1, .26, .42); }` });
   shadowB.m = new THREE.Mesh(g2, sm); shadowB.m.frustumCulled = false; shadowB.m.renderOrder = 2; scene.add(shadowB.m);
 }
-const shadeAt = (x, z) => { if (!MASK) return 0; const i = clamp(Math.round((x + BW / 2) * 4), 0, MASK.w - 1), j = clamp(Math.round((z + BD / 2) * 4), 0, MASK.h - 1); return MASK.a[j * MASK.w + i]; };
+const shadeAt = (x, z) => { if (!MASK) return 0; const i = clamp(Math.round((x + EW / 2) * 3), 0, MASK.w - 1), j = clamp(Math.round((z + ED / 2) * 3), 0, MASK.h - 1); return MASK.a[j * MASK.w + i]; };
 /* tiny pixel font for damage numbers (3 x 5) */
 const FONT = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001', '111100111001111', '111100111101111', '111001001010010', '111101111101111', '111101111001111'];
 const pv = new THREE.Vector3(); let ovx = null;
@@ -448,10 +440,10 @@ async function boot() {
   META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, ARMY, MATCH, SKILL, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; }, tick: dt => { MANUAL = true; frame(performance.now(), dt); } };
   document.querySelector('.army.l b').textContent = MATCH.names[0]; document.querySelector('.army.r b').textContent = MATCH.names[1]; document.querySelector('.army.l small').textContent = MATCH.sub[0]; document.querySelector('.army.r small').textContent = MATCH.sub[1];
   if (NORENDER) { buildWorld(); window.CLASH.ready = true; return; }
-  renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true }); renderer.setClearColor(0x1a140e);
+  renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true }); renderer.setClearColor(0xa9b79a);
   scene = new THREE.Scene(); cam = new THREE.PerspectiveCamera(30, 1, 1, 600);
   scene.add(new THREE.HemisphereLight(0xdfeeff, 0x5a4a30, .62)); const sun = new THREE.DirectionalLight(0xfff0d0, 1.05); sun.position.set(SUN.x * 50, SUN.y * 50, SUN.z * 50); scene.add(sun);
-  scene.fog = new THREE.Fog(0x1a140e, 140, 320);
+  scene.fog = new THREE.Fog(0xa9b79a, 95, 230);
   buildWorld(); for (const k of new Set(ARMY.flat().map(a => a[0]))) makeKind(k); ovx = $('ov').getContext('2d'); ovx.imageSmoothingEnabled = false; await loadFx();
   resize(); addEventListener('resize', resize); input(); window.CLASH.ready = true; requestAnimationFrame(frame);
 }
