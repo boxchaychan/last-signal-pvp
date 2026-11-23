@@ -80,12 +80,37 @@ const UNITS = {   // role: tank / melee / ranged / mage; fly = hovers; target: '
   g_angel:   { n: 'เทวทูตดาบ',   role: 'melee',  hp: 115, dmg: 9.75, cd: .8,  spd: 3.1, rng: .35, mass: 1.4, fly: true, target: 'back', cleave: .8 },
   g_titan:   { n: 'ไททันหิน',    role: 'tank',   hp: 620, dmg: 18, cd: 1.6, spd: 1.4, rng: .45, mass: 6, slam: 1.8 },
 };
-const HITF = { m_saw: 5, m_shield: 4, a_wolf: 4, a_rhino: 5, e_psychic: 5, e_jelly: 4, h_spear: 3, h_archer: 8, d_imp: 6, d_brute: 5, g_angel: 2, g_titan: 5 };   // the frame where the blow lands
-const ARMY = [   // front to back
+Object.assign(UNITS, {   // the owner's picks (2026-11-23): human knights (tribe h) vs fierce aliens (tribe x)
+  hk_tank:    { n: 'อัศวินโล่สูง', tribe: 'h', role: 'tank',  hp: 310, dmg: 7,   cd: 1.0, spd: 1.6, rng: .3,  mass: 3, armor: .3, fxk: 'punchW' },
+  hk_glaive:  { n: 'อัศวินง้าว', tribe: 'h', role: 'melee', hp: 80,  dmg: 7.5, cd: .85, spd: 2.4, rng: .8,  mass: 1, cleave: .7, fxk: 'slashW' },
+  hk_blood:   { n: 'อัศวินเลือด', tribe: 'h', role: 'melee', hp: 75,  dmg: 7,   cd: .8,  spd: 2.4, rng: .9,  mass: 1, leech: .2, fxk: 'sparkR', drain: true },
+  hk_bat:     { n: 'นักฆ่าค้างคาว', tribe: 'h', role: 'melee', hp: 50, dmg: 7,   cd: .55, spd: 3.6, rng: .3,  mass: .8, target: 'back', fxk: 'claw' },
+  hk_ranger:  { n: 'พรานธนู', tribe: 'h', role: 'ranged', hp: 36, dmg: 5.5, cd: 1.05, spd: 2.3, rng: 9, mass: .8, proj: 'arrow' },
+  hk_mage:    { n: 'จอมเวทฮู้ดน้ำเงิน', tribe: 'h', role: 'mage', hp: 40, dmg: 6.5, cd: 1.5, spd: 2.0, rng: 6.5, mass: .8, proj: 'orb', aoe: 1.1, pc: '#6fb8ff', ifx: 'psyB' },
+  hk_banner:  { n: 'อัศวินถือธง', tribe: 'h', role: 'melee', hp: 110, dmg: 5,   cd: 1.0, spd: 2.2, rng: .5,  mass: 1.2, aura: .2, fxk: 'punchW' },
+  hk_rider:   { n: 'อัศวินขี่ม้า', tribe: 'h', role: 'melee', hp: 150, dmg: 10,  cd: 1.0, spd: 3.8, rng: .5,  mass: 2.2, charge: true, fxk: 'punchW' },
+  hk_samurai: { n: 'ซามูไร', tribe: 'h', role: 'melee', hp: 120, dmg: 11,  cd: .75, spd: 2.8, rng: .45, mass: 1.2, crit: .35, fxk: 'slashW' },
+  ax_tank:    { n: 'ยักษ์ก้าม', tribe: 'x', role: 'tank',  hp: 320, dmg: 8,   cd: 1.0, spd: 1.6, rng: .3,  mass: 3, armor: .3, fxk: 'punchG' },
+  ax_hunter:  { n: 'นักล่าหน้ากากกระดูก', tribe: 'x', role: 'melee', hp: 80, dmg: 7.5, cd: .85, spd: 2.5, rng: .8, mass: 1, fxk: 'thrustG', fxFrom: true },
+  ax_hound:   { n: 'หมาเอเลี่ยน', tribe: 'x', role: 'melee', hp: 46, dmg: 4.5, cd: .45, spd: 4.4, rng: .25, mass: .8, pack: true, fxk: 'clawG' },
+  ax_assassin: { n: 'ไซบอร์กดาบคู่', tribe: 'x', role: 'melee', hp: 50, dmg: 7, cd: .55, spd: 3.6, rng: .3, mass: .8, target: 'back', fxk: 'clawG' },
+  ax_eye:     { n: 'ตาเดียวหนวดเงา', tribe: 'x', role: 'mage', hp: 42, dmg: 8,   cd: 1.4, spd: 1.8, rng: 6.5, mass: 1, proj: 'beam' },
+  ax_priestess: { n: 'นักบวชรัง', tribe: 'x', role: 'ranged', hp: 60, dmg: 4, cd: 1.2, spd: 2.0, rng: 5, mass: .9, proj: 'orb', pc: '#9cff5a', ifx: 'psyG', heal: 16, healR: 4.5 },
+  ax_saucer:  { n: 'ขี่จานหนาม', tribe: 'x', role: 'melee', hp: 140, dmg: 10, cd: 1.0, spd: 3.8, rng: .5, mass: 2.2, charge: true, fly: true, fxk: 'punchG' },
+  ax_tk:      { n: 'พลังจิตยกหิน', tribe: 'x', role: 'mage', hp: 70, dmg: 9, cd: 1.6, spd: 1.9, rng: 6, mass: 1, proj: 'rock', aoe: .9, ifx: 'rocks' },
+});
+const HITF = { m_saw: 5, m_shield: 4, a_wolf: 4, a_rhino: 5, e_psychic: 5, e_jelly: 4, h_spear: 3, h_archer: 8, d_imp: 6, d_brute: 5, g_angel: 2, hk_tank: 5, hk_glaive: 3, hk_blood: 3, hk_bat: 3, hk_ranger: 7, hk_mage: 5, hk_banner: 4, hk_rider: 5, hk_samurai: 6, ax_tank: 3, ax_hunter: 2, ax_hound: 8, ax_assassin: 2, ax_eye: 2, ax_priestess: 4, ax_saucer: 3, ax_tk: 4, g_titan: 5 };   // the frame where the blow lands
+const MATCHES = { old: { names: ['ทัพซ้าย', 'ทัพขวา'], sub: ['เครื่องจักร · สัตว์ · มนุษย์', 'เอเลี่ยน · ปีศาจ · พระเจ้า'], army: null },
+  knights: { names: ['ทัพมนุษย์', 'ทัพเอเลี่ยน'], sub: ['อัศวิน 9 แบบ', 'เอเลี่ยนดุ 8 แบบ'], army: [
+    [['hk_tank', 4], ['hk_rider', 5], ['hk_glaive', 8], ['hk_blood', 6], ['hk_samurai', 2], ['hk_bat', 8], ['hk_banner', 3], ['hk_mage', 6], ['hk_ranger', 12]],
+    [['ax_tank', 4], ['ax_saucer', 5], ['ax_hunter', 8], ['ax_hound', 14], ['ax_assassin', 8], ['ax_tk', 4], ['ax_priestess', 3], ['ax_eye', 6]]] } };
+const MATCH = MATCHES[(location.search.match(/[?&]match=(\w+)/) || [])[1]] || MATCHES.knights;
+const ARMY0 = [   // front to back (the first test armies, ?match=old)
   [['m_shield', 3], ['a_rhino', 3], ['m_saw', 10], ['h_spear', 14], ['a_wolf', 16], ['h_archer', 14]],
   [['e_jelly', 3], ['d_brute', 4], ['g_titan', 2], ['g_angel', 12], ['d_imp', 24], ['e_psychic', 15]],   // tuned with CLASH.quick: about even, ~45 s
 ];
-const TRIBE_COL = { m: '#ffa040', a: '#c8a070', e: '#ff6ad8', h: '#7fb8ff', d: '#ff5a3a', g: '#ffe890' };
+MATCHES.old.army = ARMY0; const ARMY = MATCH.army;
+const TRIBE_COL = { x: '#9cff5a', m: '#ffa040', a: '#c8a070', e: '#ff6ad8', h: '#7fb8ff', d: '#ff5a3a', g: '#ffe890' };
 let META = null;   // art/clash/units.json: sprite sizes
 /* ---------- battle state (no drawing here: CLASH.quick runs it headless) */
 let B = null;
@@ -120,14 +145,17 @@ function hurt(t, dmg, from, kind) {
   if (t.hp <= 0) { t.dead = true; t.deadT = 0; if (!MUTE) deathFx(t); }
 }
 function strike(u, t) {
-  const D = u.D; let dmg = D.dmg * (1 + u.pack);
+  const D = u.D; let dmg = D.dmg * (1 + u.pack + aura(u));
+  if (D.heal) { let best = null, bf = .92; for (const o of B.units) if (!o.dead && o.side === u.side && o !== u && o.hp / o.max < bf && Math.hypot(o.x - u.x, o.z - u.z) < D.healR) { bf = o.hp / o.max; best = o; } if (best) { best.hp = Math.min(best.max, best.hp + D.heal); fx('heal', best.x, best.y + .05, best.z); if (!MUTE && B.nums.length < 140) B.nums.push({ x: best.x, y: CHEST(best) + .5, z: best.z, v: D.heal, l: .75, c: '#9cff5a' }); return; } }
+  if (D.proj === 'beam') { hurt(t, dmg, u); if (!MUTE) { B.fx.push({ k: 'beam', a: u, b: t, l: .18, L: .18 }); fx('psyG', t.x, CHEST(t), t.z, 1, 1.6); } return; }
   if (u.charging) { u.charging = false; dmg *= 2; for (const o of B.units) if (!o.dead && o.side !== u.side && Math.hypot(o.x - t.x, o.z - t.z) < 1.6) { hurt(o, dmg * .5, u); o.x += u.face * .9; } fx('slam', t.x, .05, t.z, u.face); fx('shock', t.x, .05, t.z, u.face); fx('rocks', t.x, .05, t.z, u.face); shake(.3); hitstop(.07); }
-  if (D.proj) { B.proj.push({ k: D.proj, side: u.side, from: u, tgt: t, x: u.x, y: u.y + .9, z: u.z, sx: u.x, sz: u.z, t: 0, T: Math.max(.25, Math.hypot(t.x - u.x, t.z - u.z) / (D.proj === 'arrow' ? 15 : 9)), dmg, aoe: D.aoe || 0, miss: D.proj === 'arrow' && Math.random() < .1 }); return; }
-  const crit = Math.random() < .1; hurt(t, dmg * (crit ? 1.6 : 1), u, crit ? 'crit' : ''); hitFx(u, t, crit);
+  if (D.proj) { B.proj.push({ k: D.proj, side: u.side, from: u, tgt: t, x: u.x, y: u.y + .9, z: u.z, sx: u.x, sz: u.z, t: 0, T: Math.max(.25, Math.hypot(t.x - u.x, t.z - u.z) / (D.proj === 'arrow' ? 15 : D.proj === 'rock' ? 7 : 9)), dmg, aoe: D.aoe || 0, miss: D.proj === 'arrow' && Math.random() < .1, c: D.pc, ifx: D.ifx }); return; }
+  const crit = Math.random() < (D.crit || .1); hurt(t, dmg * (crit ? 1.6 : 1), u, crit ? 'crit' : ''); hitFx(u, t, crit);
   if (D.slam) { for (const o of B.units) if (!o.dead && o !== t && o.side !== u.side && !o.D.fly && Math.hypot(o.x - t.x, o.z - t.z) < D.slam) hurt(o, dmg * .6, u); fx('shock', t.x, .05, t.z, u.face); }
   if (D.cleave) for (const o of B.units) if (!o.dead && o !== t && o.side !== u.side && Math.hypot(o.x - t.x, o.z - t.z) < D.cleave) hurt(o, dmg * .5, u);
 }
-const traj = (p, k, out) => { out.x = p.sx + (p.tgt.x - p.sx) * k + (p.miss ? .9 * k : 0); out.z = p.sz + (p.tgt.z - p.sz) * k; out.y = .9 + Math.sin(k * Math.PI) * (p.k === 'arrow' ? 1.6 : .5) - k * .5; return out; };
+const aura = u => { for (const o of B.units) if (!o.dead && o !== u && o.side === u.side && o.D.aura && Math.abs(o.x - u.x) < 3.2 && Math.abs(o.z - u.z) < 3.2) return o.D.aura; return 0; };   // banner bearers rally the allies round them
+const traj = (p, k, out) => { out.x = p.sx + (p.tgt.x - p.sx) * k + (p.miss ? .9 * k : 0); out.z = p.sz + (p.tgt.z - p.sz) * k; out.y = .9 + Math.sin(k * Math.PI) * (p.k === 'arrow' ? 1.6 : p.k === 'rock' ? 1.2 : .5) - k * .5; return out; };
 const GRID = new Map();
 function separate() {
   GRID.clear(); for (const u of B.units) if (!u.dead) { const key = (Math.floor(u.x / 2) * 997 + Math.floor(u.z / 2)) | 0; let a = GRID.get(key); if (!a) GRID.set(key, a = []); a.push(u); }
@@ -151,7 +179,7 @@ function step(dt) {
     u.x = clamp(u.x, -BW / 2 + .8, BW / 2 - .8); u.z = clamp(u.z, -BD / 2 + .8, BD / 2 - .8);
   }
   for (let i = B.proj.length - 1; i >= 0; i--) { const p = B.proj[i]; p.t += dt; const tx = p.tgt.x, tz = p.tgt.z, k = clamp(p.t / p.T, 0, 1); traj(p, k, p);
-    if (k >= 1) { B.proj.splice(i, 1); if (p.miss) continue; if (p.aoe) { for (const o of B.units) if (!o.dead && o.side !== p.side && Math.hypot(o.x - tx, o.z - tz) < p.aoe) hurt(o, p.dmg, p.from); fx('psy', tx, .7, tz, 1, 1.35); } else { hurt(p.tgt, p.dmg, p.from); fx('arrowHit', tx, CHEST(p.tgt), tz, tx >= p.sx ? 1 : -1); } } }
+    if (k >= 1) { B.proj.splice(i, 1); if (p.miss) continue; if (p.aoe) { for (const o of B.units) if (!o.dead && o.side !== p.side && Math.hypot(o.x - tx, o.z - tz) < p.aoe) hurt(o, p.dmg, p.from); if (p.ifx === 'rocks') { fx('rocks', tx, .05, tz); fx('psyG', tx, .5, tz, 1, 1.6); shake(.08); } else fx(p.ifx || 'psy', tx, .7, tz, 1, 1.35); } else { hurt(p.tgt, p.dmg, p.from); fx('arrowHit', tx, CHEST(p.tgt), tz, tx >= p.sx ? 1 : -1); } } }
   separate();
   const a = alive(0).length, b = alive(1).length; if (!a || !b) { B.phase = 'over'; B.win = a ? 0 : b ? 1 : -1; if (!MUTE) onOver(); }
 }
@@ -166,6 +194,8 @@ const FXDEF = {
   acid: ['nature/acid-splash', '#66f0c8'], smash: ['melee/hammer-smash', '#ff7a40'], slashG: ['melee/sword-combo', '#ffe070'], slam: ['impacts/ground-slam', null],
   shock: ['impacts/shockwave-ring', '#ffe8a0'], rocks: ['impacts/rock-shatter', null], crit: ['impacts/crit-hit', null], dust: ['smoke/dash-dust', null],
   puff: ['smoke/dust-puff', null], boom: ['explosions/small-explosion', null], feathers: ['holy/angel-feathers', null], flames: ['fire/ground-flames', null],
+  slashW: ['melee/sword-combo', null], clawG: ['melee/shadow-claw', '#9cff5a'], thrustG: ['melee/spear-thrust', '#9cff5a'], punchG: ['impacts/punch-hit', '#9cff5a'], psyG: ['explosions/arcane-burst', '#9cff5a'],
+  psyB: ['explosions/arcane-burst', '#6fb8ff'], heal: ['holy/holy-heal', '#9cff5a'], acidG: ['nature/acid-splash', '#9cff5a'],
 };
 const FXS = {};
 async function loadFx() { await Promise.all(Object.entries(FXDEF).map(async ([k, [path, tint]]) => { try {
@@ -188,13 +218,14 @@ function hitFx(u, t, crit) {
   else if (k === 'd_brute') { fx('smash', t.x, t.y + .05, t.z, f); drain(t, u); shake(.12); }
   else if (k === 'g_angel') fx('slashG', t.x, cy, t.z, f, 1.4);
   else if (k === 'g_titan') { fx('slam', t.x, .05, t.z, f); fx('rocks', t.x, .05, t.z, f); shake(.34); hitstop(.07); }
+  else if (u.D.fxk) { if (u.D.fxFrom) fx(u.D.fxk, u.x + f * u.r, CHEST(u), u.z, f, 1.5); else fx(u.D.fxk, t.x, cy, t.z, f, 1.4); if (u.D.drain) drain(t, u); }
   if (crit) fx('crit', t.x, cy, t.z, f, 1.2);
 }
 function drain(t, u) { for (let i = 0; i < 5 && B.fx.length < 400; i++) B.fx.push({ k: 'drain', x: t.x + rnd(-.3, .3), y: CHEST(t) + rnd(-.2, .3), z: t.z, to: u, t: -i * .05, T: .45, l: 9, L: 9 }); }
-function deathFx(t) { const tr = t.k[0], g = t.y + .05; burst(t.x, CHEST(t), t.z, TRIBE_COL[tr], 8);
-  if (tr === 'm') { fx('boom', t.x, g, t.z); burst(t.x, CHEST(t), t.z, '#8a8a90', 6); shake(.1); } else if (tr === 'd') fx('flames', t.x, g, t.z); else if (tr === 'e') fx('acid', t.x, g, t.z, 1, 1.3); else if (tr === 'g') fx('feathers', t.x, CHEST(t) + .4, t.z); else fx('puff', t.x, g, t.z); }
+function deathFx(t) { const tr = t.D.tribe || t.k[0], g = t.y + .05; burst(t.x, CHEST(t), t.z, TRIBE_COL[tr], 8);
+  if (tr === 'm') { fx('boom', t.x, g, t.z); burst(t.x, CHEST(t), t.z, '#8a8a90', 6); shake(.1); } else if (tr === 'd') fx('flames', t.x, g, t.z); else if (tr === 'e') fx('acid', t.x, g, t.z, 1, 1.3); else if (tr === 'x') fx('acidG', t.x, g, t.z, 1, 1.3); else if (tr === 'g') fx('feathers', t.x, CHEST(t) + .4, t.z); else fx('puff', t.x, g, t.z); }
 function onOver() {
-  const L = alive(0).length, R = alive(1).length; $('banT').textContent = B.win === 0 ? 'ทัพซ้ายชนะ!' : B.win === 1 ? 'ทัพขวาชนะ!' : 'เสมอ';
+  const L = alive(0).length, R = alive(1).length; $('banT').textContent = B.win < 0 ? 'เสมอ' : MATCH.names[B.win] + 'ชนะ!';
   $('banS').textContent = `ใช้เวลา ${Math.round(B.t)} วินาที · เหลือรอด ${B.win === 0 ? L : R} ตัว`; setTimeout(() => { if (B.phase === 'over') $('ban').classList.remove('hide'); }, 1300);
 }
 /* ---------- view */
@@ -328,10 +359,13 @@ function draw(dt, now) {
   // overlay: projectiles, swooshes, rings, bits, numbers, HP bars of big units (all whole device pixels)
   const o = ovx, P = PIX; o.imageSmoothingEnabled = false; o.clearRect(0, 0, o.canvas.width, o.canvas.height);
   for (const p of B.proj) { const [x, y] = proj(p.x, p.y, p.z); if (p.k === 'arrow') { const q = traj(p, Math.max(0, p.t / p.T - .06), {}), [x2, y2] = proj(q.x, q.y, q.z), len = Math.hypot(x - x2, y - y2) || 1, ux = (x - x2) / len, uy = (y - y2) / len; o.fillStyle = '#d9c08a'; for (let s = 1; s < 5; s++) o.fillRect(Math.round(x - ux * s * P) , Math.round(y - uy * s * P), P, P); o.fillStyle = '#ffffff'; o.fillRect(x, y, P, P); }
-    else { for (let s = 1; s <= 4; s++) { const q = traj(p, Math.max(0, p.t / p.T - s * .05), {}), [x3, y3] = proj(q.x, q.y, q.z); o.globalAlpha = .55 - s * .11; o.fillStyle = '#ff7ae0'; o.fillRect(x3 - P, y3 - P, 2 * P, 2 * P); } o.globalAlpha = 1; o.fillStyle = 'rgba(255,110,220,.35)'; o.fillRect(x - 3 * P, y - 3 * P, 6 * P, 6 * P); o.fillStyle = '#ff7ae0'; o.fillRect(x - 2 * P, y - 2 * P, 4 * P, 4 * P); o.fillStyle = '#ffe6fa'; o.fillRect(x - P, y - P, 2 * P, 2 * P); } }
+    else if (p.k === 'rock') { o.fillStyle = 'rgba(156,255,90,.35)'; o.fillRect(x - 3 * P, y - 3 * P, 6 * P, 6 * P); o.fillStyle = '#5a4a66'; o.fillRect(x - 2 * P, y - 2 * P, 4 * P, 4 * P); o.fillStyle = '#8a7a99'; o.fillRect(x - 2 * P, y - 2 * P, 2 * P, 2 * P); }
+    else { const pc = p.c || '#ff7ae0'; for (let s = 1; s <= 4; s++) { const q = traj(p, Math.max(0, p.t / p.T - s * .05), {}), [x3, y3] = proj(q.x, q.y, q.z); o.globalAlpha = .55 - s * .11; o.fillStyle = pc; o.fillRect(x3 - P, y3 - P, 2 * P, 2 * P); } o.globalAlpha = 1; o.fillStyle = pc + '59'; o.fillRect(x - 3 * P, y - 3 * P, 6 * P, 6 * P); o.fillStyle = pc; o.fillRect(x - 2 * P, y - 2 * P, 4 * P, 4 * P); o.fillStyle = '#ffe6fa'; o.fillRect(x - P, y - P, 2 * P, 2 * P); } }
   for (let i = B.fx.length - 1; i >= 0; i--) { const f = B.fx[i]; f.l -= dt; if (f.l <= 0) { B.fx.splice(i, 1); continue; } const a = clamp(f.l / f.L, 0, 1);
     if (f.k === 'sheet') { const S = FXS[f.key]; f.t += dt * f.sp; if (f.t >= S.T) { B.fx.splice(i, 1); continue; } let fi = 0; while (fi < S.fr.length - 1 && S.fr[fi].end <= f.t) fi++; const F = S.fr[fi], [x, y] = proj(f.x, f.y, f.z), yy = y - S.pv[1] * P;
       if (f.face >= 0) o.drawImage(S.src, F.x, F.y, F.w, F.h, x - S.pv[0] * P, yy, F.w * P, F.h * P); else { o.save(); o.translate(x, 0); o.scale(-1, 1); o.drawImage(S.src, F.x, F.y, F.w, F.h, -S.pv[0] * P, yy, F.w * P, F.h * P); o.restore(); } continue; }
+    if (f.k === 'beam') { if (f.a.dead && f.b.dead) { B.fx.splice(i, 1); continue; } const [x1, y1] = proj(f.a.x + f.a.face * f.a.r, CHEST(f.a) + .15, f.a.z), [x2, y2] = proj(f.b.x, CHEST(f.b), f.b.z), n = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / P)); o.globalAlpha = a;
+      for (let s = 0; s <= n; s++) { const x = Math.round(x1 + (x2 - x1) * s / n), y = Math.round(y1 + (y2 - y1) * s / n); o.fillStyle = '#9cff5a'; o.fillRect(x - P, y - P, 2 * P, 2 * P); o.fillStyle = '#eaffd8'; o.fillRect(x - (P >> 1), y - (P >> 1), P, P); } o.globalAlpha = 1; continue; }
     if (f.k === 'drain') { f.t += dt; if (f.t >= f.T || f.to.dead) { B.fx.splice(i, 1); continue; } if (f.t < 0) continue; const k = f.t / f.T, ty = CHEST(f.to), [x, y] = proj(f.x + (f.to.x - f.x) * k, f.y + (ty - f.y) * k + Math.sin(k * Math.PI) * .6, f.z + (f.to.z - f.z) * k); o.fillStyle = '#ff3048'; o.fillRect(x - P, y - P, 2 * P, 2 * P); o.fillStyle = '#ffb0b8'; o.fillRect(x - P, y - P, P, P); continue; }
     if (f.k === 'bit') { f.x += f.vx * dt; f.y += f.vy * dt; f.z += f.vz * dt; f.vy -= 10 * dt; if (f.y < 0) { f.y = 0; f.vy *= -.3; f.vx *= .6; } const [x, y] = proj(f.x, f.y, f.z); o.globalAlpha = a; o.fillStyle = f.c; o.fillRect(x, y, P * 2, P * 2); }
     else if (f.k === 'swoosh') { const [x, y] = proj(f.x, f.y, f.z), k = 1 - a; o.globalAlpha = a; o.fillStyle = f.c; for (let s = 0; s < 7; s++) { const t = (s / 6 - .5) * 2.2 + k * .8, r = 7 * P; o.fillRect(x + Math.round(Math.cos(t) * r) * f.face - P, y - Math.round(Math.sin(t) * r), P * 2, P * 2); } }
@@ -360,13 +394,14 @@ function input() {
   $('again').onclick = () => { newBattle(); $('ban').classList.add('hide'); $('go').classList.remove('hide'); };
 }
 async function boot() {
-  META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, ARMY, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; } };
+  META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, ARMY, MATCH, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; } };
+  document.querySelector('.army.l b').textContent = MATCH.names[0]; document.querySelector('.army.r b').textContent = MATCH.names[1]; document.querySelector('.army.l small').textContent = MATCH.sub[0]; document.querySelector('.army.r small').textContent = MATCH.sub[1];
   if (NORENDER) { buildWorld(); window.CLASH.ready = true; return; }
   renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true }); renderer.setClearColor(0x1a140e);
   scene = new THREE.Scene(); cam = new THREE.PerspectiveCamera(30, 1, 1, 600);
   scene.add(new THREE.HemisphereLight(0xdfeeff, 0x5a4a30, .62)); const sun = new THREE.DirectionalLight(0xfff0d0, 1.05); sun.position.set(SUN.x * 50, SUN.y * 50, SUN.z * 50); scene.add(sun);
   scene.fog = new THREE.Fog(0x1a140e, 140, 320);
-  buildWorld(); for (const k in META) makeKind(k); ovx = $('ov').getContext('2d'); ovx.imageSmoothingEnabled = false; await loadFx();
+  buildWorld(); for (const k of new Set(ARMY.flat().map(a => a[0]))) makeKind(k); ovx = $('ov').getContext('2d'); ovx.imageSmoothingEnabled = false; await loadFx();
   resize(); addEventListener('resize', resize); input(); window.CLASH.ready = true; requestAnimationFrame(frame);
 }
 boot();
