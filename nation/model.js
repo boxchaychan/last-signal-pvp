@@ -34,7 +34,7 @@ function stageOf(pop, idx) { let s = 0; for (let i = 0; i < STAGES.length; i++) 
 function stepModel(S) {
   const L = S.lawMod || {}, a = S.age, k = S.k, b = S.bud, t = S.tax, G0 = ageGroups(a), pop = G0.pop, m = S.stats && S.month;
   const LF = Math.max(.5, G0.work * .82 + G0.old * .06), skill = clamp((S.eduY - 5) / 9);
-  const dem = clamp(.955 + .04 * Math.sin(S.m / 31) + .022 * Math.sin(S.m / 9.7) + (S.shock || 0), .6, 1.05); S.shock = (S.shock || 0) * .95;
+  const dem = clamp(.945 + .055 * Math.sin(S.m / 31) + .03 * Math.sin(S.m / 9.7) + (S.shock || 0), .55, 1.05); S.shock = (S.shock || 0) * .95;
   const techE = Math.min(k.tech, LF * skill), oth = k.ag + (k.ind + k.svc) * dem + k.pub, othE = Math.min(oth, LF - techE), fill = oth > 0 ? othE / oth : 0;
   const E = { ag: k.ag * fill, ind: k.ind * dem * fill, svc: k.svc * dem * fill, pub: k.pub * fill };
   const emp = techE + othE, u = clamp(1 - emp / LF);
@@ -48,7 +48,7 @@ function stepModel(S) {
   const eff = 1 - S.corr * .7;
   /* government money */
   const rev = gdp * (.62 * t.inc + .38 * t.corp + .7 * t.vat) / 100 * (1 - S.corr * .55) * (.72 + .28 * S.trust / 100) * (1 + (L.rev || 0));
-  let spend = gdp * (L.upkeep || 0) / 100; for (const q in BUDGET_N) spend += gdp * b[q] * BUDGET_N[q][1] / 100;
+  let spend = gdp * ((L.upkeep || 0) + .3 * cleanW + .4 * pw + .9 * hospCov + .9 * schoolCov + .4 * clamp(k.safe / pop) + .25 * clamp(k.trash / pop)) / 100; for (const q in BUDGET_N) spend += gdp * b[q] * BUDGET_N[q][1] / 100;
   const debtRatio0 = S.debt / Math.max(gdp * 12, 1), interest = S.debt * (.0035 + .012 * Math.max(0, debtRatio0 - .6));
   S.treas += rev - spend - interest;
   if (S.treas > gdp * 3 && S.debt > 0) { const pay = Math.min(S.debt, (S.treas - gdp * 3) * .3); S.debt -= pay; S.treas -= pay; }
@@ -74,18 +74,20 @@ function stepModel(S) {
   const forest = clamp(S.forestBase + S.forestAdj + (L.forest || 0));
   S.P += (clamp(.02 + dirtyShare * .85 + (1 - clean) * .12 + clamp(car / (pop + 1)) * .1 - .12 * Math.min(1.4, b.env * eff) - .1 * (forest - .5) - parkCov * .03 + S.adj.pol + (L.pol || 0), .005, .95) - S.P) * .035;
   S.gini += (clamp(.3 + .22 * (k.ind + k.tech * 1.2) / (LF + 5) * .45 - .12 * Math.min(1.4, b.welfare) + .16 * S.corr + .05 * Math.log(S.tech) + S.adj.gini + (L.gini || 0), .18, .75) - S.gini) * .025;
-  S.corr += (clamp(.055 + .022 * Math.log10(pop + 1) - .09 * b.admin - .04 * Math.min(1, k.admin) + S.adj.corr + (L.corr || 0), .01, .8) - S.corr) * .025;
+  S.corr += (clamp(.055 + .036 * Math.log10(pop + 1) - .09 * b.admin - .04 * Math.min(1, k.admin) + S.adj.corr + (L.corr || 0), .01, .8) - S.corr) * .025;
   S.crime += (clamp(.03 + .55 * u + .25 * Math.max(0, S.gini - .3) + .25 * S.hunger + .1 * (1 - safeCov) - .08 * Math.min(1.5, b.safety * eff) * safeCov + S.adj.crime + (L.crime || 0), .005, .9) - S.crime) * .06;
   const taxLoad = t.inc + t.corp * .35 + t.vat * 1.1;
   const LE = clamp(44 + .36 * S.hq + 8 * clamp(Math.log((gdpPc + 1) / 120) / Math.log(20)) - 22 * S.P - 35 * S.hunger - 30 * S.epi - (S.war > 0 ? 3 : 0), 25, 90);
   /* happiness */
   S.mods = S.mods.filter(q => q.u > S.m); const modSum = S.mods.reduce((q, r) => q + r.v, 0);
-  const hapT = 100 * (.17 * clamp(1 - u * 3) + .14 * clamp(1 - S.hunger * 4) * clamp(foodMonths + .55) + .1 * clamp(.35 + .65 * cleanW) + .12 * clamp(.2 + .8 * S.hq / 75) + .08 * clamp(.3 + .7 * schoolCov) + .09 * clamp(1 - S.crime * 2.4) + .1 * clamp(houseRatio - .15) + .07 * clamp(Math.log((gdpPc + 20) / 90) / Math.log(18)) + .05 * clamp(1 - S.P * 2) + .04 * parkCov + .04 * clamp(S.road)) + modSum + (L.happy || 0) - Math.max(0, taxLoad - 25) * .8 - Math.max(0, S.infl - .006) * 900 - (S.war > 0 ? 9 : 0);
+  const hapT = 100 * (.17 * clamp(1 - u * 3) + .14 * clamp(1 - S.hunger * 4) * clamp(foodMonths + .55) + .1 * clamp(.35 + .65 * cleanW) + .12 * clamp(.2 + .8 * S.hq / 75) + .08 * clamp(.3 + .7 * schoolCov) + .09 * clamp(1 - S.crime * 2.4) + .1 * clamp(houseRatio - .15) + .07 * clamp(Math.log((gdpPc + 20) / 90) / Math.log(18)) + .05 * clamp(1 - S.P * 2) + .04 * parkCov + .04 * clamp(S.road)) + modSum + (L.happy || 0) - (3 + ((S.x && S.x.stage) || 0) * 3.5 + Math.max(0, S.eduY - 5) * 1.5) - Math.max(0, taxLoad - 25) * .8 - Math.max(0, S.infl - .006) * 900 - (S.war > 0 ? 9 : 0);
   S.happy += (clamp(hapT, 3, 99) - S.happy) * .12;
   const debtRatio = S.debt / Math.max(gdp * 12, 1);
-  S.trust += (clamp(24 + .68 * S.happy - 46 * S.corr - 8 * clamp(debtRatio - 1) + .14 * (S.rep * 100 - 30) + (L.trust || 0), 3, 98) - S.trust) * .05;
+  S.trust += (clamp(17 + .68 * S.happy - 46 * S.corr - 8 * clamp(debtRatio - 1) + .14 * (S.rep * 100 - 30) + (L.trust || 0), 3, 98) - S.trust) * .05;
   if (S.unrest == null) S.unrest = 6; S.unrestAdj = (S.unrestAdj || 0) * .96;
-  const unT = clamp(6 + Math.max(0, 52 - S.trust) * 1.15 + Math.max(0, 48 - S.happy) * .75 + S.hunger * 130 + u * 48 + Math.max(0, S.infl - .01) * 900 + (S.war > 0 ? 8 : 0) + Math.max(0, .3 - b.defense) * 14 + Math.max(0, taxLoad - 28) * 1.1 + S.corr * 18 - Math.min(1.4, b.safety * eff) * safeCov * 5 - Math.min(1.5, b.defense) * 5 - Math.min(1, k.admin) * 4 + S.unrestAdj + (L.unrest || 0), 0, 130);
+  const stNow = (S.x && S.x.stage) || 0, why = { trust: Math.max(0, 52 - S.trust) * 1.15, mood: Math.max(0, 48 - S.happy) * .75, hunger: S.hunger * 130, jobs: u * 48, prices: Math.max(0, S.infl - .01) * 900, war: S.war > 0 ? 8 : 0, army: Math.max(0, .3 + stNow * .075 - b.defense) * 22, tax: Math.max(0, taxLoad - 28) * 1.1, corr: S.corr * 26, free: Math.max(0, S.eduY - 6) * 2.3, age: Math.min(16, S.m / 12 * .2), neglect: pop < 50 ? 0 : clamp((S.m - 72) / 120) * ((1 - cleanW) * 16 + (1 - hospCov) * 15 + (1 - schoolCov) * 11 + (1 - pw) * 8) };
+  S.unWhy = why; let whySum = 0; for (const q in why) whySum += why[q];
+  const unT = clamp(6 + whySum - Math.min(1.4, b.safety * eff) * safeCov * 5 - Math.min(1.5, b.defense) * 5 - Math.min(1, k.admin) * 4 + S.unrestAdj + (L.unrest || 0), 0, 130);
   S.unrest = clamp(S.unrest + (unT - S.unrest) * .07, 0, 100);
   S.rep = clamp(S.rep + (.45 * (S.trust / 100) + .15 * clamp(gdpPc / 1800) - .03 * (S.war > 0) + (L.rep || 0) - S.rep) * .006, .01, 1);
   S.tech *= 1 + (.004 + (L.tech || 0) + .022 * clamp(S.eduY / 12) * (1 - S.corr) + .018 * Math.min(1.6, b.rnd * eff) + .012 * Math.min(k.rnd, 2) + .05 * techE / Math.max(LF, 1) + .003 * Math.min(k.port + k.air, 4)) / 12 * (S.war > 0 ? .4 : 1) / (1 + S.tech / 9);
@@ -122,7 +124,7 @@ function applyFx(S, fx) {
     else if (q === 'food') S.food = Math.max(0, S.food + v * pop); else if (q === 'mat') S.mat = Math.max(0, S.mat + v); else if (q === 'rep') S.rep = clamp(S.rep + v);
     else if (q === 'infl') S.inflShock += v; else if (q === 'tech') S.tech += v; else if (q === 'tension') S.tension = clamp(S.tension + v); else if (q === 'forest') S.forestAdj += v;
     else if (q === 'priv') { S.priv = Math.max(0, S.priv + v * base); if (v < 0) S.shock = (S.shock || 0) + v * .12; } else if (q === 'war') S.war = Math.max(S.war, v); else if (q === 'epi') S.epi = Math.max(0, S.epi + v); else if (q === 'drought') S.drought = Math.max(S.drought, v);
-    else if (q === 'geo') { if (typeof geoFx === 'function') geoFx(S, v); } else if (q === 'next') { S.queue = S.queue || []; S.queue.push({ m: S.m + v[0], id: v[1] }); } else if (q === 'fire') { if (typeof govFire === 'function') govFire(S, v); } else if (q === 'loy') { if (typeof govLoy === 'function') govLoy(S, v); } else if (q === 'unrest') { S.unrest = clamp((S.unrest || 0) + v, 0, 100); S.unrestAdj = (S.unrestAdj || 0) + v * .6; } else if (q === 'road') S.road = clamp(S.road + v); else if (q === 'cong') S.transit -= v; else if (q === 'tfr') S.tfrAdd += v;
+    else if (q === 'geo') { if (typeof geoFx === 'function') geoFx(S, v); } else if (q === 'next') { S.queue = S.queue || []; S.queue.push({ m: S.m + v[0], id: v[1] }); } else if (q === 'fire') { if (typeof govFire === 'function') govFire(S, v); } else if (q === 'loy') { if (typeof govLoy === 'function') govLoy(S, v); } else if (q === 'unrest') { S.unrest = clamp((S.unrest || 0) + v, 0, 100); S.unrestAdj = (S.unrestAdj || 0) + v * .95; } else if (q === 'road') S.road = clamp(S.road + v); else if (q === 'cong') S.transit -= v; else if (q === 'tfr') S.tfrAdd += v;
     else if (q === 'tax') { S.tax.inc = clamp(S.tax.inc + v, 0, 45); S.tax.vat = clamp(S.tax.vat + v, 0, 25); }
     else if (q === 'bud') { for (const r in S.bud) S.bud[r] = clamp(S.bud[r] * (1 + v), 0, 2); }
     else if (q === 'debt') { if (v < 0) S.debt *= Math.max(0, 1 + v); else { const n = v * base * 6; S.debt += n; S.treas += n * .5; } }
