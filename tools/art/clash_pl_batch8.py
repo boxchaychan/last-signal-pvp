@@ -1,4 +1,5 @@
-"""clash.html batch 8 = COMMANDERS (owner 2026-11-23 "กำหนดตัวแปรชัยชนะ โดยเพิ่มแม่ทัพ" -> picked "เจนใหม่ด้วย PixelLab"):
+"""clash.html batch 8 = COMMANDERS (owner 2026-11-23 "ตัวแรกฝั่งคนอยากทำลิโป้ ขี่ม้า ของคาสไรเดอร์": slots c8_00, c8_02, c8_10 = 3 different
+Lu Bu style mounted warlords for the human RIDER commander, described by look only: own design, no game's version copied); (owner 2026-11-23 "กำหนดตัวแปรชัยชนะ โดยเพิ่มแม่ทัพ" -> picked "เจนใหม่ด้วย PixelLab"):
 64 DIFFERENT army commanders for all 6 tribes (human 12, alien 11, animal 11, machine 10, demon 10, god 10), own designs, public-domain myths only.
 Slot = 40 px (bigger than the 25-39 px soldiers): the style pictures are 32 px fierce sprites from batches 3 / 4 / 6 / 7 padded onto a 40 x 40 canvas,
 because the style picture's size sets the slot size. 64 items at 33-42 px = 15 generations. Dry run by default; `--go` only after the owner says "เจน"."""
@@ -8,12 +9,12 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__)); R = os.path.join(HERE, '../..'); OUT = os.path.join(R, 'art/incoming/clash/batch8')
 K = 'fierce chibi army COMMANDER, grander and bigger than a soldier, heroic leader pose, bold silhouette, battle ready'
 CM = {
- 'human': ['warlord king in black plate armour with a golden crown and a red cape, greatsword raised', 'knight commander on foot holding a tall war banner and a longsword, blue cape',
-   'general riding a white armoured warhorse with a lance and a golden helmet plume', 'paladin commander with a glowing holy hammer and a tower shield, white and gold armour',
+ 'human': ['legendary ancient chinese warlord riding a red warhorse, two very long pheasant tail feathers on his helmet, crescent-bladed halberd raised, red and gold armour', 'knight commander on foot holding a tall war banner and a longsword, blue cape',
+   'ancient chinese warlord charging on a dark red horse, halberd pointed forward, black and gold armour, two long pheasant feathers on his helmet, flowing red cape', 'paladin commander with a glowing holy hammer and a tower shield, white and gold armour',
    'battle queen in silver armour with a spear and a flowing red cape', 'old wizard general in blue robes with a long white beard and a lightning orb staff',
    'crossbow captain in a feathered hat and leather coat with a heavy crossbow', 'dark knight lord in spiky black armour with a flaming two-handed sword',
    'shogun in red lacquered armour with a big horned helmet and a katana', 'war priest commander blowing a golden war horn, holding a mace',
-   'giant champion in full plate with a huge axe and a horned helmet', 'one-eyed general with two swords, an eyepatch and a fur cape'],
+   'ancient chinese general on a rearing red horse, crescent halberd behind him, golden lion-face chest armour, two long curved pheasant feathers on his helmet', 'one-eyed general with two swords, an eyepatch and a fur cape'],
  'alien': ['alien overlord with a huge brain head on a floating hover throne', 'alien insect queen with a tall crest and four arms', 'alien warlord in spiked power armour with a plasma glaive',
    'bloated alien hive mother with egg sacs and tentacles', 'tall grey alien commander with a staff topped by a floating crystal and a dark cape', 'small alien piloting a two-legged walker mech',
    'alien beast lord riding a six-legged crawler, holding a spear', 'alien psychic master with a glowing third eye and floating rocks around', 'alien hunter chief with bone mask trophies and a net launcher',
