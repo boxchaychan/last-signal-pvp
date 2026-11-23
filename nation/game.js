@@ -256,7 +256,7 @@ function loadGame() {
   G.S.k = keep; reclaimPrice(); for (const b of G.blds) if (b.t === 'reclaim' && b.prog > 0) { b.rs = Math.min(3, Math.floor(b.prog * 4)); if (b.rs) W.reclaim(b.x + 1.5, b.z + 1.5, RECLAIM_R * b.rs / 4); } for (let i = 0; i < D.roads.length; i += 3) { W.road[D.roads[i]] = D.roads[i + 1]; W.wear[D.roads[i]] = D.roads[i + 2]; if (D.roads[i + 1] >= 2) W.roadCount++; } for (let i = 0; i < D.roads.length; i += 3) if (D.roads[i + 1]) W.paintRoad(D.roads[i] % N, D.roads[i] / N | 0);
   if (W.plan) { for (let c = 0; c < N * N; c++) if (W.road[c] >= 2) W.plan[c] = 1; G.cities.forEach(c => W.planCity(c)); }
   const H = homes(); for (const p of D.ppl) { const a = newAgent(p[2], { sex: p[1] }); a.name = p[0]; a.shirt = p[3]; a.skin = p[4]; const h = H.length ? pick(H) : null; a.home = h ? h.id : 0; placeAgent(a, h); }
-  assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
+  if (!G.S.e) G.S.e = econNew(); rOf(G.S); econSeed(G.S); assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
 }
 function newGame(name) {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
@@ -269,7 +269,7 @@ function newGame(name) {
   for (const t of ['hut', 'hut', 'hut', 'farm', 'lumber']) { const sp = W.findSpot(G.cities[0], t, 7); if (sp) makeB(t, sp, 0, { instant: true }); else addGive(t); }
   const fam = [[62, 1], [41, 0], [38, 1], [12, 1], [9, 0], [34, 0], [31, 1], [6, 0], [27, 0], [3, 1]], H = homes(), lasts = [pick(LAST_NAMES), pick(LAST_NAMES), pick(LAST_NAMES)], who = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2];
   fam.forEach((f, i) => { const a = newAgent(f[0], { sex: f[1], last: lasts[who[i]] }), h = H[who[i]] || H[0]; a.home = h ? h.id : 0; placeAgent(a, h); });
-  stepModel(S); S.m = 0; S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }; assignJobs(); W.fly(hs.x + 1.5, hs.z + 1.5, 24); W.needShadow = true;
+  stepModel(S); rOf(S); econSeed(S); S.m = 0; S.month = { born: 0, died: 0, inM: 0, outM: 0, noKid: 0 }; assignJobs(); W.fly(hs.x + 1.5, hs.z + 1.5, 24); W.needShadow = true;
 }
 
 /* ---------- monthly + per-frame clock ---------- */
