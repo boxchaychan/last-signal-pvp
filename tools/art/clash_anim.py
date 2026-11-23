@@ -36,10 +36,34 @@ MOVE = {
    'd_imp': 'flying in place, flapping its bat wings up and down, bobbing, a looping flight cycle',
    'g_angel': 'hovering in place, flapping its white wings, sword ready, a looping flight cycle',
    'h_archer': 'walking forward to the right in place, legs stepping, bow in hand, a looping walk cycle'}}
+# the human knights (owner 2026-11-23 "เอาไปเจนท่าเลยทั้งหมดที่พูดมา"): picks from batch 3 (k3_02 18 20 07 14 10) and batch 2 (33 32 44)
+SUBJ.update({'hk_tank': 'a small bronze knight with a tall tower shield and a short sword', 'hk_samurai': 'a small red samurai knight with a katana',
+ 'hk_bat': 'a small dark knight with a bat-wing helmet and two daggers', 'hk_ranger': 'a small hooded ranger knight with a longbow',
+ 'hk_mage': 'a small blue hooded mage knight with a crystal staff', 'hk_banner': 'a small knight captain holding a tall blue war banner',
+ 'hk_glaive': 'a small silver knight with a unicorn-horn helmet and a glaive', 'hk_rider': 'a small knight riding a brown horse, holding a lance',
+ 'hk_blood': 'a small crimson knight with a long whip sword'})
+MOVE['attack'].update({'hk_tank': 'bashes forward to the right with the tower shield and stabs with the short sword, then steps back to stance',
+ 'hk_samurai': 'swings the katana in a fast horizontal slash forward to the right, then returns to stance',
+ 'hk_bat': 'dashes forward to the right and slashes with both daggers in a quick cross cut, then hops back to stance',
+ 'hk_ranger': 'draws the longbow fully, aims to the right and releases an arrow, then lowers the bow',
+ 'hk_mage': 'raises the crystal staff and casts a blue magic bolt forward to the right, then lowers the staff',
+ 'hk_banner': 'swings the war banner forward to the right in a rallying sweep, the flag waving, then plants it again',
+ 'hk_glaive': 'swings the glaive in a wide forward arc to the right, then returns to stance',
+ 'hk_rider': 'the horse rears up and the knight thrusts the lance forward to the right, then the horse settles',
+ 'hk_blood': 'lashes the whip sword forward to the right in a long snaking strike, then pulls it back'})
+MOVE['walk'].update({'hk_tank': 'marching forward to the right in place behind the tower shield, legs stepping, a looping walk cycle',
+ 'hk_samurai': 'walking forward to the right in place, katana held ready, legs stepping, a looping walk cycle',
+ 'hk_bat': 'sneaking forward to the right in place, crouched low with daggers ready, a looping walk cycle',
+ 'hk_ranger': 'walking forward to the right in place, longbow in hand, legs stepping, a looping walk cycle',
+ 'hk_mage': 'walking forward to the right in place, robe swaying, staff in hand, a looping walk cycle',
+ 'hk_banner': 'marching forward to the right in place holding the banner upright, the flag waving, a looping walk cycle',
+ 'hk_glaive': 'marching forward to the right in place, glaive held upright, a looping walk cycle',
+ 'hk_rider': 'the horse gallops in place to the right, legs moving, rider bouncing, a looping gallop cycle',
+ 'hk_blood': 'walking forward to the right in place, whip sword trailing, a looping walk cycle'})
 FRAMES = {'attack': 12, 'walk': 8}
 
-def prep():
-    for k in SUBJ:
+def prep(only=None):
+    for k in (only or SUBJ):
         im = Image.open(os.path.join(ROOT, 'art/clash/units', k + '.png')).convert('RGBA'); w, h = im.size
         c = Image.new('RGBA', (C, C), (0, 0, 0, 0)); x = max(2, min(C - w - 2, 30 - w // 2)); c.paste(im, (x, FOOT - h), im)
         c.save(os.path.join(OUT, k + '_in.png')); print(k, 'at', x, FOOT - h)
@@ -68,6 +92,6 @@ def fetch():
 
 if __name__ == '__main__':
     cmd = sys.argv[1]
-    if cmd == 'prep': prep()
+    if cmd == 'prep': prep(sys.argv[2:] or None)
     elif cmd == 'go': go(sys.argv[2:])
     elif cmd == 'fetch': fetch()
