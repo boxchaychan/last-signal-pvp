@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#14121f">
+<title>ศึกปราการอสูร</title>
+<!-- rampart.html "ศึกปราการอสูร": versus lane defence, 1v1 / 2v2 against AI. 3D voxel map made in code, locked camera, every fighter = a pixel monster card
+     from art/horde/mobs/index.json (no new art). Rules + numbers: the RAMPART section at the end of docs/action-game.md. Check: GAME.simMatch('2v2', 2) in the console. -->
+<style>
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F, U+2212; }
+@font-face { font-family: Kanit; font-weight: 800; font-display: swap; src: url(art/gem/font/kanit-thai-800-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+:root { --ink:#14121f; --pan:#2a2438; --pan2:#3b3350; --line:#0b0a12; --hi:#6d5f8c; --txt:#f6efdc; --dim:#b9aec9; --gold:#ffcf4a; --soul:#6fe7ff; --blue:#4aa8ff; --red:#ff5a55; --ok:#6fdc5c; }
+* { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(--txt); font: 600 14px/1.15 Kanit, system-ui, sans-serif; touch-action: none; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#ov { pointer-events: none; }
+button { font: inherit; color: inherit; border: 2px solid var(--line); background: var(--pan2); box-shadow: inset 0 2px 0 var(--hi), inset 0 -3px 0 #0005; cursor: pointer; padding: 0; }
+button:active { transform: translateY(1px); }
+button:disabled { filter: grayscale(.8) brightness(.62); cursor: default; }
+.hide { display: none !important; }
+#top { position: fixed; left: max(6px, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right)); top: 4px; height: 38px; display: flex; gap: 6px; align-items: stretch; pointer-events: none; }
+#top > * { pointer-events: auto; }
+.hpw { flex: 1; min-width: 90px; background: var(--pan); border: 2px solid var(--line); position: relative; overflow: hidden; }
+.hpw i { position: absolute; inset: 0 auto 0 0; background: var(--blue); }
+.hpw.r i { left: auto; right: 0; background: var(--red); }
+.hpw span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-shadow: 0 2px 0 #000, 1px 0 0 #000, -1px 0 0 #000; white-space: nowrap; }
+#wv { width: 150px; background: var(--pan); border: 2px solid var(--line); text-align: center; display: flex; flex-direction: column; justify-content: center; }
+#wv b { font-size: 14px; } #wv small { font-size: 11px; color: var(--dim); }
+#tabs { display: flex; gap: 2px; } #tabs button { width: 44px; font-size: 11px; line-height: 1.05; } #tabs button.on { background: var(--hi); }
+#tabs button.t0 { border-bottom: 3px solid var(--blue); } #tabs button.t1 { border-bottom: 3px solid var(--red); }
+.sm { width: 42px; font-size: 12px; }
+#bar { position: fixed; left: max(6px, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right)); bottom: max(4px, env(safe-area-inset-bottom)); height: 84px; display: flex; gap: 5px; }
+#res { width: 112px; background: var(--pan); border: 2px solid var(--line); padding: 3px 6px; display: flex; flex-direction: column; justify-content: space-between; font-size: 13px; }
+#res .g { color: var(--gold); } #res .s { color: var(--soul); } #res small { color: var(--dim); font-size: 11px; }
+#pick { width: 54px; display: flex; flex-direction: column; gap: 3px; } #pick button { flex: 1; font-size: 12px; } #pick button.on { background: var(--hi); }
+#cards { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; min-width: 0; }
+.card { position: relative; overflow: hidden; min-width: 0; }
+.card.on { background: #6c5a2c; outline: 2px solid var(--gold); outline-offset: -2px; }
+.card canvas { position: absolute; left: 0; top: 0; width: 100%; height: 62px; inset: 0 0 auto 0; image-rendering: pixelated; }
+.card .c { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 13px; color: var(--gold); text-shadow: 0 2px 0 #000; }
+.card.send .c { color: var(--soul); }
+.card .r { position: absolute; right: 3px; top: 2px; font-size: 10px; color: var(--txt); background: #0009; padding: 0 3px; }
+#side { width: 112px; display: flex; flex-direction: column; gap: 3px; }
+#wk { height: 34px; font-size: 12px; } #go { flex: 1; background: #3f8b3a; font-weight: 800; font-size: 16px; }
+#info { position: fixed; bottom: 94px; left: 50%; transform: translateX(-50%); width: min(440px, calc(100vw - 24px)); background: var(--pan); border: 2px solid var(--line); padding: 5px 8px; display: flex; gap: 8px; align-items: center; }
+#info div { flex: 1; font-size: 12px; color: var(--dim); } #info b { color: var(--txt); font-size: 14px; }
+#info button { height: 40px; padding: 0 10px; font-size: 13px; }
+#msg { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); padding: 3px 12px; background: #000a; font-size: 15px; pointer-events: none; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+#menu, #end { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #1b1730dd, #0b0a12f5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 6px max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left)); touch-action: pan-y; }
+h1 { font-weight: 800; font-size: clamp(25px, 7vh, 46px); color: var(--gold); text-shadow: 0 3px 0 #6b3d10, 0 5px 0 #000; }
+.sub { color: var(--dim); font-size: 13px; text-align: center; }
+.row { display: flex; gap: 6px; justify-content: center; }
+.opt { min-width: 92px; height: 38px; padding: 0 10px; } .opt.on { background: #8a6a1f; }
+#tribes { display: grid; grid-template-columns: repeat(8, minmax(0, 88px)); gap: 4px; width: 100%; justify-content: center; }
+.tb { height: clamp(62px, 22vh, 104px); position: relative; overflow: hidden; } .tb.on { background: #8a6a1f; }
+.tb canvas { position: absolute; inset: 0 0 18px 0; width: 100%; height: calc(100% - 18px); image-rendering: pixelated; }
+.tb span { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font-size: 12px; text-shadow: 0 2px 0 #000; }
+.big { min-width: 190px; height: 46px; background: #3f8b3a; font-size: 19px; font-weight: 800; }
+#end h1.lose { color: var(--red); text-shadow: 0 3px 0 #5a1616, 0 5px 0 #000; }
+#rot { position: fixed; inset: 0; background: var(--ink); display: none; align-items: center; justify-content: center; text-align: center; font-size: 18px; padding: 20px; z-index: 9; }
+@media (orientation: portrait) and (max-width: 700px) { #rot { display: flex; } }
+@media (max-width: 720px) { #res, #side { width: 92px; } #wv { width: 112px; } #pick { width: 46px; } .hpw { min-width: 60px; } }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas><canvas id="ov"></canvas>
+<div id="top" class="hide">
+  <div class="hpw"><i id="hpA"></i><span id="hpAt"></span></div>
+  <div id="wv"><b id="wvT"></b><small id="wvS"></small></div>
+  <div class="hpw r"><i id="hpB"></i><span id="hpBt"></span></div>
+  <div id="tabs"></div>
+  <button class="sm" id="spd">x1</button><button class="sm" id="quit">ออก</button>
+</div>
+<div id="msg" class="hide"></div>
+<div id="info" class="hide"><div id="infoT"></div><button id="up"></button><button id="sell"></button></div>
+<div id="bar" class="hide">
+  <div id="res"><div class="g" id="rG"></div><div class="s" id="rS"></div><small id="rI"></small></div>
+  <div id="pick"><button id="pU" class="on">ยูนิต</button><button id="pS">ส่งมอน</button></div>
+  <div id="cards"></div>
+  <div id="side"><button id="wk"></button><button id="go">พร้อม!</button></div>
+</div>
+<div id="menu">
+  <h1>ศึกปราการอสูร</h1>
+  <div class="sub">วางอสูรในเลน ป้องกันคลื่น เก็บเงิน แล้วส่งมอนไปกดดันอีกฝ่าย ป้อมใครแตกก่อนแพ้</div>
+  <div class="row" id="mMode"></div>
+  <div class="row" id="mDiff"></div>
+  <div id="tribes"></div>
+  <button class="big" id="start">เริ่มเกม</button>
+</div>
+<div id="end" class="hide"><h1 id="eT"></h1><div class="sub" id="eS"></div><div class="row"><button class="big" id="again">เล่นอีกครั้ง</button><button class="opt" id="toMenu">เมนู</button></div></div>
+<div id="rot">หมุนมือถือเป็นแนวนอนเพื่อเล่น</div>
+<script src="vendor/threejs/three.min.js"></script>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search), NORENDER = Q.get('norender') === '1';
+const $ = id => document.getElementById(id), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), V3 = THREE.Vector3;
+let rs = 12345; const rnd = (a = 0, b = 1) => { rs = (rs + 0x6D2B79F5) | 0; let t = Math.imul(rs ^ (rs >>> 15), 1 | rs); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return a + (b - a) * (((t ^ (t >>> 14)) >>> 0) / 4294967296); };
+const pickR = a => a[Math.floor(rnd() * a.length)], shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+/* ---------- rules: every number to tune is here */
+const BAL = {
+  waves: 15, buildT: 30, firstBuildT: 40, fightMax: 70, startGold: 110, startSoul: 10,
+  fort: { '1v1': 40, '2v2': 60 }, waveGold: w => 55 + w * 10, workerCost: n => 40 + n * 15, soulRate: n => .22 + n * .2,
+  cost: [15, 30, 50, 80, 125, 190], upMul: [1.2, 2.2], starHp: [1, 1.75, 3], starDmg: [1, 1.7, 2.8],
+  role: { tank: { hp: 1.8, dmg: .6, rng: .95, spd: 1.2 }, melee: { hp: 1, dmg: 1, rng: 1, spd: 1.55 }, swift: { hp: .8, dmg: 1.15, rng: .95, spd: 2.2 }, ranged: { hp: .62, dmg: 1.05, rng: 4.2, spd: 1.4 }, caster: { hp: .58, dmg: .82, rng: 3.7, spd: 1.3, splash: 1.25 } },
+  unitHp: 7.5, unitDps: .9, wavePower: w => 85 + 66 * (w - 1) + 4.2 * (w - 1) * (w - 1), waveHp: 8.6, waveDps: .22,
+  sends: [{ c: 10, h: 10 }, { c: 20, h: 12 }, { c: 35, h: 14 }, { c: 55, h: 15 }, { c: 85, h: 16 }, { c: 130, h: 18 }], sendInc: .16, sendOpen: [1, 2, 4, 6, 8, 10],
+  fortDmg: w => 10 + w * 7, diff: [{ n: 'ง่าย', eff: .62, send: .35 }, { n: 'ปกติ', eff: .86, send: .7 }, { n: 'ยาก', eff: 1, send: 1 }]
+};
+const TRIBES = [{ k: 'forest', n: 'ป่า', re: /^(mob|boss)_(meadow|vale|forest)_/, pal: 0 }, { k: 'grave', n: 'สุสาน', re: /^(mob|boss)_graveyard_/, pal: 3 }, { k: 'ruins', n: 'ซากเมือง', re: /^(mob|boss)_ruins_/, pal: 3 }, { k: 'desert', n: 'ทะเลทราย', re: /^(mob|boss)_desert_/, pal: 1 },
+  { k: 'volcano', n: 'ภูเขาไฟ', re: /^(mob|boss)_volcano_/, pal: 4 }, { k: 'snow', n: 'หิมะ', re: /^(mob|boss)_snow_/, pal: 2 }, { k: 'sky', n: 'เวหา', re: /^(mob|boss)_sky_/, pal: 5 }, { k: 'myth', n: 'ตำนาน', re: /^(?!mob_)(?!boss_(?:vale|forest|graveyard|ruins|desert|volcano|snow|sky)_)/, pal: 0 }];
+const ROLE_N = { tank: 'แทงก์', melee: 'ประชิด', swift: 'ว่องไว', ranged: 'ยิงไกล', caster: 'เวทวงกว้าง' };
+const GRID = { x0: 6, cols: 10, z0: -3, rows: 6 }, GATE_X = 3.1, SPAWN_X = 25, LZ = 22;
+let MOBS = {}, ALLK = [], BOSSK = [], ROSTER = {};
+const roleOf = I => { const r = I.boss ? 'melee' : I.role; return r === 'summoner' ? 'caster' : r === 'passive' || !BAL.role[r] ? 'melee' : r; };
+function buildRoster() {
+  ALLK = Object.keys(MOBS).filter(k => !MOBS[k].boss).sort((a, b) => MOBS[a].hw - MOBS[b].hw); BOSSK = Object.keys(MOBS).filter(k => MOBS[k].boss);
+  for (const T of TRIBES) { const L = ALLK.filter(k => T.re.test(k)), P = []; for (let i = 0; i < 6; i++) P.push(L[Math.round(i * (L.length - 1) / 5)]);
+    /* every tribe needs shooters: slots 2 and 4 take the closest ranged / caster */
+    for (const s of [1, 3]) { if (['ranged', 'caster'].includes(roleOf(MOBS[P[s]]))) continue; const c = L.filter(k => ['ranged', 'caster'].includes(roleOf(MOBS[k])) && !P.includes(k)).sort((a, b) => Math.abs(MOBS[a].hw - MOBS[P[s]].hw) - Math.abs(MOBS[b].hw - MOBS[P[s]].hw))[0]; if (c) P[s] = c; }
+    ROSTER[T.k] = P.map((k, i) => ({ k, i, cost: BAL.cost[i], role: roleOf(MOBS[k]), name: MOBS[k].name, fly: !!MOBS[k].fly })); }
+}
+
+/* ---------- match */
+let G = null;
+function newMatch(cfg) {
+  const n = cfg.mode === '2v2' ? 4 : 2, fh = BAL.fort[cfg.mode], tribes = shuffle(TRIBES.map(t => t.k).filter(k => k !== cfg.tribe)), P = [];
+  for (let i = 0; i < n; i++) P.push({ id: i, team: i < n / 2 ? 0 : 1, ai: !(i === 0 && !cfg.allAi), tribe: i === 0 ? cfg.tribe : tribes[i], gold: BAL.startGold, soul: BAL.startSoul, workers: 1, income: 0, units: [], inbox: [], aiT: 0, kills: 0, leaks: 0, sent: 0, name: i === 0 ? 'คุณ' : i < n / 2 ? 'เพื่อน AI' : 'ศัตรู ' + (i - n / 2 + 1) });
+  const pool = shuffle(ALLK.slice()), sends = BAL.sends.map((s, i) => { const lo = 34 + i * 17, c = pool.filter(k => Math.abs(MOBS[k].hw - lo) < 14), k = c[0] || pool[i]; return { ...s, i, k, role: roleOf(MOBS[k]), fly: !!MOBS[k].fly, name: MOBS[k].name }; });
+  G = { cfg, mode: cfg.mode, P, n, teams: [{ hp: fh, max: fh }, { hp: fh, max: fh }], wave: 1, phase: 'build', timer: BAL.firstBuildT, t: 0, over: false, win: -1, sends, pool, bosses: shuffle(BOSSK.slice()), lanes: P.map((p, i) => ({ i, p, f: [], q: [], gateT: 0, clear: false })), fx: [], floats: [], ready: false };
+  for (const p of P) p.aiT = rnd(1, 5);
+  layoutIdle(); return G;
+}
+const unitStats = (D, star) => { const R = BAL.role[D.role]; return { hp: Math.round(D.cost * BAL.unitHp * R.hp * BAL.starHp[star]), dmg: D.cost * BAL.unitDps * R.dmg * BAL.starDmg[star], rng: R.rng, spd: R.spd, splash: R.splash || 0 }; };
+const defOf = (p, u) => ROSTER[p.tribe][u.d];
+const workerCost = p => BAL.workerCost(p.workers - 1), upCost = (p, u) => u.star >= 2 ? 0 : Math.round(defOf(p, u).cost * BAL.upMul[u.star]);
+const invested = (p, u) => { const D = defOf(p, u); let c = D.cost; for (let s = 0; s < u.star; s++) c += Math.round(D.cost * BAL.upMul[s]); return c; };
+function mkF(side, k, x, z, st, extra) { const I = MOBS[k]; return Object.assign({ side, k, x, z, hx: x, hz: z, hp: st.hp, max: st.hp, dmg: st.dmg, rng: st.rng, spd: st.spd, splash: st.splash || 0, cd: 1, cdT: rnd(0, .5), role: st.role || roleOf(I), fly: !!I.fly, boss: !!I.boss, flip: side === 0 ? 1 : -1, fr: rnd(0, 4), row: 0, atkT: 0, flash: 0, dead: false, deadT: 0, tgt: null, leak: 1, bounty: 0, star: 0 }, extra); }
+function layoutIdle() { for (const L of G.lanes) { L.f = L.p.units.map(u => { const D = defOf(L.p, u), S = unitStats(D, u.star); return mkF(0, D.k, GRID.x0 + u.c + .5, GRID.z0 + u.r + .5, { ...S, role: D.role }, { u, star: u.star }); }); L.q = []; L.clear = false; } }
+const cellFree = (p, c, r) => c >= 0 && r >= 0 && c < GRID.cols && r < GRID.rows && !p.units.some(u => u.c === c && u.r === r);
+function buyUnit(p, d, c, r) { if (G.phase !== 'build' || G.over) return false; const D = ROSTER[p.tribe][d]; if (p.gold < D.cost || !cellFree(p, c, r)) return false; p.gold -= D.cost; p.units.push({ d, c, r, star: 0 }); layoutIdle(); return true; }
+function upgrade(p, u) { if (G.phase !== 'build' || u.star >= 2) return false; const c = upCost(p, u); if (p.gold < c) return false; p.gold -= c; u.star++; layoutIdle(); return true; }
+function sellUnit(p, u) { if (G.phase !== 'build') return false; p.gold += Math.round(invested(p, u) * .7); p.units.splice(p.units.indexOf(u), 1); layoutIdle(); return true; }
+function buyWorker(p) { const c = workerCost(p); if (p.gold < c || p.workers >= 12) return false; p.gold -= c; p.workers++; return true; }
+const sendOpen = i => G.wave >= BAL.sendOpen[i];
+function sendMob(p, i) { const S = G.sends[i]; if (!sendOpen(i) || p.soul < S.c || G.over) return false; p.soul -= S.c; p.income += Math.max(1, Math.round(S.c * BAL.sendInc)); p.sent++; const tgt = G.P[(p.id + G.n / 2) % G.n]; tgt.inbox.push(i); return true; }
+function wavePlan(w) {
+  const pw = BAL.wavePower(w), boss = w % 5 === 0, T = pw * BAL.waveHp, D = pw * BAL.waveDps, n = boss ? 4 : clamp(Math.round(5 + w * .5), 5, 12), tgt = 32 + w * 6.5, near = G.pool.filter(k => Math.abs(MOBS[k].hw - tgt) < 18), a = near[(w * 7) % near.length] || G.pool[w], b = near[(w * 13 + 3) % near.length] || a, L = [];
+  if (boss) L.push({ k: G.bosses[(w / 5 - 1) % G.bosses.length], hp: T * .62, dmg: D * .5, boss: true });
+  const hp = (boss ? T * .38 : T) / n, dmg = (boss ? D * .5 : D) / n; for (let i = 0; i < n; i++) L.push({ k: i % 2 ? b : a, hp, dmg });
+  return L;
+}
+function startWave() {
+  G.phase = 'fight'; G.timer = BAL.fightMax; G.ready = false; layoutIdle(); const plan = wavePlan(G.wave);
+  for (const L of G.lanes) { let dl = .2; const add = (o, ex) => { const I = MOBS[o.k], R = BAL.role[roleOf(I)]; L.q.push({ t: dl, f: mkF(1, o.k, SPAWN_X + rnd(0, 1), rnd(-2.5, 2.5), { hp: Math.round(o.hp * (R.hp > 1 ? 1.25 : R.hp < .7 ? .8 : 1)), dmg: o.dmg, rng: R.rng, spd: I.boss ? 1.1 : R.spd * .86, splash: 0 }, { leak: o.boss ? 4 : 1, bounty: Math.max(1, Math.round((22 + G.wave * 5) / plan.length)) * (o.boss ? 3 : 1), ...ex }) }); dl += o.boss ? .8 : .42; };
+    plan.forEach(o => add(o)); for (const i of L.p.inbox) { const S = G.sends[i]; add({ k: S.k, hp: S.c * S.h * (1 + G.wave * .05), dmg: S.c * .36 }, { sent: true, bounty: 0 }); } L.p.inbox = []; }
+}
+function endWave() {
+  for (const L of G.lanes) { for (const f of L.f) if (f.side === 1 && !f.dead) { G.teams[L.p.team].hp -= f.leak; L.p.leaks++; } L.q.forEach(q => { G.teams[L.p.team].hp -= q.f.leak; }); L.f = []; L.q = []; }
+  for (const p of G.P) p.gold += BAL.waveGold(G.wave) + p.income;
+  if (checkEnd()) return; if (G.wave >= BAL.waves && G.teams[0].hp !== G.teams[1].hp) { G.over = true; G.win = G.teams[0].hp > G.teams[1].hp ? 0 : 1; onOver(); return; }
+  G.wave++; G.phase = 'build'; G.timer = BAL.buildT; for (const p of G.P) p.aiT = rnd(.5, 5); layoutIdle(); onWave();
+}
+function checkEnd() { const a = G.teams[0].hp <= 0, b = G.teams[1].hp <= 0; if (!a && !b) return false; G.teams.forEach(t => t.hp = Math.max(0, t.hp)); G.over = true; G.win = a && b ? -1 : a ? 1 : 0; onOver(); return true; }
+function strike(L, a, t) { let m = 1; if (t.fly) m = a.role === 'ranged' ? 1.4 : a.role === 'caster' ? 1.1 : .65; else if (t.role === 'tank' && a.role === 'caster') m = 1.4; const hurt = (x, k) => { const d = a.dmg * m * k; x.hp -= d; x.flash = .12; if (x === vt) addFx(L.i, x.x, .7, x.z, a.side ? '#ff8a6a' : '#fff2b0', 3); if (x.hp <= 0 && !x.dead) kill(L, x); };
+  const vt = t; hurt(t, 1); if (a.splash) for (const o of L.f) if (o !== t && !o.dead && o.side === t.side && Math.hypot(o.x - t.x, o.z - t.z) < a.splash) hurt(o, .55); }
+function kill(L, x) { x.dead = true; x.deadT = .55; x.row = 0; if (x.side === 1) { L.p.gold += x.bounty; L.p.kills++; if (x.bounty && L.p === me() && curLane === L.i) addFloat(x.x, x.z, '+' + x.bounty, '#ffcf4a'); } addFx(L.i, x.x, .6, x.z, x.side ? '#ffd27a' : '#8fd0ff', 8); }
+function stepLane(L, dt) {
+  for (let i = L.q.length - 1; i >= 0; i--) { L.q[i].t -= dt; if (L.q[i].t <= 0) { L.f.push(L.q[i].f); L.q.splice(i, 1); } }
+  const F = L.f, team = G.teams[L.p.team]; L.gateT -= dt;
+  for (const f of F) { if (f.dead) { f.deadT -= dt; continue; } f.flash = Math.max(0, f.flash - dt); f.cdT -= dt; f.atkT = Math.max(0, f.atkT - dt); if (f.tgt && f.tgt.dead) f.tgt = null;
+    if (!f.tgt || Math.random() < .03) { let best = null, bd = f.side ? 6.5 : 7.5; for (const o of F) { if (o.dead || o.side === f.side) continue; const d = Math.hypot(o.x - f.x, (o.z - f.z) * 1.15); if (d < bd) { bd = d; best = o; } } f.tgt = best || f.tgt; }
+    let mx = 0, mz = 0; if (f.tgt) { const t = f.tgt, dx = t.x - f.x, dz = t.z - f.z, d = Math.hypot(dx, dz) || .01, r = f.rng + (t.boss ? .75 : .2); if (d > r) { mx = dx / d; mz = dz / d; } else if (f.cdT <= 0) { f.cdT = f.cd; f.atkT = .4; f.flip = dx >= 0 ? 1 : -1; if (f.rng > 2) addShot(L.i, f, t); strike(L, f, t); } }
+    else if (f.side === 1) { if (f.x > GATE_X) mx = -1; else { team.hp -= f.leak; L.p.leaks++; f.dead = true; f.deadT = .3; addFx(L.i, 2, 1.2, f.z, '#ff5a55', 8); if (L.p === me() && curLane === L.i) shake = .25; continue; } }
+    else { const dx = f.hx - f.x, dz = f.hz - f.z, d = Math.hypot(dx, dz); if (d > .12) { mx = dx / d; mz = dz / d; } }
+    if (mx || mz) { f.x += mx * f.spd * dt; f.z = clamp(f.z + mz * f.spd * dt, -3.8, 3.8); if (Math.abs(mx) > .15) f.flip = mx > 0 ? 1 : -1; f.fr += dt * (4 + f.spd * 2); f.moving = true; } else f.moving = false; f.row = f.atkT > 0 ? 1 : 0; if (f.atkT > 0) f.fr = (1 - f.atkT / .4) * (MOBS[f.k].n - .01); }
+  for (let i = 0; i < F.length; i++) { const a = F[i]; if (a.dead) continue; for (let j = i + 1; j < F.length; j++) { const b = F[j]; if (b.dead || a.side !== b.side) continue; const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || .01, m = a.boss || b.boss ? .95 : .55; if (d < m) { const p = (m - d) * .3; a.x -= dx / d * p; a.z = clamp(a.z - dz / d * p, -3.8, 3.8); b.x += dx / d * p; b.z = clamp(b.z + dz / d * p, -3.8, 3.8); } } }
+  if (L.gateT <= 0) { let b = null, bd = 6.5; for (const o of F) if (!o.dead && o.side === 1 && o.x < bd) { bd = o.x; b = o; } if (b) { L.gateT = .7; addShot(L.i, { x: 1.8, z: b.z, y: 2.6 }, b, '#7fe0ff'); strike(L, { dmg: BAL.fortDmg(G.wave), role: 'ranged', side: 0, splash: 0 }, b); } }
+  for (let i = F.length - 1; i >= 0; i--) if (F[i].dead && F[i].deadT <= 0) F.splice(i, 1);
+  L.clear = !L.q.length && !F.some(f => f.side === 1 && !f.dead);
+}
+function step(dt) {
+  if (!G || G.over) return; G.t += dt; for (const p of G.P) p.soul += BAL.soulRate(p.workers) * dt;
+  if (G.phase === 'build') { G.timer -= dt; for (const p of G.P) if (p.ai && p.aiT > 0) { p.aiT -= dt; if (p.aiT <= 0) aiTurn(p); } if (G.timer <= 0) startWave(); }
+  else { G.timer -= dt; for (const L of G.lanes) stepLane(L, dt); if (checkEnd()) return; if (G.lanes.every(L => L.clear) || G.timer <= 0) endWave(); }
+}
+
+/* ---------- AI: same buttons as the player, no cheating; difficulty = how much of its money it uses and how often it sends */
+function aiCell(p, D) { const shooter = D.role === 'ranged' || D.role === 'caster', cols = shooter ? [4, 3, 5, 2, 6, 1] : [8, 7, 9, 6, 5], rows = [2, 3, 1, 4, 0, 5]; for (const c of cols) for (const r of rows) if (cellFree(p, c, r)) return [c, r]; for (let c = 0; c < GRID.cols; c++) for (let r = 0; r < GRID.rows; r++) if (cellFree(p, c, r)) return [c, r]; return null; }
+function aiTurn(p) {
+  const Df = BAL.diff[p.id === 0 && G.cfg.allAi ? 2 : p.team === 0 ? 1 : G.cfg.diff], keep = p.gold * (1 - Df.eff), R = ROSTER[p.tribe];
+  if (G.wave <= 9 && p.workers < 2 + G.wave * .55 && p.gold - workerCost(p) > 45 + G.wave * 8) buyWorker(p);
+  for (let g = 0; g < 40; g++) { const sp = p.gold - keep, ups = p.units.filter(u => u.star < 2 && upCost(p, u) <= sp).sort((a, b) => defOf(p, b).cost - defOf(p, a).cost), mel = p.units.filter(u => !['ranged', 'caster'].includes(defOf(p, u).role)).length, sh = p.units.length - mel, wantSh = sh * 1.6 < mel;
+    const cap = Math.max(30, (p.gold + p.units.reduce((s, u) => s + invested(p, u), 0)) * .34); let opts = R.filter(D => D.cost <= sp && D.cost <= cap && (['ranged', 'caster'].includes(D.role) === wantSh)); if (!opts.length) opts = R.filter(D => D.cost <= sp && D.cost <= cap); const D = opts[opts.length - 1];
+    if (ups.length && (p.units.length >= 8 || !D || rnd() < .28)) { upgrade(p, ups[0]); continue; } if (!D || p.units.length >= 24) break; const c = aiCell(p, D); if (!c) break; buyUnit(p, D.i, c[0], c[1]); }
+  if (rnd() < Df.send + .1) for (let i = 5; i >= 0; i--) { if (sendOpen(i) && p.soul >= G.sends[i].c * 1.15) { sendMob(p, i); if (rnd() < .55) break; } }
+}
+
+/* ---------- view: voxel map (ONE instanced cube), monster cards (one instanced draw per kind), blobs and sparks */
+let renderer, scene, cam, dirL, curLane = 0, shake = 0, W = 1, H = 1, S = .04, CAMR = new V3(1, 0, 0), CAMU = new V3(0, 1, 0), voxMesh = null, gridMesh, hiMesh; const EL = 52 * Math.PI / 180, TGT = new V3(13.5, 0, 0), BARH = 92, TOPH = 44, KIND = {}, TL = new THREE.TextureLoader();
+const me = () => G && G.P[0];
+const PAL = [{ top: 0x5a9a48, top2: 0x62a44e, side: 0x7a5636, side2: 0x5e4029, path: 0xb99d68, grid: 0x6cae56, low: 0x2f6d8f, leaf: 0x2f8b43, leaf2: 0x46a64d, rock: 0x8d8c96 }, { top: 0xe3bf72, top2: 0xecca7d, side: 0xb4824a, side2: 0x916438, path: 0xcfa05c, grid: 0xf0d38f, low: 0x2f8f90, leaf: 0x5f9a3a, leaf2: 0x7bb048, rock: 0xa98a68 },
+  { top: 0xdde9f2, top2: 0xeaf3f8, side: 0x7d94ad, side2: 0x617690, path: 0xb6cbdc, grid: 0xf4fbff, low: 0x3b78b5, leaf: 0x3d7a6b, leaf2: 0xcfe6ea, rock: 0x8ea0b3 }, { top: 0x565a6e, top2: 0x62667c, side: 0x3b3c4e, side2: 0x2c2c3b, path: 0x7a7488, grid: 0x6d7188, low: 0x3e2f63, leaf: 0x54406f, leaf2: 0x6e4f86, rock: 0x777585 },
+  { top: 0x4a3a3c, top2: 0x574345, side: 0x2d2326, side2: 0x20191c, path: 0x8a4a32, grid: 0x634c4a, low: 0xff6a22, leaf: 0x6b2f22, leaf2: 0xc2552b, rock: 0x5b5157 }, { top: 0x8fd6b5, top2: 0x9fe2c2, side: 0xd8e3ee, side2: 0xaec3d8, path: 0xf2e6c4, grid: 0xb4ecd1, low: 0x7fc4f2, leaf: 0xf4f4ff, leaf2: 0xcbdcf5, rock: 0xc7d0dd }];
+function initView() {
+  renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: false, powerPreference: 'high-performance' }); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.BasicShadowMap;
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x14121f); cam = new THREE.OrthographicCamera(-10, 10, 10, -10, .1, 220);
+  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x54607a, .72)); dirL = new THREE.DirectionalLight(0xfff0d0, .82); dirL.castShadow = true; dirL.shadow.mapSize.set(1024, 1024); Object.assign(dirL.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 90 }); dirL.shadow.bias = -.0012; dirL.shadow.autoUpdate = false; scene.add(dirL, dirL.target);
+  const gc = document.createElement('canvas'); gc.width = 160; gc.height = 96; const x = gc.getContext('2d'); x.fillStyle = 'rgba(255,255,255,.2)'; for (let c = 0; c < 10; c++) for (let r = 0; r < 6; r++) { if ((c + r) % 2 === 0) { x.fillStyle = 'rgba(255,255,255,.11)'; x.fillRect(c * 16, r * 16, 16, 16); } x.fillStyle = 'rgba(255,255,255,.34)'; x.fillRect(c * 16, r * 16, 16, 1); x.fillRect(c * 16, r * 16, 1, 16); } x.fillRect(0, 95, 160, 1); x.fillRect(159, 0, 1, 96);
+  const gt = new THREE.CanvasTexture(gc); gt.magFilter = gt.minFilter = THREE.NearestFilter; gridMesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 6).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: gt, transparent: true, depthWrite: false })); gridMesh.position.set(GRID.x0 + 5, .025, 0); gridMesh.renderOrder = 1; scene.add(gridMesh);
+  hiMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: .5, depthWrite: false })); hiMesh.position.y = .035; hiMesh.visible = false; hiMesh.renderOrder = 2; scene.add(hiMesh);
+  initBatches(); addEventListener('resize', fit); fit();
+}
+function grainTex() { const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d'); for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { const v = 218 + Math.floor(Math.random() * 38); x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(i, j, 1, 1); } x.fillStyle = 'rgba(0,0,0,.16)'; x.fillRect(0, 15, 16, 1); x.fillRect(15, 0, 1, 16); x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(0, 0, 16, 1); const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; return t; }
+const shade = (h, k) => (clamp(((h >> 16) & 255) * k, 0, 255) << 16) | (clamp(((h >> 8) & 255) * k, 0, 255) << 8) | clamp((h & 255) * k, 0, 255);
+function buildMap() {
+  if (voxMesh) { scene.remove(voxMesh); voxMesh.geometry.dispose(); voxMesh.material.map.dispose(); voxMesh.material.dispose(); voxMesh.dispose(); }
+  const B = [], box = (x, y, z, sx, sy, sz, col) => B.push({ x, y, z, sx, sy, sz, col }), n2 = (a, b) => { const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return s - Math.floor(s); };
+  for (const L of G.lanes) { const zc = L.i * LZ, P = PAL[TRIBES.find(t => t.k === L.p.tribe).pal], teamC = L.p.team ? 0xe8473f : 0x3f93ee;
+    for (let x = -14; x <= 40; x++) for (let z = -11; z <= 10; z++) { const cz = z + .5; let top = 0, col = shade(n2(x * 3, z) > .5 ? P.top : P.top2, .95 + n2(z, x * 2) * .08);
+        if (cz < -4) { top = cz < -7 ? 2 + (n2(x, z) > .62 ? 1 : 0) : cz < -5 ? 1 + (n2(x, z) > .75 ? 1 : 0) : (n2(x, z) > .7 ? 1 : 0); } else if (cz > 4) { top = cz > 7 ? -3 : cz > 5.5 ? -2 : -1; if (cz > 7) col = P.low; }
+        else if (x >= 3 && x <= 26 && Math.abs(cz) < 3.6 && (x < GRID.x0 || x >= GRID.x0 + GRID.cols)) col = shade(Math.abs(cz) + n2(x, z) * .8 < 3.1 ? P.path : P.top, .94 + n2(x, z * 3) * .1);
+        else if (x >= GRID.x0 && x < GRID.x0 + GRID.cols && Math.abs(cz) < 3) col = shade((x + z) % 2 ? P.grid : P.top2, .98 + n2(x, z) * .04);
+        const bot = -5; box(x + .5, (top + bot) / 2, zc + cz, 1, top - bot, 1, top < -2 ? P.low : col); if (top !== 0 && top > -3) box(x + .5, top - .5, zc + cz, 1.002, .98, 1.002, n2(z, x) > .5 ? P.side : P.side2); if (top !== 0 && top > -3) box(x + .5, top - .04, zc + cz, 1.004, .08, 1.004, col); }
+    const tree = (x, z, h) => { const y = -z > 7 ? 2 : -z > 5 ? 1 : 0; box(x, y + h / 2, zc + z, .5, h, .5, 0x6b4a2c); box(x, y + h + .45, zc + z, 1.9, .9, 1.9, P.leaf); box(x, y + h + 1.15, zc + z, 1.25, .7, 1.25, P.leaf2); box(x + .2, y + h + 1.65, zc + z - .1, .6, .35, .6, P.leaf2); };
+    for (let i = 0; i < 11; i++) tree(-3 + i * 3.7 + n2(i, L.i) * 1.3, -5.6 - n2(L.i, i) * 2.6, 1 + n2(i, 3) * .8); for (let i = 0; i < 9; i++) { const rx = n2(i, 9 + L.i) * 34 - 3, rz = -5.4 - n2(i, 4) * 2; box(rx, 1.3, zc + rz, .7 + n2(i, 1) * .6, .6, .6, P.rock); }
+    /* the fort at the left end: towers seen from the locked camera (top + front faces) */
+    const stone = 0xa8a2b4, stone2 = 0x8b8598, dark = 0x2b2433, roof = teamC, tower = (x, z, w, h, d) => { box(x, h / 2, zc + z, w, h, d, stone); box(x, h * .32, zc + z + d / 2 + .01, w, .12, .02, stone2); box(x, h * .66, zc + z + d / 2 + .01, w, .12, .02, stone2); for (let i = 0; i < Math.round(w); i++) box(x - w / 2 + (i + .5) * w / Math.round(w), h + .22, zc + z + d / 2 - .16, .55, .44, .32, stone2); box(x, h + .12, zc + z, w * .82, .24, d * .82, stone2); for (let i = 0; i < 3; i++) box(x, h + .5 + i * .42, zc + z, w * (.74 - i * .22), .42, d * (.74 - i * .22), i % 2 ? (roof & 0xfefefe) >> 1 : roof); box(x, h * .72, zc + z + d / 2 + .02, .34, .56, .03, 0xffd76a); };
+    tower(.2, -3.6, 3, 5.4, 2.2); tower(2.1, -1.1, 2.1, 3.2, 1.8); tower(.2, 1.1, 3, 4.5, 2.5); tower(2.1, 3.5, 2.1, 2.8, 1.5); box(2.1, .78, zc + 4.27, 1, 1.56, .04, dark); box(2.1, 1.62, zc + 4.27, .62, .16, .04, dark); box(.2, 8.3, zc - 3.6, .12, 2.2, .12, 0x5a4633); box(.86, 8.95, zc - 3.6, 1.2, .72, .06, teamC);
+    /* the rift monsters come out of: glowing ground + two standing stones */
+    for (let x = 0; x < 5; x++) for (let z = -3; z < 3; z++) { const d = Math.hypot(x - 2, (z + .5) * .72); if (d > 2.5) continue; box(24.6 + x, .03, zc + z + .5, 1, .08, 1, d < .9 ? 0xf0d0ff : d < 1.7 ? 0xa45cff : 0x4b2c78); }
+    for (const s of [-1, 1]) { box(26.7, 1.3, zc + s * 3.75, 1, 2.6, .8, 0x4a3f61); box(26.7, 2.75, zc + s * 3.75, .72, .34, .62, 0xc58bff); box(25.2, .8, zc + s * 3.9, .7, 1.6, .6, 0x4a3f61); } }
+  const g = new THREE.BoxGeometry(1, 1, 1), m = new THREE.MeshLambertMaterial({ map: grainTex() }), M = new THREE.InstancedMesh(g, m, B.length), o = new THREE.Object3D(), c = new THREE.Color();
+  B.forEach((b, i) => { o.position.set(b.x, b.y, b.z); o.scale.set(b.sx, b.sy, b.sz); o.updateMatrix(); M.setMatrixAt(i, o.matrix); M.setColorAt(i, c.setHex(b.col)); }); M.castShadow = M.receiveShadow = true; M.frustumCulled = false; scene.add(M); voxMesh = M; setLane(0);
+}
+function setLane(i) { curLane = i; TGT.set(13.2, 0, i * LZ - .75); dirL.target.position.set(13.5, 0, i * LZ); dirL.position.set(13.5 - 16, 34, i * LZ + 17); dirL.target.updateMatrixWorld(); dirL.shadow.needsUpdate = true; gridMesh.position.z = i * LZ; fit(); refreshTabs(); }
+function fit() {
+  W = innerWidth; H = innerHeight; const pr = Math.min(devicePixelRatio || 1, W > 1100 ? 1.25 : 1.6); renderer.setPixelRatio(pr); renderer.setSize(W, H, false); const ov = $('ov'); ov.width = W * pr; ov.height = H * pr; ov.getContext('2d').setTransform(pr, 0, 0, pr, 0, 0);
+  const ui = clamp(Math.min(H / 400, W / 860), 1, 1.9); for (const id of ['top', 'bar', 'info', 'msg', 'menu', 'end']) $(id).style.zoom = ui; const band = Math.max(100, H - TOPH * ui - BARH * ui); S = Math.max(29.5 / W, 10.5 / band); const yc = TOPH * ui + band / 2; cam.left = -W * S / 2; cam.right = W * S / 2; cam.top = yc * S; cam.bottom = -(H - yc) * S; cam.position.set(TGT.x, TGT.y + Math.sin(EL) * 80, TGT.z + Math.cos(EL) * 80); cam.up.set(0, 1, 0); cam.lookAt(TGT); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); CAMR.setFromMatrixColumn(cam.matrixWorld, 0); CAMU.setFromMatrixColumn(cam.matrixWorld, 1);
+}
+/* cards + blobs + sparks */
+const CARD_V = 'attribute vec4 aPos; attribute vec4 aFr; attribute vec4 aTint; uniform vec3 camR, camU; uniform vec2 grid; varying vec2 vUv; varying float vFl; varying float vA; void main(){ vec3 p = aPos.xyz + camR * (position.x * aFr.z) * aPos.w + camU * (position.y * aPos.w * aTint.y); vUv = vec2((aFr.x + uv.x) * grid.x, 1.0 - (aFr.y + 1.0 - uv.y) * grid.y); vFl = aFr.w; vA = aTint.x; gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0); }';
+const CARD_F = 'uniform sampler2D map; uniform float pm; varying vec2 vUv; varying float vFl; varying float vA; void main(){ vec4 c = texture2D(map, vUv); if (c.a < .45 || vA < .02) discard; vec3 col = c.rgb / mix(1.0, max(c.a, .001), pm); gl_FragColor = vec4(mix(col, vec3(1.0), vFl), vA); }';
+const CARDU = { camR: { value: CAMR }, camU: { value: CAMU } }; let blobB, sparkB;
+function loadKind(k) {
+  if (KIND[k]) return KIND[k]; const I = MOBS[k], K = KIND[k] = { k, I, ok: false, n: 0 }; const hgt = I.boss ? 2.75 : .98 + .85 * clamp(I.hw / 135, 0, 1), u = hgt / I.hw / I.px; K.h = hgt; K.rows = Object.keys(I.rows).length;
+  if (NORENDER) return K; TL.load(I.f, t => { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; const cap = 48, g = new THREE.InstancedBufferGeometry(), p = new THREE.PlaneGeometry(I.w * u, I.h * u); p.translate((I.w / 2 - I.fx) * u, (I.fy - I.h / 2) * u, 0); g.index = p.index; g.setAttribute('position', p.attributes.position); g.setAttribute('uv', p.attributes.uv);
+    for (const [n, sz] of [['aPos', 4], ['aFr', 4], ['aTint', 2]]) { const a = new THREE.InstancedBufferAttribute(new Float32Array(cap * sz), sz); a.setUsage(THREE.DynamicDrawUsage); g.setAttribute(n, a); K[n] = a; }
+    const mat = new THREE.ShaderMaterial({ uniforms: { ...CARDU, map: { value: t }, grid: { value: new THREE.Vector2(1 / I.n, 1 / K.rows) }, pm: { value: I.px === 2 ? 1 : 0 } }, vertexShader: CARD_V.replace('attribute vec4 aTint', 'attribute vec2 aTint'), fragmentShader: CARD_F, side: THREE.DoubleSide, transparent: true, alphaTest: .01 }); K.mesh = new THREE.Mesh(g, mat); K.mesh.frustumCulled = false; K.mesh.renderOrder = 3; K.cap = cap; g.instanceCount = 0; scene.add(K.mesh); K.ok = true; }, undefined, () => console.warn('kind', k)); return K;
+}
+function initBatches() {
+  const mk = (cap, attrs, vs, fs, opt, plane) => { const g = new THREE.InstancedBufferGeometry(); g.index = plane.index; g.setAttribute('position', plane.attributes.position); g.setAttribute('uv', plane.attributes.uv); const o = { cap, n: 0 }; for (const [n, sz] of attrs) { const a = new THREE.InstancedBufferAttribute(new Float32Array(cap * sz), sz); a.setUsage(THREE.DynamicDrawUsage); g.setAttribute(n, a); o[n] = a; } g.instanceCount = 0; o.g = g; o.m = new THREE.Mesh(g, new THREE.ShaderMaterial({ vertexShader: vs, fragmentShader: fs, transparent: true, depthWrite: false, ...opt })); o.m.frustumCulled = false; scene.add(o.m); return o; };
+  blobB = mk(200, [['aB', 3], ['aC', 4]], 'attribute vec3 aB; attribute vec4 aC; varying vec2 vU; varying vec4 vC; void main(){ vU = uv * 2.0 - 1.0; vC = aC; gl_Position = projectionMatrix * viewMatrix * vec4(aB.x + position.x * aB.z, .05, aB.y + position.z * aB.z * .82, 1.0); }', 'varying vec2 vU; varying vec4 vC; void main(){ vec2 q = floor(vU * 12.0) / 12.0; float d = length(q); if (d > .96) discard; float ring = step(.72, d); gl_FragColor = vC.a > .01 && ring > .5 ? vec4(vC.rgb, .95) : vec4(0.0, 0.0, 0.0, .34); }', {}, new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)); blobB.m.renderOrder = 2;
+  sparkB = mk(240, [['aP', 4], ['aC', 4]], 'attribute vec4 aP; attribute vec4 aC; uniform vec3 camR, camU; varying vec4 vC; void main(){ vC = aC; vec3 p = aP.xyz + camR * position.x * aP.w + camU * position.y * aP.w; gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0); }', 'varying vec4 vC; void main(){ gl_FragColor = vC; }', { uniforms: CARDU, blending: THREE.AdditiveBlending, depthTest: false }, new THREE.PlaneGeometry(1, 1)); sparkB.m.renderOrder = 6;
+}
+function addFx(l, x, y, z, col, n) { if (NORENDER || l !== curLane || G.fx.length > 200) return; const c = new THREE.Color(col); for (let i = 0; i < n; i++) G.fx.push({ x, y, z, vx: rnd(-2.6, 2.6), vy: rnd(.8, 3.8), vz: rnd(-1.4, 1.4), l: rnd(.18, .42), L: .42, c, s: rnd(.07, .15), g: 8 }); }
+function addShot(l, a, t, col) { if (NORENDER || l !== curLane) return; const c = new THREE.Color(col || (a.side ? '#ff9a66' : '#ffe680')), y = a.y || .8, T = .16; G.fx.push({ x: a.x, y, z: a.z, vx: (t.x - a.x) / T, vy: (.7 - y) / T, vz: (t.z - a.z) / T, l: T, L: T, c, s: .2, g: 0 }); }
+function addFloat(x, z, s, c) { if (!NORENDER) G.floats.push({ x, y: 1.4, z: z + curLane * LZ, s, c, l: .8 }); }
+const pv = new V3();
+function draw(dt) {
+  if (NORENDER || !G) return; for (const k in KIND) { if (KIND[k].ok) KIND[k].n = 0; } let bn = 0; const L = G.lanes[curLane], zc = curLane * LZ, now = performance.now() / 1000; const ov = $('ov').getContext('2d'); ov.clearRect(0, 0, W, H); ov.textAlign = 'center';
+  const bar = (x, y, w, f, c) => { ov.fillStyle = '#0b0a12'; ov.fillRect(x - w / 2 - 1, y - 1, w + 2, 5); ov.fillStyle = c; ov.fillRect(x - w / 2, y, Math.max(1, w * f), 3); };
+  for (const f of L.f) { const K = loadKind(f.k); if (!K.ok || K.n >= K.cap) continue; const I = K.I, i = K.n++, y = f.fly ? .5 + .1 * Math.sin(now * 4 + f.hx) : .04, dk = f.dead ? clamp(f.deadT / .55, 0, 1) : 1, fr = f.row ? Math.floor(f.fr) : f.moving ? Math.floor(f.fr) % I.n : 0;
+    K.aPos.setXYZW(i, f.x, y, f.z + zc, 1 + (f.star || 0) * .1); K.aFr.setXYZW(i, clamp(fr, 0, I.n - 1), f.row, f.flip, f.dead ? .55 : f.flash > 0 ? .75 : 0); K.aTint.setXY(i, dk, f.dead ? .35 + dk * .65 : 1);
+    if (!f.dead && bn < blobB.cap) { const r = f.boss ? 2.1 : .95 + K.h * .22; blobB.aB.setXYZ(bn, f.x, f.z + zc, r); const c = f.side === 0 ? [.3, .68, 1, 1] : f.sent ? [1, .3, .86, 1] : [0, 0, 0, 0]; blobB.aC.setXYZW(bn, ...c); bn++; }
+    if (!f.dead && (f.hp < f.max || f.boss)) { pv.set(f.x, y + K.h + .12, f.z + zc).project(cam); const sx = (pv.x + 1) / 2 * W, sy = (1 - pv.y) / 2 * H; bar(sx, sy, f.boss ? 74 : 28, clamp(f.hp / f.max, 0, 1), f.side ? '#ff5a55' : '#6fdc5c'); }
+    if (!f.dead && f.star) { pv.set(f.x, y + K.h + .12, f.z + zc).project(cam); ov.fillStyle = '#ffcf4a'; ov.font = '800 11px Kanit'; ov.fillText('★'.repeat(f.star + 1), (pv.x + 1) / 2 * W, (1 - pv.y) / 2 * H - 3); } }
+  for (const k in KIND) { const K = KIND[k]; if (!K.ok) continue; K.mesh.geometry.instanceCount = K.n; K.mesh.visible = K.n > 0; if (K.n) { K.aPos.needsUpdate = K.aFr.needsUpdate = K.aTint.needsUpdate = true; } }
+  blobB.g.instanceCount = bn; blobB.aB.needsUpdate = blobB.aC.needsUpdate = true;
+  let sn = 0; for (let i = G.fx.length - 1; i >= 0; i--) { const p = G.fx[i]; p.l -= dt; if (p.l <= 0) { G.fx.splice(i, 1); continue; } p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.vy -= p.g * dt; if (sn < sparkB.cap) { sparkB.aP.setXYZW(sn, p.x, p.y, p.z + zc, p.s); const a = clamp(p.l / p.L * 1.6, 0, 1); sparkB.aC.setXYZW(sn, p.c.r, p.c.g, p.c.b, a); sn++; } } sparkB.g.instanceCount = sn; sparkB.aP.needsUpdate = sparkB.aC.needsUpdate = true;
+  ov.font = '800 14px Kanit'; for (let i = G.floats.length - 1; i >= 0; i--) { const t = G.floats[i]; t.l -= dt; t.y += dt * 1.1; if (t.l <= 0) { G.floats.splice(i, 1); continue; } pv.set(t.x, t.y, t.z).project(cam); const sx = (pv.x + 1) / 2 * W, sy = (1 - pv.y) / 2 * H; ov.globalAlpha = clamp(t.l * 2, 0, 1); ov.fillStyle = '#000'; ov.fillText(t.s, sx + 1, sy + 1); ov.fillStyle = t.c; ov.fillText(t.s, sx, sy); ov.globalAlpha = 1; }
+  gridMesh.visible = G.phase === 'build' && curLane === 0 && !G.over; hiMesh.visible = gridMesh.visible && !!hover && sel !== null && tab === 'u'; if (hiMesh.visible) { hiMesh.position.x = GRID.x0 + hover.c + .5; hiMesh.position.z = GRID.z0 + hover.r + .5; hiMesh.material.color.setHex(cellFree(me(), hover.c, hover.r) ? 0xffe27a : 0xff5a55); }
+  if (shake > 0) { shake = Math.max(0, shake - dt); cam.position.x = TGT.x + Math.sin(now * 70) * shake * .35; cam.updateMatrixWorld(); } else if (cam.position.x !== TGT.x) { cam.position.x = TGT.x; cam.updateMatrixWorld(); }
+  renderer.render(scene, cam);
+}
+
+/* ---------- HUD */
+let tab = 'u', sel = null, picked = null, hover = null, speed = 1, menu = { mode: '1v1', diff: 1, tribe: 'forest' }, lastHud = 0; const IMG = {};
+function thumb(cv, k, big) { const I = MOBS[k]; if (!IMG[I.f]) { IMG[I.f] = new Image(); IMG[I.f].src = I.f; } const im = IMG[I.f], go = () => { const r = cv.getBoundingClientRect(), pr = 2; cv.width = Math.max(40, r.width * pr); cv.height = Math.max(40, r.height * pr); const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; const bw = I.w, bh = I.h, s = Math.min(cv.width / bw, cv.height / bh) * (big ? 1.1 : 1.08); x.drawImage(im, 0, 0, bw, bh, (cv.width - bw * s) / 2, cv.height - bh * s, bw * s, bh * s); }; if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go, { once: true }); }
+function refreshTabs() { const t = $('tabs'); if (!G) return; if (t.children.length !== G.n) { t.innerHTML = ''; G.P.forEach((p, i) => { const b = document.createElement('button'); b.className = 't' + p.team; b.textContent = i === 0 ? 'คุณ' : p.team === 0 ? 'เพื่อน' : 'ศัตรู' + (G.n > 2 ? i - 1 : ''); b.onclick = () => { setLane(i); closeInfo(); }; t.appendChild(b); }); } [...t.children].forEach((b, i) => b.classList.toggle('on', i === curLane)); }
+function buildCards() { const c = $('cards'); c.innerHTML = ''; const L = tab === 'u' ? ROSTER[me().tribe] : G.sends; L.forEach((D, i) => { const b = document.createElement('button'); b.className = 'card' + (tab === 's' ? ' send' : ''); b.dataset.i = i; b.innerHTML = `<canvas></canvas><div class="r">${tab === 'u' ? ROLE_N[D.role] : D.fly ? 'บิน' : ROLE_N[D.role]}</div><div class="c">${tab === 'u' ? D.cost : D.c}</div>`; b.onclick = () => cardTap(i); c.appendChild(b); requestAnimationFrame(() => thumb(b.querySelector('canvas'), D.k)); }); hud(true); }
+function cardTap(i) { if (!G || G.over) return; if (tab === 's') { if (sendMob(me(), i)) { say(`ส่ง ${G.sends[i].name} ไปคลื่นหน้า รายได้เพิ่ม`); beep(520, .05); } else say(sendOpen(i) ? 'วิญญาณไม่พอ' : `เปิดที่คลื่น ${BAL.sendOpen[i]}`); hud(true); return; } sel = sel === i ? null : i; closeInfo(); if (curLane !== 0) setLane(0); if (sel !== null) say('แตะช่องในตารางเพื่อวาง'); hud(true); }
+let msgT = 0; function say(s) { $('msg').textContent = s; $('msg').classList.remove('hide'); msgT = 2.4; }
+function closeInfo() { picked = null; $('info').classList.add('hide'); }
+function openInfo(u) { picked = u; sel = null; const p = me(), D = defOf(p, u), St = unitStats(D, u.star), c = upCost(p, u); $('infoT').innerHTML = `<b>${D.name} ${'★'.repeat(u.star + 1)}</b><br>${ROLE_N[D.role]} พลัง ${St.hp} โจมตี ${Math.round(St.dmg)}`; const U = $('up'); U.textContent = u.star >= 2 ? 'เต็มแล้ว' : `อัป ${c}`; U.disabled = u.star >= 2 || p.gold < c; $('sell').textContent = `ขาย +${Math.round(invested(p, u) * .7)}`; $('info').classList.remove('hide'); hud(true); }
+function hud(force) { if (!G) return; const now = performance.now(); if (!force && now - lastHud < 120) return; lastHud = now; const p = me(), A = G.teams[0], B = G.teams[1];
+  $('hpA').style.width = A.hp / A.max * 100 + '%'; $('hpB').style.width = B.hp / B.max * 100 + '%'; $('hpAt').textContent = `ทีมเรา ${Math.ceil(A.hp)}`; $('hpBt').textContent = `ศัตรู ${Math.ceil(B.hp)}`; $('wvT').textContent = `คลื่น ${G.wave}/${BAL.waves}`; $('wvS').textContent = G.phase === 'build' ? `เตรียมตัว ${Math.ceil(G.timer)} วิ` : `กำลังสู้ เหลือ ${G.lanes.reduce((s, L) => s + L.q.length + L.f.filter(f => f.side === 1 && !f.dead).length, 0)} ตัว`;
+  $('rG').textContent = `ทอง ${Math.floor(p.gold)}`; $('rS').textContent = `วิญญาณ ${Math.floor(p.soul)}`; $('rI').textContent = `รายได้ +${BAL.waveGold(G.wave) + p.income}/คลื่น`; const wc = workerCost(p), wk = $('wk'); wk.textContent = `ภูตขุด ${p.workers} (${wc})`; wk.disabled = p.gold < wc || p.workers >= 12; const go = $('go'); go.disabled = G.phase !== 'build'; go.textContent = G.phase === 'build' ? 'พร้อม!' : 'สู้อยู่';
+  [...$('cards').children].forEach((b, i) => { if (tab === 'u') { const D = ROSTER[p.tribe][i]; b.disabled = p.gold < D.cost || G.phase !== 'build'; b.classList.toggle('on', sel === i); } else { const D = G.sends[i]; b.disabled = !sendOpen(i) || p.soul < D.c; b.querySelector('.c').textContent = sendOpen(i) ? D.c : `คลื่น ${BAL.sendOpen[i]}`; } }); }
+function onWave() { if (NORENDER || G.cfg.allAi) return; closeInfo(); say(G.wave % 5 === 0 ? `คลื่น ${G.wave}: บอสกำลังมา!` : `คลื่น ${G.wave} เตรียมตัว`); hud(true); beep(660, .08); }
+function onOver() { if (NORENDER || G.cfg.allAi) return; const win = G.win === 0, p = me(); $('eT').textContent = G.win < 0 ? 'เสมอ' : win ? 'ชนะ!' : 'แพ้แล้ว'; $('eT').className = win ? '' : 'lose'; $('eS').textContent = `ถึงคลื่น ${G.wave} ป้อมเรา ${Math.ceil(G.teams[0].hp)} ป้อมศัตรู ${Math.ceil(G.teams[1].hp)} ปราบ ${p.kills} ตัว ส่งมอน ${p.sent} ครั้ง`; $('end').classList.remove('hide'); for (const id of ['bar', 'info', 'msg']) $(id).classList.add('hide'); beep(win ? 880 : 180, .3); }
+let AC = null; function beep(f, d) { if (Q.get('snd') === '0') return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), g = AC.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.035, AC.currentTime); g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + d); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + d); } catch (e) { } }
+const ray = new THREE.Raycaster(), plane = new THREE.Plane(new V3(0, 1, 0), 0), hitP = new V3();
+function cellAt(cx, cy) { ray.setFromCamera({ x: cx / W * 2 - 1, y: 1 - cy / H * 2 }, cam); if (!ray.ray.intersectPlane(plane, hitP)) return null; const c = Math.floor(hitP.x - GRID.x0), r = Math.floor(hitP.z - curLane * LZ - GRID.z0); return c >= 0 && r >= 0 && c < GRID.cols && r < GRID.rows ? { c, r } : null; }
+function bindInput() {
+  const gl = $('gl'); gl.addEventListener('pointermove', e => { if (G && curLane === 0) hover = cellAt(e.clientX, e.clientY); });
+  gl.addEventListener('pointerup', e => { if (!G || G.over || curLane !== 0 || G.phase !== 'build') return; const c = cellAt(e.clientX, e.clientY), p = me(); if (!c) { closeInfo(); return; } hover = c; const u = p.units.find(u => u.c === c.c && u.r === c.r); if (u) { openInfo(u); return; } if (sel !== null && tab === 'u') { if (buyUnit(p, sel, c.c, c.r)) { beep(440, .05); if (p.gold < ROSTER[p.tribe][sel].cost) sel = null; hud(true); } else say('ทองไม่พอ'); } else closeInfo(); });
+  $('pU').onclick = () => { tab = 'u'; $('pU').classList.add('on'); $('pS').classList.remove('on'); buildCards(); }; $('pS').onclick = () => { tab = 's'; sel = null; $('pS').classList.add('on'); $('pU').classList.remove('on'); buildCards(); };
+  $('wk').onclick = () => { if (buyWorker(me())) { say('ภูตขุดเพิ่มวิญญาณต่อวินาที'); hud(true); } }; $('go').onclick = () => { if (G && G.phase === 'build') { for (const p of G.P) if (p.ai && p.aiT > 0) { p.aiT = 0; aiTurn(p); } startWave(); closeInfo(); sel = null; hud(true); } };
+  $('up').onclick = () => { if (picked && upgrade(me(), picked)) { const u = picked; openInfo(u); beep(700, .06); } }; $('sell').onclick = () => { if (picked && sellUnit(me(), picked)) { closeInfo(); hud(true); } };
+  $('spd').onclick = () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('spd').textContent = 'x' + speed; }; $('quit').onclick = toMenu; $('again').onclick = begin; $('toMenu').onclick = toMenu; $('start').onclick = begin;
+  addEventListener('keydown', e => { if (!G || G.over) return; if (e.key >= '1' && e.key <= '6') cardTap(+e.key - 1); else if (e.key === ' ') { e.preventDefault(); $('go').click(); } else if (e.key === 'Tab') { e.preventDefault(); (tab === 'u' ? $('pS') : $('pU')).click(); } else if (e.key === 'Escape') { sel = null; closeInfo(); hud(true); } });
+}
+function menuUI() {
+  const opt = (el, list, key) => { $(el).innerHTML = ''; list.forEach(([v, n]) => { const b = document.createElement('button'); b.className = 'opt' + (menu[key] === v ? ' on' : ''); b.textContent = n; b.onclick = () => { menu[key] = v; menuUI(); }; $(el).appendChild(b); }); };
+  opt('mMode', [['1v1', '1 ต่อ 1'], ['2v2', '2 ต่อ 2']], 'mode'); opt('mDiff', BAL.diff.map((d, i) => [i, d.n]), 'diff'); const T = $('tribes'); if (!T.children.length) TRIBES.forEach(t => { const b = document.createElement('button'); b.className = 'tb'; b.dataset.k = t.k; b.innerHTML = `<canvas></canvas><span>${t.n}</span>`; b.onclick = () => { menu.tribe = t.k; menuUI(); }; T.appendChild(b); requestAnimationFrame(() => thumb(b.querySelector('canvas'), ROSTER[t.k][3].k, true)); }); [...T.children].forEach(b => b.classList.toggle('on', b.dataset.k === menu.tribe));
+}
+function begin() { rs = (Date.now() & 0xffffff) | 1; newMatch({ mode: menu.mode, diff: menu.diff, tribe: menu.tribe }); $('menu').classList.add('hide'); $('end').classList.add('hide'); for (const id of ['top', 'bar']) $(id).classList.remove('hide'); $('tabs').innerHTML = ''; tab = 'u'; sel = null; closeInfo(); $('pU').classList.add('on'); $('pS').classList.remove('on'); buildMap(); buildCards(); refreshTabs(); ROSTER[menu.tribe].forEach(D => loadKind(D.k)); say('เลือกการ์ด แล้วแตะช่องในตารางเพื่อวางอสูร'); hud(true); }
+function toMenu() { G = null; for (const id of ['top', 'bar', 'info', 'msg', 'end']) $(id).classList.add('hide'); $('menu').classList.remove('hide'); $('ov').getContext('2d').clearRect(0, 0, W, H); for (const k in KIND) if (KIND[k].ok) KIND[k].mesh.visible = false; if (blobB) blobB.g.instanceCount = sparkB.g.instanceCount = 0; }
+let last = 0, acc = 0, hold = false; const FIX = 1 / 30;
+function loop(ts) { requestAnimationFrame(loop); if (hold) return; const dt = Math.min(.1, (ts - last) / 1000 || 0); last = ts; if (G) { acc += dt * speed; let n = 0; while (acc >= FIX && n++ < 12) { step(FIX); acc -= FIX; } if (msgT > 0) { msgT -= dt; if (msgT <= 0) $('msg').classList.add('hide'); } hud(); draw(dt); if (G && !G.over && G.phase === 'fight') G.lanes[curLane].q.slice(0, 2).forEach(q => loadKind(q.f.k)); } else renderer.render(scene, cam); }
+/* test hooks: GAME.simMatch(mode, diff) plays a whole AI-only match with no drawing */
+function simMatch(mode, diff, tribe) { const keep = G; rs = (Math.random() * 1e9) | 1; newMatch({ mode, diff, tribe: tribe || pickR(TRIBES).k, allAi: true }); const M = G; let i = 0; while (!M.over && i++ < 200000) step(FIX); const r = { win: M.win, wave: M.wave, hp: M.teams.map(t => Math.ceil(t.hp)), mins: +(M.t / 60).toFixed(1), units: M.P.map(p => p.units.length), sent: M.P.map(p => p.sent), kills: M.P.map(p => p.kills), leaks: M.P.map(p => p.leaks), steps: i }; G = keep; return r; }
+window.GAME = { get G() { return G; }, BAL, ROSTER, TRIBES, newMatch, step, simMatch, buyUnit, sendMob, buyWorker, upgrade, begin, menu, setLane, cardTap, set hold(v) { hold = v; }, draw: d => draw(d), get MOBS() { return MOBS; } };
+(async () => { const J = await fetch('art/horde/mobs/index.json').then(r => r.json()); MOBS = J.mobs; buildRoster(); if (!NORENDER) initView(); bindInput(); menuUI(); window.GAME.ready = true; if (!NORENDER) requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
