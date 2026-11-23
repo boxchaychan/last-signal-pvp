@@ -164,7 +164,7 @@ W.paintGround = function () {
   const tx = new THREE.CanvasTexture(c); tx.anisotropy = MOBILE ? 2 : 4; tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping; W.gtex = tx;
 };
 W.paintRect = function (x0, y0, x1, y1) {
-  const g = W.gctx, w = x1 - x0, h0 = y1 - y0, im = g.createImageData(w, h0), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [120, 162, 80], g2: [92, 142, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] };
+  const g = W.gctx, w = x1 - x0, h0 = y1 - y0, im = g.createImageData(w, h0), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [120, 162, 80], g2: [92, 142, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] }; if (typeof ISO_ON !== 'undefined' && ISO_ON) { pal.g1 = [104, 168, 70]; pal.g2 = [66, 134, 60]; pal.f = [48, 110, 52]; pal.hill = [96, 134, 76]; pal.rock = [120, 124, 104]; }
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
     const wx = x * k, wz = y * k, h = W.h(wx, wz), n = W.fbm(wx * .16, wz * .16), n2 = W.fbm(wx * .9 + 7, wz * .9), t = W.T[ci(Math.min(N - 1, wx | 0), Math.min(N - 1, wz | 0))]; let C;
     if (h < .1) { const m = clamp((h + .2) / .3); C = [pal.sea[0] + (pal.sand[0] - pal.sea[0]) * m, pal.sea[1] + (pal.sand[1] - pal.sea[1]) * m, pal.sea[2] + (pal.sand[2] - pal.sea[2]) * m]; }
@@ -201,11 +201,11 @@ W.init = function (canvas, seed) {
   /* sea and rivers */
   const dt = new Uint8Array((N + 1) * (N + 1) * 4); for (let z = 0; z <= N; z++) for (let x = 0; x <= N; x++) { const i = (x + z * (N + 1)) * 4, v = clamp(-W.H[x + z * (N + 1)] / 2.4) * 255; dt[i] = v; dt[i + 1] = v; dt[i + 2] = v; dt[i + 3] = 255; }
   const depth = new THREE.DataTexture(dt, N + 1, N + 1, THREE.RGBAFormat); depth.magFilter = depth.minFilter = THREE.LinearFilter; depth.wrapS = depth.wrapT = THREE.ClampToEdgeWrapping; depth.needsUpdate = true; W.depthData = dt; W.depthTex = depth;
-  W.waterU = { t: { value: 0 }, d: { value: depth }, L: { value: 1 }, N: { value: N } };
+  W.waterU = { sK: { value: 1 }, t: { value: 0 }, d: { value: depth }, L: { value: 1 }, N: { value: N } };
   const water = W.water = new THREE.Mesh(new THREE.PlaneGeometry(N * 7, N * 7), new THREE.ShaderMaterial({
     uniforms: W.waterU, transparent: true,
     vertexShader: 'varying vec3 p;void main(){vec4 w=modelMatrix*vec4(position,1.);p=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
-    fragmentShader: 'uniform float t,L,N;uniform sampler2D d;varying vec3 p;float W_(vec2 q){return sin(q.x)*cos(q.y);}float H(vec2 q){mat2 r=mat2(.8,.6,-.6,.8);float a=W_(q*1.1+vec2(t*.7,t*.5));q=r*q;a+=.55*W_(q*2.3-vec2(t*.9,-t*.6));q=r*q;a+=.28*W_(q*4.7+vec2(-t*1.2,t*.8));return a;}void main(){vec2 u=p.xz/N,q=p.xz;float e=(u.x<0.||u.y<0.||u.x>1.||u.y>1.)?1.:texture2D(d,u).r,h=H(q);float dl=length(cameraPosition-p),nr=smoothstep(105.,16.,dl);vec3 n=normalize(vec3((h-H(q+vec2(.12,0.)))*nr,.42,(h-H(q+vec2(0.,.12)))*nr)),v=normalize(cameraPosition-p),s=normalize(vec3(-.48,.72,.5)),b=normalize(v+s);float sp=pow(max(dot(n,b),0.),120.)*.9*nr,fr=pow(1.-max(dot(n,v),0.),3.);vec3 c=mix(vec3(.36,.86,.78),vec3(.1,.57,.68),smoothstep(.0,.2,e));c=mix(c,vec3(.04,.27,.49),smoothstep(.18,.72,e));c=mix(c,vec3(.64,.84,.93),fr*.42);float f=smoothstep(.055,.012,e+.012*h)*(.58+.42*sin(e*120.-t*1.6));c=mix(c,vec3(.97,.99,.96),clamp(f,0.,1.)*.8);c=c*L+sp*vec3(1.,.95,.82)*L*L;gl_FragColor=vec4(c,mix(.74,.96,smoothstep(.0,.3,e)));}'
+    fragmentShader: 'uniform float t,L,N,sK;uniform sampler2D d;varying vec3 p;float W_(vec2 q){return sin(q.x)*cos(q.y);}float H(vec2 q){mat2 r=mat2(.8,.6,-.6,.8);float a=W_(q*1.1+vec2(t*.7,t*.5));q=r*q;a+=.55*W_(q*2.3-vec2(t*.9,-t*.6));q=r*q;a+=.28*W_(q*4.7+vec2(-t*1.2,t*.8));return a;}void main(){vec2 u=p.xz/N,q=p.xz;float e=(u.x<0.||u.y<0.||u.x>1.||u.y>1.)?1.:texture2D(d,u).r,h=H(q);float dl=length(cameraPosition-p),nr=smoothstep(105.,16.,dl);vec3 n=normalize(vec3((h-H(q+vec2(.12,0.)))*nr,.42,(h-H(q+vec2(0.,.12)))*nr)),v=normalize(cameraPosition-p),s=normalize(vec3(-.48,.72,.5)),b=normalize(v+s);float sp=pow(max(dot(n,b),0.),120.)*.9*nr*sK,fr=pow(1.-max(dot(n,v),0.),3.);vec3 c=mix(vec3(.36,.86,.78),vec3(.1,.57,.68),smoothstep(.0,.2,e));c=mix(c,vec3(.04,.27,.49),smoothstep(.18,.72,e));c=mix(c,vec3(.64,.84,.93),fr*.42);float f=smoothstep(.055,.012,e+.012*h)*(.58+.42*sin(e*120.-t*1.6));c=mix(c,vec3(.97,.99,.96),clamp(f,0.,1.)*.8);c=c*L+sp*vec3(1.,.95,.82)*L*L;gl_FragColor=vec4(c,mix(.74,.96,smoothstep(.0,.3,e)));}'
   }));
   water.rotation.x = -Math.PI / 2; water.position.set(N / 2, 0, N / 2); sc.add(water);
   /* bridges appear wherever people keep crossing a river */
@@ -360,7 +360,7 @@ W.drawAgents = function (t) {
 /* ---------- camera + input ---------- */
 W.bindInput = function (c) {
   const P = new Map(); let downAt = 0, moved = 0, last = null, pinchD = 0, pinchA = 0;
-  const pan = (dx, dy) => { const k = W.cam.dist * .0021 * (800 / Math.max(innerHeight, 320)) * 1.35, s = Math.sin(W.cam.yaw), cs = Math.cos(W.cam.yaw); W.cam.tx = clamp(W.cam.tx - (dx * cs + dy * s) * k, 4, N - 4); W.cam.tz = clamp(W.cam.tz - (-dx * s + dy * cs) * k, 4, N - 4); };
+  const pan = (dx0, dy) => { const dx = W.fixPitch != null ? dx0 * .5 : dx0, k = W.cam.dist * .0021 * (800 / Math.max(innerHeight, 320)) * 1.35, s = Math.sin(W.cam.yaw), cs = Math.cos(W.cam.yaw); W.cam.tx = clamp(W.cam.tx - (dx * cs + dy * s) * k, 4, N - 4); W.cam.tz = clamp(W.cam.tz - (-dx * s + dy * cs) * k, 4, N - 4); };
   c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); P.set(e.pointerId, [e.clientX, e.clientY]); if (P.size === 1) { downAt = performance.now(); moved = 0; last = [e.clientX, e.clientY]; } else if (P.size === 2) { const [a, b] = [...P.values()]; pinchD = Math.hypot(a[0] - b[0], a[1] - b[1]); pinchA = Math.atan2(b[1] - a[1], b[0] - a[0]); moved = 99; } });
   c.addEventListener('pointermove', e => { if (!P.has(e.pointerId)) return; P.set(e.pointerId, [e.clientX, e.clientY]); if (P.size === 1 && last) { const dx = e.clientX - last[0], dy = e.clientY - last[1]; moved += Math.abs(dx) + Math.abs(dy); if (moved > 7) pan(dx, dy); last = [e.clientX, e.clientY]; } else if (P.size === 2) { const [a, b] = [...P.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), an = Math.atan2(b[1] - a[1], b[0] - a[0]); W.zoom(pinchD / Math.max(d, 1)); W.cam.yaw += (an - pinchA); pinchD = d; pinchA = an; } });
   const up = e => { const had = P.has(e.pointerId); P.delete(e.pointerId); if (had && P.size === 0 && moved <= 7 && performance.now() - downAt < 450 && W.onTap) W.onTap(e.clientX, e.clientY); if (P.size === 1) { last = [...P.values()][0]; } };
@@ -386,7 +386,7 @@ W.setDay = function (f, smog) {
 };
 W.render = function (t, dt) {
   const C = W.cam, kk = 1 - Math.exp(-dt * 7); C.x += (C.tx - C.x) * kk; C.z += (C.tz - C.z) * kk; C.dist += (C.tDist - C.dist) * kk;
-  const pitch = .62 + clamp((C.dist - 7) / 90) * .5, ground = Math.max(0, W.h(C.x, C.z)), cam = W.camera;
+  const pitch = W.fixPitch != null ? W.fixPitch : .62 + clamp((C.dist - 7) / 90) * .5, ground = Math.max(0, W.h(C.x, C.z)), cam = W.camera;
   cam.position.set(C.x + Math.sin(C.yaw) * Math.cos(pitch) * C.dist, ground + Math.sin(pitch) * C.dist, C.z + Math.cos(C.yaw) * Math.cos(pitch) * C.dist); cam.lookAt(C.x, ground, C.z);
   W.waterU.t.value = t; const sz = clamp(C.dist * 1.1, 14, 92), sun = W.sun;
   if (W.needShadow || Math.hypot(C.x - sx0, C.z - sz0) > sz * .16 || Math.abs(C.dist - sd0) > sd0 * .12) {

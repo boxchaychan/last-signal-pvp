@@ -29,6 +29,6 @@
     bright.uniforms.t.value = rt.texture; bright.uniforms.th.value = .93 - night * .36; pass(bright, a1);
     const B = (src, dst, x, y) => { blur.uniforms.t.value = src.texture; blur.uniforms.d.value.set(x / src.width, y / src.height); pass(blur, dst); };
     B(a1, a2, 1, 0); B(a2, a1, 0, 1); B(a1, b1, 1, 0); B(b1, b2, 0, 1); B(b2, b1, 1.4, 0); B(b1, b2, 0, 1.4);
-    const u = final.uniforms; u.t.value = rt.texture; u.b.value = a1.texture; u.c2.value = b2.texture; u.px.value.set(1 / size.x, 1 / size.y); u.tilt.value = clamp(1.3 - W.cam.dist / 62, .12, 1) * (size.y / 720); u.night.value = night; pass(final, null);
+    const u = final.uniforms; u.t.value = rt.texture; u.b.value = a1.texture; u.c2.value = b2.texture; u.px.value.set(1 / size.x, 1 / size.y); u.tilt.value = clamp(1.3 - W.cam.dist / 62, .12, 1) * (size.y / 720) * (W.fixPitch != null ? .4 : 1); u.night.value = night; pass(final, null);
   };
 })();
