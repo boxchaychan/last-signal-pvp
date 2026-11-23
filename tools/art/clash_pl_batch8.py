@@ -42,9 +42,23 @@ for tribe, lst in CM.items():
         k = f'c8_{len(keys):02d}'; items.append(f'{K}, {tribe} tribe, {d}, {TONE[tribe]}, side view facing right, full body'); keys.append(k); names[k] = f'{tribe}: {d}'
 assert len(items) == 64 and len(set(items)) == 64, (len(items), len(set(items)))
 SP = ['batch3/raw/k3_02', 'batch3/raw/k3_18', 'batch4/raw/a4_12', 'batch4/raw/a4_34', 'batch6/raw/p6_00', 'batch7/raw/m7_01', 'batch7/raw/m7_12', 'batch3/raw/k3_10']
+def drop_edge_slivers(im, small=24):
+    # bits of the NEIGHBOUR cell cut into a 64-pack slot (thin lines at the slot edge) are removed from the style picture only
+    w, h = im.size; px = im.load(); seen = set()
+    for y0 in range(h):
+        for x0 in range(w):
+            if (x0, y0) in seen or px[x0, y0][3] < 30: continue
+            comp, st = [], [(x0, y0)]; seen.add((x0, y0))
+            while st:
+                x, y = st.pop(); comp.append((x, y))
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in seen and px[nx, ny][3] >= 30: seen.add((nx, ny)); st.append((nx, ny))
+            if len(comp) < small and any(x in (0, w - 1) or y in (0, h - 1) for x, y in comp):
+                for x, y in comp: px[x, y] = (0, 0, 0, 0)
+    return im
 style = []
 for f in SP:
-    im = Image.open(os.path.join(R, 'art/incoming/clash', f + '.png')).convert('RGBA'); c = Image.new('RGBA', (40, 40), (0, 0, 0, 0)); c.paste(im, ((40 - im.width) // 2, 40 - im.height), im)
+    im = drop_edge_slivers(Image.open(os.path.join(R, 'art/incoming/clash', f + '.png')).convert('RGBA')); c = Image.new('RGBA', (40, 40), (0, 0, 0, 0)); c.paste(im, ((40 - im.width) // 2, 40 - im.height), im)
     b = io.BytesIO(); c.save(b, 'PNG'); style.append({'type': 'base64', 'base64': base64.b64encode(b.getvalue()).decode(), 'format': 'png'})
 args = {'description': f'tiny {K}, pixel art game sprite, side view facing right, full body, dark outline, bright colours', 'name': 'clash commanders batch 8',
         'view': 'sidescroller', 'style_images': style, 'item_descriptions': items}
