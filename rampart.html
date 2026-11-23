@@ -53,11 +53,13 @@ button:disabled { filter: grayscale(.8) brightness(.62); cursor: default; }
 h1 { font-weight: 800; font-size: clamp(25px, 7vh, 46px); color: var(--gold); text-shadow: 0 3px 0 #6b3d10, 0 5px 0 #000; }
 .sub { color: var(--dim); font-size: 13px; text-align: center; }
 .row { display: flex; gap: 6px; justify-content: center; }
-.opt { min-width: 92px; height: 38px; padding: 0 10px; } .opt.on { background: #8a6a1f; }
+.opt { min-width: 70px; height: 36px; padding: 0 10px; } .opt.on { background: #8a6a1f; }
 #tribes { display: grid; grid-template-columns: repeat(8, minmax(0, 88px)); gap: 4px; width: 100%; justify-content: center; }
-.tb { height: clamp(62px, 22vh, 104px); position: relative; overflow: hidden; } .tb.on { background: #8a6a1f; }
+.tb { height: clamp(54px, 17vh, 104px); position: relative; overflow: hidden; } .tb.on { background: #8a6a1f; }
 .tb canvas { position: absolute; inset: 0 0 18px 0; width: 100%; height: calc(100% - 18px); image-rendering: pixelated; }
 .tb span { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font-size: 12px; text-shadow: 0 2px 0 #000; }
+#tInfo { display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; } #tUnits { display: flex; gap: 2px; } #tUnits canvas { position: static; width: 42px; height: 42px; background: var(--pan); border: 1px solid var(--line); image-rendering: pixelated; } #tText { font-size: 12px; color: var(--dim); max-width: 330px; } #tText b { color: var(--gold); font-size: 14px; }
+#tr { position: absolute; left: 0; bottom: 88px; max-width: 196px; padding: 2px 7px; background: #000b; color: var(--gold); font-size: 11px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .big { min-width: 190px; height: 46px; background: #3f8b3a; font-size: 19px; font-weight: 800; }
 #end h1.lose { color: var(--red); text-shadow: 0 3px 0 #5a1616, 0 5px 0 #000; }
 #rot { position: fixed; inset: 0; background: var(--ink); display: none; align-items: center; justify-content: center; text-align: center; font-size: 18px; padding: 20px; z-index: 9; }
@@ -77,6 +79,7 @@ h1 { font-weight: 800; font-size: clamp(25px, 7vh, 46px); color: var(--gold); te
 <div id="msg" class="hide"></div>
 <div id="info" class="hide"><div id="infoT"></div><button id="up"></button><button id="sell"></button></div>
 <div id="bar" class="hide">
+  <div id="tr"></div>
   <div id="res"><div class="g" id="rG"></div><div class="s" id="rS"></div><small id="rI"></small></div>
   <div id="pick"><button id="pU" class="on">ยูนิต</button><button id="pS">ส่งมอน</button></div>
   <div id="cards"></div>
@@ -85,9 +88,9 @@ h1 { font-weight: 800; font-size: clamp(25px, 7vh, 46px); color: var(--gold); te
 <div id="menu">
   <h1>ศึกปราการอสูร</h1>
   <div class="sub">วางอสูรในเลน สู้มอนแต่ละเวฟ คอยกันราชาของทีม แล้วส่งมอนไปกดดันอีกฝ่าย ราชาใครล้มก่อนแพ้</div>
-  <div class="row" id="mMode"></div>
-  <div class="row" id="mDiff"></div>
+  <div class="row"><div class="row" id="mMode"></div><div class="row" id="mDiff"></div></div>
   <div id="tribes"></div>
+  <div id="tInfo"><div id="tUnits"></div><div id="tText"></div></div>
   <button class="big" id="start">เริ่มเกม</button>
 </div>
 <div id="end" class="hide"><h1 id="eT"></h1><div class="sub" id="eS"></div><div class="row"><button class="big" id="again">เล่นอีกครั้ง</button><button class="opt" id="toMenu">เมนู</button></div></div>
@@ -112,22 +115,25 @@ const BAL = {
 };
 const TRIBES = [{ k: 'forest', n: 'ป่า', re: /^(mob|boss)_(meadow|vale|forest)_/, pal: 0 }, { k: 'grave', n: 'สุสาน', re: /^(mob|boss)_graveyard_/, pal: 3 }, { k: 'ruins', n: 'ซากเมือง', re: /^(mob|boss)_ruins_/, pal: 3 }, { k: 'desert', n: 'ทะเลทราย', re: /^(mob|boss)_desert_/, pal: 1 },
   { k: 'volcano', n: 'ภูเขาไฟ', re: /^(mob|boss)_volcano_/, pal: 4 }, { k: 'snow', n: 'หิมะ', re: /^(mob|boss)_snow_/, pal: 2 }, { k: 'sky', n: 'เวหา', re: /^(mob|boss)_sky_/, pal: 5 }, { k: 'myth', n: 'ตำนาน', re: /^(?!mob_)(?!boss_(?:vale|forest|graveyard|ruins|desert|volcano|snow|sky)_)/, pal: 0 }];
+const TRAITS = { forest: { n: 'ฟื้นฟู', d: 'ทุกตัวค่อยๆ ฟื้นเลือดระหว่างสู้', c: '#9dff7a' }, grave: { n: 'คืนชีพ', d: 'ตายครั้งแรกของเวฟ ลุกขึ้นมาสู้ต่อ', c: '#c9b6ff' }, ruins: { n: 'เกราะเหล็ก', d: 'รับดาเมจน้อยลง', c: '#d8d8e6' }, desert: { n: 'พิษ', d: 'ตีแล้วศัตรูเลือดลดต่อเนื่อง', c: '#c8ff4a' }, volcano: { n: 'เพลิง', d: 'ตีแรงขึ้น และไฟลามตัวข้างๆ', c: '#ff9a3c' }, snow: { n: 'เยือกแข็ง', d: 'ศัตรูเดินและตีช้าลง', c: '#8fe6ff' }, sky: { n: 'สายลม', d: 'เร็วขึ้น และหลบการโจมตีได้', c: '#ffffff' }, myth: { n: 'ตำนานรวมพล', d: 'ยิ่งวางหลายแบบ ยิ่งเก่งทั้งทีม', c: '#ffd76a' } };
 const ROLE_N = { tank: 'แทงก์', melee: 'ประชิด', swift: 'ว่องไว', ranged: 'ยิงไกล', caster: 'เวทวงกว้าง' };
 const GRID = { cols: 8, z0: -8, rows: 8 }, SPAWN_Z = -14.5, LEAK_Z = 2.2, KING_Z = 9, LANE_GAP = 16, TEAM_GAP = 46;
 let MOBS = {}, ALLK = [], BOSSK = [], ROSTER = {};
 const roleOf = I => { const r = I.boss ? 'melee' : I.role; return r === 'summoner' ? 'caster' : r === 'passive' || !BAL.role[r] ? 'melee' : r; };
+/* each tribe = a FIXED team of 6 defenders: one of each job, cheap to expensive by body size */
 function buildRoster() {
-  ALLK = Object.keys(MOBS).filter(k => !MOBS[k].boss).sort((a, b) => MOBS[a].hw - MOBS[b].hw); BOSSK = Object.keys(MOBS).filter(k => MOBS[k].boss);
-  for (const T of TRIBES) { const L = ALLK.filter(k => T.re.test(k)), P = []; for (let i = 0; i < 6; i++) { const lo = Math.floor(i * L.length / 6), hi = Math.max(lo + 1, Math.floor((i + 1) * L.length / 6)); P.push(L[lo + Math.floor(rnd() * (hi - lo))]); }
-    /* every tribe needs shooters: slots 2 and 4 take the closest ranged / caster */
-    for (const s of [1, 3]) { if (['ranged', 'caster'].includes(roleOf(MOBS[P[s]]))) continue; const c = L.filter(k => ['ranged', 'caster'].includes(roleOf(MOBS[k])) && !P.includes(k)).sort((a, b) => Math.abs(MOBS[a].hw - MOBS[P[s]].hw) - Math.abs(MOBS[b].hw - MOBS[P[s]].hw))[0]; if (c) P[s] = c; }
-    ROSTER[T.k] = P.map((k, i) => ({ k, i, cost: BAL.cost[i], role: roleOf(MOBS[k]), name: MOBS[k].name, fly: !!MOBS[k].fly })); }
+  ALLK = Object.keys(MOBS).filter(k => !MOBS[k].boss).sort((a, b) => MOBS[a].hw - MOBS[b].hw); BOSSK = Object.keys(MOBS).filter(k => MOBS[k].boss); const JOBS = [['melee', 'swift'], ['ranged', 'caster'], ['tank', 'melee'], ['caster', 'ranged'], ['swift', 'melee'], ['melee', 'tank']];
+  for (const T of TRIBES) { const L = ALLK.filter(k => T.re.test(k) && MOBS[k].role !== 'passive'), P = []; JOBS.forEach((J, i) => { const want = MOBS[L[Math.round(i * (L.length - 1) / 5)]].hw, near = list => list.filter(k => !P.includes(k)).sort((a, b) => Math.abs(MOBS[a].hw - want) - Math.abs(MOBS[b].hw - want))[0]; P.push(near(L.filter(k => roleOf(MOBS[k]) === J[0])) || near(L.filter(k => roleOf(MOBS[k]) === J[1])) || near(L)); });
+    P.sort((a, b) => MOBS[a].hw - MOBS[b].hw); ROSTER[T.k] = P.map((k, i) => ({ k, i, cost: BAL.cost[i], role: roleOf(MOBS[k]), name: MOBS[k].name, fly: !!MOBS[k].fly })); }
 }
+const tribeBuff = p => { const n = p.units.length, lv = n >= 6 ? 3 : n >= 4 ? 2 : n >= 2 ? 1 : 0, K = [0, .6, 1, 1.5][lv], kinds = new Set(p.units.map(u => u.d)).size, t = p.tribe; return { lv, K, tr: t, hp: t === 'myth' ? 1 + .035 * kinds * K : 1, dmg: t === 'myth' ? 1 + .035 * kinds * K : t === 'volcano' ? 1 + .14 * K : 1, spd: t === 'sky' ? 1 + .15 * K : 1 }; };
+const spOf = f => f.spd * (f.slowT > 0 ? 1 - f.slowK : 1);
+function tickStatus(f, dt) { if (f.tr === 'forest') f.hp = Math.min(f.max, f.hp + f.max * .045 * f.trK * dt); if (f.slowT > 0) { f.slowT -= dt; f.cdT += dt * f.slowK; } if (f.poisT > 0) { f.poisT -= dt; f.hp -= f.pois * dt; if (f.hp <= 0 && !f.dead) { kill(f); return true; } } return false; }
 
 /* ---------- match: each team = its lanes side by side + ONE king below them. Units hold the lane; what gets through runs to the king */
 let G = null;
 function newMatch(cfg) {
-  buildRoster(); const n = cfg.mode === '2v2' ? 4 : 2, per = n / 2, fh = BAL.king[cfg.mode], tribes = shuffle(TRIBES.map(t => t.k).filter(k => k !== cfg.tribe)), P = [];
+  const n = cfg.mode === '2v2' ? 4 : 2, per = n / 2, fh = BAL.king[cfg.mode], tribes = shuffle(TRIBES.map(t => t.k).filter(k => k !== cfg.tribe)), P = [];
   for (let i = 0; i < n; i++) P.push({ id: i, team: i < per ? 0 : 1, ai: !(i === 0 && !cfg.allAi), tribe: i === 0 ? cfg.tribe : tribes[i], gold: BAL.startGold, soul: BAL.startSoul, workers: 1, income: 0, units: [], inbox: [], aiT: 0, kills: 0, leaks: 0, sent: 0, name: i === 0 ? 'คุณ' : i < per ? 'เพื่อน AI' : 'ศัตรู ' + (i - per + 1) });
   const kings = ['boss_jotun', 'boss_chalawan'], pool = shuffle(ALLK.slice()), sends = BAL.sends.map((s, i) => { const lo = 34 + i * 17, c = pool.filter(k => Math.abs(MOBS[k].hw - lo) < 14), k = c[0] || pool[i]; return { ...s, i, k, role: roleOf(MOBS[k]), fly: !!MOBS[k].fly, name: MOBS[k].name }; });
   const teams = [0, 1].map(t => ({ t, x: t * TEAM_GAP, hp: fh, max: fh, lv: 0, f: [], k: kings[t], cdT: 0, atkT: 0, flash: 0, flip: 1, fr: 0 }));
@@ -139,7 +145,7 @@ const defOf = (p, u) => ROSTER[p.tribe][u.d], laneOf = p => G.lanes[p.id], cellX
 const workerCost = p => BAL.workerCost(p.workers - 1), upCost = (p, u) => u.star >= 2 ? 0 : Math.round(defOf(p, u).cost * BAL.upMul[u.star]), kingCost = T => BAL.kingUp(T.lv);
 const invested = (p, u) => { const D = defOf(p, u); let c = D.cost; for (let s = 0; s < u.star; s++) c += Math.round(D.cost * BAL.upMul[s]); return c; };
 function mkF(side, k, x, z, st, extra) { const I = MOBS[k]; return Object.assign({ side, k, x, z, hx: x, hz: z, hp: st.hp, max: st.hp, dmg: st.dmg, rng: st.rng, spd: st.spd, splash: st.splash || 0, cd: 1, cdT: rnd(0, .5), role: st.role || roleOf(I), fly: !!I.fly, boss: !!I.boss, flip: 1, fr: rnd(0, 4), row: 0, atkT: 0, flash: 0, dead: false, deadT: 0, tgt: null, bounty: 0, star: 0 }, extra); }
-function layoutIdle() { for (const T of G.teams) T.f = []; for (const L of G.lanes) { L.f = L.p.units.map(u => { const D = defOf(L.p, u), S = unitStats(D, u.star); return mkF(0, D.k, cellX(L, u.c), cellZ(u.r), { ...S, role: D.role }, { u, star: u.star }); }); L.q = []; L.clear = false; } }
+function layoutIdle() { for (const T of G.teams) T.f = []; for (const L of G.lanes) { const B = tribeBuff(L.p); L.f = L.p.units.map(u => { const D = defOf(L.p, u), S = unitStats(D, u.star); return mkF(0, D.k, cellX(L, u.c), cellZ(u.r), { ...S, hp: Math.round(S.hp * B.hp), dmg: S.dmg * B.dmg, spd: S.spd * B.spd, role: D.role }, { u, star: u.star, tr: B.lv ? B.tr : '', trK: B.K }); }); L.q = []; L.clear = false; } }
 const cellFree = (p, c, r) => c >= 0 && r >= 0 && c < GRID.cols && r < GRID.rows && !p.units.some(u => u.c === c && u.r === r);
 function buyUnit(p, d, c, r) { if (G.phase !== 'build' || G.over) return false; const D = ROSTER[p.tribe][d]; if (p.gold < D.cost || !cellFree(p, c, r)) return false; p.gold -= D.cost; p.units.push({ d, c, r, star: 0 }); layoutIdle(); return true; }
 function upgrade(p, u) { if (G.phase !== 'build' || u.star >= 2) return false; const c = upCost(p, u); if (p.gold < c) return false; p.gold -= c; u.star++; layoutIdle(); return true; }
@@ -166,24 +172,27 @@ function endWave() {
   G.wave++; G.phase = 'build'; G.timer = BAL.buildT; for (const p of G.P) p.aiT = rnd(.5, 5); layoutIdle(); onWave();
 }
 function checkEnd() { const a = G.teams[0].hp <= 0, b = G.teams[1].hp <= 0; if (!a && !b) return false; G.teams.forEach(t => t.hp = Math.max(0, t.hp)); G.over = true; G.win = a && b ? -1 : a ? 1 : 0; onOver(); return true; }
-function strike(list, a, t) { let m = 1; if (t.fly) m = a.role === 'ranged' ? 1.4 : a.role === 'caster' ? 1.1 : .65; else if (t.role === 'tank' && a.role === 'caster') m = 1.4; const hurt = (x, k) => { x.hp -= a.dmg * m * k; x.flash = .12; if (x === t) addFx(x.x, .7, x.z, a.side ? '#ff8a6a' : '#fff2b0', 3); if (x.hp <= 0 && !x.dead) kill(x); }; hurt(t, 1); if (a.splash) for (const o of list) if (o !== t && !o.dead && o.side === t.side && Math.hypot(o.x - t.x, o.z - t.z) < a.splash) hurt(o, .55); }
+function strike(list, a, t) { let m = 1; if (t.fly) m = a.role === 'ranged' ? 1.4 : a.role === 'caster' ? 1.1 : .65; else if (t.role === 'tank' && a.role === 'caster') m = 1.4; const col = a.side ? '#ff8a6a' : (TRAITS[a.tr] || {}).c || '#fff2b0';
+  const hurt = (x, k) => { if (x.dead) return; if (x.tr === 'sky' && rnd() < .16 * x.trK) { if (x === t) addFx(x.x, 1, x.z, '#ffffff', 2); return; } let d = a.dmg * m * k; if (x.tr === 'ruins') d *= 1 - .2 * x.trK; x.hp -= d; x.flash = .12; if (x === t) addFx(x.x, .7, x.z, col, 3); if (a.tr === 'desert') { x.pois = a.dmg * .24 * a.trK; x.poisT = 3; } if (a.tr === 'snow') { x.slowK = Math.min(.45, .28 * a.trK); x.slowT = 1.5; }
+    if (x.hp <= 0) { if (x.tr === 'grave' && !x.rev) { x.rev = true; x.hp = x.max * .3 * x.trK; x.flash = .4; x.poisT = 0; addFx(x.x, .8, x.z, '#c9b6ff', 10); return; } kill(x); } };
+  hurt(t, 1); const sp = a.splash || (a.tr === 'volcano' ? 1 : 0), sk = a.splash ? .55 : .3 * (a.trK || 0); if (sp) for (const o of list) if (o !== t && !o.dead && o.side === t.side && Math.hypot(o.x - t.x, o.z - t.z) < sp) hurt(o, sk); }
 function kill(x) { x.dead = true; x.deadT = .55; x.row = 0; if (x.side === 1 && x.L) { const p = x.L.p, g = x.leaked ? Math.floor(x.bounty / 2) : x.bounty; p.gold += g; p.kills++; if (g && p === me()) addFloat(x.x, x.z, '+' + g, '#ffcf4a'); } addFx(x.x, .6, x.z, x.side ? '#ffd27a' : '#8fd0ff', 8); }
 function separate(F) { for (let i = 0; i < F.length; i++) { const a = F[i]; if (a.dead) continue; for (let j = i + 1; j < F.length; j++) { const b = F[j]; if (b.dead || a.side !== b.side) continue; const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || .01, m = a.boss || b.boss ? .95 : .55; if (d < m) { const p = (m - d) * .3; a.x -= dx / d * p; a.z -= dz / d * p; b.x += dx / d * p; b.z += dz / d * p; } } } }
 function stepLane(L, dt) {
   for (let i = L.q.length - 1; i >= 0; i--) { L.q[i].t -= dt; if (L.q[i].t <= 0) { L.f.push(L.q[i].f); L.q.splice(i, 1); } } const F = L.f, T = G.teams[L.p.team], xa = L.cx - 4.3, xb = L.cx + 4.3;
-  for (const f of F) { if (f.dead) { f.deadT -= dt; continue; } f.flash = Math.max(0, f.flash - dt); f.cdT -= dt; f.atkT = Math.max(0, f.atkT - dt); if (f.tgt && f.tgt.dead) f.tgt = null;
+  for (const f of F) { if (f.dead) { f.deadT -= dt; continue; } f.flash = Math.max(0, f.flash - dt); f.cdT -= dt; f.atkT = Math.max(0, f.atkT - dt); if (tickStatus(f, dt)) continue; if (f.tgt && f.tgt.dead) f.tgt = null;
     if (!f.tgt || rnd() < .03) { let best = null, bd = f.side ? 5.5 : 7.5; for (const o of F) { if (o.dead || o.side === f.side) continue; const d = Math.hypot(o.x - f.x, o.z - f.z); if (d < bd) { bd = d; best = o; } } f.tgt = best || f.tgt; }
     let mx = 0, mz = 0; if (f.tgt) { const t = f.tgt, dx = t.x - f.x, dz = t.z - f.z, d = Math.hypot(dx, dz) || .01, r = f.rng + (t.boss ? .75 : .2); if (Math.abs(dx) > .1) f.flip = dx > 0 ? 1 : -1; if (d > r) { mx = dx / d; mz = dz / d; } else if (f.cdT <= 0) { f.cdT = f.cd; f.atkT = .4; if (f.rng > 2) addShot(f, t); strike(F, f, t); } }
     else if (f.side === 1) mz = 1; else { const dx = f.hx - f.x, dz = f.hz - f.z, d = Math.hypot(dx, dz); if (d > .12) { mx = dx / d; mz = dz / d; } }
-    if (mx || mz) { f.x = clamp(f.x + mx * f.spd * dt, xa, xb); f.z += mz * f.spd * dt; if (f.side === 0) f.z = Math.min(f.z, LEAK_Z - .3); if (Math.abs(mx) > .2) f.flip = mx > 0 ? 1 : -1; f.fr += dt * (4 + f.spd * 2); f.moving = true; } else f.moving = false; f.row = f.atkT > 0 ? 1 : 0; if (f.atkT > 0) f.fr = (1 - f.atkT / .4) * (MOBS[f.k].n - .01);
+    if (mx || mz) { f.x = clamp(f.x + mx * spOf(f) * dt, xa, xb); f.z += mz * spOf(f) * dt; if (f.side === 0) f.z = Math.min(f.z, LEAK_Z - .3); if (Math.abs(mx) > .2) f.flip = mx > 0 ? 1 : -1; f.fr += dt * (4 + f.spd * 2); f.moving = true; } else f.moving = false; f.row = f.atkT > 0 ? 1 : 0; if (f.atkT > 0) f.fr = (1 - f.atkT / .4) * (MOBS[f.k].n - .01);
     if (f.side === 1 && f.z >= LEAK_Z) { f.leaked = true; f.tgt = null; f.gone = true; T.f.push(f); L.p.leaks++; if (L.p.team === 0 && !G.leakSaid) { G.leakSaid = true; onLeak(); } } }
   for (let i = F.length - 1; i >= 0; i--) if (F[i].gone || (F[i].dead && F[i].deadT <= 0)) F.splice(i, 1); separate(F); for (const f of F) if (!f.dead) f.x = clamp(f.x, xa, xb);
   L.clear = !L.q.length && !F.some(f => f.side === 1 && !f.dead);
 }
 function stepKing(T, dt) {
   const F = T.f, kx = T.x, kz = KING_Z; T.flash = Math.max(0, T.flash - dt); T.cdT -= dt; T.atkT = Math.max(0, T.atkT - dt);
-  for (const f of F) { if (f.dead) { f.deadT -= dt; continue; } f.flash = Math.max(0, f.flash - dt); f.cdT -= dt; f.atkT = Math.max(0, f.atkT - dt); const dx = kx - f.x, dz = kz - f.z, d = Math.hypot(dx, dz) || .01, r = Math.max(1.5, f.rng); if (Math.abs(dx) > .1) f.flip = dx > 0 ? 1 : -1;
-    if (d > r) { f.x += dx / d * f.spd * 1.15 * dt; f.z += dz / d * f.spd * 1.15 * dt; f.fr += dt * (4 + f.spd * 2); f.moving = true; } else { f.moving = false; if (f.cdT <= 0) { f.cdT = f.cd; f.atkT = .4; T.hp -= f.dmg; T.flash = .12; if (f.rng > 2) addShot(f, { x: kx, z: kz }); addFx(kx, 1.6, kz, '#ff5a55', 3); if (T.t === 0) shake = Math.max(shake, .14); } } f.row = f.atkT > 0 ? 1 : 0; if (f.atkT > 0) f.fr = (1 - f.atkT / .4) * (MOBS[f.k].n - .01); }
+  for (const f of F) { if (f.dead) { f.deadT -= dt; continue; } f.flash = Math.max(0, f.flash - dt); f.cdT -= dt; f.atkT = Math.max(0, f.atkT - dt); if (tickStatus(f, dt)) continue; const dx = kx - f.x, dz = kz - f.z, d = Math.hypot(dx, dz) || .01, r = Math.max(1.5, f.rng); if (Math.abs(dx) > .1) f.flip = dx > 0 ? 1 : -1;
+    if (d > r) { f.x += dx / d * spOf(f) * 1.15 * dt; f.z += dz / d * spOf(f) * 1.15 * dt; f.fr += dt * (4 + f.spd * 2); f.moving = true; } else { f.moving = false; if (f.cdT <= 0) { f.cdT = f.cd; f.atkT = .4; T.hp -= f.dmg; T.flash = .12; if (f.rng > 2) addShot(f, { x: kx, z: kz }); addFx(kx, 1.6, kz, '#ff5a55', 3); if (T.t === 0) shake = Math.max(shake, .14); } } f.row = f.atkT > 0 ? 1 : 0; if (f.atkT > 0) f.fr = (1 - f.atkT / .4) * (MOBS[f.k].n - .01); }
   if (T.cdT <= 0) { let b = null, bd = 10; for (const o of F) { if (o.dead) continue; const d = Math.hypot(o.x - kx, o.z - kz); if (d < bd) { bd = d; b = o; } } if (b) { T.cdT = .8; T.atkT = .4; T.flip = b.x >= kx ? 1 : -1; addShot({ x: kx, z: kz, y: 2.2, side: 0 }, b, T.t ? '#ff9a7a' : '#7fe0ff'); strike(F, { dmg: BAL.kingDps(G.wave) * (1 + T.lv * BAL.kingDmgUp) * .8, role: 'ranged', side: 0, splash: 1.5 }, b); } }
   for (let i = F.length - 1; i >= 0; i--) if (F[i].dead && F[i].deadT <= 0) F.splice(i, 1); separate(F);
 }
@@ -288,10 +297,10 @@ function buildCards() { const c = $('cards'); c.innerHTML = ''; const L = tab ==
 function cardTap(i) { if (!G || G.over) return; if (tab === 's') { if (sendMob(me(), i)) { say(`ส่ง ${G.sends[i].name} ไปคลื่นหน้า รายได้เพิ่ม`); beep(520, .05); } else say(sendOpen(i) ? 'แร่ไม่พอ' : `เปิดที่คลื่น ${BAL.sendOpen[i]}`); hud(true); return; } sel = sel === i ? null : i; closeInfo(); if (viewTab !== 0) focusLane(0); if (sel !== null) say('แตะช่องในตารางเพื่อวาง'); hud(true); }
 let msgT = 0; function say(s) { $('msg').textContent = s; $('msg').classList.remove('hide'); msgT = 2.4; }
 function closeInfo() { picked = null; $('info').classList.add('hide'); }
-function openInfo(u) { picked = u; sel = null; const p = me(), D = defOf(p, u), St = unitStats(D, u.star), c = upCost(p, u); $('infoT').innerHTML = `<b>${D.name} ${'★'.repeat(u.star + 1)}</b><br>${ROLE_N[D.role]} พลัง ${St.hp} โจมตี ${Math.round(St.dmg)}`; const U = $('up'); U.textContent = u.star >= 2 ? 'เต็มแล้ว' : `อัป ${c}`; U.disabled = u.star >= 2 || p.gold < c; $('sell').textContent = `ขาย +${Math.round(invested(p, u) * .7)}`; $('info').classList.remove('hide'); hud(true); }
+function openInfo(u) { picked = u; sel = null; const p = me(), D = defOf(p, u), St = unitStats(D, u.star), c = upCost(p, u); $('infoT').innerHTML = `<b>${D.name} ${'★'.repeat(u.star + 1)}</b><br>${ROLE_N[D.role]} เลือด ${St.hp} โจมตี ${Math.round(St.dmg)}`; const U = $('up'); U.textContent = u.star >= 2 ? 'เต็มแล้ว' : `อัป ${c}`; U.disabled = u.star >= 2 || p.gold < c; $('sell').textContent = `ขาย +${Math.round(invested(p, u) * .7)}`; $('info').classList.remove('hide'); hud(true); }
 function hud(force) { if (!G) return; const now = performance.now(); if (!force && now - lastHud < 120) return; lastHud = now; const p = me(), A = G.teams[0], B = G.teams[1];
   $('hpA').style.width = A.hp / A.max * 100 + '%'; $('hpB').style.width = B.hp / B.max * 100 + '%'; $('hpAt').textContent = `ราชาเรา ${Math.ceil(A.hp)}`; $('hpBt').textContent = `ราชาศัตรู ${Math.ceil(B.hp)}`; $('wvT').textContent = `เวฟ ${G.wave}/${BAL.waves}`; $('wvS').textContent = G.phase === 'build' ? `เตรียมตัว ${Math.ceil(G.timer)} วิ` : `สู้อยู่ เหลือ ${G.lanes.reduce((s, L) => s + L.q.length + L.f.filter(f => f.side === 1 && !f.dead).length, 0) + G.teams.reduce((s, T) => s + T.f.filter(f => !f.dead).length, 0)} ตัว`;
-  $('rG').textContent = `ทอง ${Math.floor(p.gold)}`; $('rS').textContent = `แร่ ${Math.floor(p.soul)} +${BAL.soulRate(p.workers).toFixed(1)}/วิ`; $('rI').textContent = `รายได้ +${BAL.waveGold(G.wave) + p.income}/เวฟ`; const wc = workerCost(p), wk = $('wk'); wk.textContent = `คนงาน ${p.workers} (${wc})`; wk.disabled = p.gold < wc || p.workers >= 12; const kc = kingCost(A), kg = $('kg'); kg.textContent = `อัปราชา (${kc} แร่)`; kg.disabled = p.soul < kc; const go = $('go'); go.disabled = G.phase !== 'build'; go.textContent = G.phase === 'build' ? 'พร้อม!' : 'สู้อยู่';
+  const TB = tribeBuff(p), Tn = TRIBES.find(t => t.k === p.tribe).n; $('tr').textContent = TB.lv ? `เผ่า${Tn} ${TRAITS[p.tribe].n} ระดับ ${TB.lv}/3` : `เผ่า${Tn}: วาง 2 ตัวเปิดพลัง`; $('rG').textContent = `ทอง ${Math.floor(p.gold)}`; $('rS').textContent = `แร่ ${Math.floor(p.soul)} +${BAL.soulRate(p.workers).toFixed(1)}/วิ`; $('rI').textContent = `รายได้ +${BAL.waveGold(G.wave) + p.income}/เวฟ`; const wc = workerCost(p), wk = $('wk'); wk.textContent = `คนงาน ${p.workers} (${wc})`; wk.disabled = p.gold < wc || p.workers >= 12; const kc = kingCost(A), kg = $('kg'); kg.textContent = `อัปราชา (${kc} แร่)`; kg.disabled = p.soul < kc; const go = $('go'); go.disabled = G.phase !== 'build'; go.textContent = G.phase === 'build' ? 'พร้อม!' : 'สู้อยู่';
   [...$('cards').children].forEach((b, i) => { if (tab === 'u') { const D = ROSTER[p.tribe][i]; b.disabled = p.gold < D.cost || G.phase !== 'build'; b.classList.toggle('on', sel === i); } else { const D = G.sends[i]; b.disabled = !sendOpen(i) || p.soul < D.c; b.querySelector('.c').textContent = sendOpen(i) ? D.c : `เวฟ ${BAL.sendOpen[i]}`; } }); }
 function onWave() { if (NORENDER || G.cfg.allAi) return; closeInfo(); focusLane(0); say(G.wave % 5 === 0 ? `เวฟ ${G.wave}: บอสกำลังมา!` : `เวฟ ${G.wave} เตรียมตัว`); hud(true); beep(660, .08); }
 function onFight() { if (NORENDER || G.cfg.allAi) return; closeInfo(); sel = null; }
@@ -300,7 +309,7 @@ function onOver() { if (NORENDER || G.cfg.allAi) return; const win = G.win === 0
 let AC = null; function beep(f, d) { if (Q.get('snd') === '0') return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), g = AC.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.035, AC.currentTime); g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + d); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + d); } catch (e) { } }
 const ray = new THREE.Raycaster(), plane = new THREE.Plane(new V3(0, 1, 0), 0), hitP = new V3();
 function cellAt(cx, cy) { ray.setFromCamera({ x: cx / W * 2 - 1, y: 1 - cy / H * 2 }, cam); if (!ray.ray.intersectPlane(plane, hitP)) return null; const L = G.lanes[0], c = Math.floor(hitP.x - (L.cx - GRID.cols / 2)), r = Math.floor(hitP.z - GRID.z0); return c >= 0 && r >= 0 && c < GRID.cols && r < GRID.rows ? { c, r } : null; }
-function tapAt(x, y) { if (!G || G.over || G.phase !== 'build') return; const c = cellAt(x, y), p = me(); if (!c) { closeInfo(); return; } hover = c; const u = p.units.find(u => u.c === c.c && u.r === c.r); if (u) { openInfo(u); return; } if (sel !== null && tab === 'u') { if (buyUnit(p, sel, c.c, c.r)) { beep(440, .05); if (p.gold < ROSTER[p.tribe][sel].cost) sel = null; hud(true); } else say('ทองไม่พอ'); } else closeInfo(); }
+function tapAt(x, y) { if (!G || G.over || G.phase !== 'build') return; const c = cellAt(x, y), p = me(); if (!c) { closeInfo(); return; } hover = c; const u = p.units.find(u => u.c === c.c && u.r === c.r); if (u) { openInfo(u); return; } if (sel !== null && tab === 'u') { if (buyUnit(p, sel, c.c, c.r)) { beep(440, .05); if ([2, 4, 6].includes(p.units.length)) say(`พลังเผ่า ${TRAITS[p.tribe].n} ระดับ ${tribeBuff(p).lv}: ${TRAITS[p.tribe].d}`); if (p.gold < ROSTER[p.tribe][sel].cost) sel = null; hud(true); } else say('ทองไม่พอ'); } else closeInfo(); }
 function bindInput() {
   const gl = $('gl'), PT = new Map(); let drag = 0, pinch = 0, z0 = 1;
   gl.addEventListener('pointerdown', e => { gl.setPointerCapture(e.pointerId); PT.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (PT.size === 1) drag = 0; if (PT.size === 2) { const [a, b] = [...PT.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); z0 = ZOOM; drag = 99; } });
@@ -314,7 +323,7 @@ function bindInput() {
 }
 function menuUI() {
   const opt = (el, list, key) => { $(el).innerHTML = ''; list.forEach(([v, n]) => { const b = document.createElement('button'); b.className = 'opt' + (menu[key] === v ? ' on' : ''); b.textContent = n; b.onclick = () => { menu[key] = v; menuUI(); }; $(el).appendChild(b); }); };
-  opt('mMode', [['1v1', '1 ต่อ 1'], ['2v2', '2 ต่อ 2']], 'mode'); opt('mDiff', BAL.diff.map((d, i) => [i, d.n]), 'diff'); const T = $('tribes'); if (!T.children.length) TRIBES.forEach(t => { const b = document.createElement('button'); b.className = 'tb'; b.dataset.k = t.k; b.innerHTML = `<canvas></canvas><span>${t.n}</span>`; b.onclick = () => { menu.tribe = t.k; menuUI(); }; T.appendChild(b); requestAnimationFrame(() => thumb(b.querySelector('canvas'), ROSTER[t.k][3].k, true)); }); [...T.children].forEach(b => b.classList.toggle('on', b.dataset.k === menu.tribe));
+  opt('mMode', [['1v1', '1 ต่อ 1'], ['2v2', '2 ต่อ 2']], 'mode'); opt('mDiff', BAL.diff.map((d, i) => [i, d.n]), 'diff'); const T = $('tribes'); if (!T.children.length) TRIBES.forEach(t => { const b = document.createElement('button'); b.className = 'tb'; b.dataset.k = t.k; b.innerHTML = `<canvas></canvas><span>${t.n}</span>`; b.onclick = () => { menu.tribe = t.k; menuUI(); }; T.appendChild(b); requestAnimationFrame(() => thumb(b.querySelector('canvas'), ROSTER[t.k][3].k, true)); }); [...T.children].forEach(b => b.classList.toggle('on', b.dataset.k === menu.tribe)); const U = $('tUnits'), Tr = TRAITS[menu.tribe], Tn = TRIBES.find(t => t.k === menu.tribe).n; if (U.dataset.k !== menu.tribe) { U.dataset.k = menu.tribe; U.innerHTML = ''; ROSTER[menu.tribe].forEach(D => { const c = document.createElement('canvas'); U.appendChild(c); requestAnimationFrame(() => thumb(c, D.k)); }); } $('tText').innerHTML = `<b>เผ่า${Tn}: ${Tr.n}</b><br>${Tr.d} (แรงขึ้นเมื่อวางครบ 2 / 4 / 6 ตัว)`;
 }
 function begin() { rs = (Date.now() & 0xffffff) | 1; ZOOM = 1; newMatch({ mode: menu.mode, diff: menu.diff, tribe: menu.tribe }); $('menu').classList.add('hide'); $('end').classList.add('hide'); for (const id of ['top', 'bar']) $(id).classList.remove('hide'); $('tabs').innerHTML = ''; tab = 'u'; sel = null; closeInfo(); $('pU').classList.add('on'); $('pS').classList.remove('on'); buildMap(); fit(); buildCards(); refreshTabs(); ROSTER[menu.tribe].forEach(D => loadKind(D.k)); G.teams.forEach(T => loadKind(T.k)); loadKind('dwarf_berserker'); say('เลือกการ์ด แล้วแตะช่องเพื่อวางอสูร คนแคระข้างเลนคือคนงานขุดแร่'); hud(true); }
 function toMenu() { G = null; for (const id of ['top', 'bar', 'info', 'msg', 'end']) $(id).classList.add('hide'); $('menu').classList.remove('hide'); $('ov').getContext('2d').clearRect(0, 0, W, H); for (const k in KIND) if (KIND[k].ok) KIND[k].mesh.visible = false; if (blobB) blobB.g.instanceCount = sparkB.g.instanceCount = 0; }
