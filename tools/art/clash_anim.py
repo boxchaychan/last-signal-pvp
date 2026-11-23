@@ -84,6 +84,29 @@ MOVE['walk'].update({'ax_tank': 'stomping forward to the right in place on heavy
  'ax_saucer': 'the saucer hovers and bobs in place, lights blinking, a looping hover cycle',
  'ax_tk': 'walking forward to the right in place, floating rocks circling around it, a looping walk cycle'})
 
+# animal tribe (owner 2026-11-23: prehistoric + mythical picks; "เจนท่าเลย")
+SUBJ.update({'an_tank': 'a spiked armoured dinosaur with a club tail', 'an_rhino': 'a woolly rhinoceros with a huge horn', 'an_raptor': 'a feathered utahraptor with sickle claws',
+ 'an_trex': 'a tyrannosaurus rex with bone armour', 'an_thunder': 'a blue thunderbird with lightning on its wings', 'an_fox': 'a white nine-tailed fox with blue fox fire',
+ 'an_phoenix': 'a phoenix bird made of fire', 'an_nightmare': 'a black horse with a flaming mane and tail', 'an_frost': 'a frost dragon with ice crystal spikes'})
+MOVE['attack'].update({'an_tank': 'turns and swings its heavy club tail forward to the right, then returns to stance',
+ 'an_rhino': 'lowers its head and rams forward to the right with its huge horn, then steps back',
+ 'an_raptor': 'leaps forward to the right and slashes with its sickle claws, then lands back',
+ 'an_trex': 'lunges forward to the right and bites with its huge jaws, then pulls back roaring',
+ 'an_thunder': 'flaps its wings and shoots a bolt of lightning forward to the right, then hovers back',
+ 'an_fox': 'swishes its nine tails and throws a ball of blue fox fire forward to the right, then settles',
+ 'an_phoenix': 'spreads its burning wings and sends a wave of fire forward to the right, then hovers back',
+ 'an_nightmare': 'rears up and stomps forward to the right with flaming hooves, then lands',
+ 'an_frost': 'breathes a cone of icy frost forward to the right, then closes its jaws'})
+MOVE['walk'].update({'an_tank': 'walking forward to the right in place on four heavy legs, tail swaying, a looping walk cycle',
+ 'an_rhino': 'trotting forward to the right in place on four legs, fur bouncing, a looping walk cycle',
+ 'an_raptor': 'running forward to the right in place on two legs, tail straight, a looping run cycle',
+ 'an_trex': 'stomping forward to the right in place on two huge legs, a looping walk cycle',
+ 'an_thunder': 'flying in place, flapping its wings up and down, sparks crackling, a looping flight cycle',
+ 'an_fox': 'trotting forward to the right in place, nine tails flowing, a looping walk cycle',
+ 'an_phoenix': 'flying in place, flapping its fiery wings, flames flickering, a looping flight cycle',
+ 'an_nightmare': 'galloping forward to the right in place, mane burning, a looping gallop cycle',
+ 'an_frost': 'walking forward to the right in place on four legs, wings folded, a looping walk cycle'})
+
 def prep(only=None):
     for k in (only or SUBJ):
         im = Image.open(os.path.join(ROOT, 'art/clash/units', k + '.png')).convert('RGBA'); w, h = im.size
