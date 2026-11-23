@@ -107,6 +107,11 @@ Object.assign(UNITS, {   // the owner's picks (2026-11-23): human knights (tribe
   an_phoenix: { n: 'ฟีนิกซ์', tribe: 'n', role: 'ranged', hp: 80, dmg: 5, cd: 1.2, spd: 2.6, rng: 5, mass: 1, fly: true, proj: 'orb', pc: '#ffa040', ifx: 'psy', heal: 12, healR: 4.5, rebirth: true },
   an_nightmare: { n: 'ม้าไฟฝันร้าย', tribe: 'n', role: 'melee', hp: 140, dmg: 10, cd: 1.0, spd: 3.9, rng: .5, mass: 2.2, charge: true, fxk: 'sparkR' },
   an_frost:   { n: 'มังกรน้ำแข็ง', tribe: 'n', role: 'mage', hp: 170, dmg: 5.5, cd: 1.5, spd: 1.8, rng: 3, mass: 3, cone: true },
+  /* COMMANDERS (owner "กำหนดตัวแปรชัยชนะ โดยเพิ่มแม่ทัพ"): own class, one a side behind the army, an aura for allies near it + one big automatic skill;
+     its death changes nothing but losing them. `art` = placeholder picture until the owner's pick from batch 8 is animated */
+  cm_h: { n: 'ลิโป้', tribe: 'h', role: 'cmd', hp: 380, dmg: 14, cd: 1.0, spd: 3.4, rng: .55, mass: 3, charge: true, fxk: 'slashW', cmd: { r: 7, dmg: .15 }, art: 'hk_rider' },
+  cm_x: { n: 'จอมจิตเอเลี่ยน', tribe: 'x', role: 'cmd', hp: 300, dmg: 9, cd: 1.4, spd: 2.0, rng: 6, mass: 3, proj: 'beam', cmd: { r: 7, regen: 3.5 }, art: 'ax_tk' },
+  cm_n: { n: 'ราชาสัตว์ป่า', tribe: 'n', role: 'cmd', hp: 400, dmg: 15, cd: 1.1, spd: 2.8, rng: .45, mass: 3, fxk: 'sparkR', cmd: { r: 7, spd: .1, atk: .12 }, art: 'an_trex' },
   ax_tk:      { n: 'พลังจิตยกหิน', tribe: 'x', role: 'mage', hp: 70, dmg: 9, cd: 1.6, spd: 1.9, rng: 6, mass: 1, proj: 'rock', aoe: .9, ifx: 'rocks' },
 });
 const SKILL = {   // automatic, no buttons (owner: "สกิลกดไม่ไหว มันหลายตัว")
@@ -114,19 +119,22 @@ const SKILL = {   // automatic, no buttons (owner: "สกิลกดไม่�
   hk_mage: { n: 'เยือกแข็ง', cd: 12 }, hk_banner: { n: 'ปลุกใจ', cd: 0 }, hk_rider: { n: 'ชาร์จซ้ำ', cd: 14 }, hk_samurai: { n: 'ชักดาบ', cd: 10, p: 1.3 },
   ax_tank: { n: 'หนีบจับ', cd: 6 }, ax_hunter: { n: 'ล่าเหยื่อ', cd: 0, p: .3 }, ax_hound: { n: 'แค้นฝูง', cd: 0 }, ax_assassin: { n: 'วาร์ป', cd: 5 }, ax_eye: { n: 'จ้องสะกด', cd: 0, p: 2 },
   ax_priestess: { n: 'รังฟื้นฟู', cd: 8, p: 20 },
+  cm_h: { n: 'บุกตามธง!', cd: 15 }, cm_x: { n: 'พายุจิต', cd: 12 }, cm_n: { n: 'เสียงเรียกป่า', cd: 16 },
   an_tank: { n: 'หางกระบอง', cd: 7 }, an_rhino: { n: 'ขวิดกระเด็น', cd: 8 }, an_raptor: { n: 'ล่าเป็นฝูง', cd: 0 }, an_trex: { n: 'คำรามสะท้าน', cd: 10 }, an_thunder: { n: 'สายฟ้าชิ่ง', cd: 0 },
   an_fox: { n: 'ไฟจิ้งจอก', cd: 9 }, an_phoenix: { n: 'คืนชีพจากเถ้า', cd: 0 }, an_nightmare: { n: 'ทางไฟ', cd: 12 }, an_frost: { n: 'ลมหายใจน้ำแข็ง', cd: 0 }, ax_saucer: { n: 'ลำแสงดูด', cd: 7 }, ax_tk: { n: 'พายุหิน', cd: 7 },
 };
-const HITF = { m_saw: 5, m_shield: 4, a_wolf: 4, a_rhino: 5, e_psychic: 5, e_jelly: 4, h_spear: 3, h_archer: 8, d_imp: 6, d_brute: 5, g_angel: 2, hk_tank: 5, hk_glaive: 3, hk_blood: 3, hk_bat: 3, hk_ranger: 7, hk_mage: 5, hk_banner: 4, hk_rider: 5, hk_samurai: 6, an_tank: 3, an_rhino: 6, an_raptor: 4, an_trex: 3, an_thunder: 3, an_fox: 5, an_phoenix: 3, an_nightmare: 7, an_frost: 2, ax_tank: 3, ax_hunter: 2, ax_hound: 8, ax_assassin: 2, ax_eye: 2, ax_priestess: 4, ax_saucer: 3, ax_tk: 4, g_titan: 5 };   // the frame where the blow lands
+const HITF = { m_saw: 5, m_shield: 4, a_wolf: 4, a_rhino: 5, e_psychic: 5, e_jelly: 4, h_spear: 3, h_archer: 8, d_imp: 6, d_brute: 5, g_angel: 2, hk_tank: 5, hk_glaive: 3, hk_blood: 3, hk_bat: 3, hk_ranger: 7, hk_mage: 5, hk_banner: 4, hk_rider: 5, hk_samurai: 6, cm_h: 5, cm_x: 4, cm_n: 3, an_tank: 3, an_rhino: 6, an_raptor: 4, an_trex: 3, an_thunder: 3, an_fox: 5, an_phoenix: 3, an_nightmare: 7, an_frost: 2, ax_tank: 3, ax_hunter: 2, ax_hound: 8, ax_assassin: 2, ax_eye: 2, ax_priestess: 4, ax_saucer: 3, ax_tk: 4, g_titan: 5 };   // the frame where the blow lands
 const MATCHES = { old: { names: ['ทัพซ้าย', 'ทัพขวา'], sub: ['เครื่องจักร · สัตว์ · มนุษย์', 'เอเลี่ยน · ปีศาจ · พระเจ้า'], army: null },
   knights: { names: ['ทัพมนุษย์', 'ทัพเอเลี่ยน'], sub: ['อัศวิน 9 แบบ', 'เอเลี่ยนดุ 8 แบบ'], army: [
     [['hk_tank', 4], ['hk_rider', 5], ['hk_glaive', 8], ['hk_blood', 6], ['hk_samurai', 2], ['hk_bat', 8], ['hk_banner', 3], ['hk_mage', 6], ['hk_ranger', 12]],
     [['ax_tank', 4], ['ax_saucer', 5], ['ax_hunter', 10], ['ax_hound', 16], ['ax_assassin', 8], ['ax_tk', 4], ['ax_priestess', 3], ['ax_eye', 6]]] } };
-const TRIBES = { human: { name: 'ทัพมนุษย์', sub: 'อัศวิน 9 แบบ', army: MATCHES.knights.army[0] }, alien: { name: 'ทัพเอเลี่ยน', sub: 'เอเลี่ยนดุ 8 แบบ', army: MATCHES.knights.army[1] },
-  animal: { name: 'ทัพสัตว์', sub: 'ดึกดำบรรพ์ + เทพนิยาย', army: [['an_tank', 4], ['an_nightmare', 4], ['an_rhino', 6], ['an_trex', 2], ['an_raptor', 9], ['an_frost', 2], ['an_phoenix', 3], ['an_fox', 5], ['an_thunder', 8]] } };
+const TRIBES = { human: { name: 'ทัพมนุษย์', sub: 'อัศวิน 9 แบบ', cmd: 'cm_h', army: MATCHES.knights.army[0] }, alien: { name: 'ทัพเอเลี่ยน', sub: 'เอเลี่ยนดุ 8 แบบ', cmd: 'cm_x', army: MATCHES.knights.army[1] },
+  animal: { name: 'ทัพสัตว์', sub: 'ดึกดำบรรพ์ + เทพนิยาย', cmd: 'cm_n', army: [['an_tank', 4], ['an_nightmare', 4], ['an_rhino', 6], ['an_trex', 2], ['an_raptor', 9], ['an_frost', 2], ['an_phoenix', 3], ['an_fox', 5], ['an_thunder', 8]] } };
 const TKEYS = Object.keys(TRIBES), qs = k => (location.search.match(new RegExp('[?&]' + k + '=(\\w+)')) || [])[1];
 const PICK = [TRIBES[qs('L')] ? qs('L') : 'human', TRIBES[qs('R')] ? qs('R') : 'animal'];
-const MATCH = MATCHES[qs('match')] || { names: PICK.map(t => TRIBES[t].name), sub: PICK.map(t => TRIBES[t].sub), army: PICK.map(t => TRIBES[t].army) };
+const tsub = t => 'แม่ทัพ ' + UNITS[TRIBES[t].cmd].n + ' · ' + TRIBES[t].sub;
+const MATCH = MATCHES[qs('match')] || { names: PICK.map(t => TRIBES[t].name), sub: PICK.map(tsub), army: PICK.map(t => TRIBES[t].army), cmd: qs('cmd') === '0' ? [] : PICK.map(t => TRIBES[t].cmd) };
+const kindsUsed = () => new Set([...ARMY.flat().map(a => a[0]), ...(MATCH.cmd || []).filter(Boolean), ...((MATCH.cmd || []).includes('cm_n') ? ['an_raptor'] : [])]);
 const ARMY0 = [   // front to back (the first test armies, ?match=old)
   [['m_shield', 3], ['a_rhino', 3], ['m_saw', 10], ['h_spear', 14], ['a_wolf', 16], ['h_archer', 14]],
   [['e_jelly', 3], ['d_brute', 4], ['g_titan', 2], ['g_angel', 12], ['d_imp', 24], ['e_psychic', 15]],   // tuned with CLASH.quick: about even, ~45 s
@@ -136,6 +144,9 @@ const TRIBE_COL = { n: '#e0a860', x: '#9cff5a', m: '#ffa040', a: '#c8a070', e: '
 let META = null;   // art/clash/units.json: sprite sizes
 /* ---------- battle state (no drawing here: CLASH.quick runs it headless) */
 let B = null;
+function mkUnit(id, k, side, x, z) { const D = UNITS[k], m = META[k], r = Math.max(.32, m.w * ART * .3);
+  return { id, k, D, side, x, z, r, hp: D.hp, max: D.hp, cdT: rnd(0, D.cd), tgt: null, tT: rnd(0, .3), face: side ? -1 : 1, atkT: 0, hitT: 0, knock: 0, walk: rnd(0, 9), dead: false, deadT: 0, charging: !!D.charge, seed: rnd(0, 99), y: D.fly ? .9 : 0, pack: 0,
+    skT: SKILL[k] ? (D.role === 'cmd' ? rnd(5, 7) : rnd(2, SKILL[k].cd * .7 + 2)) : 0, stealth: k === 'hk_bat', shots: 0, deaths: 0 }; }
 function newBattle() {
   const units = []; let id = 0;
   ARMY.forEach((list, side) => {
@@ -144,10 +155,11 @@ function newBattle() {
       const D = UNITS[k], m = META[k], r = Math.max(.32, m.w * ART * .3), per = Math.min(n, D.mass >= 3 ? 3 : 8), cols = Math.ceil(n / per), gap = r * 2.5;
       for (let i = 0; i < n; i++) {
         const c = Math.floor(i / per), row = i % per, rowsHere = Math.min(per, n - c * per), z = (row - (rowsHere - 1) / 2) * Math.min(3.4, 24 / rowsHere) + rnd(-.3, .3);
-        units.push({ id: id++, k, D, side, x: dir * (x + c * gap) + rnd(-.2, .2), z, r, hp: D.hp, max: D.hp, cdT: rnd(0, D.cd), tgt: null, tT: rnd(0, .3), face: side ? -1 : 1, atkT: 0, hitT: 0, knock: 0, walk: rnd(0, 9), dead: false, deadT: 0, charging: !!D.charge, seed: rnd(0, 99), y: D.fly ? .9 : 0, pack: 0, skT: SKILL[k] ? rnd(2, SKILL[k].cd * .7 + 2) : 0, stealth: k === 'hk_bat', shots: 0, deaths: 0 });
+        units.push(mkUnit(id++, k, side, dir * (x + c * gap) + rnd(-.2, .2), z));
       }
       x += cols * gap + .6;
     }
+    const ck = (MATCH.cmd || [])[side]; if (ck && UNITS[ck] && META[ck]) units.push(mkUnit(id++, ck, side, dir * Math.min(BW / 2 - 2, x + 1.2), 0));
   });
   B = { units, proj: [], fx: [], nums: [], t: 0, phase: 'deploy', win: -1, hits: 0, ban: 0 }; if (DEC) { DEC.n = DEC.i = 0; DEC.g.instanceCount = 0; }
   return B;
@@ -169,7 +181,7 @@ function hurt(t, dmg, from, kind) {
   if (t.hp <= 0) { t.dead = true; t.deadT = 0; if (!MUTE) deathFx(t); onDeath(t); }
 }
 function strike(u, t) {
-  const D = u.D; let dmg = D.dmg * (1 + u.pack + aura(u)) * (u.frenzyT > 0 ? 1.3 : 1);
+  const D = u.D, ca = u.ca; let dmg = D.dmg * (1 + u.pack + aura(u) + (ca && ca.dmg || 0)) * (u.frenzyT > 0 ? 1.3 : 1);
   if (u.stealth) { u.stealth = false; dmg *= SKILL.hk_bat.p; say(u); fx('crit', t.x, CHEST(t), t.z, u.face, 1.2); }
   if (u.k === 'ax_hunter' && t.hp / t.max < SKILL.ax_hunter.p) { dmg *= 2; if (Math.random() < .5) say(u); }
   if (D.heal) { let best = null, bf = .92; for (const o of B.units) if (!o.dead && o.side === u.side && o !== u && o.hp / o.max < bf && Math.hypot(o.x - u.x, o.z - u.z) < D.healR) { bf = o.hp / o.max; best = o; } if (best) { best.hp = Math.min(best.max, best.hp + D.heal); fx('heal', best.x, best.y + .05, best.z); if (!MUTE && B.nums.length < 140) B.nums.push({ x: best.x, y: CHEST(best) + .5, z: best.z, v: D.heal, l: .75, c: '#9cff5a' }); return; } }
@@ -200,6 +212,13 @@ function skill(u) {   // returns true when it fired (then the cooldown restarts)
     case 'hk_samurai': { if (!t || Math.hypot(t.x - u.x, t.z - u.z) > 5) return false; const dx = t.x - u.x, dz = t.z - u.z, L = Math.hypot(dx, dz) || 1, go = Math.min(4.5, L + 1.4), sx = u.x, sz = u.z;
       for (const o of B.units) if (aimable(o) && o.side !== u.side) { const px = o.x - sx, pz = o.z - sz, along = (px * dx + pz * dz) / L, off = Math.abs(px * dz - pz * dx) / L; if (along > 0 && along < go && off < .8) { hurt(o, D.dmg * SKILL[u.k].p, u, 'crit'); fx('slashW', o.x, CHEST(o), o.z, f, 1.8); } }
       u.x = clamp(sx + dx / L * go, -BW / 2 + .8, BW / 2 - .8); u.z = clamp(sz + dz / L * go, -BD / 2 + .8, BD / 2 - .8); if (!MUTE) B.fx.push({ k: 'beam', a: { x: sx, y: .7, z: sz }, b: { x: u.x, y: .7, z: u.z }, l: .25, L: .25, c1: '#ffffff', c2: '#ffe0e0' }); say(u); return true; }
+    case 'cm_h': { let n = 0; for (const o of B.units) if (!o.dead && o.side === u.side) { o.hasteT = Math.max(o.hasteT || 0, 4); o.frenzyT = Math.max(o.frenzyT || 0, 4); if (n++ < 14) glow(o.x, CHEST(o), o.z, '#ffd25a', 5, .5); }
+      pillar(u.x, u.z, '#ffd25a', 3.4, 7, .7); ring(u.x, u.z, 2, '#ffd25a'); ring(u.x, u.z, 3.4, '#ffb040', .12); fx('rally', u.x, .05, u.z); say(u); shake(.08); return true; }
+    case 'cm_x': { let best = null, bn = 1; for (const o of B.units) if (aimable(o) && o.side !== u.side && Math.abs(o.x - u.x) < 14) { const k = foes(u, 2.6, o.x, o.z).length; if (k > bn) { bn = k; best = o; } } if (!best) return false;
+      const cx = best.x, cz = best.z; for (const o of foes(u, 2.8, cx, cz)) { hurt(o, 24, u); o.stunT = 1.5; } bolt(u, { x: cx, y: 1.2, z: cz }, '#c08aff', .4); fx('psyG', cx, .6, cz, 1, 1.2); fx('psy', cx, .6, cz, 1, 1);
+      ring(cx, cz, 1.4, '#c08aff'); ring(cx, cz, 2.6, '#9cff5a', .1); decal('burn', cx, cz, 2.6, '#2a1438', .7); glow(cx, 1, cz, '#c08aff', 16, .5); say(u); shake(.12); return true; }
+    case 'cm_n': { const f0 = u.side ? -1 : 1; for (let i = 0; i < 2; i++) { const r = mkUnit(9000 + B.units.length, 'an_raptor', u.side, u.x + f0 * rnd(.5, 1.5), u.z + (i - .5) * 1.4); r.summon = true; B.units.push(r); fx('dust', r.x, .05, r.z, f0); }
+      for (const o of foes(u, 4.5)) { o.slowT = 2; o.slowK = .3; } ring(u.x, u.z, 2, '#e0a860'); ring(u.x, u.z, 3.4, '#ffd25a', .12); ring(u.x, u.z, 4.5, '#ff9a50', .24); decal('crack', u.x, u.z, 2.2, '#2a2018', .8); shake(.2); hitstop(.05); say(u); return true; }
     case 'an_tank': { const v = foes(u, 1.9); if (v.length < 2) return false; for (const o of v) { hurt(o, D.dmg, u); o.stunT = .5; } fx('shock', u.x, .05, u.z, f, 1.4); fx('stun', u.x, CHEST(u) + .8, u.z); fx('dust', u.x, .05, u.z, f); decal('crack', u.x + f * .6, u.z, 2, '#2a2018', .85); shake(.1); say(u); return true; }
     case 'an_rhino': { if (!t || !aimable(t) || Math.hypot(t.x - u.x, t.z - u.z) > D.rng + u.r + t.r + .3 || t.D.mass >= 3) return false; hurt(t, D.dmg * 1.5, u); t.x += f * 2; t.stunT = .6; fx('punchW', t.x, CHEST(t), t.z, f); fx('dust', t.x - f * .6, .05, t.z, f); decal('crack', t.x - f * 1, t.z, 1.3, '#2a2018', .7); shake(.08); say(u); return true; }
     case 'an_trex': { const v = foes(u, 2.7); if (v.length < 2) return false; for (const o of v) o.stunT = 1; fx('shock', u.x, .05, u.z, f, 1.1); ring(u.x, u.z, 1.6, '#ffe8a0'); ring(u.x, u.z, 2.3, '#ffc070', .1); ring(u.x, u.z, 3, '#ff9a50', .2); decal('crack', u.x, u.z, 2.4, '#2a2018', .85); shake(.22); hitstop(.05); say(u); return true; }
@@ -228,24 +247,29 @@ function separate() {
       for (const o of a) { if (o.id <= u.id || !!o.D.fly !== !!u.D.fly) continue; const dx = o.x - u.x, dz = o.z - u.z, d = Math.hypot(dx, dz) || .01, m = (u.r + o.r) * .92; if (d < m) { const p = (m - d) * .28, wu = o.D.mass / (u.D.mass + o.D.mass), wo = 1 - wu; u.x -= dx / d * p * wu; u.z -= dz / d * p * wu; o.x += dx / d * p * wo; o.z += dz / d * p * wo; } } } }
 }
 function step(dt) {
-  if (!B || B.phase !== 'fight') return; B.t += dt;
+  if (!B || B.phase !== 'fight') return; B.t += dt; const CM = [null, null]; for (const u of B.units) if (u.D.role === 'cmd' && !u.dead) CM[u.side] = u;
   for (const u of B.units) {
-    if (u.dead) { u.deadT += dt; continue; } const D = u.D;
+    if (u.dead) { u.deadT += dt; continue; } const D = u.D, cm = CM[u.side]; u.ca = cm && cm !== u && Math.hypot(cm.x - u.x, cm.z - u.z) < cm.D.cmd.r ? cm.D.cmd : null; if (u.ca && u.ca.regen && u.hp < u.max) u.hp = Math.min(u.max, u.hp + u.ca.regen * dt);
     for (const s2 of ['shieldT', 'slowT', 'hasteT', 'frenzyT', 'tauntT']) if (u[s2] > 0) u[s2] -= dt;
     if (u.abT > 0) { u.abT -= dt; if (u.abT <= 0) { u.abT = 0; hurt(u, 12, null); fx('puff', u.x, .05, u.z); } continue; }   // abducted: floating, out of the fight
     if (u.stunT > 0 || u.heldT > 0) { u.stunT -= dt; u.heldT -= dt; u.sw = null; continue; }
     if (u.shieldT > 0 && (u.shFx = (u.shFx || 0) - dt) <= 0) { u.shFx = .9; fx('shieldB', u.x, .05, u.z); }
     if (SKILL[u.k] && SKILL[u.k].cd && (u.skT -= dt) <= 0 && !u.sw && skill(u)) u.skT = SKILL[u.k].cd * rnd(.9, 1.1);
-    u.cdT -= u.hasteT > 0 ? dt * 1.45 : dt; u.atkT = Math.max(0, u.atkT - dt); u.hitT = Math.max(0, u.hitT - dt); u.tT -= dt;
+    u.cdT -= (u.hasteT > 0 ? dt * 1.45 : dt) * (1 + (u.ca && u.ca.atk || 0)); u.atkT = Math.max(0, u.atkT - dt); u.hitT = Math.max(0, u.hitT - dt); u.tT -= dt;
     if (u.tgt && u.tgt.dead) u.tgt = null;
     if (u.tauntT > 0 && u.taunter && !u.taunter.dead) u.tgt = u.taunter;
     else if (!u.tgt || u.tT <= 0 || !aimable(u.tgt)) { u.tgt = pickTarget(u) || (u.tgt && aimable(u.tgt) ? u.tgt : null); u.tT = .3 + rnd(0, .15); if (D.pack) { let n = 0; for (const o of B.units) if (!o.dead && o !== u && o.k === u.k && Math.abs(o.x - u.x) < 3 && Math.abs(o.z - u.z) < 3) n++; u.pack = Math.min(.3, n * .04); } }
     if (u.sw) { const w = u.sw; w.t += dt; if (!w.hit && w.t >= w.T * (HITF[u.k] || 4) / 12) { w.hit = true; if (!w.tgt.dead) strike(u, w.tgt); } if (w.t >= w.T) u.sw = null; else continue; }
+    if (D.role === 'cmd' && !u.sw && !u.charging) { const f0 = u.side ? -1 : 1; let ax = 0, az = 0, n = 0; for (const o of B.units) if (!o.dead && o.side === u.side && o !== u && !o.summon) { ax += o.x; az += o.z; n++; }
+      const near = u.tgt && Math.hypot(u.tgt.x - u.x, u.tgt.z - u.z) < (D.rng > 2 ? D.rng + .5 : 3.2);
+      if (n > 5 && !near) { ax = ax / n - f0 * 4.5; az /= n; const gx = ax - u.x, gz = az - u.z, gd = Math.hypot(gx, gz), sp = gd > .35 ? D.spd * .8 * clamp(gd / 2, .25, 1) : 0, ea = Math.min(1, dt * 6);
+        u.vx = (u.vx || 0) + ((gd > .35 ? gx / gd * sp : 0) - (u.vx || 0)) * ea; u.vz = (u.vz || 0) + ((gd > .35 ? gz / gd * sp : 0) - (u.vz || 0)) * ea; u.x += u.vx * dt; u.z += u.vz * dt; u.walk += Math.hypot(u.vx, u.vz) * dt * 3.2;
+        u.face = Math.abs(u.vx) > .4 ? (u.vx > 0 ? 1 : -1) : f0; u.x = clamp(u.x, -BW / 2 + .8, BW / 2 - .8); u.z = clamp(u.z, -BD / 2 + .8, BD / 2 - .8); continue; } }
     const t = u.tgt; if (!t) continue;
     const dx = t.x - u.x, dz = t.z - u.z, d = Math.hypot(dx, dz) || .01, reach = D.rng + u.r + t.r;
     if (Math.abs(dx) > .45 && (dx > 0 ? 1 : -1) !== u.face) u.face = dx > 0 ? 1 : -1;
     if (u.k === 'hk_tank' && !u.walled && u.hp < u.max * .5) { u.walled = true; u.shieldT = SKILL.hk_tank.T; say(u); for (const o of B.units) if (!o.dead && o.side !== u.side && Math.hypot(o.x - u.x, o.z - u.z) < 3.2) { o.tauntT = SKILL.hk_tank.T; o.taunter = u; } }
-    let wx = 0, wz = 0; if (d > reach) { const sp = D.spd * (u.charging ? 2.2 : 1) * (u.slowT > 0 ? 1 - u.slowK : 1) * (u.frenzyT > 0 ? 1.4 : 1) * (u.charging ? 1 : clamp((d - reach) / .9 + .3, .3, 1)); wx = dx / d * sp; wz = dz / d * sp; }
+    let wx = 0, wz = 0; if (d > reach) { const sp = D.spd * (1 + (u.ca && u.ca.spd || 0)) * (u.charging ? 2.2 : 1) * (u.slowT > 0 ? 1 - u.slowK : 1) * (u.frenzyT > 0 ? 1.4 : 1) * (u.charging ? 1 : clamp((d - reach) / .9 + .3, .3, 1)); wx = dx / d * sp; wz = dz / d * sp; }
     const ease = Math.min(1, dt * (u.charging ? 14 : 9)); u.vx = (u.vx || 0) + (wx - (u.vx || 0)) * ease; u.vz = (u.vz || 0) + (wz - (u.vz || 0)) * ease; u.x += u.vx * dt; u.z += u.vz * dt; const vs = Math.hypot(u.vx, u.vz); u.walk += vs * dt * 3.2;
     if (d > reach) { if (u.charging && (u.dustT = (u.dustT || 0) - dt) <= 0) { u.dustT = .12; fx('dust', u.x - u.face * .4, .05, u.z, u.face); } }
     else if (u.cdT <= 0 && !u.sw) { u.cdT = D.cd * rnd(.92, 1.08); u.sw = { t: 0, T: clamp(D.cd * .95, .45, 1.1), tgt: t, hit: false }; u.vx *= .3; u.vz *= .3; }
@@ -369,7 +393,7 @@ float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453
 void main(){ vec4 c = texture2D(map, vUv); if (c.a < .5) discard; if (vFx.y > 0.0 && hash(floor(vUv * size)) < vFx.y) discard;
   vec3 col = c.rgb * vec3(1.03, 1.0, .95); col = mix(col, col * vec3(.5, .56, .78), vFx.z); col = mix(col, vec3(1.0), vFx.x); gl_FragColor = vec4(col, 1.0); }`;
 function makeKind(k) {
-  const m = META[k], A = m.anim, K = KIND[k] = { k, m, A, n: 0, cap: 64 }, tex = new THREE.TextureLoader().load(A ? 'art/clash/anim/' + k + '.png' : 'art/clash/units/' + k + '.png');
+  const m = META[k], A = m.anim, f = (UNITS[k] && UNITS[k].art) || k, K = KIND[k] = { k, m, A, n: 0, cap: 64 }, tex = new THREE.TextureLoader().load(A ? 'art/clash/anim/' + f + '.png' : 'art/clash/units/' + f + '.png');
   tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
   const p = A ? new THREE.PlaneGeometry(A.cw, A.ch).translate(A.cw / 2 - A.fx, A.fy - A.ch / 2, 0) : new THREE.PlaneGeometry(m.w, m.h).translate(m.w / 2 - Math.floor(m.w / 2), m.h / 2, 0);   // foot at (0, 0), corners on whole pixels
   const cols = A ? A.atk : 1, rows = A ? (A.walk ? 2 : 1) : 1;
@@ -565,6 +589,10 @@ function draw(dt, now) {
     o.globalAlpha = 1; }
   const fs = Math.max(2, Math.round(DPR));
   for (let i = B.nums.length - 1; i >= 0; i--) { const t = B.nums[i]; t.l -= dt; t.y += dt * 1.6; if (t.l <= 0) { B.nums.splice(i, 1); continue; } const [x, y] = proj(t.x, t.y, t.z); if (t.L0 === undefined) t.L0 = t.l; const age = t.L0 - t.l, base = t.big ? fs + Math.max(1, fs >> 1) : fs, pop = t.big && age < .1 ? 1.5 : 1; if (t.big && age < .25) gdraw('#ffd25a', 8, x, y, 1 - age * 4); o.globalAlpha = clamp(t.l * 3, 0, 1); drawNum(t.v, x, y, t.c, Math.max(1, Math.round(base * pop))); o.globalAlpha = 1; }
+  for (const u of B.units) if (!u.dead && u.D.role === 'cmd') { const ux = u.rx ?? u.x, uz = u.rz ?? u.z, gc = u.side ? '#ffb09a' : '#bfe4ff';
+    for (let s2 = 0; s2 < 26; s2++) { const t = s2 / 26 * Math.PI * 2, [x, y] = proj(ux + Math.cos(t) * .95, .05, uz + Math.sin(t) * .6); o.fillStyle = '#ffd25a'; o.fillRect(x - P, y - P, 2 * P, P); }
+    if (B.phase === 'deploy') { const pu = .7 + .3 * Math.sin(now * 4); for (let s2 = 0; s2 < 72; s2 += 2) { const t = s2 / 72 * Math.PI * 2, [x, y] = proj(ux + Math.cos(t) * u.D.cmd.r, .05, uz + Math.sin(t) * u.D.cmd.r); o.globalAlpha = pu; o.fillStyle = '#140c06'; o.fillRect(x - P, y - P, 3 * P, 3 * P); o.fillStyle = gc; o.fillRect(x - P, y - P, 2 * P, 2 * P); ltx.globalAlpha = pu * .6; ltx.fillStyle = gc; ltx.fillRect(x - 2 * P, y - 2 * P, 4 * P, 4 * P); } o.globalAlpha = ltx.globalAlpha = 1; }
+    const [cx, cy] = proj(ux, (u.D.fly ? .9 : 0) + META[u.k].h * PXW + .15, uz); o.fillStyle = '#140c06'; o.fillRect(cx - 4 * P, cy - 4 * P, 8 * P, 5 * P); o.fillStyle = '#ffd25a'; o.fillRect(cx - 3 * P, cy - 2 * P, 6 * P, 2 * P); o.fillRect(cx - 3 * P, cy - 3 * P, P, P); o.fillRect(cx - P / 2 | 0, cy - 3 * P, P, P); o.fillRect(cx + 2 * P, cy - 3 * P, P, P); gdraw('#ffd25a', 5, cx, cy - P, .5); }
   for (const u of B.units) if (!u.dead && u.D.mass >= 3 && u.hp < u.max) { const m = META[u.k], [x, y] = proj(u.rx ?? u.x, (u.D.fly ? .9 : 0), u.rz ?? u.z), w = 12 * P, top = y - (m.h + 4) * P; o.fillStyle = '#0c0805'; o.fillRect(x - w / 2 - P, top - P, w + 2 * P, 3 * P); o.fillStyle = u.side ? '#ff5a55' : '#4aa8ff'; o.fillRect(x - w / 2, top, Math.max(P, Math.round(w * u.hp / u.max)), P); }
   if (B.ban > 0) { B.ban -= dt; const age = 1.4 - B.ban, sc = age < .14 ? 1.7 - age * 5 : 1, fsz = Math.round(Math.min(W, H * 2) * DPR * .07 * sc), cx = Math.round(W * DPR / 2), cy = Math.round(H * DPR * .42);
     gdraw('#ffd25a', 30, cx, cy, Math.min(1, B.ban * 1.5) * .5); o.globalAlpha = Math.min(1, B.ban * 2.5); o.font = `800 ${fsz}px Kanit, sans-serif`; o.textAlign = 'center'; o.textBaseline = 'middle'; o.lineJoin = 'round'; o.lineWidth = Math.max(4, fsz * .14); o.strokeStyle = '#140c06'; o.strokeText('บุก!', cx, cy); o.fillStyle = '#ffe08a'; o.fillText('บุก!', cx, cy); o.textBaseline = 'alphabetic'; o.globalAlpha = 1; }
@@ -584,8 +612,8 @@ function input() {
   const up = e => { pts.delete(e.pointerId); pinch0 = 0; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
   el.addEventListener('wheel', e => { e.preventDefault(); VIEW.zoom = clamp(VIEW.zoom * Math.exp(e.deltaY * .0012), .38, 1.25); placeCam(); }, { passive: false });
   const showPick = () => { const old = !!MATCHES[qs('match')]; for (const [i, id] of [[0, 'pickL'], [1, 'pickR']]) { $(id).textContent = (i ? 'ขวา: ' : 'ซ้าย: ') + TRIBES[PICK[i]].name.replace('ทัพ', ''); $(id).classList.toggle('hide', old || B.phase !== 'deploy'); } };
-  const setPick = (i) => { PICK[i] = TKEYS[(TKEYS.indexOf(PICK[i]) + 1) % TKEYS.length]; ARMY = MATCH.army = PICK.map(t => TRIBES[t].army); MATCH.names = PICK.map(t => TRIBES[t].name); MATCH.sub = PICK.map(t => TRIBES[t].sub);
-    for (const k of new Set(ARMY.flat().map(a => a[0]))) if (!KIND[k]) { makeKind(k); const res = new THREE.Vector2(); renderer.getDrawingBufferSize(res); KIND[k].mat.uniforms.res.value.copy(res); KIND[k].mat.uniforms.pix.value = PIX; }
+  const setPick = (i) => { PICK[i] = TKEYS[(TKEYS.indexOf(PICK[i]) + 1) % TKEYS.length]; ARMY = MATCH.army = PICK.map(t => TRIBES[t].army); MATCH.names = PICK.map(t => TRIBES[t].name); MATCH.sub = PICK.map(tsub); if (qs('cmd') !== '0') MATCH.cmd = PICK.map(t => TRIBES[t].cmd);
+    for (const k of kindsUsed()) if (!KIND[k]) { makeKind(k); const res = new THREE.Vector2(); renderer.getDrawingBufferSize(res); KIND[k].mat.uniforms.res.value.copy(res); KIND[k].mat.uniforms.pix.value = PIX; }
     document.querySelector('.army.l b').textContent = MATCH.names[0]; document.querySelector('.army.r b').textContent = MATCH.names[1]; document.querySelector('.army.l small').textContent = MATCH.sub[0]; document.querySelector('.army.r small').textContent = MATCH.sub[1]; newBattle(); showPick(); };
   $('pickL').onclick = () => setPick(0); $('pickR').onclick = () => setPick(1); showPick();
   $('go').onclick = () => { if (B.phase === 'deploy') { B.phase = 'fight'; B.ban = 1.4; $('go').classList.add('hide'); showPick(); } };
@@ -593,14 +621,14 @@ function input() {
   $('again').onclick = () => { newBattle(); $('ban').classList.add('hide'); $('go').classList.remove('hide'); showPick(); };
 }
 async function boot() {
-  META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, get ARMY() { return ARMY; }, MATCH, SKILL, TRIBES, setArmies: (a, b) => { ARMY = MATCH.army = [TRIBES[a].army, TRIBES[b].army]; newBattle(); }, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; }, get DEC() { return DEC; }, tick: dt => { MANUAL = true; frame(performance.now(), dt); } };
+  META = await (await fetch('art/clash/units.json')).json(); for (const k in UNITS) if (UNITS[k].art && !META[k]) META[k] = META[UNITS[k].art]; newBattle(); window.CLASH = { get B() { return B; }, UNITS, get ARMY() { return ARMY; }, MATCH, SKILL, TRIBES, setArmies: (a, b, c = true) => { ARMY = MATCH.army = [TRIBES[a].army, TRIBES[b].army]; MATCH.cmd = c ? [TRIBES[a].cmd, TRIBES[b].cmd] : []; newBattle(); }, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; }, get DEC() { return DEC; }, tick: dt => { MANUAL = true; frame(performance.now(), dt); } };
   document.querySelector('.army.l b').textContent = MATCH.names[0]; document.querySelector('.army.r b').textContent = MATCH.names[1]; document.querySelector('.army.l small').textContent = MATCH.sub[0]; document.querySelector('.army.r small').textContent = MATCH.sub[1];
   if (NORENDER) { buildWorld(); window.CLASH.ready = true; return; }
   renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true }); renderer.setClearColor(0x9db48c);
   scene = new THREE.Scene(); cam = new THREE.PerspectiveCamera(30, 1, 1, 600);
   scene.add(new THREE.HemisphereLight(0xe6f2ff, 0x4a3c26, .6)); const sun = new THREE.DirectionalLight(0xfff1d8, 1.12); sun.position.set(SUN.x * 50, SUN.y * 50, SUN.z * 50); scene.add(sun);
   scene.fog = new THREE.Fog(0x9db48c, 95, 230);
-  buildWorld(); for (const k of new Set(ARMY.flat().map(a => a[0]))) makeKind(k); ovx = $('ov').getContext('2d'); ltx = $('lt').getContext('2d'); initDecals(); await loadFx();
+  buildWorld(); for (const k of kindsUsed()) makeKind(k); ovx = $('ov').getContext('2d'); ltx = $('lt').getContext('2d'); initDecals(); await loadFx();
   resize(); addEventListener('resize', resize); input(); window.CLASH.ready = true; requestAnimationFrame(frame);
 }
 boot();
