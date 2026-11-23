@@ -12,7 +12,7 @@
   const final = mk({ t: { value: null }, b: { value: null }, c2: { value: null }, px: { value: new THREE.Vector2() }, tilt: { value: 0 }, night: { value: 0 } },
     'uniform sampler2D t,b,c2;uniform vec2 px;uniform float tilt,night;varying vec2 v;void main(){float k=smoothstep(.17,.52,abs(v.y-.5))*tilt;vec3 c=texture2D(t,v).rgb;' +
     (HQ ? 'if(k>.01){vec3 s=c;for(int i=0;i<8;i++){float a=float(i)*.7854+.39,r=mod(float(i),2.)<.5?3.2:5.6;s+=texture2D(t,v+vec2(cos(a),sin(a))*px*k*r).rgb;}c=s/9.;}' : '') +
-    'vec3 g=texture2D(b,v).rgb*.75+texture2D(c2,v).rgb*.65;c+=g*(.24+night*.34);c=clamp(c,0.,1.);c=mix(c,c*c*(3.-2.*c),.34);float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,1.14);c*=mix(vec3(1.025,1.,.955),vec3(.93,.98,1.1),night);gl_FragColor=vec4(clamp(c,0.,1.),1.);}');
+    'vec3 g=texture2D(b,v).rgb*.75+texture2D(c2,v).rgb*.65;c+=g*(.24+night*.34);c=clamp(c,0.,1.);c=mix(c,c*c*(3.-2.*c),.28);float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,1.02);c*=mix(vec3(1.03,1.,.94),vec3(.93,.98,1.1),night);c.g*=.985;float vg=1.-smoothstep(.34,.98,length((v-.5)*vec2(1.08,1.)));c*=mix(.84,1.,vg);gl_FragColor=vec4(clamp(c,0.,1.),1.);}');
   const pass = (m, target) => { quad.material = m; W.renderer.setRenderTarget(target); W.renderer.render(scene, cam); };
   function free() { for (const q of [rt, a1, a2, b1, b2]) if (q) q.dispose(); rt = null; }
   function alloc(w, h) {

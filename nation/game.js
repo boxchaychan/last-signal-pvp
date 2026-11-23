@@ -257,7 +257,7 @@ function loadGame() {
   G.S.k = keep; reclaimPrice(); for (const b of G.blds) if (b.t === 'reclaim' && b.prog > 0) { b.rs = Math.min(3, Math.floor(b.prog * 4)); if (b.rs) W.reclaim(b.x + 1.5, b.z + 1.5, RECLAIM_R * b.rs / 4); } for (let i = 0; i < D.roads.length; i += 3) { W.road[D.roads[i]] = D.roads[i + 1]; W.wear[D.roads[i]] = D.roads[i + 2]; if (D.roads[i + 1] >= 2) W.roadCount++; } for (let i = 0; i < D.roads.length; i += 3) if (D.roads[i + 1]) W.paintRoad(D.roads[i] % N, D.roads[i] / N | 0);
   if (W.plan) { for (let c = 0; c < N * N; c++) if (W.road[c] >= 2) W.plan[c] = 1; G.cities.forEach(c => W.planCity(c)); }
   const H = homes(); for (const p of D.ppl) { const a = newAgent(p[2], { sex: p[1] }); a.name = p[0]; a.shirt = p[3]; a.skin = p[4]; const h = H.length ? pick(H) : null; a.home = h ? h.id : 0; placeAgent(a, h); }
-  if (!G.S.e) G.S.e = econNew(); rOf(G.S); econSeed(G.S); globeOf(G.S); invOf(G.S); assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
+  if (!G.S.e) G.S.e = econNew(); rOf(G.S); econSeed(G.S); globeOf(G.S); invOf(G.S); if (W.ruinLook) for (const id in G.S.r.dmg) { const b = G.byId.get(+id); if (b && G.S.r.dmg[id].w) W.ruinLook(b, true); } assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
 }
 function newGame(name) {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}

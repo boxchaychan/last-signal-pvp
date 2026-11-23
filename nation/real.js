@@ -15,9 +15,9 @@ function lowOf(b) {
 function ruin(b, closed) {
   const r = G.S.r, k = G.S.k; if (!b.done || b.t === 'hall' || !BT[b.t] || r.dmg[b.id]) return false; const l = {}, f = b.vis ? .4 : 1;
   for (const q in BT[b.t].g) { const a = Math.min(k[q] || 0, BT[b.t].g[q] * f); k[q] = (k[q] || 0) - a; l[q] = a; }
-  r.dmg[b.id] = closed ? { w: 1, l, c: 1 } : { w: 1, l }; W.removeInstance(b); b.done = false; b.prog = .32; b.vis = 1; W.addSite(b); W.siteProgress(b, .32); return true;
+  r.dmg[b.id] = closed ? { w: 1, l, c: 1 } : { w: 1, l }; W.removeInstance(b); b.done = false; b.prog = .32; b.vis = 1; W.addSite(b); W.siteProgress(b, .32); if (W.ruinLook) W.ruinLook(b, true); return true;
 }
-function startRepair(id) { const d = G.S.r.dmg[id]; if (d) d.w = 0; }
+function startRepair(id) { const d = G.S.r.dmg[id]; if (!d) return; d.w = 0; const b = G.byId.get(+id); if (b && W.ruinLook) W.ruinLook(b, false); }
 function ruins(S, pubOnly) { const L = []; for (const id in S.r.dmg) { const b = G.byId.get(+id); if (!b) { delete S.r.dmg[id]; continue; } if (S.r.dmg[id].w && !S.r.dmg[id].c && (!pubOnly || b.pub)) L.push(b); } return L; }
 
 /* ---------- weather and water, every month ---------- */
