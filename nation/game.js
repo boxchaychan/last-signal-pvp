@@ -94,14 +94,14 @@ function maybeNewCity(force) {
   if (!best) return; const door = W.doorFor(best.x, best.z, 3, 3, best.x - 3, best.z); if (!door) return;
   const idx = G.cities.length, C = { x: best.x + 1.5, z: best.z + 1.5, n: 0, name: CITY_NAMES[(idx - 1) % CITY_NAMES.length], door: [door[0], door[1]] }; G.cities.push(C);
   makeB('hall', { x: best.x, z: best.z, w: 3, d: 3, door }, idx, { instant: true, v: 0 });
-  const from = G.cities[nearestCity(C, idx)], p = W.path(from.door[0], from.door[1], door[0], door[1], 24000); if (p) for (const c of p) { W.wear[c] = Math.max(W.wear[c], 70); if (!W.road[c]) { W.road[c] = 1; W.paintRoad(c % N, c / N | 0); } }
+  const from = G.cities[nearestCity(C, idx)], p = W.path(from.door[0], from.door[1], door[0], door[1], 24000); if (p) for (const c of p) { if (W.plan) W.plan[c] = 1; W.wear[c] = Math.max(W.wear[c], 70); if (!W.road[c]) { W.road[c] = 1; W.paintRoad(c % N, c / N | 0); } }
   news('เกิดเมืองใหม่: ' + C.name + ' รัฐบาลต้องจ้างคนสร้างทางหลวงเชื่อมเมือง', 'good');
 }
 function nearestCity(C, skip) { let b = 0, d = 1e9; G.cities.forEach((c, i) => { if (i === skip) return; const q = Math.hypot(c.x - C.x, c.z - C.z); if (q < d) { d = q; b = i; } }); return b; }
 
 /* ---------- roads: people wear a trail, the government pays crews to build the real road ---------- */
 const ROAD_COST = [0, 0, 6, 22, 70];
-function roadTarget(c) { const w = W.wear[c], q = G.S.road, st = G.S.x.stage || 0; return w >= 150 && st >= 3 && q > .5 ? 4 : w >= 55 && st >= 2 && q > .4 ? 3 : w >= 7 ? 2 : 0; }
+function roadTarget(c) { if (W.plan && !W.plan[c]) return 0; const w = W.wear[c], q = G.S.road, st = G.S.x.stage || 0; return w >= 150 && st >= 3 && q > .5 ? 4 : w >= 55 && st >= 2 && q > .4 ? 3 : w >= 7 ? 2 : 0; }
 function planRoads() {
   const L = []; for (let c = 0; c < N * N; c++) { if (W.wear[c] < 7 || W.occ[c] || W.T[c] === 0 || roadTarget(c) <= W.road[c]) continue; const x = c % N, z = c / N | 0; let adj = 0; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (inMap(x + a, z + b) && W.road[ci(x + a, z + b)] >= 2) adj = 1; const d = Math.min(...G.cities.map(q => Math.hypot(q.x - x, q.z - z))); L.push([W.wear[c] * (adj ? 2.4 : 1) - d * .4, c]); }
   L.sort((p, q) => q[0] - p[0]); const busy = new Set(W.agents.filter(a => a.crew).map(a => a.crew - 1)); G.roadQ = L.slice(0, 70).map(q => q[1]).filter(c => !busy.has(c));
@@ -251,9 +251,10 @@ function saveGame() {
 function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function loadGame() {
   let D; try { D = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return false; } if (!D || !D.S || D.S.v !== 1) return false;
-  G.seed = D.seed; W.init(document.getElementById('cv'), G.seed); G.S = D.S; G.nextId = D.nextId; G.cities = D.cities; G.cities.forEach(c => { c.n = 0; }); const keep = { ...G.S.k }; for (const r of G.S.reclaims || []) W.reclaim(r[0], r[1], RECLAIM_R);
+  G.seed = D.seed; W.init(document.getElementById('cv'), G.seed); G.S = D.S; G.nextId = D.nextId; G.cities = D.cities; G.cities.forEach(c => { c.n = 0; c.planR = 0; }); const keep = { ...G.S.k }; for (const r of G.S.reclaims || []) W.reclaim(r[0], r[1], RECLAIM_R);
   for (const r of D.blds) { const b = { id: r[0], t: r[1], v: r[2], x: r[3], z: r[4], w: r[5], d: r[6], rot: r[7], door: [r[8], r[9]], city: r[10], prog: r[11], done: !!r[12], pub: !!r[13], fund: r[14], urgent: !!r[15], vis: r[16] ? 1 : 0, sc: r[17] || 1 }; G.blds.push(b); G.byId.set(b.id, b); W.occupy(b); G.cities[b.city].n++; if (b.done) W.placeInstance(b); else { W.addSite(b); W.siteProgress(b, b.prog); } }
   G.S.k = keep; reclaimPrice(); for (const b of G.blds) if (b.t === 'reclaim' && b.prog > 0) { b.rs = Math.min(3, Math.floor(b.prog * 4)); if (b.rs) W.reclaim(b.x + 1.5, b.z + 1.5, RECLAIM_R * b.rs / 4); } for (let i = 0; i < D.roads.length; i += 3) { W.road[D.roads[i]] = D.roads[i + 1]; W.wear[D.roads[i]] = D.roads[i + 2]; if (D.roads[i + 1] >= 2) W.roadCount++; } for (let i = 0; i < D.roads.length; i += 3) if (D.roads[i + 1]) W.paintRoad(D.roads[i] % N, D.roads[i] / N | 0);
+  if (W.plan) { for (let c = 0; c < N * N; c++) if (W.road[c] >= 2) W.plan[c] = 1; G.cities.forEach(c => W.planCity(c)); }
   const H = homes(); for (const p of D.ppl) { const a = newAgent(p[2], { sex: p[1] }); a.name = p[0]; a.shirt = p[3]; a.skin = p[4]; const h = H.length ? pick(H) : null; a.home = h ? h.id : 0; placeAgent(a, h); }
   assignJobs(); W.fly(G.cities[0].x, G.cities[0].z, 28); W.needShadow = true; return true;
 }
@@ -277,7 +278,7 @@ function monthTick() {
   const before = S.x.stage, x = stepModel(S); nationalWorks(S); roadMonth(); if (typeof geoTick === 'function') geoTick(S);
   for (let i = S.later.length - 1; i >= 0; i--) { const q = S.later[i]; if (q.m <= S.m) { applyFx(S, q.fx); if (q.news) news(q.news, q.fx.tr < 0 || q.fx.food < 0 ? 'bad' : 'good'); if (q.vis === 'flood') G.floodT = 14; S.later.splice(i, 1); } }
   if (S.grantWait && S.m >= S.grantWait.m) { const t = S.grantWait.t, ok = Math.random() < clamp(.42 + S.rep * .7 + (x.trust - 50) * .006, .15, .95); S.grantWait = null; if (ok) { S.treas += BT[t].c; news('ได้รับทุนสร้าง' + BT[t].n + ' แล้ว! สั่งสร้างได้เลย', 'good'); } else news('คำขอทุนสร้าง' + BT[t].n + ' ถูกปฏิเสธ', 'bad'); }
-  autoGrowth(); redevelop(); if (S.m % 6 === 0) { maybeNewCity(); } syncAgents(); if (S.m % 3 === 0) assignJobs();
+  autoGrowth(); redevelop(); if (W.townTick) W.townTick(S); if (S.m % 6 === 0) { maybeNewCity(); } syncAgents(); if (S.m % 3 === 0) assignJobs();
   if (S.m % 3 === 0) { S.hist.push([S.m, Math.round(x.pop), Math.round(x.idx), Math.round(x.gdpPc), Math.round(x.happy), x.score]); if (S.hist.length > 260) S.hist.splice(0, 2).length; }
   if (x.stage > before && x.stage === S.stageMax) UI.showStage(x.stage);
   if (x.pop < 1.2) { UI.showEnd('ประเทศร้างผู้คน', 'ไม่เหลือใครอยู่ในประเทศแล้ว'); return; }

@@ -164,7 +164,7 @@ W.paintGround = function () {
   const tx = new THREE.CanvasTexture(c); tx.anisotropy = MOBILE ? 2 : 4; tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping; W.gtex = tx;
 };
 W.paintRect = function (x0, y0, x1, y1) {
-  const g = W.gctx, w = x1 - x0, h0 = y1 - y0, im = g.createImageData(w, h0), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [120, 162, 80], g2: [92, 142, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] }; if (typeof ISO_ON !== 'undefined' && ISO_ON) { pal.g1 = [104, 168, 70]; pal.g2 = [66, 134, 60]; pal.f = [48, 110, 52]; pal.hill = [96, 134, 76]; pal.rock = [120, 124, 104]; }
+  const g = W.gctx, w = x1 - x0, h0 = y1 - y0, im = g.createImageData(w, h0), d = im.data, k = N / TEX, pal = { sea: [188, 178, 132], sand: [226, 207, 156], g1: [120, 162, 80], g2: [92, 142, 66], f: [72, 128, 58], hill: [132, 142, 92], rock: [132, 126, 118], snow: [226, 228, 228], dirt: [156, 132, 90] }; if (typeof ISO_ON !== 'undefined' && ISO_ON) { pal.g1 = [104, 168, 70]; pal.g2 = [66, 134, 60]; pal.f = [48, 110, 52]; pal.hill = [80, 150, 68]; pal.rock = [98, 130, 82]; }
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
     const wx = x * k, wz = y * k, h = W.h(wx, wz), n = W.fbm(wx * .16, wz * .16), n2 = W.fbm(wx * .9 + 7, wz * .9), t = W.T[ci(Math.min(N - 1, wx | 0), Math.min(N - 1, wz | 0))]; let C;
     if (h < .1) { const m = clamp((h + .2) / .3); C = [pal.sea[0] + (pal.sand[0] - pal.sea[0]) * m, pal.sea[1] + (pal.sand[1] - pal.sea[1]) * m, pal.sea[2] + (pal.sand[2] - pal.sea[2]) * m]; }
@@ -176,7 +176,7 @@ W.paintRect = function (x0, y0, x1, y1) {
 const ROAD_STYLE = [null, ['#b89f70', .26, 0], ['#a98a58', .42, 0], ['#8f8a7c', .52, '#6f6b60'], ['#4f5157', .68, '#34353a']];
 W.paintRoad = function (x, z) {
   const t = W.road[ci(x, z)]; if (!t) return; const g = W.gctx, p = TEX / N, X = (x + .5) * p, Z = (z + .5) * p, st = ROAD_STYLE[t], lines = [];
-  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { if (!a && !b || !inMap(x + a, z + b)) continue; if (W.road[ci(x + a, z + b)] >= Math.min(t, 2)) lines.push([(x + a + .5) * p, (z + b + .5) * p]); }
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { if (!a && !b || !inMap(x + a, z + b) || (W.plan && a && b)) continue; if (W.road[ci(x + a, z + b)] >= Math.min(t, 2)) lines.push([(x + a + .5) * p, (z + b + .5) * p]); }
   const draw = (col, w) => { g.strokeStyle = col; g.fillStyle = col; g.lineWidth = w * p; g.beginPath(); g.arc(X, Z, w * p / 2, 0, 7); g.fill(); g.beginPath(); for (const l of lines) { g.moveTo(X, Z); g.lineTo(l[0], l[1]); } g.stroke(); };
   if (st[2]) draw(st[2], st[1] + .14); draw(st[0], st[1]);
   if (t === 4) { g.strokeStyle = 'rgba(240,230,190,.72)'; g.lineWidth = .05 * p; g.setLineDash([.22 * p, .22 * p]); g.beginPath(); for (const l of lines) { g.moveTo(X, Z); g.lineTo(l[0], l[1]); } g.stroke(); g.setLineDash([]); }
@@ -330,7 +330,7 @@ W.path = function (sx, sz, tx, tz, limit = 2600) {
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
       if (!a && !b) continue; const p = x + a, q = z + b; if (!inMap(p, q)) continue; const d = ci(p, q), ty = W.T[d]; if (ty === 0 || (W.occ[d] && d !== T)) continue;
       if (a && b) { const e = ci(x + a, z), f = ci(x, z + b); if (W.occ[e] || W.occ[f] || W.T[e] === 0 || W.T[f] === 0) continue; }
-      const g = heapG[c] + (a && b ? 1.41 : 1) * COST[W.road[d]] * (ty === 1 && W.road[d] < 1 ? 4.5 : ty === 5 ? 1.5 : ty === 6 ? 3 : 1);
+      const g = heapG[c] + (a && b ? 1.41 : 1) * COST[W.road[d]] * (ty === 1 && W.road[d] < 1 && !(W.plan && W.plan[d]) ? 4.5 : ty === 5 ? 1.5 : ty === 6 ? 3 : 1) * (W.plan ? (W.plan[d] ? .62 : 1.45) : 1);
       if (stamp[d] !== stampV || g < heapG[d]) { stamp[d] = stampV; heapG[d] = g; heapF[d] = g + hx(d); came[d] = c; push(d); }
     }
   }

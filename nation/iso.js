@@ -4,7 +4,7 @@ const ISO_ON = new URLSearchParams(location.search).get('look') === '2d';
 if (ISO_ON) (function () {
   const S2 = Math.SQRT2, AW = 2048, AH = 2048, CAP = MOBILE ? 4200 : 8000;
   const MAP = { hut: 0, house: 1, row: 2, shop: 2, market: 3, apt: 4, tower: 5, office: 6, cbd: 7, mega: 7, school: 8, hischool: 8, univ: 8, clinic: 9, hospital: 9, medcenter: 9, farm: 10, bigfarm: 10, park: 11 };
-  const FIT = { hut: 1.15, house: 1.2, shop: 1.05, market: 1.08, apt: 1.25, tower: 1.3, office: 1.3, cbd: 1.4, mega: 1.5, school: 1.12, hischool: 1.3, univ: 1.45, clinic: 1, hospital: 1.2, medcenter: 1.5, farm: 1.04, bigfarm: 1.1, park: 1.15, row: 1.08 };
+  const FIT = {};
   let art = null, ctx, tex, mesh, geo, iA, iS, iU, iX, stat = [], statKey = '', baked = {}, bakeX = 0, bakeY = 1040, people = [], carU = [], treeU = null, shadowU = null;
   W.atlasP = Promise.all([W.atlasP, new Promise(res => { const im = new Image(); im.onload = () => { art = im; res(); }; im.onerror = () => res(); im.src = 'art/nation/iso.webp?b=' + BUILD; setTimeout(res, 9000); })]);
   const uvOf = (x0, y0, x1, y1) => [x0 / AW, 1 - y1 / AH, x1 / AW, 1 - y0 / AH];
@@ -30,7 +30,7 @@ if (ISO_ON) (function () {
     const o = { u: uvOf(bakeX + .5, bakeY + .5, bakeX + SZ - .5, bakeY + SZ - .5), sx: half * 2, sy: half * 2, ox: -half, oy: -half * .25 - W0 * .32 }; bakeX += SZ; baked[key] = o; return o;
   }
   function spriteOf(b) {
-    const i = MAP[b.t]; if (art && i != null) { const q = ISO_ART.cells[i], W0 = (b.w + b.d) / S2, k = (FIT[b.t] || 1.05) * (b.vis && b.sc ? Math.max(.8, b.sc * 1.2) : 1), sx = W0 * k, sy = sx * (q[3] - q[1]) / (q[2] - q[0]); return { u: uvOf(q[0], q[1], q[2], q[3]), sx, sy, ox: -sx * q[4], oy: -W0 * k / 4 }; } return bake(b.t, b.v);
+    const i = MAP[b.t]; if (art && i != null) { const q = ISO_ART.cells[i], W0 = (b.w + b.d) / S2, k = FIT[b.t] || 1.03, sx = W0 * k, sy = sx * (q[3] - q[1]) / (q[2] - q[0]); return { u: uvOf(q[0], q[1], q[2], q[3]), sx, sy, ox: -sx * q[4], oy: -W0 * k / 4 }; } return bake(b.t, b.v);
   }
 
   function setup() {
@@ -45,7 +45,7 @@ if (ISO_ON) (function () {
 
   function staticList() {
     const L = [], z = new THREE.Vector3(), m = new THREE.Matrix4();
-    if (treeU) W.treeAt.forEach((l, c) => { for (const e of l) { const sp = Math.floor(e / 100000), i = e % 100000; if (i % 3) continue; W.treeMeshes[sp].getMatrixAt(i, m); z.setFromMatrixPosition(m); const r = (i * 7919) % 100 / 100, s = 2 + r * .95; L.push({ k: z.x + z.z, x: z.x, y: Math.max(z.y, .05), z: z.z, u: treeU, ox: -s * .5, oy: -s * .05, sx: s, sy: s * (treeU[3] - treeU[1]) / (treeU[2] - treeU[0]) * (AW / AH), fl: i % 2, p: 1 }); } });
+    if (treeU) W.treeAt.forEach((l, c) => { for (const e of l) { const sp = Math.floor(e / 100000), i = e % 100000; if (i % 3) continue; { const cx0 = c % N, cz0 = c / N | 0; let onStreet = false; for (let a = -1; a <= 1 && !onStreet; a++) for (let b = -1; b <= 1; b++) if (inMap(cx0 + a, cz0 + b) && (W.plan[ci(cx0 + a, cz0 + b)] || W.occ[ci(cx0 + a, cz0 + b)])) { onStreet = true; break; } if (onStreet) continue; } W.treeMeshes[sp].getMatrixAt(i, m); z.setFromMatrixPosition(m); const r = (i * 7919) % 100 / 100, s = 2 + r * .95; L.push({ k: z.x + z.z, x: z.x, y: Math.max(z.y, .05), z: z.z, u: treeU, ox: -s * .5, oy: -s * .05, sx: s, sy: s * (treeU[3] - treeU[1]) / (treeU[2] - treeU[0]) * (AW / AH), fl: i % 2, p: 1 }); } });
     for (const b of G.blds) { if (!b.done) continue; const sp = spriteOf(b); if (!sp) continue; const cx = b.x + b.w / 2, cz = b.z + b.d / 2, hk = TALL_K(b); L.push({ k: cx + cz, x: cx, y: Math.max(.04, W.h(cx, cz)), z: cz, u: sp.u, ox: sp.ox, oy: sp.oy, sx: sp.sx, sy: sp.sy * hk, p: 1, b, g: GLOW(b) }); }
     return L.sort((p, q) => p.k - q.k);
   }
@@ -54,7 +54,7 @@ if (ISO_ON) (function () {
   const push = (i, q) => { iA.array.set([q.x, q.y, q.z], i * 3); iS.array.set([q.ox, q.oy, q.sx, q.sy], i * 4); iU.array.set(q.u, i * 4); iX.array[i * 3] = q.p; iX.array[i * 3 + 1] = q.fl ? 1 : 0; iX.array[i * 3 + 2] = q.g || 0; };
   let visible = [];
   function sync() {
-    const key = G.blds.length + ':' + G.blds.filter(b => b.done).length + ':' + W.treeLive + ':' + G.blds.reduce((q, b) => q + (b.done ? b.t.length * b.id : 0), 0); if (key !== statKey) { statKey = key; stat = staticList(); }
+    const key = (W.layoutV || 0) + ':' + G.blds.length + ':' + G.blds.filter(b => b.done).length + ':' + W.treeLive + ':' + G.blds.reduce((q, b) => q + (b.done ? b.t.length * b.id : 0), 0); if (key !== statKey) { statKey = key; stat = staticList(); }
     const dyn = [], cam = W.cam, hh = cam.dist * .56 + 10, hw = hh * (innerWidth / innerHeight) + 10, inView = (x, z) => Math.abs((x - cam.x) - (z - cam.z)) / S2 < hw + 6 && Math.abs((x + z) - (cam.x + cam.z)) / S2 * .5 < hh + 12;
     for (const b of G.blds) { if (b.done) continue; const sp = spriteOf(b), cx = b.x + b.w / 2, cz = b.z + b.d / 2; if (!sp) continue; dyn.push({ k: cx + cz, x: cx, y: b.t === 'reclaim' ? .03 : Math.max(.04, W.h(cx, cz)), z: cz, u: sp.u, ox: sp.ox, oy: sp.oy, sx: sp.sx, sy: sp.sy * TALL_K(b), p: Math.max(.04, b.prog), b, g: GLOW(b) }); }
     if (cam.dist < 72) {
