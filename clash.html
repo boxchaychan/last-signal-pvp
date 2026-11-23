@@ -34,7 +34,7 @@ button:active { transform: translateY(1px); }
 #mid { width: 150px; background: #2b2118e6; border: 2px solid var(--line); text-align: center; display: flex; flex-direction: column; justify-content: center; }
 #mid b { color: var(--gold); font-weight: 800; font-size: 16px; } #mid small { color: var(--dim); font-size: 11px; }
 #btns { position: fixed; right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); display: flex; gap: 6px; }
-#go { background: #3f8b3a; font-weight: 800; font-size: 17px; min-width: 120px; }
+.pick { font-size: 13px; min-width: 96px; } #go { background: #3f8b3a; font-weight: 800; font-size: 17px; min-width: 120px; }
 #hint { position: fixed; left: max(8px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom)); max-width: 46vw; font-size: 12px; color: var(--dim); background: #0008; padding: 3px 8px; pointer-events: none; }
 #ban { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: radial-gradient(ellipse at center, #1a140ecc, #0c0805ee); }
 #ban h1 { font-weight: 800; font-size: clamp(26px, 8vh, 48px); color: var(--gold); text-shadow: 0 3px 0 #6b3d10, 0 5px 0 #000; }
@@ -53,7 +53,7 @@ button:active { transform: translateY(1px); }
   <div class="army r"><div class="n"><b>ทัพขวา</b><span id="nR"></span></div><small>เอเลี่ยน · ปีศาจ · พระเจ้า</small><div class="hp"><i id="hpR"></i></div></div>
 </div>
 <div id="hint">ลากเพื่อเลื่อนกล้อง · ถ่างนิ้ว / ล้อเมาส์เพื่อซูม</div>
-<div id="btns"><button id="spd">x1</button><button id="go">เริ่มศึก</button></div>
+<div id="btns"><button id="pickL" class="pick"></button><button id="pickR" class="pick"></button><button id="spd">x1</button><button id="go">เริ่มศึก</button></div>
 <div id="ban" class="hide"><h1 id="banT"></h1><p id="banS"></p><button id="again">เล่นใหม่</button></div>
 <div id="rot">หมุนจอเป็นแนวนอน<br>เพื่อดูสนามรบ</div>
 <script src="vendor/threejs/three.min.js"></script>
@@ -97,26 +97,41 @@ Object.assign(UNITS, {   // the owner's picks (2026-11-23): human knights (tribe
   ax_eye:     { n: 'ตาเดียวหนวดเงา', tribe: 'x', role: 'mage', hp: 42, dmg: 8,   cd: 1.4, spd: 1.8, rng: 6.5, mass: 1, proj: 'beam' },
   ax_priestess: { n: 'นักบวชรัง', tribe: 'x', role: 'ranged', hp: 60, dmg: 4, cd: 1.2, spd: 2.0, rng: 5, mass: .9, proj: 'orb', pc: '#9cff5a', ifx: 'psyG', heal: 16, healR: 4.5 },
   ax_saucer:  { n: 'ขี่จานหนาม', tribe: 'x', role: 'melee', hp: 140, dmg: 10, cd: 1.0, spd: 3.8, rng: .5, mass: 2.2, charge: true, fly: true, fxk: 'punchG' },
+  an_tank:    { n: 'ไดโนเกราะหนาม', tribe: 'n', role: 'tank',  hp: 260, dmg: 7,  cd: 1.0, spd: 1.5, rng: .35, mass: 3, armor: .3, fxk: 'punchW' },
+  an_rhino:   { n: 'แรดขนยาว', tribe: 'n', role: 'melee', hp: 175, dmg: 9,  cd: .9,  spd: 2.6, rng: .35, mass: 2, charge: true, fxk: 'punchW' },
+  an_raptor:  { n: 'ยูทาห์แร็พเตอร์', tribe: 'n', role: 'melee', hp: 62, dmg: 6.5, cd: .5, spd: 4.2, rng: .3, mass: .9, target: 'back', pack: true, fxk: 'claw' },
+  an_trex:    { n: 'ทีเร็กซ์', tribe: 'n', role: 'melee', hp: 220, dmg: 14, cd: 1.1, spd: 2.6, rng: .45, mass: 3, target: 'weak', fxk: 'sparkR', drain: true },
+  an_thunder: { n: 'นกสายฟ้า', tribe: 'n', role: 'ranged', hp: 40, dmg: 3.6, cd: 1.3, spd: 2.6, rng: 8, mass: .8, fly: true, proj: 'chain' },
+  an_fox:     { n: 'จิ้งจอกเก้าหาง', tribe: 'n', role: 'mage', hp: 50, dmg: 6.5, cd: 1.5, spd: 2.4, rng: 6.5, mass: .9, proj: 'orb', aoe: 1.5, pc: '#7fd8ff', ifx: 'psyB' },
+  an_phoenix: { n: 'ฟีนิกซ์', tribe: 'n', role: 'ranged', hp: 80, dmg: 5, cd: 1.2, spd: 2.6, rng: 5, mass: 1, fly: true, proj: 'orb', pc: '#ffa040', ifx: 'psy', heal: 12, healR: 4.5, rebirth: true },
+  an_nightmare: { n: 'ม้าไฟฝันร้าย', tribe: 'n', role: 'melee', hp: 140, dmg: 10, cd: 1.0, spd: 3.9, rng: .5, mass: 2.2, charge: true, fxk: 'sparkR' },
+  an_frost:   { n: 'มังกรน้ำแข็ง', tribe: 'n', role: 'mage', hp: 170, dmg: 5.5, cd: 1.5, spd: 1.8, rng: 3, mass: 3, cone: true },
   ax_tk:      { n: 'พลังจิตยกหิน', tribe: 'x', role: 'mage', hp: 70, dmg: 9, cd: 1.6, spd: 1.9, rng: 6, mass: 1, proj: 'rock', aoe: .9, ifx: 'rocks' },
 });
 const SKILL = {   // automatic, no buttons (owner: "สกิลกดไม่ไหว มันหลายตัว")
   hk_tank: { n: 'กำแพงโล่', cd: 0, p: .45, T: 3 }, hk_glaive: { n: 'กวาดวง', cd: 8, p: .8 }, hk_blood: { n: 'แส้รัด', cd: 9, p: 1 }, hk_bat: { n: 'ซุ่มโจมตี', cd: 0, p: 2 }, hk_ranger: { n: 'ธนูทะลุ', cd: 9, p: 1 },
   hk_mage: { n: 'เยือกแข็ง', cd: 12 }, hk_banner: { n: 'ปลุกใจ', cd: 0 }, hk_rider: { n: 'ชาร์จซ้ำ', cd: 14 }, hk_samurai: { n: 'ชักดาบ', cd: 10, p: 1.3 },
-  ax_tank: { n: 'หนีบจับ', cd: 6 }, ax_hunter: { n: 'ล่าเหยื่อ', cd: 0, p: .4 }, ax_hound: { n: 'แค้นฝูง', cd: 0 }, ax_assassin: { n: 'วาร์ป', cd: 5 }, ax_eye: { n: 'จ้องสะกด', cd: 0, p: 2 },
-  ax_priestess: { n: 'รังฟื้นฟู', cd: 8, p: 20 }, ax_saucer: { n: 'ลำแสงดูด', cd: 7 }, ax_tk: { n: 'พายุหิน', cd: 7 },
+  ax_tank: { n: 'หนีบจับ', cd: 6 }, ax_hunter: { n: 'ล่าเหยื่อ', cd: 0, p: .3 }, ax_hound: { n: 'แค้นฝูง', cd: 0 }, ax_assassin: { n: 'วาร์ป', cd: 5 }, ax_eye: { n: 'จ้องสะกด', cd: 0, p: 2 },
+  ax_priestess: { n: 'รังฟื้นฟู', cd: 8, p: 20 },
+  an_tank: { n: 'หางกระบอง', cd: 7 }, an_rhino: { n: 'ขวิดกระเด็น', cd: 8 }, an_raptor: { n: 'ล่าเป็นฝูง', cd: 0 }, an_trex: { n: 'คำรามสะท้าน', cd: 10 }, an_thunder: { n: 'สายฟ้าชิ่ง', cd: 0 },
+  an_fox: { n: 'ไฟจิ้งจอก', cd: 9 }, an_phoenix: { n: 'คืนชีพจากเถ้า', cd: 0 }, an_nightmare: { n: 'ทางไฟ', cd: 12 }, an_frost: { n: 'ลมหายใจน้ำแข็ง', cd: 0 }, ax_saucer: { n: 'ลำแสงดูด', cd: 7 }, ax_tk: { n: 'พายุหิน', cd: 7 },
 };
-const HITF = { m_saw: 5, m_shield: 4, a_wolf: 4, a_rhino: 5, e_psychic: 5, e_jelly: 4, h_spear: 3, h_archer: 8, d_imp: 6, d_brute: 5, g_angel: 2, hk_tank: 5, hk_glaive: 3, hk_blood: 3, hk_bat: 3, hk_ranger: 7, hk_mage: 5, hk_banner: 4, hk_rider: 5, hk_samurai: 6, ax_tank: 3, ax_hunter: 2, ax_hound: 8, ax_assassin: 2, ax_eye: 2, ax_priestess: 4, ax_saucer: 3, ax_tk: 4, g_titan: 5 };   // the frame where the blow lands
+const HITF = { m_saw: 5, m_shield: 4, a_wolf: 4, a_rhino: 5, e_psychic: 5, e_jelly: 4, h_spear: 3, h_archer: 8, d_imp: 6, d_brute: 5, g_angel: 2, hk_tank: 5, hk_glaive: 3, hk_blood: 3, hk_bat: 3, hk_ranger: 7, hk_mage: 5, hk_banner: 4, hk_rider: 5, hk_samurai: 6, an_tank: 3, an_rhino: 6, an_raptor: 4, an_trex: 3, an_thunder: 3, an_fox: 5, an_phoenix: 3, an_nightmare: 7, an_frost: 2, ax_tank: 3, ax_hunter: 2, ax_hound: 8, ax_assassin: 2, ax_eye: 2, ax_priestess: 4, ax_saucer: 3, ax_tk: 4, g_titan: 5 };   // the frame where the blow lands
 const MATCHES = { old: { names: ['ทัพซ้าย', 'ทัพขวา'], sub: ['เครื่องจักร · สัตว์ · มนุษย์', 'เอเลี่ยน · ปีศาจ · พระเจ้า'], army: null },
   knights: { names: ['ทัพมนุษย์', 'ทัพเอเลี่ยน'], sub: ['อัศวิน 9 แบบ', 'เอเลี่ยนดุ 8 แบบ'], army: [
     [['hk_tank', 4], ['hk_rider', 5], ['hk_glaive', 8], ['hk_blood', 6], ['hk_samurai', 2], ['hk_bat', 8], ['hk_banner', 3], ['hk_mage', 6], ['hk_ranger', 12]],
     [['ax_tank', 4], ['ax_saucer', 5], ['ax_hunter', 10], ['ax_hound', 16], ['ax_assassin', 8], ['ax_tk', 4], ['ax_priestess', 3], ['ax_eye', 6]]] } };
-const MATCH = MATCHES[(location.search.match(/[?&]match=(\w+)/) || [])[1]] || MATCHES.knights;
+const TRIBES = { human: { name: 'ทัพมนุษย์', sub: 'อัศวิน 9 แบบ', army: MATCHES.knights.army[0] }, alien: { name: 'ทัพเอเลี่ยน', sub: 'เอเลี่ยนดุ 8 แบบ', army: MATCHES.knights.army[1] },
+  animal: { name: 'ทัพสัตว์', sub: 'ดึกดำบรรพ์ + เทพนิยาย', army: [['an_tank', 4], ['an_nightmare', 4], ['an_rhino', 6], ['an_trex', 2], ['an_raptor', 9], ['an_frost', 2], ['an_phoenix', 3], ['an_fox', 5], ['an_thunder', 8]] } };
+const TKEYS = Object.keys(TRIBES), qs = k => (location.search.match(new RegExp('[?&]' + k + '=(\\w+)')) || [])[1];
+const PICK = [TRIBES[qs('L')] ? qs('L') : 'human', TRIBES[qs('R')] ? qs('R') : 'animal'];
+const MATCH = MATCHES[qs('match')] || { names: PICK.map(t => TRIBES[t].name), sub: PICK.map(t => TRIBES[t].sub), army: PICK.map(t => TRIBES[t].army) };
 const ARMY0 = [   // front to back (the first test armies, ?match=old)
   [['m_shield', 3], ['a_rhino', 3], ['m_saw', 10], ['h_spear', 14], ['a_wolf', 16], ['h_archer', 14]],
   [['e_jelly', 3], ['d_brute', 4], ['g_titan', 2], ['g_angel', 12], ['d_imp', 24], ['e_psychic', 15]],   // tuned with CLASH.quick: about even, ~45 s
 ];
-MATCHES.old.army = ARMY0; const ARMY = MATCH.army;
-const TRIBE_COL = { x: '#9cff5a', m: '#ffa040', a: '#c8a070', e: '#ff6ad8', h: '#7fb8ff', d: '#ff5a3a', g: '#ffe890' };
+MATCHES.old.army = ARMY0; let ARMY = MATCH.army;
+const TRIBE_COL = { n: '#e0a860', x: '#9cff5a', m: '#ffa040', a: '#c8a070', e: '#ff6ad8', h: '#7fb8ff', d: '#ff5a3a', g: '#ffe890' };
 let META = null;   // art/clash/units.json: sprite sizes
 /* ---------- battle state (no drawing here: CLASH.quick runs it headless) */
 let B = null;
@@ -149,6 +164,7 @@ function hurt(t, dmg, from, kind) {
   if (t.dead || t.abT > 0) return; const d = dmg * (1 - (t.D.armor || 0)) * (t.shieldT > 0 ? SKILL.hk_tank.p : 1); t.hp -= d; t.hitT = .1; t.knock = from ? Math.sign(t.x - from.x) || 1 : 0; B.hits++;
   if (!MUTE && B.nums.length < 140) B.nums.push({ x: t.x + rnd(-.55, .55), y: t.y + META[t.k].h * ART + rnd(.1, .6), z: t.z, v: Math.max(1, Math.round(d)), l: kind === 'crit' ? .95 : .75, c: kind === 'crit' ? '#ffd25a' : '#ffffff', big: kind === 'crit' });
   if (from && from.D.leech && !from.dead) from.hp = Math.min(from.max, from.hp + d * from.D.leech);
+  if (t.hp <= 0 && t.D.rebirth && !t.reborn) { t.reborn = true; t.hp = t.max * .5; t.stunT = .6; fx('flames', t.x, .05, t.z); fx('feathers', t.x, CHEST(t) + .4, t.z); say(t); return; }
   if (t.hp <= 0) { t.dead = true; t.deadT = 0; if (!MUTE) deathFx(t); onDeath(t); }
 }
 function strike(u, t) {
@@ -156,6 +172,11 @@ function strike(u, t) {
   if (u.stealth) { u.stealth = false; dmg *= SKILL.hk_bat.p; say(u); fx('crit', t.x, CHEST(t), t.z, u.face, 1.2); }
   if (u.k === 'ax_hunter' && t.hp / t.max < SKILL.ax_hunter.p) { dmg *= 2; if (Math.random() < .5) say(u); }
   if (D.heal) { let best = null, bf = .92; for (const o of B.units) if (!o.dead && o.side === u.side && o !== u && o.hp / o.max < bf && Math.hypot(o.x - u.x, o.z - u.z) < D.healR) { bf = o.hp / o.max; best = o; } if (best) { best.hp = Math.min(best.max, best.hp + D.heal); fx('heal', best.x, best.y + .05, best.z); if (!MUTE && B.nums.length < 140) B.nums.push({ x: best.x, y: CHEST(best) + .5, z: best.z, v: D.heal, l: .75, c: '#9cff5a' }); return; } }
+  if (D.proj === 'chain') { const hit = [t]; let cur = t, k = dmg; hurt(t, k, u); if (!MUTE) B.fx.push({ k: 'beam', a: u, b: t, l: .2, L: .2, c1: '#9fe8ff', c2: '#ffffff' });
+    for (let j = 0; j < 4; j++) { let nx = null, nd = 3.2; for (const o of B.units) if (aimable(o) && o.side !== u.side && !hit.includes(o)) { const d = Math.hypot(o.x - cur.x, o.z - cur.z); if (d < nd) { nd = d; nx = o; } } if (!nx) break; k *= .85; hurt(nx, k, u); hit.push(nx); if (!MUTE) B.fx.push({ k: 'beam', a: cur, b: nx, l: .2, L: .2, c1: '#9fe8ff', c2: '#ffffff' }); cur = nx; }
+    if (hit.length > 2 && Math.random() < .25) say(u); return; }
+  if (D.cone) { let n = 0; for (const o of B.units) if (aimable(o) && o.side !== u.side) { const dx = o.x - u.x, dz = o.z - u.z, d = Math.hypot(dx, dz); if (d < D.rng + u.r + 1 && dx * u.face > -.2 && Math.abs(dz) < 1.4 + d * .4) { hurt(o, dmg, u); o.slowT = 1.5; o.slowK = .3; n++; } }
+    fx('frost', u.x + u.face * 1.6, .05, u.z, u.face); if (n > 2 && Math.random() < .2) say(u); return; }
   if (D.proj === 'beam') { hurt(t, dmg, u); if (u.k === 'ax_eye' && ++u.shots % SKILL.ax_eye.p === 0 && !t.dead) { t.stunT = 1; say(u); fx('stun', t.x, CHEST(t) + .7, t.z); } if (!MUTE) { B.fx.push({ k: 'beam', a: u, b: t, l: .18, L: .18 }); fx('psyG', t.x, CHEST(t), t.z, 1, 1.6); } return; }
   if (u.charging) { u.charging = false; dmg *= 2; for (const o of B.units) if (!o.dead && o.side !== u.side && Math.hypot(o.x - t.x, o.z - t.z) < 1.6) { hurt(o, dmg * .5, u); o.x += u.face * .9; } fx('slam', t.x, .05, t.z, u.face); fx('shock', t.x, .05, t.z, u.face); fx('rocks', t.x, .05, t.z, u.face); shake(.3); hitstop(.07); }
   if (D.proj) { B.proj.push({ k: D.proj, side: u.side, from: u, tgt: t, x: u.x, y: u.y + .9, z: u.z, sx: u.x, sz: u.z, t: 0, T: Math.max(.25, Math.hypot(t.x - u.x, t.z - u.z) / (D.proj === 'arrow' ? 15 : D.proj === 'rock' ? 7 : 9)), dmg, aoe: D.aoe || 0, miss: D.proj === 'arrow' && Math.random() < .1, c: u.frost ? '#bfeaff' : D.pc, ifx: u.frost ? 'frost' : D.ifx, slow: u.frost ? .4 : 0 }); u.frost = false; return; }
@@ -178,6 +199,11 @@ function skill(u) {   // returns true when it fired (then the cooldown restarts)
     case 'hk_samurai': { if (!t || Math.hypot(t.x - u.x, t.z - u.z) > 5) return false; const dx = t.x - u.x, dz = t.z - u.z, L = Math.hypot(dx, dz) || 1, go = Math.min(4.5, L + 1.4), sx = u.x, sz = u.z;
       for (const o of B.units) if (aimable(o) && o.side !== u.side) { const px = o.x - sx, pz = o.z - sz, along = (px * dx + pz * dz) / L, off = Math.abs(px * dz - pz * dx) / L; if (along > 0 && along < go && off < .8) { hurt(o, D.dmg * SKILL[u.k].p, u, 'crit'); fx('slashW', o.x, CHEST(o), o.z, f, 1.8); } }
       u.x = clamp(sx + dx / L * go, -BW / 2 + .8, BW / 2 - .8); u.z = clamp(sz + dz / L * go, -BD / 2 + .8, BD / 2 - .8); if (!MUTE) B.fx.push({ k: 'beam', a: { x: sx, y: .7, z: sz }, b: { x: u.x, y: .7, z: u.z }, l: .25, L: .25, c1: '#ffffff', c2: '#ffe0e0' }); say(u); return true; }
+    case 'an_tank': { const v = foes(u, 1.9); if (v.length < 2) return false; for (const o of v) { hurt(o, D.dmg, u); o.stunT = .5; } fx('shock', u.x, .05, u.z, f, 1.4); fx('stun', u.x, CHEST(u) + .8, u.z); say(u); return true; }
+    case 'an_rhino': { if (!t || !aimable(t) || Math.hypot(t.x - u.x, t.z - u.z) > D.rng + u.r + t.r + .3 || t.D.mass >= 3) return false; hurt(t, D.dmg * 1.5, u); t.x += f * 2; t.stunT = .6; fx('punchW', t.x, CHEST(t), t.z, f); fx('dust', t.x - f * .6, .05, t.z, f); say(u); return true; }
+    case 'an_trex': { const v = foes(u, 2.7); if (v.length < 2) return false; for (const o of v) o.stunT = 1; fx('shock', u.x, .05, u.z, f, 1.1); shake(.15); say(u); return true; }
+    case 'an_fox': { const v = foes(u, D.rng + 1); if (!v.length) return false; for (let i = 0; i < 3; i++) { const o = v[Math.floor(Math.random() * v.length)]; B.proj.push({ k: 'orb', side: u.side, from: u, tgt: o, x: u.x, y: 1.2, z: u.z, sx: u.x, sz: u.z, t: -i * .12, T: .55, dmg: D.dmg, aoe: D.aoe, miss: false, c: '#7fd8ff', ifx: 'psyB' }); } say(u); return true; }
+    case 'an_nightmare': { if (u.charging) return false; u.x -= f * 1.6; u.charging = true; fx('flames', u.x, .05, u.z, f); say(u); return true; }
     case 'ax_tank': { if (!t || !aimable(t) || Math.hypot(t.x - u.x, t.z - u.z) > D.rng + u.r + t.r + .3) return false; t.heldT = 2; hurt(t, D.dmg, u); fx('punchG', t.x, CHEST(t), t.z, f); fx('stun', t.x, CHEST(t) + .7, t.z); say(u); return true; }
     case 'ax_assassin': { let best = null, bh = 1e9; for (const o of foes(u, 9)) if (o.hp < bh) { bh = o.hp; best = o; } if (!best) return false; fx('blink', u.x, .05, u.z); u.x = clamp(best.x - best.face * .9, -BW / 2 + .8, BW / 2 - .8); u.z = best.z; u.tgt = best; u.cdT = 0; fx('blink', u.x, .05, u.z); say(u); return true; }
     case 'ax_priestess': { let n = 0; for (const o of B.units) if (!o.dead && o.side === u.side && o.hp < o.max && Math.hypot(o.x - u.x, o.z - u.z) < 4.5) { o.hp = Math.min(o.max, o.hp + SKILL[u.k].p); if (n++ < 8) fx('heal', o.x, o.y + .05, o.z); } if (!n) return false; ring(u.x, u.z, 4.5, '#9cff5a'); say(u); return true; }
@@ -225,7 +251,7 @@ function step(dt) {
     u.x = clamp(u.x, -BW / 2 + .8, BW / 2 - .8); u.z = clamp(u.z, -BD / 2 + .8, BD / 2 - .8);
   }
   for (let i = B.proj.length - 1; i >= 0; i--) { const p = B.proj[i]; p.t += dt; if (p.t < 0) continue; const tx = p.tgt.x, tz = p.tgt.z, k = clamp(p.t / p.T, 0, 1); traj(p, k, p);
-    if (k >= 1) { B.proj.splice(i, 1); if (p.miss) continue; if (p.aoe) { for (const o of B.units) if (!o.dead && o.side !== p.side && Math.hypot(o.x - tx, o.z - tz) < p.aoe * (p.slow ? 1.5 : 1)) { hurt(o, p.dmg, p.from); if (p.slow) { o.slowT = 2.5; o.slowK = p.slow; } } if (p.ifx === 'rocks') { fx('rocks', tx, .05, tz); fx('psyG', tx, .5, tz, 1, 1.6); shake(.08); } else if (p.ifx === 'frost') fx('frost', tx, .05, tz); else fx(p.ifx || 'psy', tx, .7, tz, 1, 1.35); } else { hurt(p.tgt, p.dmg, p.from); fx('arrowHit', tx, CHEST(p.tgt), tz, tx >= p.sx ? 1 : -1); } } }
+    if (k >= 1) { B.proj.splice(i, 1); if (p.miss) continue; if (p.aoe) { for (const o of B.units) if (!o.dead && o.side !== p.side && Math.hypot(o.x - tx, o.z - tz) < p.aoe * (p.slow ? 1.5 : 1)) { hurt(o, p.dmg, p.from); if (p.slow) { o.slowT = 2.5; o.slowK = p.slow; } } if (p.ifx === 'rocks') { fx('rocks', tx, .05, tz); fx('psyG', tx, .5, tz, 1, 1.6); shake(.08); } else if (p.ifx === 'frost') fx('frost', tx, .05, tz); else fx(p.ifx || 'psy', tx, .7, tz, 1, 1.35); } else { hurt(p.tgt, p.dmg * (p.k === 'arrow' && p.tgt.D.fly ? 1.6 : 1), p.from);   /* arrows hit flyers harder */ fx('arrowHit', tx, CHEST(p.tgt), tz, tx >= p.sx ? 1 : -1); } } }
   separate();
   const a = alive(0).length, b = alive(1).length; if (!a || !b) { B.phase = 'over'; B.win = a ? 0 : b ? 1 : -1; if (!MUTE) onOver(); }
 }
@@ -432,12 +458,17 @@ function input() {
     const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; const k = fitDist() * VIEW.zoom * Math.tan(cam.fov * Math.PI / 360) * 2 / H; TGT.x = clamp(TGT.x - dx * k, -BW / 2, BW / 2); TGT.z = clamp(TGT.z - dy * k * 1.35, -BD / 2, BD / 2); placeCam(); });
   const up = e => { pts.delete(e.pointerId); pinch0 = 0; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
   el.addEventListener('wheel', e => { e.preventDefault(); VIEW.zoom = clamp(VIEW.zoom * Math.exp(e.deltaY * .0012), .38, 1.25); placeCam(); }, { passive: false });
-  $('go').onclick = () => { if (B.phase === 'deploy') { B.phase = 'fight'; $('go').classList.add('hide'); } };
+  const showPick = () => { const old = !!MATCHES[qs('match')]; for (const [i, id] of [[0, 'pickL'], [1, 'pickR']]) { $(id).textContent = (i ? 'ขวา: ' : 'ซ้าย: ') + TRIBES[PICK[i]].name.replace('ทัพ', ''); $(id).classList.toggle('hide', old || B.phase !== 'deploy'); } };
+  const setPick = (i) => { PICK[i] = TKEYS[(TKEYS.indexOf(PICK[i]) + 1) % TKEYS.length]; ARMY = MATCH.army = PICK.map(t => TRIBES[t].army); MATCH.names = PICK.map(t => TRIBES[t].name); MATCH.sub = PICK.map(t => TRIBES[t].sub);
+    for (const k of new Set(ARMY.flat().map(a => a[0]))) if (!KIND[k]) { makeKind(k); const res = new THREE.Vector2(); renderer.getDrawingBufferSize(res); KIND[k].mat.uniforms.res.value.copy(res); KIND[k].mat.uniforms.pix.value = PIX; }
+    document.querySelector('.army.l b').textContent = MATCH.names[0]; document.querySelector('.army.r b').textContent = MATCH.names[1]; document.querySelector('.army.l small').textContent = MATCH.sub[0]; document.querySelector('.army.r small').textContent = MATCH.sub[1]; newBattle(); showPick(); };
+  $('pickL').onclick = () => setPick(0); $('pickR').onclick = () => setPick(1); showPick();
+  $('go').onclick = () => { if (B.phase === 'deploy') { B.phase = 'fight'; $('go').classList.add('hide'); showPick(); } };
   $('spd').onclick = () => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; $('spd').textContent = 'x' + speed; };
-  $('again').onclick = () => { newBattle(); $('ban').classList.add('hide'); $('go').classList.remove('hide'); };
+  $('again').onclick = () => { newBattle(); $('ban').classList.add('hide'); $('go').classList.remove('hide'); showPick(); };
 }
 async function boot() {
-  META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, ARMY, MATCH, SKILL, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; }, tick: dt => { MANUAL = true; frame(performance.now(), dt); } };
+  META = await (await fetch('art/clash/units.json')).json(); newBattle(); window.CLASH = { get B() { return B; }, UNITS, get ARMY() { return ARMY; }, MATCH, SKILL, TRIBES, setArmies: (a, b) => { ARMY = MATCH.army = [TRIBES[a].army, TRIBES[b].army]; newBattle(); }, quick, newBattle, start: () => { B.phase = 'fight'; $('go').classList.add('hide'); }, step, get PIX() { return PIX; }, tick: dt => { MANUAL = true; frame(performance.now(), dt); } };
   document.querySelector('.army.l b').textContent = MATCH.names[0]; document.querySelector('.army.r b').textContent = MATCH.names[1]; document.querySelector('.army.l small').textContent = MATCH.sub[0]; document.querySelector('.army.r small').textContent = MATCH.sub[1];
   if (NORENDER) { buildWorld(); window.CLASH.ready = true; return; }
   renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true }); renderer.setClearColor(0xa9b79a);
