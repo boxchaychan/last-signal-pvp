@@ -64,7 +64,30 @@ FRAMES = {'attack': 12, 'walk': 8}
 
 # COMMANDERS are bigger: own canvas (just over the 128 price step, so 12 frames stay cheap) and foot row. Lu Bu (owner 2026-11-24 "เอาลิโป้ลงเลย สวยละ เจนท่าให้ครบ"):
 # the 99 x 102 Pro Flash sprite from the owner's ChatGPT painting (art/incoming/clash/lubu/gpt/lubu_full_i2p_cut.png -> art/clash/units/cm_h.png)
-BIG = {}   # was {'cm_h': {'C': 132, 'FOOT': 126}} for the 99 px Lu Bu; owner 2026-11-24 "ตัวใหญ่เกิน" -> the ~50 px Lu Bu on the normal 68 canvas
+BIG = {}
+# GOD tribe (owner 2026-11-24 picks from batch 11, 16-bit; "เจนมา" = moves for the 9 god units)
+SUBJ.update({'gd_tank': 'a heavy angel knight in white and gold armour with a great shield and a halo', 'gd_goddess': 'a war goddess in gold armour with a sword and a round shield',
+ 'gd_monk': 'a celestial monk with glowing blue fists and a golden sash', 'gd_lance': 'a griffin-helmed gold knight with a long lance', 'gd_seraph': 'a six-winged white seraph with twin glowing blades',
+ 'gd_archer': 'a golden sun archer with a radiant bow', 'gd_aurora': 'an aurora mage in a blue and gold robe with a glowing staff', 'gd_healer': 'a white-winged healing angel with green-gold light',
+ 'gd_pegasus': 'a gold knight riding a white winged pegasus, holding a lance'})
+MOVE['attack'].update({'gd_tank': 'bashes forward to the right with the great shield, light flashing, then steps back into stance',
+ 'gd_goddess': 'swings the sword in a bright horizontal slash forward to the right behind the round shield, then returns to stance',
+ 'gd_monk': 'throws a fast glowing punch combo forward to the right, light bursting from the fists, then returns to stance',
+ 'gd_lance': 'lunges and thrusts the long lance far forward to the right, then pulls back to stance',
+ 'gd_seraph': 'darts forward to the right and slashes with both glowing blades in a cross cut, wings flaring, then hovers back',
+ 'gd_archer': 'draws the radiant bow, aims to the right and releases a shining arrow, then lowers the bow',
+ 'gd_aurora': 'raises the glowing staff and casts a wave of aurora light forward to the right, then lowers it',
+ 'gd_healer': 'raises both hands and releases a warm green-gold healing light, wings spreading, then folds them again',
+ 'gd_pegasus': 'the pegasus rears with wings spread and the knight thrusts the lance forward to the right, then they settle'})
+MOVE['walk'].update({'gd_tank': 'marching forward to the right in place behind the great shield, heavy steps, a looping walk cycle',
+ 'gd_goddess': 'walking forward to the right in place, sword and shield ready, cape swaying, a looping walk cycle',
+ 'gd_monk': 'walking forward to the right in place, fists ready, sash swaying, a looping walk cycle',
+ 'gd_lance': 'marching forward to the right in place, lance held upright, a looping walk cycle',
+ 'gd_seraph': 'hovering in place, six wings flapping gently, blades ready, a looping flight cycle',
+ 'gd_archer': 'walking forward to the right in place, bow in hand, a looping walk cycle',
+ 'gd_aurora': 'walking forward to the right in place, robe swaying, staff glowing, a looping walk cycle',
+ 'gd_healer': 'hovering in place, white wings flapping slowly, a looping flight cycle',
+ 'gd_pegasus': 'the pegasus flying in place, wings beating up and down, the knight riding, a looping flight cycle'})   # was {'cm_h': {'C': 132, 'FOOT': 126}} for the 99 px Lu Bu; owner 2026-11-24 "ตัวใหญ่เกิน" -> the ~50 px Lu Bu on the normal 68 canvas
 SUBJ.update({'cm_h': 'a chibi ancient chinese warlord on a red warhorse, two long red pheasant feathers on a gold crown helmet, crescent-bladed halberd, black and gold armour, red cape'})
 MOVE['attack'].update({'cm_h': 'the warlord swings the crescent halberd down and forward to the right in one powerful sweeping strike as the horse lunges, cape and feathers flying, then lifts the halberd back up to the ready pose'})
 MOVE['walk'].update({'cm_h': 'the red warhorse trots forward to the right in place, legs stepping, the rider bobbing with the halberd held up, cape and feathers swaying, a looping trot cycle'})
