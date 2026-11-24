@@ -62,6 +62,13 @@ MOVE['walk'].update({'hk_tank': 'marching forward to the right in place behind t
  'hk_blood': 'walking forward to the right in place, whip sword trailing, a looping walk cycle'})
 FRAMES = {'attack': 12, 'walk': 8}
 
+# COMMANDERS are bigger: own canvas (just over the 128 price step, so 12 frames stay cheap) and foot row. Lu Bu (owner 2026-11-24 "เอาลิโป้ลงเลย สวยละ เจนท่าให้ครบ"):
+# the 99 x 102 Pro Flash sprite from the owner's ChatGPT painting (art/incoming/clash/lubu/gpt/lubu_full_i2p_cut.png -> art/clash/units/cm_h.png)
+BIG = {'cm_h': {'C': 132, 'FOOT': 126}}
+SUBJ.update({'cm_h': 'a chibi ancient chinese warlord on a red warhorse, two long red pheasant feathers on a gold crown helmet, crescent-bladed halberd, black and gold armour, red cape'})
+MOVE['attack'].update({'cm_h': 'the warlord swings the crescent halberd down and forward to the right in one powerful sweeping strike as the horse lunges, cape and feathers flying, then lifts the halberd back up to the ready pose'})
+MOVE['walk'].update({'cm_h': 'the red warhorse trots forward to the right in place, legs stepping, the rider bobbing with the halberd held up, cape and feathers swaying, a looping trot cycle'})
+
 # alien tribe (owner 2026-11-23 picks from batch 4: a4_12 00 07 29 34 19 55 45; "เจนท่า")
 SUBJ.update({'ax_tank': 'a dark red armoured alien brute with big crab claws', 'ax_hunter': 'an alien hunter with a bone-white skull mask and an energy spear',
  'ax_hound': 'an eyeless black and toxic green alien hound with huge jaws', 'ax_assassin': 'a black cyborg alien assassin with two magenta energy blades',
@@ -109,9 +116,9 @@ MOVE['walk'].update({'an_tank': 'walking forward to the right in place on four h
 
 def prep(only=None):
     for k in (only or SUBJ):
-        im = Image.open(os.path.join(ROOT, 'art/clash/units', k + '.png')).convert('RGBA'); w, h = im.size
-        c = Image.new('RGBA', (C, C), (0, 0, 0, 0)); x = max(2, min(C - w - 2, 30 - w // 2)); c.paste(im, (x, FOOT - h), im)
-        c.save(os.path.join(OUT, k + '_in.png')); print(k, 'at', x, FOOT - h)
+        im = Image.open(os.path.join(ROOT, 'art/clash/units', k + '.png')).convert('RGBA'); w, h = im.size; cc, ft = (BIG[k]['C'], BIG[k]['FOOT']) if k in BIG else (C, FOOT)
+        c = Image.new('RGBA', (cc, cc), (0, 0, 0, 0)); x = max(2, min(cc - w - 2, round(cc * .44) - w // 2)); c.paste(im, (x, ft - h), im)
+        c.save(os.path.join(OUT, k + '_in.png')); print(k, 'at', x, ft - h)
 
 def go(items):
     from pl_rpc import call
