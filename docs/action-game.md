@@ -2552,3 +2552,20 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
 - 2026-11-24 DEMON TRIBE IN THE BATTLE (owner "เจนเลย ปีศาจละ ไม่มีให้เล่น"): 14 units `dm_*` = 11 picks from batch 13 + 3 SPECIALS from the batch 8 commanders (original colours, ~34 px), PixelLab moves 28 x 1 credit (job ids in `art/incoming/clash/anim/jobs.json`). Skills: dm_bone ป้อมกระดูก (taunt + shield), dm_hound หอนนรก (slow + burn), dm_knight ดาบสาป (x2.2 + drain), dm_ram บ้าคลั่ง (frenzy), dm_reaper โซ่ตะขอ (pull), dm_trident = SPEAR (x1.6 vs chargers), dm_queen จูบมรณะ (blink to the weakest, x2.5, heal), dm_imp ฝนไฟ (3 fireballs), dm_witch วงไฟนรก (fire ring on the densest group), dm_blood พิธีเลือด (heal), dm_nightmare ทางไฟ (recharge); SPECIALS with 2 skills: dm_wingqueen เปลวสาป / ปีกนรก (fire nova + knock-back), dm_fallen เคียวมรณะ (sweep) / พายุขนนกดำ (feather storm, slow), dm_lich ไฟวิญญาณ (drain bolt) / คำสาปมรณะ (curse field). ALL SIX TRIBES ARE NOW PLAYABLE (button: human / alien / demon / machine / god / animal).
   Balance (8 headless each, all 15 pairs): human 40 %, alien 48 %, animal 48 %, god 57 %, machine 45 %, demon 63 % (demons were 87 % at first: numbers and specials' stats cut; robots -1 warrior / -1 sniper; humans +1 bat). Matchups are rock-paper-scissors-like (e.g. demons beat aliens / humans, lose to animals / machines).
 - 2026-11-24 SPECIALS AT 40 PX (batch 15, 15 credits): batch 14 was made at 32 px by mistake (I picked the size to fit the owner's "10 เครดิต" instead of asking; the specials are ~40 px like the demon specials). Batch 15 = same 64 ideas with more look detail, slot 40 px, max_colors 16, style pictures = the owner's OWN liked 16-bit cuts (3 demon specials, 3 picked dinos, rhino / elk riders) padded to 40 x 40. Result clearly richer than batch 14. LESSON: when a budget and a size disagree, ask; and the owner's own liked cuts make the best style pictures. Waiting for the owner's picks, then moves (~2 credits each, ask first) and 2 skills each like the demon specials.
+
+## TURN-BASED PIXEL + BONES (owner 2026-11-24, NOT BUILT YET; start here on "เกมเทิร์นเบส")
+- Owner: "อยากลองทำเทิร์นเบสสวยๆ ซักตัว โดยใช้พิกเซล ... ใช้ pro และกระดูก", after asking whether games like Seven Knights use many frames. My answer: Seven Knights is 3D; 2D gacha games mostly use Spine bones; pixel games use 4-12 frames a move.
+- Owner's picks:
+  - Characters are 128 px tall.
+  - The first character comes from the OWNER'S OWN picture. Ask them to send it as an attached file.
+  - PixelLab PRO straight away. This is the owner's explicit choice for this game and overrides the standard-first rule here. Still say the cost and open the exact input before every job. Pro Flash at 128 costs about 5-9; candidates are `image_to_pixelart_pro_flash` (6, picks its own size) and `edit_image_pro_flash` with the picture as reference at 128 x 128. Read the free quote first.
+- Moves = OUR OWN 2D bones, not drawn frames, using the `dragonrig.html` recipe: split the original pixels into parts (`tools/art/dragon_rig_parts.py`), no AI redraw. To keep pixels crisp:
+  - rotate with nearest neighbour;
+  - keep joint angles small;
+  - snap part positions to whole pixels.
+- Plan:
+  1. Turn the owner's picture into a 128 px pixel character with pro. The pose must suit a rig: side or 3/4 view facing right, arms and legs apart from the body, weapon clear.
+  2. Have Codex / GPT draw the hidden parts (back arm, back leg, back of the cape) on a guide, free, like the dragon legs.
+  3. Split the character into parts and bones.
+  4. Build a battle test page: idle breathing, attack lunge, skill, hurt, death, with effects. ASK before building it.
+
