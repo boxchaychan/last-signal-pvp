@@ -41,6 +41,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 
 ## NEWEST (owner 2026-11-24): turn-based pixel game with bones (NOT built yet)
 - Pretty turn-based battle, pixel characters 128 px moved by our own 2D bones (`dragonrig.html` recipe). The first hero comes from the owner's picture via PixelLab PRO: the owner chose pro straight away for this game. Plan and picks: the TURN-BASED section at the end of `docs/action-game.md`; start there on "เกมเทิร์นเบส".
+- Free bone test `turnrig.html` (chibi swordsman cut by `tools/art/pixrig_parts.py`, low-res pixel canvas, RotSprite-style 8x parts, "แบบ: เฟรม PixelLab" to compare) is built; waiting for the owner's verdict before any pro job.
 
 ## NEWEST (owner 2026-11-23, latest of all): `clash.html` "ศึกหกเผ่า" = open-field army clash: tiny 2D pixel armies on a full-screen 3D battlefield (started as a tabletop from the owner's clip, technique only; table removed 2026-11-23), 6 tribes (machine, animal, alien, human, demon, god) x 6 classes, one battle per match (deploy once, then fight), weather + fully hidden enemy squads. Units = the owner's ChatGPT sheet cut to true pixels (`tools/art/clash_cut.py`, free), moves by code. Owner 2026-11-23 "ถามก่อนสร้าง": ASK before building anything new (say what + cost, wait for "ทำเลย"). Notes + every tribe decision: the CLASH section at the end of `docs/action-game.md`; start there on "ศึกหกเผ่า" / "เกมทัพ".
 

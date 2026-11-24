@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เทสกระดูกพิกเซล</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<style>
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0b12; font: 600 14px Kanit, system-ui, sans-serif; color: #f4ead6; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+#top { position: fixed; left: calc(8px + env(safe-area-inset-left,0px)); right: calc(8px + env(safe-area-inset-right,0px)); top: 6px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; pointer-events: none; }
+#top b { font-size: 16px; text-shadow: 0 2px 0 #000; margin-right: 4px; }
+#top button { pointer-events: auto; }
+#turn { position: fixed; left: 0; right: 0; top: 58px; text-align: center; font-size: 15px; text-shadow: 0 2px 0 #000, 0 0 6px #000; pointer-events: none; }
+#bar { position: fixed; left: 0; right: 0; bottom: calc(6px + env(safe-area-inset-bottom,0px)); display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; padding: 0 8px; }
+button { font: inherit; min-width: 54px; height: 36px; padding: 0 11px; color: #f4ead6; background: rgba(28,22,34,.82); border: 2px solid #6b5a3c; border-radius: 6px; cursor: pointer; }
+button.on { color: #1b1408; background: #e8c46a; border-color: #fff1c0; }
+button.big { border-color: #d9a441; }
+.sep { width: 6px; }
+@media (max-height: 430px) { button { height: 32px; min-width: 44px; padding: 0 8px; font-size: 13px; } #top b { font-size: 14px; } #turn { top: 50px; font-size: 13px; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top"><b>เทสกระดูกพิกเซล</b><button id="mode">แบบ: กระดูก</button><button id="bgb">ฉาก</button><button id="slow">ช้า</button><button id="vb">โครง</button></div>
+<div id="turn"></div>
+<div id="bar">
+  <button class="big" data-a="attack">โจมตี</button><button class="big" data-a="skill">สกิล</button><button data-a="hurt">โดนตี</button><button data-a="death">ตาย</button><button data-a="win">ชนะ</button>
+  <span class="sep"></span><button id="auto">อัตโนมัติ</button>
+</div>
+<script>
+'use strict';
+/* Turn-based PIXEL + BONES test (owner 2026-11-24 "งั้นทำของเรามาดูก่อน"): the chibi swordsman's PixelLab side view cut into 8 parts with its
+   ORIGINAL pixels (tools/art/pixrig_parts.py -> art/turnrig), moved by code. Everything is drawn on a low-res canvas, 1 canvas px = 1 art px, so the
+   pixels stay one size; turned parts are sampled from a scale2x x3 (8x) copy (RotSprite idea) so lines stay clean. "แบบ: เฟรม" = the same hero
+   with his PixelLab drawn clips, to compare. Backgrounds art/gem/bg_*, monsters art/action/mobs (6-frame rows walk / attack / death / hurt). */
+const $ = id => document.getElementById(id), Q = new URLSearchParams(location.search);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t, sm = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+const eo = t => 1 - (1 - clamp(t, 0, 1)) ** 3, ei = t => clamp(t, 0, 1) ** 2, seg = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const cv = $('c'), g = cv.getContext('2d');
+const BGS = [
+  { f: 'bg_norse', gy: 250, mob: 'boss_jotun' }, { f: 'bg_camp', gy: 238, mob: 'troll' }, { f: 'bg_japan', gy: 250, mob: 'oni' },
+  { f: 'bg_china', gy: 250, mob: 'boss_nian' }, { f: 'bg_siam', gy: 252, mob: 'boss_chalawan' }, { f: 'bg_egypt', gy: 250, mob: 'boss_sphinx' }];
+const IMG = {}, MOB = {};
+const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(src); i.src = src; });
+
+/* ---------- view: 1 canvas px = 1 background px, the background is cropped (never stretched) ---------- */
+let VW = 480, VH = 272, CX = 0, CY = 0;
+function resize() {
+  const a = innerWidth / innerHeight;
+  if (a > 480 / 272) { VW = 480; VH = Math.round(480 / a); CX = 0; CY = 272 - VH; } else { VH = 272; VW = Math.round(272 * a); CX = Math.round((480 - VW) / 2); CY = 0; }
+  HOME = Math.round(CX + VW * .25); EX = Math.round(CX + VW * .765); if (typeof Hh !== 'undefined' && Hh.act === 'idle') Hh.x = HOME; if (typeof E !== 'undefined' && E.act === 'idle') E.x = EX;
+  cv.width = VW; cv.height = VH; HC.width = VW; HC.height = VH; g.imageSmoothingEnabled = false; hg.imageSmoothingEnabled = false;
+}
+const HC = document.createElement('canvas'), hg = HC.getContext('2d');   // the hero is drawn here first (ghosts + white flash)
+addEventListener('resize', resize);
+
+/* ---------- scale2x three times = an 8x copy that turns cleanly ---------- */
+function scale2x(src) {
+  const w = src.width, h = src.height, s = new Uint32Array(src.getContext('2d').getImageData(0, 0, w, h).data.buffer), o = document.createElement('canvas'); o.width = w * 2; o.height = h * 2;
+  const od = o.getContext('2d').createImageData(w * 2, h * 2), d = new Uint32Array(od.data.buffer), at = (x, y) => s[clamp(y, 0, h - 1) * w + clamp(x, 0, w - 1)];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const E = at(x, y), B = at(x, y - 1), D = at(x - 1, y), F = at(x + 1, y), H = at(x, y + 1); let e0 = E, e1 = E, e2 = E, e3 = E;
+    if (B !== H && D !== F) { if (D === B) e0 = D; if (B === F) e1 = F; if (D === H) e2 = D; if (H === F) e3 = F; }
+    const i = (y * 2) * w * 2 + x * 2; d[i] = e0; d[i + 1] = e1; d[i + w * 2] = e2; d[i + w * 2 + 1] = e3;
+  }
+  o.getContext('2d').putImageData(od, 0, 0); return o;
+}
+function crop(img, x, y, w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, x, y, w, h, 0, 0, w, h); return c; }
+
+/* ---------- the rig ---------- */
+let RIG, PART = {}, ORDER = [];
+function buildRig(rig, atlas) {
+  RIG = rig; ORDER = rig.parts.map(p => p.name);
+  for (const p of rig.parts) { const c1 = crop(atlas, p.ax, p.ay, p.w, p.h); PART[p.name] = { ...p, c1, c8: scale2x(scale2x(scale2x(c1))) }; }
+}
+const FOOT = { x: 86, y: 152 };
+function restPose() { const P = { x: 0, y: 0, r: 0, rc: 0, cape: 0, capeW: 0, p: {} }; for (const n of ORDER) P.p[n] = { r: 0, ox: 0, oy: 0 }; return P; }
+/* world matrix of a part: parent * T(pivot - parent pivot + offset) * R(r) */
+function mats(P) {
+  const M = {}, base = new DOMMatrix().translate(Math.round(P.x), Math.round(P.y)).translate(0, -P.rc).rotate(P.r * 57.2958).translate(0, P.rc);   /* rc: turn round the body's middle (flips), 0 = round the feet (falling) */
+  const piv = n => n === 'root' ? FOOT : { x: PART[n].px, y: PART[n].py };
+  const get = n => {
+    if (M[n]) return M[n]; const p = PART[n], q = P.p[n], par = p.parent === 'root' ? base : get(p.parent), pp = piv(p.parent);
+    return M[n] = par.translate(p.px - pp.x + q.ox, p.py - pp.y + q.oy).rotate(q.r * 57.2958);
+  };
+  for (const n of ORDER) get(n); return M;
+}
+function drawRig(c, P, M) {
+  const V = c.getTransform();   /* the view offset stays in front of every part's matrix */
+  for (const n of ORDER) {
+    const p = PART[n], m = M[n]; c.setTransform(V.multiply(m));
+    if (n === 'cape') {   /* each pixel row of the cape slides on its own: a wave that stays on the pixel grid */
+      for (let j = 0; j < p.h; j++) { const f = clamp((p.y + j - 84) / 52, 0, 1), off = Math.round(P.cape * f ** 1.4 + P.capeW * Math.sin((p.y + j) * .23 - T.now * 6) * f); c.drawImage(p.c8, 0, j * 8, p.w * 8, 8, p.x - p.px + off, p.y - p.py + j, p.w, 1); }
+    } else c.drawImage(p.c8, p.x - p.px, p.y - p.py, p.w, p.h);
+  }
+  c.setTransform(V);
+}
+function bladeTip(M) { return M.sword.transformPoint(new DOMPoint(108 - PART.sword.px, 150 - PART.sword.py)); }
+
+/* ---------- the hero's moves (angles in radians; + = clockwise on screen) ---------- */
+let HOME = 118, EX = 368; const A = { attack: 1.42, skill: 1.62, hurt: .5, death: .9, win: 9e9 };
+function heroPose(H, now) {
+  const P = restPose(), q = P.p, t = H.act === 'dead' ? A.death : H.t, b = Math.sin(now * 2.6);
+  P.x = H.x; P.y = H.gy;
+  /* breathing: 1 px up and down, arms and sword sway a little */
+  q.torso.oy = b > .2 ? 1 : 0; q.head.r = .015 * Math.sin(now * 2.6 - .8); q.arm_s.r = .035 * Math.sin(now * 2.6 - .5); q.arm_o.r = -.05 * Math.sin(now * 2.6 - .3); q.sword.r = .03 * Math.sin(now * 2.6 - 1.2);
+  const a = H.act === 'dead' ? 'death' : H.act;
+  if (a === 'attack') {
+    const ex = E.x - 74;
+    const k0 = seg(t, 0, .22), dash = seg(t, .22, .38), s1 = seg(t, .38, .46), s2 = seg(t, .64, .72), back = seg(t, 1.02, 1.36), rest = seg(t, 1.28, 1.42);
+    P.x = lerp(lerp(HOME, ex, eo(dash)), HOME, sm(back)); P.y = H.gy + 2 * sm(k0) * (1 - dash) - 14 * Math.sin(Math.PI * back) - 5 * Math.sin(Math.PI * seg(t, .66, .9));
+    let arm = 2.55 * sm(k0); arm = lerp(arm, 5.25, eo(s1)); arm = lerp(arm, 3.7, eo(s2)); arm = lerp(arm, 0, sm(rest) * 1 + sm(back) * 0);
+    const fore = lerp(lerp(.55 * sm(k0), -.1, eo(s1)), .15, eo(s2)) * (1 - sm(back));
+    q.arm_s.r += lerp(arm, 0, sm(back)); q.fore_s.r = fore; q.sword.r += lerp(.25 * sm(k0) + .35 * eo(s1) + 0 * eo(s2), 0, sm(back));
+    q.torso.r = lerp(-.12 * sm(k0) + .22 * dash, 0, 0) - .22 * eo(s1) * 0 + .2 * eo(s1) - .12 * eo(s2); q.torso.r *= 1 - sm(back);
+    q.head.r += -.6 * q.torso.r; q.arm_o.r += (.5 * sm(k0) - .9 * eo(s1) + .6 * eo(s2)) * (1 - sm(back));
+    q.legs.ox = Math.round(2 * dash - 2 * sm(back)); P.r = .06 * Math.sin(Math.PI * back) * -1;
+  } else if (a === 'skill') {
+    const ex = E.x - 40, ch = seg(t, 0, .32), lp = seg(t, .32, .66), dn = seg(t, .66, .74), kn = seg(t, .74, 1.08), bk = seg(t, 1.08, 1.5), rs = seg(t, 1.42, 1.62);
+    const lx = lerp(HOME, ex, sm(lp)), up = Math.sin(Math.PI * lp * .5) * 84 * (1 - dn);
+    P.x = lerp(lerp(lx, ex, dn), HOME, sm(bk)); P.y = H.gy + 3 * sm(ch) * (1 - lp) - up + 4 * Math.sin(Math.PI * kn) * (1 - bk) - 30 * Math.sin(Math.PI * bk);
+    P.rc = 62; P.r = 6.283 * eo(lp) * (1 - dn); if (bk > 0) P.r = -6.283 * sm(bk);
+    const raise = 3.15 * sm(ch), plunge = lerp(raise, -.4, eo(dn));
+    q.arm_s.r += lerp(plunge, 0, sm(bk)); q.fore_s.r = .25 * sm(ch) * (1 - dn) - .2 * dn * (1 - sm(bk)); q.sword.r += (.45 * sm(ch) * (1 - dn) + 1.3 * dn) * (1 - sm(bk));
+    q.torso.r = (-.15 * sm(ch) * (1 - lp) + .3 * dn) * (1 - sm(bk)); q.head.r += -.5 * q.torso.r - .2 * sm(ch) * (1 - lp); q.arm_o.r += (1.2 * sm(ch) - .9 * dn) * (1 - sm(bk));
+    P.y += 0; if (rs > 0) { q.arm_s.r *= 1 - sm(rs); }
+  } else if (a === 'hurt') {
+    const k = seg(t, 0, .08), r = seg(t, .08, .5); P.x = H.x - 7 * eo(k) * (1 - sm(r)); q.torso.r = -.22 * eo(k) * (1 - sm(r)); q.head.r += -.25 * eo(k) * (1 - sm(r)); q.arm_s.r += .4 * eo(k) * (1 - sm(r)); q.arm_o.r += .6 * eo(k) * (1 - sm(r));
+  } else if (a === 'death') {
+    const s = seg(t, 0, .18), f = seg(t, .18, .62), bo = seg(t, .62, .82);
+    P.x = H.x - 8 * eo(s) - 10 * f; P.r = -1.57 * ei(f) + .12 * Math.sin(Math.PI * bo); P.y = H.gy - 3 * Math.sin(Math.PI * bo) - 20 * ei(f);   /* lifted so the back lies on the ground */
+    q.torso.r = -.25 * eo(s); q.head.r += -.3 * eo(s) + .2 * f; q.arm_s.r += .7 * eo(s) + .4 * f; q.arm_o.r += 1.1 * eo(s); q.sword.r += .5 * f;
+  } else if (a === 'win') {
+    const u = seg(t, 0, .35); q.arm_s.r += 3.3 * eo(u) + .04 * Math.sin(now * 3); q.fore_s.r = -.15 * eo(u); q.sword.r += .7 * eo(u); q.head.r += -.12 * eo(u); q.torso.r = -.05 * eo(u); q.arm_o.r += -.25 * eo(u);
+    P.y = H.gy - 5 * Math.sin(Math.PI * seg(t, 0, .3));
+  }
+  return P;
+}
+/* hits during a move: [time, kind] */
+const HITS = { attack: [[.43, 1], [.69, 2]], skill: [[.74, 3]] };
+
+/* ---------- the same hero as PixelLab drawn frames (to compare) ---------- */
+let CLIP, CLIPJ;
+const FR = { idle: [60, 8, 8, true], attack: [10, 41, 26], skill: [120, 16, 18], hurt: [70, 4, 10], death: [80, 8, 10], win: [60, 8, 8, true] };
+function clipFrame(H, now) {
+  const a = H.act === 'dead' ? 'death' : H.act === 'idle' || !FR[H.act] ? 'idle' : H.act, [s, n, fps, loop] = FR[a];
+  let t = a === 'idle' ? now : H.act === 'dead' ? 9 : H.t; if (a === 'attack') t = clamp(H.t - .3, 0, 9); if (a === 'skill') t = clamp(H.t - .55, 0, 9);
+  let i = Math.floor(t * fps); i = loop ? i % n : Math.min(i, n - 1); return s + i;
+}
+function clipPos(H) {
+  const t = H.t; if (H.act === 'attack') { const d = seg(t, .14, .3), b = seg(t, 1.9, 2.2); return { x: lerp(lerp(HOME, E.x - 70, eo(d)), HOME, sm(b)), y: H.gy - 12 * Math.sin(Math.PI * b) }; }
+  if (H.act === 'skill') { const d = seg(t, .2, .5), b = seg(t, 1.6, 1.95); return { x: lerp(lerp(HOME, E.x - 60, eo(d)), HOME, sm(b)), y: H.gy - 40 * Math.sin(Math.PI * d) - 18 * Math.sin(Math.PI * b) }; }
+  if (H.act === 'hurt') return { x: H.x - 6 * Math.sin(Math.PI * seg(t, 0, .4)), y: H.gy };
+  return { x: H.x, y: H.gy };
+}
+const HITS_F = { attack: [[.3 + 6 / 26, 1], [.3 + 15 / 26, 1], [.3 + 24 / 26, 2]], skill: [[.55 + 5 / 18, 1], [.55 + 10 / 18, 3]] };
+const LEN_F = { attack: 2.25, skill: 2.0, hurt: .5, death: .9, win: 9e9 };
+
+/* ---------- state ---------- */
+const T = { now: 0, stop: 0, shake: 0, flash: 0, slow: false, frames: Q.get('mode') === 'frame', bones: false, bg: +(Q.get('bg') || 0) % BGS.length };
+const Hh = { act: 'idle', t: 0, x: HOME, gy: 250, hp: 100, max: 100, flash: 0, ghosts: [], done: null };
+const E = { k: '', act: 'idle', t: 0, x: EX, gy: 250, hp: 100, max: 100, flash: 0, kx: 0, done: null, alpha: 1 };
+let FX = [], NUM = [], AUTO = false, autoT = 0, turnN = 0, capeV = 0, capeS = 0, lastHX = HOME, lastHY = 250;
+
+function heroDo(a, done) { Hh.act = a; Hh.t = 0; Hh.fired = 0; Hh.done = done || null; if (a !== 'death' && a !== 'win') Hh.x = Hh.x || HOME; }
+function enemyDo(a, done) { E.act = a; E.t = 0; E.fired = 0; E.done = done || null; }
+function setBg(i) { T.bg = i; const b = BGS[i]; Hh.gy = E.gy = b.gy; E.k = b.mob; E.hp = E.max = 100; E.alpha = 1; enemyDo('idle'); E.x = EX; }
+
+/* ---------- pixel effects (all on whole pixels) ---------- */
+const px = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
+function crescent(f) {   /* a slash: ring between two circles, drawn pixel by pixel; bands white -> light blue -> deep blue */
+  const life = clamp(f.t / f.d, 0, 1), sweep = eo(life * 2.2), a0 = f.a0, a1 = lerp(f.a0, f.a1, sweep), R = f.r, th = f.th * (1 - life * .7), cx = f.x, cy = f.y, c = g;
+  const lo = Math.min(a0, a1), hi = Math.max(a0, a1), x0 = Math.floor(cx - R - 2), x1 = Math.ceil(cx + R + 2), y0 = Math.floor(cy - R - 2), y1 = Math.ceil(cy + R + 2);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const dx = x + .5 - cx, dy = y + .5 - cy, d = Math.hypot(dx, dy); if (d > R || d < R - th - 2) continue;
+    let an = Math.atan2(dy, dx); while (an < lo) an += 6.2832; while (an > lo + 6.2832) an -= 6.2832; if (an > hi) continue;
+    const along = (an - lo) / Math.max(.001, hi - lo), lead = f.a1 > f.a0 ? along : 1 - along, w = th * (.25 + .75 * Math.sin(Math.PI * clamp(lead * 1.05, 0, 1))) * (life < .5 ? 1 : 1 - (life - .5) * 1.6);
+    const k = R - d; if (k > w) continue; const band = k / Math.max(1, w);
+    c.fillStyle = band < .3 ? '#ffffff' : band < .62 ? '#9ff3ff' : band < .85 ? '#3fa8f0' : '#1d4fb8'; c.globalAlpha = life > .75 ? 1 - (life - .75) * 4 : 1; c.fillRect(x, y, 1, 1);
+  }
+  g.globalAlpha = 1;
+}
+function spark(f) { const l = f.t / f.d, n = f.n || 8, r = 4 + 22 * eo(l) * (f.big ? 1.6 : 1); for (let i = 0; i < n; i++) { const a = i / n * 6.283 + f.r0, len = (i % 2 ? .55 : 1) * (1 - l) * (f.big ? 16 : 10); for (let s = 0; s < len; s++) px(g, f.x + Math.cos(a) * (r + s), f.y + Math.sin(a) * (r + s) * .8, 1, 1, s < 2 ? '#fff' : f.col || '#ffe48a'); } if (l < .25) { px(g, f.x - 3, f.y - 3, 7, 7, '#fff'); } }
+function ring(f) { const l = f.t / f.d, R = f.r0 + (f.r1 - f.r0) * eo(l), th = Math.max(1, Math.round(f.th * (1 - l))); for (let a = 0; a < 6.283; a += .5 / Math.max(8, R)) { const x = f.x + Math.cos(a) * R, y = f.y + Math.sin(a) * R * f.fl; if (y > f.y + 3 && f.fl < 1) continue; px(g, x, y, th, th, l < .4 ? '#fff' : f.col); } }
+function pillar(f) { const l = f.t / f.d, w = Math.round(f.w * (l < .2 ? eo(l / .2) : 1 - ei((l - .2) / .8))), h = f.h; if (w < 1) return; px(g, f.x - w, f.y - h, w * 2, h, '#3fa8f0'); px(g, f.x - w * .6, f.y - h, Math.max(1, w * 1.2), h, '#9ff3ff'); px(g, f.x - w * .25, f.y - h, Math.max(1, w * .5), h, '#fff'); }
+function dust(f) { const l = f.t / f.d; for (let i = 0; i < 5; i++) { const x = f.x + (i - 2) * 4 * (1 + l * 2) * f.dir, y = f.y - 2 - i % 2 * 2 - l * 6, s = Math.max(1, Math.round((3 - i % 3) * (1 - l))); px(g, x, y, s, s, i % 2 ? '#d8cbb0' : '#b4a588'); } }
+function mote(f) { const l = f.t / f.d; px(g, f.x + Math.sin(f.t * 9 + f.s) * 3, f.y - l * f.h, 1, l < .5 ? 2 : 1, l < .5 ? '#fff' : '#9ff3ff'); }
+const FXD = { crescent, spark, ring, pillar, dust, mote };
+const fx = o => FX.push({ t: 0, ...o });
+/* 3 x 5 pixel digits for the damage numbers */
+const DIG = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001', '111100111001111', '111100111101111', '111001001010010', '111101111101111', '111101111001111'];
+function number(n) { NUM.push({ s: String(n), x: n.x, y: n.y, t: 0, ...n }); }
+function drawNum(o) {
+  const l = o.t / 1.0, s = o.big ? 3 : 2, y = o.y - 18 * eo(l * 1.6), w = o.s.length * 4 * s; let x = Math.round(o.x - w / 2); g.globalAlpha = l > .7 ? 1 - (l - .7) / .3 : 1;
+  for (const ch of o.s) { const m = DIG[+ch]; for (let p = 0; p < 15; p++) if (m[p] === '1') { const X = x + (p % 3) * s, Y = Math.round(y) + Math.floor(p / 3) * s; px(g, X - 1, Y - 1, s + 2, s + 2, '#1a0d05'); } x += 4 * s; }
+  x = Math.round(o.x - w / 2); for (const ch of o.s) { const m = DIG[+ch]; for (let p = 0; p < 15; p++) if (m[p] === '1') px(g, x + (p % 3) * s, Math.round(y) + Math.floor(p / 3) * s, s, s, o.col || (o.big ? '#ffe14d' : '#fff')); x += 4 * s; }
+  g.globalAlpha = 1;
+}
+
+/* ---------- hits ---------- */
+function hitEnemy(kind, at) {
+  const dmg = kind === 3 ? 38 + (Math.random() * 6 | 0) : kind === 2 ? 17 + (Math.random() * 4 | 0) : 11 + (Math.random() * 4 | 0);
+  E.hp = Math.max(0, E.hp - dmg); E.flash = .1; E.kx = kind === 3 ? 14 : kind === 2 ? 9 : 5; T.stop = kind === 3 ? .13 : kind === 2 ? .08 : .06; T.shake = kind === 3 ? 7 : kind === 2 ? 4 : 2.5;
+  number({ s: String(dmg), x: E.x, y: E.gy - mobH() * .7, big: kind === 3 });
+  fx({ kind: 'spark', x: at.x, y: at.y, d: .3, r0: Math.random(), big: kind > 1, n: kind > 1 ? 10 : 8 });
+  if (kind === 3) { T.flash = .18; fx({ kind: 'ring', x: E.x - 10, y: E.gy, r0: 6, r1: 70, th: 4, d: .45, fl: .32, col: '#3fa8f0' }); fx({ kind: 'pillar', x: E.x - 10, y: E.gy, w: 12, h: 300, d: .5 }); }
+  if (E.act !== 'death') enemyDo(E.hp <= 0 ? 'death' : 'hurt');
+}
+function hitHero() {
+  const dmg = 9 + (Math.random() * 7 | 0); Hh.hp = Math.max(0, Hh.hp - dmg); Hh.flash = .1; T.stop = .07; T.shake = 3.5;
+  number({ s: String(dmg), x: Hh.x, y: Hh.gy - 110, col: '#ff7a6a' }); fx({ kind: 'spark', x: Hh.x + 10, y: Hh.gy - 60, d: .28, r0: .3, col: '#ffb08a' });
+  heroDo(Hh.hp <= 0 ? 'death' : 'hurt');
+}
+
+/* ---------- monster ---------- */
+const mobH = () => (MOB[E.k] ? MOB[E.k].j.size || 100 : 100);
+function enemyFrame() {
+  const m = MOB[E.k]; if (!m) return null; const j = m.j, n = j.n;
+  if (E.act === 'attack') { const f = Math.floor(seg(E.t, .32, .92) * n); return [j.rows.attack, Math.min(n - 1, f)]; }
+  if (E.act === 'hurt') return [j.rows.hurt, Math.min(n - 1, Math.floor(E.t * 14))];
+  if (E.act === 'death') return [j.rows.death, Math.min(n - 1, Math.floor(E.t * 9))];
+  return [j.rows.walk, Math.floor(T.now * 5) % n];
+}
+function enemyX() {
+  if (E.act === 'attack') { const go = seg(E.t, 0, .3), bk = seg(E.t, 1.05, 1.35); return lerp(lerp(EX, Hh.x + mobH() * .5 + 28, eo(go)), EX, sm(bk)); }
+  return E.x;
+}
+
+/* ---------- drawing ---------- */
+function drawHero(c, now) {
+  if (T.frames) {
+    const f = clipFrame(Hh, now), C = CLIPJ.cell, cols = CLIPJ.cols, p = clipPos(Hh);
+    c.drawImage(CLIP, (f % cols) * C, Math.floor(f / cols) * C, C, C, Math.round(p.x - CLIPJ.fx), Math.round(p.y - CLIPJ.fy), C, C); return { x: p.x, y: p.y };
+  }
+  const P = heroPose(Hh, now), dx = P.x - lastHX, dy = P.y - lastHY; lastHX = P.x; lastHY = P.y;
+  /* the cape: a spring pushed by how fast the body moves */
+  const dt = 1 / 60; capeV += ((clamp(-dx * 1.2, -9, 9) - capeS) * 60 - capeV * 9) * dt; capeS += capeV * dt; P.cape = capeS + 1.2 * Math.sin(now * 1.7); P.capeW = .6 + Math.min(1.5, Math.abs(dx) * .3);
+  const M = mats(P); Hh.lastM = M; drawRig(c, P, M);
+  if (T.bones) { c.fillStyle = '#ff3b30'; for (const n of ORDER) { const q = M[n].transformPoint(new DOMPoint(0, 0)); c.fillRect(Math.round(q.x) - 1, Math.round(q.y) - 1, 3, 3); } }
+  return { x: P.x, y: P.y, P };
+}
+
+function shadow(x, y, w) { g.fillStyle = 'rgba(10,6,14,.45)'; for (let r = -2; r <= 2; r++) { const ww = Math.round(w * Math.sqrt(1 - (r / 2.6) ** 2)); g.fillRect(Math.round(x - ww / 2), Math.round(y + r), ww, 1); } }
+function bars() {
+  const bw = Math.min(150, Math.round(VW * .34)), y = 26;
+  const bar = (x, hp, max, col, right) => { px(g, x - 1, y - 1, bw + 2, 8, '#120c08'); px(g, x, y, bw, 6, '#3a2418'); const w = Math.round(bw * hp / max); px(g, right ? x + bw - w : x, y, w, 6, col); px(g, right ? x + bw - w : x, y, w, 2, '#ffffff55'); };
+  bar(8, Hh.hp, Hh.max, '#5fd86a', false); bar(VW - bw - 8, E.hp, E.max, '#ff5a4a', true);
+}
+function frame() {
+  const now = T.now;
+  const sh = T.shake > .2 ? [Math.round((Math.random() - .5) * T.shake), Math.round((Math.random() - .5) * T.shake)] : [0, 0];
+  g.setTransform(1, 0, 0, 1, sh[0] - CX, sh[1] - CY); g.imageSmoothingEnabled = false;
+  g.drawImage(IMG[BGS[T.bg].f], 0, 0);
+  /* monster */
+  const m = MOB[E.k], ef = enemyFrame(), exx = enemyX() + E.kx; E.xd = exx;
+  if (m && ef) {
+    shadow(exx, E.gy, mobH() * .7); const j = m.j; g.save(); g.globalAlpha = E.alpha; g.translate(Math.round(exx), Math.round(E.gy)); g.scale(-1, 1);
+    g.drawImage(m.img, ef[1] * j.w, ef[0] * j.h, j.w, j.h, -j.fx, -j.fy, j.w, j.h);
+    if (E.flash > 0) { g.globalAlpha = E.alpha * .8; g.drawImage(m.white, ef[1] * j.w, ef[0] * j.h, j.w, j.h, -j.fx, -j.fy, j.w, j.h); } g.restore();
+  }
+  /* hero: drawn on its own canvas, then ghosts + flash */
+  hg.setTransform(1, 0, 0, 1, -CX, -CY); hg.clearRect(CX, CY, VW, VH); const hp = drawHero(hg, now); hg.setTransform(1, 0, 0, 1, 0, 0);
+  shadow(hp.x, Hh.gy, Hh.act === 'death' && Hh.t > .5 ? 90 : 46);
+  g.setTransform(1, 0, 0, 1, sh[0], sh[1]);
+  for (const gh of Hh.ghosts) { g.globalAlpha = gh.a * .5; g.drawImage(gh.c, 0, 0); } g.globalAlpha = 1;
+  g.drawImage(HC, 0, 0);
+  if (Hh.flash > 0) { hg.globalCompositeOperation = 'source-in'; hg.fillStyle = '#fff'; hg.fillRect(0, 0, VW, VH); hg.globalCompositeOperation = 'source-over'; g.globalAlpha = .8; g.drawImage(HC, 0, 0); g.globalAlpha = 1; }
+  const fast = (Hh.act === 'attack' && Hh.t > .2 && Hh.t < .42) || (Hh.act === 'skill' && Hh.t > .3 && Hh.t < .76) || (T.frames && (Hh.act === 'attack' || Hh.act === 'skill') && Hh.t > .1 && Hh.t < .55);
+  if (fast && T.stop <= 0) { const c = document.createElement('canvas'); c.width = VW; c.height = VH; c.getContext('2d').drawImage(HC, 0, 0); Hh.ghosts.push({ c, a: 1 }); }
+  /* effects + numbers */
+  g.setTransform(1, 0, 0, 1, sh[0] - CX, sh[1] - CY);
+  for (const f of FX) FXD[f.kind](f);
+  for (const o of NUM) drawNum(o);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  if (T.flash > 0) { g.globalAlpha = clamp(T.flash / .18, 0, 1) * .55; g.fillStyle = '#e8fbff'; g.fillRect(0, 0, VW, VH); g.globalAlpha = 1; }
+  bars();
+}
+
+/* ---------- time ---------- */
+function stepHero(dt) {
+  if (Hh.act === 'idle') return; Hh.t += dt;
+  const hits = T.frames ? HITS_F[Hh.act] : HITS[Hh.act], len = T.frames ? LEN_F[Hh.act] : A[Hh.act];
+  if (hits) for (let i = Hh.fired; i < hits.length; i++) if (Hh.t >= hits[i][0]) {
+    Hh.fired = i + 1; const k = hits[i][1];
+    let at = { x: E.xd - 14, y: E.gy - mobH() * .55 };
+    if (!T.frames && Hh.lastM) { const tp = bladeTip(Hh.lastM); at = { x: Math.min(tp.x, E.xd + 10), y: tp.y }; }
+    hitEnemy(k, at);
+  }
+  /* slash arcs follow the sword's real swing */
+  if (!T.frames && Hh.act === 'attack') {
+    if (!Hh.s1 && Hh.t >= .37) { Hh.s1 = 1; const P = heroPose(Hh, T.now); fx({ kind: 'crescent', x: P.x + 2, y: P.y - 66, r: 58, th: 13, a0: -2.7, a1: .55, d: .32 }); }
+    if (!Hh.s2 && Hh.t >= .63) { Hh.s2 = 1; const P = heroPose(Hh, T.now); fx({ kind: 'crescent', x: P.x + 4, y: P.y - 62, r: 54, th: 12, a0: .9, a1: -1.9, d: .3 }); }
+    if (!Hh.d1 && Hh.t >= .22) { Hh.d1 = 1; fx({ kind: 'dust', x: HOME - 4, y: Hh.gy, d: .4, dir: -1 }); }
+  }
+  if (!T.frames && Hh.act === 'skill') {
+    if (Hh.t < .32 && Math.random() < .6) fx({ kind: 'mote', x: Hh.x + (Math.random() - .5) * 40, y: Hh.gy - Math.random() * 20, h: 50 + Math.random() * 40, d: .6, s: Math.random() * 9 });
+    if (!Hh.s1 && Hh.t >= .62) { Hh.s1 = 1; fx({ kind: 'crescent', x: E.x - 40, y: Hh.gy - 70, r: 64, th: 15, a0: -2.2, a1: 1.2, d: .3 }); }
+  }
+  if (T.frames && (Hh.act === 'attack' || Hh.act === 'skill') && !Hh.d1 && Hh.t >= .14) { Hh.d1 = 1; fx({ kind: 'dust', x: HOME - 4, y: Hh.gy, d: .4, dir: -1 }); }
+  if (Hh.t >= len) { const d = Hh.done; const was = Hh.act; Hh.act = was === 'death' ? 'dead' : 'idle'; Hh.t = 0; Hh.s1 = Hh.s2 = Hh.d1 = 0; if (was !== 'death') Hh.x = HOME; if (d) d(); }
+}
+function stepEnemy(dt) {
+  if (E.flash > 0) E.flash -= dt; E.kx *= Math.exp(-dt * 9);
+  if (E.act === 'idle' || E.act === 'gone') return; E.t += dt;
+  if (E.act === 'attack') { if (!E.fired && E.t >= .32 + ((MOB[E.k].j.hit || 3) / MOB[E.k].j.n) * .6) { E.fired = 1; hitHero(); } if (E.t >= 1.35) { E.act = 'idle'; const d = E.done; E.done = null; if (d) d(); } }
+  else if (E.act === 'hurt') { if (E.t >= .42) { E.act = 'idle'; } }
+  else if (E.act === 'death') { if (E.t > .9) E.alpha = Math.max(0, 1 - (E.t - .9) * 2); if (E.t >= 1.8) { E.act = 'gone'; setTimeout(() => { E.hp = E.max; E.alpha = 1; enemyDo('idle'); }, 500); } }
+}
+function step(dt) {
+  T.now += dt;
+  for (const f of FX) f.t += dt; FX = FX.filter(f => f.t < f.d); for (const o of NUM) o.t += dt; NUM = NUM.filter(o => o.t < 1);
+  for (const gh of Hh.ghosts) gh.a -= dt * 5; Hh.ghosts = Hh.ghosts.filter(gh => gh.a > 0).slice(-6);
+  if (T.shake > 0) T.shake *= Math.exp(-dt * 14); if (T.flash > 0) T.flash -= dt; if (Hh.flash > 0) Hh.flash -= dt;
+  if (T.stop > 0) { T.stop -= dt; return; }
+  stepHero(dt); stepEnemy(dt);
+  if (AUTO) autoStep(dt);
+}
+
+/* ---------- a small turn loop: our turn, their turn ---------- */
+let busy = false;
+function say(s) { $('turn').textContent = s; }
+function heroTurn() {
+  busy = true; turnN++; const sk = turnN % 3 === 0; say(sk ? 'เทิร์นเรา: สกิล' : 'เทิร์นเรา: โจมตี');
+  heroDo(sk ? 'skill' : 'attack', () => setTimeout(() => { if (E.act === 'death' || E.act === 'gone') { say('ชนะ!'); heroDo('win'); setTimeout(() => { heroDo('idle'); busy = false; }, 1600); return; } enemyTurn(); }, 300));
+}
+function enemyTurn() { say('เทิร์นศัตรู'); enemyDo('attack', () => setTimeout(() => { if (Hh.act === 'dead' || Hh.act === 'death') { setTimeout(() => { Hh.hp = Hh.max; heroDo('idle'); busy = false; say(''); }, 1200); return; } busy = false; }, 350)); }
+function autoStep() { if (!busy && E.act !== 'gone' && Hh.act === 'idle') heroTurn(); }
+
+/* ---------- loop + buttons ---------- */
+let last = performance.now();
+function loop(n) { let dt = Math.min(.05, (n - last) / 1000); last = n; if (T.slow) dt *= .25; step(dt); frame(); requestAnimationFrame(loop); }
+function ui() { $('mode').textContent = T.frames ? 'แบบ: เฟรม PixelLab' : 'แบบ: กระดูก'; $('mode').classList.toggle('on', T.frames); $('slow').classList.toggle('on', T.slow); $('vb').classList.toggle('on', T.bones); $('auto').classList.toggle('on', AUTO); $('vb').style.display = T.frames ? 'none' : ''; }
+document.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+  if (AUTO) { AUTO = false; ui(); } busy = false; say(''); const a = b.dataset.a;
+  if (Hh.act === 'dead' && a !== 'death') Hh.hp = Hh.max;
+  if (a === 'hurt') { hitHero(); return; }
+  if (E.act === 'gone') { E.hp = E.max; E.alpha = 1; enemyDo('idle'); }
+  Hh.x = HOME; heroDo(a);
+});
+$('auto').onclick = () => { AUTO = !AUTO; if (AUTO) { Hh.hp = Hh.max; if (Hh.act !== 'idle') heroDo('idle'); busy = false; } else say(''); ui(); };
+$('mode').onclick = () => { T.frames = !T.frames; heroDo('idle'); Hh.x = HOME; ui(); };
+$('slow').onclick = () => { T.slow = !T.slow; ui(); };
+$('vb').onclick = () => { T.bones = !T.bones; ui(); };
+$('bgb').onclick = () => { setBg((T.bg + 1) % BGS.length); };
+
+(async () => {
+  resize();
+  const [rig, atlas, clip, clipj] = await Promise.all([fetch('art/turnrig/rig.json').then(r => r.json()), load('art/turnrig/parts.png'), load('art/poses/combo/chibi_pl.png'), fetch('art/poses/combo/chibi_pl.json').then(r => r.json())]);
+  buildRig(rig, atlas); CLIP = clip; CLIPJ = clipj;
+  await Promise.all(BGS.map(async b => {
+    IMG[b.f] = await load(`art/gem/${b.f}.png`);
+    const [j, img] = await Promise.all([fetch(`art/action/mobs/${b.mob}.json`).then(r => r.json()), load(`art/action/mobs/${b.mob}.png`)]);
+    const w = document.createElement('canvas'); w.width = img.width; w.height = img.height; const wc = w.getContext('2d'); wc.drawImage(img, 0, 0); wc.globalCompositeOperation = 'source-in'; wc.fillStyle = '#fff'; wc.fillRect(0, 0, w.width, w.height);
+    MOB[b.mob] = { j, img, white: w };
+  }));
+  setBg(T.bg); ui();
+  window.TR = { T, Hh, E, step, frame, heroDo, setBg, ready: true };
+  requestAnimationFrame(loop);
+})().catch(e => { console.error(e); say('โหลดไม่สำเร็จ ลองรีเฟรช'); });
+</script>
+</body>
+</html>

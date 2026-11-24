@@ -2568,4 +2568,13 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   2. Have Codex / GPT draw the hidden parts (back arm, back leg, back of the cape) on a guide, free, like the dragon legs.
   3. Split the character into parts and bones.
   4. Build a battle test page: idle breathing, attack lunge, skill, hurt, death, with effects. ASK before building it.
+- FREE BONE TEST BUILT (owner 2026-11-24 "งั้นทำของเรามาดูก่อน"): `turnrig.html`, no credits used.
+  - Hero: the chibi swordsman's PixelLab side view (`art/incoming/darkchibi/pl_char/east.png`, body 124 px).
+  - Parts: `tools/art/pixrig_parts.py` cuts him into 8 parts with the ORIGINAL pixels (cape, legs, torso, empty arm, head, sword, sword upper arm, sword forearm) into `art/turnrig/` (`parts.png`, `rig.json`, `parts_map.png`). Parts are labelled by position and colour; outlines follow their nearest coloured pixel. Each part is under-painted with its own nearest colours, only between its own left and right edge on each row.
+  - Rendering: everything is drawn on a low-res canvas (1 canvas px = 1 background px; the background is cropped, never stretched), so every pixel is one size. Turned parts are sampled from a scale2x x3 (8x) copy (RotSprite idea). The cape waves by sliding each pixel row.
+  - Moves are code in `heroPose()`: idle breathing, attack (wind-up, dash with afterimages, overhead slash, rising slash, hop back), skill (charge, flip leap, plunge with a light pillar and a shockwave), hurt, death, victory. Hit-stop, shake, white flash, 3x5 pixel damage numbers.
+  - Scenes and enemies: 6 `art/gem/bg_*` arenas, each with a matching animated `art/action/mobs` monster. The turn loop is under the "อัตโนมัติ" button.
+  - "แบบ: เฟรม PixelLab" plays the same hero with his drawn PixelLab clips (`art/poses/combo/chibi_pl.png`) to compare; `?mode=frame`, `?bg=0-5`.
+  - Checked: 740x360, 844x390, 1280x720, 1100x800; a 32 s auto battle in real time; no console errors.
+  - Known limits of THIS picture: the arms hang against the body and the legs are one block, so the legs do not step, and the hidden body behind the arm is colour fill. A rig-friendly picture (arms and legs apart) would look better.
 
