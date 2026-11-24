@@ -9,7 +9,7 @@ import glob, json, os, subprocess, sys
 import numpy as np
 from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-IN = os.path.join(ROOT, 'art/incoming/clash/anim'); C, FOOT = 68, 64; FLY = {'d_imp', 'g_angel', 'ax_saucer', 'an_thunder', 'an_phoenix', 'gd_seraph', 'gd_healer', 'gd_pegasus'}   # flyers keep their own up / down in the loop
+IN = os.path.join(ROOT, 'art/incoming/clash/anim'); C, FOOT = 68, 64; FLY = {'d_imp', 'g_angel', 'ax_saucer', 'an_thunder', 'an_phoenix', 'gd_seraph', 'gd_healer', 'gd_pegasus', 'mc_core'}   # flyers keep their own up / down in the loop
 meta = json.load(open(os.path.join(ROOT, 'art/clash/units.json')))
 def bbox(im):
     a = np.asarray(im)[..., 3] > 127; ys, xs = np.nonzero(a); return (xs.min(), ys.min(), xs.max(), ys.max()) if len(xs) else None
