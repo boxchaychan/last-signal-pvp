@@ -64,7 +64,7 @@ FRAMES = {'attack': 12, 'walk': 8}
 
 # COMMANDERS are bigger: own canvas (just over the 128 price step, so 12 frames stay cheap) and foot row. Lu Bu (owner 2026-11-24 "เอาลิโป้ลงเลย สวยละ เจนท่าให้ครบ"):
 # the 99 x 102 Pro Flash sprite from the owner's ChatGPT painting (art/incoming/clash/lubu/gpt/lubu_full_i2p_cut.png -> art/clash/units/cm_h.png)
-BIG = {'cm_h': {'C': 132, 'FOOT': 126}}
+BIG = {}   # was {'cm_h': {'C': 132, 'FOOT': 126}} for the 99 px Lu Bu; owner 2026-11-24 "ตัวใหญ่เกิน" -> the ~50 px Lu Bu on the normal 68 canvas
 SUBJ.update({'cm_h': 'a chibi ancient chinese warlord on a red warhorse, two long red pheasant feathers on a gold crown helmet, crescent-bladed halberd, black and gold armour, red cape'})
 MOVE['attack'].update({'cm_h': 'the warlord swings the crescent halberd down and forward to the right in one powerful sweeping strike as the horse lunges, cape and feathers flying, then lifts the halberd back up to the ready pose'})
 MOVE['walk'].update({'cm_h': 'the red warhorse trots forward to the right in place, legs stepping, the rider bobbing with the halberd held up, cape and feathers swaying, a looping trot cycle'})
