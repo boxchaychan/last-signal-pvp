@@ -65,6 +65,31 @@ FRAMES = {'attack': 12, 'walk': 8}
 # COMMANDERS are bigger: own canvas (just over the 128 price step, so 12 frames stay cheap) and foot row. Lu Bu (owner 2026-11-24 "เอาลิโป้ลงเลย สวยละ เจนท่าให้ครบ"):
 # the 99 x 102 Pro Flash sprite from the owner's ChatGPT painting (art/incoming/clash/lubu/gpt/lubu_full_i2p_cut.png -> art/clash/units/cm_h.png)
 BIG = {}
+# MACHINE tribe (owner 2026-11-24 picks from batch 12, recoloured steel + neon blue, "เค" = moves for the 10 machine units)
+SUBJ.update({'mc_tank': 'a bulky steel robot with a glowing neon blue energy barrier arm', 'mc_warrior': 'a steel robot sentinel with a gear shield and a long bolt lance',
+ 'mc_spider': 'a steel spider assassin robot with neon blue eyes', 'mc_sniper': 'a steel sniper robot with a long rail rifle', 'mc_flamer': 'a steel robot trooper with a flamethrower',
+ 'mc_plasma': 'a steel android holding a glowing neon blue plasma orb', 'mc_gravity': 'a steel engineer robot with neon blue gravity rings', 'mc_medic': 'a boxy steel medic robot with a green cross light',
+ 'mc_rider': 'a robot pilot riding a steel mech spider', 'mc_core': 'a floating steel AI core sphere with a neon blue eye and cables'})
+MOVE['attack'].update({'mc_tank': 'pushes the glowing energy barrier forward to the right in a heavy bash, sparks flying, then pulls back',
+ 'mc_warrior': 'thrusts the bolt lance forward to the right with electric sparks, then pulls back behind the gear shield',
+ 'mc_spider': 'leaps forward to the right and stabs with its front legs, then scuttles back',
+ 'mc_sniper': 'aims the long rail rifle to the right and fires a bright neon blue shot with recoil, then reloads',
+ 'mc_flamer': 'sprays a long stream of fire forward to the right from the flamethrower, then stops',
+ 'mc_plasma': 'raises the plasma orb and fires a neon blue plasma bolt forward to the right, then lowers it',
+ 'mc_gravity': 'spins the neon gravity rings and launches a pulsing gravity wave forward to the right',
+ 'mc_medic': 'raises its arm and fires a green repair beam forward, its cross light flashing',
+ 'mc_rider': 'the mech spider rears up and slams its front legs forward to the right while the pilot leans in, then settles',
+ 'mc_core': 'charges its neon blue eye and fires a laser beam forward to the right, cables waving'})
+MOVE['walk'].update({'mc_tank': 'stomping forward to the right in place with heavy robot steps, a looping walk cycle',
+ 'mc_warrior': 'marching forward to the right in place, lance upright, a looping walk cycle',
+ 'mc_spider': 'scuttling forward to the right in place on eight legs, a looping walk cycle',
+ 'mc_sniper': 'walking forward to the right in place holding the rifle, a looping walk cycle',
+ 'mc_flamer': 'walking forward to the right in place with the flamethrower ready, a looping walk cycle',
+ 'mc_plasma': 'walking forward to the right in place, plasma orb glowing, a looping walk cycle',
+ 'mc_gravity': 'walking forward to the right in place, gravity rings spinning, a looping walk cycle',
+ 'mc_medic': 'rolling and stepping forward to the right in place, a looping walk cycle',
+ 'mc_rider': 'the mech spider walking forward to the right in place on eight legs, the pilot riding, a looping walk cycle',
+ 'mc_core': 'floating in place, bobbing, cables swaying, eye glowing, a looping hover cycle'})
 # GOD tribe (owner 2026-11-24 picks from batch 11, 16-bit; "เจนมา" = moves for the 9 god units)
 SUBJ.update({'gd_tank': 'a heavy angel knight in white and gold armour with a great shield and a halo', 'gd_goddess': 'a war goddess in gold armour with a sword and a round shield',
  'gd_monk': 'a celestial monk with glowing blue fists and a golden sash', 'gd_lance': 'a griffin-helmed gold knight with a long lance', 'gd_seraph': 'a six-winged white seraph with twin glowing blades',
