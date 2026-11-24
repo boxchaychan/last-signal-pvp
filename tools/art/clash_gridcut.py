@@ -23,7 +23,15 @@ objs.sort(key=lambda s: (s[0].start + s[0].stop) / 2); rows = []
 for s in objs:
     if rows and abs((s[0].start + s[0].stop) / 2 - (rows[-1][0][0].start + rows[-1][0][0].stop) / 2) < 120: rows[-1].append(s)
     else: rows.append([s])
-objs = [s for r in rows for s in sorted(r, key=lambda s: s[1].start)]; print('sprites', len(objs)); assert len(objs) == N, len(objs)
+objs = [s for r in rows for s in sorted(r, key=lambda s: s[1].start)]; print('sprites', len(objs))
+if len(objs) != N:   # some sprites touch: fall back to the sheet's 4 x 3 cells (pieces assigned to the cell of their centre)
+    Hh, Ww = fig.shape; cw, ch = Ww / 4, Hh / 3; lab2, n2 = nd.label(fig); cellof = np.zeros(n2 + 1, int) - 1
+    for i, c0 in enumerate(nd.center_of_mass(fig, lab2, range(1, n2 + 1)), 1): cellof[i] = int(min(2, c0[0] // ch)) * 4 + int(min(3, c0[1] // cw))
+    objs = []; masks = []
+    for k in range(12):
+        m = (cellof[lab2] == k) & fig; ys, xs = np.nonzero(m); objs.append((slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))); masks.append(m)
+    fig_cells = masks; print('cut by 4 x 3 cells')
+else: fig_cells = None
 def cells(h, w, ox, oy): return np.floor((np.arange(h) - oy) / CY).astype(int) + 1, np.floor((np.arange(w) - ox) / CX).astype(int) + 1
 def spread(sub, ox, oy):
     h, w, _ = sub.shape; ys, xs = cells(h, w, ox, oy); W = xs.max() + 1; idx = (ys[:, None] * W + xs[None, :]).ravel(); t = 0
@@ -33,7 +41,7 @@ def spread(sub, ox, oy):
 os.makedirs(out, exist_ok=True); res = []
 for n_, s in enumerate(objs, 1):
     y0, y1, x0, x1 = max(0, s[0].start - 4), s[0].stop + 4, max(0, s[1].start - 4), s[1].stop + 4
-    sub = A[y0:y1, x0:x1]; f = fig[y0:y1, x0:x1]; h, w, _ = sub.shape
+    sub = A[y0:y1, x0:x1]; f = (fig_cells[n_ - 1] if fig_cells else fig)[y0:y1, x0:x1]; h, w, _ = sub.shape
     ox, oy = min(((ox, oy) for ox in np.arange(0, CX, CX / 8) for oy in np.arange(0, CY, CY / 8)), key=lambda o: spread(sub, *o))
     ys, xs = cells(h, w, ox, oy); H, W = ys.max() + 1, xs.max() + 1; o = np.zeros((H, W, 4), np.uint8)
     q = (sub // 12).astype(int); keyc = q[..., 0] * 4096 + q[..., 1] * 64 + q[..., 2]
