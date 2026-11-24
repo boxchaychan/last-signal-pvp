@@ -65,6 +65,28 @@ FRAMES = {'attack': 12, 'walk': 8}
 # COMMANDERS are bigger: own canvas (just over the 128 price step, so 12 frames stay cheap) and foot row. Lu Bu (owner 2026-11-24 "เอาลิโป้ลงเลย สวยละ เจนท่าให้ครบ"):
 # the 99 x 102 Pro Flash sprite from the owner's ChatGPT painting (art/incoming/clash/lubu/gpt/lubu_full_i2p_cut.png -> art/clash/units/cm_h.png)
 BIG = {}
+# DEMON tribe (owner 2026-11-24 picks from batch 13 + 3 specials from the batch 8 commanders at 40 px; "เจนเลย ปีศาจ")
+SUBJ.update({'dm_bone': 'a demon made of bones holding a big rib-cage shield', 'dm_hound': 'an armoured black hellhound with glowing red eyes', 'dm_knight': 'a black-armoured dark knight with a cursed red greatsword',
+ 'dm_ram': 'a ram-horned demon berserker with long red claws', 'dm_reaper': 'a hooded demon reaper with a chain and a hook', 'dm_trident': 'a red devil with a trident',
+ 'dm_queen': 'a demon queen with long sharp claws and a crown', 'dm_imp': 'a small red imp holding a fireball', 'dm_witch': 'a hell witch with a pointed hat and a flaming staff',
+ 'dm_blood': 'a hooded blood mage holding a red orb', 'dm_nightmare': 'a dark knight riding a black nightmare horse with a flaming mane',
+ 'dm_wingqueen': 'a winged demon queen with bat wings and a cursed flaming staff', 'dm_fallen': 'a fallen angel with black wings, a broken halo and a scythe', 'dm_lich': 'a lich with a skull staff and green soul fire'})
+MOVE['attack'].update({'dm_bone': 'bashes forward to the right with the rib-cage shield, bones rattling, then steps back',
+ 'dm_hound': 'lunges forward to the right and bites with flaming jaws, then lands back', 'dm_knight': 'swings the cursed greatsword in a heavy overhead slash forward to the right, red sparks flying, then recovers',
+ 'dm_ram': 'slashes forward to the right with both claws in a fast double swipe, then returns to stance', 'dm_reaper': 'throws the chain hook forward to the right and yanks it back',
+ 'dm_trident': 'thrusts the trident far forward to the right, then pulls it back', 'dm_queen': 'leaps forward to the right and rakes with her claws, then lands back',
+ 'dm_imp': 'throws the fireball forward to the right, the flame trailing, then grabs a new flame', 'dm_witch': 'swings the flaming staff and casts a fire bolt forward to the right',
+ 'dm_blood': 'raises the red orb and fires a blood bolt forward to the right', 'dm_nightmare': 'the nightmare horse rears with a flaming mane and the knight slashes forward to the right, then they settle',
+ 'dm_wingqueen': 'spreads her bat wings and casts a cursed fire blast from the staff forward to the right', 'dm_fallen': 'swings the scythe in a wide arc forward to the right, black feathers falling',
+ 'dm_lich': 'raises the skull staff and casts green soul fire forward to the right'})
+MOVE['walk'].update({'dm_bone': 'stomping forward to the right in place behind the rib shield, bones rattling, a looping walk cycle',
+ 'dm_hound': 'running forward to the right in place on four legs, a looping run cycle', 'dm_knight': 'marching forward to the right in place with the greatsword, a looping walk cycle',
+ 'dm_ram': 'stalking forward to the right in place, claws ready, a looping walk cycle', 'dm_reaper': 'gliding forward to the right in place, robe swaying, chain swinging, a looping walk cycle',
+ 'dm_trident': 'walking forward to the right in place, trident upright, tail swaying, a looping walk cycle', 'dm_queen': 'stalking forward to the right in place, claws ready, a looping walk cycle',
+ 'dm_imp': 'hopping forward to the right in place holding the fireball, a looping walk cycle', 'dm_witch': 'walking forward to the right in place, robe swaying, staff burning, a looping walk cycle',
+ 'dm_blood': 'walking forward to the right in place, orb glowing, a looping walk cycle', 'dm_nightmare': 'the nightmare horse galloping forward to the right in place, flaming mane, a looping run cycle',
+ 'dm_wingqueen': 'walking forward to the right in place, wings folded, staff burning, a looping walk cycle', 'dm_fallen': 'walking forward to the right in place, black wings slowly moving, scythe ready, a looping walk cycle',
+ 'dm_lich': 'gliding forward to the right in place, robe swaying, staff glowing green, a looping walk cycle'})
 # MACHINE tribe (owner 2026-11-24 picks from batch 12, recoloured steel + neon blue, "เค" = moves for the 10 machine units)
 SUBJ.update({'mc_tank': 'a bulky steel robot with a glowing neon blue energy barrier arm', 'mc_warrior': 'a steel robot sentinel with a gear shield and a long bolt lance',
  'mc_spider': 'a steel spider assassin robot with neon blue eyes', 'mc_sniper': 'a steel sniper robot with a long rail rifle', 'mc_flamer': 'a steel robot trooper with a flamethrower',
