@@ -2787,4 +2787,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - `divine_vfx.py` now also takes a playback fps and an edge fade.
   - ค้อนสะเทือนฟ้า plays it on the target (h 480, mythic 560) instead of the still shock picture.
   - The hammer-slam part (about frames 8-90) is unused, kept for a future Thor ultimate.
+- 2026-11-26 THIRD VIDEO EFFECT: the owner's Gemini clip (1280 x 720, a gold rune sand tornado that stays inside the frame; Gemini keeps the frame better than Meta). The raw `.mp4` stays local: `art/incoming/divine_game/video/gemini_anubis_sand.mp4`.
+  - Frames 6-204 step 6 at 14 fps -> `art/divine/vfx_anubis_sand.jpg` (34 frames). The anchor was set by hand to the base (.5, .86).
+  - ผนึกทราย plays it on the target (h 250, mythic 300).
+  - Gold light is weaker over the bright sky island than blue light is; if the owner wants more punch, add a soft dark underlay or use stronger colours.
 
