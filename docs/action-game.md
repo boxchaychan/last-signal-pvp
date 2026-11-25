@@ -2579,6 +2579,8 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - Checked: 740x360, 844x390, 1280x720, 1100x800; a 32 s auto battle in real time; no console errors.
   - Known limits of THIS picture: the arms hang against the body and the legs are one block, so the legs do not step, and the hidden body behind the arm is colour fill. A rig-friendly picture (arms and legs apart) would look better.
 
+- 2026-11-25 DETAILED SHOPHOUSE (owner: "ลอง 1 หลัง", "ไม่ต้องใช้ tripo", then after the comparison "ใช้แบบใหม่"). `URB.rowHD` in `nation/urban.js`: real recessed windows with frames and sills, balconies with steel railings, plants and laundry, shopfronts with signs, striped awnings, shutters or glass, AC units, pipes, roof tanks. About 4,200 triangles against 700 for the light row, so rows near the camera use it and far ones keep the light model (`lodTick`, up to 90 on PC, 36 on phones). Wall detail from the CC0 maps was made smoother at the same time (it looked rough up close). Other building types can get the same treatment the same way.
+
 ## NEXT CHAT NOTE (owner 2026-11-25, end of the clash / turnrig chat)
 - The owner wants to REDESIGN the side-game character in a new chat ("อยากเปลี่ยนตัวละครออกแบบใหม่"), right after asking where the side game is. Nothing is started yet.
 - First ask the owner which game this is for:
@@ -2588,4 +2590,3 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
 - Lessons from this chat that apply to a new hero:
   - Our own pixel bones (`turnrig.html`) need a picture with the arms and legs apart from the body.
   - PixelLab skeleton-v3 keeps the character on model, but small chibis (about 60 px) move little and the weapon smears. Test it on a big body (about 128 px).
-
