@@ -2781,4 +2781,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - `tools/art/divine_vfx.py <video> <name> <first> <last> [step] [height]` cuts a frame range into a black-background JPEG sheet + json (crop = union of bright pixels; anchor = the hot spot of the strongest frame). Here frames 156-198 step 2 -> `art/divine/vfx_zeus_storm.jpg` (22 frames at 12 fps).
   - In game, type-`anim` effects are drawn with additive light, so black is invisible, at alpha .72 so overlapping strikes do not burn to white. พายุซุส now plays the video strike on each struck monster, 4 ticks apart.
   - Owner: "ของเมต้าชอบทำเกินกรอบ". The video prompts now end with "keep the WHOLE effect inside the frame"; a lightning bolt from the sky may cross the top edge.
+- 2026-11-26 SECOND VIDEO EFFECT: the owner's Meta clip of Thor's hammer.
+  - The clip shows the hammer slamming with lightning, floating, flying off, then a sky bolt and a big rune shockwave ring that runs off the frame. The raw `.mp4` stays local: `art/incoming/divine_game/video/meta_thor_quake.mp4`.
+  - The strike-plus-ring part (frames 107-182, step 3, played at 11 fps) -> `art/divine/vfx_thor_quake.jpg` (26 frames), with the new `edgefade` .18 so the ring's cut edges fade out.
+  - `divine_vfx.py` now also takes a playback fps and an edge fade.
+  - ค้อนสะเทือนฟ้า plays it on the target (h 480, mythic 560) instead of the still shock picture.
+  - The hammer-slam part (about frames 8-90) is unused, kept for a future Thor ultimate.
 
