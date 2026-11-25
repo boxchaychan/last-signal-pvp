@@ -6,7 +6,7 @@ All poses of all sets use ONE scale (Zeus's idle body 322 px -> 200 px), so the 
 import json, os
 from PIL import Image
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..'); D = os.path.join(R, 'art/divine')
-SETS = {'zeus': ('vfx_zeus_spirit', 'vfx_lightning_slash', 240), 'thor': ('vfx_thor_spirit', 'vfx_hammer_shock', 220)}
+SETS = {'zeus': ('vfx_zeus_spirit', 'vfx_lightning_slash', 240), 'thor': ('vfx_thor_spirit', 'vfx_hammer_shock', 220), 'anubis': ('vfx_anubis_spirit', 'vfx_sand_beam', 240)}
 F = 200 / 322; out = {}
 for name, (spirit, fx, fxw) in SETS.items():
     src = os.path.join(D, name); o = {}

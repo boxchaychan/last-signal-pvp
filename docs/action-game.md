@@ -2814,4 +2814,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Rings, shadows, stars, the attack origin and the spirit are smaller to match.
   - Video effects are about 30 % smaller, so a skill no longer covers the whole board: Thor 340 / 400, fire rain 170 / 200, sand 190 / 220, storm 125 / 150, summon 120 / 150, merge 130.
   - The god spirit behind a mythic still rises above its slot on purpose; shrink it too if the owner asks.
+- 2026-11-26 ANUBIS SET IN (Codex branch `codex/divine-anubis`, brief item B; brought in by hand, the PR is not merged).
+  - Raw files: `art/incoming/divine_game/raw/anubis_v1/` + the report. `divine_sets.py` makes `anubis_*`.
+  - `PSET.egypt = 'anubis'`. Anubis is drawn taller than Zeus (jackal ears), so `drawSet` now scales each god by its OWN idle height and he still fits the slot.
+  - A sand-beam picture flies along each Egypt hit. The spirit stands behind a mythic Anubis. The hero card uses `anubis_idle`.
+  - Still waiting on Codex: C Monkey King, D recruit (E monsters / F arena can go to Gemini instead).
 
