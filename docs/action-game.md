@@ -2777,4 +2777,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - the hammer shockwave picture lands under every Norse hit, and a big one comes with ค้อนสะเทือนฟ้า;
     - the hero card and the lobby use the new pictures.
   - Still waiting on Codex: B Anubis, C Monkey King, D recruit, E monsters, F arena.
+- 2026-11-26 FIRST VIDEO EFFECT: the owner's Meta AI clip of lightning strikes plus a plasma burst (720 x 1280, 10 s; the raw `.mp4` stays local, `*.mp4` is gitignored: `art/incoming/divine_game/video/meta_zeus_storm.mp4`).
+  - `tools/art/divine_vfx.py <video> <name> <first> <last> [step] [height]` cuts a frame range into a black-background JPEG sheet + json (crop = union of bright pixels; anchor = the hot spot of the strongest frame). Here frames 156-198 step 2 -> `art/divine/vfx_zeus_storm.jpg` (22 frames at 12 fps).
+  - In game, type-`anim` effects are drawn with additive light, so black is invisible, at alpha .72 so overlapping strikes do not burn to white. พายุซุส now plays the video strike on each struck monster, 4 ticks apart.
+  - Owner: "ของเมต้าชอบทำเกินกรอบ". The video prompts now end with "keep the WHOLE effect inside the frame"; a lightning bolt from the sky may cross the top edge.
 
