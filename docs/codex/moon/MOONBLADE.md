@@ -38,3 +38,6 @@ Each `<name>.png`: landscape 1536 x 1024, exactly 16 frames, 4 columns x 4 rows,
 16. `death`: staggers, drops to the knees, falls and stays down (no return to standing).
 
 Open each sheet beside `base_side.png` and the dragon's `idle.png`. Redo it if the character changes, the sword changes hand or shape, the size differs, a frame is cut off or touches another cell, or the motion jumps. Say in `REPORT_TH.txt` what still looks off.
+
+## Redo 2026-11-25 (owner "พวกท่าที่ไม่เต็มอะ ทำให้เต็ม")
+In the first set the sword, hair or body crossed the cell border and got cut off in: `jump` (frames 6-9), `attack2` (frames 10-11), `skill_leap` (frames 6-10), `skill_cast` (frames 5-9). Redraw ONLY these four sheets with the same moves and the same character size, but on a SQUARE sheet 1536 x 1536 (4 x 4 cells of 384 x 384) so there is room above the head: the raised sword, the jump and the leap must stay fully inside their own cell with at least 24 px of empty blue on every side in EVERY frame. Ground line at the same height near the bottom of every cell. Overwrite the four files on the same branch `codex/moon-blade` (fetch it first), commit and push each one, update `REPORT_TH.txt`. Do not merge.
