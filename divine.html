@@ -21,12 +21,11 @@ button { font-family: Kanit, system-ui, sans-serif; font-weight: 800; color: #ff
 button:active { transform: translateY(calc(var(--u) * 3)); box-shadow: inset 0 calc(var(--u) * 5) 0 #ffffff40, inset 0 calc(var(--u) * -4) 0 #00000040, 0 calc(var(--u) * 2) 0 #0000006a; }
 button[disabled] { filter: grayscale(.7) brightness(.75); }
 button small { display: block; font-size: .62em; font-weight: 600; }
-#big { left: 3.5%; right: 3.5%; top: 76.2%; height: 10.4%; display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 3%; }
+#big { left: 3.5%; right: 3.5%; top: 76.2%; height: 10.4%; display: grid; grid-template-columns: 1fr 1.6fr; gap: 3%; }
 #small { left: 5%; right: 5%; top: 87.9%; height: 6.4%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3%; }
 #big button { font-size: calc(var(--u) * 27); }
 #summon { font-size: calc(var(--u) * 36) !important; background: linear-gradient(#ffe25a, #f2b51c 55%, #d98f0c); color: #fff; }
 #fuse { background: linear-gradient(#8b6cf0, #5a3ac4); }
-#gamble { background: linear-gradient(#5fd2ff, #2b8fd8); }
 #small button { font-size: calc(var(--u) * 21); }
 #boss { background: linear-gradient(#ff6d61, #c9302c); }
 #chrono { background: linear-gradient(#5e8ff0, #2f52b0); }
@@ -38,7 +37,6 @@ button small { display: block; font-size: .62em; font-weight: 600; }
 #sel .nm small { display: block; font-weight: 600; font-size: .72em; color: #ffd98a; }
 #sel button { height: 78%; padding: 0 3.4%; font-size: calc(var(--u) * 18); background: linear-gradient(#ffcf4a, #e0951a); }
 #sel #sell { background: linear-gradient(#9aa0ab, #5f6571); }
-#sel #awake { background: linear-gradient(#fff2a0, #f0b020); color: #5a2a00; text-shadow: none; }
 #toast { position: absolute; left: 50%; top: 27%; transform: translateX(-50%); padding: .2em .9em; font-weight: 800; font-size: calc(var(--u) * 22); color: #fff4c2; background: #2a1810ee; border: calc(var(--u) * 4) solid var(--ink); border-radius: 999px; white-space: nowrap; opacity: 0; transition: opacity .18s; pointer-events: none; }
 #toast.on { opacity: 1; }
 #over { position: absolute; inset: 0; display: none; place-items: center; background: #07060bcc; }
@@ -52,9 +50,9 @@ button small { display: block; font-size: .62em; font-weight: 600; }
 <body>
 <div id="app">
   <canvas id="c"></canvas>
-  <div id="sel"><div class="nm" id="selName">-</div><button id="merge">รวม 3</button><button id="awake">ปลุกพลัง</button><button id="sell">ขาย</button></div>
+  <div id="sel"><div class="nm" id="selName">-</div><button id="merge">รวม 3</button><button id="sell">ขาย</button></div>
   <button id="speed">x1</button>
-  <div id="big" class="ui"><button id="fuse">หลอมเทพ<small>เอปิคขึ้นไป 2 ตัว</small></button><button id="summon">อัญเชิญ<small id="sumCost">20 ทอง</small></button><button id="gamble">เสี่ยงทาย<small>1 เพชร</small></button></div>
+  <div id="big" class="ui"><button id="fuse">หลอมเทพ<small>เอปิคขึ้นไป 2 ตัว</small></button><button id="summon">อัญเชิญ<small id="sumCost">20 ทอง</small></button></div>
   <div id="small" class="ui"><button id="boss">ท้าบอส</button><button id="chrono">หยุดกาล</button><button id="upgrade">เสริมพลัง<small id="upCost">45 ทอง</small></button></div>
   <div id="toast"></div>
   <div id="over"><div class="card"><h2 id="rank">วิหารแตก!</h2><p id="sum"></p><button id="again">เล่นใหม่</button></div></div>
@@ -101,7 +99,7 @@ function makeRivals() { const n = [...RIVAL_NAMES].sort(() => Math.random() - .5
 /* no server yet: each rival has a hidden last wave; their monster count climbs toward 100 as it gets near */
 function stepRivals() { for (const r of G.rivals) { if (r.out) continue; const f = clamp((G.wave + (20 - G.sec) / 20 - r.end * .45) / (r.end * .55), 0, 1.05), target = Math.round(100 * f * f + 6 * Math.sin(tt * .7 + r.end)); r.count += clamp(target - r.count, -2, 2); r.count = clamp(r.count, 0, 100); if (G.wave >= r.end && r.count >= 96) { r.out = 5 - G.rivals.filter(q => q.out).length; r.count = 100; toast(r.name + ' ตกรอบ! (อันดับ ' + r.out + ')'); if (G.rivals.every(q => q.out)) toast('เหลือคุณคนเดียว! อันดับ 1'); } } }
 function fresh() {
-  G = { gold: 180, gem: 3, core: 0, atk: 1, upCost: 45, sumCost: 20, wave: 1, sec: 20, grid: Array(COLS * ROWS).fill(null), mobs: [], fx: [], num: [], sel: -1, speed: 1, freeze: 0, chronoCd: 0, spawn: 0, tick: 0, kills: 0, over: false, boss: null, rivals: makeRivals() };
+  G = { gold: 180, atk: 1, upCost: 45, sumCost: 20, wave: 1, sec: 20, grid: Array(COLS * ROWS).fill(null), mobs: [], fx: [], num: [], sel: -1, speed: 1, freeze: 0, chronoCd: 0, spawn: 0, tick: 0, kills: 0, over: false, boss: null, rivals: makeRivals() };
   $('over').classList.remove('on'); sync();
 }
 function toast(s) { const e = $('toast'); e.textContent = s; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 1600); }
@@ -116,12 +114,6 @@ function summon() {
   const r = Math.random() + G.atk * .004, t = r > .97 ? 'LEGEND' : r > .84 ? 'EPIC' : r > .55 ? 'RARE' : 'COMMON';
   if (place(makeUnit(t)) < 0) return; G.gold -= G.sumCost; G.sumCost = Math.min(60, G.sumCost + 1); if (t !== 'COMMON' && t !== 'RARE') toast('ได้ระดับ' + TD[t].th + '!'); sync();
 }
-function gamble() {
-  if (G.over) return; if (G.gem < 1) return toast('เพชรไม่พอ'); if (!G.grid.includes(null)) return toast('กระดานเต็ม 21 ช่องแล้ว');
-  G.gem--; const r = Math.random();
-  if (r < .5) { toast('พลาด! ลองใหม่'); sync(); return; }
-  const t = r > .97 ? 'MYTHIC' : r > .85 ? 'LEGEND' : 'EPIC'; place(makeUnit(t)); toast('เสี่ยงทายได้ระดับ' + TD[t].th + '!'); sync();
-}
 function fuse() {
   if (G.over) return; const idx = []; G.grid.forEach((u, i) => { if (u && u.kind === 'hero' && (u.tier === 'EPIC' || u.tier === 'LEGEND')) idx.push(i); });
   if (idx.length < 2) return toast('ต้องมีเอปิคขึ้นไป 2 ตัว');
@@ -135,7 +127,6 @@ function merge() {
   const c = cell(ids[0]); burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); G.sel = ids[0]; toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
 }
 function sell() { const u = G.grid[G.sel]; if (!u) return; G.gold += [10, 22, 48, 90, 150][TIERS.indexOf(u.tier)]; G.grid[G.sel] = null; G.sel = -1; sync(); }
-function awaken() { const u = G.grid[G.sel]; if (!u || u.tier !== 'MYTHIC' || u.awake) return; if (G.core < 1) return toast('ต้องใช้แก่นเทพ 1 (ได้จากบอส)'); G.core--; u.awake = true; const c = cell(G.sel); ring(c.x, c.y - 40, '#fff2a0', 10, 130, .6); T.flash = .2; toast('ปลุกพลัง ' + unitName(u) + '!'); sync(); }
 function upgrade() { if (G.gold < G.upCost) return toast('ทองไม่พอ'); G.gold -= G.upCost; G.atk++; G.upCost = Math.round(G.upCost * 1.45 + 5); toast('พลังโจมตี Lv ' + G.atk); sync(); }
 function spawnBoss() { if (G.boss) return toast('บอสอยู่ในสนามแล้ว'); const hp = Math.round(mobHp(G.wave) * 28 + 1200); const m = { k: 'boss_ghoul', h: 150, d: 0, hp, max: hp, sp: .6, boss: true, face: -1, step: 0, hit: 0 }; G.mobs.push(m); G.boss = m; toast('ยักษ์มลทินบุก!'); }
 function chrono() { if (G.chronoCd > 0) return toast('หยุดกาลพร้อมในอีก ' + Math.ceil(G.chronoCd / 60) + ' วิ'); G.freeze = 300; G.chronoCd = 1800; T.flash = .15; toast('หยุดกาล 5 วินาที!'); }
@@ -186,7 +177,7 @@ function step() {
   for (const m of G.mobs) { if (G.freeze <= 0) { m.d += m.sp; m.step += .18 * m.sp; } const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; if (m.hit > 0) m.hit--; }
   const s = syn();
   G.grid.forEach((u, i) => { if (!u) return; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1); });
-  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 30, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.core++; G.gem += 2; G.gold += 80; T.flash = .2; toast('ปราบยักษ์มลทิน! +แก่นเทพ +2 เพชร'); } else { G.gold += 4; if (Math.random() < .012) { G.gem++; toast('ได้เพชร +1'); } } sync(); }
+  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 30, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; T.flash = .2; const free = G.grid.includes(null) ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else G.gold += 4; sync(); }
   for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 30, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
   G.fx = G.fx.filter(f => f.life > 0); for (const n of G.num) n.life--; G.num = G.num.filter(n => n.life > 0);
   if (T.flash > 0) T.flash -= 1 / 60; if (T.shake > 0) T.shake *= .86;
@@ -326,10 +317,8 @@ function chips() {
   for (const p of PK) { const on = s[p] >= 2; rr(g, x - 4, y - 24, 112, 48, 14); g.fillStyle = on ? '#4a2f20' : '#2b2420'; g.fill(); g.lineWidth = 5; g.strokeStyle = '#24160f'; g.stroke(); spr('hero_' + p, x + 20, y + 22, 44, false, on ? 1 : .55); txt(PAN[p].th, x + 66, y - 6, 17, on ? PAN[p].col : '#9b9188'); txt(s[p] + '/2', x + 66, y + 13, 16, on ? '#fff' : '#9b9188'); x += 128; }
   /* money row */
   const ry = 922; const pill = (x, w, icon, v) => { rr(g, x, ry - 20, w, 40, 14); g.fillStyle = '#2b1b14'; g.fill(); g.lineWidth = 5; g.stroke(); icon(x + 22, ry); txt(String(v), x + w / 2 + 14, ry, 22, '#fff'); };
-  pill(40, 120, (x, y) => { g.fillStyle = '#ffd23f'; rr(g, x - 12, y - 10, 24, 20, 5); g.fill(); g.lineWidth = 3; g.stroke(); g.fillStyle = '#fff3a0'; g.fillRect(x - 6, y - 6, 8, 4); }, G.gold);
-  pill(172, 96, (x, y) => { g.fillStyle = '#5fd2ff'; g.beginPath(); g.moveTo(x, y - 13); g.lineTo(x + 11, y - 2); g.lineTo(x, y + 13); g.lineTo(x - 11, y - 2); g.closePath(); g.fill(); g.lineWidth = 3; g.stroke(); }, G.gem);
-  pill(280, 96, (x, y) => { g.fillStyle = '#ff7ad1'; g.beginPath(); g.arc(x, y, 10, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); }, G.core);
-  pill(388, 120, (x, y) => { g.fillStyle = '#e8d6c0'; g.beginPath(); g.arc(x, y - 4, 7, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(x, y + 9, 11, 6, 0, Math.PI, 0); g.fill(); g.stroke(); }, G.grid.filter(Boolean).length + '/21');
+  pill(150, 130, (x, y) => { g.fillStyle = '#ffd23f'; rr(g, x - 12, y - 10, 24, 20, 5); g.fill(); g.lineWidth = 3; g.stroke(); g.fillStyle = '#fff3a0'; g.fillRect(x - 6, y - 6, 8, 4); }, G.gold);
+  pill(306, 130, (x, y) => { g.fillStyle = '#e8d6c0'; g.beginPath(); g.arc(x, y - 4, 7, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(x, y + 9, 11, 6, 0, Math.PI, 0); g.fill(); g.stroke(); }, G.grid.filter(Boolean).length + '/21');
 }
 function draw() {
   g.setTransform(SC, 0, 0, SC, 0, 0); g.clearRect(0, 0, W, H);
@@ -348,7 +337,7 @@ function draw() {
 function sync() {
   $('sumCost').textContent = G.sumCost + ' ทอง'; $('upCost').textContent = G.upCost + ' ทอง'; $('speed').textContent = 'x' + G.speed;
   const u = G.grid[G.sel]; $('sel').classList.toggle('on', !!u);
-  if (u) { const n = G.grid.filter(v => same(v, u)).length; $('selName').innerHTML = unitName(u) + '<small>' + TD[u.tier].th + (u.kind === 'hero' ? ' · ' + PAN[u.p].th : '') + (u.awake ? ' · ปลุกแล้ว' : '') + ' · แตะช่องอื่นเพื่อย้าย</small>'; $('merge').disabled = u.tier === 'MYTHIC' || n < 3; $('merge').textContent = 'รวม 3 (' + Math.min(n, 3) + ')'; $('awake').style.display = u.tier === 'MYTHIC' && !u.awake ? '' : 'none'; }
+  if (u) { const n = G.grid.filter(v => same(v, u)).length; $('selName').innerHTML = unitName(u) + '<small>' + TD[u.tier].th + (u.kind === 'hero' ? ' · ' + PAN[u.p].th : '') + (u.awake ? ' · ปลุกแล้ว' : '') + ' · แตะช่องอื่นเพื่อย้าย</small>'; $('merge').disabled = u.tier === 'MYTHIC' || n < 3; $('merge').textContent = 'รวม 3 (' + Math.min(n, 3) + ')'; }
 }
 cv.addEventListener('pointerdown', e => {
   if (G.over) return; const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
@@ -358,8 +347,8 @@ cv.addEventListener('pointerdown', e => {
   else G.sel = G.sel === i || !G.grid[i] ? -1 : i;
   sync();
 });
-$('summon').onclick = summon; $('gamble').onclick = gamble; $('fuse').onclick = fuse; $('boss').onclick = spawnBoss; $('chrono').onclick = chrono; $('upgrade').onclick = upgrade;
-$('merge').onclick = merge; $('sell').onclick = sell; $('awake').onclick = awaken; $('again').onclick = fresh; $('speed').onclick = () => { G.speed = G.speed === 1 ? 2 : 1; sync(); };
+$('summon').onclick = summon; $('fuse').onclick = fuse; $('boss').onclick = spawnBoss; $('chrono').onclick = chrono; $('upgrade').onclick = upgrade;
+$('merge').onclick = merge; $('sell').onclick = sell; $('again').onclick = fresh; $('speed').onclick = () => { G.speed = G.speed === 1 ? 2 : 1; sync(); };
 let last = 0;
 function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; tt += dt; for (let k = 0; k < G.speed; k++) step(); draw(); requestAnimationFrame(frame); }
 (async () => {
@@ -367,7 +356,7 @@ function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; 
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   BG = paintBG(); fresh();
-  window.DIVINE = { state: () => G, summon, gamble, fuse, merge, spawnBoss, chrono, upgrade, step, draw, place, makeUnit, ready: true };
+  window.DIVINE = { state: () => G, summon, fuse, merge, spawnBoss, chrono, upgrade, step, draw, place, makeUnit, ready: true };
   requestAnimationFrame(frame);
 })().catch(e => { console.error(e); toast('โหลดไม่สำเร็จ ลองรีเฟรช'); });
 </script>
