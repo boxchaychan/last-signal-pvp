@@ -2738,4 +2738,7 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - a sand dust ring (200-240, unused);
   - two fireball barrages, fireballs falling diagonally then dome blasts, smoke and ground fire (about 250-470 and 504-704).
   - The second barrage, frames 504-704 step 5 at 16 fps with edge fade .12 -> `art/divine/vfx_wukong_firerain.jpg` (41 frames). ฝนเพลิงวานร plays it once on the target (h 220, mythic 260); the code fireballs still do the damage.
+- 2026-11-26 FIFTH VIDEO EFFECT: the owner's Meta summon clip (a neon magic circle plus a gold light pillar with stars). The raw `.mp4` stays local: `art/incoming/divine_game/video/meta_summon.mp4`.
+  - Frames 12-150 step 4 at 20 fps, edge fade .1 -> `art/divine/vfx_summon.jpg` (35 frames). The anchor is the circle centre (.5, .819).
+  - It plays on every new unit (h 160, 210 for legend and up). Effects marked `back: 1` are drawn BEFORE the units (`drawFx(true)`), so the light sits behind the new hero and does not bleach them.
 
