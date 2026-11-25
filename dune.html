@@ -100,7 +100,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + 
 const cv = $('c'), ctx = cv.getContext('2d', { alpha: false }); if (TOUCH) document.body.classList.add('t');
 const OTTER = new URLSearchParams(location.search).get('hero') === 'otter', SKILL_TEST = OTTER && new URLSearchParams(location.search).get('test') === '1', WFX2 = OTTER && new URLSearchParams(location.search).get('wfx') !== '1', WFX3 = OTTER && !['1', '2'].includes(new URLSearchParams(location.search).get('wfx'));   /* owner chose the ChatGPT water set; &wfx=2 = the glowing Meta set, &wfx=1 = the old dark blue */   /* owner: all the water glows; &wfx=1 = the old dark blue water */   /* &test=1: every skill open, MP always full, nothing is saved */
 /* the otter chi fist, by link until the owner has played it; it has its own save */
-const VIEW_H = TOUCH ? 600 : 700, MAPW = 7860, GROUND = 1200, GRAV = 1950, KEY = OTTER ? 'dune_save_otter' : 'dune_save1', RUN_SPEED = 215, CHAR = 2 / 3, HERO_SC = .5 * CHAR; /* owner: characters one third smaller against the scenery */
+const WIDE = new URLSearchParams(location.search).get('wide') === '1', VIEW_H = (TOUCH ? 600 : 700) * (WIDE ? 1.3 : 1), MAPW = WIDE ? 1200 + 4440 * 2.2 : 7860,   /* ?wide=1 (owner 2026-11-25 "ตัวเล็ก แมพใหญ่ กว้าง"): camera sees 30 % more, the field is 2.2x instead of 1.5x, more monsters */ GROUND = 1200, GRAV = 1950, KEY = OTTER ? 'dune_save_otter' : 'dune_save1', RUN_SPEED = 215, CHAR = 2 / 3, HERO_SC = .5 * CHAR; /* owner: characters one third smaller against the scenery */
 const CLASSES = { spear: { n: 'นักรบหอก', hero: 'กิ้งก่าทราย' } }; /* one entry per job: the owner will bring more characters */
 let SW = 1, SH = 1, K = 1, VW = 960;
 let lastW = 0, lastH = 0;
@@ -134,9 +134,9 @@ for (const k in MT) { const T = MT[k], c = T.boss ? .8 : CHAR; T.sc *= c; T.r *=
 const SPAWN = [ ['scorpion', 1250, 1390, GROUND], ['scorpion', 1440, 1760, GROUND], ['scorpion', 1710, 2020, GROUND], ['scorpion', 1420, 1760, 1076], ['scorpion', 1440, 1760, 1076], ['scorpion', 1850, 2240, 952], ['wolf', 2040, 2380, GROUND], ['wolf', 2400, 2680, GROUND], ['wolf', 2420, 2850, 1076], ['wolf', 1490, 1770, 828], ['wolf', 2520, 2880, 824], ['wolf', 2700, 2950, GROUND],
   ['mummy', 2980, 3330, 952], ['mummy', 2970, 3280, GROUND], ['mummy', 3280, 3560, GROUND], ['mummy', 3450, 3840, 1076], ['mummy', 3040, 3360, 714], ['mummy', 3470, 3760, 806], ['cactus', 3600, 3880, GROUND], ['cactus', 3890, 4230, GROUND], ['cactus', 3800, 4100, 936], ['cactus', 4080, 4380, GROUND] ];
 /* owner: small characters on a big wide map: everything east of the camp is stretched, then filled with more scenery and monsters */
-const MX = 1.5, WF = x => x <= 1200 ? x : 1200 + (x - 1200) * MX, BARRIER = WF(4440), ARENA = [WF(4560), WF(5360)], BOSS_X = WF(5180), PORTAL_X = WF(5480);
+const MX = WIDE ? 2.2 : 1.5, WF = x => x <= 1200 ? x : 1200 + (x - 1200) * MX, BARRIER = WF(4440), ARENA = [WF(4560), WF(5360)], BOSS_X = WF(5180), PORTAL_X = WF(5480);
 for (const p of PLATS) { const r = WF(p.x + p.w); p.x = WF(p.x); p.w = r - p.x; } for (const l of LADDERS) l.x = WF(l.x); for (const b of BACK) b[1] = WF(b[1]); for (const b of FRONT) b[1] = WF(b[1]); for (const g of GLOWS) g[0] = WF(g[0]); for (const d of SPAWN) { d[1] = WF(d[1]); d[2] = WF(d[2]); }
-SPAWN.push(...SPAWN.filter((d, i) => i % 2 === 0).map(d => [...d]));
+SPAWN.push(...SPAWN.filter((d, i) => WIDE || i % 2 === 0).map(d => [...d])); if (WIDE) SPAWN.push(...SPAWN.filter(d => d[3] === GROUND).map(d => [d[0], d[1] + 60, d[2] + 60, d[3]]));
 { let q = 91; const rn = () => (q = (q * 16807) % 2147483647) / 2147483647, K2 = [['palm1', 320], ['palm3', 300], ['palm2', 300], ['column', 240], ['columnb', 170], ['obelisk', 280], ['arch', 300], ['statue', 210], ['palm1', 280], ['blocks', 70], ['cactus', 86], ['shrub', 66]], add = []; for (let x = 1320; x < MAPW - 120; x += 150 + rn() * 230) { const k = K2[rn() * K2.length | 0]; add.push([k[0], Math.round(x), GROUND + 6, Math.round(k[1] * (.86 + rn() * .3)), rn() < .5 ? 1 : 0]); } BACK.unshift(...add); for (let x = 1260; x < MAPW - 80; x += 120 + rn() * 210) FRONT.push([['tuft', 'shrub', 'tuft', 'blocks'][rn() * 4 | 0], Math.round(x), GROUND + 15, Math.round(30 + rn() * 18)]); }
 const QUESTS = [ { k: 'scorpion', n: 8, t: 'ปราบแมงป่องทราย', r: { xp: 45, gold: 45 } }, { k: 'wolf', n: 10, t: 'ไล่ฝูงหมาป่าเนินทราย', r: { xp: 95, gold: 75 } }, { k: 'mummy', n: 10, t: 'สงบมัมมี่ในสุสาน', r: { xp: 190, gold: 120 } }, { k: 'cactus', n: 8, t: 'ฝ่าดงกระบองเพชรเดิน', r: { xp: 300, gold: 160 } }, { k: 'golem', n: 1, t: 'โค่นโกเลมผู้เฝ้าสุสาน', r: { xp: 600, gold: 400 } } ];
 const DRAGON_SKILLS = [ /* owner: spear and fire, nothing dragon-shaped: the hero does not know what they are yet */
@@ -431,7 +431,7 @@ function stepWorld(dt) {
   if (G.chainT > 0) { G.chainT -= dt; if (G.chainT <= 0) G.chain = 0; } G.chainPop = Math.max(0, (G.chainPop || 0) - dt);
   G.shake = Math.max(0, G.shake - dt * 42); G.flash = Math.max(0, G.flash - dt * 2.4);
   const npc = NPCS.find(n => Math.abs(n.x - P.x) < 82 && P.y === GROUND); G.near = npc || null; if (EDGE.talk) { EDGE.talk = 0; if (npc) openNPC(npc); }
-  const tx = clamp(P.x + P.dir * 54 - VW / 2, 0, Math.max(0, MAPW - VW)), ty = clamp(P.y - VIEW_H * .7, 120, GROUND + (TOUCH ? 150 : 96) - VIEW_H); G.camX = lerp(G.camX, tx, 1 - Math.exp(-dt * 7)); G.camY = lerp(G.camY, ty, 1 - Math.exp(-dt * 5));
+  const tx = clamp(P.x + P.dir * 54 - VW / 2, 0, Math.max(0, MAPW - VW)), ty = clamp(P.y - VIEW_H * .7, 120, GROUND + (TOUCH ? 150 : 96) * (WIDE ? 1.7 : 1) - VIEW_H); G.camX = lerp(G.camX, tx, 1 - Math.exp(-dt * 7)); G.camY = lerp(G.camY, ty, 1 - Math.exp(-dt * 5));
   const Q = QUESTS[G.quest];
 }
 function surfaceAt(x, y0, y1) { for (const p of PLATS) if (x > p.x && x < p.x + p.w && p.y >= y0 - 1 && p.y <= y1) return p.y; return y1 >= GROUND ? GROUND : null; }
