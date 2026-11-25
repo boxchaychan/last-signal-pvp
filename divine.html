@@ -135,7 +135,7 @@ button small { display: block; font-size: .62em; font-weight: 600; }
 const $ = id => document.getElementById(id), cv = $('c'), g = cv.getContext('2d'), W = 585, H = 1266, SC = 2;
 cv.width = W * SC; cv.height = H * SC;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
-const COLS = 7, ROWS = 3, CW = 50, CH = 48, BX = Math.round((W - COLS * CW) / 2), BY = 420;   /* owner "ช่องยังยาว" then "ช่องกว้างไป": small square slots, the hero fills it and stands up out of it */   /* owner "ทำช่องขนาดตัวก่อน", then "ยังไม่เล็ก": small slots, one character each */
+const COLS = 7, ROWS = 3, CW = 68, CH = 66, BX = Math.round((W - COLS * CW) / 2), BY = 401;   /* owner: "ช่องยังยาว", "ช่องกว้างไป" (the hero must fill a square slot), then "กระจอกเกิน": the board fills the screen width like the reference genre, everything scaled up together */   /* owner "ทำช่องขนาดตัวก่อน", then "ยังไม่เล็ก": small slots, one character each */
 const cell = i => ({ x: BX + (i % COLS) * CW + CW / 2, y: BY + Math.floor(i / COLS) * CH + CH * .88 });   /* feet point */
 /* monsters walk round the board on the centre line of the dirt ring */
 const PL = BX - 31, PR = BX + COLS * CW + 31, PT = BY - 31, PB = BY + ROWS * CH + 31, LOOP = [[PL, PT], [PR, PT], [PR, PB], [PL, PB], [PL, PT]];
@@ -157,7 +157,7 @@ const PAN = {
   asia: { th: 'เอเชีย', hero: ['ผู้รับพรเห้งเจีย', 'วานรเพลิง', 'ร่างทรงเห้งเจีย', 'มหาเทพวานร'], col: '#ff9a4a', syn: 'ตีเร็ว +15%' }
 };
 const PK = Object.keys(PAN);
-const MOBS = [{ k: 'mob_robot_a', h: 60, sp: 1.05, face: 1 }, { k: 'mob_robot_b', h: 62, sp: 1.0, face: 1 }, { k: 'mob_robot_c', h: 47, sp: 1.35, face: 1 }, { k: 'mob_ghoul', h: 66, sp: .9, face: -1, hpk: 1.4 }];
+const MOBS = [{ k: 'mob_robot_a', h: 80, sp: 1.05, face: 1 }, { k: 'mob_robot_b', h: 83, sp: 1.0, face: 1 }, { k: 'mob_robot_c', h: 63, sp: 1.35, face: 1 }, { k: 'mob_ghoul', h: 88, sp: .9, face: -1, hpk: 1.4 }];
 const IMG = {};
 let ZEUS = null;   /* the Greek champion's own poses + effects (Codex, owner-approved): art/divine/zeus_*.png, anchors in zeus.json */
 const FIT = { greek: 1, norse: 1.1, egypt: 1.13, asia: 1.03, soldier: .97 };   /* same HEAD size for everyone: helmets and jackal ears add height */
@@ -253,7 +253,7 @@ function merge() {
 }
 function sell() { const u = G.grid[G.sel]; if (!u) return; G.gold += [10, 22, 48, 90, 150][TIERS.indexOf(u.tier)]; G.grid[G.sel] = null; G.sel = -1; sync(); }
 function upgrade() { if (G.gold < G.upCost) return toast('ทองไม่พอ'); G.gold -= G.upCost; G.atk++; G.upCost = Math.round(G.upCost * 1.45 + 5); toast('พลังโจมตี Lv ' + G.atk); sync(); }
-function spawnBoss() { if (G.boss) return toast('บอสอยู่ในสนามแล้ว'); const hp = Math.round(mobHp(G.wave) * 28 + 1200); const m = { k: 'boss_ghoul', h: 120, d: 0, hp, max: hp, sp: .6, boss: true, face: -1, step: 0, hit: 0 }; G.mobs.push(m); G.boss = m; sfx('boss'); banner('ยักษ์มลทินบุก!', '#ff6a5a'); }
+function spawnBoss() { if (G.boss) return toast('บอสอยู่ในสนามแล้ว'); const hp = Math.round(mobHp(G.wave) * 28 + 1200); const m = { k: 'boss_ghoul', h: 160, d: 0, hp, max: hp, sp: .6, boss: true, face: -1, step: 0, hit: 0 }; G.mobs.push(m); G.boss = m; sfx('boss'); banner('ยักษ์มลทินบุก!', '#ff6a5a'); }
 function chrono() { if (G.chronoCd > 0) return toast('หยุดกาลพร้อมในอีก ' + Math.ceil(G.chronoCd / 60) + ' วิ'); G.freeze = 300; G.chronoCd = 1800; T.flash = .15; toast('หยุดกาล 5 วินาที!'); }
 function syn() { const c = { greek: 0, norse: 0, egypt: 0, asia: 0 }; G.grid.forEach(u => { if (u && u.kind === 'hero') c[u.p]++; }); return c; }
 
@@ -268,26 +268,26 @@ function number(x, y, v, crit, big) { if (G.num.length > 16 && !crit && !big) re
 
 /* ---------- combat ---------- */
 function dmgTo(m, d, crit) { m.hp -= d; m.hit = 6; number(m.x, m.y - (m.h || 80) * .8, d, crit, m.boss); }
-function nearest(x, y, r, not) { let best = null, bd = r; for (const m of G.mobs) { if (m.hp <= 0 || (not && not.includes(m))) continue; const d = Math.hypot(m.x - x, m.y - y + 24); if (d < bd) { bd = d; best = m; } } return best; }
+function nearest(x, y, r, not) { let best = null, bd = r; for (const m of G.mobs) { if (m.hp <= 0 || (not && not.includes(m))) continue; const d = Math.hypot(m.x - x, m.y - y + 32); if (d < bd) { bd = d; best = m; } } return best; }
 function attack(u, i) {
-  const c = cell(i), D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), tgt = nearest(c.x, c.y - 32, D.rng); if (!tgt) return false;
+  const c = cell(i), D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), tgt = nearest(c.x, c.y - 44, D.rng); if (!tgt) return false;
   let dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u);
   const crit = Math.random() < .1 + (s.norse >= 2 ? .15 : 0) + G.atk * .005; if (crit) dmg *= 2.2;
-  dmg = Math.round(dmg * rnd(.9, 1.1)); u.flash = 14; const hx = c.x + 14, hy = c.y - 50 * D.sz;
-  if (u.kind === 'sol') { beam(hx + 8, hy + 14, tgt.x, tgt.y - 24, '#ffe066', 3, 6); dmgTo(tgt, dmg, crit); burst(tgt.x, tgt.y - 24, '#ffd23f', 4, 2); }
+  dmg = Math.round(dmg * rnd(.9, 1.1)); u.flash = 14; const hx = c.x + 18, hy = c.y - 66 * D.sz;
+  if (u.kind === 'sol') { beam(hx + 8, hy + 14, tgt.x, tgt.y - 32, '#ffe066', 3, 6); dmgTo(tgt, dmg, crit); burst(tgt.x, tgt.y - 32, '#ffd23f', 4, 2); }
   else if (u.p === 'greek') {
     let from = { x: hx - 22, y: hy - 8 }, hit = [], m = tgt; const jumps = 1 + (tier >= 3 ? 2 : 1) + (s.greek >= 2 ? 1 : 0);
-    for (let j = 0; j < jumps && m; j++) { bolt(from.x, from.y, m.x, m.y - 27, j ? '#bff6ff' : '#7fe8ff', tier >= 3 ? 5 : 3.5, 11); dmgTo(m, Math.round(dmg * (j ? .6 : 1)), crit && !j); burst(m.x, m.y - 27, '#bff6ff', 5, 2.5); hit.push(m); from = { x: m.x, y: m.y - 27 }; m = nearest(m.x, m.y, 150, hit); }
+    for (let j = 0; j < jumps && m; j++) { bolt(from.x, from.y, m.x, m.y - 36, j ? '#bff6ff' : '#7fe8ff', tier >= 3 ? 5 : 3.5, 11); dmgTo(m, Math.round(dmg * (j ? .6 : 1)), crit && !j); burst(m.x, m.y - 36, '#bff6ff', 5, 2.5); hit.push(m); from = { x: m.x, y: m.y - 36 }; m = nearest(m.x, m.y, 150, hit); }
     if (tier >= 2) u.spirit = 26;
     const ang = Math.atan2(tgt.y - 27 - hy, tgt.x - hx); G.fx.push({ t: 'img', k: 'zeus_slash', x: hx + (tgt.x - hx) * .7, y: hy + (tgt.y - 27 - hy) * .7, ang, w: tier >= 3 ? 120 : 92, life: 13, max: 13 });
   } else if (u.p === 'norse') {
     bolt(tgt.x + rnd(-6, 6), tgt.y - 360, tgt.x, tgt.y - 20, '#cfe3ff', tier >= 3 ? 6 : 4, 12); ring(tgt.x, tgt.y - 6, '#9fc4ff', 6, 60 + tier * 8, .32, .4);
     dmgTo(tgt, dmg, crit); for (const m of G.mobs) if (m !== tgt && Math.hypot(m.x - tgt.x, m.y - tgt.y) < 60 + tier * 8) dmgTo(m, Math.round(dmg * .55), false); T.shake = Math.max(T.shake, tier >= 3 ? 4 : 2);
   } else if (u.p === 'egypt') {
-    const ang = Math.atan2(tgt.y - 24 - hy, tgt.x - hx), x1 = hx + Math.cos(ang) * 420, y1 = hy + Math.sin(ang) * 420; beam(hx, hy, x1, y1, '#ffd36b', tier >= 3 ? 7 : 5, 10);
-    for (const m of G.mobs) { const t = ((m.x - hx) * Math.cos(ang) + (m.y - 24 - hy) * Math.sin(ang)), dd = Math.abs(-(m.x - hx) * Math.sin(ang) + (m.y - 24 - hy) * Math.cos(ang)); if (t > 0 && t < 420 && dd < 26) { dmgTo(m, m === tgt ? dmg : Math.round(dmg * .7), crit && m === tgt); burst(m.x, m.y - 24, '#ffe7a0', 4, 2); } }
+    const ang = Math.atan2(tgt.y - 32 - hy, tgt.x - hx), x1 = hx + Math.cos(ang) * 420, y1 = hy + Math.sin(ang) * 420; beam(hx, hy, x1, y1, '#ffd36b', tier >= 3 ? 7 : 5, 10);
+    for (const m of G.mobs) { const t = ((m.x - hx) * Math.cos(ang) + (m.y - 32 - hy) * Math.sin(ang)), dd = Math.abs(-(m.x - hx) * Math.sin(ang) + (m.y - 32 - hy) * Math.cos(ang)); if (t > 0 && t < 420 && dd < 26) { dmgTo(m, m === tgt ? dmg : Math.round(dmg * .7), crit && m === tgt); burst(m.x, m.y - 32, '#ffe7a0', 4, 2); } }
   } else if (u.p === 'asia') {
-    shot(hx, hy - 10, tgt, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 52 + tier * 6, .3, .45); burst(m.x, m.y - 19, '#ffb15a', 10, 3.5); dmgTo(m, dmg, crit); for (const o of G.mobs) if (o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 52 + tier * 6) dmgTo(o, Math.round(dmg * .5), false); });
+    shot(hx, hy - 10, tgt, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 52 + tier * 6, .3, .45); burst(m.x, m.y - 26, '#ffb15a', 10, 3.5); dmgTo(m, dmg, crit); for (const o of G.mobs) if (o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 52 + tier * 6) dmgTo(o, Math.round(dmg * .5), false); });
   }
   if (tier >= 3 && ++u.hits % 6 === 0) skill(u, i, tgt, dmg);
   return true;
@@ -301,7 +301,7 @@ function skill(u, i, tgt, dmg) {
   if (u.p === 'greek') { alive.sort(() => Math.random() - .5).slice(0, my ? 8 : 5).forEach(m => { bolt(m.x + rnd(-8, 8), m.y - 330, m.x, m.y - 20, '#bff6ff', 6, 14); dmgTo(m, Math.round(dmg * 1.6 * k), false); burst(m.x, m.y - 20, '#bff6ff', 8, 3); }); T.flash = .12; }
   else if (u.p === 'norse') { ring(tgt.x, tgt.y - 6, '#cfe3ff', 10, 150, .45, .45); T.shake = 7; for (const m of alive) if (Math.hypot(m.x - tgt.x, m.y - tgt.y) < 150) { m.stun = Math.max(m.stun || 0, my ? 100 : 65); dmgTo(m, Math.round(dmg * 1.2 * k), false); } }
   else if (u.p === 'egypt') { ring(tgt.x, tgt.y - 6, '#ffd36b', 10, 180, .55, .45); for (const m of alive) if (Math.hypot(m.x - tgt.x, m.y - tgt.y) < 180) { m.slow = Math.max(m.slow || 0, my ? 220 : 150); dmgTo(m, Math.round(dmg * .8 * k), false); burst(m.x, m.y - 20, '#ffe7a0', 4, 2); } }
-  else if (u.p === 'asia') { alive.sort(() => Math.random() - .5).slice(0, my ? 7 : 4).forEach(t => shot(c.x, c.y - 60, t, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 60, .3, .45); burst(m.x, m.y - 19, '#ffb15a', 10, 3.5); for (const o of G.mobs) if (Math.hypot(o.x - m.x, o.y - m.y) < 60) dmgTo(o, Math.round(dmg * 1.1 * k), false); })); }
+  else if (u.p === 'asia') { alive.sort(() => Math.random() - .5).slice(0, my ? 7 : 4).forEach(t => shot(c.x, c.y - 60, t, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 60, .3, .45); burst(m.x, m.y - 26, '#ffb15a', 10, 3.5); for (const o of G.mobs) if (Math.hypot(o.x - m.x, o.y - m.y) < 60) dmgTo(o, Math.round(dmg * 1.1 * k), false); })); }
 }
 function banner(text, col) { T.banner = { text, col, t: 1.8 }; }
 
@@ -317,8 +317,8 @@ function step() {
   for (const m of G.mobs) { if (m.stun > 0) m.stun--; if (m.slow > 0) m.slow--; if (G.freeze <= 0 && !(m.stun > 0)) { const v = m.sp * (m.slow > 0 ? .5 : 1); m.d += v; m.step += .18 * v; } const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; if (m.hit > 0) m.hit--; }
   const s = syn();
   G.grid.forEach((u, i) => { if (!u) return; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.skillT > 0) u.skillT--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed); });
-  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 24, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; T.flash = .2; const free = G.grid.includes(null) ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); } } sync(); }
-  for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 24, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
+  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 32, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; T.flash = .2; const free = G.grid.includes(null) ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); } } sync(); }
+  for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 32, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
   G.fx = G.fx.filter(f => f.life > 0); for (const n of G.num) n.life--; G.num = G.num.filter(n => n.life > 0);
   if (T.flash > 0) T.flash -= 1 / 60; if (T.shake > 0) T.shake *= .86; if (T.banner) { T.banner.t -= 1 / 60; if (T.banner.t <= 0) T.banner = null; }
   if (G.mobs.length >= 100) endMatch();
@@ -438,35 +438,35 @@ function hud() {
   txt(G.boss ? 'บอสบุกแล้ว!' : 'บอสใน ' + bw + ' รอบ', cx + 52, cy + 134, 20, '#fff');
 }
 function drawUnit(u, i) {
-  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = 64 * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]);
+  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = 88 * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]);
   if (G.sel === i) { g.lineWidth = 5; g.strokeStyle = '#fff06a'; rr(g, c.x - CW / 2 + 2, c.y - CH * .88 + 3, CW - 4, CH - 6, 9); g.stroke(); }
   /* tier ring on the floor */
-  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 18, 5.5, 0, 0, 6.3); g.stroke(); g.restore();
+  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 25, 7.5, 0, 0, 6.3); g.stroke(); g.restore();
   /* the god behind the blessed one: always for a greek mythic, a flash on big hits for greek epic / legend */
   if (u.kind === 'hero' && u.p === 'greek' && (tier >= 4 || u.spirit > 0)) {
-    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 104 : 78, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
+    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 140 : 104, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
     g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, sy - sh * .5, 6, c.x, sy - sh * .5, sh * .6); gr.addColorStop(0, '#7fe8ff40'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - sh, sy - sh * 1.1, sh * 2, sh * 1.2); g.restore();
     spr(ZEUS ? 'zeus_spirit' : 'spirit_greek', c.x - 4, ZEUS ? c.y - h * .15 + Math.sin(tt * 1.7) * 3 : sy, ZEUS ? sh * 1.15 : sh, false, clamp(a, 0, 1));   /* the god behind: normal blend so his face stays readable */
   }
   if (u.awake || tier >= 4) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, c.y - h * .45, 4, c.x, c.y - h * .45, 58); gr.addColorStop(0, (u.awake ? '#fff2a0' : D.col) + '66'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - 60, c.y - h - 20, 120, h + 40); g.restore(); }
-  shadow(c.x, c.y, 17);
+  shadow(c.x, c.y, 23);
   const k = u.kind === 'sol' ? 'soldier' : 'hero_' + u.p, lunge = u.flash > 8 ? (u.flash - 8) * .8 : 0;
   if (u.p === 'greek' && ZEUS) { const ps = zeusPose(u); drawZeus(ps, c.x, c.y - (ps === 'idle' ? Math.max(0, bob) : 0), h); }
   else { spr(k, c.x + lunge, c.y + bob * .3 - Math.max(0, bob), h);
   if (u.flash > 10) { g.save(); g.globalCompositeOperation = 'lighter'; spr(k, c.x + lunge, c.y - Math.max(0, bob), h, false, (u.flash - 10) / 8); g.restore(); } }
   /* stars */
-  for (let s = 0; s < D.stars; s++) { const sx = c.x + (s - (D.stars - 1) / 2) * 9, sy = c.y + 9; g.fillStyle = D.col; g.strokeStyle = '#24160f'; g.lineWidth = 2; star(sx, sy, 5); }
+  for (let s = 0; s < D.stars; s++) { const sx = c.x + (s - (D.stars - 1) / 2) * 11, sy = c.y + 11; g.fillStyle = D.col; g.strokeStyle = '#24160f'; g.lineWidth = 2; star(sx, sy, 6); }
 }
 function star(x, y, r) { g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? r * .45 : r; g.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } g.closePath(); g.fill(); g.stroke(); }
 function drawMob(m) {
   const bob = Math.abs(Math.sin(m.step)) * (G.freeze > 0 ? 0 : 4), flip = m.face * (m.dir || 1) < 0;
   if (m.elite) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(m.x, m.y - m.h * .5, 4, m.x, m.y - m.h * .5, m.h * .75); gr.addColorStop(0, '#c58bff66'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(m.x - m.h, m.y - m.h * 1.3, m.h * 2, m.h * 1.6); g.restore(); }
   if (m.slow > 0) { g.save(); g.globalAlpha = .7; g.strokeStyle = '#ffd36b'; g.lineWidth = 3; g.beginPath(); g.ellipse(m.x, m.y, 20, 6, 0, 0, 6.3); g.stroke(); g.restore(); }
-  shadow(m.x, m.y, m.boss ? 38 : 17); spr(m.k, m.x, m.y - bob, m.h, flip);
+  shadow(m.x, m.y, m.boss ? 50 : 22); spr(m.k, m.x, m.y - bob, m.h, flip);
   if (m.stun > 0) { for (let k = 0; k < 3; k++) { const a = tt * 6 + k * 2.1; g.fillStyle = '#ffe36b'; g.strokeStyle = '#24160f'; g.lineWidth = 1.5; star(m.x + Math.cos(a) * 14, m.y - m.h - 4 + Math.sin(a) * 4, 4); } }
   if (m.hit > 0) { g.save(); g.globalCompositeOperation = 'lighter'; spr(m.k, m.x, m.y - bob, m.h, flip, m.hit / 8); g.restore(); }
   if (G.freeze > 0) { g.save(); g.globalAlpha = .35; g.fillStyle = '#9fd8ff'; g.beginPath(); g.ellipse(m.x, m.y - m.h * .5, m.h * .45, m.h * .55, 0, 0, 6.3); g.fill(); g.restore(); }
-  const w = m.boss ? 76 : 38, y = m.y - m.h - 8; g.fillStyle = '#24160f'; g.fillRect(m.x - w / 2 - 2, y - 2, w + 4, 9); g.fillStyle = m.boss ? '#ff5a4a' : '#7be36a'; g.fillRect(m.x - w / 2, y, w * clamp(m.hp / m.max, 0, 1), 5);
+  const w = m.boss ? 96 : 48, y = m.y - m.h - 8; g.fillStyle = '#24160f'; g.fillRect(m.x - w / 2 - 2, y - 2, w + 4, 9); g.fillStyle = m.boss ? '#ff5a4a' : '#7be36a'; g.fillRect(m.x - w / 2, y, w * clamp(m.hp / m.max, 0, 1), 5);
 }
 function drawFx() {
   for (const f of G.fx) {
@@ -498,9 +498,9 @@ function drawLobby() {
   g.setTransform(SC, 0, 0, SC, 0, 0); g.clearRect(0, 0, W, H); skyLayer(); g.drawImage(BG, 0, 0, W, H);
   g.save(); g.translate(PL + 10, PT - 22); g.scale(.7, .7); portal(0, 0); g.restore(); ambient();
   const show = [[8, 'soldier'], [9, 'greek'], [10, 'norse'], [11, 'egypt'], [12, 'asia'], [3, 'soldier'], [17, 'soldier']];
-  for (const [i, k] of show) { const c = cell(i), bob = Math.sin(tt * 3 + i) * 1.4, h = 64 * (k === 'soldier' ? FIT.soldier : FIT[k]) * (k === 'soldier' ? .86 : 1.02);
-    if (k === 'greek') spr(ZEUS ? 'zeus_spirit' : 'spirit_greek', c.x, ZEUS ? c.y - h * .2 + Math.sin(tt * 1.7) * 3 : c.y - h * .6, ZEUS ? 110 : 96, false, .5 + .08 * Math.sin(tt * 2));
-    g.save(); g.lineWidth = 3; g.strokeStyle = k === 'soldier' ? '#c9ced8' : '#ffcf3a'; g.beginPath(); g.ellipse(c.x, c.y, 20, 6, 0, 0, 6.3); g.stroke(); g.restore(); shadow(c.x, c.y, 17); if (k === 'greek' && ZEUS) drawZeus(Math.sin(tt * .8) > .85 ? 'skill' : 'idle', c.x, c.y - Math.max(0, bob), h); else spr(k === 'soldier' ? 'soldier' : 'hero_' + k, c.x, c.y - Math.max(0, bob), h); }
+  for (const [i, k] of show) { const c = cell(i), bob = Math.sin(tt * 3 + i) * 1.4, h = 88 * (k === 'soldier' ? FIT.soldier : FIT[k]) * (k === 'soldier' ? .86 : 1.02);
+    if (k === 'greek') spr(ZEUS ? 'zeus_spirit' : 'spirit_greek', c.x, ZEUS ? c.y - h * .2 + Math.sin(tt * 1.7) * 3 : c.y - h * .6, ZEUS ? 150 : 130, false, .5 + .08 * Math.sin(tt * 2));
+    g.save(); g.lineWidth = 3; g.strokeStyle = k === 'soldier' ? '#c9ced8' : '#ffcf3a'; g.beginPath(); g.ellipse(c.x, c.y, 25, 7.5, 0, 0, 6.3); g.stroke(); g.restore(); shadow(c.x, c.y, 23); if (k === 'greek' && ZEUS) drawZeus(Math.sin(tt * .8) > .85 ? 'skill' : 'idle', c.x, c.y - Math.max(0, bob), h); else spr(k === 'soldier' ? 'soldier' : 'hero_' + k, c.x, c.y - Math.max(0, bob), h); }
   for (const m of LOB.mobs) { m.d += m.sp; m.step += .09; const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; const flip = m.face * m.dir < 0; shadow(m.x, m.y, 15); spr(m.k, m.x, m.y - Math.abs(Math.sin(m.step)) * 3, m.h, flip); }
 }
 function draw() {
