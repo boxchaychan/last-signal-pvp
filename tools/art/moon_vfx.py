@@ -24,6 +24,11 @@ FX = {   # key: (video, frames, frames that fade out at the end)
     'fx_m_spin': ('fx_m_spin', span(4, 140, 24), 4),      # ring of crescents spinning round the body
     'fx_m_fall': ('fx_m_fall', span(0, 40, 10) + span(44, 190, 14), 5),   # blade falls, moon circle on the ground
     'fx_m_moon': ('fx_m_moon', span(0, 84, 14), 0),       # the full moon of the ultimate (the blade rain is drawn in code)
+    'fx_m_d1': ('fx_m_dance', span(10, 44, 9), 3),      # U sword dance (owner "U ให้เป็นรอยดาบ 4-5 ครั้ง"): 1 wide flat ring
+    'fx_m_d2': ('fx_m_dance', span(76, 88, 5), 2),       # 2 rising diagonal
+    'fx_m_d3': ('fx_m_dance', span(90, 110, 7), 3),      # 3 crossed X
+    'fx_m_d4': ('fx_m_dance', span(114, 150, 9), 3),     # 4 flat ring the other way
+    'fx_m_d5': ('fx_m_dance', span(154, 204, 11), 4),    # 5 the big crescent
 }
 def read(name):
     c = cv2.VideoCapture(RAW + name + '.mp4'); out = []
