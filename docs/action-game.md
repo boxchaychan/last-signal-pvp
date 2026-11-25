@@ -2765,4 +2765,5 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Moving every frame (`skyLayer` + `ambient`): drifting clouds, 2 bobbing far islands with temples, birds, 2 waterfalls falling off the island, glowing blue rune lights running round the road, brazier fire, motes.
   - The lobby uses the same scene.
 - 2026-11-25 (owner "ช่องก็ยังยาวอยู่", "เกมมีให้ดูตั้ง 2 เกม"): slots are now SQUARE, 60 x 58 at BY 405 (board 420 x 174). Characters stand up out of their slot, as the reference genre does.
+- 2026-11-25 (owner "ช่องมันกว้างไป ช่องวางฮีโร่"): slots are now 50 x 48 at BY 420 (board 350 x 144), so each hero fills its slot.
 
