@@ -2710,4 +2710,13 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
 - 2026-11-25 (owner "ช่องมันกว้างไป ช่องวางฮีโร่"): slots are now 50 x 48 at BY 420 (board 350 x 144), so each hero fills its slot.
 - 2026-11-25 (owner "กระจอกเกิน"): the board fills the screen width again, with square 68 x 66 slots at BY 401. Everything was scaled up together: heroes 88 x tier x FIT, monsters 63-88, boss 160, plus rings, stars, shadows, spirit, hit points and effect offsets. Each hero still fills its slot.
   - Honest note for the next step: the arena is still drawn in code. A painted arena background (Gemini / Codex, made for this 7 x 3 layout) would be the biggest jump in quality.
+- 2026-11-25 THOR SET IN (Codex branch `codex/divine-thor`, brief `docs/codex/divine/NEXT.md` item A; brought in by hand, the PR is not merged):
+  - Raw files: `art/incoming/divine_game/raw/thor_v1/` plus the report; the frames are in `art/divine/thor/`.
+  - God sets are now general: `tools/art/divine_sets.py` crops every set with ONE scale (Zeus's idle body 322 px -> 200 px) into `art/divine/<set>_{idle,attack,skill,spirit,fx}.png` + `sets.json`. `PSET` maps pantheon -> set (greek: zeus, norse: thor). `drawSet` / `poseOf` replace the Zeus-only code. `zeus.json` and `zeus_slash.png` are gone (now `sets.json`, `zeus_fx.png`).
+  - Thor in play:
+    - idle / attack (throws the hammer) / skill (hammer up);
+    - the spirit stands behind a mythic Thor and flashes on legend skills;
+    - the hammer shockwave picture lands under every Norse hit, and a big one comes with ค้อนสะเทือนฟ้า;
+    - the hero card and the lobby use the new pictures.
+  - Still waiting on Codex: B Anubis, C Monkey King, D recruit, E monsters, F arena.
 
