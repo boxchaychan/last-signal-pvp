@@ -96,6 +96,16 @@ button small { display: block; font-size: .62em; font-weight: 600; }
 #mslots div { aspect-ratio: .72; display: grid; place-items: end center; padding-bottom: 8%; font-weight: 800; font-size: calc(var(--u) * 15); background: #3a2419; border: calc(var(--u) * 4) solid var(--ink); border-radius: calc(var(--u) * 14); overflow: hidden; position: relative; }
 #mslots div img { position: absolute; left: 8%; top: 6%; width: 84%; height: 70%; object-fit: contain; }
 #mslots div.me { background: linear-gradient(#ffcf4a, #d98f0c); color: #3a1c06; }
+#summon.hint { animation: pulse 1s ease-in-out infinite; }
+#mbtn { position: absolute; right: 5%; top: 18%; height: 5.2%; padding: 0 4%; font-size: calc(var(--u) * 22); background: linear-gradient(#8b6cf0, #5a3ac4); }
+#mbtn .dot { position: absolute; right: -6%; top: -18%; width: calc(var(--u) * 22); height: calc(var(--u) * 22); border-radius: 50%; background: #ff3b30; border: calc(var(--u) * 3) solid var(--ink); display: none; }
+#mbtn.has .dot { display: block; }
+#mission { position: absolute; inset: 0; display: none; place-items: center; background: #07060bc8; z-index: 5; }
+#mission.on { display: grid; }
+#mission .panel { position: relative; inset: auto; width: 90%; max-height: 76%; }
+#mclose { position: absolute; right: 3%; top: 2%; width: calc(var(--u) * 54); height: calc(var(--u) * 54); font-size: calc(var(--u) * 24); background: linear-gradient(#ff6d61, #c9302c); border-radius: 50%; }
+.bar { height: calc(var(--u) * 12); margin-top: .35em; background: #1a100c; border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd23f, #ff9a3a); }
 #over #reward { margin: -.4em 0 1em; font-weight: 800; font-size: calc(var(--u) * 28); color: #ffe27a; text-shadow: 0 3px 0 var(--ink); }
 #over #home { margin-top: .5em; background: linear-gradient(#9aa0ab, #5f6571); }
 </style>
@@ -113,7 +123,7 @@ button small { display: block; font-size: .62em; font-weight: 600; }
     <div id="ltop"><div class="pill"><i class="coin"></i><b id="lgold">0</b></div><div class="pill">ดีที่สุด รอบ&nbsp;<b id="lbest">0</b></div><button id="snd">เสียง: เปิด</button></div>
     <section class="page" id="p-shop"><div class="panel"><h3>ร้านค้า</h3><div class="sub">ของช่วยสำหรับแมตช์ถัดไป ใช้ทองที่ได้จากการเล่น</div><div id="shopList"></div></div></section>
     <section class="page" id="p-hero"><div class="panel"><h3>ฮีโร่ผู้รับพร</h3><div class="sub" id="heroSub"></div><div class="cards" id="heroList"></div></div></section>
-    <section class="page on" id="p-play"><div class="logo">ศึกผู้รับพร</div><div class="tag">แมตช์ 5 คน · คนรอดคนสุดท้ายชนะ</div><button id="go">เริ่มต่อสู้</button><div class="stats" id="playStats"></div></section>
+    <section class="page on" id="p-play"><div class="logo">ศึกผู้รับพร</div><div class="tag">แมตช์ 5 คน · คนรอดคนสุดท้ายชนะ</div><button id="go">เริ่มต่อสู้</button><button id="mbtn">ภารกิจวันนี้<span class="dot"></span></button><div class="stats" id="playStats"></div></section>
     <section class="page" id="p-rank"><div class="panel"><h3>อันดับประจำสัปดาห์</h3><div class="sub">นับจากรอบที่ไปได้ไกลที่สุด</div><div id="rankList"></div></div></section>
     <section class="page" id="p-temple"><div class="panel"><h3>วิหารแห่งพร</h3><div class="sub">อัปเกรดถาวร ใช้ได้ทุกแมตช์</div><div id="templeList"></div></div></section>
     <nav id="lnav">
@@ -124,6 +134,7 @@ button small { display: block; font-size: .62em; font-weight: 600; }
       <button data-p="temple"><svg viewBox="0 0 40 40"><path d="M4 14 L20 4 L36 14Z" fill="#ffd36b" stroke="#24160f" stroke-width="3"/><rect x="8" y="15" width="5" height="16" fill="#f3ecdf" stroke="#24160f" stroke-width="2.5"/><rect x="17.5" y="15" width="5" height="16" fill="#f3ecdf" stroke="#24160f" stroke-width="2.5"/><rect x="27" y="15" width="5" height="16" fill="#f3ecdf" stroke="#24160f" stroke-width="2.5"/><rect x="4" y="31" width="32" height="5" rx="1" fill="#d8cfbd" stroke="#24160f" stroke-width="3"/></svg>วิหาร</button>
     </nav>
   </div>
+  <div id="mission"><div class="panel"><button id="mclose">X</button><h3>ภารกิจวันนี้</h3><div class="sub">ทำให้ครบแล้วกดรับทอง เปลี่ยนใหม่ทุกวัน</div><div id="mlist"></div></div></div>
   <div id="match"><div class="mcard"><h3 id="mtitle">กำลังหาผู้เล่น...</h3><div id="mslots"></div></div></div>
 </div>
 <script>
@@ -186,6 +197,27 @@ const TP = {
   luck: { n: 'พรแห่งโชค', d: v => 'โอกาสได้ระดับสูง +' + (v * 1.5).toFixed(1) + '%', img: 'hero_greek', base: 250 },
   speed: { n: 'พรแห่งความเร็ว', d: v => 'ตีเร็วขึ้น +' + v * 3 + '%', img: 'hero_asia', base: 220 }
 };
+/* daily missions: 3 a day from this pool, picked by the date; progress counts across matches */
+const MPOOL = [
+  { k: 'summon', n: 'อัญเชิญ 25 ครั้ง', goal: 25, r: 120 }, { k: 'merge', n: 'รวมร่าง 8 ครั้ง', goal: 8, r: 150 }, { k: 'wave', n: 'ไปให้ถึงรอบ 20', goal: 20, r: 200, max: 1 },
+  { k: 'boss', n: 'ปราบยักษ์มลทิน 1 ตัว', goal: 1, r: 200 }, { k: 'mythic', n: 'หลอมมหาเทพ 2 ตัว', goal: 2, r: 180 }, { k: 'elite', n: 'ปราบศัตรูชั้นยอด 3 ตัว', goal: 3, r: 150 },
+  { k: 'win', n: 'ได้อันดับ 1 หนึ่งครั้ง', goal: 1, r: 250 }, { k: 'match', n: 'เล่น 3 แมตช์', goal: 3, r: 120 }, { k: 'skill', n: 'ใช้สกิลเทพ 30 ครั้ง', goal: 30, r: 150 }];
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };   /* the player's own day, not UTC */
+function daily() {
+  if (!META.daily || META.daily.day !== today()) { let sd = [...today()].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 233280; const rn = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
+    const pool = [...MPOOL], pickd = []; while (pickd.length < 3) pickd.push(pool.splice(Math.floor(rn() * pool.length), 1)[0].k); META.daily = { day: today(), list: pickd, p: {}, got: {} }; save(); }
+  return META.daily;
+}
+function track(k, v) { const d = daily(); if (!d.list.includes(k)) return; const m = MPOOL.find(q => q.k === k); d.p[k] = m.max ? Math.max(d.p[k] || 0, v) : (d.p[k] || 0) + v; save(); }
+function renderMissions() {
+  const d = daily(); let can = false;
+  $('mlist').innerHTML = d.list.map(k => { const m = MPOOL.find(q => q.k === k), v = Math.min(m.goal, d.p[k] || 0), done = v >= m.goal, got = d.got[k]; if (done && !got) can = true;
+    return '<div class="row"><div class="tx">' + m.n + '<small>' + v + ' / ' + m.goal + ' · รางวัล ' + m.r + ' ทอง</small><div class="bar"><i style="width:' + (v / m.goal * 100) + '%"></i></div></div><button data-m="' + k + '" class="' + (got || !done ? 'done' : '') + '">' + (got ? 'รับแล้ว' : done ? 'รับ' : 'ยังไม่ครบ') + '</button></div>'; }).join('');
+  $('mbtn').classList.toggle('has', can);
+}
+$('mbtn').onclick = () => { sfx('click'); renderMissions(); $('mission').classList.add('on'); };
+$('mclose').onclick = () => { $('mission').classList.remove('on'); renderLobby(); };
+$('mission').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (!b) return; const d = daily(), k = b.dataset.m, m = MPOOL.find(q => q.k === k); if (d.got[k] || (d.p[k] || 0) < m.goal) return; d.got[k] = 1; META.gold += m.r; save(); sfx('coin'); toast('ได้ทอง +' + m.r); renderMissions(); });
 const tpCost = (k, v) => Math.round(TP[k].base * Math.pow(1.55, v));
 const SHOP = [
   { k: 'epic', n: 'เริ่มด้วยเอปิค', d: 'แมตช์หน้าได้ผู้รับพรระดับเอปิคฟรี 1 ตัว', cost: 300, img: 'hero_egypt' },
@@ -215,7 +247,7 @@ function makeRivals() { const n = [...RIVAL_NAMES].sort(() => Math.random() - .5
 function endMatch() {
   if (G.over) return; G.over = true; const rank = 1 + G.rivals.filter(r => !r.out).length;
   let gold = 40 + G.wave * 12 + [0, 250, 160, 100, 60, 30][rank]; if (G.useDouble) gold *= 2;
-  META.gold += gold; META.games++; if (rank === 1) META.wins++; META.best = Math.max(META.best, G.wave); save();
+  META.gold += gold; META.games++; if (rank === 1) { META.wins++; track('win', 1); } track('match', 1); track('wave', G.wave); META.best = Math.max(META.best, G.wave); save();
   $('rank').textContent = rank === 1 ? 'ชนะ! อันดับ 1' : 'อันดับ ' + rank + ' จาก 5'; $('sum').textContent = 'ถึงรอบ ' + G.wave + ' · ปราบ ' + G.kills + ' ตัว';
   $('reward').innerHTML = '+' + gold + ' ทอง' + (G.useDouble ? ' (x2)' : ''); $('over').classList.add('on'); sfx(rank <= 2 ? 'win' : 'lose');
 }
@@ -236,23 +268,23 @@ function toast(s) { const e = $('toast'); e.textContent = s; e.classList.add('on
 function unitName(u) { return u.kind === 'sol' ? 'ทหารรับจ้าง' : PAN[u.p].hero[Math.min(3, TIERS.indexOf(u.tier) - 1)]; }
 function makeUnit(tier, p) { if (tier === 'COMMON') return { kind: 'sol', p: null, tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false, hits: 0 }; return { kind: 'hero', p: p || pick(PK), tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false, hits: 0 }; }
 function same(a, b) { return a && b && a.kind === b.kind && a.tier === b.tier && a.p === b.p; }
-function place(u) { const free = []; G.grid.forEach((v, i) => { if (!v) free.push(i); }); if (!free.length) { toast('กระดานเต็ม 21 ช่องแล้ว'); return -1; } const i = free[0]; G.grid[i] = u; const c = cell(i); burst(c.x, c.y - 40, TD[u.tier].col, 18, 4); ring(c.x, c.y - 4, TD[u.tier].col, 10, 44, .4); if (VFX.summon) { const v = VFX.summon, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'summon', x: c.x, y: c.y + 2, h: TIERS.indexOf(u.tier) >= 3 ? 210 : 160, life: L, max: L, dl: 0, back: 1 }); } return i; }
+function place(u) { const free = []; G.grid.forEach((v, i) => { if (!v) free.push(i); }); if (!free.length) { toast('กระดานเต็ม 21 ช่องแล้ว'); return -1; } const i = free[0]; G.grid[i] = u; const c = cell(i); burst(c.x, c.y - 40, TD[u.tier].col, 18, 4); ring(c.x, c.y - 4, TD[u.tier].col, 10, 44, .4); if (VFX.summon && G.fx.filter(f => f.t === 'anim').length < 10) { const v = VFX.summon, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'summon', x: c.x, y: c.y + 2, h: TIERS.indexOf(u.tier) >= 3 ? 210 : 160, life: L, max: L, dl: 0, back: 1 }); } return i; }
 function summon() {
   if (G.over) return; if (G.gold < G.sumCost) return toast('ทองไม่พอ');
   const r = Math.random() + G.atk * .004 + META.tp.luck * .015, t = r > .97 ? 'LEGEND' : r > .84 ? 'EPIC' : r > .55 ? 'RARE' : 'COMMON';
-  if (place(makeUnit(t)) < 0) return; sfx('summon'); G.gold -= G.sumCost; G.sumCost = Math.min(60, G.sumCost + 1); if (t !== 'COMMON' && t !== 'RARE') toast('ได้ระดับ' + TD[t].th + '!'); sync();
+  if (place(makeUnit(t)) < 0) return; sfx('summon'); track('summon', 1); G.gold -= G.sumCost; G.sumCost = Math.min(60, G.sumCost + 1); if (t !== 'COMMON' && t !== 'RARE') toast('ได้ระดับ' + TD[t].th + '!'); sync();
 }
 function fuse() {
   if (G.over) return; const idx = []; G.grid.forEach((u, i) => { if (u && u.kind === 'hero' && (u.tier === 'EPIC' || u.tier === 'LEGEND')) idx.push(i); });
   if (idx.length < 2) return toast('ต้องมีเอปิคขึ้นไป 2 ตัว');
   const p = G.grid[idx[0]].p; G.grid[idx[0]] = G.grid[idx[1]] = null; const i = place(makeUnit('MYTHIC', p)); G.sel = -1; const c = cell(i);
-  ring(c.x, c.y - 40, '#ff5d7a', 10, 120, .6); T.flash = .25; sfx('mythic'); banner(PAN[p].hero[3] + ' จุติ!', PAN[p].col); sync();
+  ring(c.x, c.y - 40, '#ff5d7a', 10, 120, .6); T.flash = .25; sfx('mythic'); track('mythic', 1); banner(PAN[p].hero[3] + ' จุติ!', PAN[p].col); sync();
 }
 function merge() {
   const u = G.grid[G.sel]; if (!u || u.tier === 'MYTHIC') return; const ids = []; G.grid.forEach((v, i) => { if (same(v, u) && ids.length < 3) ids.push(i); });
   if (ids.length < 3) return toast('ต้องมีตัวเหมือนกัน 3 ตัว');
   const next = TIERS[TIERS.indexOf(u.tier) + 1]; ids.forEach(i => G.grid[i] = null); G.grid[ids[0]] = makeUnit(next, u.kind === 'hero' ? u.p : null);
-  const c = cell(ids[0]); if (VFX.merge) { const v = VFX.merge, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'merge', x: c.x, y: c.y - 40, h: 170, life: L, max: L, dl: 0 }); } burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); G.sel = ids[0]; sfx('merge'); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
+  const c = cell(ids[0]); if (VFX.merge) { const v = VFX.merge, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'merge', x: c.x, y: c.y - 40, h: 170, life: L, max: L, dl: 0 }); } burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); G.sel = ids[0]; sfx('merge'); track('merge', 1); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
 }
 function sell() { const u = G.grid[G.sel]; if (!u) return; G.gold += [10, 22, 48, 90, 150][TIERS.indexOf(u.tier)]; G.grid[G.sel] = null; G.sel = -1; sync(); }
 function upgrade() { if (G.gold < G.upCost) return toast('ทองไม่พอ'); G.gold -= G.upCost; G.atk++; G.upCost = Math.round(G.upCost * 1.45 + 5); toast('พลังโจมตี Lv ' + G.atk); sync(); }
@@ -298,7 +330,7 @@ function attack(u, i) {
 const heroMul = u => (1 + .12 * ((META.lv[u.kind === 'sol' ? 'soldier' : u.p] || 1) - 1)) * (1 + .06 * META.tp.atk);
 /* every 6th hit of a legend / mythic: the god's own skill */
 function skill(u, i, tgt, dmg) {
-  const c = cell(i), my = u.tier === 'MYTHIC', k = my ? 1.5 : 1; sfx('skill'); u.spirit = 40; u.skillT = 34;
+  const c = cell(i), my = u.tier === 'MYTHIC', k = my ? 1.5 : 1; sfx('skill'); track('skill', 1); u.spirit = 40; u.skillT = 34;
   G.num.push({ x: c.x, y: c.y - 70, s: HERO[u.p].sk, col: PAN[u.p].col, sk: 1, life: 70, max: 70 });
   const alive = G.mobs.filter(m => m.hp > 0);
   if (u.p === 'greek') { alive.sort(() => Math.random() - .5).slice(0, my ? 8 : 5).forEach((m, q) => { if (VFX.zeus_storm) { const v = VFX.zeus_storm, L = v.n * 60 / v.fps, dl = q * 4; G.fx.push({ t: 'anim', k: 'zeus_storm', x: m.x, y: m.y - 30, h: my ? 190 : 160, life: L + dl, max: L + dl, dl }); } else bolt(m.x + rnd(-8, 8), m.y - 330, m.x, m.y - 20, '#bff6ff', 6, 14); dmgTo(m, Math.round(dmg * 1.6 * k), false); burst(m.x, m.y - 20, '#bff6ff', 8, 3); }); T.flash = .12; }
@@ -306,7 +338,7 @@ function skill(u, i, tgt, dmg) {
   else if (u.p === 'egypt') { ring(tgt.x, tgt.y - 6, '#ffd36b', 10, 180, .55, .45); if (VFX.anubis_sand) { const v = VFX.anubis_sand, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'anubis_sand', x: tgt.x, y: tgt.y + 6, h: my ? 300 : 250, life: L, max: L, dl: 0 }); } for (const m of alive) if (Math.hypot(m.x - tgt.x, m.y - tgt.y) < 180) { m.slow = Math.max(m.slow || 0, my ? 220 : 150); dmgTo(m, Math.round(dmg * .8 * k), false); burst(m.x, m.y - 20, '#ffe7a0', 4, 2); } }
   else if (u.p === 'asia') { if (VFX.wukong_firerain) { const v = VFX.wukong_firerain, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'wukong_firerain', x: tgt.x, y: tgt.y + 8, h: my ? 260 : 220, life: L, max: L, dl: 0 }); } alive.sort(() => Math.random() - .5).slice(0, my ? 7 : 4).forEach(t => shot(c.x, c.y - 60, t, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 60, .3, .45); burst(m.x, m.y - 26, '#ffb15a', 10, 3.5); for (const o of G.mobs) if (Math.hypot(o.x - m.x, o.y - m.y) < 60) dmgTo(o, Math.round(dmg * 1.1 * k), false); })); }
 }
-function banner(text, col) { T.banner = { text, col, t: 1.8 }; }
+function banner(text, col, dur) { T.banner = { text, col, t: dur || (text.length > 22 ? 3.4 : 1.8), d: dur || (text.length > 22 ? 3.4 : 1.8) }; }
 
 /* ---------- step ---------- */
 const mobHp = w => 55 * Math.pow(1.16, w - 1) + 20 * w;   /* grows faster than the army: the run has an end */
@@ -320,7 +352,7 @@ function step() {
   for (const m of G.mobs) { if (m.stun > 0) m.stun--; if (m.slow > 0) m.slow--; if (G.freeze <= 0 && !(m.stun > 0)) { const v = m.sp * (m.slow > 0 ? .5 : 1); m.d += v; m.step += .18 * v; } const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; if (m.hit > 0) m.hit--; }
   const s = syn();
   G.grid.forEach((u, i) => { if (!u) return; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.skillT > 0) u.skillT--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed); });
-  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 32, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; T.flash = .2; const free = G.grid.includes(null) ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); } } sync(); }
+  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 32, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; track('boss', 1); T.flash = .2; const free = G.grid.includes(null) ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); track('elite', 1); } } sync(); }
   for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 32, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
   G.fx = G.fx.filter(f => f.life > 0); for (const n of G.num) n.life--; G.num = G.num.filter(n => n.life > 0);
   if (T.flash > 0) T.flash -= 1 / 60; if (T.shake > 0) T.shake *= .86; if (T.banner) { T.banner.t -= 1 / 60; if (T.banner.t <= 0) T.banner = null; }
@@ -520,7 +552,7 @@ function draw() {
   G.grid.forEach((u, i) => { if (u) drawUnit(u, i); });
   [...G.mobs].sort((a, b) => a.y - b.y).forEach(drawMob);
   drawFx(); hud(); rivals(); chips();
-  if (T.banner) { const b = T.banner, k = Math.min(1, (1.8 - b.t) * 6), a = Math.min(1, b.t * 2.5); g.save(); g.globalAlpha = a; g.translate(W / 2, BY + 110); g.scale(.6 + .4 * k, .6 + .4 * k); rr(g, -230, -36, 460, 72, 30); g.fillStyle = '#24160fd8'; g.fill(); g.lineWidth = 5; g.strokeStyle = b.col; g.stroke(); txt(b.text, 0, 2, 38, b.col); g.restore(); }
+  if (T.banner) { const b = T.banner, k = Math.min(1, (b.d - b.t) * 6), a = Math.min(1, b.t * 2.5); g.font = '800 38px Kanit, system-ui, sans-serif'; const tw = g.measureText(b.text).width, fs = Math.min(38, 38 * 470 / tw), bw = Math.min(550, tw * fs / 38 + 70); g.save(); g.globalAlpha = a; g.translate(W / 2, BY + 110); g.scale(.6 + .4 * k, .6 + .4 * k); rr(g, -bw / 2, -36, bw, 72, 30); g.fillStyle = '#24160fd8'; g.fill(); g.lineWidth = 5; g.strokeStyle = b.col; g.stroke(); txt(b.text, 0, 2, fs, b.col); g.restore(); }
   g.setTransform(SC, 0, 0, SC, 0, 0);
   if (T.flash > 0) { g.globalAlpha = clamp(T.flash / .25, 0, 1) * .45; g.fillStyle = '#eafcff'; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
   if (G.freeze > 0) { g.globalAlpha = .12; g.fillStyle = '#7fc8ff'; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
@@ -528,6 +560,7 @@ function draw() {
 
 /* ---------- ui ---------- */
 function sync() {
+  $('summon').classList.toggle('hint', MODE === 'battle' && !G.over && G.gold >= G.sumCost * 2 && G.grid.includes(null));
   $('sumCost').textContent = G.sumCost + ' ทอง'; $('upCost').textContent = G.upCost + ' ทอง'; $('speed').textContent = 'x' + G.speed;
   const u = G.grid[G.sel]; $('sel').classList.toggle('on', !!u);
   if (u) { const n = G.grid.filter(v => same(v, u)).length; $('selName').innerHTML = unitName(u) + '<small>' + TD[u.tier].th + (u.kind === 'hero' ? ' · ' + PAN[u.p].th : '') + (u.awake ? ' · ปลุกแล้ว' : '') + ' · แตะช่องอื่นเพื่อย้าย</small>'; $('merge').disabled = u.tier === 'MYTHIC' || n < 3; $('merge').textContent = 'รวม 3 (' + Math.min(n, 3) + ')'; }
@@ -549,7 +582,7 @@ function startMatch() {
   const slots = $('mslots'); slots.innerHTML = '<div class="me"><img src="art/divine/hero_greek.png" alt="">คุณ</div>' + rv.map(() => '<div></div>').join('');
   rv.forEach((r, i) => setTimeout(() => { const d = slots.children[i + 1]; d.innerHTML = '<img src="art/divine/hero_' + r.p + '.png" alt="">' + r.name; sfx('click'); }, 300 + i * 320));
   setTimeout(() => { $('mtitle').textContent = 'ครบ 5 คน เริ่ม!'; }, 1650);
-  setTimeout(() => { $('match').classList.remove('on'); MODE = 'battle'; $('app').classList.remove('lobby'); fresh(rv); banner('รอบ 1 เริ่ม!', '#ffe27a'); }, 2200);
+  setTimeout(() => { $('match').classList.remove('on'); MODE = 'battle'; $('app').classList.remove('lobby'); fresh(rv); banner('รอบ 1 เริ่ม!', '#ffe27a'); if (!META.tut) { META.tut = 1; save(); [[2500, 'แตะ "อัญเชิญ" เพื่อเรียกผู้รับพรลงกระดาน'], [7000, 'ตัวเหมือนกัน 3 ตัว: แตะตัว แล้วกด "รวม 3" เพื่อเลื่อนขั้น'], [12000, 'อย่าให้มอนในสนามถึง 100 ตัว ไม่งั้นแพ้'], [17000, 'เอปิคขึ้นไป 2 ตัว กด "หลอมเทพ" ได้มหาเทพ']].forEach(([ms, tx]) => setTimeout(() => { if (MODE === 'battle' && !G.over) banner(tx, '#ffe27a'); }, ms)); } }, 2200);
 }
 function weekBoard() {
   const wk = Math.floor(Date.now() / 6048e5); let sd = wk * 9301 + 49297; const rn = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
@@ -558,6 +591,7 @@ function weekBoard() {
   return rows.sort((a, b) => b.w - a.w);
 }
 function renderLobby() {
+  renderMissions();
   $('lgold').textContent = META.gold; $('lbest').textContent = META.best; $('snd').textContent = 'เสียง: ' + (META.sound ? 'เปิด' : 'ปิด');
   const own = SHOP.filter(x => META.boost[x.k] > 0).map(x => x.n);
   $('playStats').innerHTML = '<span class="pill">ชนะ ' + META.wins + ' / ' + META.games + ' แมตช์</span>' + (own.length ? '<span class="pill">ของช่วย: ' + own.join(', ') + '</span>' : '');
