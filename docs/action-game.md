@@ -2809,4 +2809,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The summon button pulses when you can pay for 2 summons and have space.
   - At most 10 video effects at once, so summon lights skip when the screen is busy.
   - Checked: lobby, mission panel, a tip in a match, back to the lobby; no console errors.
+- 2026-11-26 (owner "ทำอย่าให้ล้นกรอบ"): heroes now stay INSIDE their 68 x 66 slot.
+  - `UH` 60 = a mythic hero's height; the tier sizes are .86-1; `FIT` is tightened; the feet sit at 93 % of the slot.
+  - Rings, shadows, stars, the attack origin and the spirit are smaller to match.
+  - Video effects are about 30 % smaller, so a skill no longer covers the whole board: Thor 340 / 400, fire rain 170 / 200, sand 190 / 220, storm 125 / 150, summon 120 / 150, merge 130.
+  - The god spirit behind a mythic still rises above its slot on purpose; shrink it too if the owner asks.
 

@@ -147,7 +147,8 @@ const $ = id => document.getElementById(id), cv = $('c'), g = cv.getContext('2d'
 cv.width = W * SC; cv.height = H * SC;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
 const COLS = 7, ROWS = 3, CW = 68, CH = 66, BX = Math.round((W - COLS * CW) / 2), BY = 401;   /* owner: "ช่องยังยาว", "ช่องกว้างไป" (the hero must fill a square slot), then "กระจอกเกิน": the board fills the screen width like the reference genre, everything scaled up together */   /* owner "ทำช่องขนาดตัวก่อน", then "ยังไม่เล็ก": small slots, one character each */
-const cell = i => ({ x: BX + (i % COLS) * CW + CW / 2, y: BY + Math.floor(i / COLS) * CH + CH * .88 });   /* feet point */
+const cell = i => ({ x: BX + (i % COLS) * CW + CW / 2, y: BY + Math.floor(i / COLS) * CH + CH * .93 });   /* feet point: near the slot's bottom edge */
+const UH = 60;   /* owner "ทำอย่าให้ล้นกรอบ": a mythic hero is at most this tall, so every hero stays inside its 66 px slot */
 /* monsters walk round the board on the centre line of the dirt ring */
 const PL = BX - 31, PR = BX + COLS * CW + 31, PT = BY - 31, PB = BY + ROWS * CH + 31, LOOP = [[PL, PT], [PR, PT], [PR, PB], [PL, PB], [PL, PT]];
 const SEG = []; let LEN = 0; for (let i = 0; i < 4; i++) { const [a, b] = [LOOP[i], LOOP[i + 1]], l = Math.hypot(b[0] - a[0], b[1] - a[1]); SEG.push({ a, b, l, s: LEN }); LEN += l; }
@@ -155,11 +156,11 @@ function along(d) { d = ((d % LEN) + LEN) % LEN; for (const s of SEG) if (d <= s
 
 const TIERS = ['COMMON', 'RARE', 'EPIC', 'LEGEND', 'MYTHIC'];
 const TD = {
-  COMMON: { th: 'ธรรมดา', col: '#c9ced8', dmg: 14, cd: 40, rng: 300, sz: .82, stars: 1 },
+  COMMON: { th: 'ธรรมดา', col: '#c9ced8', dmg: 14, cd: 40, rng: 300, sz: .86, stars: 1 },
   RARE: { th: 'หายาก', col: '#4cc9ff', dmg: 34, cd: 38, rng: 310, sz: .9, stars: 2 },
-  EPIC: { th: 'เอปิค', col: '#b880ff', dmg: 75, cd: 34, rng: 320, sz: .96, stars: 3 },
-  LEGEND: { th: 'ตำนาน', col: '#ffcf3a', dmg: 160, cd: 30, rng: 330, sz: 1.02, stars: 4 },
-  MYTHIC: { th: 'มหาเทพ', col: '#ff5d7a', dmg: 380, cd: 24, rng: 345, sz: 1.12, stars: 5 }
+  EPIC: { th: 'เอปิค', col: '#b880ff', dmg: 75, cd: 34, rng: 320, sz: .94, stars: 3 },
+  LEGEND: { th: 'ตำนาน', col: '#ffcf3a', dmg: 160, cd: 30, rng: 330, sz: .97, stars: 4 },
+  MYTHIC: { th: 'มหาเทพ', col: '#ff5d7a', dmg: 380, cd: 24, rng: 345, sz: 1, stars: 5 }
 };
 const PAN = {
   greek: { th: 'กรีก', hero: ['ผู้รับพรซุส', 'ศิษย์สายฟ้า', 'ร่างทรงซุส', 'มหาเทพสายฟ้า'], col: '#7fe8ff', syn: 'สายฟ้ากระโดดเพิ่ม' },
@@ -174,7 +175,7 @@ let SETS = null;   /* the gods' own poses + spirit + effect, drawn by Codex in t
 const PSET = { greek: 'zeus', norse: 'thor' };   /* pantheon -> set; the others still use their single cut picture until Codex draws them */
 const VFX = {};   /* effects cut from the owner's videos (tools/art/divine_vfx.py): black-background sheets drawn with additive light */
 const setOf = p => SETS && PSET[p] && SETS[PSET[p]] ? PSET[p] : null;
-const FIT = { greek: 1, norse: 1.1, egypt: 1.13, asia: 1.03, soldier: .97 };   /* same HEAD size for everyone: helmets and jackal ears add height */
+const FIT = { greek: 1, norse: 1.04, egypt: 1.06, asia: 1.02, soldier: .95 };   /* same HEAD size for everyone: helmets and jackal ears add height */
 const load = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(s); i.src = s; });
 
 let G, BG, tt = 0, MODE = 'lobby';
@@ -268,7 +269,7 @@ function toast(s) { const e = $('toast'); e.textContent = s; e.classList.add('on
 function unitName(u) { return u.kind === 'sol' ? 'ทหารรับจ้าง' : PAN[u.p].hero[Math.min(3, TIERS.indexOf(u.tier) - 1)]; }
 function makeUnit(tier, p) { if (tier === 'COMMON') return { kind: 'sol', p: null, tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false, hits: 0 }; return { kind: 'hero', p: p || pick(PK), tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false, hits: 0 }; }
 function same(a, b) { return a && b && a.kind === b.kind && a.tier === b.tier && a.p === b.p; }
-function place(u) { const free = []; G.grid.forEach((v, i) => { if (!v) free.push(i); }); if (!free.length) { toast('กระดานเต็ม 21 ช่องแล้ว'); return -1; } const i = free[0]; G.grid[i] = u; const c = cell(i); burst(c.x, c.y - 40, TD[u.tier].col, 18, 4); ring(c.x, c.y - 4, TD[u.tier].col, 10, 44, .4); if (VFX.summon && G.fx.filter(f => f.t === 'anim').length < 10) { const v = VFX.summon, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'summon', x: c.x, y: c.y + 2, h: TIERS.indexOf(u.tier) >= 3 ? 210 : 160, life: L, max: L, dl: 0, back: 1 }); } return i; }
+function place(u) { const free = []; G.grid.forEach((v, i) => { if (!v) free.push(i); }); if (!free.length) { toast('กระดานเต็ม 21 ช่องแล้ว'); return -1; } const i = free[0]; G.grid[i] = u; const c = cell(i); burst(c.x, c.y - 40, TD[u.tier].col, 18, 4); ring(c.x, c.y - 4, TD[u.tier].col, 10, 44, .4); if (VFX.summon && G.fx.filter(f => f.t === 'anim').length < 10) { const v = VFX.summon, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'summon', x: c.x, y: c.y + 2, h: TIERS.indexOf(u.tier) >= 3 ? 150 : 120, life: L, max: L, dl: 0, back: 1 }); } return i; }
 function summon() {
   if (G.over) return; if (G.gold < G.sumCost) return toast('ทองไม่พอ');
   const r = Math.random() + G.atk * .004 + META.tp.luck * .015, t = r > .97 ? 'LEGEND' : r > .84 ? 'EPIC' : r > .55 ? 'RARE' : 'COMMON';
@@ -284,7 +285,7 @@ function merge() {
   const u = G.grid[G.sel]; if (!u || u.tier === 'MYTHIC') return; const ids = []; G.grid.forEach((v, i) => { if (same(v, u) && ids.length < 3) ids.push(i); });
   if (ids.length < 3) return toast('ต้องมีตัวเหมือนกัน 3 ตัว');
   const next = TIERS[TIERS.indexOf(u.tier) + 1]; ids.forEach(i => G.grid[i] = null); G.grid[ids[0]] = makeUnit(next, u.kind === 'hero' ? u.p : null);
-  const c = cell(ids[0]); if (VFX.merge) { const v = VFX.merge, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'merge', x: c.x, y: c.y - 40, h: 170, life: L, max: L, dl: 0 }); } burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); G.sel = ids[0]; sfx('merge'); track('merge', 1); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
+  const c = cell(ids[0]); if (VFX.merge) { const v = VFX.merge, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'merge', x: c.x, y: c.y - 30, h: 130, life: L, max: L, dl: 0 }); } burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); G.sel = ids[0]; sfx('merge'); track('merge', 1); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
 }
 function sell() { const u = G.grid[G.sel]; if (!u) return; G.gold += [10, 22, 48, 90, 150][TIERS.indexOf(u.tier)]; G.grid[G.sel] = null; G.sel = -1; sync(); }
 function upgrade() { if (G.gold < G.upCost) return toast('ทองไม่พอ'); G.gold -= G.upCost; G.atk++; G.upCost = Math.round(G.upCost * 1.45 + 5); toast('พลังโจมตี Lv ' + G.atk); sync(); }
@@ -305,10 +306,10 @@ function number(x, y, v, crit, big) { if (G.num.length > 16 && !crit && !big) re
 function dmgTo(m, d, crit) { m.hp -= d; m.hit = 6; number(m.x, m.y - (m.h || 80) * .8, d, crit, m.boss); }
 function nearest(x, y, r, not) { let best = null, bd = r; for (const m of G.mobs) { if (m.hp <= 0 || (not && not.includes(m))) continue; const d = Math.hypot(m.x - x, m.y - y + 32); if (d < bd) { bd = d; best = m; } } return best; }
 function attack(u, i) {
-  const c = cell(i), D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), tgt = nearest(c.x, c.y - 44, D.rng); if (!tgt) return false;
+  const c = cell(i), D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), tgt = nearest(c.x, c.y - 32, D.rng); if (!tgt) return false;
   let dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u);
   const crit = Math.random() < .1 + (s.norse >= 2 ? .15 : 0) + G.atk * .005; if (crit) dmg *= 2.2;
-  dmg = Math.round(dmg * rnd(.9, 1.1)); u.flash = 14; const hx = c.x + 18, hy = c.y - 66 * D.sz;
+  dmg = Math.round(dmg * rnd(.9, 1.1)); u.flash = 14; const hx = c.x + 14, hy = c.y - 46 * D.sz;
   if (u.kind === 'sol') { beam(hx + 8, hy + 14, tgt.x, tgt.y - 32, '#ffe066', 3, 6); dmgTo(tgt, dmg, crit); burst(tgt.x, tgt.y - 32, '#ffd23f', 4, 2); }
   else if (u.p === 'greek') {
     let from = { x: hx - 22, y: hy - 8 }, hit = [], m = tgt; const jumps = 1 + (tier >= 3 ? 2 : 1) + (s.greek >= 2 ? 1 : 0);
@@ -333,10 +334,10 @@ function skill(u, i, tgt, dmg) {
   const c = cell(i), my = u.tier === 'MYTHIC', k = my ? 1.5 : 1; sfx('skill'); track('skill', 1); u.spirit = 40; u.skillT = 34;
   G.num.push({ x: c.x, y: c.y - 70, s: HERO[u.p].sk, col: PAN[u.p].col, sk: 1, life: 70, max: 70 });
   const alive = G.mobs.filter(m => m.hp > 0);
-  if (u.p === 'greek') { alive.sort(() => Math.random() - .5).slice(0, my ? 8 : 5).forEach((m, q) => { if (VFX.zeus_storm) { const v = VFX.zeus_storm, L = v.n * 60 / v.fps, dl = q * 4; G.fx.push({ t: 'anim', k: 'zeus_storm', x: m.x, y: m.y - 30, h: my ? 190 : 160, life: L + dl, max: L + dl, dl }); } else bolt(m.x + rnd(-8, 8), m.y - 330, m.x, m.y - 20, '#bff6ff', 6, 14); dmgTo(m, Math.round(dmg * 1.6 * k), false); burst(m.x, m.y - 20, '#bff6ff', 8, 3); }); T.flash = .12; }
-  else if (u.p === 'norse') { ring(tgt.x, tgt.y - 6, '#cfe3ff', 10, 150, .45, .45); if (VFX.thor_quake) { const v = VFX.thor_quake, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'thor_quake', x: tgt.x, y: tgt.y + 4, h: my ? 560 : 480, life: L, max: L, dl: 0 }); } else if (SETS && SETS.thor) G.fx.push({ t: 'img', k: 'thor_fx', x: tgt.x, y: tgt.y - 4, ang: 0, w: 300, life: 26, max: 26 }); T.shake = 7; for (const m of alive) if (Math.hypot(m.x - tgt.x, m.y - tgt.y) < 150) { m.stun = Math.max(m.stun || 0, my ? 100 : 65); dmgTo(m, Math.round(dmg * 1.2 * k), false); } }
-  else if (u.p === 'egypt') { ring(tgt.x, tgt.y - 6, '#ffd36b', 10, 180, .55, .45); if (VFX.anubis_sand) { const v = VFX.anubis_sand, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'anubis_sand', x: tgt.x, y: tgt.y + 6, h: my ? 300 : 250, life: L, max: L, dl: 0 }); } for (const m of alive) if (Math.hypot(m.x - tgt.x, m.y - tgt.y) < 180) { m.slow = Math.max(m.slow || 0, my ? 220 : 150); dmgTo(m, Math.round(dmg * .8 * k), false); burst(m.x, m.y - 20, '#ffe7a0', 4, 2); } }
-  else if (u.p === 'asia') { if (VFX.wukong_firerain) { const v = VFX.wukong_firerain, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'wukong_firerain', x: tgt.x, y: tgt.y + 8, h: my ? 260 : 220, life: L, max: L, dl: 0 }); } alive.sort(() => Math.random() - .5).slice(0, my ? 7 : 4).forEach(t => shot(c.x, c.y - 60, t, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 60, .3, .45); burst(m.x, m.y - 26, '#ffb15a', 10, 3.5); for (const o of G.mobs) if (Math.hypot(o.x - m.x, o.y - m.y) < 60) dmgTo(o, Math.round(dmg * 1.1 * k), false); })); }
+  if (u.p === 'greek') { alive.sort(() => Math.random() - .5).slice(0, my ? 8 : 5).forEach((m, q) => { if (VFX.zeus_storm) { const v = VFX.zeus_storm, L = v.n * 60 / v.fps, dl = q * 4; G.fx.push({ t: 'anim', k: 'zeus_storm', x: m.x, y: m.y - 30, h: my ? 150 : 125, life: L + dl, max: L + dl, dl }); } else bolt(m.x + rnd(-8, 8), m.y - 330, m.x, m.y - 20, '#bff6ff', 6, 14); dmgTo(m, Math.round(dmg * 1.6 * k), false); burst(m.x, m.y - 20, '#bff6ff', 8, 3); }); T.flash = .12; }
+  else if (u.p === 'norse') { ring(tgt.x, tgt.y - 6, '#cfe3ff', 10, 150, .45, .45); if (VFX.thor_quake) { const v = VFX.thor_quake, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'thor_quake', x: tgt.x, y: tgt.y + 4, h: my ? 400 : 340, life: L, max: L, dl: 0 }); } else if (SETS && SETS.thor) G.fx.push({ t: 'img', k: 'thor_fx', x: tgt.x, y: tgt.y - 4, ang: 0, w: 300, life: 26, max: 26 }); T.shake = 7; for (const m of alive) if (Math.hypot(m.x - tgt.x, m.y - tgt.y) < 150) { m.stun = Math.max(m.stun || 0, my ? 100 : 65); dmgTo(m, Math.round(dmg * 1.2 * k), false); } }
+  else if (u.p === 'egypt') { ring(tgt.x, tgt.y - 6, '#ffd36b', 10, 180, .55, .45); if (VFX.anubis_sand) { const v = VFX.anubis_sand, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'anubis_sand', x: tgt.x, y: tgt.y + 6, h: my ? 220 : 190, life: L, max: L, dl: 0 }); } for (const m of alive) if (Math.hypot(m.x - tgt.x, m.y - tgt.y) < 180) { m.slow = Math.max(m.slow || 0, my ? 220 : 150); dmgTo(m, Math.round(dmg * .8 * k), false); burst(m.x, m.y - 20, '#ffe7a0', 4, 2); } }
+  else if (u.p === 'asia') { if (VFX.wukong_firerain) { const v = VFX.wukong_firerain, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'wukong_firerain', x: tgt.x, y: tgt.y + 8, h: my ? 200 : 170, life: L, max: L, dl: 0 }); } alive.sort(() => Math.random() - .5).slice(0, my ? 7 : 4).forEach(t => shot(c.x, c.y - 60, t, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 60, .3, .45); burst(m.x, m.y - 26, '#ffb15a', 10, 3.5); for (const o of G.mobs) if (Math.hypot(o.x - m.x, o.y - m.y) < 60) dmgTo(o, Math.round(dmg * 1.1 * k), false); })); }
 }
 function banner(text, col, dur) { T.banner = { text, col, t: dur || (text.length > 22 ? 3.4 : 1.8), d: dur || (text.length > 22 ? 3.4 : 1.8) }; }
 
@@ -473,25 +474,25 @@ function hud() {
   txt(G.boss ? 'บอสบุกแล้ว!' : 'บอสใน ' + bw + ' รอบ', cx + 52, cy + 134, 20, '#fff');
 }
 function drawUnit(u, i) {
-  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = 88 * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]);
+  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = UH * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]);
   if (G.sel === i) { g.lineWidth = 5; g.strokeStyle = '#fff06a'; rr(g, c.x - CW / 2 + 2, c.y - CH * .88 + 3, CW - 4, CH - 6, 9); g.stroke(); }
   /* tier ring on the floor */
-  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 25, 7.5, 0, 0, 6.3); g.stroke(); g.restore();
+  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 22, 6.5, 0, 0, 6.3); g.stroke(); g.restore();
   /* the god behind the blessed one: always for a greek mythic, a flash on big hits for greek epic / legend */
   const st = u.kind === 'hero' ? setOf(u.p) : null;
   if (st && (tier >= 4 || u.spirit > 0)) {
-    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 140 : 104, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
+    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 110 : 84, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
     g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, sy - sh * .5, 6, c.x, sy - sh * .5, sh * .6); gr.addColorStop(0, '#7fe8ff40'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - sh, sy - sh * 1.1, sh * 2, sh * 1.2); g.restore();
     spr(st + '_spirit', c.x - 4, c.y - h * .15 + Math.sin(tt * 1.7) * 3, sh * 1.15, false, clamp(a, 0, 1));   /* the god behind: normal blend so his face stays readable */
   }
   if (u.awake || tier >= 4) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, c.y - h * .45, 4, c.x, c.y - h * .45, 58); gr.addColorStop(0, (u.awake ? '#fff2a0' : D.col) + '66'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - 60, c.y - h - 20, 120, h + 40); g.restore(); }
-  shadow(c.x, c.y, 23);
+  shadow(c.x, c.y, 19);
   const k = u.kind === 'sol' ? 'soldier' : 'hero_' + u.p, lunge = u.flash > 8 ? (u.flash - 8) * .8 : 0;
-  if (st) { const ps = poseOf(u); drawSet(st, ps, c.x, c.y - (ps === 'idle' ? Math.max(0, bob) : 0), 88 * D.sz); }
+  if (st) { const ps = poseOf(u); drawSet(st, ps, c.x, c.y - (ps === 'idle' ? Math.max(0, bob) : 0), UH * D.sz); }
   else { spr(k, c.x + lunge, c.y + bob * .3 - Math.max(0, bob), h);
   if (u.flash > 10) { g.save(); g.globalCompositeOperation = 'lighter'; spr(k, c.x + lunge, c.y - Math.max(0, bob), h, false, (u.flash - 10) / 8); g.restore(); } }
   /* stars */
-  for (let s = 0; s < D.stars; s++) { const sx = c.x + (s - (D.stars - 1) / 2) * 11, sy = c.y + 11; g.fillStyle = D.col; g.strokeStyle = '#24160f'; g.lineWidth = 2; star(sx, sy, 6); }
+  for (let s = 0; s < D.stars; s++) { const sx = c.x + (s - (D.stars - 1) / 2) * 9, sy = c.y + 2; g.fillStyle = D.col; g.strokeStyle = '#24160f'; g.lineWidth = 2; star(sx, sy, 4.5); }
 }
 function star(x, y, r) { g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? r * .45 : r; g.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } g.closePath(); g.fill(); g.stroke(); }
 function drawMob(m) {
@@ -537,9 +538,9 @@ function drawLobby() {
   g.setTransform(SC, 0, 0, SC, 0, 0); g.clearRect(0, 0, W, H); skyLayer(); g.drawImage(BG, 0, 0, W, H);
   g.save(); g.translate(PL + 10, PT - 22); g.scale(.7, .7); portal(0, 0); g.restore(); ambient();
   const show = [[8, 'soldier'], [9, 'greek'], [10, 'norse'], [11, 'egypt'], [12, 'asia'], [3, 'soldier'], [17, 'soldier']];
-  for (const [i, k] of show) { const c = cell(i), bob = Math.sin(tt * 3 + i) * 1.4, h = 88 * (k === 'soldier' ? FIT.soldier : FIT[k]) * (k === 'soldier' ? .86 : 1.02);
+  for (const [i, k] of show) { const c = cell(i), bob = Math.sin(tt * 3 + i) * 1.4, h = UH * (k === 'soldier' ? FIT.soldier : FIT[k]) * (k === 'soldier' ? .86 : 1.02);
     const ls = setOf(k); if (k === 'greek' && ls) spr(ls + '_spirit', c.x, c.y - h * .2 + Math.sin(tt * 1.7) * 3, 150, false, .5 + .08 * Math.sin(tt * 2));
-    g.save(); g.lineWidth = 3; g.strokeStyle = k === 'soldier' ? '#c9ced8' : '#ffcf3a'; g.beginPath(); g.ellipse(c.x, c.y, 25, 7.5, 0, 0, 6.3); g.stroke(); g.restore(); shadow(c.x, c.y, 23); if (ls) drawSet(ls, Math.sin(tt * .8 + i) > .85 ? 'skill' : 'idle', c.x, c.y - Math.max(0, bob), 90); else spr(k === 'soldier' ? 'soldier' : 'hero_' + k, c.x, c.y - Math.max(0, bob), h); }
+    g.save(); g.lineWidth = 3; g.strokeStyle = k === 'soldier' ? '#c9ced8' : '#ffcf3a'; g.beginPath(); g.ellipse(c.x, c.y, 22, 6.5, 0, 0, 6.3); g.stroke(); g.restore(); shadow(c.x, c.y, 19); if (ls) drawSet(ls, Math.sin(tt * .8 + i) > .85 ? 'skill' : 'idle', c.x, c.y - Math.max(0, bob), UH); else spr(k === 'soldier' ? 'soldier' : 'hero_' + k, c.x, c.y - Math.max(0, bob), h); }
   for (const m of LOB.mobs) { m.d += m.sp; m.step += .09; const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; const flip = m.face * m.dir < 0; shadow(m.x, m.y, 15); spr(m.k, m.x, m.y - Math.abs(Math.sin(m.step)) * 3, m.h, flip); }
 }
 function draw() {
