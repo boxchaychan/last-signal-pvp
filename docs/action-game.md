@@ -2694,4 +2694,10 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
     - Big banners for a mythic, the boss, an elite and the start.
     - Small sounds made in code (summon, merge, mythic, skill, boss, coin, win / lose), with an on/off switch in the lobby.
   - Checked at 390 x 844 (every tab, match start, fight, result, back to the lobby) with no console errors. Test pages call `DIVINE.setMode('battle')`.
+- 2026-11-25 ZEUS SET IN (the owner had Codex make it on `codex/divine-dark-compact`, commit fe6711f "approved Zeus champion poses and VFX"; brought in by hand, the Codex PR is not merged):
+  - Raw files: `art/incoming/divine_game/raw/zeus_v1/` plus the report. The 512 frames are in `art/divine/zeus/`.
+  - Game-size crops: `art/divine/zeus_{idle,attack,skill,spirit,slash}.png`. The anchors are in `zeus.json` (idle body = 200 px at 2x; pose heights are kept relative to it).
+  - Greek units now play idle, attack (while flashing after a hit) and skill (34 frames when the god skill fires).
+  - The lightning slash picture flies along each Greek hit. The full-body Zeus spirit replaces the old cut one, in battle and in the lobby. The hero card uses `zeus_idle`.
+  - Checked at 390 x 844 with no console errors.
 

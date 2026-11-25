@@ -159,6 +159,7 @@ const PAN = {
 const PK = Object.keys(PAN);
 const MOBS = [{ k: 'mob_robot_a', h: 60, sp: 1.05, face: 1 }, { k: 'mob_robot_b', h: 62, sp: 1.0, face: 1 }, { k: 'mob_robot_c', h: 47, sp: 1.35, face: 1 }, { k: 'mob_ghoul', h: 66, sp: .9, face: -1, hpk: 1.4 }];
 const IMG = {};
+let ZEUS = null;   /* the Greek champion's own poses + effects (Codex, owner-approved): art/divine/zeus_*.png, anchors in zeus.json */
 const FIT = { greek: 1, norse: 1.1, egypt: 1.13, asia: 1.03, soldier: .97 };   /* same HEAD size for everyone: helmets and jackal ears add height */
 const load = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(s); i.src = s; });
 
@@ -168,7 +169,7 @@ const SAVE = 'divine_meta_v1';
 const META = (() => { let m = null; try { m = JSON.parse(localStorage.getItem(SAVE)); } catch (e) {} return Object.assign({ gold: 300, lv: { greek: 1, norse: 1, egypt: 1, asia: 1, soldier: 1 }, tp: { start: 0, atk: 0, luck: 0, speed: 0 }, best: 0, wins: 0, games: 0, chestAt: 0, boost: { epic: 0, gold: 0, double: 0 }, sound: true }, m || {}); })();
 function save() { try { localStorage.setItem(SAVE, JSON.stringify(META)); } catch (e) {} }
 const HERO = {
-  greek: { img: 'hero_greek', sk: 'พายุซุส', d: 'สายฟ้ากระโดดหลายตัว · สกิลฟ้าผ่ามอนหลายตัวพร้อมกัน', c1: '#4fb6d8', c2: '#1f5a86' },
+  greek: { img: 'zeus_idle', sk: 'พายุซุส', d: 'สายฟ้ากระโดดหลายตัว · สกิลฟ้าผ่ามอนหลายตัวพร้อมกัน', c1: '#4fb6d8', c2: '#1f5a86' },
   norse: { img: 'hero_norse', sk: 'ค้อนสะเทือนฟ้า', d: 'ฟ้าผ่าเป็นวง · สกิลทำให้มอนรอบ ๆ มึนหยุดเดิน', c1: '#7f96d8', c2: '#32447e' },
   egypt: { img: 'hero_egypt', sk: 'ผนึกทราย', d: 'ลำแสงทะลุเป็นแถว · สกิลทำให้มอนช้าลงครึ่งหนึ่ง', c1: '#e6b04a', c2: '#8a5a14' },
   asia: { img: 'hero_asia', sk: 'ฝนเพลิงวานร', d: 'ลูกไฟระเบิดเป็นวง · สกิลยิงฝนลูกไฟใส่หลายตัว', c1: '#f08a4a', c2: '#8e3414' },
@@ -278,6 +279,7 @@ function attack(u, i) {
     let from = { x: hx - 22, y: hy - 8 }, hit = [], m = tgt; const jumps = 1 + (tier >= 3 ? 2 : 1) + (s.greek >= 2 ? 1 : 0);
     for (let j = 0; j < jumps && m; j++) { bolt(from.x, from.y, m.x, m.y - 27, j ? '#bff6ff' : '#7fe8ff', tier >= 3 ? 5 : 3.5, 11); dmgTo(m, Math.round(dmg * (j ? .6 : 1)), crit && !j); burst(m.x, m.y - 27, '#bff6ff', 5, 2.5); hit.push(m); from = { x: m.x, y: m.y - 27 }; m = nearest(m.x, m.y, 150, hit); }
     if (tier >= 2) u.spirit = 26;
+    const ang = Math.atan2(tgt.y - 27 - hy, tgt.x - hx); G.fx.push({ t: 'img', k: 'zeus_slash', x: hx + (tgt.x - hx) * .7, y: hy + (tgt.y - 27 - hy) * .7, ang, w: tier >= 3 ? 120 : 92, life: 13, max: 13 });
   } else if (u.p === 'norse') {
     bolt(tgt.x + rnd(-6, 6), tgt.y - 360, tgt.x, tgt.y - 20, '#cfe3ff', tier >= 3 ? 6 : 4, 12); ring(tgt.x, tgt.y - 6, '#9fc4ff', 6, 60 + tier * 8, .32, .4);
     dmgTo(tgt, dmg, crit); for (const m of G.mobs) if (m !== tgt && Math.hypot(m.x - tgt.x, m.y - tgt.y) < 60 + tier * 8) dmgTo(m, Math.round(dmg * .55), false); T.shake = Math.max(T.shake, tier >= 3 ? 4 : 2);
@@ -293,7 +295,7 @@ function attack(u, i) {
 const heroMul = u => (1 + .12 * ((META.lv[u.kind === 'sol' ? 'soldier' : u.p] || 1) - 1)) * (1 + .06 * META.tp.atk);
 /* every 6th hit of a legend / mythic: the god's own skill */
 function skill(u, i, tgt, dmg) {
-  const c = cell(i), my = u.tier === 'MYTHIC', k = my ? 1.5 : 1; sfx('skill'); u.spirit = 40;
+  const c = cell(i), my = u.tier === 'MYTHIC', k = my ? 1.5 : 1; sfx('skill'); u.spirit = 40; u.skillT = 34;
   G.num.push({ x: c.x, y: c.y - 70, s: HERO[u.p].sk, col: PAN[u.p].col, sk: 1, life: 70, max: 70 });
   const alive = G.mobs.filter(m => m.hp > 0);
   if (u.p === 'greek') { alive.sort(() => Math.random() - .5).slice(0, my ? 8 : 5).forEach(m => { bolt(m.x + rnd(-8, 8), m.y - 330, m.x, m.y - 20, '#bff6ff', 6, 14); dmgTo(m, Math.round(dmg * 1.6 * k), false); burst(m.x, m.y - 20, '#bff6ff', 8, 3); }); T.flash = .12; }
@@ -314,7 +316,7 @@ function step() {
   G.spawn++; if (G.spawn > Math.max(28, 66 - G.wave * 2)) { G.spawn = 0; if (!G.boss || G.wave % 10) spawnMob(); }
   for (const m of G.mobs) { if (m.stun > 0) m.stun--; if (m.slow > 0) m.slow--; if (G.freeze <= 0 && !(m.stun > 0)) { const v = m.sp * (m.slow > 0 ? .5 : 1); m.d += v; m.step += .18 * v; } const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; if (m.hit > 0) m.hit--; }
   const s = syn();
-  G.grid.forEach((u, i) => { if (!u) return; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed); });
+  G.grid.forEach((u, i) => { if (!u) return; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.skillT > 0) u.skillT--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed); });
   for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 24, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; T.flash = .2; const free = G.grid.includes(null) ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); } } sync(); }
   for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 24, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
   G.fx = G.fx.filter(f => f.life > 0); for (const n of G.num) n.life--; G.num = G.num.filter(n => n.life > 0);
@@ -385,6 +387,9 @@ function rivals() {   /* the other 4 players of this match */
 
 /* ---------- drawing ---------- */
 function spr(k, x, y, h, flip, alpha) { const im = IMG[k]; if (!im) return; const w = im.width * h / im.height; g.save(); g.globalAlpha = alpha == null ? 1 : alpha; g.translate(x, y); if (flip) g.scale(-1, 1); g.drawImage(im, -w / 2, -h, w, h); g.restore(); }
+function sprA(k, x, y, h, ax, alpha) { const im = IMG[k]; if (!im) return; const w = im.width * h / im.height; g.save(); g.globalAlpha = alpha == null ? 1 : alpha; g.drawImage(im, x - w * ax, y - h, w, h); g.restore(); }
+function zeusPose(u) { return u.skillT > 0 ? 'skill' : u.flash > 5 ? 'attack' : 'idle'; }
+function drawZeus(pose, x, y, h, alpha) { const z = ZEUS[pose]; sprA('zeus_' + pose, x, y, h * z.h / ZEUS.idle.h, z.ax, alpha); }
 function shadow(x, y, w) { g.fillStyle = 'rgba(20,10,6,.38)'; g.beginPath(); g.ellipse(x, y, w, w * .3, 0, 0, 6.3); g.fill(); }
 function txt(s, x, y, size, col, out, align) { g.font = `800 ${size}px Kanit, system-ui, sans-serif`; g.textAlign = align || 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round'; g.lineWidth = Math.max(4, size / 5); g.strokeStyle = out || '#24160f'; g.strokeText(s, x, y); g.fillStyle = col; g.fillText(s, x, y); }
 function portal(x, y) {
@@ -417,13 +422,14 @@ function drawUnit(u, i) {
   if (u.kind === 'hero' && u.p === 'greek' && (tier >= 4 || u.spirit > 0)) {
     const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 104 : 78, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
     g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, sy - sh * .5, 6, c.x, sy - sh * .5, sh * .6); gr.addColorStop(0, '#7fe8ff40'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - sh, sy - sh * 1.1, sh * 2, sh * 1.2); g.restore();
-    spr('spirit_greek', c.x - 4, sy, sh, false, clamp(a, 0, 1));   /* the god behind: normal blend so his face stays readable */
+    spr(ZEUS ? 'zeus_spirit' : 'spirit_greek', c.x - 4, ZEUS ? c.y - h * .15 + Math.sin(tt * 1.7) * 3 : sy, ZEUS ? sh * 1.15 : sh, false, clamp(a, 0, 1));   /* the god behind: normal blend so his face stays readable */
   }
   if (u.awake || tier >= 4) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, c.y - h * .45, 4, c.x, c.y - h * .45, 58); gr.addColorStop(0, (u.awake ? '#fff2a0' : D.col) + '66'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - 60, c.y - h - 20, 120, h + 40); g.restore(); }
   shadow(c.x, c.y, 17);
   const k = u.kind === 'sol' ? 'soldier' : 'hero_' + u.p, lunge = u.flash > 8 ? (u.flash - 8) * .8 : 0;
-  spr(k, c.x + lunge, c.y + bob * .3 - Math.max(0, bob), h);
-  if (u.flash > 10) { g.save(); g.globalCompositeOperation = 'lighter'; spr(k, c.x + lunge, c.y - Math.max(0, bob), h, false, (u.flash - 10) / 8); g.restore(); }
+  if (u.p === 'greek' && ZEUS) { const ps = zeusPose(u); drawZeus(ps, c.x, c.y - (ps === 'idle' ? Math.max(0, bob) : 0), h); }
+  else { spr(k, c.x + lunge, c.y + bob * .3 - Math.max(0, bob), h);
+  if (u.flash > 10) { g.save(); g.globalCompositeOperation = 'lighter'; spr(k, c.x + lunge, c.y - Math.max(0, bob), h, false, (u.flash - 10) / 8); g.restore(); } }
   /* stars */
   for (let s = 0; s < D.stars; s++) { const sx = c.x + (s - (D.stars - 1) / 2) * 9, sy = c.y + 9; g.fillStyle = D.col; g.strokeStyle = '#24160f'; g.lineWidth = 2; star(sx, sy, 5); }
 }
@@ -447,7 +453,8 @@ function drawFx() {
       const pts = f.t === 'bolt' ? f.pts : [[f.x0, f.y0], [f.x1, f.y1]]; g.save(); g.globalCompositeOperation = 'lighter'; g.lineJoin = 'round'; g.lineCap = 'round';
       for (const [w, col, al] of [[f.w * 3.2, f.col, .35 * a], [f.w * 1.6, f.col, .8 * a], [f.w * .6, '#ffffff', a]]) { g.globalAlpha = al; g.strokeStyle = col; g.lineWidth = w; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); }
       g.restore();
-    } else if (f.t === 'shot') { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(f.x, f.y, 1, f.x, f.y, 16); gr.addColorStop(0, '#fff6c8'); gr.addColorStop(.4, f.col); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(f.x - 16, f.y - 16, 32, 32); g.restore(); }
+    } else if (f.t === 'img') { const im = IMG[f.k]; if (im) { const w = f.w * (1.15 - .15 * a), h = w * im.height / im.width; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = a; g.translate(f.x, f.y); g.rotate(f.ang); g.drawImage(im, -w / 2, -h / 2, w, h); g.restore(); } }
+    else if (f.t === 'shot') { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(f.x, f.y, 1, f.x, f.y, 16); gr.addColorStop(0, '#fff6c8'); gr.addColorStop(.4, f.col); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(f.x - 16, f.y - 16, 32, 32); g.restore(); }
   }
   g.globalAlpha = 1;
   for (const n of G.num) { if (n.sk) { const a = n.life / n.max; g.globalAlpha = a < .3 ? a / .3 : 1; txt(n.s, n.x, n.y - (1 - a) * 26, 20, n.col); continue; } const a = n.life / n.max, up = (1 - a) * 34, sz = n.big ? 40 : n.crit ? 34 : 24; g.globalAlpha = a < .3 ? a / .3 : 1; if (n.crit) txt('คริ!', n.x, n.y - up - sz * .8, sz * .55, '#ffd23f'); txt(n.s, n.x, n.y - up, sz * (a > .85 ? 1 + (a - .85) * 3 : 1), n.crit || n.big ? '#ffd23f' : '#fff'); }
@@ -468,8 +475,8 @@ function drawLobby() {
   g.save(); g.translate(PL + 10, PT - 22); g.scale(.7, .7); portal(0, 0); g.restore(); ambient();
   const show = [[8, 'soldier'], [9, 'greek'], [10, 'norse'], [11, 'egypt'], [12, 'asia'], [3, 'soldier'], [17, 'soldier']];
   for (const [i, k] of show) { const c = cell(i), bob = Math.sin(tt * 3 + i) * 1.4, h = 64 * (k === 'soldier' ? FIT.soldier : FIT[k]) * (k === 'soldier' ? .86 : 1.02);
-    if (k === 'greek') spr('spirit_greek', c.x, c.y - h * .6 + Math.sin(tt * 1.7) * 3, 96, false, .45 + .08 * Math.sin(tt * 2));
-    g.save(); g.lineWidth = 3; g.strokeStyle = k === 'soldier' ? '#c9ced8' : '#ffcf3a'; g.beginPath(); g.ellipse(c.x, c.y, 20, 6, 0, 0, 6.3); g.stroke(); g.restore(); shadow(c.x, c.y, 17); spr(k === 'soldier' ? 'soldier' : 'hero_' + k, c.x, c.y - Math.max(0, bob), h); }
+    if (k === 'greek') spr(ZEUS ? 'zeus_spirit' : 'spirit_greek', c.x, ZEUS ? c.y - h * .2 + Math.sin(tt * 1.7) * 3 : c.y - h * .6, ZEUS ? 110 : 96, false, .5 + .08 * Math.sin(tt * 2));
+    g.save(); g.lineWidth = 3; g.strokeStyle = k === 'soldier' ? '#c9ced8' : '#ffcf3a'; g.beginPath(); g.ellipse(c.x, c.y, 20, 6, 0, 0, 6.3); g.stroke(); g.restore(); shadow(c.x, c.y, 17); if (k === 'greek' && ZEUS) drawZeus(Math.sin(tt * .8) > .85 ? 'skill' : 'idle', c.x, c.y - Math.max(0, bob), h); else spr(k === 'soldier' ? 'soldier' : 'hero_' + k, c.x, c.y - Math.max(0, bob), h); }
   for (const m of LOB.mobs) { m.d += m.sp; m.step += .09; const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; const flip = m.face * m.dir < 0; shadow(m.x, m.y, 15); spr(m.k, m.x, m.y - Math.abs(Math.sin(m.step)) * 3, m.h, flip); }
 }
 function draw() {
@@ -550,7 +557,8 @@ $('exit').onclick = () => { if (G.over) return; if (Date.now() - exitAt < 2000) 
 let last = 0;
 function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; tt += dt; if (MODE === 'battle') for (let k = 0; k < G.speed; k++) step(); draw(); requestAnimationFrame(frame); }
 (async () => {
-  const names = ['hero_greek', 'hero_norse', 'hero_egypt', 'hero_asia', 'soldier', 'spirit_greek', 'mob_robot_a', 'mob_robot_b', 'mob_robot_c', 'mob_ghoul', 'boss_ghoul'];
+  const names = ['hero_greek', 'hero_norse', 'hero_egypt', 'hero_asia', 'soldier', 'spirit_greek', 'mob_robot_a', 'mob_robot_b', 'mob_robot_c', 'mob_ghoul', 'boss_ghoul', 'zeus_idle', 'zeus_attack', 'zeus_skill', 'zeus_spirit', 'zeus_slash'];
+  ZEUS = await fetch('art/divine/zeus.json').then(r => r.json());
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   BG = paintBG(); fresh(); renderLobby();
