@@ -57,7 +57,7 @@ button small { display: block; font-size: .62em; font-weight: 600; }
   <div id="big" class="ui"><button id="fuse">หลอมเทพ<small>เอปิคขึ้นไป 2 ตัว</small></button><button id="summon">อัญเชิญ<small id="sumCost">20 ทอง</small></button><button id="gamble">เสี่ยงทาย<small>1 เพชร</small></button></div>
   <div id="small" class="ui"><button id="boss">ท้าบอส</button><button id="chrono">หยุดกาล</button><button id="upgrade">เสริมพลัง<small id="upCost">45 ทอง</small></button></div>
   <div id="toast"></div>
-  <div id="over"><div class="card"><h2>วิหารแตก!</h2><p id="sum"></p><button id="again">เล่นใหม่</button></div></div>
+  <div id="over"><div class="card"><h2 id="rank">วิหารแตก!</h2><p id="sum"></p><button id="again">เล่นใหม่</button></div></div>
 </div>
 <script>
 'use strict';
@@ -68,10 +68,10 @@ button small { display: block; font-size: .62em; font-weight: 600; }
 const $ = id => document.getElementById(id), cv = $('c'), g = cv.getContext('2d'), W = 585, H = 1266, SC = 2;
 cv.width = W * SC; cv.height = H * SC;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
-const COLS = 7, ROWS = 3, CW = 68, CH = 128, BX = Math.round((W - COLS * CW) / 2), BY = 380;
-const cell = i => ({ x: BX + (i % COLS) * CW + CW / 2, y: BY + Math.floor(i / COLS) * CH + CH * .86 });   /* feet point */
+const COLS = 7, ROWS = 3, CW = 68, CH = 100, BX = Math.round((W - COLS * CW) / 2), BY = 360;   /* owner "ทำช่องขนาดตัวก่อน": a slot fits one character */
+const cell = i => ({ x: BX + (i % COLS) * CW + CW / 2, y: BY + Math.floor(i / COLS) * CH + CH * .88 });   /* feet point */
 /* monsters walk round the board on the centre line of the dirt ring */
-const PL = 23, PR = W - 23, PT = 339, PB = 805, LOOP = [[PL, PT], [PR, PT], [PR, PB], [PL, PB], [PL, PT]];
+const PL = BX - 31, PR = BX + COLS * CW + 31, PT = BY - 31, PB = BY + ROWS * CH + 31, LOOP = [[PL, PT], [PR, PT], [PR, PB], [PL, PB], [PL, PT]];
 const SEG = []; let LEN = 0; for (let i = 0; i < 4; i++) { const [a, b] = [LOOP[i], LOOP[i + 1]], l = Math.hypot(b[0] - a[0], b[1] - a[1]); SEG.push({ a, b, l, s: LEN }); LEN += l; }
 function along(d) { d = ((d % LEN) + LEN) % LEN; for (const s of SEG) if (d <= s.s + s.l) { const f = (d - s.s) / s.l; return { x: s.a[0] + (s.b[0] - s.a[0]) * f, y: s.a[1] + (s.b[1] - s.a[1]) * f, dx: Math.sign(s.b[0] - s.a[0]) }; } return { x: PL, y: PT, dx: 1 }; }
 
@@ -92,11 +92,16 @@ const PAN = {
 const PK = Object.keys(PAN);
 const MOBS = [{ k: 'mob_robot_a', h: 75, sp: 1.05, face: 1 }, { k: 'mob_robot_b', h: 78, sp: 1.0, face: 1 }, { k: 'mob_robot_c', h: 59, sp: 1.35, face: 1 }, { k: 'mob_ghoul', h: 83, sp: .9, face: -1, hpk: 1.4 }];
 const IMG = {};
+const FIT = { greek: 1, norse: 1.1, egypt: 1.13, asia: 1.03, soldier: .97 };   /* same HEAD size for everyone: helmets and jackal ears add height */
 const load = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(s); i.src = s; });
 
 let G, BG, tt = 0;
+const RIVAL_NAMES = ['ต้นกล้า', 'มายด์', 'บอสส์', 'น้ำหวาน', 'แทนไท', 'ปลายฟ้า', 'จิ๊บ', 'ภูผา'];
+function makeRivals() { const n = [...RIVAL_NAMES].sort(() => Math.random() - .5); return [0, 1, 2, 3].map(i => ({ name: n[i], p: pick(PK), end: Math.round(rnd(18, 62)), count: 0, out: 0 })); }
+/* no server yet: each rival has a hidden last wave; their monster count climbs toward 100 as it gets near */
+function stepRivals() { for (const r of G.rivals) { if (r.out) continue; const f = clamp((G.wave + (20 - G.sec) / 20 - r.end * .45) / (r.end * .55), 0, 1.05), target = Math.round(100 * f * f + 6 * Math.sin(tt * .7 + r.end)); r.count += clamp(target - r.count, -2, 2); r.count = clamp(r.count, 0, 100); if (G.wave >= r.end && r.count >= 96) { r.out = 5 - G.rivals.filter(q => q.out).length; r.count = 100; toast(r.name + ' ตกรอบ! (อันดับ ' + r.out + ')'); if (G.rivals.every(q => q.out)) toast('เหลือคุณคนเดียว! อันดับ 1'); } } }
 function fresh() {
-  G = { gold: 180, gem: 3, core: 0, atk: 1, upCost: 45, sumCost: 20, wave: 1, sec: 20, grid: Array(COLS * ROWS).fill(null), mobs: [], fx: [], num: [], sel: -1, speed: 1, freeze: 0, chronoCd: 0, spawn: 0, tick: 0, kills: 0, over: false, boss: null };
+  G = { gold: 180, gem: 3, core: 0, atk: 1, upCost: 45, sumCost: 20, wave: 1, sec: 20, grid: Array(COLS * ROWS).fill(null), mobs: [], fx: [], num: [], sel: -1, speed: 1, freeze: 0, chronoCd: 0, spawn: 0, tick: 0, kills: 0, over: false, boss: null, rivals: makeRivals() };
   $('over').classList.remove('on'); sync();
 }
 function toast(s) { const e = $('toast'); e.textContent = s; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 1600); }
@@ -175,6 +180,7 @@ const mobHp = w => 55 * Math.pow(1.16, w - 1) + 20 * w;   /* grows faster than t
 function spawnMob() { const t = pick(G.wave < 3 ? MOBS.slice(0, 3) : MOBS), hp = mobHp(G.wave) * (t.hpk || 1); G.mobs.push({ k: t.k, h: t.h, face: t.face, d: 0, hp, max: hp, sp: t.sp * rnd(.92, 1.08), step: Math.random() * 6, hit: 0 }); }
 function step() {
   if (G.over) return; G.tick++; if (G.freeze > 0) G.freeze--; if (G.chronoCd > 0) G.chronoCd--;
+  if (G.tick % 30 === 0) stepRivals();
   if (G.tick % 60 === 0) { G.sec--; if (G.sec <= 0) { G.wave++; G.sec = 20; G.gold += 30 + G.wave * 4; toast('รอบ ' + G.wave + ' · ได้ทอง ' + (30 + G.wave * 4)); if (G.wave % 10 === 0) spawnBoss(); } sync(); }
   G.spawn++; if (G.spawn > Math.max(28, 66 - G.wave * 2)) { G.spawn = 0; if (!G.boss || G.wave % 10) spawnMob(); }
   for (const m of G.mobs) { if (G.freeze <= 0) { m.d += m.sp; m.step += .18 * m.sp; } const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; if (m.hit > 0) m.hit--; }
@@ -184,34 +190,68 @@ function step() {
   for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 30, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
   G.fx = G.fx.filter(f => f.life > 0); for (const n of G.num) n.life--; G.num = G.num.filter(n => n.life > 0);
   if (T.flash > 0) T.flash -= 1 / 60; if (T.shake > 0) T.shake *= .86;
-  if (G.mobs.length >= 100) { G.over = true; $('sum').textContent = 'ถึงรอบ ' + G.wave + ' · ปราบ ' + G.kills + ' ตัว'; $('over').classList.add('on'); }
+  if (G.mobs.length >= 100) { G.over = true; const rank = 1 + G.rivals.filter(r => !r.out).length; $('rank').textContent = 'อันดับ ' + rank + ' จาก 5'; $('sum').textContent = 'ถึงรอบ ' + G.wave + ' · ปราบ ' + G.kills + ' ตัว'; $('over').classList.add('on'); }
 }
 
 /* ---------- the arena, painted once ---------- */
 function rr(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
-function paintBG() {
+function paintBG() {   /* owner "ปรับสนามให้สวย": a sacred temple courtyard at dusk, painted once */
   const b = document.createElement('canvas'); b.width = W * SC; b.height = H * SC; const c = b.getContext('2d'); c.scale(SC, SC);
-  let gr = c.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#1b2236'); gr.addColorStop(.55, '#151a29'); gr.addColorStop(1, '#0f121c'); c.fillStyle = gr; c.fillRect(0, 0, W, H);
-  /* ruins and pipes in the dark */
-  c.lineWidth = 5; c.strokeStyle = '#0c0d14';
-  const rock = (x, y, w, h, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(x, y + h); c.lineTo(x + w * .15, y + h * .2); c.lineTo(x + w * .55, y); c.lineTo(x + w * .9, y + h * .25); c.lineTo(x + w, y + h); c.closePath(); c.fill(); c.stroke(); };
-  for (const [x, y, w, h] of [[-20, 230, 110, 90], [480, 250, 130, 80], [-30, 860, 120, 80], [500, 850, 110, 70], [200, 236, 70, 40]]) rock(x, y, w, h, '#2b3042');
-  c.fillStyle = '#3a3f50'; for (const [x, y, w, h] of [[8, 470, 18, 300], [W - 26, 470, 18, 300]]) { rr(c, x, y, w, h, 8); c.fill(); c.stroke(); }
-  for (const [x, y] of [[17, 520], [17, 640], [W - 17, 520], [W - 17, 640]]) { c.fillStyle = '#545a6b'; rr(c, x - 14, y - 8, 28, 16, 4); c.fill(); c.stroke(); }
-  /* dirt ring */
-  c.lineWidth = 7; c.strokeStyle = '#24160f';
-  rr(c, 4, 300, W - 8, 545, 64); c.fillStyle = '#a86d4c'; c.fill(); c.stroke();
-  rr(c, 14, 310, W - 28, 525, 56); gr = c.createLinearGradient(0, 300, 0, 845); gr.addColorStop(0, '#c88a62'); gr.addColorStop(1, '#b97a55'); c.fillStyle = gr; c.fill();
-  c.fillStyle = '#9d6545'; for (let i = 0; i < 70; i++) { const a = Math.random(), side = Math.floor(Math.random() * 4); let x, y; if (side === 0) { x = 30 + a * (W - 60); y = rnd(318, 360); } else if (side === 1) { x = rnd(W - 58, W - 20); y = 320 + a * 510; } else if (side === 2) { x = 30 + a * (W - 60); y = rnd(788, 828); } else { x = rnd(20, 58); y = 320 + a * 510; } c.beginPath(); c.ellipse(x, y, rnd(2, 6), rnd(1.5, 3.5), 0, 0, 6.3); c.fill(); }
-  c.fillStyle = '#8e5a3d'; for (const [x, y] of [[48, 818], [W - 52, 330]]) { c.beginPath(); c.ellipse(x, y, 26, 16, 0, 0, 6.3); c.fill(); }
-  /* stone board */
-  rr(c, BX - 14, BY - 14, COLS * CW + 28, ROWS * CH + 28, 26); c.fillStyle = '#3e3936'; c.fill(); c.lineWidth = 7; c.stroke();
-  rr(c, BX - 6, BY - 6, COLS * CW + 12, ROWS * CH + 12, 18); c.fillStyle = '#57504b'; c.fill();
+  const ink = '#24160f', R = (a, z) => a + Math.random() * (z - a);
+  /* dusk sky + distant temple on the hill */
+  let gr = c.createLinearGradient(0, 0, 0, 320); gr.addColorStop(0, '#231a3d'); gr.addColorStop(.45, '#5a3360'); gr.addColorStop(.8, '#c5685a'); gr.addColorStop(1, '#f0a45e'); c.fillStyle = gr; c.fillRect(0, 0, W, 330);
+  gr = c.createRadialGradient(292, 250, 10, 292, 250, 190); gr.addColorStop(0, '#ffe3a0cc'); gr.addColorStop(1, '#ffe3a000'); c.fillStyle = gr; c.fillRect(0, 60, W, 270);
+  c.fillStyle = '#fff6dc55'; for (let i = 0; i < 40; i++) { c.beginPath(); c.arc(R(0, W), R(0, 150), R(.6, 1.6), 0, 6.3); c.fill(); }
+  c.fillStyle = '#3d2a4e'; c.beginPath(); c.moveTo(0, 300); for (let x = 0; x <= W; x += 30) c.lineTo(x, 262 - 26 * Math.sin(x * .011) - 14 * Math.sin(x * .031)); c.lineTo(W, 330); c.lineTo(0, 330); c.fill();
+  c.fillStyle = '#4c3352'; c.fillRect(222, 212, 140, 40); c.beginPath(); c.moveTo(212, 214); c.lineTo(292, 182); c.lineTo(372, 214); c.fill(); for (let i = 0; i < 6; i++) c.fillRect(230 + i * 24, 214, 9, 40);
+  /* grass ground */
+  gr = c.createLinearGradient(0, 290, 0, H); gr.addColorStop(0, '#6aa84a'); gr.addColorStop(.35, '#4f8f3a'); gr.addColorStop(.7, '#3c7430'); gr.addColorStop(1, '#244a1f'); c.fillStyle = gr; c.fillRect(0, 290, W, H - 290);
+  for (let i = 0; i < 900; i++) { const x = R(0, W), y = R(296, 1000), l = R(3, 8); c.strokeStyle = Math.random() < .5 ? '#3a6e2c' : '#7cbc55'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(x, y); c.lineTo(x + R(-2, 2), y - l); c.stroke(); }
+  for (let i = 0; i < 46; i++) { const x = R(0, W), y = R(700, 840); c.fillStyle = pick(['#ffe36b', '#ff9fc1', '#ffffff', '#b9a0ff']); c.beginPath(); c.arc(x, y, 2.4, 0, 6.3); c.fill(); }
+  /* sand path ring with edge stones */
+  const ox = PL - 30, oy = PT - 30, ow = PR - PL + 60, oh = PB - PT + 60;
+  c.lineWidth = 6; c.strokeStyle = ink; rr(c, ox, oy, ow, oh, 52); gr = c.createLinearGradient(0, oy, 0, oy + oh); gr.addColorStop(0, '#e2b57a'); gr.addColorStop(1, '#cf9a60'); c.fillStyle = gr; c.fill(); c.stroke();
+  c.fillStyle = '#c08752'; for (let i = 0; i < 160; i++) { const t = Math.random(), side = Math.floor(Math.random() * 4); let x, y; if (side < 2) { x = ox + 20 + t * (ow - 40); y = side ? oy + oh - R(8, 52) : oy + R(8, 52); } else { y = oy + 20 + t * (oh - 40); x = side === 2 ? ox + R(8, 52) : ox + ow - R(8, 52); } c.beginPath(); c.ellipse(x, y, R(1.5, 4), R(1, 2.5), 0, 0, 6.3); c.fill(); }
+  for (let i = 0; i < 64; i++) { const t = i / 64, per = 2 * (ow + oh), d = t * per; let x, y; if (d < ow) { x = ox + d; y = oy; } else if (d < ow + oh) { x = ox + ow; y = oy + d - ow; } else if (d < 2 * ow + oh) { x = ox + ow - (d - ow - oh); y = oy + oh; } else { x = ox; y = oy + oh - (d - 2 * ow - oh); }
+    x = clamp(x, ox + 14, ox + ow - 14); y = clamp(y, oy + 12, oy + oh - 12); c.fillStyle = Math.random() < .5 ? '#9b9a8e' : '#b5b2a3'; c.lineWidth = 3; c.beginPath(); c.ellipse(x + R(-3, 3), y + R(-3, 3), R(6, 10), R(4, 7), R(0, 3), 0, 6.3); c.fill(); c.stroke(); }
+  /* marble temple floor with a gold frame */
+  const fx = BX - 12, fy = BY - 12, fw = COLS * CW + 24, fh = ROWS * CH + 24;
+  rr(c, fx - 4, fy + 4, fw + 8, fh + 6, 20); c.fillStyle = '#00000040'; c.fill();
+  rr(c, fx, fy, fw, fh, 18); gr = c.createLinearGradient(0, fy, 0, fy + fh); gr.addColorStop(0, '#f3cf6a'); gr.addColorStop(1, '#c98f2c'); c.fillStyle = gr; c.fill(); c.lineWidth = 6; c.strokeStyle = ink; c.stroke();
+  rr(c, fx + 7, fy + 7, fw - 14, fh - 14, 12); c.fillStyle = '#8c7a63'; c.fill(); c.lineWidth = 3; c.stroke();
+  c.fillStyle = '#ffe9a6'; for (const [x, y] of [[fx + 4, fy + 4], [fx + fw - 4, fy + 4], [fx + 4, fy + fh - 4], [fx + fw - 4, fy + fh - 4]]) { c.save(); c.translate(x, y); c.rotate(.785); c.fillRect(-6, -6, 12, 12); c.lineWidth = 3; c.strokeRect(-6, -6, 12, 12); c.restore(); }
   for (let r = 0; r < ROWS; r++) for (let k = 0; k < COLS; k++) {
-    const x = BX + k * CW + 3, y = BY + r * CH + 3, w = CW - 6, h = CH - 6; rr(c, x, y, w, h, 9); c.fillStyle = '#6d6661'; c.fill(); c.lineWidth = 3; c.strokeStyle = '#2f2a27'; c.stroke();
-    rr(c, x + 3, y + 3, w - 6, 10, 5); c.fillStyle = '#7d7671'; c.fill(); c.fillStyle = '#625b56'; c.fillRect(x + 6, y + h - 14, w - 12, 6);
+    const x = BX + k * CW + 2, y = BY + r * CH + 2, w = CW - 4, h = CH - 4; rr(c, x, y, w, h, 7); gr = c.createLinearGradient(x, y, x + w, y + h); gr.addColorStop(0, (r + k) % 2 ? '#efe7d6' : '#e6dcc8'); gr.addColorStop(1, (r + k) % 2 ? '#d7cbb3' : '#cfc1a6'); c.fillStyle = gr; c.fill(); c.lineWidth = 2.5; c.strokeStyle = '#6d5c46'; c.stroke();
+    c.strokeStyle = '#bcae94'; c.lineWidth = 1.2; if (Math.random() < .45) { c.beginPath(); let cx = x + R(8, w - 8), cy = y + R(8, h - 8); c.moveTo(cx, cy); for (let q = 0; q < 3; q++) { cx += R(-9, 9); cy += R(-9, 9); c.lineTo(cx, cy); } c.stroke(); }
+    c.fillStyle = '#ffffff50'; c.fillRect(x + 4, y + 3, w - 8, 3);
   }
+  /* broken columns, bushes and stone braziers round the courtyard */
+  const column = (x, y, h, broke) => { c.lineWidth = 5; c.strokeStyle = ink; c.fillStyle = '#e9e2d3'; rr(c, x - 15, y - h, 30, h, 4); c.fill(); c.stroke(); c.strokeStyle = '#b8ad97'; c.lineWidth = 2; for (let i = -8; i <= 8; i += 8) { c.beginPath(); c.moveTo(x + i, y - h + 6); c.lineTo(x + i, y - 6); c.stroke(); } c.lineWidth = 5; c.strokeStyle = ink; c.fillStyle = '#d8cfbd'; rr(c, x - 21, y - 12, 42, 12, 3); c.fill(); c.stroke(); if (!broke) { rr(c, x - 21, y - h - 10, 42, 12, 3); c.fill(); c.stroke(); } else { c.fillStyle = '#e9e2d3'; c.beginPath(); c.moveTo(x - 15, y - h); c.lineTo(x - 4, y - h - 10); c.lineTo(x + 5, y - h - 2); c.lineTo(x + 15, y - h - 12); c.lineTo(x + 15, y - h); c.closePath(); c.fill(); c.stroke(); } };
+  const bush = (x, y, r) => { c.lineWidth = 4; c.strokeStyle = ink; c.fillStyle = '#3f7d2f'; c.beginPath(); c.arc(x - r * .6, y, r * .7, 0, 6.3); c.arc(x + r * .6, y, r * .7, 0, 6.3); c.arc(x, y - r * .5, r * .8, 0, 6.3); c.fill(); c.stroke(); c.fillStyle = '#5fa443'; c.beginPath(); c.arc(x - r * .2, y - r * .7, r * .35, 0, 6.3); c.fill(); };
+  bush(30, 300, 20); bush(W - 30, 302, 22); column(30, 812, 88, false); column(W - 30, 812, 70, true); bush(92, 812, 18); bush(W - 92, 814, 17);
+  for (const x of [168, W - 168]) { c.lineWidth = 5; c.strokeStyle = ink; c.fillStyle = '#7d7466'; rr(c, x - 16, 778, 32, 34, 5); c.fill(); c.stroke(); c.fillStyle = '#5c544a'; rr(c, x - 22, 770, 44, 12, 4); c.fill(); c.stroke(); }
+  /* soft darkening at the edges */
+  gr = c.createRadialGradient(W / 2, 560, 200, W / 2, 560, 640); gr.addColorStop(0, '#00000000'); gr.addColorStop(1, '#00000070'); c.fillStyle = gr; c.fillRect(0, 0, W, H);
+  c.fillStyle = '#120d0acc'; c.fillRect(0, 838, W, H - 838);
   return b;
+}
+/* things in the courtyard that move: brazier fire and fireflies */
+const FLIES = Array.from({ length: 22 }, () => ({ x: Math.random() * W, y: 300 + Math.random() * 520, s: Math.random() * 6 }));
+function ambient() {
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (const x of [168, W - 168]) { const fl = 1 + .12 * Math.sin(tt * 9 + x); let gr = g.createRadialGradient(x, 752, 2, x, 752, 46 * fl); gr.addColorStop(0, '#ffd27a90'); gr.addColorStop(1, '#ff7a2a00'); g.fillStyle = gr; g.fillRect(x - 50, 700, 100, 100);
+    for (let i = 0; i < 3; i++) { g.fillStyle = ['#ff6a2a', '#ffb347', '#fff2b0'][i]; g.beginPath(); const hgt = (26 - i * 7) * fl, wd = 12 - i * 3; g.moveTo(x - wd, 770); g.quadraticCurveTo(x - wd * .6, 770 - hgt * .6, x + Math.sin(tt * 7 + i) * 3, 770 - hgt); g.quadraticCurveTo(x + wd * .6, 770 - hgt * .6, x + wd, 770); g.fill(); } }
+  for (const f of FLIES) { const x = f.x + Math.sin(tt * .6 + f.s) * 14, y = f.y + Math.cos(tt * .5 + f.s * 2) * 10, a = .4 + .4 * Math.sin(tt * 2 + f.s * 3); g.fillStyle = `rgba(255,240,150,${a.toFixed(2)})`; g.beginPath(); g.arc(x, y, 2.2, 0, 6.3); g.fill(); }
+  g.restore();
+}
+function rivals() {   /* the other 4 players of this match */
+  const y = 204; G.rivals.forEach((r, i) => { const x = 12 + i * 141, w = 133;
+    rr(g, x, y, w, 50, 14); g.fillStyle = r.out ? '#3a2f2bcc' : '#2b1b14e6'; g.fill(); g.lineWidth = 5; g.strokeStyle = '#24160f'; g.stroke();
+    g.save(); rr(g, x + 5, y + 5, 40, 40, 10); g.fillStyle = '#5a3a2a'; g.fill(); g.clip(); spr('hero_' + r.p, x + 25, y + 58, 52, false, r.out ? .35 : 1); g.restore();
+    txt(r.name, x + 89, y + 15, 15, r.out ? '#9b9188' : '#ffe8a0');
+    if (r.out) txt('ตกรอบ #' + r.out, x + 89, y + 35, 15, '#ff8a7a');
+    else { rr(g, x + 50, y + 28, 78, 14, 6); g.fillStyle = '#1a100c'; g.fill(); rr(g, x + 50, y + 28, 78 * r.count / 100, 14, 6); g.fillStyle = r.count > 75 ? '#ff5a4a' : '#4fd9d4'; g.fill(); txt(String(r.count), x + 89, y + 35, 12, '#fff'); }
+  });
 }
 
 /* ---------- drawing ---------- */
@@ -240,13 +280,13 @@ function hud() {
   txt(G.boss ? 'บอสบุกแล้ว!' : 'บอสใน ' + bw + ' รอบ', cx + 52, cy + 134, 20, '#fff');
 }
 function drawUnit(u, i) {
-  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = (u.kind === 'sol' ? 80 : 92) * D.sz;
-  if (G.sel === i) { g.lineWidth = 5; g.strokeStyle = '#fff06a'; rr(g, c.x - CW / 2 + 2, c.y - CH * .86 + 3, CW - 4, CH - 6, 9); g.stroke(); }
+  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = 80 * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]);
+  if (G.sel === i) { g.lineWidth = 5; g.strokeStyle = '#fff06a'; rr(g, c.x - CW / 2 + 2, c.y - CH * .88 + 3, CW - 4, CH - 6, 9); g.stroke(); }
   /* tier ring on the floor */
-  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 27, 8, 0, 0, 6.3); g.stroke(); g.restore();
+  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 25, 7.5, 0, 0, 6.3); g.stroke(); g.restore();
   /* the god behind the blessed one: always for a greek mythic, a flash on big hits for greek epic / legend */
   if (u.kind === 'hero' && u.p === 'greek' && (tier >= 4 || u.spirit > 0)) {
-    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 150 : 110, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
+    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 128 : 96, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
     g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, sy - sh * .5, 6, c.x, sy - sh * .5, sh * .6); gr.addColorStop(0, '#7fe8ff40'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - sh, sy - sh * 1.1, sh * 2, sh * 1.2); g.restore();
     spr('spirit_greek', c.x - 4, sy, sh, false, clamp(a, 0, 1));   /* the god behind: normal blend so his face stays readable */
   }
@@ -295,10 +335,10 @@ function draw() {
   g.setTransform(SC, 0, 0, SC, 0, 0); g.clearRect(0, 0, W, H);
   const sx = T.shake > .3 ? rnd(-T.shake, T.shake) : 0, sy = T.shake > .3 ? rnd(-T.shake, T.shake) : 0; g.translate(sx, sy);
   g.drawImage(BG, 0, 0, W, H);
-  portal(62, 290);
+  g.save(); g.translate(PL + 10, PT - 22); g.scale(.7, .7); portal(0, 0); g.restore(); ambient();
   G.grid.forEach((u, i) => { if (u) drawUnit(u, i); });
   [...G.mobs].sort((a, b) => a.y - b.y).forEach(drawMob);
-  drawFx(); hud(); chips();
+  drawFx(); hud(); rivals(); chips();
   g.setTransform(SC, 0, 0, SC, 0, 0);
   if (T.flash > 0) { g.globalAlpha = clamp(T.flash / .25, 0, 1) * .45; g.fillStyle = '#eafcff'; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
   if (G.freeze > 0) { g.globalAlpha = .12; g.fillStyle = '#7fc8ff'; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
