@@ -120,8 +120,8 @@ const BACK = [ /* name, x, base y, height, flip */
   ['palm2', 1330, GROUND + 6, 280, 1], ['column', 1760, GROUND + 6, 215], ['columnb', 1880, GROUND + 6, 150], ['pond', 2250, GROUND + 12, 88], ['palm1', 2360, GROUND + 6, 285, 1], ['arch', 2860, GROUND + 6, 250], ['fall', 3320, GROUND + 6, 150], ['obelisk', 3540, GROUND + 6, 250], ['palm3', 3790, GROUND + 6, 270], ['statue', 4130, GROUND + 6, 190], ['column', 4340, GROUND + 6, 250], ['arch', 4500, GROUND + 6, 340], ['column', 4660, GROUND + 6, 250],
   ['obelisk', 4860, GROUND + 6, 300], ['statue', 5050, GROUND + 6, 215, 1], ['columnb', 5230, GROUND + 6, 180], ['portal', 5480, GROUND + 6, 250],
 ];
-{ const PR = [[['shrub', 44], ['columnb', 80], ['cactus', 58], ['obelisk', 104]], [['blocks', 44], ['palm2', 190], ['jars', 48], ['column', 124]], [['statue', 112], ['cactus', 62], ['columnb', 78], ['obelisk', 112]], [['shrub', 42], ['jars', 46], ['blocks', 40], ['shrub', 40]]];   /* props on the tiers: both ends of the bottom tier, one end of the next, the top's middle */
-  HILLS.forEach(([c, ws], h) => { const P4 = PR[h], top = ws.length - 1; BACK.push([P4[0][0], c - ws[0] / 2 + 34, 1080, P4[0][1]], [P4[1][0], c + ws[0] / 2 - 40, 1080, P4[1][1], 1], [P4[2][0], c - ws[1] / 2 + 30, 956, P4[2][1]], [P4[3][0], c, 1080 - top * TIER, P4[3][1]]); }); }
+{ const PR = [[['hp_rocks', 38], ['hp_cactus', 40], ['hp_crystal', 52], ['hp_banner', 62]], [['hp_skull', 34], ['palm2', 190], ['hp_pillar', 50], ['column', 124]], [['statue', 112], ['hp_crystal', 50], ['hp_pillar', 48], ['obelisk', 112]], [['hp_rocks', 36], ['hp_banner', 58], ['hp_skull', 32], ['hp_cactus', 36]]];   /* props on the tiers (hills kit + ruins): both ends of the bottom tier, one end of the next, the top's middle; vines hang over every upper tier's edge */
+  HILLS.forEach(([c, ws], h) => { const P4 = PR[h], top = ws.length - 1; BACK.push([P4[0][0], c - ws[0] / 2 + 40, 1080, P4[0][1]], [P4[1][0], c + ws[0] / 2 - 44, 1080, P4[1][1], 1], [P4[2][0], c - ws[1] / 2 + 34, 956, P4[2][1]], [P4[3][0], c, 1080 - top * TIER, P4[3][1]]); for (let i = 1; i < ws.length; i++) BACK.push(['hp_hang', c + (i % 2 ? -1 : 1) * (ws[i] / 2 - 46), 1076 - i * TIER + 58, 62, i % 2 ? 0 : 1]); }); }
 const FRONT = [ ['tuft', 130, GROUND + 14, 40], ['shrub', 1130, GROUND + 15, 44], ['tuft', 1490, GROUND + 15, 46], ['blocks', 2130, GROUND + 18, 40], ['tuft', 2310, GROUND + 16, 48], ['cactus', 2960, GROUND + 15, 64], ['tuft', 3440, GROUND + 15, 42], ['shrub', 4040, GROUND + 15, 42], ['tuft', 4760, GROUND + 15, 44], ['blocks', 5160, GROUND + 18, 48], ['tuft', 5360, GROUND + 15, 42] ];
 const GLOWS = [[405, 1032, 78, '255,176,74'], [890, 1032, 78, '255,176,74'], [640, 1090, 78, '114,236,214'], [3320, 1120, 70, '110,235,226'], [5480, 1080, 130, '80,240,220']];
 const NPCS = [ { id: 'elder', x: 960, n: 'ผู้เฒ่าเต่าทอง', h: 76, img: 'elder' }, { id: 'shop', x: 575, n: 'พ่อค้าจิ้งจอก', h: 72, img: 'merchant' } ];
@@ -189,7 +189,7 @@ const MOON_COMBO = [ /* fast three-cut combo; fx = the Meta slash drawn at the b
 const COMBO = MOON ? MOON_COMBO : OTTER ? OTTER_COMBO : DRAGON_COMBO;
 
 /* ---------- assets ---------- */
-const BUILD = 29;   /* raise when sprites.json / world.json change, so a browser never mixes a new page with an old list */
+const BUILD = 30;   /* raise when sprites.json / world.json change, so a browser never mixes a new page with an old list */
 const SP = {}, ENV = {}, IMG = {}; let WORLD = {};
 const load = src => new Promise(ok => { const i = new Image(); i.onload = () => Promise.race([i.decode ? i.decode().catch(() => { }) : Promise.resolve(), new Promise(r => setTimeout(r, 2500))]).then(() => ok(i));   /* a browser may never finish decode() in a background window: the game must still start */ i.onerror = () => { console.warn('missing', src); ok(null); }; i.src = src; });
 async function loadAll() {
@@ -521,6 +521,7 @@ function drawBack() {
   const gy = WY(GROUND);
   if (ENV.far) { const k = .54, w = ENV.far.width * k, h = ENV.far.height * k; tileX(ENV.far, w, h, G.camX * .13, gy - h + 96 + cy * .03); }
   if (LIVE) drawBirds();
+  if (ENV.mesas) { const k = .5, w = ENV.mesas.width * k, h = ENV.mesas.height * k; tileX(ENV.mesas, w, h, G.camX * .22, gy - h + 104 + cy * .04); }   /* stepped mesas far behind the hills (Codex hills kit) */
   if (ENV.mid) { const k = .62, w = ENV.mid.width * k, h = ENV.mid.height * k; tileX(ENV.mid, w, h, G.camX * .33, gy - h + 112 + cy * .05); }
   const haze = ctx.createLinearGradient(0, gy - 150, 0, gy + 30); haze.addColorStop(0, 'rgba(255,190,110,0)'); haze.addColorStop(1, 'rgba(255,190,110,.34)'); ctx.fillStyle = haze; ctx.fillRect(0, gy - 150, VW, 180);
 }
@@ -549,16 +550,16 @@ function drawGround() {
   const g = ENV.ground, k = .47; if (g) { const w = g.width * k, h = g.height * k, top = (WORLD.ground.top || 63) * k; let x = -((G.camX % w) + w) % w; for (; x < VW; x += w) { ctx.drawImage(g, x, WY(GROUND) - top, w + .6, h); ctx.fillStyle = '#3b1826'; ctx.fillRect(x, WY(GROUND) - top + h - 1, w + 1, 340); } }
 }
 const HILLDRAW = PLATS.filter(p => p.solid).sort((a, b) => a.y - b.y);   /* highest tier first: lower, wider tiers are in front */
-function drawHills() {
-  const g = ENV.ground; if (!g) return; const k = .47, w = g.width * k, h = g.height * k, top = (WORLD.ground.top || 63) * k, yB = WY(GROUND) + 24;
+function drawHills() {   /* the Codex hills kit: a tiling cliff face between two rounded end caps, the sand lip on the tier top; falls back to the ground picture */
+  const F = ENV.hill_face, L = ENV.hill_cap_l, R = ENV.hill_cap_r, g = F || ENV.ground; if (!g) return; const k = F ? .42 : .47, w = g.width * k, h = g.height * k, top = ((F ? WORLD.hill_face.top : WORLD.ground.top) || 40) * k, yB = WY(GROUND) + 24;
   for (const T of HILLDRAW) {
-    const x0 = WX(T.x), x1 = WX(T.x + T.w), yT = WY(T.y), sl = 8 + T.tier * 2; if (x1 + sl < -40 || x0 - sl > VW + 40) continue;
-    ctx.save(); ctx.beginPath(); ctx.moveTo(x0 - 3, yT - top); ctx.lineTo(x1 + 3, yT - top); ctx.lineTo(x1 + sl, yB); ctx.lineTo(x0 - sl, yB); ctx.closePath(); ctx.clip();
-    for (let xs = WX(Math.floor((T.x - 40) / w) * w); xs < x1 + sl; xs += w) { ctx.drawImage(g, xs, yT - top, w + .6, h); ctx.fillStyle = '#3b1826'; ctx.fillRect(xs, yT - top + h - 1, w + 1, 400); }
-    if (T.tier) { ctx.fillStyle = `rgba(52,14,36,${.1 + T.tier * .05})`; ctx.fillRect(x0 - sl, yT + 6, x1 - x0 + sl * 2, yB - yT); }   /* higher tiers sit further back */
-    for (const [ex, d] of [[x0, 1], [x1, -1]]) { const gr = ctx.createLinearGradient(ex, 0, ex + d * 26, 0); gr.addColorStop(0, 'rgba(46,12,30,.62)'); gr.addColorStop(1, 'rgba(46,12,30,0)'); ctx.fillStyle = gr; ctx.fillRect(Math.min(ex, ex + d * 26) - sl, yT, 26 + sl, yB - yT); }
+    const x0 = WX(T.x), x1 = WX(T.x + T.w), yT = WY(T.y); if (x1 + 80 < -40 || x0 - 80 > VW + 40) continue;
+    ctx.save(); if (T.tier) ctx.filter = `brightness(${1 - T.tier * .07})`;   /* higher tiers sit further back */
+    ctx.beginPath(); ctx.rect(x0 + (L ? 40 : 0), yT - top - 2, x1 - x0 - (L && R ? 80 : 0), yB - yT + top + 2); ctx.clip();
+    for (let xs = WX(Math.floor((T.x - 40) / w) * w); xs < x1; xs += w) { ctx.drawImage(g, xs, yT - top, w + .6, h); ctx.fillStyle = '#3b1826'; ctx.fillRect(xs, yT - top + h - 1, w + 1, 400); }
+    ctx.restore(); ctx.save(); if (T.tier) ctx.filter = `brightness(${1 - T.tier * .07})`;
+    if (L && R) { const lw = L.width * k, lh = L.height * k, rw = R.width * k, rh = R.height * k; ctx.drawImage(L, x0 - 12, yT - WORLD.hill_cap_l.top * k, lw, lh); ctx.drawImage(R, x1 + 12 - rw, yT - WORLD.hill_cap_r.top * k, rw, rh); if (yT - WORLD.hill_cap_l.top * k + lh < yB) { ctx.fillStyle = '#3b1826'; ctx.fillRect(x0 - 4, yT - WORLD.hill_cap_l.top * k + lh - 2, lw - 8, yB); ctx.fillRect(x1 + 12 - rw + 4, yT - WORLD.hill_cap_r.top * k + rh - 2, rw - 8, yB); } }
     ctx.restore();
-    ctx.save(); ctx.strokeStyle = '#2e0f1f'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x0 - sl, yB); ctx.lineTo(x0 - 3, yT + 2); ctx.moveTo(x1 + 3, yT + 2); ctx.lineTo(x1 + sl, yB); ctx.stroke(); ctx.restore();
   }
 }
 function drawPlat(p) {
