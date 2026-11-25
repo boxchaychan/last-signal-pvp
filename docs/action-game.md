@@ -2590,3 +2590,23 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
 - Lessons from this chat that apply to a new hero:
   - Our own pixel bones (`turnrig.html`) need a picture with the arms and legs apart from the body.
   - PixelLab skeleton-v3 keeps the character on model, but small chibis (about 60 px) move little and the weapon smears. Test it on a big body (about 128 px).
+
+## DIVINE `divine.html` "Lucky Pantheon — ศึกผู้รับพร" (made by Codex from the owner's Gemini prototype; NOT on main yet)
+- Where it is: branch `codex/divine-dark-compact`, 2 commits: the playable prototype, then a rebuild around an 18-slot board. Check: `tools/qa/divine_check.js`.
+- Art direction tests are on `codex/divine-champions-style` (5 blessed champions with a god behind each), `codex/divine-unit-sample` and `codex/divine-style-tests`.
+- Another Codex branch, `codex/beast-roster-scale`, holds an animal-army lineup ("wildseed" amber seed charms) for a different idea.
+- Game, read 2026-11-25:
+  - Portrait mobile canvas 585 x 1266, one 6 x 3 board (18 slots); monsters loop round the arena; you lose at 100 monsters on the field.
+  - SUMMON costs gold and gives a random tier: COMMON / RARE / EPIC / LEGEND / MYTHIC. Merging 3 identical units raises the tier.
+  - Gems buy a Roulette spin (EPIC or better). Two Epic+ units fuse into a Mythic; a core awakens a Mythic.
+  - Also: ATK upgrade, a boss challenge, Chronos time stop, and speed x1 / x2.
+  - Four pantheons (Greek, Norse, Egypt, Asia) give synergies.
+  - Every unit is still ONE "sun champion" sprite (`art/divine/units/sun1-3.png`) recoloured per pantheon.
+  - Ran in a browser at 390 x 844 with no console errors; it looks like a real mobile game.
+- OWNER'S CHARACTER TONE (2026-11-25, "ตัวละครโทนนี้"): `art/incoming/divine_game/ref/owner_tone_zeus_boy.jpg`, the owner's own picture.
+  - Cute chibi Greek boy, about 2 heads tall, with a gold laurel wreath, a white tunic with a gold key pattern and a glowing lightning bolt.
+  - Thick dark outline, flat bright colours, soft cheeks, a cheeky grin.
+  - Behind him floats a big translucent cyan god spirit (Zeus) drawn in gold lines with a soft glow: "the blessed one + the god who blesses".
+  - This is brighter and cuter than the Codex "dark premium compact" sun champion. Make new units in THIS tone, one champion per pantheon / tier.
+  - Not started. Ask the owner before building; free routes (Codex / GPT with this picture attached) come first.
+
