@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '../..'), TYPES = { html: 'text/html', js: 
   if (what === 'skills') {
     const keys = await pg.evaluate(() => DUNE.SKILLS.map(s => s.key));
     for (const k of ['J', ...keys]) {
-      await pg.evaluate(() => { const { P, G } = DUNE; Object.assign(P, { x: 2740, y: 1200, vx: 0, vy: 0, dir: 1, st: 'idle', a: 'hero_idle', f: 0, cds: {}, mp: 999, hp: 9999, dead: false, awake: 0, clone: 0 }); for (const L of ['fx', 'rings', 'slashes', 'impacts', 'ghosts', 'mw', 'mbl', 'msl', 'parts', 'nums', 'after']) G[L].length = 0;
+      await pg.evaluate(() => { const { P, G } = DUNE; Object.assign(P, { x: 2740, y: 1200, vx: 0, vy: 0, dir: 1, st: 'idle', a: 'hero_idle', f: 0, cds: {}, mp: 999, hp: 9999, dead: false, awake: 0, clone: 0 }); for (const L of ['fx', 'rings', 'slashes', 'impacts', 'ghosts', 'mw', 'mbl', 'msl', 'msig', 'cuts', 'pools', 'parts', 'nums', 'after']) if (G[L]) G[L].length = 0; G.night = null; G.fz = G.fzT = 0;
         G.mobs = []; for (let i = 0; i < 5; i++) { const m = DUNE.spawn([['scorpion', 'wolf', 'mummy'][i % 3], 2830 + i * 70, 2831 + i * 70, 1200]); m.elite = false; m.hp = m.max = 1e7; m.x = 2830 + i * 70; m.wait = 99; G.mobs.push(m); } G.camX = P.x + 54 - innerWidth * DUNE.VIEW_H / innerHeight / 2; G.shake = 0; G.dim = 0; });
       await step(.6);
       if (k === 'J') { for (let i = 0; i < 3; i++) { await pg.evaluate(() => { DUNE.I.attack = 1; DUNE.EDGE.attack = 1; }); await step(.12); await pg.evaluate(() => { DUNE.I.attack = 0; }); await pg.screenshot({ path: `${out}/J_${i}.png` }); await step(.2); } continue; }
