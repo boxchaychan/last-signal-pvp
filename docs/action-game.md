@@ -2624,4 +2624,14 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
     - Our own names, icons and layout.
     - NOTE: the Codex prototype's buttons currently use the same English words as the reference game ("SUMMON", "Mythic", "Roulette", "Upgrade"); rename them to our own Thai words when we build.
   - Not built; ask before building.
+- OWNER'S TARGET LOOK (2026-11-25): `art/incoming/divine_game/ref/owner_target_mockup.jpg` (the owner's own AI mock-up of the whole screen).
+  - Board and path: two stacked boards of 3 x 5 slots. Monsters (rusty robots, ghouls) walk the dirt path round both boards from a glowing portal at the top left.
+  - Top HUD: wave + timer, a skull counter "28 / 100", and a boss card top right ("CYBORG BEHEMOTH" with a level).
+  - Units:
+    - Zeus boys (the tone picture) with the big translucent Zeus spirit appearing when they strike, plus chain lightning.
+    - Higher tiers: a Thor-like dwarf with a hammer, a monkey king with a fire staff, an Anubis spearman.
+    - Plain soldiers with rifles as the lowest tier.
+  - Effects and buttons: big DAMAGE / CRIT numbers; stat icons with percentages; gold / gems / unit count 23 / 26; speed x2; buttons Mythic, Summon 250, Roulette (วัดดวง), ท้าดวลบอส, สกิล Chronos, Upgrade.
+  - Cartoon style: thick outlines, warm brown ground, dark night edges.
+  - Careful: the layout is very close to the reference game. When building, keep the genre and this art tone, but use our own names (Thai), our own HUD shapes and a board or theme of our own so it is not a copy.
 
