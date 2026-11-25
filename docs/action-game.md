@@ -2700,4 +2700,10 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - Greek units now play idle, attack (while flashing after a hit) and skill (34 frames when the god skill fires).
   - The lightning slash picture flies along each Greek hit. The full-body Zeus spirit replaces the old cut one, in battle and in the lobby. The hero card uses `zeus_idle`.
   - Checked at 390 x 844 with no console errors.
+- 2026-11-25 (owner "แมพยังไม่เห็นน่าเล่นเลย"): the arena is now a FLOATING TEMPLE ISLAND in a bright sky. Two painted layers: `SKY` (sky gradient, sun rays, a sea of clouds) and the island `BG`:
+  - The grass top bleeds off both sides; the rock underside has strata and a jagged bottom, with hanging vines.
+  - A white marble road with gold edges and joint lines replaces the sand; the gold-framed marble board stays.
+  - Columns, bushes with flowers and stone braziers sit on the island.
+  - Moving every frame (`skyLayer` + `ambient`): drifting clouds, 2 bobbing far islands with temples, birds, 2 waterfalls falling off the island, glowing blue rune lights running round the road, brazier fire, motes.
+  - The lobby uses the same scene.
 
