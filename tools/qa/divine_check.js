@@ -13,25 +13,33 @@ const { chromium } = require('playwright');
     if (message.type() === 'error') errors.push(message.text());
   });
 
-  await page.goto('http://127.0.0.1:4173/divine.html', { waitUntil: 'networkidle' });
-  await page.screenshot({ path: '/tmp/divine-title.png', fullPage: true });
-  await page.goto('http://127.0.0.1:4173/divine.html?skip=1', { waitUntil: 'networkidle' });
-  await page.waitForFunction(() => window.DC && window.DC.G());
+  const base = process.env.QA_BASE || 'http://127.0.0.1:4173';
+  await page.goto(base + '/divine.html', { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.DIVINE && window.DIVINE.state());
+  await page.click('#summon');
+  await page.click('#boss');
   const result = await page.evaluate(() => {
-    DC.place('shiba', 0);
-    for (let i = 0; i < 900; i++) DC.step(1 / 60);
-    const state = DC.G();
+    const state = DIVINE.state();
+    state.gold = 10000;
+    for (let i = 0; i < 19; i++) DIVINE.summon();
+    state.grid[0].tier = 'MYTHIC';
+    state.grid[0].awakened = false;
+    state.selected = 0;
+    state.core = 1;
+    DIVINE.awakenSelected();
+    for (let i = 0; i < 900; i++) DIVINE.step();
     return {
       wave: state.wave,
-      units: state.units.length,
+      slots: state.grid.length,
+      units: state.grid.filter(Boolean).length,
+      awakened: state.grid[0].awakened,
       mobs: state.mobs.length,
       kills: state.kills,
-      hp: state.hp,
       gold: state.gold,
     };
   });
   await page.screenshot({ path: '/tmp/divine-game.png', fullPage: true });
   console.log(JSON.stringify({ errors, result }));
   await browser.close();
-  if (errors.length || result.units !== 1) process.exit(1);
+  if (errors.length || result.slots !== 18 || result.units !== 18 || !result.awakened) process.exit(1);
 })();
