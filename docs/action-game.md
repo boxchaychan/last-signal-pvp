@@ -2766,4 +2766,6 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The lobby uses the same scene.
 - 2026-11-25 (owner "ช่องก็ยังยาวอยู่", "เกมมีให้ดูตั้ง 2 เกม"): slots are now SQUARE, 60 x 58 at BY 405 (board 420 x 174). Characters stand up out of their slot, as the reference genre does.
 - 2026-11-25 (owner "ช่องมันกว้างไป ช่องวางฮีโร่"): slots are now 50 x 48 at BY 420 (board 350 x 144), so each hero fills its slot.
+- 2026-11-25 (owner "กระจอกเกิน"): the board fills the screen width again, with square 68 x 66 slots at BY 401. Everything was scaled up together: heroes 88 x tier x FIT, monsters 63-88, boss 160, plus rings, stars, shadows, spirit, hit points and effect offsets. Each hero still fills its slot.
+  - Honest note for the next step: the arena is still drawn in code. A painted arena background (Gemini / Codex, made for this 7 x 3 layout) would be the biggest jump in quality.
 
