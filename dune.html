@@ -100,7 +100,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + 
 const cv = $('c'), ctx = cv.getContext('2d', { alpha: false }); if (TOUCH) document.body.classList.add('t');
 const OTTER = new URLSearchParams(location.search).get('hero') === 'otter', SKILL_TEST = OTTER && new URLSearchParams(location.search).get('test') === '1', WFX2 = OTTER && new URLSearchParams(location.search).get('wfx') !== '1', WFX3 = OTTER && !['1', '2'].includes(new URLSearchParams(location.search).get('wfx'));   /* owner chose the ChatGPT water set; &wfx=2 = the glowing Meta set, &wfx=1 = the old dark blue */   /* owner: all the water glows; &wfx=1 = the old dark blue water */   /* &test=1: every skill open, MP always full, nothing is saved */
 /* the otter chi fist, by link until the owner has played it; it has its own save */
-const WIDE = new URLSearchParams(location.search).get('wide') === '1', VIEW_H = (TOUCH ? 600 : 700) * (WIDE ? 1.3 : 1), MAPW = WIDE ? 1200 + 4440 * 2.2 : 7860,   /* ?wide=1 (owner 2026-11-25 "ตัวเล็ก แมพใหญ่ กว้าง"): camera sees 30 % more, the field is 2.2x instead of 1.5x, more monsters */ GROUND = 1200, GRAV = 1950, KEY = OTTER ? 'dune_save_otter' : 'dune_save1', RUN_SPEED = 215, CHAR = 2 / 3, HERO_SC = .5 * CHAR; /* owner: characters one third smaller against the scenery */
+const WIDE = new URLSearchParams(location.search).get('wide') === '1', VIEW_H = (TOUCH ? 600 : 700) * (WIDE ? 1.3 : 1), MAPW = 1200 + 4440 * (WIDE ? 2.6 : 2),   /* ?wide=1 (owner 2026-11-25 "ตัวเล็ก แมพใหญ่ กว้าง"): camera sees 30 % more, the field is 2.2x instead of 1.5x, more monsters */ GROUND = 1200, GRAV = 1950, KEY = OTTER ? 'dune_save_otter' : 'dune_save1', RUN_SPEED = 215, CHAR = 2 / 3, HERO_SC = .5 * CHAR; /* owner: characters one third smaller against the scenery */
 const CLASSES = { spear: { n: 'นักรบหอก', hero: 'กิ้งก่าทราย' } }; /* one entry per job: the owner will bring more characters */
 let SW = 1, SH = 1, K = 1, VW = 960;
 let lastW = 0, lastH = 0;
@@ -110,7 +110,7 @@ addEventListener('resize', resize); resize();
 /* ---------- the map ---------- */
 /* map (owner 2026-11-25 "ทำฉากให้มีที่เก็บเลเวล ให้มีหลายชั้นเป็นเขา ไม่ใช่ลอยๆ"): the field is a row of stepped HILLS, solid earth tiers
    stacked like a mountain (walls stop you, jump or climb up), monsters on every tier; floating ledges are gone. [centre, tier widths bottom -> top] */
-const HILLS = [[1700, [440, 280, 150]], [2650, [520, 340, 180]], [3500, [480, 300, 160]], [4150, [340, 180]]], TIER = 124;
+const HILLS = [[1650, [600, 440, 280]], [2580, [700, 520, 340]], [3420, [640, 460, 280]], [4130, [480, 300]]], TIER = 124;   /* long gentle tiers (owner "เนินยาวๆหน่อย") */
 const PLATS = [], LADDERS = [];
 for (const [c, ws] of HILLS) ws.forEach((w, i) => { PLATS.push({ x: c - w / 2, y: 1076 - i * TIER, w, solid: 1, tier: i });
   if (i === 0) LADDERS.push({ x: c - w / 2 + 20, top: 1076, bot: GROUND, k: 'ladder' }); else LADDERS.push({ x: i % 2 ? c + w / 2 - 20 : c - w / 2 + 20, top: 1076 - i * TIER, bot: 1076 - (i - 1) * TIER, k: 'rope' }); });
@@ -118,9 +118,9 @@ const BACK = [ /* name, x, base y, height, flip */
   ['palm1', -10, GROUND + 6, 300], ['palm3', 1085, GROUND + 6, 285], ['tent', 205, GROUND + 6, 292], ['lantern', 405, GROUND + 4, 196], ['jars', 468, GROUND + 6, 90], ['stall', 640, GROUND + 6, 238], ['crates', 810, GROUND + 6, 108], ['well', 1010, GROUND + 6, 190], ['lantern', 890, GROUND + 4, 196, 1], ['sign', 1215, GROUND + 5, 150],
   ['palm2', 1330, GROUND + 6, 280, 1], ['column', 1760, GROUND + 6, 215], ['columnb', 1880, GROUND + 6, 150], ['pond', 2250, GROUND + 12, 88], ['palm1', 2360, GROUND + 6, 285, 1], ['arch', 2860, GROUND + 6, 250], ['fall', 3320, GROUND + 6, 150], ['obelisk', 3540, GROUND + 6, 250], ['palm3', 3790, GROUND + 6, 270], ['statue', 4130, GROUND + 6, 190], ['column', 4340, GROUND + 6, 250], ['arch', 4500, GROUND + 6, 340], ['column', 4660, GROUND + 6, 250],
   ['obelisk', 4860, GROUND + 6, 300], ['statue', 5050, GROUND + 6, 215, 1], ['columnb', 5230, GROUND + 6, 180], ['portal', 5480, GROUND + 6, 250],
-  ['shrub', 1500, 1080, 44], ['columnb', 1890, 1080, 80], ['cactus', 1585, 956, 58], ['obelisk', 1700, 832, 104], ['blocks', 2420, 1080, 44], ['palm2', 2875, 1080, 190, 1], ['jars', 2505, 956, 48], ['shrub', 2815, 956, 40], ['column', 2650, 832, 124],
-  ['statue', 3300, 1080, 112], ['cactus', 3715, 1080, 62], ['columnb', 3375, 956, 78], ['obelisk', 3500, 832, 112], ['shrub', 4010, 1080, 42], ['jars', 4290, 1080, 46], ['blocks', 4150, 956, 40]
 ];
+{ const PR = [[['shrub', 44], ['columnb', 80], ['cactus', 58], ['obelisk', 104]], [['blocks', 44], ['palm2', 190], ['jars', 48], ['column', 124]], [['statue', 112], ['cactus', 62], ['columnb', 78], ['obelisk', 112]], [['shrub', 42], ['jars', 46], ['blocks', 40], ['shrub', 40]]];   /* props on the tiers: both ends of the bottom tier, one end of the next, the top's middle */
+  HILLS.forEach(([c, ws], h) => { const P4 = PR[h], top = ws.length - 1; BACK.push([P4[0][0], c - ws[0] / 2 + 34, 1080, P4[0][1]], [P4[1][0], c + ws[0] / 2 - 40, 1080, P4[1][1], 1], [P4[2][0], c - ws[1] / 2 + 30, 956, P4[2][1]], [P4[3][0], c, 1080 - top * TIER, P4[3][1]]); }); }
 const FRONT = [ ['tuft', 130, GROUND + 14, 40], ['shrub', 1130, GROUND + 15, 44], ['tuft', 1490, GROUND + 15, 46], ['blocks', 2130, GROUND + 18, 40], ['tuft', 2310, GROUND + 16, 48], ['cactus', 2960, GROUND + 15, 64], ['tuft', 3440, GROUND + 15, 42], ['shrub', 4040, GROUND + 15, 42], ['tuft', 4760, GROUND + 15, 44], ['blocks', 5160, GROUND + 18, 48], ['tuft', 5360, GROUND + 15, 42] ];
 const GLOWS = [[405, 1032, 78, '255,176,74'], [890, 1032, 78, '255,176,74'], [640, 1090, 78, '114,236,214'], [3320, 1120, 70, '110,235,226'], [5480, 1080, 130, '80,240,220']];
 const NPCS = [ { id: 'elder', x: 960, n: 'ผู้เฒ่าเต่าทอง', h: 76, img: 'elder' }, { id: 'shop', x: 575, n: 'พ่อค้าจิ้งจอก', h: 72, img: 'merchant' } ];
@@ -132,12 +132,11 @@ const MT = {
   golem: { n: 'โกเลมผู้เฝ้าสุสาน', lv: 12, hp: 9500, atk: 54, spd: 58, xp: 520, gold: [180, 240], sc: .86, r: 86, h: 225, reach: 170, aggro: 900, hitF: 8, boss: 1 }
 };
 for (const k in MT) { const T = MT[k], c = T.boss ? .8 : CHAR; T.sc *= c; T.r *= c; T.h *= c; T.reach *= c; }
-const SPAWN = [ ['scorpion', 1230, 1460, GROUND], ['scorpion', 1250, 1450, GROUND], ['scorpion', 1500, 1900, 1076], ['scorpion', 1500, 1900, 1076], ['scorpion', 1575, 1825, 952], ['scorpion', 1640, 1760, 828],
-  ['scorpion', 1940, 2150, GROUND], ['wolf', 2100, 2370, GROUND], ['wolf', 1960, 2370, GROUND], ['wolf', 2410, 2890, 1076], ['wolf', 2410, 2890, 1076], ['wolf', 2500, 2800, 952], ['wolf', 2580, 2720, 828],
-  ['wolf', 2930, 3240, GROUND], ['mummy', 2930, 3240, GROUND], ['mummy', 3280, 3720, 1076], ['mummy', 3280, 3720, 1076], ['mummy', 3370, 3630, 952], ['mummy', 3440, 3560, 828],
-  ['cactus', 3760, 3960, GROUND], ['cactus', 4000, 4300, 1076], ['cactus', 4080, 4220, 952], ['cactus', 4335, 4430, GROUND] ];
+const KIND = ['scorpion', 'wolf', 'mummy', 'cactus'], SPAWN = [];   /* every tier of a hill holds its kind; the ground between hills holds the two kinds around it */
+HILLS.forEach(([c, ws], h) => ws.forEach((w, i) => { for (let k = 0; k < (i < 2 ? 2 : 1); k++) SPAWN.push([KIND[h], c - w / 2 + 22, c + w / 2 - 22, 1076 - i * TIER]); }));
+{ const edges = [1200, ...HILLS.flatMap(([c, ws]) => [c - ws[0] / 2, c + ws[0] / 2]), 4440]; for (let g = 0; g < edges.length; g += 2) { const a = edges[g] + 20, b = edges[g + 1] - 20, L = KIND[Math.max(0, g / 2 - 1)], R = KIND[Math.min(3, g / 2)]; if (b - a < 60) continue; SPAWN.push([L, a, b, GROUND], [R, a, b, GROUND]); if (b - a > 260) SPAWN.push([R, a, b, GROUND]); } }
 /* owner: small characters on a big wide map: everything east of the camp is stretched, then filled with more scenery and monsters */
-const MX = WIDE ? 2.2 : 1.5, WF = x => x <= 1200 ? x : 1200 + (x - 1200) * MX, BARRIER = WF(4440), ARENA = [WF(4560), WF(5360)], BOSS_X = WF(5180), PORTAL_X = WF(5480);
+const MX = WIDE ? 2.6 : 2, WF =   /* owner "เนินยาวๆหน่อย": the field is stretched 2x (was 1.5x) */ x => x <= 1200 ? x : 1200 + (x - 1200) * MX, BARRIER = WF(4440), ARENA = [WF(4560), WF(5360)], BOSS_X = WF(5180), PORTAL_X = WF(5480);
 for (const p of PLATS) { const r = WF(p.x + p.w); p.x = WF(p.x); p.w = r - p.x; } for (const l of LADDERS) l.x = WF(l.x); for (const b of BACK) b[1] = WF(b[1]); for (const b of FRONT) b[1] = WF(b[1]); for (const g of GLOWS) g[0] = WF(g[0]); for (const d of SPAWN) { d[1] = WF(d[1]); d[2] = WF(d[2]); }
 const fitGround = () => { for (const d of SPAWN) { if (d[3] !== GROUND) continue; for (const p of PLATS) { if (p.tier !== 0) continue; const a = p.x - 14, b = p.x + p.w + 14; if (d[2] <= a || d[1] >= b) continue; if ((d[1] + d[2]) / 2 < (a + b) / 2) d[2] = a; else d[1] = b; } if (d[2] - d[1] < 40) d[1] = d[2] - 40; } };
 SPAWN.push(...SPAWN.filter((d, i) => WIDE || i % 2 === 0).map(d => [...d])); if (WIDE) SPAWN.push(...SPAWN.filter(d => d[3] === GROUND).map(d => [d[0], d[1] + 60, d[2] + 60, d[3]])); fitGround();
