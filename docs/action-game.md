@@ -2634,4 +2634,29 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - Effects and buttons: big DAMAGE / CRIT numbers; stat icons with percentages; gold / gems / unit count 23 / 26; speed x2; buttons Mythic, Summon 250, Roulette (วัดดวง), ท้าดวลบอส, สกิล Chronos, Upgrade.
   - Cartoon style: thick outlines, warm brown ground, dark night edges.
   - Careful: the layout is very close to the reference game. When building, keep the genre and this art tone, but use our own names (Thai), our own HUD shapes and a board or theme of our own so it is not a copy.
+- REMODEL BUILT (2026-11-25, owner "ทำไมไม่รีโมเดล", "แถว 6x3", then "ทำ 7 ช่องไปงั้น" so it differs from the reference game): our own `divine.html` "ศึกผู้รับพร" replaces the Codex file. Codex's branch stays unmerged.
+  - Board and path: ONE board of 7 x 3 = 21 slots. Monsters walk round a dirt ring from a portal at the top left; you lose at 100.
+  - Tiers: common = soldier; rare to mythic = pantheon heroes (Greek / Norse / Egypt / Asia). The tier shows as a coloured floor ring plus 1-5 stars.
+  - Moves: a mythic Greek has the Zeus spirit behind; Greek epic and above flash the spirit when they hit.
+  - Attacks:
+    - Greek: chain lightning.
+    - Norse: a sky bolt plus an area ring.
+    - Egypt: a piercing gold beam.
+    - Asia: a fireball that bursts.
+    - Soldier: tracer bullets.
+  - Buttons (our own Thai): อัญเชิญ / หลอมเทพ (2 epic+ -> mythic) / เสี่ยงทาย (1 gem, 50 % miss) / ท้าบอส / หยุดกาล (5 s, 30 s cooldown) / เสริมพลัง, speed x1 / x2.
+  - Tap a unit to get รวม 3 / ปลุกพลัง (mythic + core) / ขาย; tap another slot to move or swap.
+  - Synergy chips: 2+ of a pantheon gives a bonus.
+  - Balance: monster HP = 55 x 1.16^(wave-1) + 20 x wave; boss = 28 x that + 1200, every 10th wave. A summon-and-merge bot reaches wave 53 (about 18 min) and loses.
+  - Art:
+    - Cut free from the owner's own pictures by `tools/art/divine_cut.py` (GrabCut; the Zeus boy cut along his dark outline; the spirit's alpha comes from its distance to white).
+    - `tools/art/divine_sprites.py` scales them into `art/divine/` at 2x.
+  - Canvas: 585 x 1266 drawn at 2x; the arena is painted in code.
+  - Checked at 390 x 844 with no console errors.
+- NEXT ART (owner: "ทอร์ ลิง ไม่สวย เจนใหม่", "ดูขนาดตัวด้วย", the owner will use Gemini):
+  - Prompts: `art/incoming/divine_game/PROMPTS_gemini.md`.
+  - Champions: Thor kid and monkey kid made new, an Anubis kid, a plain common recruit.
+  - God spirits for Thor, Monkey King and Anubis.
+  - References: `ref/REF_size_champion.png` (the Zeus boy at the standard size on a 1024 square) and `ref/REF_god_spirit.png`.
+  - When they come: cut them, scale by HEAD size (not full height, because of ears and helmets), then wire each spirit like the Greek one.
 

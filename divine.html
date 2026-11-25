@@ -61,14 +61,14 @@ button small { display: block; font-size: .62em; font-weight: 600; }
 </div>
 <script>
 'use strict';
-/* ศึกผู้รับพร (owner 2026-11-25: remodel to the owner's mock-up art/incoming/divine_game/ref/owner_target_mockup.jpg, ONE 6 x 3 board).
+/* ศึกผู้รับพร (owner 2026-11-25: remodel to the owner's mock-up art/incoming/divine_game/ref/owner_target_mockup.jpg; ONE board of 7 x 3 = 21 slots, owner "ทำ 7 ช่อง" so it differs from the reference game).
    Genre: random summon + merge defence (owner's references: genre only, own names / HUD / board). Rules started from the Codex prototype
    on branch codex/divine-dark-compact. Characters = cut from the owner's own pictures (tools/art/divine_cut.py + divine_sprites.py -> art/divine).
    Logical canvas 585 x 1266, drawn at 2x. */
 const $ = id => document.getElementById(id), cv = $('c'), g = cv.getContext('2d'), W = 585, H = 1266, SC = 2;
 cv.width = W * SC; cv.height = H * SC;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
-const COLS = 6, ROWS = 3, CW = 76, CH = 128, BX = Math.round((W - COLS * CW) / 2), BY = 380;
+const COLS = 7, ROWS = 3, CW = 68, CH = 128, BX = Math.round((W - COLS * CW) / 2), BY = 380;
 const cell = i => ({ x: BX + (i % COLS) * CW + CW / 2, y: BY + Math.floor(i / COLS) * CH + CH * .86 });   /* feet point */
 /* monsters walk round the board on the centre line of the dirt ring */
 const PL = 23, PR = W - 23, PT = 339, PB = 805, LOOP = [[PL, PT], [PR, PT], [PR, PB], [PL, PB], [PL, PT]];
@@ -105,14 +105,14 @@ function toast(s) { const e = $('toast'); e.textContent = s; e.classList.add('on
 function unitName(u) { return u.kind === 'sol' ? 'ทหารรับจ้าง' : PAN[u.p].hero[Math.min(3, TIERS.indexOf(u.tier) - 1)]; }
 function makeUnit(tier, p) { if (tier === 'COMMON') return { kind: 'sol', p: null, tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false }; return { kind: 'hero', p: p || pick(PK), tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false }; }
 function same(a, b) { return a && b && a.kind === b.kind && a.tier === b.tier && a.p === b.p; }
-function place(u) { const free = []; G.grid.forEach((v, i) => { if (!v) free.push(i); }); if (!free.length) { toast('กระดานเต็ม 18 ช่องแล้ว'); return -1; } const i = free[0]; G.grid[i] = u; const c = cell(i); burst(c.x, c.y - 40, TD[u.tier].col, 18, 4); ring(c.x, c.y - 4, TD[u.tier].col, 10, 44, .4); return i; }
+function place(u) { const free = []; G.grid.forEach((v, i) => { if (!v) free.push(i); }); if (!free.length) { toast('กระดานเต็ม 21 ช่องแล้ว'); return -1; } const i = free[0]; G.grid[i] = u; const c = cell(i); burst(c.x, c.y - 40, TD[u.tier].col, 18, 4); ring(c.x, c.y - 4, TD[u.tier].col, 10, 44, .4); return i; }
 function summon() {
   if (G.over) return; if (G.gold < G.sumCost) return toast('ทองไม่พอ');
   const r = Math.random() + G.atk * .004, t = r > .97 ? 'LEGEND' : r > .84 ? 'EPIC' : r > .55 ? 'RARE' : 'COMMON';
   if (place(makeUnit(t)) < 0) return; G.gold -= G.sumCost; G.sumCost = Math.min(60, G.sumCost + 1); if (t !== 'COMMON' && t !== 'RARE') toast('ได้ระดับ' + TD[t].th + '!'); sync();
 }
 function gamble() {
-  if (G.over) return; if (G.gem < 1) return toast('เพชรไม่พอ'); if (!G.grid.includes(null)) return toast('กระดานเต็ม 18 ช่องแล้ว');
+  if (G.over) return; if (G.gem < 1) return toast('เพชรไม่พอ'); if (!G.grid.includes(null)) return toast('กระดานเต็ม 21 ช่องแล้ว');
   G.gem--; const r = Math.random();
   if (r < .5) { toast('พลาด! ลองใหม่'); sync(); return; }
   const t = r > .97 ? 'MYTHIC' : r > .85 ? 'LEGEND' : 'EPIC'; place(makeUnit(t)); toast('เสี่ยงทายได้ระดับ' + TD[t].th + '!'); sync();
@@ -240,10 +240,10 @@ function hud() {
   txt(G.boss ? 'บอสบุกแล้ว!' : 'บอสใน ' + bw + ' รอบ', cx + 52, cy + 134, 20, '#fff');
 }
 function drawUnit(u, i) {
-  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = (u.kind === 'sol' ? 88 : 100) * D.sz;
-  if (G.sel === i) { g.lineWidth = 5; g.strokeStyle = '#fff06a'; rr(g, c.x - CW / 2 + 3, c.y - CH * .86 + 3, CW - 6, CH - 6, 9); g.stroke(); }
+  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = (u.kind === 'sol' ? 80 : 92) * D.sz;
+  if (G.sel === i) { g.lineWidth = 5; g.strokeStyle = '#fff06a'; rr(g, c.x - CW / 2 + 2, c.y - CH * .86 + 3, CW - 4, CH - 6, 9); g.stroke(); }
   /* tier ring on the floor */
-  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 30, 9, 0, 0, 6.3); g.stroke(); g.restore();
+  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 27, 8, 0, 0, 6.3); g.stroke(); g.restore();
   /* the god behind the blessed one: always for a greek mythic, a flash on big hits for greek epic / legend */
   if (u.kind === 'hero' && u.p === 'greek' && (tier >= 4 || u.spirit > 0)) {
     const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 150 : 110, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
@@ -289,7 +289,7 @@ function chips() {
   pill(40, 120, (x, y) => { g.fillStyle = '#ffd23f'; rr(g, x - 12, y - 10, 24, 20, 5); g.fill(); g.lineWidth = 3; g.stroke(); g.fillStyle = '#fff3a0'; g.fillRect(x - 6, y - 6, 8, 4); }, G.gold);
   pill(172, 96, (x, y) => { g.fillStyle = '#5fd2ff'; g.beginPath(); g.moveTo(x, y - 13); g.lineTo(x + 11, y - 2); g.lineTo(x, y + 13); g.lineTo(x - 11, y - 2); g.closePath(); g.fill(); g.lineWidth = 3; g.stroke(); }, G.gem);
   pill(280, 96, (x, y) => { g.fillStyle = '#ff7ad1'; g.beginPath(); g.arc(x, y, 10, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); }, G.core);
-  pill(388, 120, (x, y) => { g.fillStyle = '#e8d6c0'; g.beginPath(); g.arc(x, y - 4, 7, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(x, y + 9, 11, 6, 0, Math.PI, 0); g.fill(); g.stroke(); }, G.grid.filter(Boolean).length + '/18');
+  pill(388, 120, (x, y) => { g.fillStyle = '#e8d6c0'; g.beginPath(); g.arc(x, y - 4, 7, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(x, y + 9, 11, 6, 0, Math.PI, 0); g.fill(); g.stroke(); }, G.grid.filter(Boolean).length + '/21');
 }
 function draw() {
   g.setTransform(SC, 0, 0, SC, 0, 0); g.clearRect(0, 0, W, H);

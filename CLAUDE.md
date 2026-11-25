@@ -39,8 +39,8 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Per champion: GPT big-pixel 3-view sheet (free) → PixelLab redraw B at body 128 (1 credit; say the cost, the owner's "เทส" / "เจน" is the go-ahead) → for the bag game only the SIDE view is used, so clips are ordered east only: character 4 + idle 1 + attack combo 4 + hurt 1 + death 1 ≈ 12 credits, only on "เจน".
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
-## NEWEST (owner 2026-11-25): `divine.html` "Lucky Pantheon — ศึกผู้รับพร" (Codex-made, branch `codex/divine-dark-compact`, NOT on main)
-- Portrait mobile summon-and-merge defence on an 18-slot board with 4 pantheons. The owner wants the characters in the tone of `art/incoming/divine_game/ref/owner_tone_zeus_boy.jpg` (cute chibi champion + glowing god spirit behind). Notes: the DIVINE section at the end of `docs/action-game.md`; start there on "เกมผู้รับพร" / "Lucky Pantheon".
+## NEWEST (owner 2026-11-25): `divine.html` "ศึกผู้รับพร" (our remodel on main; the first Codex version stays on branch `codex/divine-dark-compact`)
+- Portrait mobile summon-and-merge defence on ONE 7 x 3 board (21 slots) with 4 pantheons; characters cut from the owner's pictures; Gemini prompts for the rest in `art/incoming/divine_game/PROMPTS_gemini.md`. The owner wants the characters in the tone of `art/incoming/divine_game/ref/owner_tone_zeus_boy.jpg` (cute chibi champion + glowing god spirit behind). Notes: the DIVINE section at the end of `docs/action-game.md`; start there on "เกมผู้รับพร" / "Lucky Pantheon".
 
 ## NEWEST (owner 2026-11-24): turn-based pixel game with bones (NOT built yet)
 - Pretty turn-based battle, pixel characters 128 px moved by our own 2D bones (`dragonrig.html` recipe). The first hero comes from the owner's picture via PixelLab PRO: the owner chose pro straight away for this game. Plan and picks: the TURN-BASED section at the end of `docs/action-game.md`; start there on "เกมเทิร์นเบส".

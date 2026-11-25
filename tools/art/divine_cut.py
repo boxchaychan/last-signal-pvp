@@ -11,7 +11,7 @@ BOX = {   # name: (source, x0, y0, x1, y1) in the source's own pixels
     'robot_a': (MOCK, 492, 470, 650, 665), 'robot_b': (MOCK, 708, 512, 858, 705), 'ghoul_a': (MOCK, 892, 488, 1116, 712), 'ghoul_b': (MOCK, 1140, 488, 1366, 722),
     'robot_c': (MOCK, 934, 1958, 1075, 2100),
     'soldier': (MOCK, 1076, 1080, 1232, 1262), 'thor': (MOCK, 676, 1392, 840, 1582), 'monkey': (MOCK, 858, 1558, 1034, 1758), 'anubis': (MOCK, 676, 1692, 840, 1915),
-    'zeus_boy': (TONE, 420, 760, 1400, 1960), 'zeus_spirit': (TONE, 470, 330, 1460, 880),
+    'zeus_boy': (TONE, 420, 760, 1400, 1960), 'zeus_spirit': (TONE, 470, 150, 1460, 880),
 }
 def cut(name, src, x0, y0, x1, y1):
     im = cv2.imread(os.path.join(REF, src)); H, W = im.shape[:2]; pad = 14
@@ -29,7 +29,7 @@ def cut(name, src, x0, y0, x1, y1):
     rgba = cv2.cvtColor(sub, cv2.COLOR_BGR2RGBA); rgba[..., 3] = m * 255
     if name == 'zeus_spirit':   # drawn on white: soft alpha from the distance to white, colour un-blended from white
         c = sub[..., ::-1].astype(float); dist = np.abs(c - 255).max(2); al = np.clip(dist / (110 if name == 'zeus_spirit' else 70), 0, 1)
-        if name == 'zeus_spirit': al = np.maximum(al, .38 * (m > 0)); al *= np.clip((sub.shape[0] - np.arange(sub.shape[0])[:, None] - pad) / (sub.shape[0] * .3), 0, 1)   # fades out at the bottom
+        if name == 'zeus_spirit': al = al * 1.0; al *= np.clip((sub.shape[0] - np.arange(sub.shape[0])[:, None] - pad) / (sub.shape[0] * .3), 0, 1)   # fades out at the bottom
         al = al * (m > 0); q = np.maximum(al, 1e-3)[..., None]; col = np.clip((c - (1 - q) * 255) / q, 0, 255)
         rgba = np.dstack([col, al * 255]).astype(np.uint8)
     a = Image.fromarray(rgba); a = a.crop(a.getbbox()); a.save(os.path.join(OUT, name + '.png')); return a
