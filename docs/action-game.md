@@ -2579,3 +2579,13 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - Checked: 740x360, 844x390, 1280x720, 1100x800; a 32 s auto battle in real time; no console errors.
   - Known limits of THIS picture: the arms hang against the body and the legs are one block, so the legs do not step, and the hidden body behind the arm is colour fill. A rig-friendly picture (arms and legs apart) would look better.
 
+## NEXT CHAT NOTE (owner 2026-11-25, end of the clash / turnrig chat)
+- The owner wants to REDESIGN the side-game character in a new chat ("อยากเปลี่ยนตัวละครออกแบบใหม่"), right after asking where the side game is. Nothing is started yet.
+- First ask the owner which game this is for:
+  - `dune.html` ตำนานมังกรทราย: the painted dragon hero with a spear; start on "เกมแนวข้าง".
+  - `hoodfall.html`: the hooded rabbit; start on "เกมด้านข้าง".
+- Then ask for the new design (their picture or words), and offer the free routes first.
+- Lessons from this chat that apply to a new hero:
+  - Our own pixel bones (`turnrig.html`) need a picture with the arms and legs apart from the body.
+  - PixelLab skeleton-v3 keeps the character on model, but small chibis (about 60 px) move little and the weapon smears. Test it on a big body (about 128 px).
+
