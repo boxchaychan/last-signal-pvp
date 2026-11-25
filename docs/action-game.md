@@ -2803,4 +2803,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - `divine_vfx.py` now takes frame ranges (`62-132,148-228`) so the full-white frame is skipped -> `art/divine/vfx_merge.jpg` (32 frames at 16 fps, anchor at the centre).
   - It plays over the merged unit (h 170).
   - All 6 planned effects are in: the four god skills, summon and merge.
+- 2026-11-26 (owner "ทำต่อนะ ฉันพักก่อน"; no new Codex art yet), free gameplay polish:
+  - DAILY MISSIONS: a purple "ภารกิจวันนี้" button on the play page (red dot when a reward is ready) opens a panel with 3 missions a day. They are picked by the player's local date from a pool of 9 (summon 25, merge 8, reach wave 20, boss 1, mythic 2, elite 3, win 1, play 3, skills 30) and pay 120-250 gold. Progress counts across matches (`META.daily`, `track()`).
+  - FIRST MATCH TIPS: 4 banners at 2.5 / 7 / 12 / 17 s (summon, merge 3, the 100 limit, หลอมเทพ), shown once (`META.tut`). Long banners shrink the text to fit and stay 3.4 s.
+  - The summon button pulses when you can pay for 2 summons and have space.
+  - At most 10 video effects at once, so summon lights skip when the screen is busy.
+  - Checked: lobby, mission panel, a tip in a match, back to the lobby; no console errors.
 
