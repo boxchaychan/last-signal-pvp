@@ -108,17 +108,18 @@ function resize() { if (!innerWidth || !innerHeight) return; lastW = innerWidth;
 addEventListener('resize', resize); resize();
 
 /* ---------- the map ---------- */
-const PLATS = [
-  { x: 1400, y: 1076, w: 380 }, { x: 1835, y: 952, w: 430 }, { x: 1470, y: 828, w: 320 },
-  { x: 2400, y: 1076, w: 470 }, { x: 2960, y: 952, w: 390 }, { x: 2500, y: 824, w: 400 },
-  { x: 3430, y: 1076, w: 430 }, { x: 3020, y: 714, w: 360 }, { x: 3780, y: 936, w: 340 }, { x: 3470, y: 806, w: 300 }
-];
-const LADDERS = [ { x: 1600, top: 1076, bot: GROUND, k: 'ladder' }, { x: 2050, top: 952, bot: GROUND, k: 'rope' }, { x: 1630, top: 828, bot: 1076, k: 'rope' }, { x: 2640, top: 1076, bot: GROUND, k: 'ladder' }, { x: 3150, top: 952, bot: GROUND, k: 'rope' }, { x: 2700, top: 824, bot: 1076, k: 'ladder' }, { x: 3200, top: 714, bot: 952, k: 'rope' }, { x: 3640, top: 1076, bot: GROUND, k: 'ladder' }, { x: 3950, top: 936, bot: GROUND, k: 'rope' }, { x: 3620, top: 806, bot: 1076, k: 'rope' } ];
+/* map (owner 2026-11-25 "ทำฉากให้มีที่เก็บเลเวล ให้มีหลายชั้นเป็นเขา ไม่ใช่ลอยๆ"): the field is a row of stepped HILLS, solid earth tiers
+   stacked like a mountain (walls stop you, jump or climb up), monsters on every tier; floating ledges are gone. [centre, tier widths bottom -> top] */
+const HILLS = [[1700, [440, 280, 150]], [2650, [520, 340, 180]], [3500, [480, 300, 160]], [4150, [340, 180]]], TIER = 124;
+const PLATS = [], LADDERS = [];
+for (const [c, ws] of HILLS) ws.forEach((w, i) => { PLATS.push({ x: c - w / 2, y: 1076 - i * TIER, w, solid: 1, tier: i });
+  if (i === 0) LADDERS.push({ x: c - w / 2 + 20, top: 1076, bot: GROUND, k: 'ladder' }); else LADDERS.push({ x: i % 2 ? c + w / 2 - 20 : c - w / 2 + 20, top: 1076 - i * TIER, bot: 1076 - (i - 1) * TIER, k: 'rope' }); });
 const BACK = [ /* name, x, base y, height, flip */
   ['palm1', -10, GROUND + 6, 300], ['palm3', 1085, GROUND + 6, 285], ['tent', 205, GROUND + 6, 292], ['lantern', 405, GROUND + 4, 196], ['jars', 468, GROUND + 6, 90], ['stall', 640, GROUND + 6, 238], ['crates', 810, GROUND + 6, 108], ['well', 1010, GROUND + 6, 190], ['lantern', 890, GROUND + 4, 196, 1], ['sign', 1215, GROUND + 5, 150],
   ['palm2', 1330, GROUND + 6, 280, 1], ['column', 1760, GROUND + 6, 215], ['columnb', 1880, GROUND + 6, 150], ['pond', 2250, GROUND + 12, 88], ['palm1', 2360, GROUND + 6, 285, 1], ['arch', 2860, GROUND + 6, 250], ['fall', 3320, GROUND + 6, 150], ['obelisk', 3540, GROUND + 6, 250], ['palm3', 3790, GROUND + 6, 270], ['statue', 4130, GROUND + 6, 190], ['column', 4340, GROUND + 6, 250], ['arch', 4500, GROUND + 6, 340], ['column', 4660, GROUND + 6, 250],
   ['obelisk', 4860, GROUND + 6, 300], ['statue', 5050, GROUND + 6, 215, 1], ['columnb', 5230, GROUND + 6, 180], ['portal', 5480, GROUND + 6, 250],
-  ['columnb', 1520, 1076 + 4, 88], ['shrub', 1940, 952 + 4, 50], ['cactus', 2150, 952 + 4, 76], ['blocks', 2500, 1076 + 4, 46], ['shrub', 2780, 1076 + 4, 44], ['jars', 2640, 824 + 4, 54], ['column', 3080, 952 + 4, 120], ['chest', 3240, 714 + 4, 50], ['cactus', 3760, 1076 + 4, 70], ['blocks', 3900, 936 + 4, 44], ['obelisk', 3540, 806 + 4, 92]
+  ['shrub', 1500, 1080, 44], ['columnb', 1890, 1080, 80], ['cactus', 1585, 956, 58], ['obelisk', 1700, 832, 104], ['blocks', 2420, 1080, 44], ['palm2', 2875, 1080, 190, 1], ['jars', 2505, 956, 48], ['shrub', 2815, 956, 40], ['column', 2650, 832, 124],
+  ['statue', 3300, 1080, 112], ['cactus', 3715, 1080, 62], ['columnb', 3375, 956, 78], ['obelisk', 3500, 832, 112], ['shrub', 4010, 1080, 42], ['jars', 4290, 1080, 46], ['blocks', 4150, 956, 40]
 ];
 const FRONT = [ ['tuft', 130, GROUND + 14, 40], ['shrub', 1130, GROUND + 15, 44], ['tuft', 1490, GROUND + 15, 46], ['blocks', 2130, GROUND + 18, 40], ['tuft', 2310, GROUND + 16, 48], ['cactus', 2960, GROUND + 15, 64], ['tuft', 3440, GROUND + 15, 42], ['shrub', 4040, GROUND + 15, 42], ['tuft', 4760, GROUND + 15, 44], ['blocks', 5160, GROUND + 18, 48], ['tuft', 5360, GROUND + 15, 42] ];
 const GLOWS = [[405, 1032, 78, '255,176,74'], [890, 1032, 78, '255,176,74'], [640, 1090, 78, '114,236,214'], [3320, 1120, 70, '110,235,226'], [5480, 1080, 130, '80,240,220']];
@@ -131,15 +132,15 @@ const MT = {
   golem: { n: 'โกเลมผู้เฝ้าสุสาน', lv: 12, hp: 9500, atk: 54, spd: 58, xp: 520, gold: [180, 240], sc: .86, r: 86, h: 225, reach: 170, aggro: 900, hitF: 8, boss: 1 }
 };
 for (const k in MT) { const T = MT[k], c = T.boss ? .8 : CHAR; T.sc *= c; T.r *= c; T.h *= c; T.reach *= c; }
-const SPAWN = [ ['scorpion', 1250, 1390, GROUND], ['scorpion', 1440, 1760, GROUND], ['scorpion', 1710, 2020, GROUND], ['scorpion', 1420, 1760, 1076], ['scorpion', 1440, 1760, 1076], ['scorpion', 1850, 2240, 952], ['wolf', 2040, 2380, GROUND], ['wolf', 2400, 2680, GROUND], ['wolf', 2420, 2850, 1076], ['wolf', 1490, 1770, 828], ['wolf', 2520, 2880, 824], ['wolf', 2700, 2950, GROUND],
-  ['mummy', 2980, 3330, 952], ['mummy', 2970, 3280, GROUND], ['mummy', 3280, 3560, GROUND], ['mummy', 3450, 3840, 1076], ['mummy', 3040, 3360, 714], ['mummy', 3470, 3760, 806], ['cactus', 3600, 3880, GROUND], ['cactus', 3890, 4230, GROUND], ['cactus', 3800, 4100, 936], ['cactus', 4080, 4380, GROUND] ];
+const SPAWN = [ ['scorpion', 1230, 1460, GROUND], ['scorpion', 1250, 1450, GROUND], ['scorpion', 1500, 1900, 1076], ['scorpion', 1500, 1900, 1076], ['scorpion', 1575, 1825, 952], ['scorpion', 1640, 1760, 828],
+  ['scorpion', 1940, 2150, GROUND], ['wolf', 2100, 2370, GROUND], ['wolf', 1960, 2370, GROUND], ['wolf', 2410, 2890, 1076], ['wolf', 2410, 2890, 1076], ['wolf', 2500, 2800, 952], ['wolf', 2580, 2720, 828],
+  ['wolf', 2930, 3240, GROUND], ['mummy', 2930, 3240, GROUND], ['mummy', 3280, 3720, 1076], ['mummy', 3280, 3720, 1076], ['mummy', 3370, 3630, 952], ['mummy', 3440, 3560, 828],
+  ['cactus', 3760, 3960, GROUND], ['cactus', 4000, 4300, 1076], ['cactus', 4080, 4220, 952], ['cactus', 4335, 4430, GROUND] ];
 /* owner: small characters on a big wide map: everything east of the camp is stretched, then filled with more scenery and monsters */
-/* map set 3 (owner 2026-11-25 "มาทำแมพต่อ"): the last stretch before the tomb gate had no platforms: a small tower of three (no chests: owner "ไม่มีเปิดหีบ เกมเก็บเลเวล") */
-PLATS.push({ x: 3990, y: 1076, w: 300 }, { x: 4215, y: 952, w: 195 }, { x: 3935, y: 840, w: 255 }); LADDERS.push({ x: 4140, top: 1076, bot: GROUND, k: 'ladder' }, { x: 4300, top: 952, bot: GROUND, k: 'rope' }, { x: 4070, top: 840, bot: 1076, k: 'rope' });
-BACK.push(['jars', 4010, 840 + 4, 46], ['jars', 4250, 952 + 4, 50], ['shrub', 4100, 1076 + 4, 44]); SPAWN.push(['cactus', 4000, 4280, 1076], ['mummy', 3950, 4180, 840]);
 const MX = WIDE ? 2.2 : 1.5, WF = x => x <= 1200 ? x : 1200 + (x - 1200) * MX, BARRIER = WF(4440), ARENA = [WF(4560), WF(5360)], BOSS_X = WF(5180), PORTAL_X = WF(5480);
 for (const p of PLATS) { const r = WF(p.x + p.w); p.x = WF(p.x); p.w = r - p.x; } for (const l of LADDERS) l.x = WF(l.x); for (const b of BACK) b[1] = WF(b[1]); for (const b of FRONT) b[1] = WF(b[1]); for (const g of GLOWS) g[0] = WF(g[0]); for (const d of SPAWN) { d[1] = WF(d[1]); d[2] = WF(d[2]); }
-SPAWN.push(...SPAWN.filter((d, i) => WIDE || i % 2 === 0).map(d => [...d])); if (WIDE) SPAWN.push(...SPAWN.filter(d => d[3] === GROUND).map(d => [d[0], d[1] + 60, d[2] + 60, d[3]]));
+const fitGround = () => { for (const d of SPAWN) { if (d[3] !== GROUND) continue; for (const p of PLATS) { if (p.tier !== 0) continue; const a = p.x - 14, b = p.x + p.w + 14; if (d[2] <= a || d[1] >= b) continue; if ((d[1] + d[2]) / 2 < (a + b) / 2) d[2] = a; else d[1] = b; } if (d[2] - d[1] < 40) d[1] = d[2] - 40; } };
+SPAWN.push(...SPAWN.filter((d, i) => WIDE || i % 2 === 0).map(d => [...d])); if (WIDE) SPAWN.push(...SPAWN.filter(d => d[3] === GROUND).map(d => [d[0], d[1] + 60, d[2] + 60, d[3]])); fitGround();
 { let q = 91; const rn = () => (q = (q * 16807) % 2147483647) / 2147483647, K2 = [['palm1', 320], ['palm3', 300], ['palm2', 300], ['column', 240], ['columnb', 170], ['obelisk', 280], ['arch', 300], ['statue', 210], ['palm1', 280], ['blocks', 70], ['cactus', 86], ['shrub', 66]], add = []; for (let x = 1320; x < MAPW - 120; x += 150 + rn() * 230) { const k = K2[rn() * K2.length | 0]; add.push([k[0], Math.round(x), GROUND + 6, Math.round(k[1] * (.86 + rn() * .3)), rn() < .5 ? 1 : 0]); } BACK.unshift(...add); for (let x = 1260; x < MAPW - 80; x += 120 + rn() * 210) FRONT.push([['tuft', 'shrub', 'tuft', 'blocks'][rn() * 4 | 0], Math.round(x), GROUND + 15, Math.round(30 + rn() * 18)]); }
 const QUESTS = [ { k: 'scorpion', n: 8, t: 'ปราบแมงป่องทราย', r: { xp: 45, gold: 45 } }, { k: 'wolf', n: 10, t: 'ไล่ฝูงหมาป่าเนินทราย', r: { xp: 95, gold: 75 } }, { k: 'mummy', n: 10, t: 'สงบมัมมี่ในสุสาน', r: { xp: 190, gold: 120 } }, { k: 'cactus', n: 8, t: 'ฝ่าดงกระบองเพชรเดิน', r: { xp: 300, gold: 160 } }, { k: 'golem', n: 1, t: 'โค่นโกเลมผู้เฝ้าสุสาน', r: { xp: 600, gold: 400 } } ];
 const DRAGON_SKILLS = [ /* owner: spear and fire, nothing dragon-shaped: the hero does not know what they are yet */
@@ -248,7 +249,7 @@ function stepPlayer(dt) {
   if (P.dead) { P.t += dt; P.f = Math.min(15, P.t * 15); P.vy += GRAV * dt; P.y += P.vy * dt; land(); return; }
   if (P.ladder) {
     const l = P.ladder, my = (I.down ? 1 : 0) - (I.up ? 1 : 0); P.x = lerp(P.x, l.x, .35); P.y += my * 205 * dt; P.vx = P.vy = 0; P.t += Math.abs(my) * dt; P.f = (P.t * 15) % 16; P.a = 'hero_idle';
-    if (P.y <= l.top) { P.y = l.top; P.ladder = null; P.on = true; P.plat = PLATS.find(p => p.y === l.top && l.x > p.x && l.x < p.x + p.w) || null; setAnim('idle'); } else if (P.y >= l.bot) { P.y = l.bot; P.ladder = null; P.on = l.bot === GROUND; if (!P.on) P.plat = PLATS.find(p => p.y === l.bot); P.on = true; setAnim('idle'); }
+    if (P.y <= l.top) { P.y = l.top; P.ladder = null; P.on = true; P.plat = PLATS.find(p => p.y === l.top && l.x > p.x && l.x < p.x + p.w) || null; setAnim('idle'); } else if (P.y >= l.bot) { P.y = l.bot; P.ladder = null; P.on = l.bot === GROUND; if (!P.on) P.plat = PLATS.find(p => p.y === l.bot && l.x > p.x && l.x < p.x + p.w) || PLATS.find(p => p.y === l.bot); P.on = true; setAnim('idle'); }
     else if (jumpP) { P.ladder = null; P.vy = -360; P.vx = mx * 210; P.on = false; P.jumps = 1; setAnim('idle'); } return;
   }
   if ((I.up || I.down) && P.st !== 'skill') { const l = ladderAt(); if (l && ((I.up && P.y > l.top + 2) || (I.down && P.y < l.bot - 2))) { P.ladder = l; P.st = 'climb'; P.vx = P.vy = 0; P.on = false; P.plat = null; return; } }
@@ -257,7 +258,7 @@ function stepPlayer(dt) {
   else if (!busy) { if (mx) { P.dir = mx; P.vx = lerp(P.vx, mx * (RUN_SPEED + P.lv * 2) * ospd(), 1 - Math.exp(-dt * 16)); } else P.vx = lerp(P.vx, 0, 1 - Math.exp(-dt * 15)); }
   else if (P.st === 'atk') P.vx = lerp(P.vx, OTTER ? mx * 110 : 0, 1 - Math.exp(-dt * 13)); else if (P.st === 'skill') { if (P.cast && P.cast.id === 'cyclone') { if (mx) P.dir = mx; P.vx = lerp(P.vx, mx * 160, 1 - Math.exp(-dt * 10)); } else P.vx = lerp(P.vx, 0, 1 - Math.exp(-dt * 13)); } else if (P.st === 'hurt') P.vx = lerp(P.vx, 0, 1 - Math.exp(-dt * 4));
   if (jumpP && P.st !== 'skill' && P.st !== 'hurt') {
-    if (I.down && P.on && P.plat) { P.skip = P.plat; P.dropT = .22; P.on = false; P.plat = null; P.vy = 60; }
+    if (I.down && P.on && P.plat && !P.plat.solid) { P.skip = P.plat; P.dropT = .22; P.on = false; P.plat = null; P.vy = 60; }
     else if (P.on || P.jumps < 2) { if (!P.on) { spark(P.x, P.y, '#ffd28a', 9, 180); } P.vy = P.on ? -735 : -650; P.jumps = P.on ? 1 : 2; P.on = false; P.plat = null; if (P.st === 'atk') setAnim('idle'); sfx('jump'); }
   }
   if (P.buf > 0 && (P.st === 'idle' || P.st === 'run' || P.st === 'air')) startAttack(0);
@@ -268,7 +269,8 @@ function stepPlayer(dt) {
   } else if (P.st === 'skill') stepCast(dt);
   else if (P.st === 'hurt') { P.t += dt * 26; P.f = Math.min(15, P.t); if (P.f >= 11 && P.on) setAnim('idle'); }
   else if (P.st !== 'dash') { if (!P.on) { P.st = 'air'; P.a = 'hero_run'; P.f = P.vy < 0 ? 4 : 11; } else if (Math.abs(P.vx) > 36) { if (P.st !== 'run') setAnim('run'); P.t += dt * (Math.abs(P.vx) / RUN_SPEED) * 34; P.f = P.t % 16; } else { if (P.st !== 'idle') setAnim('idle'); P.t += dt * 12; P.f = P.t % 16; } }
-  P.x = clamp(P.x + P.vx * dt, G.boss ? ARENA[0] + 30 : 28, (G.quest >= 4 ? MAPW - 40 : BARRIER));   /* map set 2: the arena gate shuts while the golem lives */ if (G.quest < 4 && P.x >= BARRIER - 2 && mx > 0 && G.t - (G.barrT || -9) > 4) { G.barrT = G.t; toast('ประตูสุสานยังปิด', 'ทำภารกิจให้ครบก่อน'); }
+  const ox = P.x; P.x = clamp(P.x + P.vx * dt, G.boss ? ARENA[0] + 30 : 28, (G.quest >= 4 ? MAPW - 40 : BARRIER));   /* map set 2: the arena gate shuts while the golem lives */ if (G.quest < 4 && P.x >= BARRIER - 2 && mx > 0 && G.t - (G.barrT || -9) > 4) { G.barrT = G.t; toast('ประตูสุสานยังปิด', 'ทำภารกิจให้ครบก่อน'); }
+  for (const T of PLATS) { if (!T.solid || P.y <= T.y + 3) continue; const a = T.x + 4, b = T.x + T.w - 4; if (P.x <= a || P.x >= b) continue; P.x = ox <= a || (ox < b && ox - a < b - ox) ? a : b; P.vx = 0; }   /* hill walls: below a tier's top you cannot walk into it */
   if (P.dropT > 0) { P.dropT -= dt; if (P.dropT <= 0) P.skip = null; }
   const y0 = P.y; if (P.st === 'dash') P.vy = Math.max(0, P.vy * .5); P.vy += GRAV * dt * (P.st === 'dash' ? .2 : 1); P.y += P.vy * dt;
   if (P.on) { if (P.plat && (P.x < P.plat.x - 8 || P.x > P.plat.x + P.plat.w + 8)) { P.on = false; P.plat = null; P.jumps = Math.max(1, P.jumps); } else { P.y = P.plat ? P.plat.y : GROUND; P.vy = 0; } }
@@ -475,6 +477,19 @@ function img(n, x, base, h, flip, src) { const m = src || ENV[n]; if (!m) return
 function drawGround() {
   const g = ENV.ground, k = .47; if (g) { const w = g.width * k, h = g.height * k, top = (WORLD.ground.top || 63) * k; let x = -((G.camX % w) + w) % w; for (; x < VW; x += w) { ctx.drawImage(g, x, WY(GROUND) - top, w + .6, h); ctx.fillStyle = '#3b1826'; ctx.fillRect(x, WY(GROUND) - top + h - 1, w + 1, 340); } }
 }
+const HILLDRAW = PLATS.filter(p => p.solid).sort((a, b) => a.y - b.y);   /* highest tier first: lower, wider tiers are in front */
+function drawHills() {
+  const g = ENV.ground; if (!g) return; const k = .47, w = g.width * k, h = g.height * k, top = (WORLD.ground.top || 63) * k, yB = WY(GROUND) + 24;
+  for (const T of HILLDRAW) {
+    const x0 = WX(T.x), x1 = WX(T.x + T.w), yT = WY(T.y), sl = 8 + T.tier * 2; if (x1 + sl < -40 || x0 - sl > VW + 40) continue;
+    ctx.save(); ctx.beginPath(); ctx.moveTo(x0 - 3, yT - top); ctx.lineTo(x1 + 3, yT - top); ctx.lineTo(x1 + sl, yB); ctx.lineTo(x0 - sl, yB); ctx.closePath(); ctx.clip();
+    for (let xs = WX(Math.floor((T.x - 40) / w) * w); xs < x1 + sl; xs += w) { ctx.drawImage(g, xs, yT - top, w + .6, h); ctx.fillStyle = '#3b1826'; ctx.fillRect(xs, yT - top + h - 1, w + 1, 400); }
+    if (T.tier) { ctx.fillStyle = `rgba(52,14,36,${.1 + T.tier * .05})`; ctx.fillRect(x0 - sl, yT + 6, x1 - x0 + sl * 2, yB - yT); }   /* higher tiers sit further back */
+    for (const [ex, d] of [[x0, 1], [x1, -1]]) { const gr = ctx.createLinearGradient(ex, 0, ex + d * 26, 0); gr.addColorStop(0, 'rgba(46,12,30,.62)'); gr.addColorStop(1, 'rgba(46,12,30,0)'); ctx.fillStyle = gr; ctx.fillRect(Math.min(ex, ex + d * 26) - sl, yT, 26 + sl, yB - yT); }
+    ctx.restore();
+    ctx.save(); ctx.strokeStyle = '#2e0f1f'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x0 - sl, yB); ctx.lineTo(x0 - 3, yT + 2); ctx.moveTo(x1 + 3, yT + 2); ctx.lineTo(x1 + sl, yB); ctx.stroke(); ctx.restore();
+  }
+}
 function drawPlat(p) {
   const L = ENV.plat_l, M = ENV.plat_m, R = ENV.plat_r; if (!L || !M || !R) return; const k = .3, x = WX(p.x), y = WY(p.y); if (x > VW + 40 || x + p.w < -40) return; const lw = L.width * k, rw = R.width * k, mw = M.width * k, ly = y - WORLD.plat_l.top * k, my = y - WORLD.plat_m.top * k, ry = y - WORLD.plat_r.top * k, inner = p.w - lw - rw + 34, n = Math.max(1, Math.ceil(inner / (mw - 3)));
   for (let i = 0; i < n; i++) { const dw = i === n - 1 ? inner - (mw - 3) * (n - 1) : mw; ctx.drawImage(M, 0, 0, M.width * (dw / mw), M.height, x + lw - 17 + (mw - 3) * i, my, dw, M.height * k); }
@@ -535,7 +550,7 @@ function drawAir() {
 }
 function draw() {
   ctx.setTransform(K, 0, 0, K, 0, 0); ctx.fillStyle = '#2a1420'; ctx.fillRect(0, 0, VW + 2, VIEW_H + 2); const sx = G.shake ? rand(-G.shake, G.shake) * .55 : 0, sy = G.shake ? rand(-G.shake, G.shake) * .55 : 0;
-  drawBack(); ctx.translate(sx, sy); for (const b of BACK) if (b[2] > GROUND) img(b[0], b[1], b[2], b[3], b[4]); drawFlags(); drawGround(); for (const l of LADDERS) drawClimb(l); for (const p of PLATS) drawPlat(p); for (const b of BACK) if (b[2] <= GROUND) img(b[0], b[1], b[2], b[3], b[4]);
+  drawBack(); ctx.translate(sx, sy); for (const b of BACK) if (b[2] > GROUND) img(b[0], b[1], b[2], b[3], b[4]); drawFlags(); drawGround(); drawHills(); for (const l of LADDERS) drawClimb(l); for (const p of PLATS) if (!p.solid) drawPlat(p); for (const b of BACK) if (b[2] <= GROUND) img(b[0], b[1], b[2], b[3], b[4]);
   if (G.quest < 4) { const x = WX(BARRIER + 42), y = WY(GROUND), a = .28 + Math.sin(G.t * 3) * .1; ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createLinearGradient(x - 24, 0, x + 24, 0); g.addColorStop(0, 'rgba(90,230,220,0)'); g.addColorStop(.5, `rgba(90,230,220,${a})`); g.addColorStop(1, 'rgba(90,230,220,0)'); ctx.fillStyle = g; ctx.fillRect(x - 24, y - 300, 48, 300); ctx.restore(); }
   G.dark = lerp(G.dark || 0, G.boss ? 1 : 0, .03); if (G.dark > .01) { const x = WX(ARENA[0] + 30), y = WY(GROUND), a = (.5 + Math.sin(G.t * 5) * .15) * G.dark; ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createLinearGradient(x - 30, 0, x + 30, 0); g.addColorStop(0, 'rgba(255,60,40,0)'); g.addColorStop(.5, `rgba(255,70,40,${a})`); g.addColorStop(1, 'rgba(255,60,40,0)'); ctx.fillStyle = g; ctx.fillRect(x - 30, y - 420, 60, 420); ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = `rgba(255,210,160,${.6 * G.dark})`; ctx.lineWidth = 2; for (let i = 0; i < 5; i++) { const yy = y - ((G.t * 120 + i * 84) % 420); ctx.beginPath(); ctx.moveTo(x - 8, yy); ctx.lineTo(x + 8, yy - 18); ctx.stroke(); } ctx.restore(); }
   if (LIVE) { drawTone(); drawDrift(0); } for (const n of NPCS) drawNPC(n); drawMarks(); if (OTTER) { for (const f of G.fx) if (f.under) drawFX(f); drawPullWhirl(0); drawHoops(0); } for (const m of G.mobs) drawMob(m); drawDrops(); for (const q of G.ghosts) sprite(q.a, q.f, q.x, q.y, HERO_SC, q.dir, (1 - q.t / q.T) * .3, .75); if (!OTTER) drawCharge(); drawRings(); if (OTTER) { drawOrbs(0); drawFistRing(0); } drawPlayer(); if (OTTER) { drawPullWhirl(1); drawHoops(1); drawFistRing(1); drawFists(); drawUltArcs(); drawFistWater(); drawDrips(); drawOrbs(1); } for (const f of G.fx) if (!f.under) drawFX(f); drawBolts(); drawShots(); drawSlashes(); drawImpacts(); for (const b of FRONT) img(b[0], b[1], b[2], b[3], b[4], LIVE ? tinted(b[0], zoneIdx(b[1])) : null); drawNums(); ctx.setTransform(K, 0, 0, K, 0, 0); if (G.dark > .01) { ctx.fillStyle = `rgba(40,4,24,${.28 * G.dark})`; ctx.fillRect(0, 0, VW, VIEW_H); } drawAir(); drawChain(); if (G.state === 'intro') drawIntro();
