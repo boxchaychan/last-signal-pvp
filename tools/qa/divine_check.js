@@ -16,6 +16,16 @@ const { chromium } = require('playwright');
   const base = process.env.QA_BASE || 'http://127.0.0.1:4173';
   await page.goto(base + '/divine.html', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.DIVINE && window.DIVINE.state());
+  await page.evaluate(() => {
+    const state = DIVINE.state();
+    state.grid.fill(null);
+    state.grid[0] = { id: 'greek_MYTHIC', name: 'ร่างทรงซุส', p: 'greek', tier: 'MYTHIC', cd: 0, bob: 0, awakened: true, pose: 'idle', poseT: 0, casts: 3 };
+    DIVINE.spawnBoss();
+    DIVINE.step();
+  });
+  await page.screenshot({ path: '/tmp/divine-zeus-skill.png', fullPage: true });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.DIVINE && window.DIVINE.state());
   await page.click('#summon');
   await page.click('#boss');
   const result = await page.evaluate(() => {
