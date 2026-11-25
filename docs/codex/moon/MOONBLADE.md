@@ -1,6 +1,6 @@
 # Moon blade swordsman (นักดาบจันทรา): third job of the desert side-scroller
 
-Owner phrases (2026-11-25): "ใช้เลย" (class = moon blade), "สั่ง codex เลย", "เอาเนียนๆ", "แมพสวย เอาแบบคมกริบทั้งตัวละครและสกิล".
+Owner phrases (2026-11-25): "ใช้เลย" (class = moon blade), "สั่ง codex เลย", "เอาเนียนๆ", "ท่าเดินท่าอะไรสั่งพร้อมไปเลยยาวๆ", "แมพสวย เอาแบบคมกริบทั้งตัวละครและสกิล".
 Branch `codex/moon-blade` made from the newest `origin/main` (run `git fetch` first), pictures in `art/incoming/moon_blade/`, plus `REPORT_TH.txt` (Thai, short). Commit and push after EVERY picture. Open a PR, do not merge. Do not edit html, tools or CLAUDE.md.
 Moves are drawn FRAMES (no bones). They must be as smooth and alive as `art/incoming/dragon_moves/attack2.png`: many small in-between steps, no jumps between frames, cloth and hair follow the weight of the move.
 
@@ -30,7 +30,11 @@ Each `<name>.png`: landscape 1536 x 1024, exactly 16 frames, 4 columns x 4 rows,
 8. `skill_dash`: low fast dash forward with the sword held back, recovers to the guard pose.
 9. `skill_leap`: jump up, flip the sword down and slash down onto the ground, land in a crouch, recover.
 10. `skill_cast`: raise the sword up to the sky with both hands (calling the moon), hold, bring it down in one big vertical cut.
-11. `hurt`: hit from the front, flinches back, recovers.
-12. `death`: staggers, drops to the knees, falls and stays down (no return to standing).
+11. `walk`: calm walk with the sword held low, frame 16 flows into frame 1.
+12. `jump`: crouch, take off, rise, top of the jump, fall, land, recover (frames 1-16 in that order; the game picks rise / fall frames).
+13. `climb`: climbing a ladder seen from the side, sword on the back, hands and feet alternate, frame 16 flows into frame 1.
+14. `skill_spin`: spin slashes round the body for the whole sheet (about two full turns), recovers to guard on frame 16.
+15. `hurt`: hit from the front, flinches back, recovers.
+16. `death`: staggers, drops to the knees, falls and stays down (no return to standing).
 
 Open each sheet beside `base_side.png` and the dragon's `idle.png`. Redo it if the character changes, the sword changes hand or shape, the size differs, a frame is cut off or touches another cell, or the motion jumps. Say in `REPORT_TH.txt` what still looks off.
