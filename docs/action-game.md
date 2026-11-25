@@ -2717,4 +2717,13 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - God spirits for Thor, Monkey King and Anubis.
   - References: `ref/REF_size_champion.png` (the Zeus boy at the standard size on a 1024 square) and `ref/REF_god_spirit.png`.
   - When they come: cut them, scale by HEAD size (not full height, because of ears and helmets), then wire each spirit like the Greek one.
+- 2026-11-25 later (owner: "ตอนนี้ทำช่องขนาดตัวก่อน", "กระดานเดียว ... เล่นคนเดียว แต่เล่นพร้อมกัน 5 คน", "ปรับสนามให้สวย"):
+  - Slots are now 68 x 100, so one character fits one slot. Characters are sized by the same HEAD size (`FIT`: Thor x1.1, Anubis x1.13 for the ears, monkey x1.03, soldier x.97).
+  - FIVE PLAYERS PER MATCH, each on their own board:
+    - There is no server yet, so 4 rivals are simulated. Each has a hidden last wave (18-62); their monster count climbs toward 100 near it.
+    - A strip under the HUD shows each rival's name, a hero icon and the count, or "ตกรอบ #n".
+    - Losing shows "อันดับ X จาก 5". Being the last one left shows a toast for 1st place, and you play on.
+    - Real players need a server later.
+  - ARENA: a temple courtyard at dusk, painted once in code. Sunset sky with a temple on the hill, grass with flowers, a sand ring path with edge stones, a marble floor in a gold frame, broken columns, bushes, 2 stone braziers with live fire, fireflies; the portal is smaller in the top-left corner.
+  - Checks: the summon-and-merge bot reaches wave 55; a summon-only bot reaches wave 27 and ranks 4 of 5. No console errors.
 
