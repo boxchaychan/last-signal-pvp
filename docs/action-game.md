@@ -2668,4 +2668,7 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
     - Real players need a server later.
   - ARENA: a temple courtyard at dusk, painted once in code. Sunset sky with a temple on the hill, grass with flowers, a sand ring path with edge stones, a marble floor in a gold frame, broken columns, bushes, 2 stone braziers with live fire, fireflies; the portal is smaller in the top-left corner.
   - Checks: the summon-and-merge bot reaches wave 55; a summon-only bot reaches wave 27 and ranks 4 of 5. No console errors.
+- 2026-11-25 (owner "เอาโทเคนออก"): gems, cores, เสี่ยงทาย (gamble) and ปลุกพลัง (awaken) are removed; gold is the only currency.
+  - Bottom row: หลอมเทพ + a bigger อัญเชิญ; the money row shows gold and units only.
+  - Killing the boss gives +150 gold and a free legend unit.
 
