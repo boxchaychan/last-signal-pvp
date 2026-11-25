@@ -37,19 +37,22 @@ sp = json.load(open('art/dune/sprites.json'))
 for name in MOVES:
     if not os.path.exists(f'{IN}{name}.png'): print(name, 'not drawn yet'); continue
     fr, cw, ch = sheet(name); soles = [sole(f) for f, _ in fr]; base = soles[0]; mid = feet_mid(fr[0][0], base)
+    k = K
+    if cw == ch:   # the 1536 x 1536 redo sheets: Codex drew him bigger there, so scale by the opening (standing) frame
+        f0s = fr[0][0]; y0s = np.where((f0s[..., 3] > 90).any(1))[0].min(); k = BODY / (base - y0s + 1)
     box = None
     for f, _ in fr:
         bb = Image.fromarray(f[..., 3]).point(lambda v: 255 if v > 12 else 0).getbbox()
         if bb: box = bb if box is None else (min(box[0], bb[0]), min(box[1], bb[1]), max(box[2], bb[2]), max(box[3], bb[3]))
-    x0, y0, x1, y1 = max(0, box[0] - 2), max(0, box[1] - 2), min(cw, box[2] + 2), min(ch, box[3] + 2); w, h = round((x1 - x0) * K), round((y1 - y0) * K)
+    x0, y0, x1, y1 = max(0, box[0] - 2), max(0, box[1] - 2), min(cw, box[2] + 2), min(ch, box[3] + 2); w, h = round((x1 - x0) * k), round((y1 - y0) * k)
     cols = min(16, 2048 // max(1, w)); rows = (16 + cols - 1) // cols; S = Image.new('RGBA', (cols * w, rows * h), (0, 0, 0, 0))
     for i, (f, _) in enumerate(fr):
         im = Image.fromarray(f, 'RGBA').crop((x0, y0, x1, y1)).resize((w, h), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=.8, percent=45, threshold=2))
         S.paste(im, (i % cols * w, i // cols * h))
     p = f'{OUT}{name}.webp'; S.save(p, 'WEBP', quality=90, alpha_quality=92, method=6)
     air = name in ('jump', 'skill_leap', 'climb'); limit = 999 if air else 26
-    sp['moon_' + name] = {'src': p, 'n': 16, 'w': w, 'h': h, 'cols': cols, 'foot': round((base - y0 + 1) * K), 'cx': round((mid - x0) * K),
-                          'dy': [0 if air else (round((base - v) * K) if abs(base - v) <= limit else 0) for v in soles]}
+    sp['moon_' + name] = {'src': p, 'n': 16, 'w': w, 'h': h, 'cols': cols, 'foot': round((base - y0 + 1) * k), 'cx': round((mid - x0) * k),
+                          'dy': [0 if air else (round((base - v) * k) if abs(base - v) <= limit else 0) for v in soles]}
     reach = [int(np.where((f[:int(sole(f) * .8), :, 3] > 60).any(0))[0].max()) for f, _ in fr]
     print(f'{name}: cell {w}x{h} {os.path.getsize(p) // 1024} KB, furthest reach on frame {int(np.argmax(reach))}')
 json.dump(sp, open('art/dune/sprites.json', 'w'), separators=(',', ':'))
