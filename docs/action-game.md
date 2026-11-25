@@ -2741,4 +2741,8 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
 - 2026-11-26 FIFTH VIDEO EFFECT: the owner's Meta summon clip (a neon magic circle plus a gold light pillar with stars). The raw `.mp4` stays local: `art/incoming/divine_game/video/meta_summon.mp4`.
   - Frames 12-150 step 4 at 20 fps, edge fade .1 -> `art/divine/vfx_summon.jpg` (35 frames). The anchor is the circle centre (.5, .819).
   - It plays on every new unit (h 160, 210 for legend and up). Effects marked `back: 1` are drawn BEFORE the units (`drawFx(true)`), so the light sits behind the new hero and does not bleach them.
+- 2026-11-26 SIXTH VIDEO EFFECT: the owner's Meta merge clip: 3 coloured orbs spiral together, a full-white flash frame, then a rainbow-ray burst and a fading swirl. The raw `.mp4` stays local: `art/incoming/divine_game/video/meta_merge.mp4`.
+  - `divine_vfx.py` now takes frame ranges (`62-132,148-228`) so the full-white frame is skipped -> `art/divine/vfx_merge.jpg` (32 frames at 16 fps, anchor at the centre).
+  - It plays over the merged unit (h 170).
+  - All 6 planned effects are in: the four god skills, summon and merge.
 

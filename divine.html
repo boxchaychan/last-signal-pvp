@@ -252,7 +252,7 @@ function merge() {
   const u = G.grid[G.sel]; if (!u || u.tier === 'MYTHIC') return; const ids = []; G.grid.forEach((v, i) => { if (same(v, u) && ids.length < 3) ids.push(i); });
   if (ids.length < 3) return toast('ต้องมีตัวเหมือนกัน 3 ตัว');
   const next = TIERS[TIERS.indexOf(u.tier) + 1]; ids.forEach(i => G.grid[i] = null); G.grid[ids[0]] = makeUnit(next, u.kind === 'hero' ? u.p : null);
-  const c = cell(ids[0]); burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); G.sel = ids[0]; sfx('merge'); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
+  const c = cell(ids[0]); if (VFX.merge) { const v = VFX.merge, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'merge', x: c.x, y: c.y - 40, h: 170, life: L, max: L, dl: 0 }); } burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); G.sel = ids[0]; sfx('merge'); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
 }
 function sell() { const u = G.grid[G.sel]; if (!u) return; G.gold += [10, 22, 48, 90, 150][TIERS.indexOf(u.tier)]; G.grid[G.sel] = null; G.sel = -1; sync(); }
 function upgrade() { if (G.gold < G.upCost) return toast('ทองไม่พอ'); G.gold -= G.upCost; G.atk++; G.upCost = Math.round(G.upCost * 1.45 + 5); toast('พลังโจมตี Lv ' + G.atk); sync(); }
@@ -591,7 +591,7 @@ function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; 
 (async () => {
   const names = ['hero_greek', 'hero_norse', 'hero_egypt', 'hero_asia', 'soldier', 'spirit_greek', 'mob_robot_a', 'mob_robot_b', 'mob_robot_c', 'mob_ghoul', 'boss_ghoul', 'zeus_idle', 'zeus_attack', 'zeus_skill', 'zeus_spirit', 'zeus_fx', 'thor_idle', 'thor_attack', 'thor_skill', 'thor_spirit', 'thor_fx'];
   SETS = await fetch('art/divine/sets.json').then(r => r.json());
-  for (const v of ['zeus_storm', 'thor_quake', 'anubis_sand', 'wukong_firerain', 'summon']) { try { const [j, im] = await Promise.all([fetch('art/divine/vfx_' + v + '.json').then(r => r.json()), load('art/divine/vfx_' + v + '.jpg')]); VFX[v] = { ...j, im }; } catch (e) {} }
+  for (const v of ['zeus_storm', 'thor_quake', 'anubis_sand', 'wukong_firerain', 'summon', 'merge']) { try { const [j, im] = await Promise.all([fetch('art/divine/vfx_' + v + '.json').then(r => r.json()), load('art/divine/vfx_' + v + '.jpg')]); VFX[v] = { ...j, im }; } catch (e) {} }
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   BG = paintBG(); fresh(); renderLobby();

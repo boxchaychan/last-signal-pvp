@@ -1,5 +1,5 @@
 """Cut a Meta / Gemini effect video (black background) into a game sprite sheet for divine.html. Free.
-  python3 tools/art/divine_vfx.py <video> <name> <first frame> <last frame> [step=2] [height=520] [fps] [edgefade 0..0.3]
+  python3 tools/art/divine_vfx.py <video> <name> <first frame>|<a-b,c-d> <last frame> [step=2] [height=520] [fps] [edgefade 0..0.3]
 fps = playback speed (default real time = 24 / step); edgefade = fade the left / right borders (Meta often runs an effect off the frame,
 this hides the straight cut).
 The sheet keeps the BLACK background (the game draws it with additive light, so black = invisible) and is saved as JPEG (small).
@@ -9,11 +9,12 @@ import sys, os, json, subprocess, tempfile, glob
 import numpy as np
 from PIL import Image
 from scipy import ndimage as nd
-vid, name, a, b = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]); step = int(sys.argv[5]) if len(sys.argv) > 5 else 2; TH = int(sys.argv[6]) if len(sys.argv) > 6 else 520
+vid, name = sys.argv[1], sys.argv[2]; RANGES = [tuple(map(int, r.split('-'))) for r in sys.argv[3].split(',')] if '-' in sys.argv[3] else [(int(sys.argv[3]), int(sys.argv[4]))];   # '<a>-<b>,<c>-<d>' skips a part (e.g. a full-white flash)
+step = int(sys.argv[5]) if len(sys.argv) > 5 else 2; TH = int(sys.argv[6]) if len(sys.argv) > 6 else 520
 FPS = float(sys.argv[7]) if len(sys.argv) > 7 else 24 / step; EF = float(sys.argv[8]) if len(sys.argv) > 8 else 0
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..'); OUT = os.path.join(R, 'art/divine')
 tmp = tempfile.mkdtemp(); subprocess.run(['ffmpeg', '-v', 'error', '-i', vid, os.path.join(tmp, '%04d.png')], check=True)
-fs = sorted(glob.glob(os.path.join(tmp, '*.png')))[a:b + 1:step]; ims = [np.asarray(Image.open(f).convert('RGB')).astype(np.float32) for f in fs]
+allf = sorted(glob.glob(os.path.join(tmp, '*.png'))); fs = [f for (ra, rb) in RANGES for f in allf[ra:rb + 1:step]]; ims = [np.asarray(Image.open(f).convert('RGB')).astype(np.float32) for f in fs]
 lum = [im.max(2) for im in ims]; union = np.zeros_like(lum[0], bool)
 for l in lum: union |= l > 28
 ys, xs = np.where(union); pad = 8; x0, y0, x1, y1 = max(0, xs.min() - pad), max(0, ys.min() - pad), min(union.shape[1], xs.max() + pad), min(union.shape[0], ys.max() + pad)
