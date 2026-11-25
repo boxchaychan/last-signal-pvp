@@ -27,7 +27,9 @@ def cut(c):
     al = cv2.GaussianBlur(cv2.erode(al, np.ones((2, 2), np.uint8)), (0, 0), .5); return np.dstack([c, al]), ly
 def sheet(name):
     a = np.array(Image.open(f'{IN}{name}.png').convert('RGB')); H, W = a.shape[:2]; cw, ch = W // 4, H // 4
-    return [cut(a[(i // 4) * ch:(i // 4 + 1) * ch, (i % 4) * cw:(i % 4 + 1) * cw]) for i in range(16)], cw, ch
+    pad = 8 if W == H else 0   # square redo sheets: a sword tip may poke a few px over the cell top, into the blue under the row above
+    a = np.concatenate([np.tile(BLUE.astype(np.uint8), (pad, W, 1)), a]) if pad else a
+    return [cut(a[(i // 4) * ch:(i // 4 + 1) * ch + pad, (i % 4) * cw:(i % 4 + 1) * cw]) for i in range(16)], cw, ch + pad
 def sole(f):   # lowest solid part of the body (a thin sword tip below the feet is ignored)
     o = cv2.morphologyEx((f[..., 3] > 90).astype(np.uint8), cv2.MORPH_OPEN, np.ones((9, 9), np.uint8)); y = np.where(o.any(1))[0]; return int(y.max()) if len(y) else f.shape[0] - 1
 def feet_mid(f, s):
@@ -38,7 +40,7 @@ for name in MOVES:
     if not os.path.exists(f'{IN}{name}.png'): print(name, 'not drawn yet'); continue
     fr, cw, ch = sheet(name); soles = [sole(f) for f, _ in fr]; base = soles[0]; mid = feet_mid(fr[0][0], base)
     k = K
-    if cw == ch:   # the 1536 x 1536 redo sheets: Codex drew him bigger there, so scale by the opening (standing) frame
+    if abs(cw - ch) <= 8:   # the 1536 x 1536 redo sheets (cells padded by 8 rows): Codex drew him bigger there, so scale by the opening (standing) frame
         f0s = fr[0][0]; y0s = np.where((f0s[..., 3] > 90).any(1))[0].min(); k = BODY / (base - y0s + 1)
     box = None
     for f, _ in fr:
