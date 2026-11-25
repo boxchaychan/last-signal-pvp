@@ -2671,4 +2671,7 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
 - 2026-11-25 (owner "เอาโทเคนออก"): gems, cores, เสี่ยงทาย (gamble) and ปลุกพลัง (awaken) are removed; gold is the only currency.
   - Bottom row: หลอมเทพ + a bigger อัญเชิญ; the money row shows gold and units only.
   - Killing the boss gives +150 gold and a free legend unit.
+- 2026-11-25 (owner "ยังช่องตัวไม่เล็กอีก"): everything is about 20 % smaller.
+  - Slots are now 56 x 78 (board 392 x 234 at BY 372). Characters are drawn at 64 x the tier size x `FIT`.
+  - Monsters: 47-66 tall, boss 120. The god spirit, rings, stars, shadows and hit points shrank to match.
 
