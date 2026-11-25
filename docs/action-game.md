@@ -2674,4 +2674,24 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
 - 2026-11-25 (owner "ยังช่องตัวไม่เล็กอีก"): everything is about 20 % smaller.
   - Slots are now 56 x 78 (board 392 x 234 at BY 372). Characters are drawn at 64 x the tier size x `FIT`.
   - Monsters: 47-66 tall, boss 120. The god spirit, rings, stars, shadows and hit points shrank to match.
+- FULL GAME PASS (owner 2026-11-25: "ทำมาเลย ... ตามต้นฉบับ 2 เกม ออกแบบมาเองเลย เอาให้สนุก สวย ดูเป็นเกม"). Genre of both references, our own design:
+  - LOBBY: the courtyard with the heroes standing guard and monsters strolling, a gold logo, a pulsing "เริ่มต่อสู้". Bottom tabs:
+    - ร้านค้า: a free gold chest every 10 min (80-200); one-match boosts: free epic 300, +150 start gold 200, x2 reward 400; up to 3 each.
+    - ฮีโร่: 5 hero cards in pantheon-coloured frames; level 1-10 costs 120 x 1.55^(lv-1); +12 % damage a level.
+    - ต่อสู้.
+    - อันดับ: a weekly board of 12 seeded names plus your best wave.
+    - วิหาร: 4 permanent upgrades (start gold +40, all attack +6 %, luck +1.5 %, attack speed +3 % per level, max 10).
+  - Progress is saved in this browser (`localStorage` key `divine_meta_v1`; `META`), starting with 300 gold.
+  - MATCH: a find-players screen fills 5 slots (you + 4 rivals), then the battle. "ออก" (tap twice) gives up.
+    - The result card shows the rank, the wave and the gold won: 40 + 12 x wave + rank bonus [250 / 160 / 100 / 60 / 30], doubled by the boost. Buttons: เล่นอีกครั้ง / กลับล็อบบี้.
+  - IN-MATCH FUN:
+    - Legend and mythic units cast their god's skill on every 6th hit, with the name floating up in the god's colour:
+      - Greek พายุซุส: sky bolts on 5 (mythic 8) monsters.
+      - Norse ค้อนสะเทือนฟ้า: stuns everything within 150 for about 1 s.
+      - Egypt ผนึกทราย: slows to half within 180.
+      - Asia ฝนเพลิงวานร: 4 (mythic 7) fireballs.
+    - Every 5th wave (not 10th) an ELITE comes: 10 x HP, bigger, purple aura, +40 gold.
+    - Big banners for a mythic, the boss, an elite and the start.
+    - Small sounds made in code (summon, merge, mythic, skill, boss, coin, win / lose), with an on/off switch in the lobby.
+  - Checked at 390 x 844 (every tab, match start, fight, result, back to the lobby) with no console errors. Test pages call `DIVINE.setMode('battle')`.
 
