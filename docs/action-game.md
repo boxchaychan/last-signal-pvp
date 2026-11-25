@@ -2791,4 +2791,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Frames 6-204 step 6 at 14 fps -> `art/divine/vfx_anubis_sand.jpg` (34 frames). The anchor was set by hand to the base (.5, .86).
   - ผนึกทราย plays it on the target (h 250, mythic 300).
   - Gold light is weaker over the bright sky island than blue light is; if the owner wants more punch, add a soft dark underlay or use stronger colours.
+- 2026-11-26 FOURTH VIDEO EFFECT: the owner's Gemini clip (30 s, "มันรวมมาเลย ตัดเอานะ"). The raw `.mp4` stays local: `art/incoming/divine_game/video/gemini_combo_sand_fire.mp4`. It holds:
+  - the sand tornado again (frames 0-200, already used);
+  - a sand dust ring (200-240, unused);
+  - two fireball barrages, fireballs falling diagonally then dome blasts, smoke and ground fire (about 250-470 and 504-704).
+  - The second barrage, frames 504-704 step 5 at 16 fps with edge fade .12 -> `art/divine/vfx_wukong_firerain.jpg` (41 frames). ฝนเพลิงวานร plays it once on the target (h 220, mythic 260); the code fireballs still do the damage.
 
