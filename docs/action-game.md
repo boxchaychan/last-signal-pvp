@@ -3029,3 +3029,13 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - The 2D hand-pixel sprite route (drawn frames) fits this look better than a 3D model through the pixel filter.
   - New Gemini box "แบบ 3" in `PROMPTS_gemini.md`, asking for pixel art directly (free test). Our own girl (black hair, purple eyes, long red scarf) in an adventurer outfit: brown travel cape, deep-teal tunic coat, satchel + compass, tights, tall boots, empty grip hands, 3 views on flat navy.
   - If Gemini's pixels are not good: Gemini painted sheet -> PixelLab standard (1 credit) at the chosen size, only on "เจน".
+- 2026-11-26 60 PX SIMULATION (owner sent 2 Gemini pictures + "ขอทำให้ 60 โดยจำลองก่อนสิว่าตัวไหนจะเวิค"). Raw files:
+  - A = `hero_v3_gemini_3view.png`: slim, about 5 heads, teal tunic, brown capelet, tights, tall boots, 3 views on navy.
+  - B = `hero_v2_gemini_pose.png`: about 3.5 heads, puffy sleeves, vest, scalloped skirt, lantern, one pointing pose on black.
+  - Free shrink, all in `art/incoming/pixgrind/sim60/`:
+    - cut from the background, biggest piece kept (loose sparkles and B's ground shadow dropped, only in the test copies);
+    - quantised to 28 colours, then each 60 px cell takes the most common colour, with dark colours weighted a little (crisp flat colours; the average / Lanczos shrink and the punch were muddy and lost the faces);
+    - a 6x zoom at 60 and 80 (`zoom_A_B_60_80.png`) and a phone frame (844 x 390 texels, 3 device px each; `phone_crop_1to1.png`, `phone_view_half.png`);
+    - the backdrop is plain code-drawn sand. The browser screenshot of the pixel map was refused by the permission check this time.
+  - Result at 60: B works better. Its big head keeps a face area, and the scarf / skirt / boots / pose read as separate shapes. A reads as a slim figure with a red scarf, but the face shrinks to a few pixels. Neither keeps visible eyes with a code shrink; a real pixel redraw (PixelLab standard 1 credit at 60, only on "เจน") or hand-tidying would.
+  - Recommendation: at 60 px use B's proportions (about 3-3.5 heads). A's slim look needs about 90-100 px.
