@@ -5,6 +5,21 @@
 
 ขนาดในเกม (owner 2026-11-26 "80"): ตัวสูง 80 พิกเซล บนจอสูงราว 360-390 พิกเซลของแมพ = ประมาณ 1/5 ของความสูงจอ โลกสร้างใหญ่รอบตัว (ดูมาตรฐานขนาดใน docs/action-game.md)
 
+## ตัวละครที่คุณส่งมา (hero_v1_owner.png) แก้ชุดให้น่ารัก + ผ้าพันคอยาว = ทำอันนี้
+แนบรูปที่คุณส่งมาเมื่อกี้ (ผมผมดำ ตาม่วง ผ้าพันคอแดง) แล้ววางกล่องนี้
+```
+Edit the attached character sheet. Keep the SAME girl exactly: same face, big purple eyes, cheeky grin, messy black hair, same chibi proportions, same art style and outline, the same three views (front, side facing right, back) in the same places, same size, same standing pose, both hands empty fists, pure white background.
+Change ONLY the outfit, to make it cuter and softer:
+- a LONG soft red scarf wrapped once around her neck, with two long scarf tails flowing behind her down to about her knees, fluttering a little in the wind, clean soft edges (not torn); in the back view both tails hang down her back;
+- no metal shoulder armour; the cream blouse gets puffy short sleeves;
+- a simple rounded brown leather vest with ONE gold buckle instead of many belts and buckles;
+- one wide belt with a small round pouch and a tiny glowing lantern charm (no compass);
+- a short brown skirt-like tabard with a scalloped hem over the black shorts, no thigh straps;
+- soft round brown boots with a cream fold at the top and one gold buckle each, no metal toe caps;
+- fingerless gloves with plain cuffs, no buckles on the arms.
+Fewer, bigger shapes: at most about 6 buckles on the whole outfit, so she stays clear when shrunk to 80 pixels tall. Colours: red scarf, cream blouse, warm brown leather, black shorts and socks, gold details. No weapon, no text.
+```
+
 ## 0. นักผจญภัยหญิงน่ารัก (owner 2026-11-26 "ขอตัวละครน่ารักๆ") = ทำอันนี้
 สูง 2.5 หัว หน้าโต ตาวิ้ง สีสวย มีจุดเด่นที่ทรงตัว (หูใหญ่ / ผมแกละ) ที่ 80 พิกเซลหน้ายังชัด
 

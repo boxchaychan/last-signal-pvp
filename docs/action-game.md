@@ -3008,3 +3008,12 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - 0B star-traveller girl: pink-lilac twin tails, navy star capelet.
   - The first plain cute design failed because it had no strong feature, only goggles and a satchel. Cool 1A / 1B are kept in the file.
   - The map box's scale hero is now "a cute adventurer girl". No wide-brim hats: the high camera would hide the face.
+- 2026-11-26 OWNER'S HERO PICTURE (`art/incoming/pixgrind/hero_v1_owner.png`, 1199 x 1312, 3 views): a chibi adventurer girl with messy black hair, purple eyes and a cheeky grin. Outfit: short torn red scarf, cream blouse, brown corset with many belts / buckles, metal pauldron, lantern + compass, thigh straps, tall buckled boots.
+  - Owner: "ปรับชุดให้น่ารักหน่อยขอผ้าพันคอยาว".
+  - Free size preview of the front view (code shrink, rough): `art/incoming/pixgrind/size_test_v1.png` (64 / 80 / 96). At 80 the face and hair read well; the many buckles and straps turn into brown noise.
+  - Gemini EDIT box (attach her picture) in `PROMPTS_gemini.md`: same girl, face, hair, style and 3 views. Changes:
+    - a long soft red scarf with two tails to the knees;
+    - no pauldron, puffy short sleeves, a rounded vest with one buckle;
+    - a belt with a pouch + a tiny lantern charm (compass dropped);
+    - a scalloped tabard, soft boots with a cream fold;
+    - at most about 6 buckles in all.
