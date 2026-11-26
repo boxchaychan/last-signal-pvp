@@ -77,6 +77,7 @@ animation, skills fire instantly as big effects, telegraph rings, a dodge button
 | 2026-11-26 | divine pixel Zeus IDLE loop, owner "ทำเลย" (standard, not pro): `animate_image` first = `pix_zeus_idle` on 64 x 64 (`pixel_zeus/anim/f_idle.png`), 4 frames, breathing + bolt crackle | job 92847a7e-40b4-4b17-8157-3964e3e40105 | 1 | ✅ 5 frames (one blink, one open mouth) |
 | 2026-11-26 | divine pixel Zeus ATTACK: `animate_image` first = idle, last = attack pose on 96 x 64 (`f_atk_first/last.png`), 8 frames, wind-up + thrust | job 9ef4dea9-f8a3-4301-af9d-fffb50bb95b0 | 1 | ✅ 9 frames, sparks on the thrust |
 | 2026-11-26 | divine pixel Zeus SKILL: `animate_image` first = idle, last = skill pose on 64 x 80 (`f_sk_first/last.png`), 8 frames, crouch + bolt raised | job 271d8b17-0e41-4278-8c7b-09375f9ba235 | 1 | ✅ 9 frames -> all three packed in `art/divine/pix_zeus_anim.png` + `.json`. Zeus total today 21 generations (balance 745.93) |
+| 2026-11-26 | divine pixel Zeus ATTACK without an end pose (owner "จำเป็นขนาดนั้นเลยหรือ" -> "เอามา"): `animate_image` first = idle on 96 x 64 only, 8 frames | job 9828d8e1-6d1c-4ab0-aa7f-ed850f7649de | 1 | ✅ usable: smaller lunge and bolt, adds a blue swoosh, one eyes-shut frame; `pixel_zeus/anim/free_attack_*.png`, `compare_pinned_vs_free.png/.gif`; not in the game yet |
 
 Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The owner switches to another key next.
 
