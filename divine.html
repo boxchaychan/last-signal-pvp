@@ -187,7 +187,7 @@ function save() { try { localStorage.setItem(SAVE, JSON.stringify(META)); } catc
 /* owner 2026-11-26 "ซุสเป็นคาสตีไกล ลิงไฟเตอร์ ... ดูอาวุธมันกำหนดคลาส ที่เหลือก็ตามสะดวก": a class per pantheon, chosen by the weapon.
    rng = share of the tier range, pace = time between hits (and damage per hit, so the damage per second stays), dmg = class bonus for a short reach */
 const CLS = {
-  greek: { th: 'สายเวท · ตีไกล', rng: 1, pace: 3, dmg: 1 },        /* lightning bolt: long range, slow heavy casts (owner: Zeus hit too fast) */
+  greek: { th: 'สายเวท · ตีไกล', rng: 1, pace: 4, dmg: 1 },        /* lightning bolt: long range, slow heavy casts (owner: Zeus hit too fast, twice: pace 3 -> 4) */
   norse: { th: 'สายนักรบ · ระยะกลาง', rng: .55, pace: 2, dmg: 1.25 },   /* hammer: smash round the target, mid reach */
   egypt: { th: 'สายหอก · ตีไกลทะลุ', rng: .9, pace: 1.5, dmg: 1 },    /* spear: a piercing line */
   asia: { th: 'สายต่อสู้ · ตีใกล้', rng: .42, pace: .8, dmg: 1.7 }     /* staff: melee fighter, quick hard hits, only monsters near its slot */
@@ -576,9 +576,11 @@ function pixFrame(u, h, seed, set) {
   let k = 'idle', i;
   if (u.skillT > 0) { const s = 34 - u.skillT; k = 'skill'; i = s < 10 ? 1 + Math.floor(s * .8) : s < 28 ? 7 + (Math.floor(tt * 10) % 2) : [6, 4, 2, 1, 0, 0][s - 28] || 0; }
   else if (MODE === 'battle' && u.cd != null) {
-    const n = ZANIM.attack.length - 1, e = u.hitT != null ? tt - u.hitT : 99, sp = G.speed || 1, cyc = TD[u.tier].cd * (1 - .03 * META.tp.speed) * paceOf(u) / 60 / sp, wind = clamp(cyc - ZATK.hold - ZATK.back, .15, ZATK.wind), rem = u.cd / 60 / sp;
-    if (e < ZATK.hold) { k = 'attack'; i = n; }
-    else if (e < ZATK.hold + ZATK.back) { k = 'attack'; i = [n - 2, n - 3, n - 4, 2][Math.min(3, Math.floor((e - ZATK.hold) / ZATK.back * 4))]; }
+    const n = ZANIM.attack.length - 1, e = u.hitT != null ? tt - u.hitT : 99, sp = G.speed || 1, cyc = TD[u.tier].cd * (1 - .03 * META.tp.speed) * paceOf(u) / 60 / sp, rem = u.cd / 60 / sp;
+    /* owner "ซุสยังดูเร็วอยู่ ปกติมันช้ากว่านี้": the drawn attack takes its time from the hit interval, so a slower hitter also MOVES slower */
+    const H = Math.min(.35, cyc * .15), B = Math.min(.3, cyc * .13), wind = clamp(cyc * .6, .15, 1.4);
+    if (e < H) { k = 'attack'; i = n; }
+    else if (e < H + B) { k = 'attack'; i = [n - 2, n - 3, n - 4, 2][Math.min(3, Math.floor((e - H) / B * 4))]; }
     else if (u.cd > 0 && rem <= wind) { k = 'attack'; i = Math.min(n - 1, Math.floor((1 - rem / wind) * n)); }
     else if (u.cd <= 0) { if (u.readyT == null) u.readyT = tt; if (tt - u.readyT < .35) { k = 'attack'; i = n - 1; } }   /* charged but no monster in range yet: hold the ready pose a moment, then breathe */
     if (u.cd > 0) u.readyT = null;

@@ -2914,3 +2914,4 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Thor now plays drawn pixel frames too (`ANIM.thor`); the frame player works for any god with `art/divine/pix_<set>_anim.png/json`.
   - Gemini prompts for 10 new gods + a new melee Monkey King: `art/incoming/divine_game/PROMPTS_gemini_gods10.md` (the owner runs them).
 - 2026-11-26 owner on the Gemini pixel-first prompt: "ไม่สวย ลองสั่งปกติ" -> use the normal painted champion prompts in Gemini, then PixelLab Pro Flash for the pixel base (the standard converter was muddy on Thor).
+- 2026-11-26 (owner "ซุสยังดูเร็วอยู่ ปกติมันช้ากว่านี้", seen on the live pace-3 build): Zeus `pace` 4, and the drawn attack now scales with the hit interval (`pixFrame`: wind-up 60 %, hold 15 %, back 13 % of it, capped 1.4 / .35 / .3 s), so a slow hitter also moves slowly: an epic Zeus charges about 1.4 s, holds the thrust .3 s, breathes a moment. Bot 4 runs: waves 68-75 (before 73-77; within noise, slightly harder).
