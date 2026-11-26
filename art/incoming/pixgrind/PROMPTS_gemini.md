@@ -24,6 +24,12 @@ Three views on one pure white sheet, same size, feet on one line: front view, si
 ## แมพ (เลือกลองข้อไหนก็ได้ ข้อละ 1 รูป)
 แต่ละข้อมีสี แสง และจุดเด่นของตัวเอง ไม่มีน้ำตก วิหาร สะพาน เป็นของประจำ
 
+### แมพที่คุณเลือก: ทะเลทราย โอเอซิส (ทำอันนี้)
+```
+PLACE: a desert oasis on a late golden afternoon. Wide rippled dunes of warm apricot sand, a deep turquoise oasis pool ringed by lush green grass, reeds and leaning date palms, low terracotta rock shelves rising in two gentle levels, dry shrubs and small rocks, sand blowing off the dune tops, dragonflies over the water. Palette: apricot and peach sand, deep turquoise water, emerald green, terracotta, long violet-blue shadows. Light: low warm sun from the upper left. Landmark: a colossal ancient stone head half buried in a dune beside the pool, cracked and weathered, its eyes glowing faint blue.
+MAP RULES: one gameplay screenshot of an original action RPG where a hero fights packs of monsters to gain levels. The world is REAL 3D (low-poly 3D terrain, 3D trees, rocks and buildings with real depth and real cast shadows) rendered through a PIXEL-ART filter: a low resolution of about 640 x 360 shown with hard square pixels, a thin dark outline on every depth edge, a small colour palette with crisp flat shading steps, no blur, no painterly brush strokes. Like a 3D diorama turned into pixel art. Camera: orthographic, high three-quarter top-down view, about 45 degrees down, landscape 16:9. Colours built around the palette named in PLACE, one clear sun direction. Open ground with room to fight. One small adventurer (a young woman in a red capelet) in the middle for scale, about one sixth of the image height. No UI, no text, no logo, no watermark, no frame. Original design, not copied from any existing game.
+```
+
 ### แมพ A. ป่าเห็ดยักษ์เรืองแสง ยามพลบค่ำ
 ```
 PLACE: a forest floor of giant mushrooms at dusk. Huge mushroom caps form the canopy, some glowing soft cyan and pink from underneath, thick twisting roots make natural low walls and paths, a moss carpet, tiny glowing spores floating, small puddles reflecting the glow. Palette: deep violet, teal, cyan glow, warm pink accents. Light: the last orange sunset light from one side, cool glow everywhere else. Landmark: one ancient mushroom far bigger than the rest, with a hollow doorway in its stem.

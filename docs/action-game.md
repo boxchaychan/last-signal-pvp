@@ -2976,3 +2976,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The map kit after the target picture = 3D pieces, not 2D tiles: CC0 3D packs, Blender scripts or Tripo for the landmark, with textures / colours matched to the target. Code adds light and moving life.
   - Open question for the owner: hero as a 2D pixel sprite (hybrid frames as picked), or a 3D model drawn through the same pixel filter. The 3D route fits the owner's "cheapest tool first" rule (3D models + ready moves beat drawing) and the 3D hero standard (one body, outfit + weapon change). It gives all directions, weapon swaps on the hand bone, and KayKit / Quaternius moves for free.
 - 2026-11-26 (owner "งงพรอม", "เอาผู้หญิงก่อน"): "rules block + place block" was confusing. `PROMPTS_gemini.md` now has ONE complete copy-paste box per picture with nothing to attach: 1 woman adventurer (do first), 2 man, maps A-D. The woman's prompt is also given in the chat. The hero 2D-or-3D question is still open; the 3-view design sheet works for both routes (Tripo would later need a T-pose redraw).
+- 2026-11-26 MAP PICK (owner "B ทะเลทราย โอเอซิส", from the first list): the first map is a DESERT OASIS.
+  - The new box is in `PROMPTS_gemini.md` ("แมพที่คุณเลือก"). It keeps the lesson: no waterfall, sun temple, bridge or camp from the old pixmap.
+  - Palette: apricot sand, deep turquoise pool, emerald palms, terracotta rock shelves on two gentle levels, long violet-blue shadows. Light: late golden afternoon.
+  - Landmark: a colossal stone head half buried in a dune by the pool, with faint blue eyes.
+  - The scale adventurer is the red-capelet woman. Same 3D-through-pixels rules.
