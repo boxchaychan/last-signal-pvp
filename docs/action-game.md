@@ -3194,3 +3194,12 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - `node tools/qa/cards_check.js <out> [seconds]`: title + bot-vs-bot (`?bot=1`) shots + errors. Last run: no errors.
     - `node tools/qa/cards_clip.js <out> [seconds]`: video of a bot game. First clip: `art/incoming/monstercards/v1_botgame.mp4`.
   - Next ideas: balance by many bot games; sounds; a real campaign map; more decks / leaders; 3D card tilt; pixelfx effects.
+- 2026-11-26 CARD DESIGN TEST (owner "ทำอาร์ตใหม่เลย ขอเทสก่อน ให้มี บอกเลือด ค่าเรียก อบิลิตี้ เป็น 2D สไตล์จิบิก็ได้ ลองเทส ออกแบบการ์ดมาซักใบ"): `cardtest.html` draws ONE big card in code. Picture: `art/incoming/monstercards/card_test_lubu.png`.
+  - The art is the owner's 2D chibi Lu Bu painting, popping out above the art window (plume and halberd break the frame).
+  - Frame: ornate gold frame, crimson body, corner gems.
+  - Window: rays + glow behind the art.
+  - Name ribbon, type line "ขุนพล · มนุษย์ · ตำนาน".
+  - Parchment ability box with coloured keywords: "จู่โจม" gold, "เมื่ออัญเชิญ:" red.
+  - Badges: blue faceted cost gem top-left (ค่าเรียก 8), red shield attack bottom-left (7), green heart HP bottom-right (7), orange rarity gem.
+  - Moving gold sheen, floating sparks.
+  - New art direction: cards get 2D CHIBI illustrations (Lu Bu painting style) instead of tiny pixel sprites. Gemini prompts (free) `art/incoming/monstercards/PROMPTS_gemini.md`: spearman, crossbowman, mummy; the Lu Bu painting attached as the style.

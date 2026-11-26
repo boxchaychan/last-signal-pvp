@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ทดสอบการ์ด</title>
+<link rel="icon" href="data:,">
+<!-- cardtest.html = ONE card design test for ศึกการ์ดอสูร (owner 2026-11-26 "ออกแบบการ์ดมาซักใบ", 2D chibi art, show HP / summon cost / ability).
+     Frame, gems and badges drawn in code; the art = the owner's chibi Lu Bu painting (art/cards/lubu_paint.png), popping out above the window.
+     ?card=lubu|soldier (soldier = a frame-only sample with the pixel spearman). -->
+<style>
+@font-face { font-family: Kanit; font-weight: 600; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: Kanit; font-weight: 600; src: url(art/gem/font/kanit-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF; }
+@font-face { font-family: Kanit; font-weight: 800; src: url(art/gem/font/kanit-thai-800-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: Kanit; font-weight: 800; src: url(art/gem/font/kanit-latin-800-normal.woff2) format('woff2'); unicode-range: U+0000-00FF; }
+html, body { margin: 0; height: 100%; background: radial-gradient(circle at 50% 40%, #5a3424, #1c100a 70%); overflow: hidden; }
+canvas { position: fixed; left: 0; top: 0; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+const cv = document.getElementById('c'), g = cv.getContext('2d'), Q = new URLSearchParams(location.search);
+const CARD = { n: 'ลิโป้', sub: 'ขุนพล · มนุษย์ · ตำนาน', cost: 8, atk: 7, hp: 7, rar: 'ตำนาน',
+  ab: [['จู่โจม', '#ffd56a'], [' ตีได้ทันทีที่ลง', '#3a2414'], ['\n', ''], ['เมื่ออัญเชิญ:', '#c8401e'], [' กวาดง้าว การ์ดศัตรูทุกใบโดน 2', '#3a2414']] };
+const art = new Image(); art.src = 'art/cards/lubu_paint.png';
+let DPR = 1, t = 0;
+function resize() { DPR = Math.min(3, devicePixelRatio || 1); cv.width = innerWidth * DPR; cv.height = innerHeight * DPR; }
+addEventListener('resize', resize); resize();
+const FONT = (w, s) => `${w} ${s}px Kanit, sans-serif`;
+function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function txt(s, x, y, size, fill, w = 800, stroke = '#2a1206', sw = 4, align = 'center') { g.font = FONT(w, size); g.textAlign = align; g.textBaseline = 'middle'; if (stroke) { g.lineJoin = 'round'; g.lineWidth = sw; g.strokeStyle = stroke; g.strokeText(s, x, y); } g.fillStyle = fill; g.fillText(s, x, y); }
+function gold(y0, y1) { const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, '#fff1b0'); gr.addColorStop(.25, '#f2c24a'); gr.addColorStop(.55, '#b87a1c'); gr.addColorStop(.8, '#f6d36a'); gr.addColorStop(1, '#7a4a10'); return gr; }
+function gem(x, y, r, c0, c1, n) {   /* faceted crystal: hexagon + facets */
+  g.save(); g.translate(x, y); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 8;
+  g.fillStyle = gold(-r - 6, r + 6); g.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 - Math.PI / 2; g.lineTo(Math.cos(a) * (r + 6), Math.sin(a) * (r + 6)); } g.closePath(); g.fill(); g.shadowBlur = 0;
+  const gr = g.createRadialGradient(-r * .3, -r * .4, 2, 0, 0, r); gr.addColorStop(0, '#ffffff'); gr.addColorStop(.25, c0); gr.addColorStop(1, c1); g.fillStyle = gr;
+  g.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 - Math.PI / 2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1.2; for (let i = 0; i < 6; i += 2) { const a = i * Math.PI / 3 - Math.PI / 2; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a) * r, Math.sin(a) * r); g.stroke(); }
+  txt(String(n), 0, 2, r * 1.15, '#ffffff', 800, 'rgba(10,20,60,.9)', 5); g.restore(); }
+function badge(x, y, r, kind, n) {
+  g.save(); g.translate(x, y); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 8;
+  if (kind === 'atk') {   /* round shield with a sword */
+    g.fillStyle = gold(-r - 5, r + 5); g.beginPath(); g.arc(0, 0, r + 5, 0, 7); g.fill(); g.shadowBlur = 0;
+    const gr = g.createRadialGradient(-r * .3, -r * .4, 2, 0, 0, r); gr.addColorStop(0, '#ff9a7a'); gr.addColorStop(.4, '#d8402a'); gr.addColorStop(1, '#6e1408'); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(255,230,200,.35)'; g.lineWidth = 2; g.save(); g.rotate(-.75); g.beginPath(); g.moveTo(0, -r * .8); g.lineTo(0, r * .8); g.moveTo(-r * .3, r * .45); g.lineTo(r * .3, r * .45); g.stroke(); g.restore();
+  } else {   /* heart */
+    const hp = (s) => { g.beginPath(); g.moveTo(0, s * .95); g.bezierCurveTo(-s * 1.35, s * .1, -s * .9, -s * 1.05, 0, -s * .45); g.bezierCurveTo(s * .9, -s * 1.05, s * 1.35, s * .1, 0, s * .95); g.closePath(); };
+    g.fillStyle = gold(-r - 6, r + 6); hp(r + 6); g.fill(); g.shadowBlur = 0;
+    const gr = g.createRadialGradient(-r * .3, -r * .4, 2, 0, 0, r * 1.1); gr.addColorStop(0, '#9cffb0'); gr.addColorStop(.45, '#2fb24e'); gr.addColorStop(1, '#0c4a1c'); g.fillStyle = gr; hp(r); g.fill();
+  }
+  txt(String(n), 0, kind === 'atk' ? 2 : 0, r * 1.2, '#ffffff', 800, 'rgba(30,8,0,.95)', 5); g.restore(); }
+function wrap(parts, x, y, w, lh) {   /* coloured runs with word wrap (Thai: break at spaces) */
+  let cx = x, cy = y; g.textAlign = 'left'; g.textBaseline = 'middle';
+  for (const [s, col] of parts) { if (s === '\n') { cx = x; cy += lh; continue; } const bold = col !== '#3a2414'; g.font = FONT(bold ? 800 : 600, 14);
+    for (const word of s.split(/(?= )/)) { const ww = g.measureText(word).width; if (cx + ww > x + w && cx > x) { cx = x; cy += lh; } if (bold) { g.lineWidth = 3; g.strokeStyle = '#2a1206'; g.strokeText(word, cx, cy); } g.fillStyle = col; g.fillText(word, cx, cy); cx += ww; } } }
+function drawCard(W, H) {
+  const x = -W / 2, y = -H / 2;
+  /* shadow + outer gold frame */
+  g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 30; g.shadowOffsetY = 12; g.fillStyle = gold(y, y + H); rr(x, y, W, H, 22); g.fill(); g.restore();
+  g.strokeStyle = '#5a3408'; g.lineWidth = 2; rr(x + 1, y + 1, W - 2, H - 2, 21); g.stroke();
+  /* crimson inner body */
+  const body = g.createLinearGradient(0, y, 0, y + H); body.addColorStop(0, '#7a1c14'); body.addColorStop(.6, '#4a0e0a'); body.addColorStop(1, '#2a0806'); g.fillStyle = body; rr(x + 10, y + 10, W - 20, H - 20, 15); g.fill();
+  /* corner ornaments */
+  for (const [cx, cy] of [[x + 18, y + 18], [x + W - 18, y + 18], [x + 18, y + H - 18], [x + W - 18, y + H - 18]]) { g.fillStyle = gold(cy - 8, cy + 8); g.beginPath(); g.moveTo(cx, cy - 8); g.lineTo(cx + 8, cy); g.lineTo(cx, cy + 8); g.lineTo(cx - 8, cy); g.closePath(); g.fill(); }
+  /* art window: rays + glow, the art pops out above the top edge */
+  const ax = x + 22, ay = y + 34, aw = W - 44, ah = H * .47;
+  g.save(); rr(ax, ay, aw, ah, 12); g.clip();
+  const sky = g.createRadialGradient(0, ay + ah * .45, 10, 0, ay + ah * .45, aw * .8); sky.addColorStop(0, '#ffd27a'); sky.addColorStop(.35, '#e8602a'); sky.addColorStop(1, '#5a0e10'); g.fillStyle = sky; g.fillRect(ax, ay, aw, ah);
+  g.globalAlpha = .18; g.fillStyle = '#fff4c0'; for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2 + t * .1; g.beginPath(); g.moveTo(0, ay + ah * .45); g.lineTo(Math.cos(a) * 400, ay + ah * .45 + Math.sin(a) * 400); g.lineTo(Math.cos(a + .12) * 400, ay + ah * .45 + Math.sin(a + .12) * 400); g.closePath(); g.fill(); } g.globalAlpha = 1;
+  g.fillStyle = 'rgba(60,10,8,.55)'; g.beginPath(); g.ellipse(0, ay + ah - 6, aw * .45, 18, 0, 0, 7); g.fill();
+  g.restore();
+  g.strokeStyle = gold(ay, ay + ah); g.lineWidth = 5; rr(ax, ay, aw, ah, 12); g.stroke();
+  if (art.complete && art.naturalWidth) {   /* clip only the bottom and the sides a little, so the plume and the halberd break out of the top */
+    g.save(); g.beginPath(); g.rect(ax - 26, y - 60, aw + 52, ay + ah - (y - 60)); g.clip();
+    const s = (aw + 40) / art.naturalWidth, dw = art.naturalWidth * s, dh = art.naturalHeight * s; g.drawImage(art, -dw / 2 + 6, ay + ah - dh + 8, dw, dh); g.restore(); }
+  /* name ribbon */
+  const ry = ay + ah + 4; g.save(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 8;
+  g.fillStyle = '#8a1c12'; g.beginPath(); g.moveTo(x + 6, ry); g.lineTo(x + W - 6, ry); g.lineTo(x + W - 22, ry + 22); g.lineTo(x + W - 6, ry + 44); g.lineTo(x + 6, ry + 44); g.lineTo(x + 22, ry + 22); g.closePath(); g.fill(); g.restore();
+  g.fillStyle = gold(ry, ry + 44); g.beginPath(); g.moveTo(x + 18, ry + 4); g.lineTo(x + W - 18, ry + 4); g.lineTo(x + W - 30, ry + 22); g.lineTo(x + W - 18, ry + 40); g.lineTo(x + 18, ry + 40); g.lineTo(x + 30, ry + 22); g.closePath(); g.fill();
+  g.fillStyle = '#5a0e0a'; g.beginPath(); g.moveTo(x + 24, ry + 8); g.lineTo(x + W - 24, ry + 8); g.lineTo(x + W - 34, ry + 22); g.lineTo(x + W - 24, ry + 36); g.lineTo(x + 24, ry + 36); g.lineTo(x + 34, ry + 22); g.closePath(); g.fill();
+  txt(CARD.n, 0, ry + 22, 26, '#ffe9a8', 800, '#2a0806', 5);
+  txt(CARD.sub, 0, ry + 54, 12, '#f2c890', 600, '#2a0806', 3);
+  /* ability scroll */
+  const by = ry + 64, bh = y + H - by - 58; g.fillStyle = '#f0dcb0'; rr(x + 26, by, W - 52, bh, 10); g.fill(); g.strokeStyle = '#a8743a'; g.lineWidth = 2; g.stroke();
+  const paper = g.createLinearGradient(0, by, 0, by + bh); paper.addColorStop(0, 'rgba(255,255,255,.35)'); paper.addColorStop(1, 'rgba(120,70,20,.18)'); g.fillStyle = paper; rr(x + 26, by, W - 52, bh, 10); g.fill();
+  wrap(CARD.ab, x + 40, by + 18, W - 80, 21);
+  /* rarity gem + label */
+  g.save(); g.translate(0, y + H - 14); g.fillStyle = gold(-10, 10); g.beginPath(); g.moveTo(0, -12); g.lineTo(12, 0); g.lineTo(0, 12); g.lineTo(-12, 0); g.closePath(); g.fill();
+  const rg = g.createRadialGradient(-2, -3, 1, 0, 0, 9); rg.addColorStop(0, '#fff'); rg.addColorStop(.4, '#ff9a2a'); rg.addColorStop(1, '#a8400a'); g.fillStyle = rg; g.beginPath(); g.moveTo(0, -8); g.lineTo(8, 0); g.lineTo(0, 8); g.lineTo(-8, 0); g.closePath(); g.fill(); g.restore();
+  /* cost gem, attack, HP */
+  gem(x + 26, y + 30, 24, '#7ac8ff', '#1a3ea8', CARD.cost);
+  badge(x + 28, y + H - 26, 22, 'atk', CARD.atk); badge(x + W - 28, y + H - 24, 22, 'hp', CARD.hp);
+  /* legendary sheen + floating sparks */
+  const sh = ((t * .35) % 1.8) - .4; g.save(); rr(x + 10, y + 10, W - 20, H - 20, 15); g.clip(); const gr = g.createLinearGradient(x, y, x + W, y + H);
+  gr.addColorStop(Math.max(0, Math.min(1, sh - .12)), 'rgba(255,255,255,0)'); gr.addColorStop(Math.max(0, Math.min(1, sh)), 'rgba(255,240,200,.28)'); gr.addColorStop(Math.max(0, Math.min(1, sh + .12)), 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(x, y, W, H); g.restore();
+  for (let i = 0; i < 10; i++) { const a = i * 2.1 + t * .6, px = Math.sin(a * 1.3) * W * .46, py = y + H * .55 - ((t * 30 + i * 47) % (H * .9)); g.globalAlpha = .6 + .4 * Math.sin(t * 4 + i); g.fillStyle = i % 2 ? '#ffe08a' : '#ffffff'; g.beginPath(); g.arc(px, py, 1.6 + (i % 3), 0, 7); g.fill(); } g.globalAlpha = 1;
+}
+function frame(now) { t = now / 1000; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+  const H = Math.min(innerHeight * .8, innerWidth * 1.15), sc = H / 440; g.setTransform(DPR * sc, 0, 0, DPR * sc, DPR * innerWidth / 2, DPR * (innerHeight / 2 + H * .05));
+  const tilt = Math.sin(t * .8) * .03; g.transform(1, 0, tilt, 1, 0, 0); drawCard(316, 440); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
