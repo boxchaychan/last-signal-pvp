@@ -3067,3 +3067,11 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
 - 2026-11-26 DECISION (owner "ย่อ60"): the hero is the Pro Flash girl shrunk free to 60 px tall. In-use copy `art/pixgrind/hero60.png`; source `art/incoming/pixgrind/pl60/B_pf_shrunk60.png`; the 76 px Pro Flash original is `pl60/B_pf_cut.png`.
   - SIZE STANDARD now H = 60 (was 80). Every ratio in the size standard stays (palms 3-4 H, landmark about 7 H, monsters 0.7-3 H). On a phone (390 texels tall) the hero is about 1/6.5 of the height.
   - Still open: the outfit colours (too much brown; teal vest / skirt proposed, free recolour test offered); side / back views and the moves (hybrid plan); the map target picture from Gemini.
+- 2026-11-26 MAP DESIGN for H 60 (owner "ออกแบบแมพให้ดูตัวเล็กลง ตามที่คุยกันไว้").
+  - Scale plan `art/incoming/pixgrind/scale_plan_H60.png`: a code diagram of proportions only, not the map look. Phone 844 x 390, the real 60 px hero next to flat silhouettes: mob 0.8 H, elite 1.5 H, palm 3.5 H, rock shelf level 1.2 H, stone head 5.5 H (fits inside the 390 texel screen), boss 3 H.
+  - First-screen layout for the target picture:
+    - the hero bottom-middle;
+    - the oasis pool middle-left with palms round it, the stone head on its far bank;
+    - rock shelves along the top as the higher level, with a sand ramp;
+    - a small scorpion pack on the right.
+  - New Gemini box in `PROMPTS_gemini.md` ("แมพทะเลทราย รอบตัว 60"). Attach `art/incoming/pixgrind/REF_hero60_x6.png` (our hero x6 on white) so Gemini draws OUR girl at the right size. It asks for the hero at about 1/7 of the height and the same 3D-through-pixels look.

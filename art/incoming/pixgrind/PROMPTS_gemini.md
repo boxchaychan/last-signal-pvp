@@ -88,6 +88,15 @@ Three views on one pure white sheet, same size, feet on one line: front view, si
 ## แมพ (เลือกลองข้อไหนก็ได้ ข้อละ 1 รูป)
 แต่ละข้อมีสี แสง และจุดเด่นของตัวเอง ไม่มีน้ำตก วิหาร สะพาน เป็นของประจำ
 
+## แมพทะเลทราย รอบตัว 60 (ตัวต้องดูเล็ก) = ทำอันนี้
+แนบรูป `art/incoming/pixgrind/REF_hero60_x6.png` (ตัวละครเรา) แล้ววางกล่องนี้
+```
+Draw ONE gameplay screenshot of an original action RPG level, landscape 16:9. The attached girl is the HERO: draw her standing near the bottom middle, small, about one seventh of the image height, same look and colours.
+PLACE: a desert oasis on a late golden afternoon. Wide rippled dunes of warm apricot sand, a deep turquoise oasis pool on the middle-left ringed by green grass and reeds, tall leaning date palms around the pool, low terracotta rock shelves along the top edge (a higher level of the land with a sand ramp up), a small pack of desert monsters (scorpions, smaller than the hero) on the right. Landmark: a colossal ancient stone head half buried in a dune on the far bank of the pool, cracked and weathered, its eyes glowing faint blue.
+SCALE, so the hero looks small in a big world: the palms are 3 to 4 times her height, each rock shelf is a little taller than her, the stone head is 5 to 6 times her height, the pool is many times wider than her, wide dune ripples and large calm ground shapes, very few small props near her.
+LOOK: a real 3D world (low-poly terrain and models, real cast shadows) rendered as crisp pixel art at about 640 x 360 with hard square pixels, a thin dark outline on depth edges, flat shading steps, a limited palette of apricot sand, turquoise water, emerald green, terracotta and long violet-blue shadows. Orthographic camera, high three-quarter top-down view about 45 degrees down. No UI, no text, no logo, no watermark. Original design, not copied from any existing game.
+```
+
 ### แมพที่คุณเลือก: ทะเลทราย โอเอซิส (ทำอันนี้)
 ```
 PLACE: a desert oasis on a late golden afternoon. Wide rippled dunes of warm apricot sand, a deep turquoise oasis pool ringed by lush green grass, reeds and leaning date palms, low terracotta rock shelves rising in two gentle levels, dry shrubs and small rocks, sand blowing off the dune tops, dragonflies over the water. Palette: apricot and peach sand, deep turquoise water, emerald green, terracotta, long violet-blue shadows. Light: low warm sun from the upper left. Landmark: a colossal ancient stone head half buried in a dune beside the pool, cracked and weathered, its eyes glowing faint blue.
