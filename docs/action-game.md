@@ -2853,3 +2853,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - `drawFigure` has `rigged = false`; `drawPuppet` / `drawRig`, `puppet.json`, `rig.json` and the part images stay in the repo for later tests only.
   - Do NOT order Codex puppet sheets. Next effort goes to what makes the reference game feel alive: denser boards, more effects and damage numbers.
 
+- 2026-11-26 GEMINI ARENA (owner "ฉันมี gemini ล็อกผ่านเดสก์ท็อป"): Claude drove the owner's Gemini DESKTOP app on the PC (computer use, free) and made brief item F, the arena.
+  - How: open the Gemini app, "+" -> สร้างรูปภาพ, aspect 9:16, "+" -> อัปโหลดไฟล์ (type the folder path, then `"a.png" "b.jpg"` in the file name box), type the prompt, send.
+  - The app's download button is BLOCKED (log: "Cancelled download from unsafe URL: blob"), and right-click Save does nothing: use the COPY button, then save the clipboard picture with PowerShell (`System.Windows.Forms.Clipboard::GetImage()`). Output is 768 x 1376.
+  - Chrome is not logged in to Gemini; the desktop app is.
+  - Raw + prompt: `art/incoming/divine_game/raw/arena_gemini/`; in game `art/divine/arena_gemini.jpg`.
+  - In `divine.html` the picture is the default arena: drawn 1.221 x W wide (sides cropped, the braziers half off screen) and 5.3 % taller than its shape, bottom on the bottom edge, so its empty plaza sits under the board and the monster road. Only the gold board is painted in code on top; birds fly over it and its two waterfalls shimmer. `?arena=code` = the old island painted in code.
+  - Next with Gemini: E monsters (prompt `PROMPTS_gemini_2.md` B, attach `ref/REF_monster.png`), D recruit.
