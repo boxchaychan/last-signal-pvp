@@ -24,7 +24,7 @@ canvas { position: fixed; left: 0; top: 0; width: 100%; height: 100%; }
 <script src="vendor/threejs/three.min.js"></script>
 <script>
 'use strict';
-const cv = document.getElementById('c'), Q = new URLSearchParams(location.search), FLAT = Q.get('flat') === '1'; let g = FLAT ? cv.getContext('2d') : null;
+const cv = document.getElementById('c'), Q = new URLSearchParams(location.search), FLAT = Q.get('3d') !== '1';   /* owner 2026-11-26 "เอา 2D แหละ แต่สวยๆหน่อย": 2D is the default, ?3d=1 = the 3D card */ let g = FLAT ? cv.getContext('2d') : null;
 const CARD = { n: 'ลิโป้', sub: 'ขุนพล · มนุษย์', rar: 'ตำนาน', cost: 8, atk: 7, hp: 7,
   ab: [{ kw: 'จู่โจม', icon: 'bolt', col: '#ffcf4a', txt: 'ตีได้ทันทีที่ลงสนาม' }, { kw: 'เมื่ออัญเชิญ', icon: 'star', col: '#ff7a4a', txt: 'กวาดง้าว การ์ดศัตรูทุกใบ โดน 2' }] };
 const art = new Image(); art.src = 'art/cards/lubu_paint.png';
@@ -58,7 +58,7 @@ function costGem(x, y, r, n) {
   txt(String(n), 0, 2, r * 1.2, '#ffffff', 800, '#0a1240', 6); g.restore(); }
 function atkBadge(x, y, r, n) {
   g.save(); g.translate(x, y); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 10; g.shadowOffsetY = 3;
-  g.save(); g.rotate(-.78); g.fillStyle = metal(-4, -r * 1.6, 4, r * 1.6); g.fillRect(-3.5, -r * 1.55, 7, r * 2.4); g.beginPath(); g.moveTo(-3.5, -r * 1.55); g.lineTo(0, -r * 1.85); g.lineTo(3.5, -r * 1.55); g.fill();
+  g.save(); g.rotate(-.78); const bl = g.createLinearGradient(-5, 0, 5, 0); bl.addColorStop(0, '#8a96a8'); bl.addColorStop(.5, '#ffffff'); bl.addColorStop(1, '#6a7484'); g.fillStyle = bl; g.beginPath(); g.moveTo(-5, -r * 1.2); g.lineTo(0, -r * 2.05); g.lineTo(5, -r * 1.2); g.lineTo(5, r * .7); g.lineTo(-5, r * .7); g.closePath(); g.fill(); g.strokeStyle = '#2a1a10'; g.lineWidth = 1.2; g.stroke();
   g.fillStyle = metal(-r * .7, 0, r * .7, 0); g.fillRect(-r * .75, r * .78, r * 1.5, 5); g.fillStyle = '#6a2a10'; g.fillRect(-2.5, r * .9, 5, r * .6); g.restore();
   g.fillStyle = metal(-r, -r, r, r); g.beginPath(); g.arc(0, 0, r + 6, 0, 7); g.fill(); g.shadowBlur = 0; g.shadowOffsetY = 0;
   const gr = g.createRadialGradient(-r * .35, -r * .45, 2, 0, 0, r); gr.addColorStop(0, '#ffb09a'); gr.addColorStop(.35, '#e8402a'); gr.addColorStop(1, '#5a0a06'); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
@@ -105,8 +105,14 @@ function drawCard(W, H, o = {}) {   /* o.tex = draw the frame only (window left 
   const rg = g.createRadialGradient(-2, -11, 1, 0, -8, 8); rg.addColorStop(0, '#fff'); rg.addColorStop(.35, '#ff4a3a'); rg.addColorStop(1, '#6a0808'); g.fillStyle = rg; g.beginPath(); g.ellipse(0, -8, 7, 8, 0, 0, 7); g.fill(); g.restore();
   /* the art with a warm rim glow, popping out above the window */
   if (!o.tex && art.complete && art.naturalWidth) { g.save(); rr(ax, ay, aw, ah, 14); if (!o.pop) g.clip(); else { g.beginPath(); g.rect(ax - 30, y - 70, aw + 60, ay + ah - 2 - (y - 70)); g.clip(); }   /* owner "ทำไมมันทะลุกรอบ": the art stays inside the window now (?pop=1 = the old break-out) */
-    const s = (aw + 44) / art.naturalWidth, dw = art.naturalWidth * s, dh = art.naturalHeight * s, px = -dw / 2 + 6, py = ay + ah - dh + 6;
-    g.shadowColor = 'rgba(255,200,110,.95)'; g.shadowBlur = 16; g.drawImage(art, px, py, dw, dh); g.shadowBlur = 0; g.drawImage(art, px, py, dw, dh); g.restore(); }
+    const pop = o.pop, s = pop ? (aw + 44) / art.naturalWidth : aw * 1.12 / art.naturalWidth, dw = art.naturalWidth * s, dh = art.naturalHeight * s;
+    const px = pop ? -dw / 2 + 6 : -dw / 2 + 4, py = pop ? ay + ah - dh + 6 : ay + ah * .34 - 150 * s + Math.sin(t * 1.4) * 1.5;   /* face (y 150 of the picture) at a third of the window; a slow breath */
+    g.shadowColor = 'rgba(255,200,110,.95)'; g.shadowBlur = 16; g.drawImage(art, px, py, dw, dh); g.shadowBlur = 0; g.drawImage(art, px, py, dw, dh);
+    if (!pop) { const top = g.createLinearGradient(0, ay, 0, ay + 26); top.addColorStop(0, 'rgba(20,4,2,.6)'); top.addColorStop(1, 'rgba(20,4,2,0)'); g.fillStyle = top; g.fillRect(ax, ay, aw, 26);   /* the frame's shadow on the picture */
+      for (const [x0, dir] of [[ax, 1], [ax + aw, -1]]) { const sd = g.createLinearGradient(x0, 0, x0 + dir * 16, 0); sd.addColorStop(0, 'rgba(20,4,2,.45)'); sd.addColorStop(1, 'rgba(20,4,2,0)'); g.fillStyle = sd; g.fillRect(Math.min(x0, x0 + dir * 16), ay, 16, ah); }
+      const gl = g.createLinearGradient(ax, ay, ax + aw * .7, ay + ah); gl.addColorStop(0, 'rgba(255,255,255,.16)'); gl.addColorStop(.35, 'rgba(255,255,255,.04)'); gl.addColorStop(.36, 'rgba(255,255,255,0)'); g.fillStyle = gl; g.fillRect(ax, ay, aw, ah); }   /* glass glare */
+    g.restore();
+    if (!pop) { g.strokeStyle = 'rgba(255,240,190,.55)'; g.lineWidth = 1.2; rr(ax + 4, ay + 4, aw - 8, ah - 8, 10); g.stroke(); } }
   /* filigree corners */
   curl(x + 14, y + 14, 1, false, false); curl(x + W - 14, y + 14, 1, true, false); curl(x + 14, y + H - 14, 1, false, true); curl(x + W - 14, y + H - 14, 1, true, true);
   /* folded name ribbon */
@@ -125,7 +131,7 @@ function drawCard(W, H, o = {}) {   /* o.tex = draw the frame only (window left 
   g.strokeStyle = metal(bx, by, bx + bw, by + bh); g.lineWidth = 2; rr(bx, by, bw, bh, 12); g.stroke(); g.restore();
   let ly = by + 18; for (const a of CARD.ab) { g.font = FONT(800, 12); const kw = g.measureText(a.kw).width + 26; g.fillStyle = a.col; rr(bx + 10, ly - 10, kw, 20, 10); g.fill();
     g.fillStyle = 'rgba(255,255,255,.3)'; rr(bx + 11, ly - 9, kw - 2, 8, 6); g.fill(); icon(a.icon, bx + 20, ly, .9, '#3a1404'); txt(a.kw, bx + 29, ly + 1, 12, '#3a1404', 800, null, 0, 'left');
-    g.font = FONT(600, 12.5); const words = a.txt.split(' '); let cx = bx + 16 + kw, cy = ly; for (const wd of words) { const ww = g.measureText(wd + ' ').width; if (cx + ww > bx + bw - 8) { cx = bx + 14; cy += 17; } txt(wd, cx, cy + 1, 12.5, '#fff0d8', 600, 'rgba(0,0,0,.6)', 2, 'left'); cx += ww; } ly = cy + 26; }
+    g.font = FONT(600, 13.5); const words = a.txt.split(' '); let cx = bx + 16 + kw, cy = ly; for (const wd of words) { const ww = g.measureText(wd + ' ').width; if (cx + ww > bx + bw - 8) { cx = bx + 14; cy += 18; } txt(wd, cx, cy + 1, 13.5, '#fff0d8', 600, 'rgba(0,0,0,.6)', 2, 'left'); cx += ww; } ly = cy + 27; }
   /* winged rarity gem */
   g.save(); g.translate(0, y + H - 22); g.fillStyle = metal(-30, -8, 30, 8); for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * 6, -2); g.quadraticCurveTo(sx * 22, -14, sx * 34, -4); g.quadraticCurveTo(sx * 24, -2, sx * 30, 4); g.quadraticCurveTo(sx * 18, 2, sx * 6, 6); g.closePath(); g.fill(); }
   g.fillStyle = metal(-10, -10, 10, 10); gemShape(11, 4); g.fill(); const og = g.createRadialGradient(-3, -4, 1, 0, 0, 9); og.addColorStop(0, '#fff'); og.addColorStop(.35, '#ffa02a'); og.addColorStop(1, '#8a2a04'); g.fillStyle = og; gemShape(8, 4); g.fill(); g.restore();

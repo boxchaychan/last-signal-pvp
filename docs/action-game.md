@@ -3221,3 +3221,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Light and foil: a key light that follows the tilt, a rainbow foil shader that slides with the tilt (stronger on the gold), sparkles orbiting the card.
   - Controls: pointer = tilt (idle sway after 2.5 s), tap = flip.
   - Pictures `art/incoming/monstercards/card3d_pair.png` (straight / tilted), clip `card3d_tilt_flip.mp4` (`tools/qa/cardtest_clip.js`).
+- 2026-11-26 DECISION (owner "เอา 2D แหละ แต่สวยๆหน่อย"): cards stay 2D. `cardtest.html` default = 2D again (`?3d=1` = the 3D card, `?pop=1` = the old break-out). v3 picture `art/incoming/monstercards/card_test_lubu_v3.png`, before / after `card_compare_v2_v3.png`.
+  - The art stays INSIDE the window, bigger: it fills the width, the face sits a third down, and it breathes slowly.
+  - Depth without 3D: the frame's shadow falls on the top and sides of the picture, a glass glare runs across it, and a thin light inner bevel line.
+  - Ability text 13.5 px; a clear steel sword crosses behind the attack shield, pointing out of the card.
