@@ -2926,3 +2926,15 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Balance fix: with slow, heavy hits the skill was fed the big hit damage and fired every 2 hits, so skills got several times stronger (bot reached waves 83-84). Now the skill charges by pace (`u.hits += pace`, fires at 6) and gets the un-paced damage: bot 4 runs waves 68-79 (target 73-77).
 - 2026-11-26 GEMINI GIFs: the Gemini desktop app makes animated GIFs (640 x 360, 30 frames, 3 s) but its download button is blocked; the GIFs sit in its cache `%APPDATA%\Gemini\Cache\Cache_Data\f_*` (find them by the `GIF89a` header). Copied: `art/incoming/divine_game/gemini_gif/` (Poseidon in water waves x2, Hades with ghost fire x2). The motion is small (the character barely moves, the effects shimmer): fine as a mood preview, not as move frames.
   - Owner's Gemini Hades champion: `art/incoming/divine_game/gods/hades_gemini.png` (1024, purple ghost flames drawn round him).
+
+## NEXT PLAN (owner 2026-11-26): pixel 3D level-grinding game, ONE hero who changes weapons
+- Owner: "จะไปทำพิกเซล 3D เก็บเลเวลแล้ว แต่รอบนี้จะทำตัวเดียว แล้วเปลี่ยนอาวุธเอา". Base = `pixmap.html` (the pixel-art 3D map, level grinding, see the PIXMAP section).
+- One pixel hero; the weapon defines the class (as decided in divine: Zeus caster, Thor warrior, ...).
+- Two ways to draw the moves (ask the owner which one; mind the earlier "ประกอบก็เละ" verdict on cut-out puppets):
+  1. Frames per weapon: idle / run / attack drawn with each weapon in hand. Best looking. Costs moves x weapons (PixelLab standard 1 credit a move, or Codex free).
+  2. Body frames without a weapon, plus ONE weapon picture pinned to the hand point of every frame (the hand position and angle stored per frame). Cheap: a new weapon = 1 picture. Looks fine for small, held weapons; big swings can look pasted on.
+- Lessons that carry over:
+  - PixelLab Pro Flash makes crisp pixel stills from a painted picture; the standard converter was muddy.
+  - 8-frame moves look the same as 16 at game size.
+  - Pixel heroes must move in WHOLE pixels: no squash or tilt by code, or they flicker.
+
