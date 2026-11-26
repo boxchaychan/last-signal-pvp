@@ -46,6 +46,14 @@ function frameOf(art, atk, t) {
   return { im, sx: f * m.w, sy: row * m.h, sw: m.w, sh: m.h, fx: m.fx, fy: m.fy, px: m.px || 2, flip: true, el: m.el };
 }
 
+/* painted card pictures (owner's ChatGPT cards, cut by tools/art/cards_paint.py): art = the picture inside GPT's frame (board / hand cards),
+   full = the whole GPT card with its numbers painted out (zoom + summon splash); bars = x of our attack / HP numbers, y, bar height (fractions of the card) */
+const PAINT = { lubu: { art: 'art/cards/p_lubu_art.jpg', full: 'art/cards/p_lubu_full.jpg', bars: [.371, .827, .917, .041] } };
+for (const P of Object.values(PAINT)) { img(P.art); img(P.full); }
+const paintOf = d => d.art && d.art.startsWith('p:') ? PAINT[d.art.slice(2)] : null;
+const imOk = im => im && im.complete && im.naturalWidth;
+const KWD = { taunt: 'ศัตรูต้องตีใบนี้ก่อน', charge: 'ตีได้ทันทีตาที่ลง', poison: 'ตีโดนใบไหน ใบนั้นตาย' };
+
 /* ---------- cards. Keywords (ours, in Thai): taunt = ผู้พิทักษ์ (must be hit first), charge = จู่โจม (hits the turn it comes), poison = พิษ (kills what it damages) */
 const CARDS = {
   spear: { n: 'ทหารทวน', c: 1, a: 1, h: 2, kw: ['taunt'], art: 'h:h_spear', fx: 'thrust', r: 0 },
@@ -54,6 +62,7 @@ const CARDS = {
   axe: { n: 'ทหารง้าว', c: 3, a: 4, h: 2, art: 'h:hk_glaive', fx: 'chop', r: 0 },
   swordk: { n: 'ซามูไรดาบ', c: 4, a: 4, h: 4, art: 'h:hk_samurai', fx: 'slash', r: 1 },
   vanguard: { n: 'ทัพหน้าเกราะหนัก', c: 5, a: 5, h: 6, kw: ['taunt'], art: 'h:hk_tank', fx: 'smash', r: 2 },
+  lubuC: { n: 'ลิโป้', c: 8, a: 7, h: 7, kw: ['charge'], bc: 'sweep2', art: 'p:lubu', fx: 'slash', r: 2, txt: 'ลงแล้วฟาดทุกใบ 2', long: 'เมื่อลง: ง้าวฟาดการ์ดศัตรูทุกใบ 2' },
   banner: { n: 'ธงศึก', c: 2, spell: 'allAtk', icon: 'banner', r: 0, txt: 'การ์ดเราทุกใบ โจมตี +2 ตานี้' },
   drum: { n: 'กลองศึก', c: 1, spell: 'drum', icon: 'drum', r: 0, txt: 'โทสะ +2 จั่ว 1 ใบ' },
   redhare: { n: 'ม้าเซ็กเธาว์', c: 3, spell: 'hare', t: 'own', icon: 'horse', r: 2, txt: 'การ์ดเรา 1 ใบ โจมตี +2 ตีได้ทันที' },
@@ -74,7 +83,7 @@ const CARDS = {
 const KWN = { taunt: 'ผู้พิทักษ์', charge: 'จู่โจม', poison: 'พิษ' };
 const LEADERS = {
   lubu: { n: 'ลิโป้', hp: 30, ult: 'sweep', un: 'ง้าวกรีดฟ้า', ud: 'การ์ดศัตรูทุกใบโดน 4 แม่ทัพศัตรูโดน 2', col: '#e8442e',
-    deck: { spear: 3, xbow: 2, cav: 3, axe: 2, swordk: 2, vanguard: 2, banner: 2, drum: 2, redhare: 1, diao: 1 } },
+    deck: { spear: 2, xbow: 2, cav: 3, axe: 2, swordk: 2, vanguard: 2, lubuC: 1, banner: 2, drum: 2, redhare: 1, diao: 1 } },
   tomb: { n: 'ราชาสุสาน', hp: 30, ult: 'raise', un: 'ปลุกสุสาน', ud: 'ปลุกมัมมี่ 3 ตัว ฟื้นเลือด 3', col: '#9b6ad6',
     deck: { viper: 2, wolf: 2, mummy: 3, bird: 2, scorp: 2, cactus: 2, turtle: 2, jackal: 1, colossus: 1, storm: 1, quick: 2 } },
 };
@@ -117,6 +126,8 @@ function play(P, c, target, slot) {
   burst(c.tx || VW / 2, c.ty || 220, 'summon', 22); S.shake = Math.max(S.shake, 3);
   if (c.d.bc === 'shot1') { const t = target && target !== 'leader' && target.owner !== c.owner ? target : (E.board.length ? E.board[Math.floor(rnd() * E.board.length)] : 'leader'); later(.35, () => { arrowShot(c, t, 1); }); }
   if (c.d.bc === 'heal4') { later(.3, () => healLeader(P, 4)); }
+  if (paintOf(c.d) && c.d.r === 2) { S.splash = { c, t: 0 }; S.busy++; later(SPLASH, () => { S.busy = Math.max(0, S.busy - 1); }); }   /* legendary entrance: the whole painted card fills the screen, then flies to its slot */
+  if (c.d.bc === 'sweep2') { const sy = E === S.p[1] ? 128 : 228; later(SPLASH * .8, () => { S.sweep = { t: 0, y: sy }; S.shake = 10; for (const m of E.board.slice()) hurt(m, 2, 'war'); for (let i = 0; i < 30; i++) burst(80 + i * 24, sy, 'fire', 2); cleanup(); }); }
   return true;
 }
 function castSpell(P, c, t) {
@@ -161,6 +172,7 @@ function ultimate(P) {
   later(2.0, () => { S.cine = null; S.busy--; });
   return true;
 }
+const SPLASH = 1.3;
 function later(sec, fn) { S.q.push({ t: sec, fn }); }
 function banner(text, col, dur = 1.2) { S.msg = { text, col, t: 0, dur }; }
 
@@ -273,6 +285,7 @@ function update(dt) {
   S.parts = S.parts.filter(p => p.t < p.life); for (const f of S.fx) f.t += dt; S.fx = S.fx.filter(f => f.t < f.life);
   for (const n of S.nums) n.t += dt; S.nums = S.nums.filter(n => n.t < 1.1); if (S.msg) { S.msg.t += dt; if (S.msg.t > S.msg.dur) S.msg = null; }
   if (S.shake > 0) S.shake = Math.max(0, S.shake - dt * 30); if (S.cine) S.cine.t += dt; if (S.sweep) { S.sweep.t += dt; if (S.sweep.t > .6) S.sweep = null; }
+  if (S.splash) { S.splash.t += dt; if (S.splash.t > SPLASH) S.splash = null; }
 }
 
 /* ---------- drawing */
@@ -307,7 +320,7 @@ function icon(kind, x, y, s) {
 const ELBG = { war: ['#ffb060', '#a8201a', '#2a0604'], earth: ['#ffd890', '#a8642a', '#2a1406'], poison: ['#dcff90', '#3a9a3a', '#08200c'], undead: ['#ece0ff', '#7a5ab0', '#160c28'],
   shadow: ['#dcb0ff', '#5a2a9a', '#10061c'], neutral: ['#fff2cc', '#b08a5a', '#22140a'], charm: ['#ffd8f2', '#c0408a', '#22081a'], sand: ['#fff2c8', '#c89050', '#2c180a'], fire: ['#ffe08a', '#e0501a', '#2a0804'] };
 const RARE = [['#d8c8b0', '#7a6a58'], ['#eef4ff', '#8a96a8'], ['#fff0a0', '#c8901a']];
-function cardEl(d) { if (d.spell) return { banner: 'war', drum: 'war', horse: 'fire', fan: 'charm', storm: 'sand', sink: 'sand' }[d.icon] || 'neutral'; if (d.art.startsWith('h:')) return 'war'; const m = MOBS[d.art.split(':')[1]]; return (m && ELBG[m.el]) ? m.el : 'earth'; }
+function cardEl(d) { if (d.spell) return { banner: 'war', drum: 'war', horse: 'fire', fan: 'charm', storm: 'sand', sink: 'sand' }[d.icon] || 'neutral'; if (d.art.startsWith('h:') || d.art.startsWith('p:')) return 'war'; const m = MOBS[d.art.split(':')[1]]; return (m && ELBG[m.el]) ? m.el : 'earth'; }
 function gemHex(x, y, r, n) { g.save(); g.translate(x, y); g.fillStyle = '#e8b448'; g.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 - Math.PI / 2; g.lineTo(Math.cos(a) * (r + 2.5), Math.sin(a) * (r + 2.5)); } g.closePath(); g.fill();
   const gr = g.createLinearGradient(-r, -r, r, r); gr.addColorStop(0, '#d6f2ff'); gr.addColorStop(.35, '#4aa8ff'); gr.addColorStop(1, '#0a2070'); g.fillStyle = gr; g.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 - Math.PI / 2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill();
   g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.ellipse(-r * .3, -r * .42, r * .3, r * .14, -.6, 0, 7); g.fill(); text(String(n), 0, 1, r * 1.25, '#fff', 800, '#0a1240', 3); g.restore(); }
@@ -326,9 +339,13 @@ function drawCard(c, x, y, w, h, rot = 0, opts = {}) {
   g.globalAlpha = .12; g.fillStyle = '#fff6d0'; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + S.t * .1 + c.id; g.beginPath(); g.moveTo(0, Y + h * .38); g.lineTo(Math.cos(a) * h, Y + h * .38 + Math.sin(a) * h); g.lineTo(Math.cos(a + .14) * h, Y + h * .38 + Math.sin(a + .14) * h); g.closePath(); g.fill(); } g.globalAlpha = 1;
   const footY = Y + h * (isHand ? .64 : .78);
   g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(0, footY, w * .32, h * .04, 0, 0, 7); g.fill();
-  if (d.spell) icon(d.icon, 0, Y + h * .4, w / 44);
+  const PA = paintOf(d), FULL = PA && opts.zoom && imOk(img(PA.full));
+  if (FULL) g.drawImage(img(PA.full), X, Y, w, h);
+  else if (PA) { const im = img(PA.art); if (imOk(im)) { const k = c.atkAnim > 0 ? 1.07 : 1 + .015 * Math.sin(S.t * 1.6 + c.id), sc = Math.max(w / im.naturalWidth, h / im.naturalHeight) * k, dw = im.naturalWidth * sc, dh = im.naturalHeight * sc;
+    g.drawImage(im, -dw / 2, Y + h * .3 - dh * .3, dw, dh); } }
+  else if (d.spell) icon(d.icon, 0, Y + h * .4, w / 44);
   else drawSprite(d.art, c.atkAnim > 0, c.atkAnim > 0 ? c.atkAnim : 0, 0, footY + 1, w * .98, h * (isHand ? .58 : .72), c.owner === 0);
-  const fade = g.createLinearGradient(0, Y + h * .55, 0, Y + h); fade.addColorStop(0, 'rgba(10,2,2,0)'); fade.addColorStop(.55, 'rgba(10,2,2,.7)'); fade.addColorStop(1, 'rgba(6,1,1,.95)'); g.fillStyle = fade; g.fillRect(X, Y + h * .55, w, h * .45);
+  if (!FULL) { const fade = g.createLinearGradient(0, Y + h * .55, 0, Y + h); fade.addColorStop(0, 'rgba(10,2,2,0)'); fade.addColorStop(.55, 'rgba(10,2,2,.7)'); fade.addColorStop(1, 'rgba(6,1,1,.95)'); g.fillStyle = fade; g.fillRect(X, Y + h * .55, w, h * .45); }
   if (d.r === 2) { const sh = (S.t * .5 + c.id * .37) % 1.8 - .4, fo = g.createLinearGradient(X, Y, X + w, Y + h); const st = (v, col) => fo.addColorStop(clamp(v, 0, 1), col); st(sh - .15, 'rgba(255,255,255,0)'); st(sh, 'rgba(255,245,210,.4)'); st(sh + .15, 'rgba(255,255,255,0)'); g.fillStyle = fo; g.fillRect(X, Y, w, h); }
   if (c.flash > 0) { g.fillStyle = `rgba(255,255,255,${c.flash * .6})`; g.fillRect(X, Y, w, h); }
   if (c.frozen > 0) { g.fillStyle = 'rgba(255,130,210,.3)'; g.fillRect(X, Y, w, h); }
@@ -337,14 +354,26 @@ function drawCard(c, x, y, w, h, rot = 0, opts = {}) {
   const eg = g.createLinearGradient(X, Y, X + w, Y + h); eg.addColorStop(0, R[0]); eg.addColorStop(.5, R[1]); eg.addColorStop(1, R[0]); g.strokeStyle = eg; g.lineWidth = 1.6; rr(X + .8, Y + .8, w - 1.6, h - 1.6, rad); g.stroke();
   if (c.kw && c.kw.includes('taunt')) { g.strokeStyle = '#e6ecf4'; g.lineWidth = 3; rr(X - 2, Y - 2, w + 4, h + 4, rad + 2); g.stroke(); g.strokeStyle = '#5a6474'; g.lineWidth = 1; rr(X - 3.5, Y - 3.5, w + 7, h + 7, rad + 3); g.stroke();
     g.fillStyle = '#e6ecf4'; g.beginPath(); g.moveTo(0, Y - 6); g.lineTo(6, Y - 2); g.lineTo(5, Y + 4); g.lineTo(0, Y + 7); g.lineTo(-5, Y + 4); g.lineTo(-6, Y - 2); g.closePath(); g.fill(); }
-  if (isHand) {
+  if (FULL) {
+    const B2 = PA.bars, fs = h * B2[3] * 1.45, atkN = c.a + (c.buff || 0);
+    text(String(atkN), X + w * B2[0], Y + h * B2[2], fs, c.buff ? '#ffe26a' : '#fff', 800, 'center', 'rgba(20,4,0,.95)', fs * .22);
+    text(String(c.h), X + w * B2[1], Y + h * B2[2], fs, c.h < c.maxH ? '#ffb4a4' : '#fff', 800, 'center', 'rgba(0,6,24,.95)', fs * .22);
+    gemHex(X + w - 9, Y + 10, 8, d.c);
+  } else if (isHand) {
     const ny = Y + h * .76; text(d.n, 0, ny, d.n.length > 9 ? 8.3 : 9.5, '#ffe9a8', 800, 'rgba(30,8,4,.95)', 3);
     const desc = d.txt || (c.kw && c.kw.map(k => KWN[k]).join(' · ')) || ''; if (desc) text(desc, 0, ny + 11, 6.6, '#ffe0c0', 600, 'rgba(0,0,0,.8)', 2);
     gemHex(X + 8, Y + 9, 8, d.c);
   }
-  if (!d.spell) { statBadge(X + 8, Y + h - 8, 7.5, 'atk', c.a + (c.buff || 0), false, !!c.buff); statBadge(X + w - 8, Y + h - 8, 7.5, 'hp', c.h, c.h < c.maxH); }
+  if (!d.spell && !FULL) { statBadge(X + 8, Y + h - 8, 7.5, 'atk', c.a + (c.buff || 0), false, !!c.buff); statBadge(X + w - 8, Y + h - 8, 7.5, 'hp', c.h, c.h < c.maxH); }
   if (!isHand && c.kw) { let ix = X + 7; if (c.kw.includes('poison')) { g.fillStyle = '#7cff4a'; g.beginPath(); g.arc(ix + 2, Y + 8, 3.6, 0, 7); g.fill(); g.strokeStyle = '#0a3a0a'; g.lineWidth = 1; g.stroke(); ix += 9; } if (c.kw.includes('charge')) { icon2bolt(ix + 3, Y + 8); } }
   if (!isHand && c.owner === 0 && S.cur === 0 && canAttack(c) && !S.busy) { g.strokeStyle = `rgba(120,255,140,${.6 + .4 * Math.sin(S.t * 6)})`; g.lineWidth = 2.5; rr(X - 2, Y - 2, w + 4, h + 4, rad + 2); g.stroke(); }
+  if (opts.zoom && !opts.noPanel) { const px = X + w + 6, pw = 74, lines = [];
+    lines.push([d.spell ? 'เวท · ค่าเรียก ' + d.c : 'ค่าเรียก ' + d.c + ' · โจมตี ' + (c.a + (c.buff || 0)) + ' · เลือด ' + c.h + '/' + c.maxH, '#ffe0b0']);
+    for (const k of (c.kw || [])) lines.push([KWN[k] + ': ' + KWD[k], '#ffd56a']);
+    if (d.long || d.txt) lines.push([d.long || d.txt, '#fff2e0']);
+    const ph = 16 + lines.length * 9; g.fillStyle = 'rgba(14,6,4,.88)'; rr(px, Y + 4, pw, ph, 5); g.fill(); g.strokeStyle = 'rgba(255,214,140,.7)'; g.lineWidth = .6; g.stroke();
+    text(d.n, px + 5, Y + 11, 7, '#ffe9a8', 800, 'left', 'rgba(30,8,4,.95)', 1.5);
+    lines.forEach(([t, col], i) => text(t, px + 5, Y + 20 + i * 9, 4.6, col, 600, 'left', null)); }
   if (!isHand && (c.sleep && !c.kw.includes('charge')) && c.owner === S.cur) text('z', w / 2 - 8, Y + 9, 11, '#cfe0ff', 800, 'center', 'rgba(10,20,50,.8)', 2);
   g.restore();
 }
@@ -420,7 +449,7 @@ function render() {
   /* targeting hints while dragging */
   if (DRAG.card && DRAG.kind === 'board') { for (const c of P1.board) if (legalTarget(DRAG.card, c)) { g.strokeStyle = 'rgba(255,90,70,.8)'; g.lineWidth = 2; rr(c.x - CW / 2 - 3, c.y - CH / 2 - 3, CW + 6, CH + 6, 8); g.stroke(); }
     if (legalTarget(DRAG.card, 'leader')) { g.strokeStyle = 'rgba(255,90,70,.8)'; g.lineWidth = 3; g.beginPath(); g.arc(P1.x, P1.y, 38, 0, 7); g.stroke(); } }
-  for (const P of [P1, P0]) for (const c of P.board) if (!c.dead && !c.lunge) drawCard(c, c.x, c.y, CW, CH);
+  for (const P of [P1, P0]) for (const c of P.board) if (!c.dead && !c.lunge && !(S.splash && S.splash.c === c)) drawCard(c, c.x, c.y, CW, CH);
   for (const P of [P1, P0]) for (const c of P.board) if (!c.dead && c.lunge) drawCard(c, c.x, c.y, CW, CH, 0, { glow: '#ffd56a' });
   /* enemy hand backs */
   for (const c of P1.hand) { g.save(); g.translate(c.x, c.y); g.fillStyle = '#4a3060'; rr(-14, -20, 28, 40, 4); g.fill(); g.strokeStyle = '#c9a8ff'; g.lineWidth = 1.5; g.stroke(); g.restore(); }
@@ -438,7 +467,15 @@ function render() {
   g.fillStyle = myTurn ? (nothing ? '#e6a23a' : '#b9542a') : '#5a4a40'; rr(...BTN_END, 12); g.fill(); g.strokeStyle = '#ffdcae'; g.lineWidth = 2; g.stroke(); text(myTurn ? 'จบตา' : 'ตาศัตรู', BTN_END[0] + BTN_END[2] / 2, BTN_END[1] + BTN_END[3] / 2 + 1, 15, '#fff', 800);
   const ready = P0.fury >= FURY_MAX && myTurn; g.fillStyle = ready ? P0.L.col : 'rgba(60,40,30,.8)'; rr(...BTN_ULT, 10); g.fill(); if (ready) { g.strokeStyle = `rgba(255,230,140,${.6 + .4 * Math.sin(S.t * 8)})`; g.lineWidth = 3; g.stroke(); }
   text('ทีเด็ด: ' + P0.L.un, BTN_ULT[0] + BTN_ULT[2] / 2, BTN_ULT[1] + BTN_ULT[3] / 2 + 1, 10.5, ready ? '#fff' : '#a89080', 800);
-  if (ZOOM && (P0.hand.includes(ZOOM) || P0.board.includes(ZOOM) || P1.board.includes(ZOOM))) { g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, 0, VW, VH); drawCard(ZOOM, VW / 2, VH / 2 - 10, HCW, HCH, 0, { hand: true, scale: 2.4 }); }
+  if (S.splash) { const T = S.splash.t / SPLASH, c = S.splash.c, out = clamp((T - .72) / .28, 0, 1), inn = clamp(T / .14, 0, 1), a = T > .9 ? (1 - T) / .1 : 1;
+    const sc = lerp(lerp(1, 2.6, ease(inn)), 1, ease(out)), x = lerp(VW / 2, c.x, ease(out)), y = lerp(VH / 2 - 8, c.y, ease(out));
+    g.fillStyle = `rgba(0,0,0,${.5 * inn * (1 - out)})`; g.fillRect(0, 0, VW, VH);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = .55 * inn * (1 - out); g.translate(x, y);
+    const rg = g.createRadialGradient(0, 0, 10, 0, 0, 300); rg.addColorStop(0, 'rgba(255,214,120,.9)'); rg.addColorStop(.35, 'rgba(255,120,40,.35)'); rg.addColorStop(1, 'rgba(255,80,20,0)'); g.fillStyle = rg;
+    g.beginPath(); g.arc(0, 0, 300, 0, 7); g.fill(); g.rotate(S.t * .35);
+    for (let i = 0; i < 14; i++) { g.rotate(Math.PI / 7); g.beginPath(); g.moveTo(0, 0); g.lineTo(-7 - (i % 2) * 7, -320); g.lineTo(7 + (i % 2) * 7, -320); g.closePath(); g.fill(); } g.restore();
+    g.globalAlpha = a; const big = out < .5; drawCard(c, x, y, big ? HCW : CW, big ? HCH : CH, 0, { hand: big, zoom: big, noPanel: true, scale: sc, glow: '#ffd56a' }); g.globalAlpha = 1; }
+  if (ZOOM && (P0.hand.includes(ZOOM) || P0.board.includes(ZOOM) || P1.board.includes(ZOOM))) { g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, 0, VW, VH); drawCard(ZOOM, VW / 2 - 92, VH / 2 - 10, HCW, HCH, 0, { hand: true, zoom: true, scale: 2.4 }); }
   if (S.msg) { const T = S.msg.t / S.msg.dur; g.globalAlpha = T < .15 ? T / .15 : T > .8 ? (1 - T) / .2 : 1; g.fillStyle = 'rgba(20,10,6,.65)'; rr(VW / 2 - 150, 160, 300, 38, 12); g.fill(); text(S.msg.text, VW / 2, 179, 20, S.msg.col, 800); g.globalAlpha = 1; }
   drawCine();
   if (S.phase === 'title') { g.fillStyle = 'rgba(16,8,4,.82)'; g.fillRect(0, 0, VW, VH); const im = img('art/cards/lubu_paint.png'); if (im.complete && im.naturalWidth) g.drawImage(im, 40, 40, 300, 310);
@@ -455,6 +492,7 @@ newGame();
 let last = performance.now();
 function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; update(dt); render(); CG.frames++; requestAnimationFrame(frame); }
 const CG = window.CG = { get S() { return S; }, frames: 0, newGame, endTurn, play, attack, ultimate, canAttack, legalTarget, playable, aiTurn,
+  mkCard, ZOOM(c) { ZOOM = c; },
   step(sec, dt = 1 / 60) { for (let t = 0; t < sec; t += dt) update(dt); render(); } };
 requestAnimationFrame(frame);
 </script>
