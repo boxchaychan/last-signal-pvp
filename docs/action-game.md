@@ -3326,3 +3326,22 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - fixed the home screen overlap (the "เลือกแล้ว" badge on the subtitle).
   - CRAFTED ICONS: ChatGPT prompt `art/incoming/bag3d/PROMPT_craft_icons.txt` (attach `art/bag/icons.png`; 4 x 3 grid on flat magenta), sent in the chat with the reference. When the sheet comes: `python3 tools/art/bag_craft_icons.py --sheet <png>` (magenta key, trim, fit 60 px, crisp step-down; unreadable cells keep the code-made icon) → `art/bag3d/icons_all.png`.
   - Checks: `bag3d_craft.js`, `bag3d_vfx.js`, `bag3d_look.js` (also `?fx=pixel`). No errors, buttons inside 844 x 390 and 740 x 360. Preview `art/bag3d/look_v4_preview.png`.
+- 2026-11-26 bag3d MORE ITEMS (owner "เพิ่มของไปอีก ให้มีทางเลือกเยอะๆ"), 0 credits. Shop pool 40 → 64 items, 12 → 20 recipes, 84 items in all.
+  - 24 new shop items:
+    - weapons: ดาบคู่เงาจันทร์ (2 hits a swing), เรเปียร์ (crit 30 %), ดาบยักษ์ทมิฬ (finisher), ดาบสายลม, หอกซัด, จักรเพลิง, คัมภีร์แสงศักดิ์สิทธิ์ (magic + life steal), ลูกแก้วความมืด (magic finisher);
+    - defence: โล่กลมเล็ก, โล่หอคอย, รองเท้าลมกรด, เครื่องรางนักบวช;
+    - food: ขนมปังเดินทาง (1 gold), ยาเลือดขวดใหญ่, น้ำผึ้งป่า, ยาอายุวัฒนะ;
+    - neighbour gems: อักขระโทสะ, ต่อมพิษอสรพิษ (adds poison), หินสายฟ้า (adds stun), ตราประทับนักบุญ;
+    - specials: หน้ากากคลั่ง (stronger when hurt), กลองศึก, ตะเกียงวิญญาณ (start hit), ถุงทองพ่อค้า (+2 gold a round).
+  - 8 new recipes (main item ★3 first): ดาบคู่+ขนนก=ดาบคู่พายุ, เรเปียร์+โคลเวอร์=เรเปียร์นำโชค, ดาบยักษ์+เขี้ยว=ดาบเพชฌฆาต, หอกซัด+น้ำแข็ง=หอกน้ำแข็งพันปี, คัมภีร์แสง+แหวน=คัมภีร์เทพ, โล่กลม+ถุงมือ=โล่ปัดป้อง, ขนมปัง+น้ำผึ้ง=ขนมปังน้ำผึ้ง, ตะเกียง+กะโหลก=ตะเกียงวิญญาณร้าย.
+  - New mechanics:
+    - `hits` = strikes per swing, each with its own dodge / crit roll;
+    - `exe` = bonus damage when the target is under 30 % HP;
+    - `rage` = up to +X damage as the owner's HP falls;
+    - neighbour `adj.poi` / `adj.stun`.
+    - Checked in the page: twin blades 2 hits a swing, finisher x1.6 on a low target, rage x1.54 at 10 % HP, the gland adds 1 poison to the next weapon.
+  - Enemies can now carry the new items too; never gold items (`!d.gold`).
+  - Icons: code-made placeholders (`NEWITEMS` / `CRAFTED2` ops `var` / `pair` in `tools/art/bag_craft_icons.py`). Icon sheet = 11 rows (`ICR`); order = IT order after the 40 originals: CRAFTED, NEWITEMS, CRAFTED2.
+  - Owner's ChatGPT sheets: 4 prompts in `art/incoming/bag3d/` (A crafted = PROMPT_craft_icons, B items 1-12, C items 13-24, D crafted 2 = 4 x 2). Cut each with `python3 tools/art/bag_craft_icons.py --sheet <png> <first id> <cols> <rows>`; the sheet is kept as `sheet_<first>_<c>x<r>.png` and re-used on every rebuild. Cutter tested with a fake sheet.
+  - Balance (`node tools/qa/bag3d_sim.js 80`): smart bot avg round 9.9 (was 10.0), random bot 11.8 (was 11.7). Not changed by the new pool; the bots do not craft.
+  - Preview `art/bag3d/items_v2_preview.png`.
