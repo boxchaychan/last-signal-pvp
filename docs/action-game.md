@@ -3075,3 +3075,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - rock shelves along the top as the higher level, with a sand ramp;
     - a small scorpion pack on the right.
   - New Gemini box in `PROMPTS_gemini.md` ("แมพทะเลทราย รอบตัว 60"). Attach `art/incoming/pixgrind/REF_hero60_x6.png` (our hero x6 on white) so Gemini draws OUR girl at the right size. It asks for the hero at about 1/7 of the height and the same 3D-through-pixels look.
+- 2026-11-26 MAP TARGET v1 from Gemini (owner sent it, "ตัวละครยังดูใหญ่อยู่"): `art/incoming/pixgrind/target_map_v1_gemini.png`, 1672 x 941.
+  - The look is right: apricot dunes, turquoise pool with palms / reeds / stepping stones, the half-buried stone head with blue glowing eyes, terracotta rock ledges with a sand ramp, a scorpion pack, the 3D-through-pixels feel.
+  - Gemini ignored the hero size: our girl is about 238 px = 1/4 of the height (asked 1/7), and the palms are only about 1.6 x her height.
+  - Free fix test: Gemini's hero was covered with a sand patch and our real `hero60.png` placed at x2 (= the game standard: 60 texels in a 390-texel phone view, which is about 773 px of this picture). Files: `target_v1_hero_small.png`, phone crop `target_v1_phone_view.png` (2.16:1), side by side `target_v1_compare.png`.
+    - At that size the palms are about 3.3 H and the world reads big: the picture's world already fits our size standard, only its hero was too big.
+    - Its scorpions are bigger than her; in the game mobs follow 0.8 H.
+  - Since we build the map ourselves, the hero will be at our size whatever Gemini draws.
