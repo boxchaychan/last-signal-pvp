@@ -3043,3 +3043,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Free comparison `art/incoming/pixgrind/sim60/colours_28_16_8.png`: at 60 px, 16 colours looks almost the same as 28; 8 colours loses the scarf red and the shading.
   - The owner's slim reference (about 105 px, soft shading, many colours) is a modern pixel look, beyond 16 bit.
   - Default for this hero: 16 colours.
+- 2026-11-26 (owner "ลองปล่อยสีปกติเลยสิ"): free comparison at 60 px, `art/incoming/pixgrind/sim60/colours_full.png`; phone frame `phone_crop_fullcolour.png`; sprites `A60_fullcolour.png`, `B60_fullcolour.png`. Three versions:
+  - 16 colours.
+  - Normal colours, crisp: each cell takes its most common original colour; up to 256 colours.
+  - Normal colours, blended: a plain average shrink, 700-1000 colours.
+  - Result:
+    - Crisp normal colour is the best: a bit richer than 16 (lantern glow, scarf highlights, skin), still clean pixels.
+    - Blended keeps a hint of B's eye, but it looks blurry / dirty with light specks on the edges (a shrunk painting, not pixel art).
