@@ -3225,3 +3225,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The art stays INSIDE the window, bigger: it fills the width, the face sits a third down, and it breathes slowly.
   - Depth without 3D: the frame's shadow falls on the top and sides of the picture, a glass glare runs across it, and a thin light inner bevel line.
   - Ability text 13.5 px; a clear steel sword crosses behind the attack shield, pointing out of the card.
+- 2026-11-26 CARD v4 = FULL ART, NO FRAME (owner "ทำให้สวยๆ หน่อย ไม่จำเป็นต้องมีกรอบก็ได้"): `cardtest.html` default; `?style=frame` = v3, `?3d=1` = 3D. Picture `art/incoming/monstercards/card_test_lubu_v4_full.png`.
+  - The battlefield fills the whole card and drifts a little. Turning light rays and a sun glow sit behind Lu Bu, who is big (1.2 x the card width) with a warm rim light and a slow breath. Embers rise over everything.
+  - A dark fade covers the lower half: the name in big embossed gold, a thin gold rule with the rarity gem, the type line "ขุนพล · มนุษย์ · ตำนาน", and ability rows (keyword chip + text, no box).
+  - Edge and stats: a thin light edge instead of a frame, an outer warm glow; the cost gem, attack shield and HP heart float on top; foil sheen and orbiting sparkles.
