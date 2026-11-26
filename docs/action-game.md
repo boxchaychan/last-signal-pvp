@@ -3305,3 +3305,24 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - KO: slow motion x0.32 for 0.75 s on the 2D and 3D layers (`b.slow`, `D3.slow`), a big explosion + dust on the loser, and the result waits 1.6 s.
   - LOOK: a vignette (red on bosses), a warm light from the top, the 3D canvas a little more saturated and contrasty (CSS filter). New slash colours for the crafted melee weapons.
   - Checks: `node tools/qa/bag3d_craft.js` (★3 message, craft, book, buttons) and `node tools/qa/bag3d_vfx.js` (round-8 fight with crafted ★3 items). No errors. The bot sim is unchanged (`BG.sim(30,true)` avg round 10; the bot does not craft). Preview `art/bag3d/vfx_preview.png`.
+- 2026-11-26 bag3d LOOK v4 (owner "ทำภาพให้ดี", then picked all four: the 3D fight scene, the hit effects, the crafted icons, the shop / bag), 0 credits:
+  - SMOOTH GLOW VFX replace the pixel sheets in battle (`SMOOTH`; `?fx=pixel` = the PVFX / fx pixel look of the batch before):
+    - built from soft glow sprites + particles drawn with light blending on the 2D layer: `vfx(b, kind, side)`, `smoothHit`, `statusFx`, `vfxStep`, `vfxDraw`, element per weapon in `EL`;
+    - kinds:
+      - hits: phys sparks, arcane, crit (flare + streaks + ring), fire (flames, embers, smoke), ice (shards + frost ring + mist), poison (splash + bubbles), blood (drops + claw marks);
+      - big moves: bolt (a jagged lightning bolt from the sky), smash (ground ring, rocks, dust), comet (a fireball flies in from the sky corner, then explodes), boom, KO;
+      - support: heal (rising sparkles + plus signs), shield (bubble), aura (skill: beam + ring + motes), drain (red orbs to the attacker);
+    - status: burning flames, poison bubbles, frost mist, stun = 3 orbiting glow stars.
+  - 3D SCENE:
+    - drifting particles per zone (`LEAF` instanced, `LZ`): autumn = falling maple leaves, forest = petals, snow = flakes, wasteland = rising embers;
+    - soft round contact shadows under both fighters (`BLOB`);
+    - sun shadow map 2048, a stronger lilac rim light;
+    - slow sun shafts on the 2D layer.
+  - SHOP / BAG (CSS "UI v4" block):
+    - warm gradient background with a faint weave;
+    - the bag = leather with a stitched outline (`outline-offset`), lit inset cells, the buy cells pulse;
+    - the shop = a merchant shelf;
+    - cards stretch to fill the shelf, with icons sized from the card (`--ci`, up to 66 px), a rarity background (bronze / blue / gold), a rarity glow behind the icon, a shine sweep on legendary cards and on hover;
+    - fixed the home screen overlap (the "เลือกแล้ว" badge on the subtitle).
+  - CRAFTED ICONS: ChatGPT prompt `art/incoming/bag3d/PROMPT_craft_icons.txt` (attach `art/bag/icons.png`; 4 x 3 grid on flat magenta), sent in the chat with the reference. When the sheet comes: `python3 tools/art/bag_craft_icons.py --sheet <png>` (magenta key, trim, fit 60 px, crisp step-down; unreadable cells keep the code-made icon) → `art/bag3d/icons_all.png`.
+  - Checks: `bag3d_craft.js`, `bag3d_vfx.js`, `bag3d_look.js` (also `?fx=pixel`). No errors, buttons inside 844 x 390 and 740 x 360. Preview `art/bag3d/look_v4_preview.png`.
