@@ -3173,3 +3173,24 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - ทีเด็ด "ง้าวกรีดฟ้า": Lu Bu charges across on his red horse, one sweep: 4 damage to every enemy card and 2 to the enemy summoner, screen shake, red-gold slash arc.
   - Proposed cards (20-card deck, duplicates allowed): ทหารทวน (1 mana 1/2 ผู้พิทักษ์), นักธนูหน้าไม้ (2 mana 2/1, when summoned 1 damage), ทหารม้าเกราะ (3 mana 3/3 จู่โจม), ขวานศึก (3 mana 4/2), ธงศึก (spell 2: +2 attack this turn to all ours), กลองศึก (spell 1: +1 fury, draw 1), ม้าเซ็กเธาว์ (spell 3: one card gets จู่โจม + 2 attack), เตียวเสี้ยน (4 mana 2/4, when summoned an enemy card cannot attack next turn), ทัพหน้า (5 mana 5/5 ผู้พิทักษ์), ลิโป้ (legendary 8 mana 7/7 จู่โจม, when summoned sweeps 2 to every enemy card).
   - First enemy decks = desert monsters (`art/horde/mobs`), each with its own leader / ทีเด็ด (e.g. the tomb king raises mummies). Numbers get tuned by bot games before showing.
+- 2026-11-26 CARDS v1 = `cards.html` "ศึกการ์ดอสูร" (owner "ลองทำมาดู"), first playable, 0 credits. ONE canvas (844 x 390 design size, scaled to fit), all UI drawn in code, Kanit font from `art/gem/font/`.
+  - Lu Bu deck (leader ลิโป้, portrait / title / cinematic from the owner's painting `art/cards/lubu_paint.png`, his 13-frame halberd sweep `art/cards/lubu_anim.png`) vs the Tomb King deck played by the computer.
+  - Lu Bu deck (20): ทหารทวน x3 (h_spear), นักธนูหน้าไม้ x2 (h_archer, 1 shot on summon), ทหารม้าเกราะ x3 (hk_rider, จู่โจม), ทหารง้าว x2 (hk_glaive), ซามูไรดาบ x2 (hk_samurai), ทัพหน้าเกราะหนัก x2 (hk_tank, ผู้พิทักษ์), ธงศึก x2, กลองศึก x2, ม้าเซ็กเธาว์, กลอุบายเตียวเสี้ยน. Only clash units WITH move sheets are used; the big h_k_* knights have stills only.
+  - Tomb King deck (20): viper (พิษ), wolf (จู่โจม), mummy, strider bird (จู่โจม), scorpion (พิษ), walking cactus / fortress tortoise (ผู้พิทักษ์), jackal priest (heals 4), sandstone colossus, พายุทราย, ทรายดูด.
+  - Rules:
+    - mana +1 a turn up to 10, 30 HP, start with 3 / 4 cards, board max 7, hand max 10;
+    - empty deck = growing damage;
+    - a new card sleeps unless จู่โจม; ผู้พิทักษ์ must be hit first; พิษ kills what it damages.
+  - Fury +1 at turn start, +1 per attack, +2 per own card lost. At 10 the ทีเด็ด button fires a cinematic: the painting slides in + the pixel halberd sweep, the name and what it does.
+    - Lu Bu "ง้าวกรีดฟ้า": a red-gold arc across the enemy row, 4 to every enemy card, 2 to the leader.
+    - Tomb King "ปลุกสุสาน": 3 mummy tokens 2/2 + heal 3.
+  - Controls: drag a hand card up onto the board to play (targets: drop on the card); drag a board card onto an enemy card / the leader to attack (curved aim line, legal targets ringed red); tap = zoom a card.
+  - Hit feel:
+    - the card lunges, a hit-stop of 0.08 s, the screen shakes, damage numbers, the card's pixel art plays its ATTACK frames;
+    - an effect per weapon / element: thrust line, arrow bolt, charge ring, chop / slash arcs, smash ring + rocks, poison splats, undead wisps, shadow claws, stars;
+    - dead cards shatter into 4 pieces.
+  - AI: plays what fits (dearest first), uses spells sensibly, hits taunts, makes good trades, else goes face; fires its ทีเด็ด.
+  - Checks:
+    - `node tools/qa/cards_check.js <out> [seconds]`: title + bot-vs-bot (`?bot=1`) shots + errors. Last run: no errors.
+    - `node tools/qa/cards_clip.js <out> [seconds]`: video of a bot game. First clip: `art/incoming/monstercards/v1_botgame.mp4`.
+  - Next ideas: balance by many bot games; sounds; a real campaign map; more decks / leaders; 3D card tilt; pixelfx effects.
