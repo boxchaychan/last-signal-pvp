@@ -2848,4 +2848,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The hands now lose their own cuff (`KEEP` masks in `divine_puppet.py`) and hang BEHIND the arm, tucked under the arm's cuff, so each arm reads as one piece (shoulder -> cuff -> fist).
   - Draw order: legs, bolt, weapon hand, weapon arm, free hand, free arm, torso, head.
   - The free arm turns out beside the skirt (rest -10 degrees).
+- 2026-11-26 DECISION (owner "ประกอบก็เละ เห็นกี่ครั้งก็เหมือนเดิม ไม่พัฒนา", after comparing with the reference game whose units barely move): NO cut-out puppets or rigs.
+  - Every god uses Codex's own whole pictures (idle / attack / skill) with whole-body motion: breathing, lunge, jump, cross-fade, turning.
+  - `drawFigure` has `rigged = false`; `drawPuppet` / `drawRig`, `puppet.json`, `rig.json` and the part images stay in the repo for later tests only.
+  - Do NOT order Codex puppet sheets. Next effort goes to what makes the reference game feel alive: denser boards, more effects and damage numbers.
 
