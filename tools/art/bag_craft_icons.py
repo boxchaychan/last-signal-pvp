@@ -2,7 +2,11 @@
 Each crafted icon = the main ingredient's icon, colour-graded toward the recipe's element + a soft glow in that colour,
 with the second ingredient's icon small in the bottom-right corner on a dark disc, and a few pixel sparkles.
 Out: art/bag3d/icons_all.png = art/bag/icons.png (5 rows) + 2 rows of crafted icons (64 px cells, 8 a row), order = CRAFTED below
-(the same order as the CRAFT table in bag3d.html).  usage: python3 tools/art/bag_craft_icons.py"""
+(the same order as the CRAFT table in bag3d.html).  usage: python3 tools/art/bag_craft_icons.py
+   --sheet <png> [cols 4] [rows 3]: use the owner's ChatGPT sheet instead (12 icons in a grid on flat magenta, PROMPT in
+   art/incoming/bag3d/PROMPT_craft_icons.txt): each cell is keyed off magenta, trimmed, fitted into 60 px (nearest step-down to keep
+   it crisp) and centred in its 64 px cell; cells it cannot read fall back to the code-made icon. The raw sheet stays in art/incoming/bag3d/."""
+import sys
 from PIL import Image, ImageFilter, ImageChops
 ORDER = ['dagger','sword','bow','axe','hammer','wand','poison','bomb','shield','helm','cactus','feather','apple','meat','juice','stone','glove','clover','ember','frost',
          'heart','star','pig','crown','spear','claw','scythe','shuriken','club','orb','icestaff','skull','book','meteor','plate','cloak','ring','wine','fang','hourglass']
@@ -31,7 +35,23 @@ def icon(main, small, col):
     for x, y in [(8, 8), (54, 10), (6, 40)]:
         d.point([(x, y - 1), (x - 1, y), (x, y), (x + 1, y), (x, y + 1)], fill=(255, 255, 230, 255))
     return out
+def from_sheet(path, cols=4, rows=3):
+    im = Image.open(path).convert('RGBA'); W, H = im.size; out = []
+    for n in range(cols * rows):
+        c = im.crop((n % cols * W // cols, n // cols * H // rows, (n % cols + 1) * W // cols, (n // cols + 1) * H // rows)); px = c.load()
+        for y in range(c.height):
+            for x in range(c.width):
+                r, g, b, a = px[x, y]
+                if r > 150 and b > 150 and g < 110 and abs(r - b) < 90: px[x, y] = (0, 0, 0, 0)   # flat magenta key
+                elif r > 120 and b > 120 and g < r * .55 and g < b * .55: px[x, y] = (r, g, b, int(a * .25))   # magenta fringe
+        bb = c.getbbox()
+        if not bb or (bb[2] - bb[0]) < 8: out.append(None); continue
+        c = c.crop(bb); k = 60 / max(c.size); w, h = max(1, round(c.width * k)), max(1, round(c.height * k))
+        big = c.resize((w * 4, h * 4), Image.LANCZOS); c = big.resize((w, h), Image.NEAREST)
+        cell = Image.new('RGBA', (64, 64), (0, 0, 0, 0)); cell.alpha_composite(c, ((64 - w) // 2, (64 - h) // 2)); out.append(cell)
+    return out
 sheet = Image.new('RGBA', (512, 448), (0, 0, 0, 0)); sheet.paste(SRC, (0, 0))
+got = from_sheet(sys.argv[2], *(int(v) for v in sys.argv[3:5])) if len(sys.argv) > 2 and sys.argv[1] == '--sheet' else []
 for n, (k, a, b, c) in enumerate(CRAFTED):
-    sheet.paste(icon(a, b, c), (n % 8 * 64, 320 + n // 8 * 64))
+    sheet.paste(got[n] if n < len(got) and got[n] else icon(a, b, c), (n % 8 * 64, 320 + n // 8 * 64))
 sheet.save('art/bag3d/icons_all.png'); print('ok', len(CRAFTED))
