@@ -2981,3 +2981,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Palette: apricot sand, deep turquoise pool, emerald palms, terracotta rock shelves on two gentle levels, long violet-blue shadows. Light: late golden afternoon.
   - Landmark: a colossal stone head half buried in a dune by the pool, with faint blue eyes.
   - The scale adventurer is the red-capelet woman. Same 3D-through-pixels rules.
+- 2026-11-26 (owner "ตัวละครดูไม่เท่ไม่สวย"): the first adventurer was too cute and generic (goggles, satchel, flask, 3 heads tall). Owner's taste from earlier heroes = cool / dark fantasy (winged knight, demon knight, tribal huntress, dark chibi rabbit).
+  - Two new woman designs, about 4 heads tall (heroic, not chibi), high contrast with ONE bright accent:
+    - 1A desert treasure hunter: indigo hood + coat with gold trim, long crimson scarf blowing, braid, golden eyes.
+    - 1B rune-marked wanderer: white hair, cropped black jacket, torn dark-red half-cape on the back, glowing blue rune down the right arm (matches the stone head's blue eyes).
+  - Both empty-handed for weapons, 3 views. The man design follows whichever the owner picks. Asked the owner to send the Gemini picture that looked bad, to see what went wrong.

@@ -5,21 +5,26 @@
 
 ขนาดในเกม: ตัวสูง 64 พิกเซล บนแมพ 640 x 360 = ประมาณ 1/6 ของความสูงจอ (ใกล้ซุสพิกเซลที่สูง 60)
 
-## 1. นักผจญภัยหญิง (ทำก่อน)
+## 1. นักผจญภัยหญิง แบบใหม่ (owner: แบบแรก "ไม่เท่ไม่สวย")
+แบบแรก (แว่นกันลม กระเป๋าย่าม กระติกน้ำ หัวโต 3 หัว) น่ารักเกินไป แบบใหม่สูง 4 หัว สีเข้ม มีสีเด่นแค่สีเดียว เงาร่างชัด
+
+### 1A. นักล่าสมบัติทะเลทราย (ฮู้ดคราม ผ้าพันคอแดงปลิว)
 ```
-Design one original adventurer heroine for a 3D-pixel action RPG. A cheerful, determined young woman: chestnut hair in a short high ponytail with a few loose strands, bright eyes, brass goggles pushed up on her forehead. A short RED hooded capelet (hood down) that ends at the chest, leaving the arms free. Cream shirt with sleeves rolled to the elbows, a brown leather vest, brown fingerless leather gloves. A wide belt with a gold buckle, a small satchel on the left hip and a water flask. Dark navy trousers tucked into tall brown boots with folded tops.
-Style: cute but cool game art, about 3 heads tall with a big readable face, thick clean dark outline, flat bright colours with soft cel shading. Big simple shapes and 5 clear colour blocks (red, cream, brown, navy, gold) so she still reads when shrunk to 64 pixels tall: no tiny details, no thin straps, no patterns.
+Design one original heroine for a 3D-pixel action RPG set in a desert: a cool, fearless desert treasure hunter. Young woman, sharp golden eyes and a confident half-smile, dark hair in a long braid, a deep indigo hood up, a long CRIMSON scarf wrapped high around her neck and jaw with two long scarf tails blowing behind her in the wind. A short fitted dark indigo coat with gold trim that ends at the waist, one leather shoulder guard on her left shoulder, black arm bracers with gold bands, black fingerless gloves, a few small gold coin charms on her belt. Slim dark trousers, cloth-wrapped shins, pointed dark leather boots.
+Style: cool action-game hero art, about 4 heads tall (heroic, NOT chibi, not cute), strong clear silhouette, sharp clean dark outline, bold cel shading with one light direction, HIGH CONTRAST: dark indigo body, the crimson scarf as the one bright accent, gold details. Big clear shapes so she still reads when shrunk to 64 pixels tall: no tiny patterns, no thin straps.
 No weapon and no shield: both hands empty, a little apart from the body, closed as if gripping a handle; nothing covers the arms.
-Three views on one pure white sheet, same size, feet on one line: front view, side view facing right, back view. Standing idle pose, full body from head to feet, no ground, no shadow, no text.
+Three views on one pure white sheet, same size, feet on one line: front view, side view facing right, back view. Confident standing pose, full body from head to feet, no ground, no shadow, no text.
 ```
 
-## 2. นักผจญภัยชาย
+### 1B. นักเดินทางรอยสักอักขระ (ผมขาว แจ็กเก็ตดำ ผ้าคลุมแดงครึ่งตัว อักขระฟ้าเรืองที่แขน)
 ```
-Design one original adventurer hero for a 3D-pixel action RPG. A cheerful, determined young man: messy short brown hair, bright eyes, brass goggles pushed up on his forehead. A short RED hooded capelet (hood down) that ends at the chest, leaving the arms free. Cream shirt with sleeves rolled to the elbows, a brown leather vest, brown fingerless leather gloves. A wide belt with a gold buckle, a small satchel on the left hip and a water flask. Dark navy trousers tucked into tall brown boots with folded tops.
-Style: cute but cool game art, about 3 heads tall with a big readable face, thick clean dark outline, flat bright colours with soft cel shading. Slightly broader shoulders. Big simple shapes and 5 clear colour blocks (red, cream, brown, navy, gold) so he still reads when shrunk to 64 pixels tall: no tiny details, no thin straps, no patterns.
+Design one original heroine for a 3D-pixel action RPG set in a desert: a cool rune-marked wanderer. Young woman, short messy white hair with one long strand over the face, sharp blue eyes, a glowing BLUE rune tattoo running down her right arm. A cropped black jacket with a high collar and a red inner lining, a torn dark-red half-cape hanging behind her back from the left shoulder (arms stay free), a dark fitted top, layered belts with a silver buckle, black arm guards, fingerless gloves. Dark grey trousers, tall black boots with silver toe caps.
+Style: cool action-game hero art, about 4 heads tall (heroic, NOT chibi, not cute), strong clear silhouette, sharp clean dark outline, bold cel shading with one light direction, HIGH CONTRAST: black and grey body, the dark-red half-cape, the blue rune glow as the accent. Big clear shapes so she still reads when shrunk to 64 pixels tall: no tiny patterns, no thin straps.
 No weapon and no shield: both hands empty, a little apart from the body, closed as if gripping a handle; nothing covers the arms.
-Three views on one pure white sheet, same size, feet on one line: front view, side view facing right, back view. Standing idle pose, full body from head to feet, no ground, no shadow, no text.
+Three views on one pure white sheet, same size, feet on one line: front view, side view facing right, back view. Confident standing pose, full body from head to feet, no ground, no shadow, no text.
 ```
+
+## 2. นักผจญภัยชาย: ทำตามแนวที่คุณเลือกจากข้อ 1 ทีหลัง
 
 ## แมพ (เลือกลองข้อไหนก็ได้ ข้อละ 1 รูป)
 แต่ละข้อมีสี แสง และจุดเด่นของตัวเอง ไม่มีน้ำตก วิหาร สะพาน เป็นของประจำ
