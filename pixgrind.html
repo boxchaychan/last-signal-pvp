@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>แมพพิกเซล โอเอซิส</title>
+<!-- pixgrind.html = the pixel 3D level-grinding game, ONE hero who changes weapons (owner 2026-11-26). Map 1 = the desert oasis of the
+     owner's Gemini target picture (art/incoming/pixgrind/target_map_v1_gemini.png). A real 3D world drawn small (about PXH texels across the
+     short side of the screen), outlined on depth edges and blown up with hard pixels; orthographic camera at a fixed angle, snapped to whole
+     texels. Hero = 2D pixel card, 1 sprite pixel = 1 texel, 60 px tall (H = 1.6 m). Size standard (docs/action-game.md): palms 3-4 H,
+     one rock level 1.2 H, landmark about 5-7 H, mobs 0.8 H. Notes: the NEXT PLAN / pixgrind lines at the end of docs/action-game.md. -->
+<style>
+html, body { margin: 0; height: 100%; overflow: hidden; background: #e9ae78; touch-action: none; -webkit-user-select: none; user-select: none; }
+#gl { position: fixed; left: 0; top: 0; image-rendering: pixelated; image-rendering: crisp-edges; }
+#ui { position: fixed; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas><canvas id="ui"></canvas>
+<script src="vendor/threejs/three.min.js"></script>
+<script src="vendor/threejs/GLTFLoader.js"></script>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search), V3 = THREE.Vector3;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
+
+/* ---------- size standard */
+const H = 1.6, SPX = 60, TW = H / SPX;                 /* hero 1.6 m = 60 sprite pixels; TW = metres a texel (camera-facing) */
+const PXH = +(Q.get('pxh') || 390);                     /* texels across the SHORT side of the screen (phone landscape 390 tall) */
+const MW = 150, MD = 110, C = 2, NX = MW / C, NZ = MD / C; /* map in metres, cells of 2 m */
+const LV = 1.2 * H;                                      /* one rock level */
+const PITCH = (+(Q.get('pitch') || 42)) * Math.PI / 180;
+const CDIR = new V3(0, Math.sin(PITCH), Math.cos(PITCH));  /* from the look point to the camera: south and up */
+const SUN = new V3(-.5, 1.35, -.55).normalize();           /* sun from the upper left of the screen (north-west), shadows fall lower right */
+
+/* ---------- noise */
+function hash(x, z) { let h = Math.imul(x | 0, 374761393) ^ Math.imul(z | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function vnoise(x, z) { const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  return lerp(lerp(hash(xi, zi), hash(xi + 1, zi), u), lerp(hash(xi, zi + 1), hash(xi + 1, zi + 1), u), v); }
+function fbm(x, z) { return vnoise(x, z) * .55 + vnoise(x * 2.1 + 7, z * 2.1 + 3) * .3 + vnoise(x * 4.3 + 1, z * 4.3 + 9) * .15; }
+let SEED = 1; const rnd = () => (SEED = (SEED * 16807) % 2147483647) / 2147483647;
+
+/* ---------- layout (metres; x east, z south; the camera looks north) */
+const POOLS = [   /* circles joined smoothly = pools (x, z, r) */
+  [50, 65, 6.5], [57, 67, 5], [44, 68, 4], [53, 61, 4.5], /* main oasis, just north of the start */
+  [94, 32, 6], [100, 35, 4.5],                             /* spring on the upper level */
+  [26, 86, 4.5], [31, 88, 3.5]                             /* south-west pond */
+];
+const START = [60, 78], HEAD = [46, 55];                   /* hero start; the stone head on the far bank of the main pool */
+const RAMPS = [   /* sand ramps: x0, x1, z0, z1, way up ('n', 'e', 'w', 's') */
+  [70, 78, 41, 51, 'n'], [30, 37, 5, 15, 'n'], [121, 131, 60, 67, 'e'], [11, 21, 38, 45, 'w'], [64, 72, 95, 105, 's']   /* cut INTO the upper level, so rock walls line both sides */
+];
+function plateauRaw(x, z) {   /* 1 = upper level */
+  if (x < 5 || x > MW - 5 || z < 5 || z > MD - 5) return 1;                    /* frame */
+  if (z < 14) return 1;                                                         /* north ledges */
+  if (x > 64 && x < 112 && z < 50) return 1;                                    /* the upper level north-east of the oasis (ramp up at x 70-78) */
+  if (x > 122 && x < 146 && z > 54 && z < 80) return 1;                         /* east mesa */
+  if (x < 20 && z > 26 && z < 56) return 1;                                     /* west plateau */
+  if (x < 24 && z > 96) return 1; if (x > 124 && z > 92) return 1;              /* corners */
+  if (x > 58 && x < 78 && z > 96) return 1;                                     /* south lip */
+  return 0;
+}
+const LEV = new Uint8Array(NX * NZ);
+for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = (i + .5) * C, z = (j + .5) * C, w = (fbm(x * .08, z * .08) - .5) * 7;
+  LEV[j * NX + i] = plateauRaw(x + w, z - w * .7); }
+function rampAt(x, z) { for (const r of RAMPS) if (x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3]) {
+  const t = r[4] === 'n' ? (r[3] - z) / (r[3] - r[2]) : r[4] === 's' ? (z - r[2]) / (r[3] - r[2]) : r[4] === 'e' ? (x - r[0]) / (r[1] - r[0]) : (r[1] - x) / (r[1] - r[0]); return clamp(t, 0, 1); } return -1; }
+for (const r of RAMPS) for (let z = r[2] + 1; z < r[3]; z += C) for (let x = r[0] + 1; x < r[1]; x += C) { const i = Math.floor(x / C), j = Math.floor(z / C); LEV[j * NX + i] = 0; }   /* a ramp cuts its way down */
+const levC = (i, j) => (i < 0 || j < 0 || i >= NX || j >= NZ) ? 1 : LEV[j * NX + i];
+function poolAt(x, z) { let b = POOLS[0], bd = 1e9; for (const p of POOLS) { const d = Math.hypot(x - p[0], z - p[1]) - p[2]; if (d < bd) { bd = d; b = p; } } return b; }
+function poolSDF(x, z) { let d = 1e3; for (const p of POOLS) { const e = Math.hypot(x - p[0], z - p[1]) - p[2], h = clamp(.5 + .5 * (e - d) / 3, 0, 1); d = lerp(e, d, h) - 3 * h * (1 - h); } return d; }
+function levelH(x, z) { const r = rampAt(x, z); if (r >= 0) return r * LV; return levC(Math.floor(x / C), Math.floor(z / C)) * LV; }
+function duneH(x, z) { return (fbm(x * .045, z * .06) - .45) * .9 + Math.sin(x * .07 + z * .03) * .12; }
+function edgeF(x, z) { const i = Math.floor(x / C), j = Math.floor(z / C), l = levC(i, j); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) if (levC(i + a, j + b) !== l) return .22; return l ? .5 : 1; }   /* flatter next to the ledges, so the blocks meet the sand */
+function groundH(x, z) { const p = poolSDF(x, z); let h = levelH(x, z) + duneH(x, z) * edgeF(x, z) * (p < 3 ? clamp(p / 3, 0, 1) : 1); if (p < 0) h -= Math.min(1.1, -p * .45 + .1); else if (p < 1) h -= (1 - p) * .1; return h; }
+const WATER_Y = -.32;
+
+/* ---------- renderer + pixel pass */
+const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
+const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false });
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.BasicShadowMap;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xe9ae78);
+const camera = new THREE.OrthographicCamera(-10, 10, 6, -6, 1, 220);
+const PX = { k: 1, T: 1, bw: 2, bh: 2, m: 0 };
+let rt = null; const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const postMat = new THREE.ShaderMaterial({ uniforms: { tC: { value: null }, tD: { value: null }, px: { value: new THREE.Vector2(1, 1) }, edge: { value: .0032 }, shades: { value: 22 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
+  fragmentShader: `uniform sampler2D tC, tD; uniform vec2 px; uniform float edge, shades; varying vec2 vUv;
+    void main(){ vec4 c = texture2D(tC, vUv); float d = texture2D(tD, vUv).x;
+      float dl = texture2D(tD, vUv - vec2(px.x, 0.)).x, dr = texture2D(tD, vUv + vec2(px.x, 0.)).x, du = texture2D(tD, vUv + vec2(0., px.y)).x, dd = texture2D(tD, vUv - vec2(0., px.y)).x;
+      float far = max(max(dl, dr), max(du, dd)) - d;   /* a neighbour much farther = this texel is the edge of something nearer */
+      vec3 col = c.rgb;
+      if (far > edge) col = col * vec3(.5, .34, .4) + vec3(.02, .0, .03);   /* dark violet-brown outline, like the target picture */
+      col = floor(col * shades + .5) / shades;
+      gl_FragColor = vec4(col, 1.); }` });
+postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
+let SW = 800, SH = 450, DPR = 1;
+function resize() {
+  SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR;
+  const dp = devicePixelRatio || 1; PX.k = Math.max(1, Math.round(Math.min(SW, SH) * dp / PXH)); PX.T = PX.k / dp;   /* whole device pixels a texel */
+  PX.m = 2 * PX.T; PX.bw = Math.ceil((SW + 2 * PX.m) / PX.T); PX.bh = Math.ceil((SH + 2 * PX.m) / PX.T);
+  renderer.setPixelRatio(1); renderer.setSize(PX.bw, PX.bh, false); glc.style.width = PX.bw * PX.T + 'px'; glc.style.height = PX.bh * PX.T + 'px';
+  if (rt) rt.dispose(); rt = new THREE.WebGLRenderTarget(PX.bw, PX.bh, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+  rt.depthTexture = new THREE.DepthTexture(PX.bw, PX.bh); rt.depthTexture.type = THREE.UnsignedIntType;
+  postMat.uniforms.tC.value = rt.texture; postMat.uniforms.tD.value = rt.depthTexture; postMat.uniforms.px.value.set(1 / PX.bw, 1 / PX.bh);
+}
+addEventListener('resize', resize); resize();
+
+/* ---------- lights: violet sky light in the shadows, warm late sun */
+const hemi = new THREE.HemisphereLight(0xc9aee0, 0xf0b07a, .9); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffdc9e, .66); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 160 }); sun.shadow.bias = -.0006; scene.add(sun, sun.target);
+const fill = new THREE.DirectionalLight(0xffc9a8, .16); fill.position.set(.3, .4, 1); scene.add(fill);
+
+/* ---------- ground: one mesh, colours from a shader (dune ripples, wet sand, grass round the water) */
+const GS = .5, GX = MW / GS, GZ = MD / GS;
+const gg = new THREE.PlaneGeometry(MW, MD, GX, GZ); gg.rotateX(-Math.PI / 2); gg.translate(MW / 2, 0, MD / 2);
+{ const p = gg.attributes.position; for (let k = 0; k < p.count; k++) p.setY(k, groundH(p.getX(k), p.getZ(k))); gg.computeVertexNormals(); }
+const POOLU = POOLS.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+const GLSL_SDF = `uniform vec3 uPools[${POOLS.length}];
+  float poolSDF(vec2 q){ float d = 1e3; for (int i = 0; i < ${POOLS.length}; i++){ float e = length(q - uPools[i].xy) - uPools[i].z; float h = clamp(.5 + .5 * (e - d) / 3., 0., 1.); d = mix(e, d, h) - 3. * h * (1. - h); } return d; }
+  float hh(vec2 q){ return fract(sin(dot(q, vec2(127.1, 311.7))) * 43758.5453); }`;
+const groundMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+groundMat.onBeforeCompile = sh => {
+  sh.uniforms.uPools = { value: POOLU };
+  sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.)).xyz;');
+  sh.fragmentShader = 'varying vec3 vWP;\n' + GLSL_SDF + '\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', `
+    vec2 q = vWP.xz; float d = poolSDF(q);
+    float u = q.x * .30 + q.y * .95 + sin(q.x * .34 + q.y * .05) * .9 + sin(q.x * .09 + q.y * .07) * 3.;
+    float amp = .78 + .22 * sin(q.x * .05 + q.y * .11) * sin(q.x * .023 - q.y * .04 + 1.);   /* ripples fade in and out */
+    float rip = sin(u * 3.1) * amp;
+    vec3 col = vec3(.83, .62, .35);
+    if (rip > .45) col = vec3(.77, .55, .31);
+    if (rip > .78) col = vec3(.71, .49, .29);
+    if (rip < -.82) col = vec3(.87, .67, .40);
+    if (vWP.y > ${(LV * .6).toFixed(2)}) col *= vec3(1.02, 1.0, .97);
+    float gb = sin(q.x * 1.7 + sin(q.y * 1.3) * 1.5) * .5 + sin(q.y * 2.1 + q.x * .6) * .5, gc = sin(q.x * 3.1 + q.y * 2.3) * sin(q.y * 2.7 - q.x * 1.1);
+    float gw = 2.1 + gb * .9;
+    if (d < gw && d > .3) { col = gb > .15 ? vec3(.45, .59, .19) : vec3(.37, .53, .18); if (hh(floor(q * 9.)) > .88) col = vec3(.56, .68, .24); if (d > gw - .4) col = vec3(.60, .60, .24); }
+    if (d <= .3) col = vec3(.56, .44, .28);   /* wet sand at the edge */
+    vec4 diffuseColor = vec4(col, opacity);`);
+};
+const ground = new THREE.Mesh(gg, groundMat); ground.receiveShadow = true; scene.add(ground);
+
+/* ---------- water */
+const TIMEU = { value: 0 };
+for (const grp of [[0, 1, 2, 3], [4, 5], [6, 7]]) {
+  let x0 = 1e3, x1 = -1e3, z0 = 1e3, z1 = -1e3; for (const i of grp) { const p = POOLS[i]; x0 = Math.min(x0, p[0] - p[2] - 2); x1 = Math.max(x1, p[0] + p[2] + 2); z0 = Math.min(z0, p[1] - p[2] - 2); z1 = Math.max(z1, p[1] + p[2] + 2); }
+  const wy = levelH(POOLS[grp[0]][0], POOLS[grp[0]][1]) + WATER_Y; grp.forEach(i => POOLS[i].wy = wy);
+  const wg = new THREE.PlaneGeometry(x1 - x0, z1 - z0); wg.rotateX(-Math.PI / 2); wg.translate((x0 + x1) / 2, wy, (z0 + z1) / 2);
+  scene.add(new THREE.Mesh(wg, new THREE.ShaderMaterial({ uniforms: { uPools: { value: POOLU }, t: TIMEU },
+    vertexShader: 'varying vec3 vWP; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vWP = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: GLSL_SDF + `\n uniform float t; varying vec3 vWP;
+      void main(){ vec2 q = vWP.xz; float d = poolSDF(q); if (d > .2) discard; float dep = -d;
+        vec3 col = mix(vec3(.38, .82, .80), vec3(.07, .52, .62), smoothstep(.3, 5., dep));
+        float band = sin(dep * 2.2 - t * 1.3); if (band > .93 && dep > .8) col += vec3(.08, .1, .08);
+        vec2 c = floor(q * vec2(9., 22.)); float s = hh(c + floor(t * 2.)); if (s > .993 && dep > 1.) col = vec3(.98, .93, .66);   /* sun glints */
+        if (dep < .45) col = vec3(.88, .98, .92);   /* foam line */
+        gl_FragColor = vec4(col, 1.); }` })));
+}
+
+/* ---------- rock ledges: stacked terracotta blocks along every edge where the upper level meets the lower (not on ramps) */
+const BLK = []; SEED = 7;
+const rampWay = (x, z) => { for (const r of RAMPS) if (x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3]) return r[4]; return null; };
+for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+  if (!levC(i, j)) continue;
+  for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const ni = i + di, nj = j + dj; if (ni < 0 || nj < 0 || ni >= NX || nj >= NZ || levC(ni, nj)) continue;
+    const rw = rampWay((ni + .5) * C, (nj + .5) * C); if (rw && ((rw === 'n' && dj === 1) || (rw === 's' && dj === -1) || (rw === 'e' && di === -1) || (rw === 'w' && di === 1))) continue;   /* the top end of a ramp stays open; its sides get walls */
+    const cx = (i + .5 + di * .5) * C, cz = (j + .5 + dj * .5) * C, along = di === 0;   /* edge centre; along = the edge runs east-west */
+    for (const s of [-.5, .5]) for (let row = 0; row < 2; row++) {
+      const w = 1.0 + rnd() * .35, dpt = 1.1 + rnd() * .3, h = LV / 2 + (row ? .1 + rnd() * .12 : .02), o = (rnd() - .5) * .18;
+      const x = cx + (along ? s * C * .5 : di * (o + .05)), z = cz + (along ? dj * (o + .05) : s * C * .5);
+      BLK.push(row ? { x, z, y: LV / 2 + h / 2 - .05, sx: along ? w : dpt, sz: along ? dpt : w, sy: h, c: rnd() } : { x, z, y: h / 2 - .4, sx: along ? w * 1.04 : dpt + .1, sz: along ? dpt + .1 : w * 1.04, sy: h + .7, c: rnd() });   /* the lower row goes down into the sand */
+    }
+  }
+}
+{ const bg = new THREE.BoxGeometry(1, 1, 1), bm = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  bm.onBeforeCompile = sh => { sh.vertexShader = 'varying float vTop; varying vec2 vBU;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vTop = normal.y; vBU = uv;');
+    sh.fragmentShader = 'varying float vTop; varying vec2 vBU;\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', `vec3 bc = diffuse;
+      if (vTop > .5) bc = mix(bc, vec3(.86, .64, .40), .62);   /* sand on the top */
+      float e = min(min(vBU.x, 1. - vBU.x), min(vBU.y, 1. - vBU.y)); if (e < .05) bc *= .78;   /* joints */
+      if (vTop < .5 && vBU.y > .82) bc *= 1.1;   /* a light lip under the top */
+      vec4 diffuseColor = vec4(bc, opacity);`); };
+  const im = new THREE.InstancedMesh(bg, bm, BLK.length), M = new THREE.Matrix4(), col = new THREE.Color();
+  const PAL = [0xb26a57, 0xa35f50, 0xbd7662, 0x96564a, 0xad6e5c, 0xb87a66];   /* terracotta, a little muted like the target */
+  BLK.forEach((b, k) => { M.makeScale(b.sx, b.sy, b.sz); M.setPosition(b.x, b.y, b.z); im.setMatrixAt(k, M); im.setColorAt(k, col.setHex(PAL[Math.floor(b.c * PAL.length)])); });
+  im.castShadow = im.receiveShadow = true; scene.add(im); }
+
+/* ---------- props (palms, rocks, grass) come from CC0 models: Quaternius palms (art/pixgrind/nature), Kenney rocks, Quaternius grass */
+const SOLID = [];   /* collision circles: x, z, r */
+const loader = new THREE.GLTFLoader(), tl = new THREE.TextureLoader();
+function tex(p) { const t = tl.load(p); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestMipmapNearestFilter; return t; }
+const leafTex = tex('art/pixgrind/nature/tex/PalmTree_Leaves.png'), trunkTex = tex('art/pixgrind/nature/tex/PalmTree_Trunk.png');
+const leafMat = new THREE.MeshLambertMaterial({ map: leafTex, color: 0x4f8a34, alphaTest: .4, side: THREE.DoubleSide });
+leafMat.onBeforeCompile = sh => { sh.uniforms.t = TIMEU; sh.vertexShader = 'uniform float t;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n float sw = max(0., position.y - 2.5); transformed.x += sin(t * 1.6 + modelMatrix[3][0] * .3) * .05 * sw; transformed.z += cos(t * 1.3 + modelMatrix[3][2] * .3) * .03 * sw;');
+  sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', 'vec4 tx = texture2D(map, vUv); diffuseColor.a *= tx.a; float l = dot(tx.rgb, vec3(.3, .59, .11)); diffuseColor.rgb *= l > .42 ? vec3(1.18, 1.12, .62) : vec3(.74, .84, .86);'); };
+const leafDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: leafTex, alphaTest: .4, side: THREE.DoubleSide });
+const trunkMat = new THREE.MeshLambertMaterial({ map: trunkTex, color: 0xb48a6a });
+const rockMats = [new THREE.MeshLambertMaterial({ color: 0xc27a62, flatShading: true }), new THREE.MeshLambertMaterial({ color: 0xb98d7a, flatShading: true })];
+const grassMat = new THREE.MeshLambertMaterial({ color: 0x8cbf3e, side: THREE.DoubleSide });
+async function loadGLB(p) { try { return (await loader.loadAsync(p)).scene; } catch (e) { console.warn('no model', p); return null; } }
+function place(src, x, z, s, yaw, matFn) { const o = src.clone(true); o.position.set(x, groundH(x, z) - .05, z); o.scale.setScalar(s); o.rotation.y = yaw;
+  o.traverse(m => { if (m.isMesh) { matFn(m); m.castShadow = true; m.receiveShadow = true; } }); scene.add(o); return o; }
+const free = (x, z, r) => SOLID.every(c => Math.hypot(c[0] - x, c[1] - z) > c[2] + r) && Math.hypot(x - START[0], z - START[1]) > 4 && Math.hypot(x - HEAD[0], z - HEAD[1]) > 7;
+const onLevelEdge = (x, z) => { const i = Math.floor(x / C), j = Math.floor(z / C), l = levC(i, j); return levC(i + 1, j) !== l || levC(i - 1, j) !== l || levC(i, j + 1) !== l || levC(i, j - 1) !== l; };
+async function props() {
+  const palms = (await Promise.all([1, 2, 3, 4].map(i => loadGLB(`art/pixgrind/nature/PalmTree_${i}.glb`)))).filter(Boolean);
+  const rocks = (await Promise.all(['a', 'b', 'c'].map(k => loadGLB(`art/tribe3d/kenney/rock-${k}.glb`)))).filter(Boolean);
+  const grass = await loadGLB('art/tribe3d/nature/Grass_Large.glb');
+  SEED = 11;
+  const palmM = m => { const n = (m.material && m.material.name) || ''; if (/Leaves/.test(n)) { m.material = leafMat; m.customDepthMaterial = leafDepth; } else m.material = trunkMat; };
+  if (palms.length) {
+    let n = 0; for (let k = 0; k < 4000 && n < 46; k++) {   /* round the water */
+      const x = 4 + rnd() * (MW - 8), z = 4 + rnd() * (MD - 8), d = poolSDF(x, z); if (d < 1 || d > 4.5 || !free(x, z, 1.6) || onLevelEdge(x, z)) continue;
+      place(palms[Math.floor(rnd() * palms.length)], x, z, .9 + rnd() * .3, rnd() * 6.28, palmM); SOLID.push([x, z, .45]); n++; }
+    for (let k = 0, m = 0; k < 3000 && m < 22; k++) {   /* a few lone palms */
+      const x = 8 + rnd() * (MW - 16), z = 8 + rnd() * (MD - 16); if (poolSDF(x, z) < 6 || !free(x, z, 4) || onLevelEdge(x, z)) continue;
+      place(palms[Math.floor(rnd() * palms.length)], x, z, .85 + rnd() * .3, rnd() * 6.28, palmM); SOLID.push([x, z, .45]); m++; }
+  }
+  const rockM = m => { m.material = rockMats[rnd() < .6 ? 0 : 1]; };
+  if (rocks.length) {
+    for (let k = 0, m = 0; k < 5000 && m < 70; k++) {   /* boulders: many near the ledges, some on open sand */
+      const x = 4 + rnd() * (MW - 8), z = 4 + rnd() * (MD - 8); if (poolSDF(x, z) < 1.2) continue; const edge = onLevelEdge(x, z); if (!edge && rnd() > .25) continue;
+      const s = edge ? 1.6 + rnd() * 1.8 : .9 + rnd() * 1.2; if (!free(x, z, s * .5)) continue;
+      place(rocks[Math.floor(rnd() * rocks.length)], x, z, s, rnd() * 6.28, rockM); SOLID.push([x, z, s * .38]); m++; }
+    for (const p of [[47, 56, 1.4], [53, 60, 1.2], [58, 53, 1.5], [44, 52, 1], [62, 60, 1.1]]) {   /* stepping stones in the main pool */
+      const o = place(rocks[1 % rocks.length], p[0], p[1], p[2], rnd() * 6.28, rockM); o.position.y = poolAt(p[0], p[1]).wy - .25; o.scale.y *= .45; }
+  }
+  if (grass) {
+    const gM = m => { m.material = grassMat; m.castShadow = false; };
+    for (let k = 0, m = 0; k < 6000 && m < 160; k++) {
+      const x = 4 + rnd() * (MW - 8), z = 4 + rnd() * (MD - 8), d = poolSDF(x, z); const near = d > .4 && d < 2.6; if (!near && rnd() > .03) continue;
+      const o = place(grass, x, z, near ? .9 + rnd() * .7 : .6 + rnd() * .4, rnd() * 6.28, gM); if (near && rnd() < .4) o.scale.y *= 2.2; m++; }   /* tall clumps = reeds */
+  }
+  PG.propsReady = true;
+}
+
+/* ---------- landmark: the stone head art comes later (Gemini kit, owner); its place HEAD stays free of props */
+
+/* ---------- hero card: idle 8 + run 6 frames (72 px cells, feet at row 68), faces left; mirrored for right */
+function sheet(p, n) { const t = tl.load(p); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.repeat.set(1 / n, 1); return t; }
+const HERO = { x: START[0], z: START[1], y: 0, vx: 0, vz: 0, face: -1, moving: false, t: 0, speed: 5.2 };
+const heroTex = { idle: sheet('art/pixgrind/hero_idle8.png', 8), run: sheet('art/pixgrind/hero_run6.png', 6) };
+const heroMat = new THREE.MeshBasicMaterial({ map: heroTex.idle, alphaTest: .5, side: THREE.DoubleSide, toneMapped: false, fog: false });
+const heroCard = new THREE.Mesh(new THREE.PlaneGeometry(72 * TW, 72 * TW), heroMat); scene.add(heroCard);
+const blobMat = new THREE.MeshBasicMaterial({ color: 0x7a4f86, transparent: true, opacity: .38, depthWrite: false });
+const heroBlob = new THREE.Mesh(new THREE.CircleGeometry(1, 16), blobMat); heroBlob.rotation.x = -Math.PI / 2; heroBlob.scale.set(.46, .26, 1); scene.add(heroBlob);
+
+/* ---------- scorpions (pixel cards from art/horde/mobs, 1 art pixel = 1 texel), wander in packs; no fighting yet */
+const MOBS = []; const scTex = tl.load('art/horde/mobs/mob_desert_stingclaw_scorpion.png'); scTex.magFilter = scTex.minFilter = THREE.NearestFilter; scTex.generateMipmaps = false; scTex.repeat.set(1 / 4, .5); scTex.offset.set(0, .5);
+{ const SC = { w: 173, h: 126, fx: 95, fy: 124, px: 2 }; SEED = 23;
+  for (const home of [[96, 66], [84, 40], [30, 70], [128, 86], [108, 48], [70, 30]]) for (let k = 0; k < 3; k++) {
+    const t = scTex.clone(); const ww = SC.w / SC.px * TW, hh = SC.h / SC.px * TW;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(ww, hh), new THREE.MeshBasicMaterial({ map: t, alphaTest: .5, side: THREE.DoubleSide, toneMapped: false }));
+    const b = new THREE.Mesh(new THREE.CircleGeometry(1, 12), blobMat); b.rotation.x = -Math.PI / 2; b.scale.set(.7, .36, 1); scene.add(m, b);
+    MOBS.push({ m, b, t, home, x: home[0] + (rnd() - .5) * 5, z: home[1] + (rnd() - .5) * 5, tx: 0, tz: 0, wait: rnd() * 3, face: 1, f: 0, ax: (SC.fx / SC.w - .5) * ww, ay: (.5 - SC.fy / SC.h) * hh }); }
+}
+
+/* ---------- walking rules */
+function walkable(x, z, fromH) { if (x < 3 || z < 3 || x > MW - 3 || z > MD - 3) return false; if (poolSDF(x, z) < .35) return false;
+  if (Math.abs(levelH(x, z) - fromH) > .55) return false; for (const c of SOLID) if (Math.hypot(c[0] - x, c[1] - z) < c[2] + .3) return false; return true; }
+
+/* ---------- input: keys + a drag stick anywhere on the screen */
+const KEYS = {}; addEventListener('keydown', e => { KEYS[e.code] = true; }); addEventListener('keyup', e => { KEYS[e.code] = false; });
+const STICK = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+addEventListener('pointerdown', e => { if (STICK.id === null) { STICK.id = e.pointerId; STICK.ox = STICK.x = e.clientX; STICK.oy = STICK.y = e.clientY; } });
+addEventListener('pointermove', e => { if (e.pointerId === STICK.id) { STICK.x = e.clientX; STICK.y = e.clientY; } });
+const endStick = e => { if (e.pointerId === STICK.id) STICK.id = null; }; addEventListener('pointerup', endStick); addEventListener('pointercancel', endStick);
+
+/* ---------- life: drifting sand motes (1 texel dots) */
+const MOTES = 140, mg = new THREE.BufferGeometry(), mp = new Float32Array(MOTES * 3); mg.setAttribute('position', new THREE.BufferAttribute(mp, 3));
+for (let k = 0; k < MOTES; k++) { mp[k * 3] = rnd() * 30 - 15; mp[k * 3 + 1] = .3 + rnd() * 2.5; mp[k * 3 + 2] = rnd() * 24 - 12; }
+const motes = new THREE.Points(mg, new THREE.PointsMaterial({ color: 0xfff0d2, size: 1, sizeAttenuation: false, transparent: true, opacity: .75, depthWrite: false })); scene.add(motes);
+
+/* ---------- update */
+const CAM = { look: new V3(START[0], 0, START[1]), lead: new V3() }; const _r = new V3(), _u = new V3(), _p = new V3();
+function step(dt) {
+  TIMEU.value += dt; HERO.t += dt;
+  let ix = (KEYS.KeyD || KEYS.ArrowRight ? 1 : 0) - (KEYS.KeyA || KEYS.ArrowLeft ? 1 : 0), iz = (KEYS.KeyS || KEYS.ArrowDown ? 1 : 0) - (KEYS.KeyW || KEYS.ArrowUp ? 1 : 0);
+  if (STICK.id !== null) { const dx = STICK.x - STICK.ox, dy = STICK.y - STICK.oy, l = Math.hypot(dx, dy); if (l > 8) { ix = dx / Math.max(l, 40); iz = dy / Math.max(l, 40); } }
+  if (PG.auto) { ix = PG.auto[0]; iz = PG.auto[1]; }
+  const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
+  HERO.moving = il > .1; const hNow = levelH(HERO.x, HERO.z);
+  if (HERO.moving) { if (Math.abs(ix) > .15) HERO.face = ix > 0 ? 1 : -1;
+    const s = HERO.speed * dt * Math.min(1, il), nx = HERO.x + ix * s, nz = HERO.z + iz * s;
+    if (walkable(nx, nz, hNow)) { HERO.x = nx; HERO.z = nz; } else if (walkable(nx, HERO.z, hNow)) HERO.x = nx; else if (walkable(HERO.x, nz, hNow)) HERO.z = nz; }
+  HERO.y = groundH(HERO.x, HERO.z);
+  for (const m of MOBS) {   /* wander */
+    if (m.wait > 0) { m.wait -= dt; m.f = 0; }
+    else { const dx = m.tx - m.x, dz = m.tz - m.z, l = Math.hypot(dx, dz);
+      if (l < .2 || !m.tx) { m.tx = m.home[0] + (rnd() - .5) * 12; m.tz = m.home[1] + (rnd() - .5) * 10; m.wait = .5 + rnd() * 2.5; if (poolSDF(m.tx, m.tz) < 1 || Math.abs(levelH(m.tx, m.tz) - levelH(m.x, m.z)) > .5) m.tx = 0; }
+      else { const s = 1.3 * dt; m.x += dx / l * s; m.z += dz / l * s; m.face = dx > 0 ? 1 : -1; m.f += dt * 8; } }
+    m.t.offset.x = (Math.floor(m.f) % 4) / 4; }
+  updCam(dt); placeCards();
+  const mo = mg.attributes.position; for (let k = 0; k < MOTES; k++) { let x = mo.getX(k) + dt * (.8 + (k % 5) * .15), y = mo.getY(k) + Math.sin(TIMEU.value * 2 + k) * dt * .15, z = mo.getZ(k) + dt * .25;
+    if (x > 16) x -= 32; if (z > 13) z -= 26; mo.setXYZ(k, x, y, z); } mo.needsUpdate = true; motes.position.set(CAM.look.x, CAM.look.y, CAM.look.z);
+}
+function snapCard(obj, fx, fy, fz, ax, ay) {   /* the card's pixel grid on the texel grid: feet point + offset, rounded in camera right / up */
+  _p.set(fx, fy, fz).addScaledVector(_r, ax).addScaledVector(_u, ay); const pr = _p.dot(_r), pu = _p.dot(_u);
+  _p.addScaledVector(_r, Math.round(pr / TW) * TW - pr).addScaledVector(_u, Math.round(pu / TW) * TW - pu); obj.position.copy(_p); obj.quaternion.copy(camera.quaternion); }
+function placeCards() {
+  const run = HERO.moving, n = run ? 6 : 8, fps = run ? 12 : 7.5, fr = Math.floor(HERO.t * fps) % n, t = run ? heroTex.run : heroTex.idle;
+  if (heroMat.map !== t) { heroMat.map = t; heroMat.needsUpdate = true; } t.offset.x = fr / n;
+  snapCard(heroCard, HERO.x, HERO.y, HERO.z, 0, (36 - 68) * -TW); heroCard.scale.x = HERO.face > 0 ? -1 : 1;
+  heroBlob.position.set(HERO.x + .2, HERO.y + .03, HERO.z + .12);
+  for (const m of MOBS) { const y = groundH(m.x, m.z); snapCard(m.m, m.x, y, m.z, -m.ax * m.face * -1, -m.ay); m.m.scale.x = m.face > 0 ? -1 : 1; m.b.position.set(m.x + .2, y + .03, m.z + .1); }
+}
+function updCam(dt) {
+  const want = new V3(HERO.x, HERO.y + .6, HERO.z);
+  const ldx = HERO.moving ? (KEYS.KeyD || KEYS.ArrowRight || (STICK.id !== null && STICK.x > STICK.ox + 8) || (PG.auto && PG.auto[0] > 0) ? 1 : (KEYS.KeyA || KEYS.ArrowLeft || (STICK.id !== null && STICK.x < STICK.ox - 8) || (PG.auto && PG.auto[0] < 0) ? -1 : 0)) : 0;
+  const ldz = HERO.moving ? (KEYS.KeyS || KEYS.ArrowDown || (STICK.id !== null && STICK.y > STICK.oy + 8) || (PG.auto && PG.auto[1] > 0) ? 1 : (KEYS.KeyW || KEYS.ArrowUp || (STICK.id !== null && STICK.y < STICK.oy - 8) || (PG.auto && PG.auto[1] < 0) ? -1 : 0)) : 0;
+  CAM.lead.lerp(new V3(ldx * 3.2, 0, ldz * 2.2), 1 - Math.exp(-dt * 1.6));   /* more ground ahead than behind */
+  want.add(CAM.lead).add(new V3(0, 0, -.8));   /* the hero sits a little below the middle */
+  if (Q.get('ov')) {   /* ?ov=1 = the whole map in one picture (to look at the layout) */
+    const vh = Math.max(MD * Math.sin(PITCH) + 10, (MW + 6) * PX.bh / PX.bw); camera.left = -vh * PX.bw / PX.bh / 2; camera.right = -camera.left; camera.top = vh / 2; camera.bottom = -vh / 2; camera.updateProjectionMatrix();
+    CAM.look.set(MW / 2, 0, MD / 2 + 2); camera.position.copy(CAM.look).addScaledVector(CDIR, 120); camera.lookAt(CAM.look); camera.updateMatrixWorld(); glc.style.transform = `translate(${-PX.m}px, ${-PX.m}px)`;
+    sun.shadow.camera.left = sun.shadow.camera.bottom = -90; sun.shadow.camera.right = sun.shadow.camera.top = 90; sun.shadow.camera.far = 300; sun.shadow.camera.updateProjectionMatrix(); sun.position.copy(CAM.look).addScaledVector(SUN, 140); sun.target.position.copy(CAM.look); sun.target.updateMatrixWorld(); return; }
+  const vh = PX.bh * TW, vw = PX.bw * TW, dz = vh / Math.sin(PITCH) / 2;
+  want.x = clamp(want.x, vw / 2 + 2, MW - vw / 2 - 2); want.z = clamp(want.z, dz * .55 + 2, MD - dz * .45 - 2);
+  CAM.look.lerp(want, 1 - Math.exp(-dt * 5));
+  camera.left = -vw / 2; camera.right = vw / 2; camera.top = vh / 2; camera.bottom = -vh / 2; camera.updateProjectionMatrix();
+  camera.position.copy(CAM.look).addScaledVector(CDIR, 90); camera.lookAt(CAM.look); camera.updateMatrixWorld();
+  _r.set(1, 0, 0).applyQuaternion(camera.quaternion); _u.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  const pr = camera.position.dot(_r), pu = camera.position.dot(_u), dr = Math.round(pr / TW) * TW - pr, du = Math.round(pu / TW) * TW - pu;
+  camera.position.addScaledVector(_r, dr).addScaledVector(_u, du); camera.updateMatrixWorld();
+  const dpx = devicePixelRatio || 1, snapD = v => Math.round(v * dpx) / dpx;
+  glc.style.transform = `translate(${snapD(-PX.m + dr / TW * PX.T)}px, ${snapD(-PX.m - du / TW * PX.T)}px)`;
+  sun.position.copy(CAM.look).addScaledVector(SUN, 70); sun.target.position.copy(CAM.look); sun.target.updateMatrixWorld();
+}
+
+/* ---------- UI */
+let FPS = 60;
+function drawUI() { ui.setTransform(DPR, 0, 0, DPR, 0, 0); ui.clearRect(0, 0, SW, SH); if (Q.get('noui') === '1') return;
+  ui.font = '600 13px sans-serif'; ui.fillStyle = 'rgba(60,30,20,.55)'; ui.fillText('โอเอซิสหัวศิลา  ·  ลากนิ้ว / WASD เดิน', 12, 20);
+  if (Q.get('fps')) { ui.fillText(FPS.toFixed(0) + ' fps', 12, SH - 10); }
+  if (STICK.id !== null) { ui.strokeStyle = 'rgba(255,245,225,.7)'; ui.lineWidth = 3; ui.beginPath(); ui.arc(STICK.ox, STICK.oy, 40, 0, 7); ui.stroke();
+    const dx = STICK.x - STICK.ox, dy = STICK.y - STICK.oy, l = Math.hypot(dx, dy), k = l > 40 ? 40 / l : 1; ui.fillStyle = 'rgba(255,245,225,.8)'; ui.beginPath(); ui.arc(STICK.ox + dx * k, STICK.oy + dy * k, 16, 0, 7); ui.fill(); } }
+
+/* ---------- loop */
+const PG = window.PG = { HERO, MOBS, MW, MD, H, TW, PX, groundH, levelH, poolSDF, walkable, renderer, scene, camera, auto: null, propsReady: false, frames: 0,
+  sim(sec, dt = 1 / 60) { for (let t = 0; t < sec; t += dt) step(dt); render(); } };
+function render() { renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(postScene, postCam); drawUI(); PG.frames++; }
+let last = performance.now();
+function loop(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; FPS = lerp(FPS, 1 / Math.max(dt, 1e-3), .05); step(dt); render(); requestAnimationFrame(loop); }
+props(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -88,6 +88,19 @@ Three views on one pure white sheet, same size, feet on one line: front view, si
 ## แมพ (เลือกลองข้อไหนก็ได้ ข้อละ 1 รูป)
 แต่ละข้อมีสี แสง และจุดเด่นของตัวเอง ไม่มีน้ำตก วิหาร สะพาน เป็นของประจำ
 
+## ชุดชิ้นส่วนแมพ (ทำหลังเห็นแมพทดลอง) = ทำอันนี้
+แนบภาพเป้าหมาย `art/incoming/pixgrind/target_map_v1_gemini.png` (ภาพแมพทะเลทรายที่คุณส่งมา) แล้ววางทีละกล่อง ได้รูปส่งมาเป็นไฟล์แนบ
+
+### ชิ้นที่ 1: หัวรูปปั้นหิน (จุดเด่นของแมพ)
+```
+From the attached game picture, draw ONLY the colossal ancient stone head (the half-buried statue face with the glowing blue eyes), alone on a plain flat pure green background (#00B140), same pixel-art style, same colours, same light from the upper left and the same high three-quarter camera angle as in the picture. Show the whole head with the sand mound around its bottom edge so it can sit on our sand. Big and detailed, filling most of the picture. No other objects, no shadow on the background, no text.
+```
+
+### ชิ้นที่ 2: ต้นอินทผลัมกับพืชริมน้ำ
+```
+From the attached game picture, draw a sprite sheet of its plants on a plain flat pure green background (#00B140): 4 different date palms (straight, leaning left, leaning right, short young one) with feathery fronds and date clusters, 3 clumps of reeds with pale cattail tops, 3 small grass tufts, 2 dry desert shrubs. Same pixel-art style, colours, light from the upper left and high three-quarter camera angle as the picture. Each plant separate with space around it, no shadows on the background, no text.
+```
+
 ## แมพทะเลทราย รอบตัว 60 (ตัวต้องดูเล็ก) = ทำอันนี้
 แนบรูป `art/incoming/pixgrind/REF_hero60_x6.png` (ตัวละครเรา) แล้ววางกล่องนี้
 ```
