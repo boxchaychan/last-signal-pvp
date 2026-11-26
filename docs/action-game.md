@@ -3148,3 +3148,4 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
 - First playable: vs AI, a small desert campaign (5-6 rival summoners + a boss), decks of 20, win cards.
 - Waiting for the owner's picks: lanes or free board; 2D pixel monsters (recommended, free, 100+) or 3D models; campaign vs AI first (recommended).
 - The earlier CARD GAME CONCEPT section (hero deck-builder with distance rows) stays as another option.
+- 2026-11-26 OWNER PICKS (owner "เลน 2D พิกเซล เล่นกับคอมก่อน"): LANES (5 a side, a monster fights the one in front of it), 2D PIXEL monsters from `art/horde/mobs` (+ `index.json` for tier / element / role), vs COMPUTER first. Next chat starts the first playable: a new page (name to choose, e.g. `cards.html`), the desert campaign, decks of 20, the chibi summoner, 3D cards drawn in code. Start on "เกมการ์ดมอนสเตอร์".
