@@ -14,14 +14,15 @@ BOX = {'head': (590, 5, 1000, 362), 'bolt': (165, 315, 378, 790), 'torso': (625,
        'handF': (1025, 625, 1170, 786), 'handW': (405, 635, 580, 765), 'legL': (553, 762, 736, 1012), 'legR': (834, 762, 1014, 1012)}
 SC = {'head': 1.12}   # the head a little bigger: chibi proportions like Codex's idle picture
 # name: (parent, attach point on the parent (raw), own joint (raw), world rest angle in degrees); draw order = list order
-PUP = [   # owner "ทำไมไม่ซ่อนไว้ใต้แขน": the upper arms hang BEHIND the torso, so the ball joints hide under the shoulders
+PUP = [   # owner "ทำไมไม่ซ่อนไว้ใต้แขน": the upper arms hang BEHIND the torso, so the ball joints hide under the shoulders;
+         # owner "แขนที่มันเป็นข้อ": the hands lose their own gold cuff and tuck UNDER the arm's cuff, so the arm reads as one piece
     ('legL', 'torso', (722, 708), (645, 792), 0), ('legR', 'torso', (862, 708), (924, 792), 0),
-    ('armF', 'torso', (900, 520), (1055, 437), 22), ('armW', 'torso', (674, 520), (547, 440), 14),
+    ('bolt', 'handW', (474, 694), (268, 558), 14), ('handW', 'armW', (460, 572), (500, 690), -40), ('armW', 'torso', (674, 520), (547, 440), 14),
+    ('handF', 'armF', (1138, 572), (1090, 702), -22), ('armF', 'torso', (902, 520), (1055, 437), -10),
     ('torso', None, None, (790, 600), 0),
-    ('handF', 'armF', (1143, 566), (1088, 664), -4),
     ('head', 'torso', (787, 452), (790, 352), 0),
-    ('bolt', 'handW', (474, 694), (268, 558), 14), ('handW', 'armW', (456, 566), (538, 686), -40),
 ]
+KEEP = {'handW': lambda x, y: x <= 503, 'handF': lambda x, y: y >= 712 - (x - 1050) * .28}   # cut the hand's own cuff away
 src = np.array(Image.open(SRC).convert('RGBA')); src[src[..., 3] < 120] = 0
 # the torso's shoulder sockets (brown holes) become skin, so the shoulder looks whole when the arm is tucked behind it
 yy, xx = np.mgrid[0:src.shape[0], 0:src.shape[1]]; c = src[..., :3].astype(int)
@@ -46,7 +47,9 @@ for n in order:
     par, att, own, deg = spec[n]; x0, y0, x1, y1 = BOX[n]; (jx, jy), a = world[n]
     if par is None: lx, ly, r = (jx - FX) * K, (jy - FY) * K, a
     else: pj, pa = world[par]; d = rot((jx - pj[0], jy - pj[1]), -pa); lx, ly, r = d[0] * K, d[1] * K, a - pa
-    sc = SC.get(n, 1); im = Image.fromarray(src[y0:y1, x0:x1]); w, h = max(1, round(im.width * K * sc)), max(1, round(im.height * K * sc)); im.resize((w, h), Image.LANCZOS).save(os.path.join(D, f'pup_zeus_{n}.png'))
+    sc = SC.get(n, 1); part = src[y0:y1, x0:x1].copy()
+    if n in KEEP: gy, gx = np.mgrid[y0:y1, x0:x1]; part[~KEEP[n](gx, gy)] = 0
+    im = Image.fromarray(part); w, h = max(1, round(im.width * K * sc)), max(1, round(im.height * K * sc)); im.resize((w, h), Image.LANCZOS).save(os.path.join(D, f'pup_zeus_{n}.png'))
     out.append({'n': n, 'p': par, 'lx': round(lx, 2), 'ly': round(ly, 2), 'rot': round(r, 4), 'ox': round((x0 - own[0]) * K * sc, 2), 'oy': round((y0 - own[1]) * K * sc, 2), 'w': w, 'h': h})
 json.dump({'zeus': {'parts': out, 'h': 200}}, open(os.path.join(D, 'puppet.json'), 'w'), indent=1)
 if len(sys.argv) > 1:   # preview at 3x the game size, next to Codex's idle picture
