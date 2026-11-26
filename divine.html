@@ -591,9 +591,13 @@ function drawRig(set, h, ang, glow) {
 function drawFigure(u, x, y, h, set, img, seed) {
   const m = motion(u, seed); if (!set) m.pose = 'idle';
   if (u.cp !== m.pose) { u.pp = u.cp; u.cp = m.pose; u.pt = tt; }
-  const blend = clamp((tt - (u.pt || 0)) / .09, 0, 1), face = u.face || 1;
-  u.faceS = u.faceS == null ? face : u.faceS + (face - u.faceS) * .22; const fs = Math.abs(u.faceS) < .12 ? .12 * Math.sign(u.faceS || 1) : u.faceS;
-  g.save(); g.translate(x + m.dx * face, y + m.dy); g.rotate(m.rot * face); g.scale(m.sx * fs, m.sy);
+  const px = PIX && set === 'zeus', face = u.face || 1;
+  /* owner "ไม่ลื่นเลย" on the pixel test: stretching / tilting a pixel picture a little every frame makes its pixels flicker. A pixel hero moves in
+     WHOLE pixels instead: no squash, no tilt, no cross-fade, an instant turn, and a 1 px breathing bob */
+  if (px) { m.rot = 0; m.sx = 1; m.sy = 1; m.dx = Math.round(m.dx); m.dy = Math.round(m.dy) - (u.cp === 'idle' && Math.sin(tt * 2.6 + seed) > .35 ? 1 : 0); }
+  const blend = px ? 1 : clamp((tt - (u.pt || 0)) / .09, 0, 1);
+  u.faceS = u.faceS == null || px ? face : u.faceS + (face - u.faceS) * .22; const fs = Math.abs(u.faceS) < .12 ? .12 * Math.sign(u.faceS || 1) : u.faceS;
+  g.save(); g.translate(px ? Math.round(x + m.dx * face) : x + m.dx * face, px ? Math.round(y + m.dy) : y + m.dy); g.rotate(m.rot * face); g.scale(m.sx * fs, m.sy);
   const rigged = false;   /* owner 2026-11-26 "ประกอบก็เละ": no cut-out puppets or rigs; every god uses Codex's own whole pictures (idle / attack / skill) with whole-body motion, like the reference game. drawPuppet / drawRig stay for later tests. */
   const cur = rigged ? null : poseImg(set, img, m.pose, h);
   if (rigged && PUPS[set]) drawPuppet(set, h, pupAngles(u, seed), m.glow); else if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) { if (cur.pix) g.imageSmoothingEnabled = false; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
@@ -620,7 +624,7 @@ function drawUnit(u, q, sc, tier, D, st) {
   const h = UH * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]), o = { x: 0, y: 0 };
   g.save(); g.translate(q.x, q.y); g.scale(sc, sc);
   /* tier ring on the floor */
-  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(0, 0, 22, 6.5, 0, 0, 6.3); g.stroke(); g.restore();
+  g.save(); g.strokeStyle = D.col; g.beginPath(); g.ellipse(0, 0, 22, 6.5, 0, 0, 6.3); g.globalAlpha = tier >= 3 ? .45 : .3; g.lineWidth = tier >= 3 ? 11 : 8; g.stroke(); g.globalAlpha = 1; g.lineWidth = 4; g.stroke(); g.restore();   /* a wide faint stroke instead of shadowBlur: much cheaper on phones */
   /* reference clip 1: strong heroes stand in flickering flames of their tier colour (epic violet, legend gold, mythic rose) */
   if (tier >= 2) flames(u, o, tier, false);
   if (u.awake || tier >= 4) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(0, -h * .45, 4, 0, -h * .45, 58); gr.addColorStop(0, (u.awake ? '#fff2a0' : D.col) + '66'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(-60, -h - 20, 120, h + 40); g.restore(); }
@@ -685,7 +689,7 @@ function summonBanner() {
 /* tongues of fire round the feet: the back half before the hero, the front half over the feet */
 function flames(u, c, tier, front) {
   const fc = tier >= 4 ? ['#ff4d6d', '#ffd0da'] : tier >= 3 ? ['#ff8a1a', '#ffe9a0'] : ['#9b5cff', '#e6d4ff']; g.save(); g.globalCompositeOperation = 'lighter';
-  if (!front) { const gr = g.createRadialGradient(c.x, c.y - 4, 2, c.x, c.y - 4, 30); gr.addColorStop(0, fc[0] + '88'); gr.addColorStop(1, fc[0] + '00'); g.fillStyle = gr; g.beginPath(); g.ellipse(c.x, c.y - 4, 30, 14, 0, 0, 6.3); g.fill(); }
+  if (!front) { g.globalAlpha = .28; g.fillStyle = fc[0]; g.beginPath(); g.ellipse(c.x, c.y - 4, 28, 12, 0, 0, 6.3); g.fill(); }
   for (let q = 0; q < 10; q++) { const an = q / 10 * 6.283 + tt * .9, sn = Math.sin(an); if ((sn > 0) !== front) continue;
     const fx = c.x + Math.cos(an) * 21, fy = c.y + sn * 6, fh = (13 + tier * 5) * (.55 + .45 * Math.sin(tt * 11 + q * 1.9 + u.bob)) * (front ? .7 : 1), fw = 7;
     for (const [col, kk] of [[fc[0], 1], [fc[1], .5]]) { g.globalAlpha = (kk === 1 ? .6 : .75) * (front ? .8 : 1); g.fillStyle = col; g.beginPath(); g.moveTo(fx - fw * kk, fy); g.quadraticCurveTo(fx - fw * kk * .6, fy - fh * kk * .6, fx + Math.sin(tt * 7 + q) * 1.8, fy - fh * kk); g.quadraticCurveTo(fx + fw * kk * .6, fy - fh * kk * .6, fx + fw * kk, fy); g.fill(); } }
@@ -826,7 +830,8 @@ setInterval(() => { if (MODE === 'lobby' && $('p-shop').classList.contains('on')
 let exitAt = 0;
 $('exit').onclick = () => { if (G.over) return; if (Date.now() - exitAt < 2000) endMatch(); else { exitAt = Date.now(); toast('แตะ "ออก" อีกครั้งเพื่อยอมแพ้'); } };
 let last = 0;
-function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; tt += dt; if (MODE === 'battle') for (let k = 0; k < G.speed; k++) step(); draw(); requestAnimationFrame(frame); }
+const FPS = { on: new URLSearchParams(location.search).get('fps') === '1', n: 0, t0: 0, v: 0 };
+function frame(t) { if (FPS.on) { FPS.n++; if (t - FPS.t0 > 1000) { FPS.v = FPS.n * 1000 / (t - FPS.t0); FPS.n = 0; FPS.t0 = t; } } const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; tt += dt; if (MODE === 'battle') for (let k = 0; k < G.speed; k++) step(); draw(); if (FPS.on) { g.setTransform(SC, 0, 0, SC, 0, 0); txt('FPS ' + Math.round(FPS.v), 8, H - 16, 20, '#7fffa0', null, 'left'); } requestAnimationFrame(frame); }
 (async () => {
   const names = ['hero_greek', 'hero_norse', 'hero_egypt', 'hero_asia', 'soldier', 'spirit_greek', 'mob_robot_a', 'mob_robot_b', 'mob_robot_c', 'mob_ghoul', 'boss_ghoul', 'zeus_idle', 'zeus_attack', 'zeus_skill', 'zeus_spirit', 'zeus_fx', 'thor_idle', 'thor_attack', 'thor_skill', 'thor_spirit', 'thor_fx', 'anubis_idle', 'anubis_attack', 'anubis_skill', 'anubis_spirit', 'anubis_fx', 'wukong_idle', 'wukong_attack', 'wukong_skill', 'wukong_spirit', 'wukong_fx'];
   SETS = await fetch('art/divine/sets.json').then(r => r.json());

@@ -2884,3 +2884,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - If the owner likes it: attack + skill pictures the same way (6 each), then the other gods; a free route is a code shrink + `pixel_punch` (softer).
   - Same day, owner "ทำต่อเลย": attack + skill stills the same way (Pro Flash, 6 each, job log) -> `art/divine/pix_zeus_attack.png` (73 x 55), `pix_zeus_skill.png` (43 x 70). In `?pix=1` every Zeus pose is drawn at the SAME pixel size (height relative to the pixel idle), anchors from `sets.json`. Raw files + `compare_3poses.png` in `art/incoming/divine_game/pixel_zeus/`.
   - Owner then: "ท่าโจมตี วิ่งไม่จำเป็นต้องโปรนะ" = animated moves (attack / run clips) use the standard 1-credit tools, not pro.
+- 2026-11-26 (owner on the pixel test: "ไม่ลื่นเลย ทำไม"): the code motion stretched / tilted / cross-faded the pixel picture by tiny amounts every frame, which makes pixel art flicker. In `?pix=1` a pixel hero now moves in WHOLE pixels: no squash, no tilt, no cross-fade, an instant turn, a 1 px breathing bob, positions rounded (`drawFigure`, `px`).
+  - Lighter for phones (all modes): the tier ring uses a wide faint stroke instead of `shadowBlur`, the flames lose their per-hero gradient.
+  - `?fps=1` shows frames per second at the bottom left, so the owner can read the speed on the phone.
+  - Real smoothness for pixel heroes = drawn animation frames (PixelLab standard animation, NOT pro per the owner), not code motion.
