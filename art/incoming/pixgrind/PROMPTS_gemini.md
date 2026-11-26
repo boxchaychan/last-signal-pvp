@@ -9,31 +9,37 @@
 ---
 
 ## ก้อนกลาง (ใส่ต่อท้ายทุกข้อของแมพ)
+บอกแค่มุมกล้อง ความคม และขนาดตัวละคร ส่วนรูปทรงแมพให้ Gemini คิดเอง (ฉบับแรกบังคับหน้าผา + บันได + น้ำ จนทุกข้อออกมาเหมือนกัน)
 
 ```
-MAP RULES: one gameplay screenshot of an original pixel-art action RPG where a hero grinds levels against packs of monsters. Camera: high three-quarter top-down view, looking down about 45 degrees, straight on (not a diamond isometric grid), no fisheye, landscape 16:9. Crisp pixel art at a low native resolution (about 640 x 360 pixels, shown with hard square pixels), every pixel placed on purpose, clean dark outlines on cliffs, trees and objects, a limited rich palette, ONE clear light direction (warm sun from the upper left) with crisp long shadows, bright saturated but harmonious colours, depth from the terrain itself. The ground is wide and open with broad walkable paths and clearings for fights, the land on 2 or 3 height levels with clear cliff walls and stone stairs between the levels, some moving life (water, falling leaves, birds, light motes). One small adventurer stands in the middle for scale, about one sixth of the image height. No UI, no health bars, no text, no logo, no watermark, no frame. Original design, not copied from any existing game.
+MAP RULES: one gameplay screenshot of an original pixel-art action RPG where a hero fights packs of monsters to gain levels. Camera: high three-quarter top-down view, about 45 degrees down, straight on, landscape 16:9. Crisp pixel art at a low native resolution (about 640 x 360, hard square pixels), every pixel placed on purpose, clean outlines, a limited palette built around the colours named in PLACE, one clear light direction. Open ground with room to fight. One small adventurer in the middle for scale, about one sixth of the image height. No UI, no text, no logo, no watermark, no frame. Original design, not copied from any existing game.
 ```
 
-## A. ป่าเขียว น้ำตก ซากวิหาร (แนะนำให้ลองก่อน: ต่างจากแมพทะเลทรายเดิม)
-```
-PLACE: a sunny ancient forest valley. A wide grassy clearing with soft dirt paths, a river that drops from the high cliff as a two-step waterfall into a clear turquoise pool with foam and lily pads, a wooden plank bridge over the river, the ruins of a moss-covered stone temple on the upper level as the landmark (broken columns, a big round stone gate with a glowing blue rune), big round-canopy trees with layered leaves, bushes, wildflowers, mossy rocks, fallen leaves drifting.
-```
-(ต่อด้วยก้อนกลาง)
+แต่ละข้อมีของตัวเอง: ไอเดีย สีหลัก แสง เวลา และจุดเด่น 1 อย่าง (ไม่มีน้ำตก วิหาร สะพาน เป็นค่าเริ่มต้นอีกแล้ว)
 
-## B. ทะเลทราย โอเอซิส (แนวเดียวกับแมพพิกเซลเดิม)
+## A. ป่าเห็ดยักษ์เรืองแสง ยามพลบค่ำ
 ```
-PLACE: a bright desert canyon oasis. Warm orange sand with dune ripples, layered sandstone mesas with striped cliff walls, a turquoise oasis pool fed by a small waterfall, palm trees, reeds and green grass around the water, a ruined sun temple with columns and a golden sun disc as the landmark, a small camp with tents, clay jars and a campfire, cattle skulls and scattered rocks.
+PLACE: a forest floor of giant mushrooms at dusk. Huge mushroom caps form the canopy, some glowing soft cyan and pink from underneath, thick twisting roots make natural low walls and paths, a moss carpet, tiny glowing spores floating, small puddles reflecting the glow. Palette: deep violet, teal, cyan glow, warm pink accents. Light: the last orange sunset light from one side, cool glow everywhere else. Landmark: one ancient mushroom far bigger than the rest, with a hollow doorway in its stem.
 ```
-(ต่อด้วยก้อนกลาง)
 
-## C. หมู่บ้านภูเขาแนวเอเชีย
+## B. ทุ่งหญ้าสีทอง ลมแรง ยามบ่ายคล้อย
 ```
-PLACE: a misty mountain terrace in an Asian fantasy land. Green terraced hills with stone retaining walls and stone stairs, a red wooden shrine gate and a small pagoda shrine as the landmark, a curved wooden bridge over a mountain stream with a small waterfall, pink blossom trees, pines, stone lanterns, bamboo, a few village houses with tiled roofs, petals drifting.
+PLACE: a wide golden grassland on a windy late afternoon. Tall grass bending in waves, patches of red and white wildflowers, low flat rocks, a few lone wind-bent trees, a dirt track winding through. Palette: gold, ochre, sage green, sky-blue shadows. Light: low warm sun, long shadows, grass tips glowing. Landmark: the huge half-buried rib cage and skull of an ancient giant beast, grass growing through the bones.
 ```
-(ต่อด้วยก้อนกลาง)
 
-## D. ที่ของคุณเอง
-พิมพ์บอกผมว่าอยากได้ที่แบบไหน (สถานที่ แสง สี จุดเด่น 1 อย่าง) ผมจะเขียนข้อ PLACE ให้
+## C. ที่ราบสูงหิมะ ใต้แสงออโรร่า ตอนกลางคืน
+```
+PLACE: a snowy highland at night under an aurora. Deep snow with trails of footprints, snow-loaded pine trees, blue ice rocks, a frozen lake with white cracks, wind blowing loose snow. Palette: white, pale blue, navy shadows, green and magenta aurora light, one warm orange campfire. Landmark: a ring of tall standing stones with frosted carvings.
+```
+
+## D. ชายหาดเกาะเขตร้อน ตอนเที่ยง
+```
+PLACE: a tropical island beach at noon. White sand, turquoise shallow water with waves and foam rolling in, coral rocks, leaning coconut palms, crabs, shells, a line of seaweed. Palette: white sand, turquoise, coral pink, lush green. Light: bright high sun, short sharp shadows. Landmark: a wrecked wooden ship lying on its side half in the sand.
+```
+
+## E. ที่ของคุณเอง หรือรูปแมพเกมที่ชอบ
+- พิมพ์บอก: สถานที่ เวลา สี จุดเด่น 1 อย่าง ผมจะเขียนข้อ PLACE ให้
+- ถ้ามีรูปแมพเกมที่ชอบ ส่งมาให้ผมดู (แค่ดูว่าชอบแสง สี มุมแบบไหน ไม่ลอก และไม่เก็บรูปไว้ในโปรเจกต์) ทางนี้ตรงใจที่สุด
 
 ---
 

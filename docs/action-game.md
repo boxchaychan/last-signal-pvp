@@ -2961,3 +2961,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Working name / folder: `pixgrind` (`art/incoming/pixgrind/`). No game page yet.
   - Next: owner sends the Gemini map pictures and picks one -> Claude proposes the kit (Codex brief or a fitting CC0 pack) -> hero design.
   - Slash effects (priority 3), free route to try first: the `pixelfx` skill (melee / impact effects in code).
+- 2026-11-26 (owner again "สังเกตุชอบทำแมพเหมือนกันละดูไม่ค่อยสวย"): the first Gemini prompts repeated the code-map formula. All three places had a waterfall, temple ruins, a bridge, and cliffs with stairs; the shared block forced cliffs, stairs and water. Rewritten:
+  - The shared block now sets only camera, pixel quality, the hero's scale and no UI. Gemini composes the land.
+  - Places A-D are each a different idea with their own palette, light, time of day and ONE landmark: A giant glowing mushrooms at dusk, B windy golden grassland with a giant beast skeleton, C snowy highland under an aurora with standing stones, D tropical beach with a shipwreck. E = the owner's own idea, or a game map picture they like (looked at only, not copied or stored).
+  - RULE for every future map: no waterfall / temple ruins / bridge / cliff stairs by default. Start from the place's own palette, light and landmark.
