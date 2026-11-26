@@ -21,9 +21,10 @@ canvas { position: fixed; left: 0; top: 0; width: 100%; height: 100%; }
 </head>
 <body>
 <canvas id="c"></canvas>
+<script src="vendor/threejs/three.min.js"></script>
 <script>
 'use strict';
-const cv = document.getElementById('c'), g = cv.getContext('2d');
+const cv = document.getElementById('c'), Q = new URLSearchParams(location.search), FLAT = Q.get('flat') === '1'; let g = FLAT ? cv.getContext('2d') : null;
 const CARD = { n: 'ลิโป้', sub: 'ขุนพล · มนุษย์', rar: 'ตำนาน', cost: 8, atk: 7, hp: 7,
   ab: [{ kw: 'จู่โจม', icon: 'bolt', col: '#ffcf4a', txt: 'ตีได้ทันทีที่ลงสนาม' }, { kw: 'เมื่ออัญเชิญ', icon: 'star', col: '#ff7a4a', txt: 'กวาดง้าว การ์ดศัตรูทุกใบ โดน 2' }] };
 const art = new Image(); art.src = 'art/cards/lubu_paint.png';
@@ -80,11 +81,11 @@ const SCN = document.createElement('canvas'); SCN.width = 300; SCN.height = 230;
   s.fillStyle = '#26080c'; for (let i = 0; i < 46; i++) { const x = rnd() * W, y = H * .84 + rnd() * 6, h = 10 + rnd() * 8; s.fillRect(x, y - h, 2, h); s.beginPath(); s.arc(x + 1, y - h - 2, 2.2, 0, 7); s.fill(); if (i % 5 === 0) { s.fillRect(x, y - h - 26, 1.5, 26); s.beginPath(); s.moveTo(x + 1.5, y - h - 26); s.lineTo(x + 12, y - h - 22); s.lineTo(x + 1.5, y - h - 17); s.fill(); } }
   s.fillStyle = '#1a0408'; s.fillRect(0, H * .86, W, H); const fog = s.createLinearGradient(0, H * .8, 0, H); fog.addColorStop(0, 'rgba(255,160,90,0)'); fog.addColorStop(1, 'rgba(255,150,80,.35)'); s.fillStyle = fog; s.fillRect(0, H * .8, W, H * .2); }
 const EMB = []; for (let i = 0; i < 26; i++) EMB.push({ x: Math.random(), y: Math.random(), s: .5 + Math.random(), v: .05 + Math.random() * .08, ph: Math.random() * 6 });
-function drawCard(W, H) {
+function drawCard(W, H, o = {}) {   /* o.tex = draw the frame only (window left empty) for the 3D card's front texture */
   const x = -W / 2, y = -H / 2;
   /* outer glow + shadow */
-  g.save(); g.shadowColor = 'rgba(255,150,60,.55)'; g.shadowBlur = 40; g.fillStyle = '#2a0806'; rr(x, y, W, H, 24); g.fill(); g.restore();
-  g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = 24; g.shadowOffsetY = 14; g.fillStyle = metal(x, y, x + W, y + H); rr(x, y, W, H, 24); g.fill(); g.restore();
+  if (!o.tex) { g.save(); g.shadowColor = 'rgba(255,150,60,.55)'; g.shadowBlur = 40; g.fillStyle = '#2a0806'; rr(x, y, W, H, 24); g.fill(); g.restore(); }
+  g.save(); if (!o.tex) { g.shadowColor = 'rgba(0,0,0,.7)'; } g.shadowBlur = 24; g.shadowOffsetY = 14; g.fillStyle = metal(x, y, x + W, y + H); rr(x, y, W, H, 24); g.fill(); g.restore();
   /* engraved border: dark groove + inner gold line + tiny dots */
   g.strokeStyle = '#3a1a06'; g.lineWidth = 2; rr(x + 1, y + 1, W - 2, H - 2, 23); g.stroke(); rr(x + 7, y + 7, W - 14, H - 14, 18); g.stroke();
   g.fillStyle = 'rgba(60,24,4,.45)'; for (let i = 0; i < 60; i++) { const u = i / 60, px = x + 4 + u * (W - 8); g.beginPath(); g.arc(px, y + 4, .9, 0, 7); g.fill(); g.beginPath(); g.arc(px, y + H - 4, .9, 0, 7); g.fill(); }
@@ -93,17 +94,17 @@ function drawCard(W, H) {
   g.save(); rr(x + 12, y + 12, W - 24, H - 24, 15); g.clip(); g.strokeStyle = 'rgba(255,190,120,.07)'; g.lineWidth = 1.2; for (let i = -12; i < 22; i++) { g.beginPath(); for (let k = 0; k < 40; k++) { const yy = y + k * 12, xx = x + i * 22 + Math.sin(k * .9) * 6; k ? g.lineTo(xx, yy) : g.moveTo(xx, yy); } g.stroke(); } g.restore();
   /* art window */
   const ax = x + 24, ay = y + 38, aw = W - 48, ah = H * .47;
-  g.save(); rr(ax, ay, aw, ah, 14); g.clip(); g.drawImage(SCN, ax, ay, aw, ah);
+  if (!o.tex) { g.save(); rr(ax, ay, aw, ah, 14); g.clip(); g.drawImage(SCN, ax, ay, aw, ah);
   const glow = g.createRadialGradient(4, ay + ah * .55, 10, 4, ay + ah * .55, aw * .6); glow.addColorStop(0, 'rgba(255,230,160,.55)'); glow.addColorStop(1, 'rgba(255,120,40,0)'); g.fillStyle = glow; g.fillRect(ax, ay, aw, ah);
   for (const e of EMB) { const ey = ay + ah - ((e.y + t * e.v) % 1) * ah, ex = ax + e.x * aw + Math.sin(t * 2 + e.ph) * 4; g.fillStyle = `rgba(255,${160 + e.s * 60 | 0},80,${.7 * (1 - Math.abs(ey - ay - ah / 2) / ah)})`; g.beginPath(); g.arc(ex, ey, e.s * 1.6, 0, 7); g.fill(); }
   const vig = g.createRadialGradient(0, ay + ah / 2, aw * .3, 0, ay + ah / 2, aw * .75); vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(30,0,0,.55)'); g.fillStyle = vig; g.fillRect(ax, ay, aw, ah);
-  g.restore();
+  g.restore(); }
   g.lineWidth = 6; g.strokeStyle = metal(ax, ay, ax + aw, ay + ah); rr(ax, ay, aw, ah, 14); g.stroke(); g.lineWidth = 1.5; g.strokeStyle = '#3a1a06'; rr(ax - 3, ay - 3, aw + 6, ah + 6, 16); g.stroke(); rr(ax + 3, ay + 3, aw - 6, ah - 6, 11); g.stroke();
   /* crest on top of the window (the art breaks out over it) */
   g.save(); g.translate(0, ay - 2); g.fillStyle = metal(-40, -16, 40, 16); g.beginPath(); g.moveTo(-46, 6); g.quadraticCurveTo(-30, -16, 0, -20); g.quadraticCurveTo(30, -16, 46, 6); g.closePath(); g.fill(); g.strokeStyle = '#3a1a06'; g.lineWidth = 1.5; g.stroke();
   const rg = g.createRadialGradient(-2, -11, 1, 0, -8, 8); rg.addColorStop(0, '#fff'); rg.addColorStop(.35, '#ff4a3a'); rg.addColorStop(1, '#6a0808'); g.fillStyle = rg; g.beginPath(); g.ellipse(0, -8, 7, 8, 0, 0, 7); g.fill(); g.restore();
   /* the art with a warm rim glow, popping out above the window */
-  if (art.complete && art.naturalWidth) { g.save(); g.beginPath(); g.rect(ax - 30, y - 70, aw + 60, ay + ah - 2 - (y - 70)); g.clip();
+  if (!o.tex && art.complete && art.naturalWidth) { g.save(); rr(ax, ay, aw, ah, 14); if (!o.pop) g.clip(); else { g.beginPath(); g.rect(ax - 30, y - 70, aw + 60, ay + ah - 2 - (y - 70)); g.clip(); }   /* owner "ทำไมมันทะลุกรอบ": the art stays inside the window now (?pop=1 = the old break-out) */
     const s = (aw + 44) / art.naturalWidth, dw = art.naturalWidth * s, dh = art.naturalHeight * s, px = -dw / 2 + 6, py = ay + ah - dh + 6;
     g.shadowColor = 'rgba(255,200,110,.95)'; g.shadowBlur = 16; g.drawImage(art, px, py, dw, dh); g.shadowBlur = 0; g.drawImage(art, px, py, dw, dh); g.restore(); }
   /* filigree corners */
@@ -130,6 +131,7 @@ function drawCard(W, H) {
   g.fillStyle = metal(-10, -10, 10, 10); gemShape(11, 4); g.fill(); const og = g.createRadialGradient(-3, -4, 1, 0, 0, 9); og.addColorStop(0, '#fff'); og.addColorStop(.35, '#ffa02a'); og.addColorStop(1, '#8a2a04'); g.fillStyle = og; gemShape(8, 4); g.fill(); g.restore();
   /* stats */
   costGem(x + 28, y + 32, 22, CARD.cost); atkBadge(x + 32, y + H - 30, 21, CARD.atk); hpBadge(x + W - 32, y + H - 28, 21, CARD.hp);
+  if (o.tex) { g.save(); g.globalCompositeOperation = 'destination-out'; rr(ax + 3, ay + 3, aw - 6, ah - 6, 11); g.fill(); g.restore(); return { ax, ay, aw, ah }; }
   /* rainbow foil sheen over the frame */
   const sh = ((t * .3) % 1.9) - .45; g.save(); rr(x, y, W, H, 24); g.clip(); g.globalCompositeOperation = 'overlay';
   const fo = g.createLinearGradient(x, y, x + W, y + H); const st = (v, c) => fo.addColorStop(Math.max(0, Math.min(1, v)), c);
@@ -138,8 +140,67 @@ function drawCard(W, H) {
 }
 function frame(now) { t = now / 1000; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
   const H = Math.min(innerHeight * .8, innerWidth * 1.15), sc = H / 440; g.setTransform(DPR * sc, 0, 0, DPR * sc, DPR * innerWidth / 2, DPR * (innerHeight / 2 + H * .05));
-  g.transform(1, 0, Math.sin(t * .8) * .025, 1, 0, 0); drawCard(316, 440); requestAnimationFrame(frame); }
-requestAnimationFrame(frame);
+  g.transform(1, 0, Math.sin(t * .8) * .025, 1, 0, 0); drawCard(316, 440, { pop: Q.get('pop') === '1' }); requestAnimationFrame(frame); }
+/* ---------- the 3D card (default): a thick gold card with a deep window; the battlefield, the embers and Lu Bu sit at different depths
+   inside it (parallax when it tilts), the frame is the 2D drawing above as a texture, the edge is metal, a foil shader follows the tilt.
+   Drag / move = tilt, tap = flip to the back. */
+function canvasOf(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; const old = g; g = c.getContext('2d'); const r = fn(); g = old; return [c, r]; }
+function start3D() {
+  const R2 = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); R2.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R2.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(32, 1, .1, 50); cam.position.set(0, 0, 9.2);
+  const fit = () => { R2.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.position.z = Math.max(9.2, 9.2 * .72 / cam.aspect * .9); cam.updateProjectionMatrix(); }; addEventListener('resize', fit); fit();
+  scene.add(new THREE.AmbientLight(0xffe8d0, .75)); const key = new THREE.PointLight(0xfff0d0, 1.4, 30); key.position.set(-3, 3, 6); scene.add(key); const rim = new THREE.PointLight(0xff9a50, .9, 30); rim.position.set(4, -2, 4); scene.add(rim);
+  const U = .01, W = 316 * U, H = 440 * U, D = .22, card = new THREE.Group(); scene.add(card);
+  /* front texture (frame with an empty window) */
+  const [ftx, win] = canvasOf(1264, 1760, () => { g.setTransform(4, 0, 0, 4, 632, 880); return drawCard(316, 440, { tex: true }); });
+  const frontTex = new THREE.CanvasTexture(ftx); frontTex.encoding = THREE.sRGBEncoding; frontTex.anisotropy = 8;
+  const wx = (win.ax + win.aw / 2) * U, wy = -(win.ay + win.ah / 2) * U, ww = win.aw * U, wh = win.ah * U;
+  /* body: rounded slab with a window hole, gold sides */
+  const shape = new THREE.Shape(), r = .24, x0 = -W / 2, y0 = -H / 2; shape.moveTo(x0 + r, y0); shape.lineTo(x0 + W - r, y0); shape.quadraticCurveTo(x0 + W, y0, x0 + W, y0 + r); shape.lineTo(x0 + W, y0 + H - r); shape.quadraticCurveTo(x0 + W, y0 + H, x0 + W - r, y0 + H); shape.lineTo(x0 + r, y0 + H); shape.quadraticCurveTo(x0, y0 + H, x0, y0 + H - r); shape.lineTo(x0, y0 + r); shape.quadraticCurveTo(x0, y0, x0 + r, y0);
+  const hole = new THREE.Path(), hr = .13, hx = wx - ww / 2 + .02, hy = wy - wh / 2 + .02, hw = ww - .04, hh = wh - .04; hole.moveTo(hx + hr, hy); hole.lineTo(hx + hw - hr, hy); hole.quadraticCurveTo(hx + hw, hy, hx + hw, hy + hr); hole.lineTo(hx + hw, hy + hh - hr); hole.quadraticCurveTo(hx + hw, hy + hh, hx + hw - hr, hy + hh); hole.lineTo(hx + hr, hy + hh); hole.quadraticCurveTo(hx, hy + hh, hx, hy + hh - hr); hole.lineTo(hx, hy + hr); hole.quadraticCurveTo(hx, hy, hx + hr, hy); shape.holes.push(hole);
+  const body = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: D, bevelEnabled: true, bevelThickness: .03, bevelSize: .03, bevelSegments: 3, curveSegments: 12 }),
+    new THREE.MeshStandardMaterial({ color: 0xd9a13a, metalness: .75, roughness: .32, emissive: 0x3a1a04 })); body.position.z = -D / 2; card.add(body);
+  /* front face: the drawn frame (UVs from x / y) */
+  const fg = new THREE.ShapeGeometry(shape, 12); { const p = fg.attributes.position, uv = fg.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + W / 2) / W, (p.getY(i) + H / 2) / H); }
+  const front = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({ map: frontTex, transparent: true, metalness: .25, roughness: .45 })); front.position.z = D / 2 + .032; card.add(front);
+  /* back plate */
+  const [btx] = canvasOf(632, 880, () => { g.setTransform(2, 0, 0, 2, 316, 440); const bg = g.createRadialGradient(0, 0, 20, 0, 0, 300); bg.addColorStop(0, '#9a2418'); bg.addColorStop(1, '#2a0606'); g.fillStyle = bg; rr(-158, -220, 316, 440, 24); g.fill();
+    g.lineWidth = 10; g.strokeStyle = metal(-158, -220, 158, 220); rr(-150, -212, 300, 424, 20); g.stroke(); for (let i = 0; i < 3; i++) { g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 70 + i * 22, 0, 7); g.stroke(); }
+    g.fillStyle = metal(-60, -60, 60, 60); g.beginPath(); for (let i = 0; i < 16; i++) { const rr2 = i % 2 ? 26 : 62, a = i * Math.PI / 8 - Math.PI / 2; g.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } g.fill(); goldText('ศึกการ์ดอสูร', 0, 150, 30); });
+  const backTex = new THREE.CanvasTexture(btx); backTex.encoding = THREE.sRGBEncoding; const bgeo = new THREE.ShapeGeometry(new THREE.Shape(shape.extractPoints(12).shape), 12); { const p = bgeo.attributes.position, uv = bgeo.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + W / 2) / W, (p.getY(i) + H / 2) / H); }   /* the back has no window hole */
+  const back = new THREE.Mesh(bgeo, new THREE.MeshStandardMaterial({ map: backTex, metalness: .3, roughness: .5 })); back.rotation.y = Math.PI; back.position.z = -D / 2 - .032; card.add(back);
+  /* inside the window, back to front: the battlefield, embers, Lu Bu (cropped to the window, a little bigger so tilting never shows an edge) */
+  const sceneTex = new THREE.CanvasTexture(SCN); sceneTex.encoding = THREE.sRGBEncoding;
+  const sc = new THREE.Mesh(new THREE.PlaneGeometry(ww * 1.25, wh * 1.25), new THREE.MeshBasicMaterial({ map: sceneTex })); sc.position.set(wx, wy, -D / 2 + .01); card.add(sc);
+  const artTex = new THREE.TextureLoader().load('art/cards/lubu_paint.png'); artTex.encoding = THREE.sRGBEncoding;
+  const aspect = 504 / 520, ah2 = wh * 1.08, aw2 = ah2 * aspect; const lub = new THREE.Mesh(new THREE.PlaneGeometry(aw2, ah2), new THREE.MeshBasicMaterial({ map: artTex, transparent: true })); lub.position.set(wx + .05, wy - .03, D / 2 - .06); card.add(lub);
+  const glowM = new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: .18, blending: THREE.AdditiveBlending, depthWrite: false }); const glow = new THREE.Mesh(new THREE.CircleGeometry(ww * .42, 32), glowM); glow.position.set(wx, wy, -D / 2 + .03); card.add(glow);
+  const EM = new THREE.Group(); card.add(EM); const emM = new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+  for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.CircleGeometry(.018 + Math.random() * .02, 6), emM); m.userData = { x: (Math.random() - .5) * ww, y: Math.random(), v: .05 + Math.random() * .08, z: -D / 2 + .02 + Math.random() * (D - .08) }; EM.add(m); }
+  /* window clip for what is inside: a stencil would be cleaner; the frame face covers everything outside the hole, the back plate covers behind */
+  /* foil: a rainbow band that slides with the tilt */
+  const foil = new THREE.Mesh(fg, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { t: { value: 0 }, tilt: { value: new THREE.Vector2() }, map: { value: frontTex } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+    fragmentShader: `uniform float t; uniform vec2 tilt; uniform sampler2D map; varying vec2 vUv; vec3 hue(float h){ return clamp(abs(mod(h * 6. + vec3(0., 4., 2.), 6.) - 3.) - 1., 0., 1.); }
+      void main(){ vec4 c = texture2D(map, vUv); float gold = step(.55, c.r) * step(c.b, .55 * c.r) * c.a; float u = vUv.x * .7 + vUv.y * .9 + tilt.x * 1.4 - tilt.y * 1.1 + t * .05;
+        float band = smoothstep(.0, .12, fract(u) ) * smoothstep(.32, .12, fract(u));
+        gl_FragColor = vec4(hue(fract(u * 1.7)) * band * .35 * (.35 + gold), 1.); }` })); foil.position.z = D / 2 + .034; card.add(foil);
+  /* sparkles round the card */
+  const SP = new THREE.Group(); scene.add(SP); for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.CircleGeometry(.025, 5), emM.clone()); m.material.color.set(0xfff2c0); SP.add(m); }
+  /* input: tilt follows the pointer, tap flips */
+  let tx = 0, ty = 0, rx = 0, ry = 0, flip = 0, fl = 0, down = null, last = 0;
+  addEventListener('pointermove', e => { tx = (e.clientX / innerWidth - .5) * .9; ty = (e.clientY / innerHeight - .5) * .7; last = performance.now(); });
+  addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; }); addEventListener('pointerup', e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 8) flip = flip ? 0 : 1; down = null; });
+  const loop = now => { t = now / 1000; const idle = now - last > 2500; const gx = idle ? Math.sin(t * .7) * .32 : tx, gy = idle ? Math.sin(t * .9) * .16 : ty;
+    rx += (gy - rx) * .08; ry += (gx - ry) * .08; fl += (flip - fl) * .09; card.rotation.set(rx, ry + fl * Math.PI, 0); card.position.y = Math.sin(t * 1.3) * .05;
+    key.position.set(-3 + ry * 6, 3 - rx * 6, 6); foil.material.uniforms.t.value = t; foil.material.uniforms.tilt.value.set(ry, rx);
+    for (const m of EM.children) { const d = m.userData, yy = ((d.y + t * d.v) % 1); m.position.set(wx + d.x + Math.sin(t * 2 + d.x * 9) * .04, wy - wh / 2 + yy * wh, d.z); m.material.opacity = Math.sin(yy * Math.PI); }
+    SP.children.forEach((m, i) => { const a = t * .6 + i * .45; m.position.set(Math.cos(a) * (W / 2 + .25), Math.sin(a * 1.3) * (H / 2 + .2), .3); m.material.opacity = .4 + .6 * Math.abs(Math.sin(t * 3 + i)); });
+    R2.render(scene, cam); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+const ready = () => (art.complete && art.naturalWidth) ? Promise.resolve() : new Promise(r => art.onload = r);
+if (FLAT) requestAnimationFrame(frame); else Promise.all([ready(), document.fonts ? document.fonts.load('800 20px Kanit').then(() => document.fonts.load('600 12px Kanit')) : null]).then(start3D);
 </script>
 </body>
 </html>
