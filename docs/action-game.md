@@ -86,6 +86,7 @@ animation, skills fire instantly as big effects, telegraph rings, a dodge button
 | 2026-11-26 | divine Monkey King frames, standard `animate_image` from the pixel idle: idle 4 (64 x 68), staff strike 8 (96 x 76), skill 8 (80 x 84, whirlwind then fire) | jobs b2e926dc-6204-405b-b642-1e0f80eceec1, 77dcaeed-09be-495a-889b-88f47299f706, d60995ba-a768-4d6f-89f1-11ace6ba54aa | 3 | ✅ `pixel_gods/wukong_anim/raw_*` |
 | 2026-11-26 | divine Monkey King LEAP SMASH (owner "ขอท่าตีลิงกระโดดฟาดหน่อย"): `animate_image` 8 frames on 88 x 92 | job 5c253703-3aa9-4720-a96b-2eea90581e20 | 1 | ✅ crouch, leap, smash with fire = his attack; the staff strike kept as `attack2`; GIF `pixel_gods/wukong_leap_smash.gif` |
 | 2026-11-26 | divine Thor SKILL redo (owner "ทำสกิลให้ต่างกันหน่อย": raising the hammer looked like Zeus raising the bolt): `animate_image` 8 frames on 96 x 80, ground slam with a blue shockwave | job c82d9f4a-3cf4-46b4-94f5-8afb19d119a6 | 1 | ✅ Thor's skill; the raise kept as `skill_raise` |
+| 2026-11-26 | pixgrind heroine B at 60 px, 16 bit (owner "ลองเจน 60 16bit 1เครดิต"): `image_to_pixelart` redraw (faithful off, strength 0), 53 x 65 canvas from `art/incoming/pixgrind/pl60/in_B_white.png` (pose B cut, on white, 892 x 1097) | ccfa7159-87a1-4798-9cc4-b3d220954e16 | 1 | done: 48 x 62 figure, 41 colours. Dark crisp outline, readable face (eyes show), bright red scarf, clear pose and boots. Changes: the hair turned dark brown, the puffy cream sleeves became bare skin, a small white blob on top of the head (kept, not removed). White fringe removed free -> `pl60/B60_pl_clean.png`, 16 colours `B60_pl_16.png`, compare `compare_B60.png`, phone `phone_free_vs_pl.png` |
 
 Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The owner switches to another key next.
 
@@ -3050,3 +3051,11 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Result:
     - Crisp normal colour is the best: a bit richer than 16 (lantern glow, scarf highlights, skin), still clean pixels.
     - Blended keeps a hint of B's eye, but it looks blurry / dirty with light specks on the edges (a shrunk painting, not pixel art).
+- 2026-11-26 PIXELLAB 60 PX TEST (owner "ลองเจน 60 16bit 1เครดิต", 1 credit, job log).
+  - This session first ran on the Default cloud environment, where api.pixellab.ai is blocked. It was moved (network only) to the "boxchaychan games" environment, which holds the PixelLab secret.
+  - Pose B in redraw mode at 60 px is much better than every free shrink: dark outline, a face with eyes, clean colour blocks. The owner's "16 bit" = the same sprite cut to 16 colours, which looks almost identical.
+  - Off-model:
+    - hair dark brown instead of black;
+    - puffy cream sleeves turned into bare arms;
+    - a small white blob on the head.
+  - Next, if the owner likes it: a standing 3-view of the final design converted the same way, 1 credit a view; or fix the hair colour free.
