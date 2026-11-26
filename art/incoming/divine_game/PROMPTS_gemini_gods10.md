@@ -76,3 +76,13 @@ A fearless chibi kid blessed by Nezha, the child protector god: two hair buns on
 ---
 
 ถ้าต้องการวิญญาณเทพด้านหลัง (แบบซุสยักษ์เรืองแสง) ของแต่ละองค์ บอกได้ ผมจะเขียนคำสั่งชุดถัดไปให้
+
+---
+
+## แบบใหม่ (แนะนำ): ให้ Gemini วาดเป็นพิกเซลเลย แล้วผมค่อยเอาเข้า PixelLab แบบธรรมดา (1 เจน) หรือจัดพิกเซลเองฟรี
+
+แนบ 2 รูป: `ref/REF_pixel_style.png` (ซุส + ธอร์ พิกเซล = แบบสไตล์) และรูปตัวละครที่จะทำ (รูปที่ Gemini วาดจากข้อบน หรือรูปเดิมในเกม)
+
+```
+Redraw the character from the SECOND picture as pixel art in exactly the style of the FIRST picture: 16-bit chibi pixel art, the character about 60 pixels tall drawn on a big visible pixel grid (every pixel a clear square), a dark 1-pixel outline, flat colours with 2-3 shades, no smooth gradients, no anti-aliasing, no blur. Same design, same colours and same pose as the second picture, full body, one character only, plain white background, no text, no frame.
+```
