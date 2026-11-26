@@ -190,7 +190,7 @@ const CLS = {
   greek: { th: 'สายเวท · ตีไกล', rng: 1, pace: 4, dmg: 1 },        /* lightning bolt: long range, slow heavy casts (owner: Zeus hit too fast, twice: pace 3 -> 4) */
   norse: { th: 'สายนักรบ · ระยะกลาง', rng: .55, pace: 2, dmg: 1.25 },   /* hammer: smash round the target, mid reach */
   egypt: { th: 'สายหอก · ตีไกลทะลุ', rng: .9, pace: 1.5, dmg: 1 },    /* spear: a piercing line */
-  asia: { th: 'สายต่อสู้ · ตีใกล้', rng: .42, pace: .8, dmg: 1.7 }     /* staff: melee fighter, quick hard hits, only monsters near its slot */
+  asia: { th: 'สายต่อสู้ · ตีใกล้', rng: .42, pace: 4, dmg: 1.7 }     /* staff: melee fighter (a leaping smash), hard hits, only monsters near its slot; owner "ปรับให้ช้าพอกับซุส": pace 4 like Zeus */
 };
 const clsOf = u => u && u.kind === 'hero' ? CLS[u.p] : null, paceOf = u => (clsOf(u) || { pace: 1 }).pace, rngOf = u => TD[u.tier].rng * (clsOf(u) || { rng: 1 }).rng;
 const HERO = {
@@ -359,12 +359,14 @@ function attack(u, i) {
     const ang = Math.atan2(tgt.y - 32 - hy, tgt.x - hx), x1 = hx + Math.cos(ang) * 420, y1 = hy + Math.sin(ang) * 420; beam(hx, hy, x1, y1, '#ffd36b', tier >= 3 ? 7 : 5, 10); if (SETS && SETS.anubis) G.fx.push({ t: 'img', k: 'anubis_fx', x: hx + (tgt.x - hx) * .65, y: hy + (tgt.y - 32 - hy) * .65, ang, w: tier >= 3 ? 140 : 110, life: 12, max: 12 });
     for (const m of G.mobs) { const t = ((m.x - hx) * Math.cos(ang) + (m.y - 32 - hy) * Math.sin(ang)), dd = Math.abs(-(m.x - hx) * Math.sin(ang) + (m.y - 32 - hy) * Math.cos(ang)); if (t > 0 && t < 420 && dd < 26) { dmgTo(m, m === tgt ? dmg : Math.round(dmg * .7), crit && m === tgt); burst(m.x, m.y - 32, '#ffe7a0', 4, 2); } }
   } else if (u.p === 'asia') {
-    /* melee fighter: a staff strike on the spot (no fireball), a small splash, a light shake */
-    const m = tgt; beam(hx, hy, m.x, m.y - 30, '#ffb347', 7, 7); ring(m.x, m.y - 10, '#ff8a3a', 6, 46 + tier * 6, .25, .45); burst(m.x, m.y - 26, '#ffb15a', 14, 4);
+    /* melee fighter, owner "ดูยังไงก็ไม่เหมือนฟาด": no line from the hero (it read as a laser): the staff comes DOWN on the monster:
+       a falling orange streak above it, a flash, a ground ring, dust thrown up, a shake */
+    const m = tgt; beam(m.x + 10 * (u.face || 1), m.y - 110, m.x, m.y - 14, '#ffb347', 9, 6); G.fx.push({ t: 'smash', x: m.x, y: m.y - 6, life: 14, max: 14 });
+    ring(m.x, m.y - 4, '#ff8a3a', 8, 56 + tier * 6, .3, .38); burst(m.x, m.y - 10, '#ffb15a', 12, 4); burst(m.x, m.y - 4, '#d8c3a5', 10, 3);
     if (IMG.wukong_fx) G.fx.push({ t: 'img', k: 'wukong_fx', x: m.x, y: m.y - 30, ang: Math.atan2(m.y - 30 - hy, m.x - hx), w: 70 + tier * 10, life: 10, max: 10 });
-    dmgTo(m, dmg, crit); for (const o of G.mobs) if (o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 46 + tier * 6) dmgTo(o, Math.round(dmg * .4), false); T.shake = Math.max(T.shake, 1.5);
+    dmgTo(m, dmg, crit); for (const o of G.mobs) if (o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 46 + tier * 6) dmgTo(o, Math.round(dmg * .4), false); T.shake = Math.max(T.shake, 3);
   }
-  if (tier >= 3 && ++u.hits % Math.max(1, Math.round(6 / paceOf(u))) === 0) skill(u, i, tgt, dmg);
+  if (tier >= 3) { u.hits += paceOf(u); if (u.hits >= 6) { u.hits -= 6; skill(u, i, tgt, dmg / paceOf(u)); } }   /* the skill keeps its old strength and its old rate in time: a slow hitter charges it faster per hit, and the bigger slow hit does not make the skill bigger */
   return true;
 }
 const heroMul = u => (1 + .12 * ((META.lv[u.kind === 'sol' ? 'soldier' : u.p] || 1) - 1)) * (1 + .06 * META.tp.atk);
@@ -762,6 +764,8 @@ function drawFx(back) {   /* back = the light that sits behind the heroes (summo
     } else if (f.t === 'anim' && !f.back === !back) { const v = VFX[f.k], age = f.max - f.life - f.dl; if (v && age >= 0) { const i = Math.min(v.n - 1, Math.floor(age * v.fps / 60)), w = f.h * v.fw / v.fh; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Math.min(.72, (age + 1) / 5); g.drawImage(v.im, (i % v.cols) * v.fw, Math.floor(i / v.cols) * v.fh, v.fw, v.fh, f.x - w * v.ax, f.y - f.h * v.ay, w, f.h); g.restore(); } }
     else if (f.t === 'img') { const im = IMG[f.k]; if (im) { const w = f.w * (1.15 - .15 * a), h = w * im.height / im.width; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = a; g.translate(f.x, f.y); g.rotate(f.ang); g.drawImage(im, -w / 2, -h / 2, w, h); g.restore(); } }
     else if (f.t === 'shot' && f.kind === 'fire' && IMG.wukong_fx) { const im = IMG.wukong_fx, w = 40, h = w * im.height / im.width, an = Math.atan2(f.m.y - 32 - f.y, f.m.x - f.x); g.save(); g.globalCompositeOperation = 'lighter'; g.translate(f.x, f.y); g.rotate(an); g.drawImage(im, -w * .7, -h / 2, w, h); g.restore(); }
+    else if (f.t === 'smash') { const k = 1 - a; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = a; const r = 10 + 30 * k, gr = g.createRadialGradient(f.x, f.y, 1, f.x, f.y, r); gr.addColorStop(0, '#ffffff'); gr.addColorStop(.35, '#ffd27a'); gr.addColorStop(1, '#ff6a1a00'); g.fillStyle = gr; g.beginPath(); g.ellipse(f.x, f.y, r * 1.4, r * .55, 0, 0, 6.3); g.fill();
+      g.strokeStyle = '#ffe9b0'; g.lineWidth = 3; for (let q = 0; q < 6; q++) { const an = -Math.PI * (q + .5) / 6, d0 = 8 + 14 * k, d1 = d0 + 12; g.beginPath(); g.moveTo(f.x + Math.cos(an) * d0 * 1.4, f.y + Math.sin(an) * d0); g.lineTo(f.x + Math.cos(an) * d1 * 1.4, f.y + Math.sin(an) * d1); g.stroke(); } g.restore(); }
     else if (f.t === 'pillar') { const grow = Math.min(1, (f.max - f.life) / 8), hgt = 240 * grow, w = 30 * (a < .3 ? a / .3 : 1); g.save(); g.globalCompositeOperation = 'lighter';
       const gr = g.createLinearGradient(f.x - w, 0, f.x + w, 0); gr.addColorStop(0, f.col + '00'); gr.addColorStop(.5, f.col + 'cc'); gr.addColorStop(1, f.col + '00');
       for (let q = 0; q < 6; q++) { g.globalAlpha = Math.min(1, a * 1.6) * (1 - q / 6); g.fillStyle = gr; g.fillRect(f.x - w, f.y - hgt * (q + 1) / 6, w * 2, hgt / 6 + 1); g.fillStyle = '#ffffff'; g.globalAlpha *= .55; g.fillRect(f.x - w * .18, f.y - hgt * (q + 1) / 6, w * .36, hgt / 6 + 1); }
@@ -885,8 +889,8 @@ function frame(t) { if (FPS.on) { FPS.n++; if (t - FPS.t0 > 1000) { FPS.v = FPS.
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   if (ARENA) try { IMG.arena = await load('art/divine/arena_gemini.jpg'); } catch (e) { console.warn(e); }
   if (PIX) try { for (const ps of ['idle', 'attack', 'skill']) { const im = await load('art/divine/pix_zeus_' + ps + '.png'); im.pix = true; IMG['pix_zeus_' + ps] = im; } IMG.zeus_idle = IMG.pix_zeus_idle;
-    for (const st of ['thor']) { const im = await load('art/divine/pix_' + st + '_idle.png'); im.pix = true; IMG['pix_' + st + '_idle'] = im; IMG[st + '_idle'] = im; }   /* pixel stills of the other gods (PixelLab Pro Flash) */
-    for (const st of ['zeus', 'thor']) { const [zj, zim] = await Promise.all([fetch('art/divine/pix_' + st + '_anim.json').then(r => r.json()), load('art/divine/pix_' + st + '_anim.png')]); const A = ANIM[st] = {};
+    for (const st of ['thor', 'wukong']) { const im = await load('art/divine/pix_' + st + '_idle.png'); im.pix = true; IMG['pix_' + st + '_idle'] = im; IMG[st + '_idle'] = im; }   /* pixel stills of the other gods (PixelLab Pro Flash) */
+    for (const st of ['zeus', 'thor', 'wukong']) { const [zj, zim] = await Promise.all([fetch('art/divine/pix_' + st + '_anim.json').then(r => r.json()), load('art/divine/pix_' + st + '_anim.png')]); const A = ANIM[st] = {};
       for (const k in zj) { const q = zj[k]; A[k] = Array.from({ length: q.n }, (_, i) => { const c = document.createElement('canvas'); c.width = q.w; c.height = q.h; c.getContext('2d').drawImage(zim, i * q.w, q.y, q.w, q.h, 0, 0, q.w, q.h); return { im: c, ax: q.ax }; }); } }
     if (new URLSearchParams(location.search).get('zatk') === '9' && ANIM.zeus.attack9) ANIM.zeus.attack = ANIM.zeus.attack9;   /* owner "ลองยืดออกดู": the old 9-frame attack with the same stretched timing, to compare */
   } catch (e) { console.warn(e); }
