@@ -3212,3 +3212,12 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - a dark glass ability panel with keyword CHIPS (icon + word: จู่โจม gold, เมื่ออัญเชิญ orange), cream text;
     - 3D faceted cost gem with a twinkle, a red shield with a sword behind for attack, a green heart crystal for HP, a winged rarity gem.
   - Effects: a rainbow foil sheen (overlay blend), sparkles orbiting the card, an outer warm glow.
+- 2026-11-26 CARD IN 3D (owner "ทำการ์ดเป็น 3D", "ทำไมมันทะลุกรอบ"): `cardtest.html` is now a three.js 3D card by default; `?flat=1` = the 2D v2 drawing, `&pop=1` = the old break-out.
+  - The art no longer breaks out of the frame. In 3D it sits INSIDE a deep window, at its own depth:
+    - battlefield at the back, then embers and a soft glow, then Lu Bu, then the frame on top;
+    - tilting gives real parallax.
+  - Body: a rounded slab 0.22 thick with a bevel and a window hole, metal gold sides (MeshStandard).
+  - Front: the 2D frame drawing as a 4x texture with the window cut out. Back: its own plate without a hole (red, gold rings, a star, "ศึกการ์ดอสูร").
+  - Light and foil: a key light that follows the tilt, a rainbow foil shader that slides with the tilt (stronger on the gold), sparkles orbiting the card.
+  - Controls: pointer = tilt (idle sway after 2.5 s), tap = flip.
+  - Pictures `art/incoming/monstercards/card3d_pair.png` (straight / tilted), clip `card3d_tilt_flip.mp4` (`tools/qa/cardtest_clip.js`).
