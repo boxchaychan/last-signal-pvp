@@ -2943,4 +2943,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   3. strong SLASH / hit effects.
   - Menus, shops and long systems come after these three.
   - Size control for Pro Flash pixel stills (owner agreed): shrink the source to the target height first; a fixed canvas is possible with the edit / create modes; or shrink a crisp sprite afterwards.
+- LESSON (owner 2026-11-26 "สังเกตชอบทำแมพเหมือนกัน และดูไม่ค่อยสวย"): Claude's code-made maps all look alike: gradient sky, noise grass, a dirt / sand ring, low-poly cones and blobs, the same props. The owner's own Gemini-painted arena looked better than every code map.
+  - For the next game, do not start the map from code.
+  - First get a TARGET picture of the map (painted by Gemini / Codex from the owner's idea): place, light, colours and one landmark.
+  - Then build the map from art made to match it: a Codex map kit (ground tiles, cliffs, trees, props, landmark in one style), or a picked CC0 pack that fits.
+  - Code adds only light, shadows and moving life (water, leaves, fog, dust).
+  - Show the target picture to the owner before building.
 
