@@ -23,6 +23,8 @@ PICK = [(f'MapleTree_{i}', .12) for i in range(1, 6)] + [(f'BirchTree_{i}', .12)
                          'Flower_1_Clump', 'Flower_2_Clump', 'Flower_3_Clump', 'Flower_4_Clump', 'Flower_5_Clump',
                          'Grass_Small', 'Grass_Large', 'Plant_1', 'Plant_2', 'Plant_Flowers')] + \
        [(f'Rock_{i}', .5) for i in range(1, 6)]
+# NP_PICK="PalmTree_1:1,PalmTree_2:.4" = convert only these (name:bark ratio), e.g. the palms for pixgrind.html
+if os.environ.get('NP_PICK'): PICK = [(n, float(r)) for n, r in (x.split(':') for x in os.environ['NP_PICK'].split(','))]
 CARD = ('Leaves', 'Flowers', 'Grass', 'Petal', 'Plant')   # material names that are cut-out cards
 
 def is_card(name): return any(k.lower() in name.lower() for k in CARD)
@@ -88,7 +90,7 @@ for name, ratio in PICK:
 
 # small textures (colour only); leaves keep their alpha
 TEX = {'MapleTree_Leaves.png': 256, 'BirchTree_Leaves.png': 256, 'NormalTree_Leaves.png': 256, 'PineTree_Leaves.png': 256, 'Bush_Leaves.png': 256,
-       'Flowers.png': 256, 'Grass.png': 64, 'MapleTree_Bark.jpg': 64, 'BirchTree_Bark.jpg': 64, 'NormalTree_Bark.jpg': 64, 'PineTree_Bark.jpg': 64, 'Rocks.jpg': 64, 'Leaves_BW.png': 256}
+       'Flowers.png': 256, 'Grass.png': 64, 'MapleTree_Bark.jpg': 64, 'BirchTree_Bark.jpg': 64, 'NormalTree_Bark.jpg': 64, 'PineTree_Bark.jpg': 64, 'Rocks.jpg': 64, 'Leaves_BW.png': 256, 'PalmTree_Leaves.png': 256, 'PalmTree_Trunk.jpg': 64}
 for f, s in TEX.items():
     p = os.path.join(SRC, 'gltf', f)
     if not os.path.exists(p): print('no texture', f); continue

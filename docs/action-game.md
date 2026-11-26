@@ -3093,3 +3093,30 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - SPELLBOOK (mage: casts from an open book).
   - Each attack = PixelLab animate from the same hero picture with the weapon described, 1 credit per 8 frames, only on "เจน".
 - 2026-11-26 IDLE (owner "ท่าโจมตีเปลี่ยนตามอาวุธหรือ" + "เอาท่ายืนนิ่ง...ก่อน ขยับเยอะๆ"). Answer given: yes, each weapon has its own attack; run / idle / dodge are shared. Lively idle made (1 credit, job log): an 8-frame loop that drops the pointing arm, bounces, scarf blowing, then points again. The hero now has idle 8 + run 6 (left; mirror for right). Next on "เจน": attacks bow / sword / spellbook, 1 credit each.
+- 2026-11-26 PIXGRIND v1 = `pixgrind.html` "โอเอซิสหัวศิลา", first walkable wide map (owner "ใช้วิ่งเอาเลยนะ ทำแมพกว้าง"; the run is accepted as it is). 0 credits.
+  - Look:
+    - a real 3D world drawn small: about `PXH` 390 texels on the short side, whole device pixels a texel;
+    - depth-edge outline in dark violet-brown, 22 shades;
+    - orthographic camera, pitch 42 degrees (`?pitch=`), snapped to whole texels, the canvas shifted by the rest.
+  - Size standard built in: H = 1.6 m = 60 sprite px, `TW` = H / 60 m a texel. Hero card idle 8 / run 6 (`art/pixgrind/hero_idle8.png`, `hero_run6.png`, 72 px cells, feet row 68), mirrored for right.
+  - Map: 150 x 110 m (about 6.5 x 7 phone screens), cells of 2 m.
+    - Two levels (lower sand, upper level 1.2 H): the north band, the big upper area north-east of the oasis, an east mesa, a west plateau, framing corners.
+    - Edges wobble by noise; rock ledges = stacked terracotta blocks with sand-dusted tops and dark joints.
+    - Five sand ramps cut INTO the upper level, with walls on both sides and an open top.
+    - Pools: the main oasis just north of the start, a spring on the upper level, a south-west pond. Water shader: depth bands, foam line, small sun glints. A grass ring with specks round every pool, wet-sand edge.
+    - Sand shader: apricot with wavy dune ripples that fade in and out.
+  - Light: violet sky light in the shadows, warm late sun from the upper left (shadows fall lower right), a weak front fill.
+  - Props from free packs:
+    - Quaternius CC0 palms converted by `NP_PICK=... python3 tools/blender/nature_pack.py art/pixgrind/nature` (`pip install bpy`): 4 kinds, about 46 round the water + 22 alone, swaying fronds, leaf-shaped shadows;
+    - Kenney rocks (boulders by the ledges, stepping stones in the main pool);
+    - Quaternius grass / reeds.
+  - Walking:
+    - drag anywhere (stick) or WASD / arrows;
+    - water, ledges (more than 0.55 m up), palm trunks and rocks block;
+    - ramps are the way up;
+    - the camera leads where you run, the hero a little below the middle.
+  - Life: 18 scorpions (horde pixel cards, 1 art px = 1 texel) wander in 6 packs, no fighting yet; drifting 1-texel sand motes.
+  - The stone head is NOT in yet. Cutting it out of the target picture failed (stone and sand are the same warm colours). Gemini kit prompts added to `PROMPTS_gemini.md` ("ชุดชิ้นส่วนแมพ": the head alone on green; a palm / reed / shrub sheet), with the target picture attached. Its spot `HEAD` stays free.
+  - `?ov=1` = the whole map in one picture.
+  - Check: `node tools/qa/pixgrind_check.js <out> [query] [scale] [start,walk,pool,ledge,ramp,upper,...]` (phone 844 x 390 @3; prints errors). Last run: no errors.
+  - Next: the head + plant kit from Gemini, the attacks (bow / sword / spellbook), fighting the scorpions, levels.
