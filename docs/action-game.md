@@ -2786,4 +2786,8 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - All 4 gods now have their own Codex art and moving parts. Checked: lobby, match, fight, result, bot run; no console errors.
   - Next: if the owner likes the puppet, order PARTS for Thor / Anubis / Monkey King too. Ask Codex for the exploded puppet SHEET only (that is the good part), not the final 512 cuts.
 - 2026-11-26 (owner "ทำไมไม่ซ่อนไว้ใต้แขนละ"): the Zeus puppet's upper arms now hang BEHIND the torso, so the ball joints hide under the shoulders. The torso's brown shoulder sockets are filled with skin in `divine_puppet.py`. Hands and the bolt are still drawn in front. Use the same rule for every future puppet.
+- 2026-11-26 (owner "แขนที่มันเป็นข้อ"): the Zeus arms looked segmented because the arm piece and the hand piece both had a gold cuff.
+  - The hands now lose their own cuff (`KEEP` masks in `divine_puppet.py`) and hang BEHIND the arm, tucked under the arm's cuff, so each arm reads as one piece (shoulder -> cuff -> fist).
+  - Draw order: legs, bolt, weapon hand, weapon arm, free hand, free arm, torso, head.
+  - The free arm turns out beside the skirt (rest -10 degrees).
 
