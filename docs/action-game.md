@@ -2950,3 +2950,14 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Code adds only light, shadows and moving life (water, leaves, fog, dust).
   - Show the target picture to the owner before building.
 
+- 2026-11-26 START (new chat, owner typed "แมพพิกเซล ทำตัวเดียวเปลี่ยนอาวุธ เน้นแมพ ท่า เอฟเฟกต์ฟัน"). Owner's picks:
+  - Map: follow the new method (target picture first, then a matching kit, code only for light / shadow / moving life); no place picked yet.
+  - Hero: a NEW design (owner sends a picture or words).
+  - Moves: HYBRID. Idle / run / roll / hurt / death = one body for every weapon, with the weapon picture pinned to the hand; attacks and skills drawn per weapon.
+  - Gemini prompts: `art/incoming/pixgrind/PROMPTS_gemini.md`.
+    - Map places A-C (A forest waterfall + ruins recommended, B desert oasis, C Asian mountain village) or the owner's own.
+    - A shared camera / style block: high 3/4 top-down about 45 degrees, 16:9, about 640 x 360 native pixels, one light direction, a hero at 1/6 of the height for scale.
+    - A draft hero block: no weapon, hands visible as an empty grip, 3 views, the chosen map picture attached for style.
+  - Working name / folder: `pixgrind` (`art/incoming/pixgrind/`). No game page yet.
+  - Next: owner sends the Gemini map pictures and picks one -> Claude proposes the kit (Codex brief or a fitting CC0 pack) -> hero design.
+  - Slash effects (priority 3), free route to try first: the `pixelfx` skill (melee / impact effects in code).
