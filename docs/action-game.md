@@ -2794,4 +2794,6 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - Every god uses Codex's own whole pictures (idle / attack / skill) with whole-body motion: breathing, lunge, jump, cross-fade, turning.
   - `drawFigure` has `rigged = false`; `drawPuppet` / `drawRig`, `puppet.json`, `rig.json` and the part images stay in the repo for later tests only.
   - Do NOT order Codex puppet sheets. Next effort goes to what makes the reference game feel alive: denser boards, more effects and damage numbers.
+- 2026-11-26 CLASH (owner "ทำสเกลต้นไม้ให้ใหญ่กว่านี้ได้ไหม"): trees in `clash.html` are now x1.8 by default (`TK`, `?tree=1` = old size, `?tree=2.4` tested). The trees inside the field grow x1.48; the keep-off margin round the board grows with them, and shadows follow the size. Screenshot comparison x1 / x1.8 / x2.4 sent to the owner.
+- 2026-11-26 CLASH test only (not in the game): pixel Zeus from divine shrunk to 40 px, 16 colours, fits next to the god tribe (special-unit size). He faces the viewer (the others face sideways) and has no walk yet. To add him, make a side-view walk (PixelLab standard 1 credit, or Codex) and give him 2 skills like the other specials.
 
