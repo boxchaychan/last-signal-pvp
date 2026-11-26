@@ -575,6 +575,7 @@ function pixFrame(u, h, seed) {
   return { im: f.im, w: f.im.width * hh / f.im.height, h: hh, ax: f.ax, pix: 1 };
 }
 function poseImg(set, img, pose, h) {   /* the picture + its size and body anchor for this pose */
+  if (PIX && set !== 'zeus' && IMG['pix_' + set + '_idle'] && IMG.pix_zeus_idle) { const im = IMG['pix_' + set + '_idle'], hh = h * im.height / IMG.pix_zeus_idle.height; return { im, w: im.width * hh / im.height, h: hh, ax: SETS[set].idle.ax, pix: 1 }; }   /* other gods with only a pixel still (Thor so far): same pixel size as Zeus, one picture for every pose */
   if (PIX && set === 'zeus' && IMG.pix_zeus_idle) { const im = IMG['pix_zeus_' + pose] || IMG.pix_zeus_idle, hh = h * im.height / IMG.pix_zeus_idle.height; return { im, w: im.width * hh / im.height, h: hh, ax: (SETS.zeus[pose] || SETS.zeus.idle).ax, pix: 1 }; }   /* every pose at the same pixel size */
   if (set) { const z = SETS[set][pose], im = IMG[set + '_' + pose]; if (!im) return null; const hh = h * z.h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h); return { im, w: im.width * hh / im.height, h: hh, ax: z.ax }; }
   const im = IMG[img]; if (!im) return null; return { im, w: im.width * h / im.height, h, ax: .5 };
@@ -617,15 +618,15 @@ function drawRig(set, h, ang, glow) {
 function drawFigure(u, x, y, h, set, img, seed) {
   const m = motion(u, seed); if (!set) m.pose = 'idle';
   if (u.cp !== m.pose) { u.pp = u.cp; u.cp = m.pose; u.pt = tt; }
-  const px = PIX && set === 'zeus', face = u.face || 1;
+  const px = PIX && !!set && !!IMG['pix_' + set + '_idle'], an = px && set === 'zeus' && ZANIM, face = u.face || 1;
   /* owner "ไม่ลื่นเลย" on the pixel test: stretching / tilting a pixel picture a little every frame makes its pixels flicker. A pixel hero moves in
      WHOLE pixels instead: no squash, no tilt, no cross-fade, an instant turn, and a 1 px breathing bob */
-  if (px) { m.rot = 0; m.sx = 1; m.sy = 1; m.dx = ZANIM ? 0 : Math.round(m.dx); m.dy = Math.round(m.dy) - (!ZANIM && u.cp === 'idle' && Math.sin(tt * 2.6 + seed) > .35 ? 1 : 0); }   /* drawn frames carry the lunge and the breathing */
+  if (px) { m.rot = 0; m.sx = 1; m.sy = 1; m.dx = an ? 0 : Math.round(m.dx); m.dy = Math.round(m.dy) - (!an && u.cp === 'idle' && Math.sin(tt * 2.6 + seed) > .35 ? 1 : 0); }   /* drawn frames carry the lunge and the breathing */
   const blend = px ? 1 : clamp((tt - (u.pt || 0)) / .09, 0, 1);
   u.faceS = u.faceS == null || px ? face : u.faceS + (face - u.faceS) * .22; const fs = Math.abs(u.faceS) < .12 ? .12 * Math.sign(u.faceS || 1) : u.faceS;
   g.save(); g.translate(px ? Math.round(x + m.dx * face) : x + m.dx * face, px ? Math.round(y + m.dy) : y + m.dy); g.rotate(m.rot * face); g.scale(m.sx * fs, m.sy);
   const rigged = false;   /* owner 2026-11-26 "ประกอบก็เละ": no cut-out puppets or rigs; every god uses Codex's own whole pictures (idle / attack / skill) with whole-body motion, like the reference game. drawPuppet / drawRig stay for later tests. */
-  const cur = rigged ? null : px && ZANIM ? pixFrame(u, h, seed) : poseImg(set, img, m.pose, h);
+  const cur = rigged ? null : an ? pixFrame(u, h, seed) : poseImg(set, img, m.pose, h);
   if (rigged && PUPS[set]) drawPuppet(set, h, pupAngles(u, seed), m.glow); else if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) { if (cur.pix) g.imageSmoothingEnabled = false; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
   if (blend < 1 && u.pp && !(rigged && u.pp !== 'skill')) { const pr = poseImg(set, img, u.pp, h); if (pr) { g.globalAlpha = 1 - blend; g.drawImage(pr.im, -pr.w * pr.ax, -pr.h, pr.w, pr.h); g.globalAlpha = 1; } }
   if (m.glow > 0 && cur) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = m.glow; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
@@ -868,6 +869,7 @@ function frame(t) { if (FPS.on) { FPS.n++; if (t - FPS.t0 > 1000) { FPS.v = FPS.
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   if (ARENA) try { IMG.arena = await load('art/divine/arena_gemini.jpg'); } catch (e) { console.warn(e); }
   if (PIX) try { for (const ps of ['idle', 'attack', 'skill']) { const im = await load('art/divine/pix_zeus_' + ps + '.png'); im.pix = true; IMG['pix_zeus_' + ps] = im; } IMG.zeus_idle = IMG.pix_zeus_idle;
+    for (const st of ['thor']) { const im = await load('art/divine/pix_' + st + '_idle.png'); im.pix = true; IMG['pix_' + st + '_idle'] = im; IMG[st + '_idle'] = im; }   /* pixel stills of the other gods (PixelLab Pro Flash) */
     const [zj, zim] = await Promise.all([fetch('art/divine/pix_zeus_anim.json').then(r => r.json()), load('art/divine/pix_zeus_anim.png')]); ZANIM = {};
     for (const k in zj) { const q = zj[k]; ZANIM[k] = Array.from({ length: q.n }, (_, i) => { const c = document.createElement('canvas'); c.width = q.w; c.height = q.h; c.getContext('2d').drawImage(zim, i * q.w, q.y, q.w, q.h, 0, 0, q.w, q.h); return { im: c, ax: q.ax }; }); }
     if (new URLSearchParams(location.search).get('zatk') === '9' && ZANIM.attack9) ZANIM.attack = ZANIM.attack9;   /* owner "ลองยืดออกดู": the old 9-frame attack with the same stretched timing, to compare */
