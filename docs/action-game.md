@@ -88,6 +88,7 @@ animation, skills fire instantly as big effects, telegraph rings, a dodge button
 | 2026-11-26 | divine Thor SKILL redo (owner "ทำสกิลให้ต่างกันหน่อย": raising the hammer looked like Zeus raising the bolt): `animate_image` 8 frames on 96 x 80, ground slam with a blue shockwave | job c82d9f4a-3cf4-46b4-94f5-8afb19d119a6 | 1 | ✅ Thor's skill; the raise kept as `skill_raise` |
 | 2026-11-26 | pixgrind heroine B at 60 px, 16 bit (owner "ลองเจน 60 16bit 1เครดิต"): `image_to_pixelart` redraw (faithful off, strength 0), 53 x 65 canvas from `art/incoming/pixgrind/pl60/in_B_white.png` (pose B cut, on white, 892 x 1097) | ccfa7159-87a1-4798-9cc4-b3d220954e16 | 1 | done: 48 x 62 figure, 41 colours. Dark crisp outline, readable face (eyes show), bright red scarf, clear pose and boots. Changes: the hair turned dark brown, the puffy cream sleeves became bare skin, a small white blob on top of the head (kept, not removed). White fringe removed free -> `pl60/B60_pl_clean.png`, 16 colours `B60_pl_16.png`, compare `compare_B60.png`, phone `phone_free_vs_pl.png` |
 | 2026-11-26 | pixgrind heroine B PRO FLASH (owner picked "แถว2ตัวกลาง" = the free crisp full-colour 60 px B, then "โปรแฟรช"; the 1-credit standard was shown first): `image_to_pixelart_pro_flash` of `pl60/in_pf_B60x4.png` (`sim60/B60_fullcolour.png` 48 x 60 on white, x4 nearest), description = same girl / colours | 84503b8f-134a-42ca-9b27-bb318f601b64 | 6 | done (charged 6): 69 x 84 on BLACK, 27 colours; figure 60 x 76 (the tool picked the size). Crisp and on model: black hair, face with eyes + grin, cream puffy sleeves, red scarf, skirt, fur-top boots. Cut -> `pl60/B_pf_cut.png`; free majority-colour shrink to 60 -> `B_pf_shrunk60.png` (still has a face); compare `compare_pf.png`, `compare_pf_76_60.png`, phone `phone_all4.png` |
+| 2026-11-26 | pixgrind hero RUN (owner "เจนเลยท่าวิ่ง"): `animate_image_pixminimax` 8 frames, direction south-west, from `art/incoming/pixgrind/run/in_run72.png` (`art/pixgrind/hero60.png` on a 72 x 72 canvas, feet at row 68), "running to the left in a smooth looping run cycle, arms swinging, long red scarf fluttering" | 4d4a2b51-1365-487b-8166-9d7c714ac0ad | 1 | done: 9 images (0 = input). Frames 1-2 go from the pointing pose into the run; frames 3-8 are a clean run cycle facing left (side view, scarf flowing, feet bounce rows 61-67). Loop = frames 3-8 -> `run/run_loop_6.png` + `run_loop_6.gif`; all frames `run_all_8.gif`, `contact.png`. Right = mirror. No weapon in hand |
 
 Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The owner switches to another key next.
 
@@ -3082,3 +3083,11 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - At that size the palms are about 3.3 H and the world reads big: the picture's world already fits our size standard, only its hero was too big.
     - Its scorpions are bigger than her; in the game mobs follow 0.8 H.
   - Since we build the map ourselves, the hero will be at our size whatever Gemini draws.
+- 2026-11-26 RUN + WEAPON PLAN (owner "เจนเลยท่าวิ่ง อาวุธแยกนะตามท่าโจมตี เอาธนู ดาบ นักเวทย์ใช้หนังสือ"):
+  - The run is made with NO weapon (1 credit, job log). Loop = 6 frames facing left, mirrored for right.
+  - Up / down movement: reuse the side run for now. Front / back runs cost 1 credit each, only on "เจน".
+  - Weapons appear only in the ATTACK moves, drawn per weapon. Three weapons:
+    - BOW (archer);
+    - SWORD (swordsman);
+    - SPELLBOOK (mage: casts from an open book).
+  - Each attack = PixelLab animate from the same hero picture with the weapon described, 1 credit per 8 frames, only on "เจน".
