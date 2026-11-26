@@ -2986,3 +2986,19 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - 1A desert treasure hunter: indigo hood + coat with gold trim, long crimson scarf blowing, braid, golden eyes.
     - 1B rune-marked wanderer: white hair, cropped black jacket, torn dark-red half-cape on the back, glowing blue rune down the right arm (matches the stone head's blue eyes).
   - Both empty-handed for weapons, 3 views. The man design follows whichever the owner picks. Asked the owner to send the Gemini picture that looked bad, to see what went wrong.
+- 2026-11-26 SIZE STANDARD (owner "80 ละทำไงให้แมพไม่ดูเล็กตัวละครไม่ดูใหญ่ แก้โจทย์นี้"). H = hero height = 80 px, head to feet, 1 sprite pixel = 1 map texel.
+  - Screen: whole device pixels per texel (k), with the short side about 360-400 texels.
+    - Phone landscape 844 x 390 @3: k 3 = 844 x 390 texels.
+    - PC 1080p: k 3 = 640 x 360.
+    - The wide phone shows more map to the sides. The hero is about 1/5 of the height.
+  - Build the world BIG around H, so H reads as normal size:
+    - date palms 3-4 H; each rock shelf / level 1-1.5 H; the landmark (stone head) about 7 H;
+    - dune ripples / ground shapes about 1 H apart, no ground noise finer than about 4 px;
+    - few small props (knee-high clutter makes the hero look big);
+    - doors and tents about 1.3 H.
+  - Size things by their SCREEN height. A camera-facing 2D card shows its full height, but a 3D object of the same height shows only about cos(pitch) of it (0.77 at 40 degrees).
+  - Monsters: normal 0.7-1 H, elite 1.5 H, boss 3 H.
+  - Camera: orthographic, pitch about 40 degrees. It leads in the walking direction (about 1/4 screen), so there is more ground ahead than behind; the hero sits a little below centre when still.
+  - HUD small, in the corners.
+  - Map many screens big (about 6 x 6 screens) with distinct zones, so the world feels large even with a large hero.
+  - Prompts updated: the heroine reads at 80 px; the map boxes use a hero at 1/5 of the height with palms 3-4 x, rock shelves taller than her, the stone head about 7 x, large calm ground shapes.
