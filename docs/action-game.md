@@ -2778,4 +2778,11 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
     - a hit: wind-up -0.4 rad, then an overhead swing to +1.15 toward the target, settle, ease back; the head and the free arm follow.
     - The skill keeps Codex's skill picture plus the jump.
   - Rigged: Zeus, Thor, Anubis. The Monkey King and the soldier still move as one piece until their Codex sets come; add their shapes to `RIG` in the tool.
+- 2026-11-26 ZEUS AS A PUPPET + MONKEY KING SET:
+  - Codex made `codex/divine-zeus-parts` from `docs/codex/divine/PARTS.md`. Its final parts (`art/divine/zeus_parts/`, kept unused) were sliced with straight blocky cuts, but its RAW sheet `art/incoming/divine_game/raw/zeus_parts/exploded_guide_raw.png` is a clean drawn puppet: head with neck, torso with shoulder sockets, ball-jointed arms, hands, legs and bolt, on a transparent background.
+  - `tools/art/divine_puppet.py` cuts that sheet with hand-set joints and rest angles (head x1.12 for chibi proportions) -> `art/divine/pup_zeus_*.png` + `puppet.json` (a parent tree in game px, the whole puppet 200 tall like Zeus's idle picture).
+  - In the game, `drawPuppet` / `pupAngles` play idle sway and an overhead swing: the arm turns about 150 degrees up and over toward the target, the wrist snaps, the head and the free arm follow. The skill still uses Codex's skill picture.
+  - Monkey King set (`codex/divine-wukong`, brief item C) brought in by hand: the raw files + report, `divine_sets.py` -> `wukong_*`, `PSET.asia = 'wukong'`, his fireball picture flies on Asia hits, his spirit stands behind a mythic, and his cut-out rig is added to `divine_rig.py` (the staff swings).
+  - All 4 gods now have their own Codex art and moving parts. Checked: lobby, match, fight, result, bot run; no console errors.
+  - Next: if the owner likes the puppet, order PARTS for Thor / Anubis / Monkey King too. Ask Codex for the exploded puppet SHEET only (that is the good part), not the final 512 cuts.
 

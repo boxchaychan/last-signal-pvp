@@ -172,9 +172,9 @@ const PK = Object.keys(PAN);
 const MOBS = [{ k: 'mob_robot_a', h: 80, sp: 1.05, face: 1 }, { k: 'mob_robot_b', h: 83, sp: 1.0, face: 1 }, { k: 'mob_robot_c', h: 63, sp: 1.35, face: 1 }, { k: 'mob_ghoul', h: 88, sp: .9, face: -1, hpk: 1.4 }];
 const IMG = {};
 let SETS = null;   /* the gods' own poses + spirit + effect, drawn by Codex in the owner-approved style: art/divine/<set>_*.png, sizes in sets.json (tools/art/divine_sets.py) */
-const PSET = { greek: 'zeus', norse: 'thor', egypt: 'anubis' };   /* pantheon -> set; the others still use their single cut picture until Codex draws them */
+const PSET = { greek: 'zeus', norse: 'thor', egypt: 'anubis', asia: 'wukong' };   /* pantheon -> set; the others still use their single cut picture until Codex draws them */
 const VFX = {};
-let RIGS = {};   /* gods cut into body / head / weapon arm / free arm (tools/art/divine_rig.py): the arm really swings on a hit */   /* effects cut from the owner's videos (tools/art/divine_vfx.py): black-background sheets drawn with additive light */
+let RIGS = {}, PUPS = {};   /* PUPS: a god drawn by Codex as a jointed puppet (tools/art/divine_puppet.py): elbows and wrists bend */   /* gods cut into body / head / weapon arm / free arm (tools/art/divine_rig.py): the arm really swings on a hit */   /* effects cut from the owner's videos (tools/art/divine_vfx.py): black-background sheets drawn with additive light */
 const setOf = p => SETS && PSET[p] && SETS[PSET[p]] ? PSET[p] : null;
 const FIT = { greek: 1, norse: 1.04, egypt: 1.06, asia: 1.02, soldier: .95 };   /* same HEAD size for everyone: helmets and jackal ears add height */
 const load = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(s); i.src = s; });
@@ -188,7 +188,7 @@ const HERO = {
   greek: { img: 'zeus_idle', sk: 'พายุซุส', d: 'สายฟ้ากระโดดหลายตัว · สกิลฟ้าผ่ามอนหลายตัวพร้อมกัน', c1: '#4fb6d8', c2: '#1f5a86' },
   norse: { img: 'thor_idle', sk: 'ค้อนสะเทือนฟ้า', d: 'ฟ้าผ่าเป็นวง · สกิลทำให้มอนรอบ ๆ มึนหยุดเดิน', c1: '#7f96d8', c2: '#32447e' },
   egypt: { img: 'anubis_idle', sk: 'ผนึกทราย', d: 'ลำแสงทะลุเป็นแถว · สกิลทำให้มอนช้าลงครึ่งหนึ่ง', c1: '#e6b04a', c2: '#8a5a14' },
-  asia: { img: 'hero_asia', sk: 'ฝนเพลิงวานร', d: 'ลูกไฟระเบิดเป็นวง · สกิลยิงฝนลูกไฟใส่หลายตัว', c1: '#f08a4a', c2: '#8e3414' },
+  asia: { img: 'wukong_idle', sk: 'ฝนเพลิงวานร', d: 'ลูกไฟระเบิดเป็นวง · สกิลยิงฝนลูกไฟใส่หลายตัว', c1: '#f08a4a', c2: '#8e3414' },
   soldier: { img: 'soldier', sk: '', d: 'ระดับธรรมดา ยิงเร็ว รวม 3 ตัวเป็นผู้รับพรระดับหายาก', c1: '#8a9a6a', c2: '#46543a' }
 };
 const heroName = k => k === 'soldier' ? 'ทหารรับจ้าง' : PAN[k].hero[0];
@@ -508,6 +508,25 @@ function rigAngles(u, seed) {
     else { const k = ease((a - 9) / 5); r.arm = .95 * (1 - k); r.head = .1 * (1 - k); r.arm2 = -.35 * (1 - k); } }
   return r;
 }
+/* the puppet: an overhead swing that goes up and over toward the target (the arm turns about 130 degrees), the wrist snaps, the head
+   and the free arm follow; idle = arms swaying, head nodding */
+function pupAngles(u, seed) {
+  const b = Math.sin(tt * 2.6 + seed), r = { armW: .07 * Math.sin(tt * 2.6 + seed + .8), handW: .06 * Math.sin(tt * 2.6 + seed + 1.6), armF: -.08 * b, handF: -.05 * b, head: .045 * Math.sin(tt * 1.6 + seed), torso: 0 };
+  if (u.flash > 0 && !(u.skillT > 0)) { const a = 14 - u.flash;
+    if (a < 2) { const k = ease(a / 2); r.armW = -.35 * k; r.handW = -.3 * k; r.head = -.07 * k; r.armF = .2 * k; }
+    else if (a < 5) { const k = ease((a - 2) / 3); r.armW = -.35 + 2.65 * k; r.handW = -.3 + .75 * k; r.head = -.07 + .18 * k; r.armF = .2 - .6 * k; r.handF = -.3 * k; }
+    else if (a < 9) { const k = ease((a - 5) / 4); r.armW = 2.3 - .2 * k; r.handW = .45 - .1 * k; r.head = .11; r.armF = -.4; r.handF = -.3; }
+    else { const k = ease((a - 9) / 5); r.armW = 2.1 * (1 - k); r.handW = .35 * (1 - k); r.head = .11 * (1 - k); r.armF = -.4 * (1 - k); r.handF = -.3 * (1 - k); } }
+  return r;
+}
+function drawPuppet(set, h, ang, glow) {
+  const P = PUPS[set], k = h / P.h, T = {}, by = {}; for (const q of P.parts) by[q.n] = q;
+  const tf = n => { if (T[n]) return T[n]; const q = by[n], base = q.p ? tf(q.p) : new DOMMatrix(); return T[n] = base.translate(q.lx * k, q.ly * k).rotate((q.rot + (ang[n] || 0)) * 57.2958); };
+  const V = g.getTransform();
+  for (const q of P.parts) { const im = IMG['pup_' + set + '_' + q.n]; if (!im) continue; g.setTransform(V.multiply(tf(q.n))); g.drawImage(im, q.ox * k, q.oy * k, q.w * k, q.h * k);
+    if (glow > 0) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = glow; g.drawImage(im, q.ox * k, q.oy * k, q.w * k, q.h * k); g.restore(); } }
+  g.setTransform(V);
+}
 function drawRig(set, h, ang, glow) {
   const R = RIGS[set], k = h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h);
   for (const pn of ['body', 'arm2', 'head', 'arm']) { const p = R[pn], im = IMG['rig_' + set + '_' + pn]; if (!im) continue; g.save();
@@ -520,9 +539,9 @@ function drawFigure(u, x, y, h, set, img, seed) {
   const blend = clamp((tt - (u.pt || 0)) / .09, 0, 1), face = u.face || 1;
   u.faceS = u.faceS == null ? face : u.faceS + (face - u.faceS) * .22; const fs = Math.abs(u.faceS) < .12 ? .12 * Math.sign(u.faceS || 1) : u.faceS;
   g.save(); g.translate(x + m.dx * face, y + m.dy); g.rotate(m.rot * face); g.scale(m.sx * fs, m.sy);
-  const rigged = set && RIGS[set] && m.pose !== 'skill'; if (rigged) { m.dx *= .45; }
+  const rigged = set && (PUPS[set] || RIGS[set]) && m.pose !== 'skill'; if (rigged) { m.dx *= .45; }
   const cur = rigged ? null : poseImg(set, img, m.pose, h);
-  if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h);
+  if (rigged && PUPS[set]) drawPuppet(set, h, pupAngles(u, seed), m.glow); else if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h);
   if (blend < 1 && u.pp && !(rigged && u.pp !== 'skill')) { const pr = poseImg(set, img, u.pp, h); if (pr) { g.globalAlpha = 1 - blend; g.drawImage(pr.im, -pr.w * pr.ax, -pr.h, pr.w, pr.h); g.globalAlpha = 1; } }
   if (m.glow > 0 && cur) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = m.glow; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
   g.restore();
@@ -569,6 +588,7 @@ function drawFx(back) {   /* back = the light that sits behind the heroes (summo
       g.restore();
     } else if (f.t === 'anim' && !f.back === !back) { const v = VFX[f.k], age = f.max - f.life - f.dl; if (v && age >= 0) { const i = Math.min(v.n - 1, Math.floor(age * v.fps / 60)), w = f.h * v.fw / v.fh; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Math.min(.72, (age + 1) / 5); g.drawImage(v.im, (i % v.cols) * v.fw, Math.floor(i / v.cols) * v.fh, v.fw, v.fh, f.x - w * v.ax, f.y - f.h * v.ay, w, f.h); g.restore(); } }
     else if (f.t === 'img') { const im = IMG[f.k]; if (im) { const w = f.w * (1.15 - .15 * a), h = w * im.height / im.width; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = a; g.translate(f.x, f.y); g.rotate(f.ang); g.drawImage(im, -w / 2, -h / 2, w, h); g.restore(); } }
+    else if (f.t === 'shot' && f.kind === 'fire' && IMG.wukong_fx) { const im = IMG.wukong_fx, w = 40, h = w * im.height / im.width, an = Math.atan2(f.m.y - 32 - f.y, f.m.x - f.x); g.save(); g.globalCompositeOperation = 'lighter'; g.translate(f.x, f.y); g.rotate(an); g.drawImage(im, -w * .7, -h / 2, w, h); g.restore(); }
     else if (f.t === 'shot') { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(f.x, f.y, 1, f.x, f.y, 16); gr.addColorStop(0, '#fff6c8'); gr.addColorStop(.4, f.col); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(f.x - 16, f.y - 16, 32, 32); g.restore(); }
   }
   g.globalAlpha = 1;
@@ -677,8 +697,9 @@ $('exit').onclick = () => { if (G.over) return; if (Date.now() - exitAt < 2000) 
 let last = 0;
 function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; tt += dt; if (MODE === 'battle') for (let k = 0; k < G.speed; k++) step(); draw(); requestAnimationFrame(frame); }
 (async () => {
-  const names = ['hero_greek', 'hero_norse', 'hero_egypt', 'hero_asia', 'soldier', 'spirit_greek', 'mob_robot_a', 'mob_robot_b', 'mob_robot_c', 'mob_ghoul', 'boss_ghoul', 'zeus_idle', 'zeus_attack', 'zeus_skill', 'zeus_spirit', 'zeus_fx', 'thor_idle', 'thor_attack', 'thor_skill', 'thor_spirit', 'thor_fx', 'anubis_idle', 'anubis_attack', 'anubis_skill', 'anubis_spirit', 'anubis_fx'];
+  const names = ['hero_greek', 'hero_norse', 'hero_egypt', 'hero_asia', 'soldier', 'spirit_greek', 'mob_robot_a', 'mob_robot_b', 'mob_robot_c', 'mob_ghoul', 'boss_ghoul', 'zeus_idle', 'zeus_attack', 'zeus_skill', 'zeus_spirit', 'zeus_fx', 'thor_idle', 'thor_attack', 'thor_skill', 'thor_spirit', 'thor_fx', 'anubis_idle', 'anubis_attack', 'anubis_skill', 'anubis_spirit', 'anubis_fx', 'wukong_idle', 'wukong_attack', 'wukong_skill', 'wukong_spirit', 'wukong_fx'];
   SETS = await fetch('art/divine/sets.json').then(r => r.json());
+  try { PUPS = await fetch('art/divine/puppet.json').then(r => r.json()); await Promise.all(Object.keys(PUPS).flatMap(st => PUPS[st].parts.map(async q => { IMG['pup_' + st + '_' + q.n] = await load('art/divine/pup_' + st + '_' + q.n + '.png'); }))); } catch (e) { PUPS = {}; }
   try { RIGS = await fetch('art/divine/rig.json').then(r => r.json()); await Promise.all(Object.keys(RIGS).flatMap(st => ['body', 'arm2', 'head', 'arm'].map(async pn => { IMG['rig_' + st + '_' + pn] = await load('art/divine/rig_' + st + '_' + pn + '.png'); }))); } catch (e) { RIGS = {}; }
   for (const v of ['zeus_storm', 'thor_quake', 'anubis_sand', 'wukong_firerain', 'summon', 'merge']) { try { const [j, im] = await Promise.all([fetch('art/divine/vfx_' + v + '.json').then(r => r.json()), load('art/divine/vfx_' + v + '.jpg')]); VFX[v] = { ...j, im }; } catch (e) {} }
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
