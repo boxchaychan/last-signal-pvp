@@ -16,3 +16,9 @@ Same art style as the attached picture: cute chibi cartoon game art, thick clean
 ```
 Same art style as the attached picture: cute chibi cartoon game art, thick clean dark outline, bright colours with soft cel shading. Draw ONE original monster for a card game: a shambling desert mummy wrapped in old cream linen with loose bandage ends, glowing purple eyes, a gold scarab amulet, arms stretched forward, a little sand falling off. Full body, pure white background, no ground, no text.
 ```
+
+## สนามเล่นการ์ด (ฉากหลังของ cards.html) = ทำอันนี้ก่อน
+เลือกภาพแนวนอน 16:9 แนบรูป `art/cards/lubu_paint.png` (แบบลายเส้น) แล้ววางกล่องนี้
+```
+A beautiful card battle arena background for a mobile card game, landscape 16:9, seen from slightly above. A large ancient war table of dark polished wood with gold inlay and carved edges, set in an open desert fortress courtyard at golden dusk: red silk banners, bronze braziers with flames at the four corners, sandstone walls, distant dunes and a big warm sun behind, glowing embers floating in the air. The middle of the table is a wide CLEAR playing surface with no objects, split into two halves by a faint glowing gold line: the top half for the enemy, the bottom half for the player. An empty round gold medallion socket at the top centre and another at the bottom left, for the two leaders' portraits. Soft warm light, rich colours, cute stylized mobile game art in the same style as the attached picture. No cards, no characters, no UI, no text.
+```
