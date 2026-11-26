@@ -3120,3 +3120,11 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - `?ov=1` = the whole map in one picture.
   - Check: `node tools/qa/pixgrind_check.js <out> [query] [scale] [start,walk,pool,ledge,ramp,upper,...]` (phone 844 x 390 @3; prints errors). Last run: no errors.
   - Next: the head + plant kit from Gemini, the attacks (bow / sword / spellbook), fighting the scorpions, levels.
+- 2026-11-26 (owner after v1: "หยุดก่อน ทำแมพประกอบก่อนค่อยทำท่าโจมตี", "วิ่งครบยัง ยืนครบยัง", "เจนภาพแมพทั้งแมพมาก่อน ทำสวยๆ", "ทำใน godot จะง่ายกว่าไหม", "เอาตัวละครมาให้ฉันลองวิ่งก่อน"):
+  - STOP on attacks: the map comes first.
+  - Run / idle are complete for the SIDE only (left, mirrored right). Front / back (walking down / up the screen) are not made; 1 credit each move and direction, only on "เจน".
+  - Whole-map design picture first: Gemini box "ภาพทั้งแมพ" in `PROMPTS_gemini.md`, with 2 attachments: the target picture (style) + `art/incoming/pixgrind/REF_layout_v1.png` (our real layout from `?ov=1`, cropped). It asks for natural weathered ledges, the stone head as the biggest object, a caravan wreck, scorpion burrows, and no default temple / waterfall / bridge. The map is then rebuilt to match the picture the owner approves.
+  - Godot question answered: staying on the web (three.js) for now.
+    - Phone testing by link, our whole cut / check pipeline is web, and Claude cannot see or drive the Godot editor from the cloud.
+    - Godot's advantages (a visual editor to place props by hand, an app build) matter later, if the owner wants to arrange maps himself or ship an app.
+  - The owner tries the run in `pixgrind.html` (deploy of v1 was running at 13:52 UTC).

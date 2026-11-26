@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   const pg = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: dsf })).newPage();
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.type() + ': ' + m.text()); });
-  const t0 = Date.now(); await pg.goto('http://localhost:8000/pixgrind.html?noui=0' + extra, { waitUntil: 'load', timeout: 180000 });
+  const t0 = Date.now(); await pg.goto('http://localhost:8000/pixgrind.html?' + (extra.includes('noui') ? '' : 'noui=0') + extra, { waitUntil: 'load', timeout: 180000 });
   await pg.waitForFunction(() => window.PG && PG.propsReady && PG.frames > 3, null, { timeout: 180000 }); console.log('ready ms', Date.now() - t0);
   console.log(JSON.stringify(await pg.evaluate(() => ({ px: [PG.PX.bw, PG.PX.bh, PG.PX.k], tris: PG.renderer.info.render.triangles, calls: PG.renderer.info.render.calls }))));
   const SP = { start: null, pool: [64, 66], ledge: [60, 57], ramp: [74, 56], upper: [92, 40], north: [44, 27], east: [104, 40], south: [40, 92] };
