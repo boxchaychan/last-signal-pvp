@@ -15,9 +15,36 @@ CRAFTED = [  # result, main icon, small icon, element colour
     ('bloodaxe', 'axe', 'fang', (255, 40, 60)), ('thunderhammer', 'hammer', 'orb', (190, 140, 255)), ('archstaff', 'wand', 'book', (210, 110, 255)),
     ('vampclaw', 'claw', 'heart', (255, 40, 100)), ('comet', 'meteor', 'bomb', (255, 170, 60)), ('fortress', 'shield', 'helm', (255, 215, 110)),
     ('spikeshield', 'shield', 'cactus', (150, 255, 120)), ('feast', 'meat', 'wine', (255, 150, 80)), ('luckycoin', 'pig', 'clover', (255, 220, 80))]
+# 24 shop items added 2026-11-26 ("เพิ่มของไปอีก"): code-made from our icons until the owner's ChatGPT sheets come
+# ('var', src, tint, amount, rotate deg, scale, flip) or ('pair', src a, src b, tint) = two icons crossed
+NEWITEMS = [('twinblades', 'pair', 'dagger', 'dagger', (190, 200, 255)), ('rapier', 'var', 'sword', (235, 240, 255), .3, -18, .9, False), ('greatsword', 'var', 'sword', (150, 70, 220), .55, 0, 1.0, True),
+    ('katana', 'var', 'sword', (150, 225, 255), .45, 28, .95, False), ('javelin', 'var', 'spear', (255, 220, 150), .35, -12, 1.0, False), ('chakram', 'var', 'shuriken', (255, 130, 40), .6, 20, 1.0, False),
+    ('holytome', 'var', 'book', (255, 225, 130), .6, 0, 1.0, False), ('voidorb', 'var', 'orb', (110, 40, 170), .6, 0, 1.0, False), ('buckler', 'var', 'shield', (215, 150, 80), .5, 0, .78, False),
+    ('towershield', 'var', 'shield', (170, 200, 230), .45, 0, 1.0, False), ('boots', 'var', 'feather', (110, 230, 210), .55, 35, 1.0, False), ('amulet', 'var', 'heart', (255, 215, 110), .6, 0, .9, False),
+    ('bread', 'var', 'apple', (215, 160, 80), .65, 0, .95, False), ('potion', 'var', 'wine', (255, 60, 80), .4, 0, 1.05, False), ('honey', 'var', 'juice', (255, 175, 40), .65, 0, 1.0, False),
+    ('elixir', 'var', 'juice', (255, 225, 110), .6, 0, 1.05, True), ('furyrune', 'var', 'ember', (255, 50, 40), .5, 0, 1.0, False), ('venomgland', 'var', 'poison', (90, 200, 60), .55, 0, 1.0, True),
+    ('thunderstone', 'var', 'stone', (170, 130, 255), .65, 0, 1.0, False), ('holyseal', 'var', 'star', (255, 240, 170), .5, 0, 1.0, False), ('ragemask', 'var', 'fang', (255, 40, 40), .55, 0, 1.0, True),
+    ('wardrum', 'var', 'bomb', (200, 130, 70), .6, 0, 1.0, False), ('lantern', 'var', 'hourglass', (255, 190, 90), .5, 0, 1.0, False), ('goldbag', 'var', 'pig', (255, 210, 60), .7, 0, 1.0, True)]
+CRAFTED2 = [('stormblades', 'twinblades', 'feather', (150, 220, 255)), ('luckrapier', 'rapier', 'clover', (140, 255, 120)), ('executioner', 'greatsword', 'fang', (255, 50, 60)),
+    ('frostlance', 'javelin', 'frost', (120, 215, 255)), ('divinetome', 'holytome', 'ring', (255, 235, 140)), ('parrybuckler', 'buckler', 'glove', (255, 200, 110)),
+    ('honeybread', 'bread', 'juice', (255, 190, 70)), ('soullantern', 'lantern', 'skull', (190, 90, 255))]
 SRC = Image.open('art/bag/icons.png').convert('RGBA')
+MADE = {}
 def cell(k):
+    if k in MADE: return MADE[k].copy()
     i = ORDER.index(k); return SRC.crop((i % 8 * 64, i // 8 * 64, i % 8 * 64 + 64, i // 8 * 64 + 64))
+def var(src, col, amt, rot, sc, flip):
+    m = grade(cell(src), col, amt)
+    if flip: m = m.transpose(Image.FLIP_LEFT_RIGHT)
+    if rot: m = m.rotate(rot, Image.BICUBIC, expand=False)
+    if sc != 1: w = max(8, round(64 * sc)); m2 = Image.new('RGBA', (64, 64), (0, 0, 0, 0)); m2.alpha_composite(m.resize((w, w), Image.LANCZOS), ((64 - w) // 2, (64 - w) // 2)); m = m2
+    return m
+def pair(a, b, col):
+    out = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
+    for src, rot, dx in ((a, 28, -6), (b, -28, 6)):
+        m = grade(cell(src), col, .35).resize((52, 52), Image.LANCZOS).rotate(rot, Image.BICUBIC, expand=False)
+        out.alpha_composite(m, (6 + dx, 6))
+    return out
 def grade(im, col, amt=.38):
     r, g, b, a = im.split(); L = Image.merge('RGB', (r, g, b)).convert('L')
     tint = Image.merge('RGB', [L.point(lambda v, c=c: min(255, int(v * c / 200))) for c in col])
@@ -50,8 +77,23 @@ def from_sheet(path, cols=4, rows=3):
         big = c.resize((w * 4, h * 4), Image.LANCZOS); c = big.resize((w, h), Image.NEAREST)
         cell = Image.new('RGBA', (64, 64), (0, 0, 0, 0)); cell.alpha_composite(c, ((64 - w) // 2, (64 - h) // 2)); out.append(cell)
     return out
-sheet = Image.new('RGBA', (512, 448), (0, 0, 0, 0)); sheet.paste(SRC, (0, 0))
-got = from_sheet(sys.argv[2], *(int(v) for v in sys.argv[3:5])) if len(sys.argv) > 2 and sys.argv[1] == '--sheet' else []
-for n, (k, a, b, c) in enumerate(CRAFTED):
-    sheet.paste(got[n] if n < len(got) and got[n] else icon(a, b, c), (n % 8 * 64, 320 + n // 8 * 64))
-sheet.save('art/bag3d/icons_all.png'); print('ok', len(CRAFTED))
+# the order of the IT table in bag3d.html after the 40 originals: CRAFTED, NEWITEMS, CRAFTED2
+ALL = [k for k, *_ in CRAFTED] + [k for k, *_ in NEWITEMS] + [k for k, *_ in CRAFTED2]
+for k, op, *a in NEWITEMS: MADE[k] = var(a[0], *a[1:]) if op == 'var' else pair(a[0], a[1], a[2])
+code = {k: icon(a, b, c) for k, a, b, c in CRAFTED}; code.update({k: MADE[k] for k, *_ in NEWITEMS}); code.update({k: icon(a, b, c) for k, a, b, c in CRAFTED2})
+# owner's ChatGPT sheets that already came in (art/incoming/bag3d/sheet_<first id>_<cols>x<rows>.png, kept and re-used), then a new one:
+#   python3 tools/art/bag_craft_icons.py --sheet <png> <first id> [cols 4] [rows 3]
+import glob, os, shutil
+if len(sys.argv) > 3 and sys.argv[1] == '--sheet':
+    c, r = (int(v) for v in (sys.argv[4:6] if len(sys.argv) > 5 else (4, 3))); dst = f'art/incoming/bag3d/sheet_{sys.argv[3]}_{c}x{r}.png'
+    if os.path.abspath(sys.argv[2]) != os.path.abspath(dst): shutil.copy(sys.argv[2], dst)
+sheets = sorted(glob.glob('art/incoming/bag3d/sheet_*_*x*.png'))
+for sh in sheets:
+    first, grid = os.path.basename(sh)[6:-4].rsplit('_', 1); c, r = (int(v) for v in grid.split('x'))
+    for n, im in enumerate(from_sheet(sh, c, r)):
+        j = ALL.index(first) + n
+        if im is not None and j < len(ALL): code[ALL[j]] = im
+rows = (40 + len(ALL) + 7) // 8
+sheet = Image.new('RGBA', (512, rows * 64), (0, 0, 0, 0)); sheet.paste(SRC, (0, 0))
+for n, k in enumerate(ALL): sheet.paste(code[k], ((40 + n) % 8 * 64, (40 + n) // 8 * 64))
+sheet.save('art/bag3d/icons_all.png'); print('ok', len(ALL), 'icons,', rows, 'rows, sheets used:', len(sheets))
