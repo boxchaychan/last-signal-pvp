@@ -546,10 +546,10 @@ function motion(u, seed) {
   return m;
 }
 /* owner 2026-11-26 test "เอาตัวซุส ... พอดีช่อง ... ขอคมๆ proflash": ?pix=1 = Zeus as PixelLab Pro Flash pixel art at slot size
-   (art/divine/pix_zeus_idle.png, 43 x 60 = 1 pixel per game px for a mythic), drawn without smoothing; one picture for every pose, the code motion does the rest */
+   (art/divine/pix_zeus_idle / attack / skill.png, idle 43 x 60 = 1 pixel per game px for a mythic), drawn without smoothing */
 const PIX = new URLSearchParams(location.search).get('pix') === '1';
 function poseImg(set, img, pose, h) {   /* the picture + its size and body anchor for this pose */
-  if (PIX && set === 'zeus' && IMG.pix_zeus_idle) { const im = IMG.pix_zeus_idle; return { im, w: im.width * h / im.height, h, ax: .541, pix: 1 }; }
+  if (PIX && set === 'zeus' && IMG.pix_zeus_idle) { const im = IMG['pix_zeus_' + pose] || IMG.pix_zeus_idle, hh = h * im.height / IMG.pix_zeus_idle.height; return { im, w: im.width * hh / im.height, h: hh, ax: (SETS.zeus[pose] || SETS.zeus.idle).ax, pix: 1 }; }   /* every pose at the same pixel size */
   if (set) { const z = SETS[set][pose], im = IMG[set + '_' + pose]; if (!im) return null; const hh = h * z.h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h); return { im, w: im.width * hh / im.height, h: hh, ax: z.ax }; }
   const im = IMG[img]; if (!im) return null; return { im, w: im.width * h / im.height, h, ax: .5 };
 }
@@ -836,7 +836,7 @@ function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; 
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   if (ARENA) try { IMG.arena = await load('art/divine/arena_gemini.jpg'); } catch (e) { console.warn(e); }
-  if (PIX) try { const im = await load('art/divine/pix_zeus_idle.png'); im.pix = true; IMG.pix_zeus_idle = im; IMG.zeus_idle = im; } catch (e) { console.warn(e); }
+  if (PIX) try { for (const ps of ['idle', 'attack', 'skill']) { const im = await load('art/divine/pix_zeus_' + ps + '.png'); im.pix = true; IMG['pix_zeus_' + ps] = im; } IMG.zeus_idle = IMG.pix_zeus_idle; } catch (e) { console.warn(e); }
   BG = paintBG(); fresh(); renderLobby();
   window.DIVINE = { state: () => G, meta: () => META, startMatch, goLobby, endMatch, summon, fuse, merge, spawnBoss, chrono, upgrade, step, draw, place, makeUnit, setMode: m => { MODE = m; $('app').classList.toggle('lobby', m !== 'battle'); }, ready: true };
   requestAnimationFrame(frame);
