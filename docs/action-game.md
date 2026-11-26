@@ -87,6 +87,7 @@ animation, skills fire instantly as big effects, telegraph rings, a dodge button
 | 2026-11-26 | divine Monkey King LEAP SMASH (owner "ขอท่าตีลิงกระโดดฟาดหน่อย"): `animate_image` 8 frames on 88 x 92 | job 5c253703-3aa9-4720-a96b-2eea90581e20 | 1 | ✅ crouch, leap, smash with fire = his attack; the staff strike kept as `attack2`; GIF `pixel_gods/wukong_leap_smash.gif` |
 | 2026-11-26 | divine Thor SKILL redo (owner "ทำสกิลให้ต่างกันหน่อย": raising the hammer looked like Zeus raising the bolt): `animate_image` 8 frames on 96 x 80, ground slam with a blue shockwave | job c82d9f4a-3cf4-46b4-94f5-8afb19d119a6 | 1 | ✅ Thor's skill; the raise kept as `skill_raise` |
 | 2026-11-26 | pixgrind heroine B at 60 px, 16 bit (owner "ลองเจน 60 16bit 1เครดิต"): `image_to_pixelart` redraw (faithful off, strength 0), 53 x 65 canvas from `art/incoming/pixgrind/pl60/in_B_white.png` (pose B cut, on white, 892 x 1097) | ccfa7159-87a1-4798-9cc4-b3d220954e16 | 1 | done: 48 x 62 figure, 41 colours. Dark crisp outline, readable face (eyes show), bright red scarf, clear pose and boots. Changes: the hair turned dark brown, the puffy cream sleeves became bare skin, a small white blob on top of the head (kept, not removed). White fringe removed free -> `pl60/B60_pl_clean.png`, 16 colours `B60_pl_16.png`, compare `compare_B60.png`, phone `phone_free_vs_pl.png` |
+| 2026-11-26 | pixgrind heroine B PRO FLASH (owner picked "แถว2ตัวกลาง" = the free crisp full-colour 60 px B, then "โปรแฟรช"; the 1-credit standard was shown first): `image_to_pixelart_pro_flash` of `pl60/in_pf_B60x4.png` (`sim60/B60_fullcolour.png` 48 x 60 on white, x4 nearest), description = same girl / colours | 84503b8f-134a-42ca-9b27-bb318f601b64 | 6 | done (charged 6): 69 x 84 on BLACK, 27 colours; figure 60 x 76 (the tool picked the size). Crisp and on model: black hair, face with eyes + grin, cream puffy sleeves, red scarf, skirt, fur-top boots. Cut -> `pl60/B_pf_cut.png`; free majority-colour shrink to 60 -> `B_pf_shrunk60.png` (still has a face); compare `compare_pf.png`, `compare_pf_76_60.png`, phone `phone_all4.png` |
 
 Balance after: 1.25 of 40 (first trial key, 2026-11-08, all attacks done). The owner switches to another key next.
 
@@ -3059,3 +3060,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - puffy cream sleeves turned into bare arms;
     - a small white blob on the head.
   - Next, if the owner likes it: a standing 3-view of the final design converted the same way, 1 credit a view; or fix the hair colour free.
+- 2026-11-26 PRO FLASH heroine B (owner "แถว2ตัวกลางโปรแฟรช", 6 credits, job log).
+  - The best so far: crisp, on model, black hair, a face with eyes, cream sleeves. The colours also separate better than the 1-credit try (black / cream / brown / red).
+  - Pro Flash picked 76 px tall, not 60 (input was 60 px x4). A free shrink of that crisp sprite to 60 keeps the face. The owner chooses 76 (close to the earlier 80 standard) or 60.
+  - Owner's open question "สีชุดใกล้กันเกินไปไหม": yes, too much brown. Proposed: black hair, a deep-teal vest or skirt, cream sleeves back, red scarf as the one accent. A free code recolour test was offered, not done yet.
