@@ -144,9 +144,50 @@ function drawCard(W, H, o = {}) {   /* o.tex = draw the frame only (window left 
   st(sh - .2, 'rgba(255,255,255,0)'); st(sh - .1, 'rgba(255,120,200,.35)'); st(sh, 'rgba(255,255,220,.6)'); st(sh + .1, 'rgba(120,220,255,.35)'); st(sh + .2, 'rgba(255,255,255,0)'); g.fillStyle = fo; g.fillRect(x, y, W, H); g.restore();
   for (let i = 0; i < 9; i++) { const a = t * .7 + i * .7, px = Math.cos(a) * (W / 2 + 6), py = Math.sin(a * 1.3) * (H / 2 + 6); g.globalAlpha = .5 + .5 * Math.sin(t * 5 + i); g.fillStyle = '#fff6c8'; g.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? .8 : 3.5, b = k * Math.PI / 4; g.lineTo(px + Math.cos(b) * r, py + Math.sin(b) * r); } g.fill(); } g.globalAlpha = 1;
 }
+/* ---------- FULL-ART card, no frame (owner 2026-11-26 "ทำให้สวยๆ หน่อย ไม่จำเป็นต้องมีกรอบก็ได้") = the default; ?style=frame = the framed v3.
+   The battlefield fills the whole card, Lu Bu stands big in it with light rays behind him, the name / abilities sit on a dark fade at the
+   bottom, a thin light edge instead of a frame, the gems and badges float on top, foil + embers over everything. */
+function drawFullCard(W, H) {
+  const x = -W / 2, y = -H / 2, R = 20;
+  g.save(); g.shadowColor = 'rgba(255,140,60,.5)'; g.shadowBlur = 36; g.fillStyle = '#2a0806'; rr(x, y, W, H, R); g.fill(); g.restore();
+  g.save(); g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = 26; g.shadowOffsetY = 14; g.fillStyle = '#1a0604'; rr(x, y, W, H, R); g.fill(); g.restore();
+  g.save(); rr(x, y, W, H, R); g.clip();
+  /* scene: the dusk battlefield, scaled to cover the card, drifting a little */
+  const ss = H * 1.02 / SCN.height, sw = SCN.width * ss; g.drawImage(SCN, -sw / 2 + Math.sin(t * .25) * 6, y - 4, sw, H * 1.02);
+  /* light rays + a sun glow behind the hero */
+  const cx = 0, cy = y + H * .36; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = .13;
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + t * .08; g.fillStyle = i % 2 ? '#ffd08a' : '#ff9a4a'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * 500, cy + Math.sin(a) * 500); g.lineTo(cx + Math.cos(a + .1) * 500, cy + Math.sin(a + .1) * 500); g.closePath(); g.fill(); } g.restore();
+  const sun = g.createRadialGradient(cx, cy, 10, cx, cy, W * .7); sun.addColorStop(0, 'rgba(255,236,170,.75)'); sun.addColorStop(.4, 'rgba(255,150,70,.25)'); sun.addColorStop(1, 'rgba(255,120,40,0)'); g.fillStyle = sun; g.fillRect(x, y, W, H);
+  /* the hero, big, with a warm rim light and a slow breath */
+  if (art.complete && art.naturalWidth) { const s = W * 1.2 / art.naturalWidth, dw = art.naturalWidth * s, dh = art.naturalHeight * s, px = -dw / 2 + 8, py = y + H * .06 + Math.sin(t * 1.4) * 2;
+    g.save(); g.shadowColor = 'rgba(255,210,130,.95)'; g.shadowBlur = 22; g.drawImage(art, px, py, dw, dh); g.restore(); g.drawImage(art, px, py, dw, dh); }
+  /* embers over the whole picture */
+  for (const e of EMB) { const ey = y + H - ((e.y + t * e.v * .8) % 1) * H, ex = x + e.x * W + Math.sin(t * 2 + e.ph) * 5; g.fillStyle = `rgba(255,${170 + e.s * 50 | 0},90,${.85 * Math.sin(((e.y + t * e.v * .8) % 1) * Math.PI)})`; g.beginPath(); g.arc(ex, ey, e.s * 1.8, 0, 7); g.fill(); }
+  /* dark fade at the bottom for the text */
+  const fade = g.createLinearGradient(0, y + H * .45, 0, y + H); fade.addColorStop(0, 'rgba(26,4,4,0)'); fade.addColorStop(.3, 'rgba(26,4,4,.82)'); fade.addColorStop(1, 'rgba(14,2,2,.97)'); g.fillStyle = fade; g.fillRect(x, y + H * .45, W, H * .55);
+  const top = g.createLinearGradient(0, y, 0, y + 70); top.addColorStop(0, 'rgba(20,4,4,.55)'); top.addColorStop(1, 'rgba(20,4,4,0)'); g.fillStyle = top; g.fillRect(x, y, W, 70);
+  /* name, a thin gold rule with the rarity gem, type line */
+  const ny = y + H * .61; goldText(CARD.n, 0, ny, 34);
+  const ry = ny + 26; const rule = g.createLinearGradient(x + 40, 0, x + W - 40, 0); rule.addColorStop(0, 'rgba(255,210,120,0)'); rule.addColorStop(.5, 'rgba(255,220,140,.95)'); rule.addColorStop(1, 'rgba(255,210,120,0)'); g.fillStyle = rule; g.fillRect(x + 40, ry - .8, W - 80, 1.6);
+  g.save(); g.translate(0, ry); g.fillStyle = metal(-9, -9, 9, 9); gemShape(8, 4); g.fill(); const og = g.createRadialGradient(-2, -3, 1, 0, 0, 6); og.addColorStop(0, '#fff'); og.addColorStop(.4, '#ffa02a'); og.addColorStop(1, '#8a2a04'); g.fillStyle = og; gemShape(5.5, 4); g.fill(); g.restore();
+  txt(CARD.sub + '  ·  ' + CARD.rar, 0, ry + 16, 11.5, '#f6cf8a', 600, 'rgba(0,0,0,.7)', 3);
+  /* abilities: chips + text, no box */
+  let ly = ry + 38; for (const a of CARD.ab) { g.font = FONT(800, 12); const kw = g.measureText(a.kw).width + 26, rowW = kw + 8 + (g.font = FONT(600, 13), g.measureText(a.txt).width), x0 = Math.max(x + 22, -rowW / 2);
+    g.fillStyle = a.col; rr(x0, ly - 10, kw, 20, 10); g.fill(); g.fillStyle = 'rgba(255,255,255,.32)'; rr(x0 + 1, ly - 9, kw - 2, 8, 6); g.fill(); icon(a.icon, x0 + 10, ly, .9, '#3a1404'); txt(a.kw, x0 + 19, ly + 1, 12, '#3a1404', 800, null, 0, 'left');
+    g.font = FONT(600, 13); let cx = x0 + kw + 8, cy = ly; for (const wd of a.txt.split(' ')) { const ww = g.measureText(wd + ' ').width; if (cx + ww > x + W - 20) { cx = x0 + 10; cy += 18; } txt(wd, cx, cy + 1, 13, '#fff2dc', 600, 'rgba(0,0,0,.75)', 3, 'left'); cx += ww; } ly = cy + 26; }
+  /* foil sheen */
+  const sh = ((t * .3) % 1.9) - .45; g.globalCompositeOperation = 'overlay'; const fo = g.createLinearGradient(x, y, x + W, y + H); const st = (v, c) => fo.addColorStop(Math.max(0, Math.min(1, v)), c);
+  st(sh - .2, 'rgba(255,255,255,0)'); st(sh - .1, 'rgba(255,120,200,.3)'); st(sh, 'rgba(255,255,220,.5)'); st(sh + .1, 'rgba(120,220,255,.3)'); st(sh + .2, 'rgba(255,255,255,0)'); g.fillStyle = fo; g.fillRect(x, y, W, H); g.globalCompositeOperation = 'source-over';
+  g.restore();
+  /* a thin light edge instead of a frame */
+  const edge = g.createLinearGradient(x, y, x + W, y + H); edge.addColorStop(0, 'rgba(255,240,200,.95)'); edge.addColorStop(.5, 'rgba(255,170,80,.55)'); edge.addColorStop(1, 'rgba(255,230,180,.9)'); g.strokeStyle = edge; g.lineWidth = 2; rr(x + 1, y + 1, W - 2, H - 2, R - 1); g.stroke();
+  /* floating stats */
+  costGem(x + 30, y + 32, 21, CARD.cost); atkBadge(x + 30, y + H - 26, 20, CARD.atk); hpBadge(x + W - 30, y + H - 24, 20, CARD.hp);
+  for (let i = 0; i < 9; i++) { const a = t * .7 + i * .7, px = Math.cos(a) * (W / 2 + 8), py = Math.sin(a * 1.3) * (H / 2 + 8); g.globalAlpha = .5 + .5 * Math.sin(t * 5 + i); g.fillStyle = '#fff6c8'; g.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? .8 : 3.5, b = k * Math.PI / 4; g.lineTo(px + Math.cos(b) * r, py + Math.sin(b) * r); } g.fill(); } g.globalAlpha = 1;
+}
 function frame(now) { t = now / 1000; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
   const H = Math.min(innerHeight * .8, innerWidth * 1.15), sc = H / 440; g.setTransform(DPR * sc, 0, 0, DPR * sc, DPR * innerWidth / 2, DPR * (innerHeight / 2 + H * .05));
-  g.transform(1, 0, Math.sin(t * .8) * .025, 1, 0, 0); drawCard(316, 440, { pop: Q.get('pop') === '1' }); requestAnimationFrame(frame); }
+  g.transform(1, 0, Math.sin(t * .8) * .025, 1, 0, 0); if (Q.get('style') === 'frame' || Q.get('pop')) drawCard(316, 440, { pop: Q.get('pop') === '1' }); else drawFullCard(316, 440); requestAnimationFrame(frame); }
 /* ---------- the 3D card (default): a thick gold card with a deep window; the battlefield, the embers and Lu Bu sit at different depths
    inside it (parallax when it tilts), the frame is the 2D drawing above as a texture, the edge is metal, a foil shader follows the tilt.
    Drag / move = tilt, tap = flip to the back. */
