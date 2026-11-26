@@ -3133,3 +3133,18 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The owner tries the run in `pixgrind.html` (deploy of v1 was running at 13:52 UTC).
 - 2026-11-26 (owner "ทำเป็นภาพวิ่งมาให้ดู ขี้เกียจรอ"): clip of the hero running round the oasis, recorded free by `node tools/qa/pixgrind_clip.js <out> [fps]` (frames stepped with `PG.sim`, ffmpeg -> mp4 x2 nearest + gif): `art/incoming/pixgrind/shots/v1_run.mp4` / `.gif` (11 s, 15 fps, phone 844 x 390).
 - 2026-11-26 (owner "ตัวละครขายาวไป"): free fix `tools/art/pixgrind_shortlegs.py` takes a band of rows out across the shins / knees of every frame (feet stay on the ground row). Versions -3 and -5 px of the run and idle in `art/incoming/pixgrind/shortlegs/`, comparison `compare.gif` (original / -3 / -5). The game still uses the original until the owner picks.
+
+## MONSTER CARD GAME IDEA (owner 2026-11-26: "อยากทำเกมส์การ์ดละมีมอนสเตอร์ออกมาด้วย"), PROPOSED, not built
+- Context: after the pixgrind hero kept changing, the owner said "มาแนวนี้คงไม่เวิค". Board-game ideas were talked about (dice loop adventure, weapon-deck board, tile laying, hex tactics) and a tabletop-miniatures skirmish (genre only, nothing from Warhammer). Then the owner asked for a card game in which monsters come OUT of the cards.
+- Proposal (genre of lane card battlers, nothing copied): each side has 5 lanes. Mana grows 1 a turn.
+  - Playing a monster card: the card flies to a lane, flips, light bursts, and the monster rises out of it.
+  - At the end of the turn every monster hits the one in front of it, or the enemy summoner if the lane is empty.
+  - Card kinds: monsters (attack / HP / one ability, elements fire / water / earth / poison / wind / holy / dark), spells, traps on a lane.
+  - Our chibi girl is the SUMMONER behind the board (only idle / cast moves needed).
+- Assets already in the repo:
+  - more than 100 pixel monsters with walk + attack rows (`art/horde/mobs`, `index.json`: tier, element, role) = the card pool;
+  - bosses for boss decks;
+  - the 3D card look from the CARD GAME CONCEPT section (thick cards, frames by rarity, tilt, holo), the 3D pixel table / desert look.
+- First playable: vs AI, a small desert campaign (5-6 rival summoners + a boss), decks of 20, win cards.
+- Waiting for the owner's picks: lanes or free board; 2D pixel monsters (recommended, free, 100+) or 3D models; campaign vs AI first (recommended).
+- The earlier CARD GAME CONCEPT section (hero deck-builder with distance rows) stays as another option.
