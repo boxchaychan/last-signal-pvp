@@ -14,14 +14,20 @@ BOX = {'head': (590, 5, 1000, 362), 'bolt': (165, 315, 378, 790), 'torso': (625,
        'handF': (1025, 625, 1170, 786), 'handW': (405, 635, 580, 765), 'legL': (553, 762, 736, 1012), 'legR': (834, 762, 1014, 1012)}
 SC = {'head': 1.12}   # the head a little bigger: chibi proportions like Codex's idle picture
 # name: (parent, attach point on the parent (raw), own joint (raw), world rest angle in degrees); draw order = list order
-PUP = [
+PUP = [   # owner "ทำไมไม่ซ่อนไว้ใต้แขน": the upper arms hang BEHIND the torso, so the ball joints hide under the shoulders
     ('legL', 'torso', (722, 708), (645, 792), 0), ('legR', 'torso', (862, 708), (924, 792), 0),
+    ('armF', 'torso', (900, 520), (1055, 437), 22), ('armW', 'torso', (674, 520), (547, 440), 14),
     ('torso', None, None, (790, 600), 0),
-    ('armF', 'torso', (904, 516), (1055, 437), 22), ('handF', 'armF', (1143, 566), (1088, 664), -4),
+    ('handF', 'armF', (1143, 566), (1088, 664), -4),
     ('head', 'torso', (787, 452), (790, 352), 0),
-    ('bolt', 'handW', (474, 694), (268, 558), 14), ('armW', 'torso', (670, 516), (547, 440), 14), ('handW', 'armW', (456, 566), (538, 686), -40),
+    ('bolt', 'handW', (474, 694), (268, 558), 14), ('handW', 'armW', (456, 566), (538, 686), -40),
 ]
 src = np.array(Image.open(SRC).convert('RGBA')); src[src[..., 3] < 120] = 0
+# the torso's shoulder sockets (brown holes) become skin, so the shoulder looks whole when the arm is tucked behind it
+yy, xx = np.mgrid[0:src.shape[0], 0:src.shape[1]]; c = src[..., :3].astype(int)
+for sx, sy in ((665, 513), (908, 513)):
+    hole = (np.hypot(xx - sx, yy - sy) < 36) & (c[..., 0] > 60) & (c[..., 0] < 170) & (c[..., 1] < 75) & (c[..., 2] < 55) & (c[..., 0] > c[..., 1] * 1.7)
+    src[hole, :3] = (253, 181, 142)
 order = [p[0] for p in PUP]; spec = {p[0]: p[1:] for p in PUP}; world = {}
 def rot(v, a): c, s = math.cos(a), math.sin(a); return (v[0] * c - v[1] * s, v[0] * s + v[1] * c)
 for n in ['torso', 'legL', 'legR', 'armF', 'handF', 'head', 'armW', 'handW', 'bolt']:   # parents first

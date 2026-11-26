@@ -2843,4 +2843,5 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Monkey King set (`codex/divine-wukong`, brief item C) brought in by hand: the raw files + report, `divine_sets.py` -> `wukong_*`, `PSET.asia = 'wukong'`, his fireball picture flies on Asia hits, his spirit stands behind a mythic, and his cut-out rig is added to `divine_rig.py` (the staff swings).
   - All 4 gods now have their own Codex art and moving parts. Checked: lobby, match, fight, result, bot run; no console errors.
   - Next: if the owner likes the puppet, order PARTS for Thor / Anubis / Monkey King too. Ask Codex for the exploded puppet SHEET only (that is the good part), not the final 512 cuts.
+- 2026-11-26 (owner "ทำไมไม่ซ่อนไว้ใต้แขนละ"): the Zeus puppet's upper arms now hang BEHIND the torso, so the ball joints hide under the shoulders. The torso's brown shoulder sockets are filled with skin in `divine_puppet.py`. Hands and the bolt are still drawn in front. Use the same rule for every future puppet.
 
