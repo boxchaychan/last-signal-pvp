@@ -3253,3 +3253,14 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - PixelLab was NOT used (0 credits); a pixel route would be 1 credit a card standard, offered only as a second option.
   - Owner "ขออาจสวยๆ" (= prettier art): every box now ends with one shared QUALITY block (premium mobile card splash art, polished detail, cinematic golden rim light, glow, depth of field, embers, dynamic composition, same chibi proportions / thick outline, portrait 3:4, no text), plus a follow-up box "ทำให้สวยขึ้น" to paste in the same chat when a picture is not pretty enough. ChatGPT is recommended over Gemini because the Lu Bu painting itself came from ChatGPT (same look).
   - Owner rule ("เอาพร้อมาในเเชทเลย", "รูปแนบก็ส่งในแชทด้วยให้บอกตลอด"): prompts go IN THE CHAT, and every picture to attach is sent in the chat as a file each time (now also in CLAUDE.md).
+- 2026-11-26 FIRST PAINTED CARD IN THE GAME: the owner's ChatGPT Lu Bu card (`art/incoming/monstercards/gpt/lubu_card_raw.png`, 1086 x 1448). GPT drew a whole gacha-style card: gold frame, SSR badge, name ribbon, 6 stars, stat bars with huge numbers. The prompt had said no frame / no text.
+  - `tools/art/cards_paint.py lubu` makes two files and leaves the raw untouched:
+    - `art/cards/p_lubu_full.jpg` (540 x 720): the WHOLE card, only the two baked numbers (48,500 / 625,000) painted out with the bar colour. The game writes our numbers into GPT's own bars.
+    - `art/cards/p_lubu_art.jpg` (330 x 452): the picture inside the frame, cut to the board-card shape between the SSR badge and the dragon banner.
+  - New legendary card `lubuC` ลิโป้: 8 mana, 7/7, จู่โจม, when played the halberd hits every enemy card for 2 (`bc: 'sweep2'`). It is in the Lu Bu deck instead of one ทหารทวน (still 20 cards).
+  - Painted art = `art: 'p:<key>'` + the `PAINT` table in `cards.html`:
+    - board / hand cards show the art cut (slow breathing, a 7% punch-in when it attacks);
+    - the ZOOM (tap) and the LEGENDARY SUMMON SPLASH show the full GPT card. The splash = the card fills the screen with golden light, then flies to its slot, 1.3 s, `SPLASH`.
+  - Every zoomed card now also has a side panel in words: cost / attack / HP, each keyword with its meaning (`KWD`), the ability (`long` or `txt`).
+  - Check: `node tools/qa/cards_paint_check.js <out>` (hand, zoom, splash, board, attack). No errors; a bot game also has no errors. Shots `art/incoming/monstercards/lubu_card_ingame.png`.
+  - Recipe for the next cards: GPT will likely draw a frame again. Keep it (the owner liked it). Add the file to `CARDS` in `tools/art/cards_paint.py` with the erase boxes for its numbers and the art crop, then `art: 'p:<key>'`.
