@@ -3264,3 +3264,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Every zoomed card now also has a side panel in words: cost / attack / HP, each keyword with its meaning (`KWD`), the ability (`long` or `txt`).
   - Check: `node tools/qa/cards_paint_check.js <out>` (hand, zoom, splash, board, attack). No errors; a bot game also has no errors. Shots `art/incoming/monstercards/lubu_card_ingame.png`.
   - Recipe for the next cards: GPT will likely draw a frame again. Keep it (the owner liked it). Add the file to `CARDS` in `tools/art/cards_paint.py` with the erase boxes for its numbers and the art crop, then `art: 'p:<key>'`.
+- 2026-11-26 CARD FORMAT = WHOLE GPT CARD (owner picked "ให้ ChatGPT วาดทั้งใบ" over a code frame template): every card is drawn by ChatGPT as a whole card in the same design as the Lu Bu card. That means the gold frame, rarity badge top-left, dragon banner top-right, name ribbon, stars, and red attack / blue HP bars.
+  - Reference to attach: `art/incoming/monstercards/REF_card_lubu.png` (a copy of the raw Lu Bu card).
+  - Prompts in `PROMPTS_gemini.md`: 1-6 the soldiers, 7-10 the spells (one wide purple "เวท" bar instead of the stat bars). Rarity: R bronze 3 stars, SR silver-purple 4, SSR gold 5 (Lu Bu 6).
+  - GPT is asked to write our REAL numbers and the Thai name. If it gets them wrong, the game paints them over (`tools/art/cards_paint.py` erase boxes + our numbers in its bars, like Lu Bu).
+  - Each card still goes in as `p:<key>`: the art cut on the board / hand, the whole card on zoom.
