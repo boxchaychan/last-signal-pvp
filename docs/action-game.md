@@ -2965,3 +2965,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The shared block now sets only camera, pixel quality, the hero's scale and no UI. Gemini composes the land.
   - Places A-D are each a different idea with their own palette, light, time of day and ONE landmark: A giant glowing mushrooms at dusk, B windy golden grassland with a giant beast skeleton, C snowy highland under an aurora with standing stones, D tropical beach with a shipwreck. E = the owner's own idea, or a game map picture they like (looked at only, not copied or stored).
   - RULE for every future map: no waterfall / temple ruins / bridge / cliff stairs by default. Start from the place's own palette, light and landmark.
+- 2026-11-26 HERO DESIGN (owner "ลองออกแบบตัวละครประมาณ ด้วยขนาดพอเหมาะกับแมพเป็นักผจญภัย"):
+  - Size: body 64 px head to feet, weapons not counted. 1 sprite pixel = 1 map texel on a map of about 640 x 360 texels, so the body is about 1/6 of the screen height, close to the divine pixel Zeus (60).
+  - Shapes: about 3 heads tall, big shapes, 5 colour blocks, no thin straps or patterns, so the 64 px version stays readable.
+  - Look: brass goggles pushed up on the head, a short RED hooded capelet ending at the chest (arms free; red stands out on every map candidate), cream shirt with rolled sleeves, brown leather vest, fingerless gloves, wide belt with satchel and flask, navy trousers, tall folded boots. Empty gripping hands for the hybrid weapon pin.
+  - Woman and man versions; prompts in `art/incoming/pixgrind/PROMPTS_gemini.md` (hero block + 1 / 2).
+  - After Gemini: Claude cuts the white and does a free 64 px shrink test first. Paid option only on "เจน": PixelLab standard straight at 64 px, 1 credit a picture.
