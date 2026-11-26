@@ -3017,3 +3017,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - a belt with a pouch + a tiny lantern charm (compass dropped);
     - a scalloped tabard, soft boots with a cream fold;
     - at most about 6 buckles in all.
+- 2026-11-26 (owner "ขายาวไปชุดขอดูนักผจญภัยกว่านี้"; no new picture sent): edit round 2 in `PROMPTS_gemini.md`. Keep the girl and the long red scarf.
+  - Proportions: about 2.5 heads with SHORT legs (about 1/3 of her height).
+  - More ADVENTURER: a small backpack with a rolled blanket + tin cup, a chest strap to a hip satchel, a soft leather guard on one shoulder, a vest with rolled sleeves, a belt with pouches + a tiny lantern + a brass compass, shin wraps, sturdy boots, bracers. At most about 8 buckles.
+  - Lesson: "cute" must not drop the adventurer signs (round 1 removed the pauldron, compass and straps).
