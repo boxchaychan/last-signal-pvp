@@ -3150,3 +3150,14 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
 - The earlier CARD GAME CONCEPT section (hero deck-builder with distance rows) stays as another option.
 - 2026-11-26 OWNER PICKS (owner "เลน 2D พิกเซล เล่นกับคอมก่อน"): LANES (5 a side, a monster fights the one in front of it), 2D PIXEL monsters from `art/horde/mobs` (+ `index.json` for tier / element / role), vs COMPUTER first. Next chat starts the first playable: a new page (name to choose, e.g. `cards.html`), the desert campaign, decks of 20, the chibi summoner, 3D cards drawn in code. Start on "เกมการ์ดมอนสเตอร์".
 - 2026-11-26 (owner "เลนยังไงงง" -> "ทำภาพตัวอย่างให้ดู"): lanes explained with a text diagram, then a free mock-up picture with our real pixel monsters: `art/incoming/monstercards/mock_lanes_v1.png` (`tools/art/monstercards_mock.py`). Landscape; 5 HORIZONTAL lanes (our monsters on the left half face right, enemies on the right half face left: side-view sprites read best this way); our chibi summoner on the left, the enemy summoner (tomb king) on the right; HP and mana; a hand of 5 cards (cost, attack, HP) with one being dragged to a glowing empty slot; clash in lane 1, an empty lane hits the summoner.
+- 2026-11-26 DECISION (owner "เอาเป็นแบบ hearthstone ดีกว่า เป็นการ์ดเลย ละเราจะทำเอฟเฟกต์ตอนตีแบบสวยๆ ตามการ์ด"): NO lanes. Monsters stay as CARDS on the board, in the genre of digital collectible card battlers. Genre only: nothing copied (no names, card frames, board layout, keywords or art).
+  - Each side has one row of up to 7 monster cards. Drag your card onto an enemy card (or the enemy summoner) to attack. Both deal their attack; HP left shows on the card.
+  - A monster cannot attack in the turn it is played (unless a keyword says so).
+  - Our own keywords in Thai, e.g. "ผู้พิทักษ์" (must be attacked first), "จู่โจม" (attacks at once), "เมื่ออัญเชิญ" (does something when played), "ตายแล้ว" (does something when it dies), "พิษ", "โล่".
+  - Mana grows 1 a turn up to 10. Summoners have 30 HP. Decks of 20 to 30.
+  - The selling point is a pretty ATTACK EFFECT PER CARD, chosen by element / role:
+    - fire slash and burst; poison splash; earth rock smash; holy light beam; shadow claws; wind blades; ice shards;
+    - the card lunges at the target, hit-stop, a shake, damage numbers;
+    - effects from the free `pixelfx` skill library (244 effects), `art/pvfx` (CC0) and `fx/`.
+  - Cards: thick 3D cards drawn in code (frame by rarity, tilt, holo for legendaries). The pixel monster art from `art/horde/mobs` fills the card window and plays its attack frames when it hits.
+  - Still decided: 2D pixel monsters, vs computer first, the chibi summoner, a desert campaign.
