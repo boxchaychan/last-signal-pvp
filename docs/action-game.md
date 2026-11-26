@@ -3039,3 +3039,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - the backdrop is plain code-drawn sand. The browser screenshot of the pixel map was refused by the permission check this time.
   - Result at 60: B works better. Its big head keeps a face area, and the scarf / skirt / boots / pose read as separate shapes. A reads as a slim figure with a red scarf, but the face shrinks to a few pixels. Neither keeps visible eyes with a code shrink; a real pixel redraw (PixelLab standard 1 credit at 60, only on "เจน") or hand-tidying would.
   - Recommendation: at 60 px use B's proportions (about 3-3.5 heads). A's slim look needs about 90-100 px.
+- 2026-11-26 (owner "16bitยัง"): "16 bit" = the SNES-era look, about 16 colours per sprite, characters about 32-64 px, simple shading steps. The 60 px test is already in that range.
+  - Free comparison `art/incoming/pixgrind/sim60/colours_28_16_8.png`: at 60 px, 16 colours looks almost the same as 28; 8 colours loses the scarf red and the shading.
+  - The owner's slim reference (about 105 px, soft shading, many colours) is a modern pixel look, beyond 16 bit.
+  - Default for this hero: 16 colours.
