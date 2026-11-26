@@ -5,6 +5,15 @@
 
 ขนาดในเกม (owner 2026-11-26 "80"): ตัวสูง 80 พิกเซล บนจอสูงราว 360-390 พิกเซลของแมพ = ประมาณ 1/5 ของความสูงจอ โลกสร้างใหญ่รอบตัว (ดูมาตรฐานขนาดใน docs/action-game.md)
 
+## แบบ 3 ตามรูปตัวอย่างที่คุณชอบ (พิกเซลละเอียด ตัวเพรียว) = ทำอันนี้
+ไม่ต้องแนบรูป วางกล่องนี้อย่างเดียว (รูปตัวอย่างเป็นงานของศิลปินอื่นและเป็นตัวละครจากเกมอื่น: ใช้ดูแนวเท่านั้น ไม่ได้เก็บไว้ ไม่ลอกตัว)
+```
+Pixel art character sheet of one original heroine for an action RPG: a travelling adventurer girl. High-quality hand-placed pixel art like a polished modern indie pixel game: each figure about 100 pixels tall, crisp square pixels, soft careful shading with a limited palette, clean silhouette, selective dark outline, anime face with big eyes. Slim, elegant proportions, about 5 heads tall (NOT chibi), long legs in tall boots.
+Look: messy shoulder-length black hair, big purple eyes, a cheeky confident smile. A LONG red scarf wrapped around her neck with two long tails flowing behind her. A short brown leather travel cape over the shoulders, a fitted deep-teal tunic coat down to mid-thigh with a cream collar and rolled sleeves, a brown belt with a small satchel and a tiny brass compass, black tights, tall brown leather boots with folded tops, brown fingerless gloves. Big clear shapes, only a few buckles.
+No weapon: both hands empty, closed as if gripping a handle.
+Three views on one plain flat dark navy background, same size, feet on one line: three-quarter front view, side view facing right, back view. Standing idle pose. A few small gold and blue sparkle pixels floating around her. No text, no logo.
+```
+
 ## แก้รอบ 2 (owner "ขายาวไป ชุดขอดูนักผจญภัยกว่านี้") = ทำอันนี้
 แนบรูปล่าสุดที่ได้ (หรือรูปแรกที่คุณส่งมาก็ได้) แล้ววางกล่องนี้
 ```

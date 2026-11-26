@@ -3021,3 +3021,11 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Proportions: about 2.5 heads with SHORT legs (about 1/3 of her height).
   - More ADVENTURER: a small backpack with a rolled blanket + tin cup, a chest strap to a hip satchel, a soft leather guard on one shoulder, a vest with rolled sleeves, a belt with pouches + a tiny lantern + a brass compass, shin wraps, sturdy boots, bracers. At most about 8 buckles.
   - Lesson: "cute" must not drop the adventurer signs (round 1 removed the pauldron, compass and straps).
+- 2026-11-26 STYLE TARGET (owner sent a pixel GIF, "อยากได้ประมาณนี้"). It is another artist's signed fan art of an existing game's character (name on it), so it is a style reference only: NOT stored in the repo, the character is not copied.
+  - Measured: 480 x 411, 128 frames at 40 ms (a 5 s showcase loop). It was upscaled about 2.5x with blur, so the figure is about 105-110 px tall natively.
+  - What the owner likes: slim, elegant anime proportions (about 5 heads, long legs in tall boots, NOT chibi), hand-placed pixels with soft careful shading and a limited palette, a clean silhouette with selective outline, big simple costume shapes with few buckles, and a bright weapon glow + sparkles on a dark background.
+  - Consequences:
+    - The hero direction moves from chibi to slim 5 heads. At 80 px the face gets small; the reference look needs about 100 px, so the owner must choose 80 or about 100.
+    - The 2D hand-pixel sprite route (drawn frames) fits this look better than a 3D model through the pixel filter.
+  - New Gemini box "แบบ 3" in `PROMPTS_gemini.md`, asking for pixel art directly (free test). Our own girl (black hair, purple eyes, long red scarf) in an adventurer outfit: brown travel cape, deep-teal tunic coat, satchel + compass, tights, tall boots, empty grip hands, 3 views on flat navy.
+  - If Gemini's pixels are not good: Gemini painted sheet -> PixelLab standard (1 credit) at the chosen size, only on "เจน".
