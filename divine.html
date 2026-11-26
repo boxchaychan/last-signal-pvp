@@ -333,7 +333,7 @@ function nearest(x, y, r, not) { let best = null, bd = r; for (const m of G.mobs
 function attack(u, i) {
   const c = u.x != null ? { x: u.x, y: u.y } : cell(i), D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), tgt = nearest(c.x, c.y - 32, D.rng); if (!tgt) return false;
   SRC = u.kind === 'sol' ? '#fff3c0' : PAN[u.p].col;
-  let dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u);
+  let dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u) * (zpix(u) ? ZSLOW : 1);
   const crit = Math.random() < .1 + (s.norse >= 2 ? .15 : 0) + G.atk * .005; if (crit) dmg *= 2.2;
   dmg = Math.round(dmg * rnd(.9, 1.1)); u.flash = 14; u.hitT = tt; u.face = tgt.x < c.x - 6 ? -1 : 1; const hx = c.x + 14, hy = c.y - 46 * D.sz;
   if (u.kind === 'sol') { beam(hx + 8, hy + 14, tgt.x, tgt.y - 32, '#ffe066', 3, 6); dmgTo(tgt, dmg, crit); burst(tgt.x, tgt.y - 32, '#ffd23f', 4, 2); }
@@ -351,7 +351,7 @@ function attack(u, i) {
   } else if (u.p === 'asia') {
     shot(hx, hy - 10, tgt, '#ff8a3a', 'fire', m => { ring(m.x, m.y - 10, '#ff8a3a', 6, 52 + tier * 6, .3, .45); burst(m.x, m.y - 26, '#ffb15a', 10, 3.5); dmgTo(m, dmg, crit); for (const o of G.mobs) if (o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 52 + tier * 6) dmgTo(o, Math.round(dmg * .5), false); });
   }
-  if (tier >= 3 && ++u.hits % 6 === 0) skill(u, i, tgt, dmg);
+  if (tier >= 3 && ++u.hits % (zpix(u) ? Math.max(1, Math.round(6 / ZSLOW)) : 6) === 0) skill(u, i, tgt, dmg);
   return true;
 }
 const heroMul = u => (1 + .12 * ((META.lv[u.kind === 'sol' ? 'soldier' : u.p] || 1) - 1)) * (1 + .06 * META.tp.atk);
@@ -378,7 +378,7 @@ function step() {
   G.spawn++; if (G.spawn > Math.max(28, 66 - G.wave * 2)) { G.spawn = 0; if (!G.boss || G.wave % 10) spawnMob(); }
   for (const m of G.mobs) { if (m.stun > 0) m.stun--; if (m.slow > 0) m.slow--; if (G.freeze <= 0 && !(m.stun > 0)) { const v = m.sp * (m.slow > 0 ? .5 : 1); m.d += v; m.step += .18 * v; } const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; if (m.hit > 0) m.hit--; }
   const s = syn();
-  eachUnit((u, i, k, sl) => { const q = memPos(i, k, sl.m.length); u.x = q.x; u.y = q.y; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.skillT > 0) u.skillT--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed); });
+  eachUnit((u, i, k, sl) => { const q = memPos(i, k, sl.m.length); u.x = q.x; u.y = q.y; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.skillT > 0) u.skillT--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed) * (zpix(u) ? ZSLOW : 1); });
   for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 32, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; track('boss', 1); T.flash = .2; const free = units() < CAP ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); track('elite', 1); } } sync(); }
   for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 32, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
   G.fx = G.fx.filter(f => f.life > 0); for (const n of G.num) n.life--; G.num = G.num.filter(n => n.life > 0);
@@ -554,12 +554,15 @@ let ZANIM = null;
 const ZSEQ = { attack: [11, 12, 13, 14, 15, 16, 16, 16, 16, 15, 14, 13, 2, 0], idle: [0, 1, 3, 3, 1, 0], blink: 2 };   /* attack = lobby only */
 /* owner "อยากให้ท่าตีเนียนขึ้น ทำ 16 เฟรม", "ทำให้ท่าตีนานกว่านี้": the 16-frame attack (raise, gather the lightning at the waist, lunge, thrust) fills the
    time between hits: the wind-up starts before the hit so the thrust frame lands WITH the bolt, then holds and returns. Seconds: */
-const ZATK = { wind: .55, hold: .14, back: .14 };
+const ZATK = { wind: .8, hold: .2, back: .18 };
+/* owner "ยืดเวลาออกไปอีก", "มันดูไวเกิน": pixel Zeus hits ZSLOW times less often and ZSLOW times harder (same damage per second, skill every
+   6 / ZSLOW hits), so the drawn attack can play about a second and still land with the bolt */
+const ZSLOW = 2, zpix = u => PIX && ZANIM && u.kind === 'hero' && u.p === 'greek';
 function pixFrame(u, h, seed) {
   let k = 'idle', i;
   if (u.skillT > 0) { const s = 34 - u.skillT; k = 'skill'; i = s < 10 ? 1 + Math.floor(s * .8) : s < 28 ? 7 + (Math.floor(tt * 10) % 2) : [6, 4, 2, 1, 0, 0][s - 28] || 0; }
   else if (MODE === 'battle' && u.cd != null) {
-    const n = ZANIM.attack.length - 1, e = u.hitT != null ? tt - u.hitT : 99, sp = G.speed || 1, cyc = TD[u.tier].cd * (1 - .03 * META.tp.speed) / 60 / sp, wind = clamp(cyc - ZATK.hold - ZATK.back, .15, ZATK.wind), rem = u.cd / 60 / sp;
+    const n = ZANIM.attack.length - 1, e = u.hitT != null ? tt - u.hitT : 99, sp = G.speed || 1, cyc = TD[u.tier].cd * (1 - .03 * META.tp.speed) * ZSLOW / 60 / sp, wind = clamp(cyc - ZATK.hold - ZATK.back, .15, ZATK.wind), rem = u.cd / 60 / sp;
     if (e < ZATK.hold) { k = 'attack'; i = n; }
     else if (e < ZATK.hold + ZATK.back) { k = 'attack'; i = [n - 2, n - 3, n - 4, 2][Math.min(3, Math.floor((e - ZATK.hold) / ZATK.back * 4))]; }
     else if (u.cd > 0 && rem <= wind) { k = 'attack'; i = Math.min(n - 1, Math.floor((1 - rem / wind) * n)); }
@@ -664,8 +667,8 @@ function selRange() {
 function fitTxt(s, x, y, size, col, maxW) { g.font = `800 ${size}px Kanit, system-ui, sans-serif`; const w = g.measureText(s).width; txt(s, x, y, w > maxW ? size * maxW / w : size, col, null, 'left'); }
 function infoCard() {
   const u = G.grid[G.sel]; if (!u) return false; const D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), hk = u.kind === 'sol' ? 'soldier' : u.p;
-  const dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u);
-  const aps = 60 / D.cd * (s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1), crit = Math.round((.1 + (s.norse >= 2 ? .15 : 0) + G.atk * .005) * 100);
+  const dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u) * (zpix(u) ? ZSLOW : 1);
+  const aps = 60 / D.cd / (zpix(u) ? ZSLOW : 1) * (s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1), crit = Math.round((.1 + (s.norse >= 2 ? .15 : 0) + G.atk * .005) * 100);
   const x = 12, y = 202, w = W - 24, h = 128, tx = x + 132, tw = w - 146;
   g.save(); rr(g, x, y + 5, w, h, 20); g.fillStyle = '#00000050'; g.fill();
   rr(g, x, y, w, h, 20); let gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, '#5c3426'); gr.addColorStop(1, '#2b1712'); g.fillStyle = gr; g.fill(); g.lineWidth = 6; g.strokeStyle = '#24160f'; g.stroke();
