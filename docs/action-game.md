@@ -2913,3 +2913,4 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - `pace` keeps the damage per second (damage x pace); the class bonus only offsets a short reach. Bot (same summon / merge / fuse / upgrade bot, 4 runs): waves 73-77, same as before. The stats card and the hero cards show the class; the range circle is the real class range.
   - Thor now plays drawn pixel frames too (`ANIM.thor`); the frame player works for any god with `art/divine/pix_<set>_anim.png/json`.
   - Gemini prompts for 10 new gods + a new melee Monkey King: `art/incoming/divine_game/PROMPTS_gemini_gods10.md` (the owner runs them).
+- 2026-11-26 owner on the Gemini pixel-first prompt: "ไม่สวย ลองสั่งปกติ" -> use the normal painted champion prompts in Gemini, then PixelLab Pro Flash for the pixel base (the standard converter was muddy on Thor).
