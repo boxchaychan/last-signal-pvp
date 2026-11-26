@@ -270,7 +270,19 @@ function toast(s) { const e = $('toast'); e.textContent = s; e.classList.add('on
 function unitName(u) { return u.kind === 'sol' ? 'ทหารรับจ้าง' : PAN[u.p].hero[Math.min(3, TIERS.indexOf(u.tier) - 1)]; }
 function makeUnit(tier, p) { if (tier === 'COMMON') return { kind: 'sol', p: null, tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false, hits: 0 }; return { kind: 'hero', p: p || pick(PK), tier, cd: rnd(0, 30), bob: Math.random() * 6, flash: 0, awake: false, hits: 0 }; }
 function same(a, b) { return a && b && a.kind === b.kind && a.tier === b.tier && a.p === b.p; }
-function place(u) { const free = []; G.grid.forEach((v, i) => { if (!v) free.push(i); }); if (!free.length) { toast('กระดานเต็ม 21 ช่องแล้ว'); return -1; } const i = free[0]; G.grid[i] = u; const c = cell(i); burst(c.x, c.y - 40, TD[u.tier].col, 18, 4); ring(c.x, c.y - 4, TD[u.tier].col, 10, 44, .4); if (VFX.summon && G.fx.filter(f => f.t === 'anim').length < 10) { const v = VFX.summon, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'summon', x: c.x, y: c.y + 2, h: TIERS.indexOf(u.tier) >= 3 ? 150 : 120, life: L, max: L, dl: 0, back: 1 }); } return i; }
+/* owner 2026-11-26 batch B (reference clip 2): a slot holds up to STACK copies of the SAME hero (same pantheon and tier) standing together;
+   3 in one slot merge into one hero of the next tier. G.grid[i] = null or a slot { kind, p, tier, m: [heroes] }. The army is capped at CAP heroes. */
+const STACK = 3, CAP = 26, MSC = [1, 1, .8, .7];
+const units = () => { let n = 0; for (const s of G.grid) if (s) n += s.m.length; return n; };
+function eachUnit(fn) { G.grid.forEach((s, i) => { if (s) s.m.forEach((u, k) => fn(u, i, k, s)); }); }
+function memPos(i, k, n) { const c = cell(i); if (n <= 1) return c; if (n === 2) return k ? { x: c.x + 13, y: c.y } : { x: c.x - 13, y: c.y - 7 }; return [{ x: c.x, y: c.y - 13 }, { x: c.x - 16, y: c.y - 1 }, { x: c.x + 16, y: c.y }][k]; }
+function take(i) { const s = G.grid[i]; if (!s) return; s.m.pop(); if (!s.m.length) G.grid[i] = null; }
+function place(u, prefer) {
+  if (units() >= CAP) { toast('ฮีโร่เต็ม ' + CAP + ' ตัวแล้ว'); return -1; }
+  let i = G.grid.findIndex(v => same(v, u) && v.m.length < STACK);
+  if (i < 0) { i = prefer != null && prefer >= 0 && !G.grid[prefer] ? prefer : G.grid.indexOf(null); if (i < 0) { toast('กระดานเต็มแล้ว'); return -1; } G.grid[i] = { kind: u.kind, p: u.p, tier: u.tier, m: [] }; }
+  const sl = G.grid[i]; sl.m.push(u); const q = memPos(i, sl.m.length - 1, sl.m.length); u.x = q.x; u.y = q.y; const c = cell(i);
+  burst(q.x, q.y - 34, TD[u.tier].col, 18, 4); ring(q.x, q.y - 4, TD[u.tier].col, 10, 44, .4); if (VFX.summon && G.fx.filter(f => f.t === 'anim').length < 10) { const v = VFX.summon, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'summon', x: c.x, y: c.y + 2, h: TIERS.indexOf(u.tier) >= 3 ? 150 : 120, life: L, max: L, dl: 0, back: 1 }); } return i; }
 function summon() {
   if (G.over) return; if (G.gold < G.sumCost) return toast('ทองไม่พอ');
   const r = Math.random() + G.atk * .004 + META.tp.luck * .015, t = r > .97 ? 'LEGEND' : r > .84 ? 'EPIC' : r > .55 ? 'RARE' : 'COMMON';
@@ -279,22 +291,21 @@ function summon() {
   sync();
 }
 function fuse() {
-  if (G.over) return; const idx = []; G.grid.forEach((u, i) => { if (u && u.kind === 'hero' && (u.tier === 'EPIC' || u.tier === 'LEGEND')) idx.push(i); });
+  if (G.over) return; const idx = []; G.grid.forEach((v, i) => { if (v && v.kind === 'hero' && (v.tier === 'EPIC' || v.tier === 'LEGEND')) for (let k = 0; k < v.m.length && idx.length < 2; k++) idx.push(i); });
   if (idx.length < 2) return toast('ต้องมีเอปิคขึ้นไป 2 ตัว');
-  const p = G.grid[idx[0]].p; G.grid[idx[0]] = G.grid[idx[1]] = null; const i = place(makeUnit('MYTHIC', p)); G.sel = -1; const c = cell(i);
+  const p = G.grid[idx[0]].p; idx.forEach(take); const i = place(makeUnit('MYTHIC', p), idx[0]); G.sel = -1; if (i < 0) return sync(); const c = cell(i);
   ring(c.x, c.y - 40, '#ff5d7a', 10, 120, .6); pillar(c.x, c.y, '#ff5d7a'); T.flash = .25; sfx('mythic'); track('mythic', 1); banner(PAN[p].hero[3] + ' จุติ!', PAN[p].col); sync();
 }
 function merge() {
-  const u = G.grid[G.sel]; if (!u || u.tier === 'MYTHIC') return; const ids = []; G.grid.forEach((v, i) => { if (same(v, u) && ids.length < 3) ids.push(i); });
-  if (ids.length < 3) return toast('ต้องมีตัวเหมือนกัน 3 ตัว');
-  const next = TIERS[TIERS.indexOf(u.tier) + 1]; ids.forEach(i => G.grid[i] = null); G.grid[ids[0]] = makeUnit(next, u.kind === 'hero' ? u.p : null);
-  const c = cell(ids[0]); if (VFX.merge) { const v = VFX.merge, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'merge', x: c.x, y: c.y - 30, h: 130, life: L, max: L, dl: 0 }); } burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); pillar(c.x, c.y, '#ff7ad9'); G.sel = ids[0]; sfx('merge'); track('merge', 1); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
+  const u = G.grid[G.sel]; if (!u || u.tier === 'MYTHIC') return; if (u.m.length < STACK) return toast('ต้องมีตัวเหมือนกัน 3 ตัวในช่องเดียว');
+  const next = TIERS[TIERS.indexOf(u.tier) + 1], at = G.sel; G.grid[at] = null; const ni = place(makeUnit(next, u.kind === 'hero' ? u.p : null), at); if (ni < 0) return sync();
+  const ids = [ni], c = cell(ni); if (VFX.merge) { const v = VFX.merge, L = v.n * 60 / v.fps; G.fx.push({ t: 'anim', k: 'merge', x: c.x, y: c.y - 30, h: 130, life: L, max: L, dl: 0 }); } burst(c.x, c.y - 40, TD[next].col, 26, 5); ring(c.x, c.y - 30, TD[next].col, 10, 70, .45); pillar(c.x, c.y, '#ff7ad9'); G.sel = ni; sfx('merge'); track('merge', 1); toast('เลื่อนเป็น' + TD[next].th + '!'); sync();
 }
-function sell() { const u = G.grid[G.sel]; if (!u) return; G.gold += [10, 22, 48, 90, 150][TIERS.indexOf(u.tier)]; G.grid[G.sel] = null; G.sel = -1; sync(); }
+function sell() { const u = G.grid[G.sel]; if (!u) return; G.gold += [10, 22, 48, 90, 150][TIERS.indexOf(u.tier)]; take(G.sel); if (!G.grid[G.sel]) G.sel = -1; sync(); }   /* sells ONE hero of the slot */
 function upgrade() { if (G.gold < G.upCost) return toast('ทองไม่พอ'); G.gold -= G.upCost; G.atk++; G.upCost = Math.round(G.upCost * 1.45 + 5); toast('พลังโจมตี Lv ' + G.atk); sync(); }
 function spawnBoss() { if (G.boss) return toast('บอสอยู่ในสนามแล้ว'); const hp = Math.round(mobHp(G.wave) * 28 + 1200); const m = { k: 'boss_ghoul', h: 160, d: 0, hp, max: hp, sp: .6, boss: true, face: -1, step: 0, hit: 0 }; G.mobs.push(m); G.boss = m; sfx('boss'); banner('ยักษ์มลทินบุก!', '#ff6a5a'); }
 function chrono() { if (G.chronoCd > 0) return toast('หยุดกาลพร้อมในอีก ' + Math.ceil(G.chronoCd / 60) + ' วิ'); G.freeze = 300; G.chronoCd = 1800; T.flash = .15; toast('หยุดกาล 5 วินาที!'); }
-function syn() { const c = { greek: 0, norse: 0, egypt: 0, asia: 0 }; G.grid.forEach(u => { if (u && u.kind === 'hero') c[u.p]++; }); return c; }
+function syn() { const c = { greek: 0, norse: 0, egypt: 0, asia: 0 }; G.grid.forEach(v => { if (v && v.kind === 'hero') c[v.p] += v.m.length; }); return c; }
 
 /* ---------- effects ---------- */
 const T = { flash: 0, shake: 0 };
@@ -320,7 +331,7 @@ function pillar(x, y, col) { G.fx.push({ t: 'pillar', x, y, col, life: 56, max: 
 function dmgTo(m, d, crit) { m.hp -= d; m.hit = 6; number(m.x, m.y - (m.h || 80) * .8, d, crit, m.boss); feedPush(d, crit, m.boss); }
 function nearest(x, y, r, not) { let best = null, bd = r; for (const m of G.mobs) { if (m.hp <= 0 || (not && not.includes(m))) continue; const d = Math.hypot(m.x - x, m.y - y + 32); if (d < bd) { bd = d; best = m; } } return best; }
 function attack(u, i) {
-  const c = cell(i), D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), tgt = nearest(c.x, c.y - 32, D.rng); if (!tgt) return false;
+  const c = u.x != null ? { x: u.x, y: u.y } : cell(i), D = TD[u.tier], s = syn(), tier = TIERS.indexOf(u.tier), tgt = nearest(c.x, c.y - 32, D.rng); if (!tgt) return false;
   SRC = u.kind === 'sol' ? '#fff3c0' : PAN[u.p].col;
   let dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u);
   const crit = Math.random() < .1 + (s.norse >= 2 ? .15 : 0) + G.atk * .005; if (crit) dmg *= 2.2;
@@ -346,7 +357,7 @@ function attack(u, i) {
 const heroMul = u => (1 + .12 * ((META.lv[u.kind === 'sol' ? 'soldier' : u.p] || 1) - 1)) * (1 + .06 * META.tp.atk);
 /* every 6th hit of a legend / mythic: the god's own skill */
 function skill(u, i, tgt, dmg) {
-  const c = cell(i), my = u.tier === 'MYTHIC', k = my ? 1.5 : 1; SRC = PAN[u.p].col; sfx('skill'); track('skill', 1); u.spirit = 40; u.skillT = 34;
+  const c = u.x != null ? { x: u.x, y: u.y } : cell(i), my = u.tier === 'MYTHIC', k = my ? 1.5 : 1; SRC = PAN[u.p].col; sfx('skill'); track('skill', 1); u.spirit = 40; u.skillT = 34;
   G.num.push({ x: c.x, y: c.y - 70, s: HERO[u.p].sk, col: PAN[u.p].col, sk: 1, life: 70, max: 70 });
   const alive = G.mobs.filter(m => m.hp > 0);
   if (u.p === 'greek') { alive.sort(() => Math.random() - .5).slice(0, my ? 8 : 5).forEach((m, q) => { if (VFX.zeus_storm) { const v = VFX.zeus_storm, L = v.n * 60 / v.fps, dl = q * 4; G.fx.push({ t: 'anim', k: 'zeus_storm', x: m.x, y: m.y - 30, h: my ? 150 : 125, life: L + dl, max: L + dl, dl }); } else bolt(m.x + rnd(-8, 8), m.y - 330, m.x, m.y - 20, '#bff6ff', 6, 14); dmgTo(m, Math.round(dmg * 1.6 * k), false); burst(m.x, m.y - 20, '#bff6ff', 8, 3); }); T.flash = .12; }
@@ -367,8 +378,8 @@ function step() {
   G.spawn++; if (G.spawn > Math.max(28, 66 - G.wave * 2)) { G.spawn = 0; if (!G.boss || G.wave % 10) spawnMob(); }
   for (const m of G.mobs) { if (m.stun > 0) m.stun--; if (m.slow > 0) m.slow--; if (G.freeze <= 0 && !(m.stun > 0)) { const v = m.sp * (m.slow > 0 ? .5 : 1); m.d += v; m.step += .18 * v; } const p = along(m.d); m.x = p.x; m.y = p.y; m.dir = p.dx || m.dir || 1; if (m.hit > 0) m.hit--; }
   const s = syn();
-  G.grid.forEach((u, i) => { if (!u) return; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.skillT > 0) u.skillT--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed); });
-  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 32, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; track('boss', 1); T.flash = .2; const free = G.grid.includes(null) ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); track('elite', 1); } } sync(); }
+  eachUnit((u, i, k, sl) => { const q = memPos(i, k, sl.m.length); u.x = q.x; u.y = q.y; if (u.flash > 0) u.flash--; if (u.spirit > 0) u.spirit--; if (u.skillT > 0) u.skillT--; if (u.cd > 0) { u.cd -= s.asia >= 2 && u.kind === 'hero' ? 1.15 : 1; return; } if (attack(u, i)) u.cd = TD[u.tier].cd * (u.awake ? .8 : 1) * (1 - .03 * META.tp.speed); });
+  for (let i = G.mobs.length - 1; i >= 0; i--) { const m = G.mobs[i]; if (m.hp > 0) continue; G.mobs.splice(i, 1); G.kills++; burst(m.x, m.y - 32, '#e8d6c0', 12, 3); if (m.boss) { G.boss = null; G.gold += 150; track('boss', 1); T.flash = .2; const free = units() < CAP ? place(makeUnit('LEGEND')) : -1; toast(free >= 0 ? 'ปราบยักษ์มลทิน! +150 ทอง +ผู้รับพรระดับตำนาน' : 'ปราบยักษ์มลทิน! +150 ทอง'); } else { G.gold += m.elite ? 40 : 4; if (m.elite) { toast('ปราบชั้นยอด +40 ทอง'); sfx('coin'); track('elite', 1); } } sync(); }
   for (const f of G.fx) { f.life--; if (f.t === 'p') { f.x += f.vx; f.y += f.vy; f.vy += .12; } if (f.t === 'shot') { const tx = f.m.x, ty = f.m.y - 32, d = Math.hypot(tx - f.x, ty - f.y); if (d < f.sp || f.m.hp <= 0) { f.life = 0; if (f.m.hp > 0) f.cb(f.m); } else { f.x += (tx - f.x) / d * f.sp; f.y += (ty - f.y) / d * f.sp; if (Math.random() < .7) G.fx.push({ t: 'p', x: f.x, y: f.y, vx: rnd(-.5, .5), vy: rnd(-1, 0), col: '#ffb15a', life: 14, max: 14, s: rnd(2, 4) }); } } }
   G.fx = G.fx.filter(f => f.life > 0); for (const n of G.num) n.life--; G.num = G.num.filter(n => n.life > 0);
   if (T.flash > 0) T.flash -= 1 / 60; if (T.shake > 0) T.shake *= .86; if (T.banner) { T.banner.t -= 1 / 60; if (T.banner.t <= 0) T.banner = null; }
@@ -586,27 +597,33 @@ function drawFigure(u, x, y, h, set, img, seed) {
   if (m.glow > 0 && cur) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = m.glow; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
   g.restore();
 }
-function drawUnit(u, i) {
-  const c = cell(i), D = TD[u.tier], tier = TIERS.indexOf(u.tier), bob = Math.sin(tt * 3 + u.bob) * 1.6, h = UH * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]);
+/* one slot: up to 3 copies of the same hero (batch B), the back one first; the god spirit and the stars once per slot */
+function drawSlot(sl, i) {
+  const c = cell(i), D = TD[sl.tier], tier = TIERS.indexOf(sl.tier), n = sl.m.length, sc = MSC[n] || .7;
   if (G.sel === i) { g.lineWidth = 5; g.strokeStyle = '#fff06a'; rr(g, c.x - CW / 2 + 2, c.y - CH * .88 + 3, CW - 4, CH - 6, 9); g.stroke(); }
-  /* tier ring on the floor */
-  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(c.x, c.y, 22, 6.5, 0, 0, 6.3); g.stroke(); g.restore();
-  /* reference clip 1: strong heroes stand in flickering flames of their tier colour (epic violet, legend gold, mythic rose) */
-  if (tier >= 2) flames(u, c, tier, false);
-  /* the god behind the blessed one: always for a greek mythic, a flash on big hits for greek epic / legend */
-  const st = u.kind === 'hero' ? setOf(u.p) : null;
-  if (st && (tier >= 4 || u.spirit > 0)) {
-    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (u.spirit > 0 ? .25 : 0) : u.spirit / 26 * .7, sh = tier >= 4 ? 110 : 84, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
+  else if (n >= STACK && tier < 4) { g.save(); g.globalAlpha = .35 + .3 * Math.sin(tt * 5); g.lineWidth = 3; g.strokeStyle = '#ffe27a'; rr(g, c.x - CW / 2 + 5, c.y - CH * .88 + 6, CW - 10, CH - 12, 8); g.stroke(); g.restore(); }   /* full slot = ready to merge */
+  /* the god behind the blessed one: always for a mythic, a flash on big hits for epic / legend */
+  const st = sl.kind === 'hero' ? setOf(sl.p) : null, sp = Math.max(0, ...sl.m.map(u => u.spirit || 0)), h = UH * D.sz * (sl.kind === 'sol' ? FIT.soldier : FIT[sl.p]);
+  if (st && (tier >= 4 || sp > 0)) {
+    const a = tier >= 4 ? .5 + .1 * Math.sin(tt * 2.2) + (sp > 0 ? .25 : 0) : sp / 26 * .7, sh = tier >= 4 ? 110 : 84, sy = c.y - h * .55 + Math.sin(tt * 1.7) * 3;
     g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, sy - sh * .5, 6, c.x, sy - sh * .5, sh * .6); gr.addColorStop(0, '#7fe8ff40'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - sh, sy - sh * 1.1, sh * 2, sh * 1.2); g.restore();
-    spr(st + '_spirit', c.x - 4, c.y - h * .15 + Math.sin(tt * 1.7) * 3, sh * 1.15, false, clamp(a, 0, 1));   /* the god behind: normal blend so his face stays readable */
+    spr(st + '_spirit', c.x - 4, c.y - h * .15 + Math.sin(tt * 1.7) * 3, sh * 1.15, false, clamp(a, 0, 1));   /* normal blend so the god's face stays readable */
   }
-  if (u.awake || tier >= 4) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(c.x, c.y - h * .45, 4, c.x, c.y - h * .45, 58); gr.addColorStop(0, (u.awake ? '#fff2a0' : D.col) + '66'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(c.x - 60, c.y - h - 20, 120, h + 40); g.restore(); }
-  shadow(c.x, c.y, 19);
-  const k = u.kind === 'sol' ? 'soldier' : 'hero_' + u.p;
-  drawFigure(u, c.x, c.y, st ? UH * D.sz : h, st, k, u.bob);
-  if (tier >= 2) flames(u, c, tier, true);
-  /* stars */
+  sl.m.forEach((u, k) => drawUnit(u, memPos(i, k, n), sc, tier, D, st));
   for (let s = 0; s < D.stars; s++) { const sx = c.x + (s - (D.stars - 1) / 2) * 9, sy = c.y + 2; g.fillStyle = D.col; g.strokeStyle = '#24160f'; g.lineWidth = 2; star(sx, sy, 4.5); }
+}
+function drawUnit(u, q, sc, tier, D, st) {
+  const h = UH * D.sz * (u.kind === 'sol' ? FIT.soldier : FIT[u.p]), o = { x: 0, y: 0 };
+  g.save(); g.translate(q.x, q.y); g.scale(sc, sc);
+  /* tier ring on the floor */
+  g.save(); g.lineWidth = 4; g.strokeStyle = D.col; g.shadowColor = D.col; g.shadowBlur = tier >= 3 ? 14 : 6; g.beginPath(); g.ellipse(0, 0, 22, 6.5, 0, 0, 6.3); g.stroke(); g.restore();
+  /* reference clip 1: strong heroes stand in flickering flames of their tier colour (epic violet, legend gold, mythic rose) */
+  if (tier >= 2) flames(u, o, tier, false);
+  if (u.awake || tier >= 4) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(0, -h * .45, 4, 0, -h * .45, 58); gr.addColorStop(0, (u.awake ? '#fff2a0' : D.col) + '66'); gr.addColorStop(1, '#00000000'); g.fillStyle = gr; g.fillRect(-60, -h - 20, 120, h + 40); g.restore(); }
+  shadow(0, 0, 19);
+  drawFigure(u, 0, 0, st ? UH * D.sz : h, st, u.kind === 'sol' ? 'soldier' : 'hero_' + u.p, u.bob);
+  if (tier >= 2) flames(u, o, tier, true);
+  g.restore();
 }
 /* reference clips: tap a hero -> its range circle under the board, a stats card at the top, the latest big hits at the left edge, a layered boss bar */
 function selRange() {
@@ -626,7 +643,7 @@ function infoCard() {
   g.save(); rr(g, x + 12, y + 12, 108, h - 24, 14); g.clip(); const st = u.kind === 'hero' ? setOf(u.p) : null; spr(st ? st + '_idle' : u.kind === 'sol' ? 'soldier' : 'hero_' + u.p, x + 66, y + h - 6, 112); g.restore();
   for (let q = 0; q < D.stars; q++) { g.fillStyle = D.col; g.strokeStyle = '#24160f'; g.lineWidth = 2; star(x + 66 + (q - (D.stars - 1) / 2) * 13, y + h - 18, 6); }
   fitTxt(unitName(u), tx, y + 26, 25, '#ffe8a0', tw);
-  fitTxt(D.th + (u.kind === 'hero' ? ' · เทพ' + PAN[u.p].th : '') + (u.awake ? ' · ปลุกแล้ว' : ''), tx, y + 52, 17, D.col, tw);
+  fitTxt(D.th + (u.kind === 'hero' ? ' · เทพ' + PAN[u.p].th : '') + ' · ในช่อง ' + u.m.length + '/3' + (u.m.length >= STACK && tier < 4 ? ' · รวมได้!' : ''), tx, y + 52, 17, D.col, tw);
   fitTxt('พลังโจมตี ' + fmt(dmg) + '  ·  ตี ' + aps.toFixed(1) + '/วิ  ·  คริ ' + crit + '%  ·  ระยะ ' + D.rng, tx, y + 78, 16, '#ffffff', tw);
   const sk = u.kind === 'sol' ? HERO.soldier.d : (tier >= 3 ? 'สกิล ' + HERO[hk].sk + ': ' : 'สกิล ' + HERO[hk].sk + ' (ปลดที่ตำนาน): ') + HERO[hk].d;
   fitTxt(sk, tx, y + 103, 15, '#ffd98a', tw);
@@ -711,7 +728,7 @@ function chips() {
   /* money row */
   const ry = 922; const pill = (x, w, icon, v) => { rr(g, x, ry - 20, w, 40, 14); g.fillStyle = '#2b1b14'; g.fill(); g.lineWidth = 5; g.stroke(); icon(x + 22, ry); txt(String(v), x + w / 2 + 14, ry, 22, '#fff'); };
   pill(150, 130, (x, y) => { g.fillStyle = '#ffd23f'; rr(g, x - 12, y - 10, 24, 20, 5); g.fill(); g.lineWidth = 3; g.stroke(); g.fillStyle = '#fff3a0'; g.fillRect(x - 6, y - 6, 8, 4); }, G.gold);
-  pill(306, 130, (x, y) => { g.fillStyle = '#e8d6c0'; g.beginPath(); g.arc(x, y - 4, 7, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(x, y + 9, 11, 6, 0, Math.PI, 0); g.fill(); g.stroke(); }, G.grid.filter(Boolean).length + '/21');
+  pill(306, 130, (x, y) => { g.fillStyle = '#e8d6c0'; g.beginPath(); g.arc(x, y - 4, 7, 0, 6.3); g.fill(); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(x, y + 9, 11, 6, 0, Math.PI, 0); g.fill(); g.stroke(); }, units() + '/' + CAP);
 }
 /* the lobby: the same courtyard with the heroes standing guard, a few monsters strolling round */
 const LOB = { units: {}, mobs: [0, 520, 1040].map((d, i) => ({ k: MOBS[i].k, h: MOBS[i].h, face: MOBS[i].face, d, sp: .5, step: 0 })) };
@@ -732,7 +749,7 @@ function draw() {
   skyLayer(); g.drawImage(BG, 0, 0, W, H);
   g.save(); g.translate(PL + 10, PT - 22); g.scale(.7, .7); portal(0, 0); g.restore(); ambient();
   drawFx(true); g.globalAlpha = 1; selRange();
-  G.grid.forEach((u, i) => { if (u) drawUnit(u, i); });
+  G.grid.forEach((sl, i) => { if (sl) drawSlot(sl, i); });
   [...G.mobs].sort((a, b) => a.y - b.y).forEach(drawMob);
   drawFx(); hud(); chips(); if (!infoCard()) { rivals(); bossBar(); } feedDraw();
   if (T.banner) { const b = T.banner, k = Math.min(1, (b.d - b.t) * 6), a = Math.min(1, b.t * 2.5); g.font = '800 38px Kanit, system-ui, sans-serif'; const tw = g.measureText(b.text).width, fs = Math.min(38, 38 * 470 / tw), bw = Math.min(550, tw * fs / 38 + 70); g.save(); g.globalAlpha = a; g.translate(W / 2, BY + 110); g.scale(.6 + .4 * k, .6 + .4 * k); rr(g, -bw / 2, -36, bw, 72, 30); g.fillStyle = '#24160fd8'; g.fill(); g.lineWidth = 5; g.strokeStyle = b.col; g.stroke(); txt(b.text, 0, 2, fs, b.col); g.restore(); }
@@ -744,10 +761,10 @@ function draw() {
 
 /* ---------- ui ---------- */
 function sync() {
-  $('summon').classList.toggle('hint', MODE === 'battle' && !G.over && G.gold >= G.sumCost * 2 && G.grid.includes(null));
+  $('summon').classList.toggle('hint', MODE === 'battle' && !G.over && G.gold >= G.sumCost * 2 && units() < CAP);
   $('sumCost').textContent = G.sumCost + ' ทอง'; $('upCost').textContent = G.upCost + ' ทอง'; $('speed').textContent = 'x' + G.speed;
   const u = G.grid[G.sel]; $('sel').classList.toggle('on', !!u);
-  if (u) { const n = G.grid.filter(v => same(v, u)).length; $('selName').innerHTML = unitName(u) + '<small>' + TD[u.tier].th + (u.kind === 'hero' ? ' · ' + PAN[u.p].th : '') + (u.awake ? ' · ปลุกแล้ว' : '') + ' · แตะช่องอื่นเพื่อย้าย</small>'; $('merge').disabled = u.tier === 'MYTHIC' || n < 3; $('merge').textContent = 'รวม 3 (' + Math.min(n, 3) + ')'; }
+  if (u) { const n = u.m.length; $('selName').innerHTML = unitName(u) + '<small>' + TD[u.tier].th + (u.kind === 'hero' ? ' · ' + PAN[u.p].th : '') + (u.awake ? ' · ปลุกแล้ว' : '') + ' · ' + n + '/3 ตัวในช่อง · แตะช่องอื่นเพื่อย้าย</small>'; $('merge').disabled = u.tier === 'MYTHIC' || n < 3; $('merge').textContent = 'รวม 3 (' + Math.min(n, 3) + ')'; }
 }
 cv.addEventListener('pointerdown', e => {
   if (MODE !== 'battle' || G.over) return; const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
@@ -766,7 +783,7 @@ function startMatch() {
   const slots = $('mslots'); slots.innerHTML = '<div class="me"><img src="art/divine/hero_greek.png" alt="">คุณ</div>' + rv.map(() => '<div></div>').join('');
   rv.forEach((r, i) => setTimeout(() => { const d = slots.children[i + 1]; d.innerHTML = '<img src="art/divine/hero_' + r.p + '.png" alt="">' + r.name; sfx('click'); }, 300 + i * 320));
   setTimeout(() => { $('mtitle').textContent = 'ครบ 5 คน เริ่ม!'; }, 1650);
-  setTimeout(() => { $('match').classList.remove('on'); MODE = 'battle'; $('app').classList.remove('lobby'); fresh(rv); banner('รอบ 1 เริ่ม!', '#ffe27a'); if (!META.tut) { META.tut = 1; save(); [[2500, 'แตะ "อัญเชิญ" เพื่อเรียกผู้รับพรลงกระดาน'], [7000, 'ตัวเหมือนกัน 3 ตัว: แตะตัว แล้วกด "รวม 3" เพื่อเลื่อนขั้น'], [12000, 'อย่าให้มอนในสนามถึง 100 ตัว ไม่งั้นแพ้'], [17000, 'เอปิคขึ้นไป 2 ตัว กด "หลอมเทพ" ได้มหาเทพ']].forEach(([ms, tx]) => setTimeout(() => { if (MODE === 'battle' && !G.over) banner(tx, '#ffe27a'); }, ms)); } }, 2200);
+  setTimeout(() => { $('match').classList.remove('on'); MODE = 'battle'; $('app').classList.remove('lobby'); fresh(rv); banner('รอบ 1 เริ่ม!', '#ffe27a'); if (!META.tut) { META.tut = 1; save(); [[2500, 'แตะ "อัญเชิญ" เพื่อเรียกผู้รับพรลงกระดาน'], [7000, 'ตัวเหมือนกันจะยืนรวมช่องเดียว ครบ 3 ตัว แตะช่อง แล้วกด "รวม 3"'], [12000, 'อย่าให้มอนในสนามถึง 100 ตัว ไม่งั้นแพ้'], [17000, 'เอปิคขึ้นไป 2 ตัว กด "หลอมเทพ" ได้มหาเทพ']].forEach(([ms, tx]) => setTimeout(() => { if (MODE === 'battle' && !G.over) banner(tx, '#ffe27a'); }, ms)); } }, 2200);
 }
 function weekBoard() {
   const wk = Math.floor(Date.now() / 6048e5); let sd = wk * 9301 + 49297; const rn = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;

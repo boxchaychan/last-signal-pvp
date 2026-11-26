@@ -2869,3 +2869,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Epic / legend summon banner (`T.sb`, `summonBanner`): the hero and their god pop up over a purple ribbon, "อัญเชิญระดับ...สำเร็จ!" and the real chance (legend .03 + bonuses, epic 13 %). It replaces the old toast.
   - Checked at 390 x 844 in the built-in browser by stepping `DIVINE.step()` by hand (a hidden pane pauses the page's timer); no console errors.
   - Batch B (3 heroes per slot like the clip) waits for the owner.
+- 2026-11-26 BATCH B (owner "ทำ B เลย"): up to 3 copies of the SAME hero (same pantheon and tier) stand together in one slot, like reference clip 2.
+  - `G.grid[i]` is now null or a slot `{ kind, p, tier, m: [heroes] }`; `STACK` 3, the army is capped at `CAP` 26 heroes (shown "n/26"). Helpers `units()`, `eachUnit()`, `memPos()` (1 = centre, 2 = side by side, 3 = one behind + two in front), `take()`.
+  - `place(u, prefer)` puts a new hero into a slot of the same hero with room, else the first empty slot (or `prefer`).
+  - Merge = 3 in ONE slot -> one hero of the next tier (soldiers -> a random pantheon), which may join another slot of the same hero. Fuse takes 2 epic / legend heroes from any slots. Sell sells ONE hero of the slot. Synergy counts heroes, not slots.
+  - Each hero still attacks on its own from its own spot. Drawing (`drawSlot` / `drawUnit`): heroes at .8 (2 in a slot) / .7 (3), stars and the god spirit once per slot, a full slot pulses gold (ready to merge). The stats card shows "ในช่อง n/3" and "รวมได้!".
+  - Balance, same summon / merge / fuse / upgrade bot, 4 runs each: old rules waves 72-75, new rules with CAP 30 waves 75-78, with CAP 26 waves 73-77 (kept: about 2 waves easier than before, more heroes on screen).
+  - Testing note: the built-in browser tab is muted (`META.sound` off in its localStorage); owner 2026-11-26 "ปิดเสียงได้ไหมหนวกตอนเทส": keep test pages muted.
