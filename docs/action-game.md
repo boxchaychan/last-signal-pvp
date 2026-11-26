@@ -3064,3 +3064,6 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - The best so far: crisp, on model, black hair, a face with eyes, cream sleeves. The colours also separate better than the 1-credit try (black / cream / brown / red).
   - Pro Flash picked 76 px tall, not 60 (input was 60 px x4). A free shrink of that crisp sprite to 60 keeps the face. The owner chooses 76 (close to the earlier 80 standard) or 60.
   - Owner's open question "สีชุดใกล้กันเกินไปไหม": yes, too much brown. Proposed: black hair, a deep-teal vest or skirt, cream sleeves back, red scarf as the one accent. A free code recolour test was offered, not done yet.
+- 2026-11-26 DECISION (owner "ย่อ60"): the hero is the Pro Flash girl shrunk free to 60 px tall. In-use copy `art/pixgrind/hero60.png`; source `art/incoming/pixgrind/pl60/B_pf_shrunk60.png`; the 76 px Pro Flash original is `pl60/B_pf_cut.png`.
+  - SIZE STANDARD now H = 60 (was 80). Every ratio in the size standard stays (palms 3-4 H, landmark about 7 H, monsters 0.7-3 H). On a phone (390 texels tall) the hero is about 1/6.5 of the height.
+  - Still open: the outfit colours (too much brown; teal vest / skirt proposed, free recolour test offered); side / back views and the moves (hybrid plan); the map target picture from Gemini.
