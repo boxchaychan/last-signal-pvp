@@ -335,7 +335,7 @@ function attack(u, i) {
   SRC = u.kind === 'sol' ? '#fff3c0' : PAN[u.p].col;
   let dmg = D.dmg * (1 + (G.atk - 1) * .12) * (u.awake ? 1.6 : 1) * (s.egypt >= 2 ? 1.15 : 1) * heroMul(u);
   const crit = Math.random() < .1 + (s.norse >= 2 ? .15 : 0) + G.atk * .005; if (crit) dmg *= 2.2;
-  dmg = Math.round(dmg * rnd(.9, 1.1)); u.flash = 14; u.face = tgt.x < c.x - 6 ? -1 : 1; const hx = c.x + 14, hy = c.y - 46 * D.sz;
+  dmg = Math.round(dmg * rnd(.9, 1.1)); u.flash = 14; u.hitT = tt; u.face = tgt.x < c.x - 6 ? -1 : 1; const hx = c.x + 14, hy = c.y - 46 * D.sz;
   if (u.kind === 'sol') { beam(hx + 8, hy + 14, tgt.x, tgt.y - 32, '#ffe066', 3, 6); dmgTo(tgt, dmg, crit); burst(tgt.x, tgt.y - 32, '#ffd23f', 4, 2); }
   else if (u.p === 'greek') {
     let from = { x: hx - 22, y: hy - 8 }, hit = [], m = tgt; const jumps = 1 + (tier >= 3 ? 2 : 1) + (s.greek >= 2 ? 1 : 0);
@@ -551,12 +551,23 @@ const PIX = new URLSearchParams(location.search).get('pix') === '1';
 /* owner "ทำเลย" (drawn frames instead of code bending): PixelLab standard animate_image from the pixel poses, art/divine/pix_zeus_anim.png + .json
    (idle 5 frames, attack 9 = idle -> wind-up -> thrust, skill 9 = idle -> crouch -> bolt raised), feet on each frame's bottom row */
 let ZANIM = null;
-const ZSEQ = { attack: [3, 4, 5, 6, 7, 8, 8, 8, 8, 7, 6, 5, 2, 0], idle: [0, 1, 3, 3, 1, 0], blink: 2 };
+const ZSEQ = { attack: [11, 12, 13, 14, 15, 16, 16, 16, 16, 15, 14, 13, 2, 0], idle: [0, 1, 3, 3, 1, 0], blink: 2 };   /* attack = lobby only */
+/* owner "อยากให้ท่าตีเนียนขึ้น ทำ 16 เฟรม", "ทำให้ท่าตีนานกว่านี้": the 16-frame attack (raise, gather the lightning at the waist, lunge, thrust) fills the
+   time between hits: the wind-up starts before the hit so the thrust frame lands WITH the bolt, then holds and returns. Seconds: */
+const ZATK = { wind: .55, hold: .14, back: .14 };
 function pixFrame(u, h, seed) {
   let k = 'idle', i;
   if (u.skillT > 0) { const s = 34 - u.skillT; k = 'skill'; i = s < 10 ? 1 + Math.floor(s * .8) : s < 28 ? 7 + (Math.floor(tt * 10) % 2) : [6, 4, 2, 1, 0, 0][s - 28] || 0; }
+  else if (MODE === 'battle' && u.cd != null) {
+    const n = ZANIM.attack.length - 1, e = u.hitT != null ? tt - u.hitT : 99, sp = G.speed || 1, cyc = TD[u.tier].cd * (1 - .03 * META.tp.speed) / 60 / sp, wind = clamp(cyc - ZATK.hold - ZATK.back, .15, ZATK.wind), rem = u.cd / 60 / sp;
+    if (e < ZATK.hold) { k = 'attack'; i = n; }
+    else if (e < ZATK.hold + ZATK.back) { k = 'attack'; i = [n - 2, n - 3, n - 4, 2][Math.min(3, Math.floor((e - ZATK.hold) / ZATK.back * 4))]; }
+    else if (u.cd > 0 && rem <= wind) { k = 'attack'; i = Math.min(n - 1, Math.floor((1 - rem / wind) * n)); }
+    else if (u.cd <= 0) { if (u.readyT == null) u.readyT = tt; if (tt - u.readyT < .35) { k = 'attack'; i = n - 1; } }   /* charged but no monster in range yet: hold the ready pose a moment, then breathe */
+    if (u.cd > 0) u.readyT = null;
+  }
   else if (u.flash > 0) { k = 'attack'; i = ZSEQ.attack[clamp(14 - u.flash, 0, 13)]; }
-  else { const t = tt * 5 + seed * 7, q = Math.floor(t) % ZSEQ.idle.length; i = Math.floor(t / ZSEQ.idle.length) % 7 === 0 && q < 2 ? ZSEQ.blink : ZSEQ.idle[q]; }
+  if (i == null) { k = 'idle'; const t = tt * 5 + seed * 7, q = Math.floor(t) % ZSEQ.idle.length; i = Math.floor(t / ZSEQ.idle.length) % 7 === 0 && q < 2 ? ZSEQ.blink : ZSEQ.idle[q]; }
   const f = ZANIM[k][clamp(i, 0, ZANIM[k].length - 1)], hh = h * f.im.height / 60;
   return { im: f.im, w: f.im.width * hh / f.im.height, h: hh, ax: f.ax, pix: 1 };
 }
