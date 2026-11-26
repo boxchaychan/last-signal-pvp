@@ -548,6 +548,18 @@ function motion(u, seed) {
 /* owner 2026-11-26 test "เอาตัวซุส ... พอดีช่อง ... ขอคมๆ proflash": ?pix=1 = Zeus as PixelLab Pro Flash pixel art at slot size
    (art/divine/pix_zeus_idle / attack / skill.png, idle 43 x 60 = 1 pixel per game px for a mythic), drawn without smoothing */
 const PIX = new URLSearchParams(location.search).get('pix') === '1';
+/* owner "ทำเลย" (drawn frames instead of code bending): PixelLab standard animate_image from the pixel poses, art/divine/pix_zeus_anim.png + .json
+   (idle 5 frames, attack 9 = idle -> wind-up -> thrust, skill 9 = idle -> crouch -> bolt raised), feet on each frame's bottom row */
+let ZANIM = null;
+const ZSEQ = { attack: [3, 4, 5, 6, 7, 8, 8, 8, 8, 7, 6, 5, 2, 0], idle: [0, 1, 3, 3, 1, 0], blink: 2 };
+function pixFrame(u, h, seed) {
+  let k = 'idle', i;
+  if (u.skillT > 0) { const s = 34 - u.skillT; k = 'skill'; i = s < 10 ? 1 + Math.floor(s * .8) : s < 28 ? 7 + (Math.floor(tt * 10) % 2) : [6, 4, 2, 1, 0, 0][s - 28] || 0; }
+  else if (u.flash > 0) { k = 'attack'; i = ZSEQ.attack[clamp(14 - u.flash, 0, 13)]; }
+  else { const t = tt * 5 + seed * 7, q = Math.floor(t) % ZSEQ.idle.length; i = Math.floor(t / ZSEQ.idle.length) % 7 === 0 && q < 2 ? ZSEQ.blink : ZSEQ.idle[q]; }
+  const f = ZANIM[k][clamp(i, 0, ZANIM[k].length - 1)], hh = h * f.im.height / 60;
+  return { im: f.im, w: f.im.width * hh / f.im.height, h: hh, ax: f.ax, pix: 1 };
+}
 function poseImg(set, img, pose, h) {   /* the picture + its size and body anchor for this pose */
   if (PIX && set === 'zeus' && IMG.pix_zeus_idle) { const im = IMG['pix_zeus_' + pose] || IMG.pix_zeus_idle, hh = h * im.height / IMG.pix_zeus_idle.height; return { im, w: im.width * hh / im.height, h: hh, ax: (SETS.zeus[pose] || SETS.zeus.idle).ax, pix: 1 }; }   /* every pose at the same pixel size */
   if (set) { const z = SETS[set][pose], im = IMG[set + '_' + pose]; if (!im) return null; const hh = h * z.h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h); return { im, w: im.width * hh / im.height, h: hh, ax: z.ax }; }
@@ -594,12 +606,12 @@ function drawFigure(u, x, y, h, set, img, seed) {
   const px = PIX && set === 'zeus', face = u.face || 1;
   /* owner "ไม่ลื่นเลย" on the pixel test: stretching / tilting a pixel picture a little every frame makes its pixels flicker. A pixel hero moves in
      WHOLE pixels instead: no squash, no tilt, no cross-fade, an instant turn, and a 1 px breathing bob */
-  if (px) { m.rot = 0; m.sx = 1; m.sy = 1; m.dx = Math.round(m.dx); m.dy = Math.round(m.dy) - (u.cp === 'idle' && Math.sin(tt * 2.6 + seed) > .35 ? 1 : 0); }
+  if (px) { m.rot = 0; m.sx = 1; m.sy = 1; m.dx = ZANIM ? 0 : Math.round(m.dx); m.dy = Math.round(m.dy) - (!ZANIM && u.cp === 'idle' && Math.sin(tt * 2.6 + seed) > .35 ? 1 : 0); }   /* drawn frames carry the lunge and the breathing */
   const blend = px ? 1 : clamp((tt - (u.pt || 0)) / .09, 0, 1);
   u.faceS = u.faceS == null || px ? face : u.faceS + (face - u.faceS) * .22; const fs = Math.abs(u.faceS) < .12 ? .12 * Math.sign(u.faceS || 1) : u.faceS;
   g.save(); g.translate(px ? Math.round(x + m.dx * face) : x + m.dx * face, px ? Math.round(y + m.dy) : y + m.dy); g.rotate(m.rot * face); g.scale(m.sx * fs, m.sy);
   const rigged = false;   /* owner 2026-11-26 "ประกอบก็เละ": no cut-out puppets or rigs; every god uses Codex's own whole pictures (idle / attack / skill) with whole-body motion, like the reference game. drawPuppet / drawRig stay for later tests. */
-  const cur = rigged ? null : poseImg(set, img, m.pose, h);
+  const cur = rigged ? null : px && ZANIM ? pixFrame(u, h, seed) : poseImg(set, img, m.pose, h);
   if (rigged && PUPS[set]) drawPuppet(set, h, pupAngles(u, seed), m.glow); else if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) { if (cur.pix) g.imageSmoothingEnabled = false; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
   if (blend < 1 && u.pp && !(rigged && u.pp !== 'skill')) { const pr = poseImg(set, img, u.pp, h); if (pr) { g.globalAlpha = 1 - blend; g.drawImage(pr.im, -pr.w * pr.ax, -pr.h, pr.w, pr.h); g.globalAlpha = 1; } }
   if (m.glow > 0 && cur) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = m.glow; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
@@ -841,7 +853,10 @@ function frame(t) { if (FPS.on) { FPS.n++; if (t - FPS.t0 > 1000) { FPS.v = FPS.
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   if (ARENA) try { IMG.arena = await load('art/divine/arena_gemini.jpg'); } catch (e) { console.warn(e); }
-  if (PIX) try { for (const ps of ['idle', 'attack', 'skill']) { const im = await load('art/divine/pix_zeus_' + ps + '.png'); im.pix = true; IMG['pix_zeus_' + ps] = im; } IMG.zeus_idle = IMG.pix_zeus_idle; } catch (e) { console.warn(e); }
+  if (PIX) try { for (const ps of ['idle', 'attack', 'skill']) { const im = await load('art/divine/pix_zeus_' + ps + '.png'); im.pix = true; IMG['pix_zeus_' + ps] = im; } IMG.zeus_idle = IMG.pix_zeus_idle;
+    const [zj, zim] = await Promise.all([fetch('art/divine/pix_zeus_anim.json').then(r => r.json()), load('art/divine/pix_zeus_anim.png')]); ZANIM = {};
+    for (const k in zj) { const q = zj[k]; ZANIM[k] = Array.from({ length: q.n }, (_, i) => { const c = document.createElement('canvas'); c.width = q.w; c.height = q.h; c.getContext('2d').drawImage(zim, i * q.w, q.y, q.w, q.h, 0, 0, q.w, q.h); return { im: c, ax: q.ax }; }); }
+  } catch (e) { console.warn(e); }
   BG = paintBG(); fresh(); renderLobby();
   window.DIVINE = { state: () => G, meta: () => META, startMatch, goLobby, endMatch, summon, fuse, merge, spawnBoss, chrono, upgrade, step, draw, place, makeUnit, setMode: m => { MODE = m; $('app').classList.toggle('lobby', m !== 'battle'); }, ready: true };
   requestAnimationFrame(frame);
