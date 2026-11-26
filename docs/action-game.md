@@ -2860,3 +2860,12 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Raw + prompt: `art/incoming/divine_game/raw/arena_gemini/`; in game `art/divine/arena_gemini.jpg`.
   - In `divine.html` the picture is the default arena: drawn 1.221 x W wide (sides cropped, the braziers half off screen) and 5.3 % taller than its shape, bottom on the bottom edge, so its empty plaza sits under the board and the monster road. Only the gold board is painted in code on top; birds fly over it and its two waterfalls shimmer. `?arena=code` = the old island painted in code.
   - Next with Gemini: E monsters (prompt `PROMPTS_gemini_2.md` B, attach `ref/REF_monster.png`), D recruit.
+- 2026-11-26 BATCH A from the owner's two Slack Off Survivor clips (owner "ทำ A ก่อน"; genre reference only, nothing copied). Look and feel only, no rule changes:
+  - Big hits stack in a column at the left edge, newest at the bottom (`G.feed`, `feedPush` in `dmgTo`, `feedDraw`): crits orange, boss hits pink, other above-average hits in the hero's pantheon colour; K / M / B numbers (`fmt`).
+  - Layered boss bar under the rivals row (`bossBar`): 12 layers, colour per layer, "xN" layers left, boss portrait.
+  - Tap a hero: range circle under the board (`selRange`, the real `TD.rng`) and a stats card over the rivals row (`infoCard`): portrait, stars, name, tier, pantheon, attack, hits a second, crit, range, skill (marked "ปลดที่ตำนาน" below legend).
+  - Flames of the tier colour round the feet of epic (violet), legend (gold) and mythic (rose) heroes (`flames`, back half before the hero, front half over the feet).
+  - Light pillar (`pillar`) on merge (pink), fuse (rose) and epic / legend summons.
+  - Epic / legend summon banner (`T.sb`, `summonBanner`): the hero and their god pop up over a purple ribbon, "อัญเชิญระดับ...สำเร็จ!" and the real chance (legend .03 + bonuses, epic 13 %). It replaces the old toast.
+  - Checked at 390 x 844 in the built-in browser by stepping `DIVINE.step()` by hand (a hidden pane pauses the page's timer); no console errors.
+  - Batch B (3 heroes per slot like the clip) waits for the owner.
