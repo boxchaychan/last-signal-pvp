@@ -3161,3 +3161,15 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - effects from the free `pixelfx` skill library (244 effects), `art/pvfx` (CC0) and `fx/`.
   - Cards: thick 3D cards drawn in code (frame by rarity, tilt, holo for legendaries). The pixel monster art from `art/horde/mobs` fills the card window and plays its attack frames when it hits.
   - Still decided: 2D pixel monsters, vs computer first, the chibi summoner, a desert campaign.
+- 2026-11-26 DECKS (owner "อยากให้ทีเด็ดแต่ละเด็ค เด็คแรกที่จะทำคือเด็คลิโป้"): every deck = a LEADER with a SIGNATURE MOVE (ทีเด็ด). Proposal:
+  - Each leader has a fury gauge (โทสะ) that fills during the fight. When full, a button fires the ทีเด็ด: a big cinematic (the leader art fills the screen, then the effect).
+  - Each deck also has its own card style.
+  - Deck 1 = LU BU (ลิโป้), the unbeatable general (historical figure / old novel, public domain; nothing taken from any game). Style: fast, heavy hits, cavalry.
+  - Art already in the repo:
+    - the owner's Lu Bu: ChatGPT painting `art/incoming/clash/lubu/gpt/`;
+    - the 99 px Pro Flash sprite + its 12-frame halberd sweep / 8-frame walk in `art/incoming/clash/lubu/big/` (cancelled in clash for size; perfect for a card window and the cinematic);
+    - human soldiers `art/clash/units/h_*` (spear, archer, axe / bow / hammer / mace / spear / sword knights).
+  - Fury fills +1 each time one of our cards attacks, +2 when one of ours dies.
+  - ทีเด็ด "ง้าวกรีดฟ้า": Lu Bu charges across on his red horse, one sweep: 4 damage to every enemy card and 2 to the enemy summoner, screen shake, red-gold slash arc.
+  - Proposed cards (20-card deck, duplicates allowed): ทหารทวน (1 mana 1/2 ผู้พิทักษ์), นักธนูหน้าไม้ (2 mana 2/1, when summoned 1 damage), ทหารม้าเกราะ (3 mana 3/3 จู่โจม), ขวานศึก (3 mana 4/2), ธงศึก (spell 2: +2 attack this turn to all ours), กลองศึก (spell 1: +1 fury, draw 1), ม้าเซ็กเธาว์ (spell 3: one card gets จู่โจม + 2 attack), เตียวเสี้ยน (4 mana 2/4, when summoned an enemy card cannot attack next turn), ทัพหน้า (5 mana 5/5 ผู้พิทักษ์), ลิโป้ (legendary 8 mana 7/7 จู่โจม, when summoned sweeps 2 to every enemy card).
+  - First enemy decks = desert monsters (`art/horde/mobs`), each with its own leader / ทีเด็ด (e.g. the tomb king raises mummies). Numbers get tuned by bot games before showing.
