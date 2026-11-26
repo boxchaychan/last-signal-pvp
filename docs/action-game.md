@@ -3203,3 +3203,12 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Badges: blue faceted cost gem top-left (ค่าเรียก 8), red shield attack bottom-left (7), green heart HP bottom-right (7), orange rarity gem.
   - Moving gold sheen, floating sparks.
   - New art direction: cards get 2D CHIBI illustrations (Lu Bu painting style) instead of tiny pixel sprites. Gemini prompts (free) `art/incoming/monstercards/PROMPTS_gemini.md`: spearman, crossbowman, mummy; the Lu Bu painting attached as the style.
+- 2026-11-26 CARD DESIGN v2 (owner "ขอสวยกว่านี้"): `cardtest.html` rewritten. Picture `art/incoming/monstercards/card_test_lubu_v2.png`; before / after `card_compare_v1_v2.png`.
+  - Frame: polished metallic gold (many-band gradient), engraved double groove with dot rows, a crimson damask body, filigree curl corners, a crest with a red gem on top of the window.
+  - Art window: a dusk battlefield drawn in code (sky, sun, two mountain ridges, army silhouettes with banners, fog), rising embers, vignette. The art gets a warm rim glow and breaks out above the frame.
+  - Name and stats:
+    - a curved red ribbon with folded tails, embossed gold lettering;
+    - the type line + the rarity dot;
+    - a dark glass ability panel with keyword CHIPS (icon + word: จู่โจม gold, เมื่ออัญเชิญ orange), cream text;
+    - 3D faceted cost gem with a twinkle, a red shield with a sword behind for attack, a green heart crystal for HP, a winged rarity gem.
+  - Effects: a rainbow foil sheen (overlay blend), sparkles orbiting the card, an outer warm glow.
