@@ -9,10 +9,10 @@
 ---
 
 ## ก้อนกลาง (ใส่ต่อท้ายทุกข้อของแมพ)
-บอกแค่มุมกล้อง ความคม และขนาดตัวละคร ส่วนรูปทรงแมพให้ Gemini คิดเอง (ฉบับแรกบังคับหน้าผา + บันได + น้ำ จนทุกข้อออกมาเหมือนกัน)
+บอกว่าเป็นโลก 3D ที่เรนเดอร์ออกมาเป็นพิกเซล (แบบแมพพิกเซลของเรา) + มุมกล้อง + ขนาดตัวละคร ส่วนรูปทรงแมพให้ Gemini คิดเอง (ฉบับแรกบังคับหน้าผา + บันได + น้ำ จนทุกข้อออกมาเหมือนกัน)
 
 ```
-MAP RULES: one gameplay screenshot of an original pixel-art action RPG where a hero fights packs of monsters to gain levels. Camera: high three-quarter top-down view, about 45 degrees down, straight on, landscape 16:9. Crisp pixel art at a low native resolution (about 640 x 360, hard square pixels), every pixel placed on purpose, clean outlines, a limited palette built around the colours named in PLACE, one clear light direction. Open ground with room to fight. One small adventurer in the middle for scale, about one sixth of the image height. No UI, no text, no logo, no watermark, no frame. Original design, not copied from any existing game.
+MAP RULES: one gameplay screenshot of an original action RPG where a hero fights packs of monsters to gain levels. The world is REAL 3D (low-poly 3D terrain, 3D trees, rocks and buildings with real depth and real cast shadows) rendered through a PIXEL-ART filter: a low resolution of about 640 x 360 shown with hard square pixels, a thin dark outline on every depth edge, a small colour palette with crisp flat shading steps, no blur, no painterly brush strokes. Like a 3D diorama turned into pixel art. Camera: orthographic, high three-quarter top-down view, about 45 degrees down, landscape 16:9. Colours built around the palette named in PLACE, one clear sun direction. Open ground with room to fight. One small adventurer in the middle for scale, about one sixth of the image height. No UI, no text, no logo, no watermark, no frame. Original design, not copied from any existing game.
 ```
 
 แต่ละข้อมีของตัวเอง: ไอเดีย สีหลัก แสง เวลา และจุดเด่น 1 อย่าง (ไม่มีน้ำตก วิหาร สะพาน เป็นค่าเริ่มต้นอีกแล้ว)
