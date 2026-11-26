@@ -2819,4 +2819,13 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - `PSET.egypt = 'anubis'`. Anubis is drawn taller than Zeus (jackal ears), so `drawSet` now scales each god by its OWN idle height and he still fits the slot.
   - A sand-beam picture flies along each Egypt hit. The spirit stands behind a mythic Anubis. The hero card uses `anubis_idle`.
   - Still waiting on Codex: C Monkey King, D recruit (E monsters / F arena can go to Gemini instead).
+- 2026-11-26 (owner "ตัวละครมันไม่ลื่นเลย"): heroes have only 3 still poses, so the movement is now made in code (`motion` / `drawFigure`):
+  - breathing squash and stretch from the feet, plus a small sway;
+  - on each hit: a 3-frame lunge toward the target with stretch, lean and a light pop, a short hold, then an eased return;
+  - on a skill: crouch, jump (18 px), float with a pulsing glow, land with a squash;
+  - a 0.09 s cross-fade between poses;
+  - each unit turns to face its target (`u.face`, set in `attack`); the body narrows through the turn like a paper puppet.
+  - Same for the cut heroes and the soldier, and for the lobby showcase (random hits and skills).
+  - Monsters hop with a squash on landing and a little waddle.
+  - The real fix for smoothness is drawn in-between frames: ask Codex for 4-6 frame attack sheets per god if the owner wants more.
 
