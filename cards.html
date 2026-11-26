@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ศึกการ์ดอสูร</title>
+<link rel="icon" href="data:,">
+<!-- cards.html "ศึกการ์ดอสูร" = card battler, monsters stay as CARDS on the board (owner 2026-11-26 "แบบ hearthstone", genre only,
+     nothing copied). Each deck has a LEADER with a fury gauge and a signature move (ทีเด็ด). v1: the Lu Bu deck (human army from clash,
+     Lu Bu = leader) vs the Tomb King deck (desert pixel monsters from art/horde/mobs) played by the computer. ONE canvas, all UI drawn in
+     code (no HTML menus). Every card hits with its own effect (by weapon / element). Notes: the MONSTER CARD GAME section at the end of
+     docs/action-game.md. Test hooks: window.CG (state, step(), auto play with ?bot=1). -->
+<style>
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-thai-600-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: Kanit; font-weight: 600; font-display: swap; src: url(art/gem/font/kanit-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF; }
+@font-face { font-family: Kanit; font-weight: 800; font-display: swap; src: url(art/gem/font/kanit-thai-800-normal.woff2) format('woff2'); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: Kanit; font-weight: 800; font-display: swap; src: url(art/gem/font/kanit-latin-800-normal.woff2) format('woff2'); unicode-range: U+0000-00FF; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #241712; touch-action: none; -webkit-user-select: none; user-select: none; }
+canvas { position: fixed; left: 0; top: 0; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+const VW = 844, VH = 390;   /* design size (phone landscape); scaled to fit */
+let SC = 1, OX = 0, OY = 0, DPR = 1;
+function resize() { DPR = Math.min(2.5, devicePixelRatio || 1); cv.width = innerWidth * DPR; cv.height = innerHeight * DPR; SC = Math.min(innerWidth / VW, innerHeight / VH); OX = (innerWidth - VW * SC) / 2; OY = (innerHeight - VH * SC) / 2; }
+addEventListener('resize', resize); resize();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t, ease = t => 1 - Math.pow(1 - t, 3);
+const FONT = (w, s) => `${w} ${s}px Kanit, "Noto Sans Thai", sans-serif`;
+let RS = 1; const rnd = () => (RS = (RS * 16807) % 2147483647) / 2147483647; RS = (Date.now() % 100000) + 1;
+
+/* ---------- art */
+const IMG = {}; function img(p) { if (!IMG[p]) { const i = new Image(); i.src = p; IMG[p] = i; } return IMG[p]; }
+let MOBS = {}; fetch('art/horde/mobs/index.json').then(r => r.json()).then(j => { MOBS = j.mobs; });
+const HUM = { h_spear: { cw: 68, fx: 30, fy: 64, atk: 13, w: 32, h: 35 }, h_archer: { cw: 68, fx: 30, fy: 64, atk: 13, w: 41, h: 28 }, hk_rider: { cw: 68, fx: 30, fy: 64, atk: 13, w: 27, h: 30 }, hk_glaive: { cw: 68, fx: 30, fy: 64, atk: 13, w: 25, h: 29 }, hk_samurai: { cw: 68, fx: 30, fy: 64, atk: 13, w: 25, h: 29 }, hk_tank: { cw: 68, fx: 30, fy: 64, atk: 13, w: 26, h: 26 } };   /* clash human units with move sheets (art/clash/anim, cells 68, feet 30 / 64); w / h = the figure itself */
+/* sprite frame for a card: { im, sx, sy, sw, sh, fx, fy, scale } ; human sheets face right, horde monsters face left */
+function frameOf(art, atk, t) {
+  const [kind, k] = art.split(':');
+  if (kind === 'h') { const A = HUM[k], im = img('art/clash/anim/' + k + '.png'), n = atk ? A.atk : 8, f = Math.floor(t) % n; return { im, sx: f * A.cw, sy: atk ? 0 : A.cw, sw: A.cw, sh: A.cw, fx: A.fx, fy: A.fy, px: 1, flip: false, fw: A.w, fh: A.h }; }
+  if (kind === 'l') { const im = img('art/cards/lubu_anim.png'), n = atk ? 13 : 8, f = Math.floor(t) % n; return { im, sx: f * 132, sy: atk ? 0 : 132, sw: 132, sh: 132, fx: 58, fy: 125, px: 1, flip: false, fw: 99, fh: 102 }; }
+  const m = MOBS[k]; if (!m) return null; const im = img(m.f), row = atk ? (m.rows.attack || 0) : 0, n = m.n || 4, f = Math.floor(t) % n;
+  return { im, sx: f * m.w, sy: row * m.h, sw: m.w, sh: m.h, fx: m.fx, fy: m.fy, px: m.px || 2, flip: true, el: m.el };
+}
+
+/* ---------- cards. Keywords (ours, in Thai): taunt = ผู้พิทักษ์ (must be hit first), charge = จู่โจม (hits the turn it comes), poison = พิษ (kills what it damages) */
+const CARDS = {
+  spear: { n: 'ทหารทวน', c: 1, a: 1, h: 2, kw: ['taunt'], art: 'h:h_spear', fx: 'thrust', r: 0 },
+  xbow: { n: 'นักธนูหน้าไม้', c: 2, a: 2, h: 1, bc: 'shot1', art: 'h:h_archer', fx: 'arrow', r: 0, txt: 'ลงแล้วยิง 1' },
+  cav: { n: 'ทหารม้าเกราะ', c: 3, a: 3, h: 3, kw: ['charge'], art: 'h:hk_rider', fx: 'charge', r: 1 },
+  axe: { n: 'ทหารง้าว', c: 3, a: 4, h: 2, art: 'h:hk_glaive', fx: 'chop', r: 0 },
+  swordk: { n: 'ซามูไรดาบ', c: 4, a: 4, h: 4, art: 'h:hk_samurai', fx: 'slash', r: 1 },
+  vanguard: { n: 'ทัพหน้าเกราะหนัก', c: 5, a: 5, h: 6, kw: ['taunt'], art: 'h:hk_tank', fx: 'smash', r: 2 },
+  banner: { n: 'ธงศึก', c: 2, spell: 'allAtk', icon: 'banner', r: 0, txt: 'การ์ดเราทุกใบ โจมตี +2 ตานี้' },
+  drum: { n: 'กลองศึก', c: 1, spell: 'drum', icon: 'drum', r: 0, txt: 'โทสะ +2 จั่ว 1 ใบ' },
+  redhare: { n: 'ม้าเซ็กเธาว์', c: 3, spell: 'hare', t: 'own', icon: 'horse', r: 2, txt: 'การ์ดเรา 1 ใบ โจมตี +2 ตีได้ทันที' },
+  diao: { n: 'กลอุบายเตียวเสี้ยน', c: 2, spell: 'freeze', t: 'enemy', icon: 'fan', r: 1, txt: 'การ์ดศัตรู 1 ใบ ตีไม่ได้ 1 ตา' },
+  viper: { n: 'งูพิษเนินทราย', c: 1, a: 1, h: 1, kw: ['poison'], art: 'm:mob_desert_dune_viper', r: 0 },
+  wolf: { n: 'หมาป่าเนินทราย', c: 2, a: 2, h: 2, kw: ['charge'], art: 'm:mob_desert_dune_wolf', r: 0 },
+  mummy: { n: 'มัมมี่เร่ร่อน', c: 2, a: 2, h: 3, art: 'm:mob_desert_linenwalker', r: 0 },
+  bird: { n: 'นกเท้าไว', c: 2, a: 3, h: 1, kw: ['charge'], art: 'm:mob_desert_strider_bird', r: 0 },
+  scorp: { n: 'แมงป่องก้ามพิษ', c: 3, a: 2, h: 3, kw: ['poison'], art: 'm:mob_desert_stingclaw_scorpion', r: 1 },
+  cactus: { n: 'กระบองเพชรเดินได้', c: 3, a: 1, h: 5, kw: ['taunt'], art: 'm:mob_desert_spinewalker', r: 0 },
+  turtle: { n: 'เต่าป้อมปราการ', c: 4, a: 2, h: 7, kw: ['taunt'], art: 'm:mob_desert_fortress_tortoise', r: 1 },
+  jackal: { n: 'นักบวชหมาใน', c: 4, a: 3, h: 4, bc: 'heal4', art: 'm:mob_desert_jackal_priest', r: 1, txt: 'ลงแล้วฟื้นเลือดแม่ทัพ 4' },
+  colossus: { n: 'ยักษ์หินทราย', c: 6, a: 6, h: 7, art: 'm:mob_desert_sandstone_colossus', r: 2 },
+  storm: { n: 'พายุทราย', c: 3, spell: 'aoe2', icon: 'storm', r: 1, txt: 'การ์ดศัตรูทุกใบโดน 2' },
+  quick: { n: 'ทรายดูด', c: 1, spell: 'dmg3', t: 'enemyCard', icon: 'sink', r: 0, txt: 'การ์ดศัตรู 1 ใบโดน 3' },
+  mummyTok: { n: 'มัมมี่ปลุก', c: 1, a: 2, h: 2, art: 'm:mob_desert_linenwalker', r: 0, token: true },
+};
+const KWN = { taunt: 'ผู้พิทักษ์', charge: 'จู่โจม', poison: 'พิษ' };
+const LEADERS = {
+  lubu: { n: 'ลิโป้', hp: 30, ult: 'sweep', un: 'ง้าวกรีดฟ้า', ud: 'การ์ดศัตรูทุกใบโดน 4 แม่ทัพศัตรูโดน 2', col: '#e8442e',
+    deck: { spear: 3, xbow: 2, cav: 3, axe: 2, swordk: 2, vanguard: 2, banner: 2, drum: 2, redhare: 1, diao: 1 } },
+  tomb: { n: 'ราชาสุสาน', hp: 30, ult: 'raise', un: 'ปลุกสุสาน', ud: 'ปลุกมัมมี่ 3 ตัว ฟื้นเลือด 3', col: '#9b6ad6',
+    deck: { viper: 2, wolf: 2, mummy: 3, bird: 2, scorp: 2, cactus: 2, turtle: 2, jackal: 1, colossus: 1, storm: 1, quick: 2 } },
+};
+const FURY_MAX = 10;
+
+/* ---------- state */
+let S = null, UID = 1;
+function mkPlayer(lk, ai) { const L = LEADERS[lk], deck = []; for (const [k, n] of Object.entries(L.deck)) for (let i = 0; i < n; i++) deck.push(k);
+  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+  return { lk, L, ai, hp: L.hp, maxHp: L.hp, mana: 0, maxMana: 0, fury: 0, deck, hand: [], board: [], fatigue: 0, hurtT: 0, x: 0, y: 0 }; }
+function newGame() {
+  S = { p: [mkPlayer('lubu', !!Q.get('bot')), mkPlayer('tomb', true)], turn: 0, cur: 0, phase: 'title', fx: [], parts: [], nums: [], q: [], busy: 0, shake: 0, hitstop: 0, msg: null, winner: -1, t: 0, cine: null, turnN: 0 };
+  for (let i = 0; i < 3; i++) draw(S.p[0], true); for (let i = 0; i < 4; i++) draw(S.p[1], true);
+  if (Q.get('skip') || Q.get('bot')) startTurn(0);
+}
+function mkCard(k, owner) { const d = CARDS[k]; return { id: UID++, k, d, owner, a: d.a, h: d.h, maxH: d.h, kw: (d.kw || []).slice(), sleep: true, atkUsed: false, frozen: 0, buff: 0, x: 0, y: 0, tx: 0, ty: 0, dead: false, anim: 0, atkAnim: 0, flash: 0, born: 0 }; }
+function draw(P, quiet) {
+  if (!P.deck.length) { P.fatigue++; dmgLeader(P, P.fatigue); popText(P.x, P.y - 30, 'การ์ดหมด!', '#ffd0a0'); return; }
+  const k = P.deck.pop(); if (P.hand.length >= 10) return; const c = mkCard(k, S.p.indexOf(P)); c.x = VW + 40; c.y = P === S.p[0] ? 340 : -60; c.born = quiet ? 1 : 0; P.hand.push(c);
+}
+const foe = P => S.p[1 - S.p.indexOf(P)];
+function startTurn(i) {
+  S.cur = i; S.phase = 'play'; S.turnN++; const P = S.p[i]; P.maxMana = Math.min(10, P.maxMana + 1); P.mana = P.maxMana; P.fury = Math.min(FURY_MAX, P.fury + 1);
+  for (const c of P.board) { c.sleep = false; c.atkUsed = false; if (c.frozen > 0) c.frozen--; }
+  for (const c of foe(P).board) c.buff = 0;
+  draw(P); banner(i === 0 ? 'ตาของคุณ' : 'ตาของ' + P.L.n, i === 0 ? '#ffd56a' : '#d9b2ff');
+  if (P.ai) setTimeout(() => aiTurn(), 900);
+}
+function endTurn() { if (S.phase !== 'play' || S.busy) return; for (const c of S.p[S.cur].board) c.buff = 0; startTurn(1 - S.cur); }
+
+/* ---------- rules */
+const hasTaunt = P => P.board.some(c => c.kw.includes('taunt') && !c.dead);
+const canAttack = c => !c.dead && !c.atkUsed && c.frozen <= 0 && (!c.sleep || c.kw.includes('charge')) && (c.a + c.buff) > 0;
+function legalTarget(att, tgt) { const E = foe(S.p[att.owner]); if (tgt === 'leader') return !hasTaunt(E); if (tgt.owner === att.owner || tgt.dead) return false; return !hasTaunt(E) || tgt.kw.includes('taunt'); }
+function playable(P, c) { if (c.d.c > P.mana) return false; if (!c.d.spell && P.board.length >= 7) return false; if (c.d.t === 'own' && !P.board.length) return false; if ((c.d.t === 'enemy' || c.d.t === 'enemyCard') && !foe(P).board.length) return false; return true; }
+function play(P, c, target, slot) {
+  if (!playable(P, c)) return false; P.mana -= c.d.c; P.hand.splice(P.hand.indexOf(c), 1); const E = foe(P);
+  if (c.d.spell) { castSpell(P, c, target); return true; }
+  const at = slot == null ? P.board.length : clamp(slot, 0, P.board.length); P.board.splice(at, 0, c); c.sleep = true; c.born = 0; c.flash = 1;
+  burst(c.tx || VW / 2, c.ty || 220, 'summon', 22); S.shake = Math.max(S.shake, 3);
+  if (c.d.bc === 'shot1') { const t = target && target !== 'leader' && target.owner !== c.owner ? target : (E.board.length ? E.board[Math.floor(rnd() * E.board.length)] : 'leader'); later(.35, () => { arrowShot(c, t, 1); }); }
+  if (c.d.bc === 'heal4') { later(.3, () => healLeader(P, 4)); }
+  return true;
+}
+function castSpell(P, c, t) {
+  const E = foe(P), sx = P === S.p[0] ? VW / 2 : VW / 2, sy = P === S.p[0] ? 300 : 80;
+  banner(c.d.n, '#ffe8a8', .9);
+  if (c.d.spell === 'allAtk') for (const m of P.board) { m.buff += 2; m.flash = 1; burst(m.x, m.y, 'buff', 10); }
+  if (c.d.spell === 'drum') { P.fury = Math.min(FURY_MAX, P.fury + 2); draw(P); burst(P.x, P.y, 'buff', 16); }
+  if (c.d.spell === 'hare') { const m = t && t !== 'leader' && t.owner === S.p.indexOf(P) ? t : P.board[0]; if (m) { m.a += 2; m.sleep = false; m.atkUsed = false; m.kw.includes('charge') || m.kw.push('charge'); m.flash = 1; burst(m.x, m.y, 'fire', 20); } }
+  if (c.d.spell === 'freeze') { const m = t && t !== 'leader' && t.owner !== S.p.indexOf(P) ? t : E.board[0]; if (m) { m.frozen = 2; m.flash = 1; burst(m.x, m.y, 'charm', 20); } }
+  if (c.d.spell === 'aoe2') { S.shake = 8; for (const m of E.board.slice()) { burst(m.x, m.y, 'earth', 14); hurt(m, 2, 'earth'); } burst(VW / 2, P === S.p[0] ? 130 : 230, 'sand', 60); }
+  if (c.d.spell === 'dmg3') { const m = t && t !== 'leader' && t.owner !== S.p.indexOf(P) ? t : E.board[0]; if (m) { burst(m.x, m.y, 'sand', 26); hurt(m, 3, 'earth'); } }
+  cleanup();
+}
+function attack(att, tgt) {
+  if (!canAttack(att) || !legalTarget(att, tgt)) return false; att.atkUsed = true; const P = S.p[att.owner], E = foe(P);
+  const tx = tgt === 'leader' ? E.x : tgt.x, ty = tgt === 'leader' ? E.y : tgt.y; S.busy++;
+  att.lunge = { t: 0, tx, ty, hit: false, tgt }; att.atkAnim = .001; P.fury = Math.min(FURY_MAX, P.fury + 1);
+  return true;
+}
+function resolveHit(att, tgt) {
+  const P = S.p[att.owner], E = foe(P), dmg = att.a + att.buff, fx = att.d.fx || (frameOf(att.d.art, false, 0) || {}).el || 'neutral';
+  const tx = tgt === 'leader' ? E.x : tgt.x, ty = tgt === 'leader' ? E.y : tgt.y;
+  hitFx(fx, tx, ty, att); S.hitstop = .08; S.shake = Math.max(S.shake, dmg >= 5 ? 9 : 5);
+  if (tgt === 'leader') dmgLeader(E, dmg);
+  else { hurt(tgt, dmg, fx, att.kw.includes('poison')); if (tgt.a > 0) hurt(att, tgt.a + tgt.buff, (tgt.d.fx || (frameOf(tgt.d.art, false, 0) || {}).el || 'neutral'), tgt.kw.includes('poison'), true); }
+  cleanup();
+}
+function hurt(c, n, fx, poison, quietFx) { if (c.dead || n <= 0) return; c.h -= n; c.flash = 1; popNum(c.x, c.y - 10, '-' + n, poison ? '#9cff6a' : '#fff3c4'); if (poison) c.h = Math.min(c.h, 0); }
+function dmgLeader(P, n) { P.hp -= n; P.hurtT = .4; popNum(P.x, P.y - 18, '-' + n, '#ff8c7a', 26); if (P.hp <= 0 && S.winner < 0) { S.winner = 1 - S.p.indexOf(P); later(1.2, () => { S.phase = 'over'; }); } }
+function healLeader(P, n) { P.hp = Math.min(P.maxHp, P.hp + n); popNum(P.x, P.y - 18, '+' + n, '#8dff9a', 24); burst(P.x, P.y, 'heal', 20); }
+function cleanup() {
+  for (const P of S.p) for (const c of P.board) if (c.h <= 0 && !c.dead) { c.dead = true; c.deadT = 0; P.fury = Math.min(FURY_MAX, P.fury + 2); shatter(c); }
+  setTimeout(() => { for (const P of S.p) P.board = P.board.filter(c => !c.dead); }, 520);
+}
+function ultimate(P) {
+  if (P.fury < FURY_MAX || S.busy || S.cine) return false; P.fury = 0; const E = foe(P); S.busy++;
+  S.cine = { P, t: 0, done: false };
+  later(1.35, () => {
+    if (P.L.ult === 'sweep') { S.sweep = { t: 0, y: E === S.p[1] ? 128 : 228 }; S.shake = 14; for (const m of E.board.slice()) hurt(m, 4, 'war'); dmgLeader(E, 2); for (let i = 0; i < 40; i++) burst(80 + i * 18, E === S.p[1] ? 128 : 228, 'fire', 2); cleanup(); }
+    if (P.L.ult === 'raise') { for (let i = 0; i < 3 && P.board.length < 7; i++) { const c = mkCard('mummyTok', S.p.indexOf(P)); P.board.push(c); c.flash = 1; } healLeader(P, 3); S.shake = 8; for (let i = 0; i < 30; i++) burst(200 + i * 15, P === S.p[1] ? 128 : 228, 'undead', 2); }
+  });
+  later(2.0, () => { S.cine = null; S.busy--; });
+  return true;
+}
+function later(sec, fn) { S.q.push({ t: sec, fn }); }
+function banner(text, col, dur = 1.2) { S.msg = { text, col, t: 0, dur }; }
+
+/* ---------- AI: play what fits (most expensive first), then attack: kill taunts, make good trades, else hit the leader */
+function aiTurn() {
+  const P = S.p[S.cur]; if (!P.ai || S.phase !== 'play' || S.winner >= 0) return;
+  if (S.busy || S.cine) { setTimeout(aiTurn, 250); return; }
+  const E = foe(P);
+  if (P.fury >= FURY_MAX && (E.board.length >= 2 || P.L.ult === 'raise')) { ultimate(P); setTimeout(aiTurn, 2300); return; }
+  const cand = P.hand.filter(c => playable(P, c)).sort((a, b) => b.d.c - a.d.c);
+  for (const c of cand) {
+    if (c.d.spell === 'aoe2' && E.board.length < 2) continue; if (c.d.spell === 'allAtk' && P.board.filter(canAttack).length < 2) continue;
+    let t = null; if (c.d.t === 'enemyCard' || c.d.t === 'enemy') t = E.board.slice().sort((a, b) => (b.a + b.h) - (a.a + a.h))[0]; if (c.d.t === 'own') t = P.board.slice().sort((a, b) => b.h - a.h)[0];
+    if (play(P, c, t)) { setTimeout(aiTurn, 750); return; }
+  }
+  const att = P.board.filter(canAttack);
+  if (att.length) {
+    const a = att[0], dmg = a.a + a.buff, taunts = E.board.filter(c => !c.dead && c.kw.includes('taunt'));
+    let tgt = null;
+    if (taunts.length) tgt = taunts.sort((x, y) => x.h - y.h)[0];
+    else { const kills = E.board.filter(c => !c.dead && c.h <= dmg && (c.a < a.h || c.a + c.h > a.a + a.h)).sort((x, y) => (y.a + y.h) - (x.a + x.h)); tgt = kills[0] || 'leader'; }
+    if (attack(a, tgt)) { setTimeout(aiTurn, 900); return; } a.atkUsed = true; setTimeout(aiTurn, 100); return;
+  }
+  setTimeout(() => { if (S.cur === S.p.indexOf(P) && S.phase === 'play' && !S.busy) endTurn(); else setTimeout(aiTurn, 300); }, 500);
+}
+
+/* ---------- effects (all drawn in code): one look per weapon / element */
+const EL = { fire: ['#ffd76a', '#ff7a2a', '#c8331f'], poison: ['#d4ff7a', '#62d64a', '#2c8a3a'], earth: ['#f0c890', '#b98a5a', '#6e4c34'], undead: ['#e6dcff', '#a58ad6', '#5a4878'],
+  shadow: ['#d9a6ff', '#7a3ac8', '#2a1440'], neutral: ['#ffffff', '#ffe6b0', '#c8a070'], war: ['#fff2c0', '#ff4a2a', '#8a1a12'], holy: ['#ffffff', '#fff0a0', '#ffc840'],
+  wind: ['#ffffff', '#c8f4ff', '#78c8e0'], ice: ['#ffffff', '#bfeaff', '#5ab0e8'], summon: ['#ffffff', '#ffe9a6', '#ffb84a'], buff: ['#fff6c0', '#ffcc4a', '#ff8a2a'],
+  heal: ['#eaffea', '#7cff8a', '#2ec85a'], charm: ['#ffe0f4', '#ff8ad0', '#c8408a'], sand: ['#fff0c8', '#e8b878', '#a87a48'] };
+function burst(x, y, el, n, sp = 1) { const C = EL[el] || EL.neutral; for (let i = 0; i < n; i++) { const a = rnd() * 6.283, v = (40 + rnd() * 140) * sp;
+  S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: .35 + rnd() * .45, t: 0, s: 1.5 + rnd() * 3.5, c: C[Math.floor(rnd() * 3)], g: el === 'earth' || el === 'sand' ? 380 : el === 'fire' ? -60 : 60, sq: el === 'earth' }); } }
+function hitFx(fx, x, y, att) {
+  const map = { thrust: 'neutral', arrow: 'neutral', charge: 'earth', chop: 'war', slash: 'war', smash: 'earth' }; const el = map[fx] || fx;
+  const shape = { thrust: 'line', arrow: 'line', charge: 'ring', chop: 'arc', slash: 'arc', smash: 'ring', poison: 'splat', earth: 'ring', undead: 'wisp', shadow: 'claw', neutral: 'star', fire: 'arc', wind: 'arc', ice: 'star', holy: 'ring' }[fx] || 'star';
+  S.fx.push({ kind: shape, x, y, t: 0, life: .42, el, dir: att.owner === 0 ? -1 : 1 }); burst(x, y, el, 26);
+  if (fx === 'smash' || fx === 'charge' || el === 'earth') for (let i = 0; i < 8; i++) burst(x + (rnd() - .5) * 30, y + 20, 'earth', 1, .6);
+}
+function arrowShot(from, to, n) { const P = S.p[from.owner], E = foe(P), tx = to === 'leader' ? E.x : to.x, ty = to === 'leader' ? E.y : to.y;
+  S.fx.push({ kind: 'bolt', x: from.x, y: from.y, x2: tx, y2: ty, t: 0, life: .25, el: 'neutral' });
+  later(.25, () => { if (to === 'leader') dmgLeader(E, n); else { hurt(to, n, 'neutral'); burst(tx, ty, 'neutral', 14); cleanup(); } }); }
+function shatter(c) { for (let i = 0; i < 4; i++) S.parts.push({ shard: c, sx: i % 2, sy: Math.floor(i / 2), x: c.x, y: c.y, vx: (i % 2 ? 1 : -1) * (60 + rnd() * 60), vy: (i < 2 ? -1 : 1) * 40 - 60, rot: 0, vr: (rnd() - .5) * 8, life: .8, t: 0 }); burst(c.x, c.y, 'neutral', 18); }
+function popNum(x, y, s, col, size = 22) { S.nums.push({ x, y, s, col, size, t: 0 }); }
+function popText(x, y, s, col) { popNum(x, y, s, col, 16); }
+
+/* ---------- layout */
+const CW = 58, CH = 80, HCW = 62, HCH = 86;
+function layout() {
+  const P0 = S.p[0], P1 = S.p[1];
+  P1.x = VW / 2; P1.y = 42; P0.x = 70; P0.y = 318;
+  for (const [P, y] of [[P1, 128], [P0, 228]]) { const n = P.board.length, w = n * CW + (n - 1) * 8; P.board.forEach((c, i) => { c.tx = VW / 2 - w / 2 + CW / 2 + i * (CW + 8); c.ty = y; }); }
+  const H = P0.hand, n = H.length, spread = Math.min(66, 420 / Math.max(1, n));
+  H.forEach((c, i) => { const off = i - (n - 1) / 2; c.tx = VW / 2 + 10 + off * spread; c.ty = 372 + Math.abs(off) * 2.5; c.rot = off * .045; if (c === DRAG.card) { c.tx = DRAG.x; c.ty = DRAG.y; c.rot = 0; } else if (c === HOVER) { c.ty -= 40; c.rot = 0; } });
+  P1.hand.forEach((c, i) => { c.tx = VW / 2 - (P1.hand.length - 1) * 9 + i * 18; c.ty = -18; c.rot = 0; });
+}
+function moveCards(dt) { for (const P of S.p) for (const c of [...P.board, ...P.hand]) { if (c.lunge) continue; const k = 1 - Math.exp(-dt * 14); c.x = lerp(c.x, c.tx, k); c.y = lerp(c.y, c.ty, k); } }
+
+/* ---------- input: drag a hand card up to play; drag a board card onto a target to attack */
+const DRAG = { card: null, kind: null, x: 0, y: 0, sx: 0, sy: 0 }; let HOVER = null, ZOOM = null;
+function toV(e) { return [(e.clientX - OX) / SC, (e.clientY - OY) / SC]; }
+function cardAt(list, x, y, w, h) { for (let i = list.length - 1; i >= 0; i--) { const c = list[i]; if (Math.abs(x - c.x) < w / 2 && Math.abs(y - c.y) < h / 2) return c; } return null; }
+function btnHit(x, y, b) { return x > b[0] && x < b[0] + b[2] && y > b[1] && y < b[1] + b[3]; }
+const BTN_END = [736, 170, 96, 40], BTN_ULT = [128, 290, 104, 34], BTN_START = [322, 262, 200, 52], BTN_AGAIN = [322, 262, 200, 52];
+cv.addEventListener('pointerdown', e => {
+  const [x, y] = toV(e); ZOOM = null;
+  if (S.phase === 'title') { if (btnHit(x, y, BTN_START)) { S.phase = 'play'; startTurn(0); } return; }
+  if (S.phase === 'over') { if (btnHit(x, y, BTN_AGAIN)) { newGame(); S.phase = 'play'; startTurn(0); } return; }
+  if (S.cur !== 0 || S.busy || S.cine) return; const P = S.p[0];
+  if (btnHit(x, y, BTN_END)) { endTurn(); return; }
+  if (btnHit(x, y, BTN_ULT)) { ultimate(P); return; }
+  const h = cardAt(P.hand, x, y, HCW, HCH); if (h) { DRAG.card = h; DRAG.kind = 'hand'; DRAG.x = x; DRAG.y = y; DRAG.sx = x; DRAG.sy = y; return; }
+  const b = cardAt(P.board, x, y, CW, CH); if (b) { DRAG.card = b; DRAG.kind = 'board'; DRAG.x = x; DRAG.y = y; DRAG.sx = x; DRAG.sy = y; return; }
+});
+cv.addEventListener('pointermove', e => { const [x, y] = toV(e); if (DRAG.card) { DRAG.x = x; DRAG.y = y; } else if (S && S.phase === 'play') HOVER = cardAt(S.p[0].hand, x, y, HCW, HCH); });
+cv.addEventListener('pointerup', e => {
+  const [x, y] = toV(e), c = DRAG.card, kind = DRAG.kind; DRAG.card = null; if (!c) return; const P = S.p[0], E = S.p[1];
+  const moved = Math.hypot(x - DRAG.sx, y - DRAG.sy) > 12;
+  if (!moved) { ZOOM = c; return; }
+  if (kind === 'hand') {
+    if (y > 300) return;   /* dropped back on the hand */
+    let t = null; const eb = cardAt(E.board, x, y, CW, CH), ob = cardAt(P.board, x, y, CW, CH);
+    if (c.d.t === 'enemy' || c.d.t === 'enemyCard') t = eb; else if (c.d.t === 'own') t = ob; else if (c.d.bc === 'shot1') t = eb || (y < 80 ? 'leader' : null);
+    if ((c.d.t === 'enemy' || c.d.t === 'enemyCard' || c.d.t === 'own') && !t) { banner('ลากไปวางบนการ์ดเป้าหมาย', '#ffd0a0', .9); return; }
+    let slot = null; if (!c.d.spell) { slot = 0; for (const m of P.board) if (x > m.x) slot++; }
+    if (!playable(P, c)) { banner(c.d.c > P.mana ? 'มานาไม่พอ' : 'ลงไม่ได้', '#ffb0a0', .8); return; }
+    c.tx = x; c.ty = y; play(P, c, t, slot);
+  } else {
+    const t = cardAt(E.board, x, y, CW, CH) || (Math.hypot(x - E.x, y - E.y) < 40 ? 'leader' : null);
+    if (!t) return; if (!canAttack(c)) { banner(c.frozen > 0 ? 'ติดกลอุบาย ตีไม่ได้' : c.atkUsed ? 'ตีไปแล้วตานี้' : 'เพิ่งลง รอตาหน้า', '#ffd0a0', .9); return; }
+    if (!legalTarget(c, t)) { banner('ต้องตีผู้พิทักษ์ก่อน', '#ffd0a0', .9); return; }
+    attack(c, t);
+  }
+});
+
+/* ---------- update */
+function update(dt) {
+  S.t += dt; if (S.hitstop > 0) { S.hitstop -= dt; return; }
+  for (let i = S.q.length - 1; i >= 0; i--) { S.q[i].t -= dt; if (S.q[i].t <= 0) { const f = S.q[i].fn; S.q.splice(i, 1); f(); } }
+  layout(); moveCards(dt);
+  for (const P of S.p) for (const c of P.board) { c.anim += dt * 7; if (c.flash > 0) c.flash -= dt * 2.5; if (c.atkAnim > 0) { c.atkAnim += dt * 18; if (c.atkAnim > 13) c.atkAnim = 0; }
+    if (c.lunge) { const L = c.lunge; L.t += dt; const T = L.t / .2;
+      if (T < 1) { c.x = lerp(c.tx, L.tx, ease(T) * .82); c.y = lerp(c.ty, L.ty, ease(T) * .82); }
+      else if (!L.hit) { L.hit = true; resolveHit(c, L.tgt); }
+      else if (T < 1.8) { const u = (T - 1) / .8; c.x = lerp(lerp(c.tx, L.tx, .82), c.tx, ease(u)); c.y = lerp(lerp(c.ty, L.ty, .82), c.ty, ease(u)); }
+      else { c.lunge = null; S.busy = Math.max(0, S.busy - 1); } } }
+  for (const P of S.p) { if (P.hurtT > 0) P.hurtT -= dt; }
+  for (const p of S.parts) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.g || 0) * dt; if (p.vr) p.rot += p.vr * dt; p.vx *= .985; }
+  S.parts = S.parts.filter(p => p.t < p.life); for (const f of S.fx) f.t += dt; S.fx = S.fx.filter(f => f.t < f.life);
+  for (const n of S.nums) n.t += dt; S.nums = S.nums.filter(n => n.t < 1.1); if (S.msg) { S.msg.t += dt; if (S.msg.t > S.msg.dur) S.msg = null; }
+  if (S.shake > 0) S.shake = Math.max(0, S.shake - dt * 30); if (S.cine) S.cine.t += dt; if (S.sweep) { S.sweep.t += dt; if (S.sweep.t > .6) S.sweep = null; }
+}
+
+/* ---------- drawing */
+function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function text(s, x, y, size, col, w = 800, align = 'center', stroke = 'rgba(30,14,8,.85)', sw = 3) { g.font = FONT(w, size); g.textAlign = align; g.textBaseline = 'middle'; if (stroke) { g.lineWidth = sw; g.strokeStyle = stroke; g.lineJoin = 'round'; g.strokeText(s, x, y); } g.fillStyle = col; g.fillText(s, x, y); }
+const RAR = [['#8f7f6c', '#5e5246'], ['#c9d1dc', '#7d8796'], ['#e8b84a', '#9a6a1c']];
+function drawSprite(art, atk, t, cx, by, maxW, maxH, flipFace) {
+  const F = frameOf(art, atk, t); if (!F || !F.im.complete || !F.im.naturalWidth) return;
+  const s = Math.max(.5, Math.floor(Math.min(maxW / (F.fw || F.sw / F.px), maxH / (F.fh || F.sh / F.px)) * 2) / 2) / F.px;   /* half-step scales keep the pixels square enough */
+  g.save(); g.imageSmoothingEnabled = false; g.translate(cx, by); const flip = F.flip !== flipFace; if (flip) g.scale(-1, 1);
+  g.drawImage(F.im, F.sx, F.sy, F.sw, F.sh, -F.fx * s, -F.fy * s, F.sw * s, F.sh * s); g.restore();
+}
+function icon(kind, x, y, s) {
+  g.save(); g.translate(x, y); g.scale(s, s); g.lineJoin = 'round';
+  if (kind === 'banner') { g.fillStyle = '#7a4a2a'; g.fillRect(-2, -20, 4, 40); g.fillStyle = '#e8442e'; g.beginPath(); g.moveTo(2, -20); g.lineTo(22, -14); g.lineTo(2, -4); g.fill(); g.fillStyle = '#ffd56a'; g.fillRect(6, -15, 6, 4); }
+  if (kind === 'drum') { g.fillStyle = '#b23a2a'; rr(-16, -10, 32, 20, 6); g.fill(); g.fillStyle = '#f2d8a8'; g.beginPath(); g.ellipse(0, -10, 16, 5, 0, 0, 7); g.fill(); g.strokeStyle = '#ffd56a'; g.lineWidth = 2; g.beginPath(); g.moveTo(-14, -4); g.lineTo(14, 8); g.moveTo(14, -4); g.lineTo(-14, 8); g.stroke(); }
+  if (kind === 'horse') { g.fillStyle = '#c8301f'; g.beginPath(); g.ellipse(0, 4, 16, 9, 0, 0, 7); g.fill(); g.beginPath(); g.moveTo(10, 0); g.lineTo(20, -14); g.lineTo(24, -10); g.lineTo(16, 4); g.fill(); g.fillStyle = '#3a1a10'; g.fillRect(-12, 10, 4, 10); g.fillRect(8, 10, 4, 10); g.fillStyle = '#ffd56a'; g.fillRect(-18, -2, 6, 3); }
+  if (kind === 'fan') { g.fillStyle = '#ff8ad0'; g.beginPath(); g.moveTo(0, 12); g.arc(0, 12, 26, -Math.PI * .85, -Math.PI * .15); g.closePath(); g.fill(); g.strokeStyle = '#fff0f8'; g.lineWidth = 1.5; for (let a = -.85; a <= -.15; a += .14) { g.beginPath(); g.moveTo(0, 12); g.lineTo(Math.cos(a * Math.PI) * 26, 12 + Math.sin(a * Math.PI) * 26); g.stroke(); } }
+  if (kind === 'storm') { g.strokeStyle = '#f0c890'; g.lineWidth = 4; for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(0, 0, 6 + i * 7, i, i + 4.2); g.stroke(); } }
+  if (kind === 'sink') { g.fillStyle = '#c89860'; g.beginPath(); g.ellipse(0, 6, 22, 9, 0, 0, 7); g.fill(); g.fillStyle = '#6e4c34'; g.beginPath(); g.ellipse(0, 6, 10, 4, 0, 0, 7); g.fill(); }
+  g.restore();
+}
+function drawCard(c, x, y, w, h, rot = 0, opts = {}) {
+  const d = c.d, R = RAR[d.r || 0], isHand = !!opts.hand; g.save(); g.translate(x, y); g.rotate(rot); if (opts.scale) g.scale(opts.scale, opts.scale);
+  if (opts.glow) { g.shadowColor = opts.glow; g.shadowBlur = 14; }
+  g.fillStyle = 'rgba(0,0,0,.35)'; rr(-w / 2 + 3, -h / 2 + 4, w, h, 7); g.fill(); g.shadowBlur = 0;
+  const taunt = c.kw && c.kw.includes('taunt');
+  g.fillStyle = R[1]; rr(-w / 2, -h / 2, w, h, 7); g.fill(); g.fillStyle = R[0]; rr(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 6); g.fill();
+  if (d.r === 2) { const sh = (S.t * .6 + c.id * .3) % 1.6 - .3; const gr = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); gr.addColorStop(clamp(sh - .15, 0, 1), 'rgba(255,255,255,0)'); gr.addColorStop(clamp(sh, 0, 1), 'rgba(255,255,255,.45)'); gr.addColorStop(clamp(sh + .15, 0, 1), 'rgba(255,255,255,0)'); g.fillStyle = gr; rr(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 6); g.fill(); }
+  const ah = isHand ? h * .55 : h - 10; const wy = -h / 2 + 5;
+  const bg = g.createLinearGradient(0, wy, 0, wy + ah); bg.addColorStop(0, d.spell ? '#3a2a50' : '#2f4660'); bg.addColorStop(1, d.spell ? '#1c1428' : '#1a2434'); g.fillStyle = bg; rr(-w / 2 + 5, wy, w - 10, ah, 4); g.fill();
+  g.save(); rr(-w / 2 + 5, wy, w - 10, ah, 4); g.clip();
+  if (d.spell) icon(d.icon, 0, wy + ah / 2, isHand ? 1.05 : .9);
+  else drawSprite(d.art, c.atkAnim > 0, c.atkAnim > 0 ? c.atkAnim : 0, 0, wy + ah - 3, w - 14, ah - 6, c.owner === 0);
+  if (c.flash > 0) { g.fillStyle = `rgba(255,255,255,${c.flash * .6})`; g.fillRect(-w / 2, -h / 2, w, h); }
+  g.restore();
+  if (taunt) { g.strokeStyle = '#d8dde6'; g.lineWidth = 3; rr(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3, 8); g.stroke(); g.strokeStyle = '#6a7484'; g.lineWidth = 1; rr(-w / 2 - 3, -h / 2 - 3, w + 6, h + 6, 9); g.stroke(); }
+  if (isHand) { text(d.n, 0, wy + ah + 9, d.n.length > 9 ? 8.5 : 10, '#fff6e0', 600, 'center', 'rgba(30,14,8,.9)', 2.5);
+    const desc = d.txt || (c.kw && c.kw.map(k => KWN[k]).join(' ')) || ''; if (desc) text(desc, 0, wy + ah + 21, 7, '#ffe8b0', 600, 'center', 'rgba(30,14,8,.8)', 2);
+    g.fillStyle = '#2e6ae6'; g.beginPath(); g.arc(-w / 2 + 7, -h / 2 + 7, 9, 0, 7); g.fill(); g.strokeStyle = '#dff0ff'; g.lineWidth = 1.5; g.stroke(); text(String(d.c), -w / 2 + 7, -h / 2 + 7.5, 12, '#fff', 800, 'center', null); }
+  if (!d.spell) { const a = c.a + (c.buff || 0), hh = c.h;
+    g.fillStyle = '#c8402e'; g.beginPath(); g.arc(-w / 2 + 7, h / 2 - 7, 8.5, 0, 7); g.fill(); text(String(a), -w / 2 + 7, h / 2 - 6.5, 11, c.buff ? '#ffe26a' : '#fff', 800, 'center', 'rgba(60,10,0,.8)', 2);
+    g.fillStyle = '#3c9a46'; g.beginPath(); g.arc(w / 2 - 7, h / 2 - 7, 8.5, 0, 7); g.fill(); text(String(hh), w / 2 - 7, h / 2 - 6.5, 11, hh < c.maxH ? '#ffb4a4' : '#fff', 800, 'center', 'rgba(0,40,10,.8)', 2); }
+  if (!isHand && c.kw) { let ix = -w / 2 + 6; if (c.kw.includes('poison')) { g.fillStyle = '#7cff4a'; g.beginPath(); g.arc(ix + 3, -h / 2 + 8, 4, 0, 7); g.fill(); ix += 10; } if (c.kw.includes('charge')) text('⚡', ix + 4, -h / 2 + 8, 9, '#ffe26a', 800, 'center', null); }
+  if (!isHand && c.owner === 0 && S.cur === 0 && canAttack(c) && !S.busy) { g.strokeStyle = `rgba(120,255,140,${.6 + .4 * Math.sin(S.t * 6)})`; g.lineWidth = 2.5; rr(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 8); g.stroke(); }
+  if (!isHand && (c.sleep && !c.kw.includes('charge')) && c.owner === S.cur) text('z', w / 2 - 8, -h / 2 + 9, 11, '#cfe0ff', 800, 'center', 'rgba(10,20,50,.8)', 2);
+  if (c.frozen > 0) { g.fillStyle = 'rgba(255,140,210,.28)'; rr(-w / 2, -h / 2, w, h, 7); g.fill(); text('💗', 0, -h / 2 + 10, 10, '#fff', 800, 'center', null); }
+  g.restore();
+}
+function drawLeader(P, x, y, isFoe) {
+  const r = 30; g.save(); if (P.hurtT > 0) g.translate((rnd() - .5) * 6, (rnd() - .5) * 6);
+  g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.arc(x + 2, y + 3, r + 4, 0, 7); g.fill();
+  g.fillStyle = isFoe ? '#3a2850' : '#4a1e16'; g.beginPath(); g.arc(x, y, r + 4, 0, 7); g.fill(); g.strokeStyle = isFoe ? '#c9a8ff' : '#ffcf6a'; g.lineWidth = 3; g.stroke();
+  g.save(); g.beginPath(); g.arc(x, y, r, 0, 7); g.clip(); g.fillStyle = isFoe ? '#2a1c38' : '#5a2418'; g.fillRect(x - r, y - r, r * 2, r * 2);
+  if (P.lk === 'lubu') { const im = img('art/cards/lubu_paint.png'); if (im.complete && im.naturalWidth) g.drawImage(im, 120, 30, 260, 260, x - r * 1.25, y - r * 1.1, r * 2.5, r * 2.5); }
+  else { const m = MOBS.boss_desert_tomb_king; if (m) { const im = img(m.f); if (im.complete && im.naturalWidth) { g.imageSmoothingEnabled = false; g.drawImage(im, 0, 0, m.w, m.h, x - r * 1.7, y - r * 1.35, r * 3.4, r * 3.4 * m.h / m.w); } } }
+  g.restore();
+  g.fillStyle = '#b8282a'; g.beginPath(); g.arc(x + r * .8, y + r * .75, 11, 0, 7); g.fill(); g.strokeStyle = '#ffd0c0'; g.lineWidth = 1.5; g.stroke(); text(String(Math.max(0, P.hp)), x + r * .8, y + r * .76, 12, '#fff', 800, 'center', null);
+  text(P.L.n, x, y + r + 12, 11, isFoe ? '#e6d4ff' : '#ffe2b0', 800);
+  /* fury gauge */
+  const gx = isFoe ? x + 46 : 128, gy = isFoe ? y - 6 : 274, gw = 74; g.fillStyle = 'rgba(0,0,0,.45)'; rr(gx, gy, gw, 9, 4); g.fill();
+  const f = P.fury / FURY_MAX; const gr = g.createLinearGradient(gx, 0, gx + gw, 0); gr.addColorStop(0, '#ff8a2a'); gr.addColorStop(1, P.L.col); g.fillStyle = gr; rr(gx + 1, gy + 1, (gw - 2) * f, 7, 3); g.fill();
+  text('โทสะ ' + P.fury + '/' + FURY_MAX, gx + gw / 2, gy - 7, 8.5, '#ffe8c8', 600);
+  g.restore();
+}
+function drawFx() {
+  for (const f of S.fx) { const T = f.t / f.life, C = EL[f.el] || EL.neutral; g.save(); g.globalAlpha = 1 - T; g.lineCap = 'round';
+    if (f.kind === 'arc') { g.strokeStyle = C[0]; g.lineWidth = 7 * (1 - T) + 1; g.beginPath(); g.arc(f.x, f.y, 26 + T * 10, -2.4 + T * .6, -.3 + T * .9); g.stroke(); g.strokeStyle = C[1]; g.lineWidth = 3; g.beginPath(); g.arc(f.x, f.y, 34 + T * 10, -2.2 + T * .6, -.5 + T * .9); g.stroke(); }
+    if (f.kind === 'line') { g.strokeStyle = C[0]; g.lineWidth = 5 * (1 - T) + 1; const L = 34; g.beginPath(); g.moveTo(f.x - L * f.dir * .2, f.y + L * .9 * f.dir); g.lineTo(f.x + L * f.dir * .2, f.y - L * .9 * f.dir); g.stroke(); }
+    if (f.kind === 'ring') { g.strokeStyle = C[1]; g.lineWidth = 6 * (1 - T) + 1; g.beginPath(); g.ellipse(f.x, f.y + 10, 12 + T * 40, 5 + T * 14, 0, 0, 7); g.stroke(); }
+    if (f.kind === 'splat') { g.fillStyle = C[1]; for (let i = 0; i < 7; i++) { const a = i * .9; g.beginPath(); g.arc(f.x + Math.cos(a) * T * 26, f.y + Math.sin(a) * T * 20, 7 * (1 - T) + 2, 0, 7); g.fill(); } }
+    if (f.kind === 'wisp') { g.strokeStyle = C[1]; g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(f.x, f.y - T * 20, 10 + i * 6, i + T * 3, i + T * 3 + 2); g.stroke(); } }
+    if (f.kind === 'claw') { g.strokeStyle = C[1]; g.lineWidth = 4; for (let i = -1; i <= 1; i++) { g.beginPath(); g.moveTo(f.x - 18 + i * 9, f.y - 20); g.lineTo(f.x + 14 + i * 9, f.y + 20); g.stroke(); } }
+    if (f.kind === 'star') { g.fillStyle = C[0]; g.beginPath(); for (let i = 0; i < 10; i++) { const rr2 = (i % 2 ? 6 : 20) * (1 + T * .6), a = i * Math.PI / 5; g.lineTo(f.x + Math.cos(a) * rr2, f.y + Math.sin(a) * rr2); } g.fill(); }
+    if (f.kind === 'bolt') { const u = Math.min(1, T * 1.2); g.strokeStyle = '#fff2c0'; g.lineWidth = 3; g.beginPath(); g.moveTo(lerp(f.x, f.x2, Math.max(0, u - .3)), lerp(f.y, f.y2, Math.max(0, u - .3))); g.lineTo(lerp(f.x, f.x2, u), lerp(f.y, f.y2, u)); g.stroke(); }
+    g.restore(); }
+  for (const p of S.parts) { const T = p.t / p.life; g.globalAlpha = 1 - T;
+    if (p.shard) { const c = p.shard; g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.beginPath(); g.rect(p.sx ? 0 : -CW / 2, p.sy ? 0 : -CH / 2, CW / 2, CH / 2); g.clip(); drawCard(c, p.sx ? -CW / 4 + CW / 4 : CW / 4 - CW / 4, 0, CW, CH); g.restore(); }
+    else { g.fillStyle = p.c; if (p.sq) g.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); else { g.beginPath(); g.arc(p.x, p.y, p.s * (1 - T * .5), 0, 7); g.fill(); } } }
+  g.globalAlpha = 1;
+  if (S.sweep) { const T = S.sweep.t / .6, y = S.sweep.y; g.save(); g.globalAlpha = 1 - T * .8; const x = lerp(-60, VW + 60, ease(T));
+    const gr = g.createLinearGradient(x - 220, 0, x, 0); gr.addColorStop(0, 'rgba(255,60,30,0)'); gr.addColorStop(.7, 'rgba(255,90,40,.8)'); gr.addColorStop(1, '#fff2c0'); g.strokeStyle = gr; g.lineWidth = 26; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x - 220, y + 30); g.quadraticCurveTo(x - 90, y - 40, x, y - 4); g.stroke(); g.strokeStyle = '#ffd56a'; g.lineWidth = 6; g.beginPath(); g.moveTo(x - 200, y + 22); g.quadraticCurveTo(x - 80, y - 34, x, y - 4); g.stroke(); g.restore(); }
+  for (const n of S.nums) { const T = n.t / 1.1; g.globalAlpha = T < .7 ? 1 : 1 - (T - .7) / .3; text(n.s, n.x, n.y - ease(Math.min(1, T * 2)) * 22, n.size * (T < .1 ? 1 + (.1 - T) * 6 : 1), n.col, 800, 'center', 'rgba(40,10,0,.9)', 4); } g.globalAlpha = 1;
+}
+function drawCine() {
+  const C = S.cine; if (!C) return; const T = C.t, P = C.P; g.save();
+  g.fillStyle = `rgba(10,4,2,${Math.min(.75, T * 2)})`; g.fillRect(0, 0, VW, VH);
+  const slide = ease(clamp(T / .35, 0, 1)), out = clamp((T - 1.6) / .3, 0, 1);
+  g.fillStyle = P.L.col; g.globalAlpha = .85 * (1 - out); g.beginPath(); g.moveTo(0, 120); g.lineTo(VW, 90); g.lineTo(VW, 290); g.lineTo(0, 300); g.fill(); g.globalAlpha = 1 - out;
+  if (P.lk === 'lubu') { const im = img('art/cards/lubu_paint.png'); if (im.complete && im.naturalWidth) g.drawImage(im, lerp(-420, 40, slide), 20, 380, 392); drawSprite('l:x', true, clamp((T - .9) * 22, 0, 12.9), lerp(VW + 100, VW - 210, ease(clamp((T - .5) / .4, 0, 1))), 300, 220, 220, false); }
+  else { const m = MOBS.boss_desert_tomb_king; if (m) { const im = img(m.f); g.imageSmoothingEnabled = false; if (im.complete) g.drawImage(im, 0, 0, m.w, m.h, lerp(-400, 60, slide), 40, 340, 340 * m.h / m.w); } }
+  text(P.L.un, lerp(VW + 200, VW * .62, slide), 160, 46, '#fff4c8', 800, 'center', 'rgba(60,0,0,.95)', 7); text(P.L.ud, lerp(VW + 200, VW * .62, slide), 205, 15, '#ffe0c0', 600);
+  g.restore();
+}
+function render() {
+  g.setTransform(DPR, 0, 0, DPR, 0, 0); g.fillStyle = '#241712'; g.fillRect(0, 0, innerWidth, innerHeight);
+  g.setTransform(DPR * SC, 0, 0, DPR * SC, DPR * OX + (S.shake ? (rnd() - .5) * S.shake : 0) * SC * DPR, DPR * OY + (S.shake ? (rnd() - .5) * S.shake : 0) * SC * DPR);
+  /* table: warm stone with a sand runner */
+  const bg = g.createRadialGradient(VW / 2, VH / 2, 40, VW / 2, VH / 2, 520); bg.addColorStop(0, '#7a5038'); bg.addColorStop(1, '#2a1a12'); g.fillStyle = bg; g.fillRect(-40, -40, VW + 80, VH + 80);
+  g.fillStyle = 'rgba(232,180,120,.18)'; rr(150, 82, 544, 196, 18); g.fill(); g.strokeStyle = 'rgba(255,214,150,.35)'; g.lineWidth = 2; g.stroke();
+  g.strokeStyle = 'rgba(255,220,160,.25)'; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(170, 178); g.lineTo(674, 178); g.stroke(); g.setLineDash([]);
+  if (!S) return;
+  const P0 = S.p[0], P1 = S.p[1];
+  drawLeader(P1, P1.x, P1.y, true); drawLeader(P0, P0.x, P0.y, false);
+  /* targeting hints while dragging */
+  if (DRAG.card && DRAG.kind === 'board') { for (const c of P1.board) if (legalTarget(DRAG.card, c)) { g.strokeStyle = 'rgba(255,90,70,.8)'; g.lineWidth = 2; rr(c.x - CW / 2 - 3, c.y - CH / 2 - 3, CW + 6, CH + 6, 8); g.stroke(); }
+    if (legalTarget(DRAG.card, 'leader')) { g.strokeStyle = 'rgba(255,90,70,.8)'; g.lineWidth = 3; g.beginPath(); g.arc(P1.x, P1.y, 38, 0, 7); g.stroke(); } }
+  for (const P of [P1, P0]) for (const c of P.board) if (!c.dead && !c.lunge) drawCard(c, c.x, c.y, CW, CH);
+  for (const P of [P1, P0]) for (const c of P.board) if (!c.dead && c.lunge) drawCard(c, c.x, c.y, CW, CH, 0, { glow: '#ffd56a' });
+  /* enemy hand backs */
+  for (const c of P1.hand) { g.save(); g.translate(c.x, c.y); g.fillStyle = '#4a3060'; rr(-14, -20, 28, 40, 4); g.fill(); g.strokeStyle = '#c9a8ff'; g.lineWidth = 1.5; g.stroke(); g.restore(); }
+  /* our hand */
+  for (const c of P0.hand) if (c !== DRAG.card && c !== HOVER) drawCard(c, c.x, c.y, HCW, HCH, c.rot || 0, { hand: true, glow: S.cur === 0 && playable(P0, c) ? 'rgba(120,255,140,.9)' : null });
+  if (HOVER && !DRAG.card && P0.hand.includes(HOVER)) drawCard(HOVER, HOVER.x, HOVER.y, HCW, HCH, 0, { hand: true, scale: 1.25, glow: playable(P0, HOVER) ? 'rgba(120,255,140,.9)' : null });
+  if (DRAG.card && DRAG.kind === 'hand') drawCard(DRAG.card, DRAG.x, DRAG.y, HCW, HCH, 0, { hand: true, scale: 1.1, glow: '#ffd56a' });
+  if (DRAG.card && DRAG.kind === 'board') { const c = DRAG.card; g.strokeStyle = '#ffd56a'; g.lineWidth = 4; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(c.x, c.y); g.quadraticCurveTo((c.x + DRAG.x) / 2, Math.min(c.y, DRAG.y) - 40, DRAG.x, DRAG.y); g.stroke(); g.setLineDash([]); g.fillStyle = '#ffd56a'; g.beginPath(); g.arc(DRAG.x, DRAG.y, 7, 0, 7); g.fill(); }
+  drawFx();
+  /* mana, decks, buttons */
+  for (let i = 0; i < 10; i++) { const x = 600 + i * 15, y = 348, on = i < P0.mana, has = i < P0.maxMana; g.fillStyle = on ? '#4aa8ff' : has ? '#284060' : 'rgba(40,40,60,.5)'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 5, y); g.lineTo(x, y + 7); g.lineTo(x - 5, y); g.closePath(); g.fill(); }
+  text('มานา ' + P0.mana + '/' + P0.maxMana, 667, 332, 11, '#cfe8ff', 800);
+  text('สำรับ ' + P0.deck.length, 760, 300, 10, '#ffe2b0', 600); text('สำรับ ' + P1.deck.length, 330, 30, 10, '#e6d4ff', 600);
+  const myTurn = S.cur === 0 && S.phase === 'play'; const nothing = myTurn && !P0.hand.some(c => playable(P0, c)) && !P0.board.some(canAttack);
+  g.fillStyle = myTurn ? (nothing ? '#e6a23a' : '#b9542a') : '#5a4a40'; rr(...BTN_END, 12); g.fill(); g.strokeStyle = '#ffdcae'; g.lineWidth = 2; g.stroke(); text(myTurn ? 'จบตา' : 'ตาศัตรู', BTN_END[0] + BTN_END[2] / 2, BTN_END[1] + BTN_END[3] / 2 + 1, 15, '#fff', 800);
+  const ready = P0.fury >= FURY_MAX && myTurn; g.fillStyle = ready ? P0.L.col : 'rgba(60,40,30,.8)'; rr(...BTN_ULT, 10); g.fill(); if (ready) { g.strokeStyle = `rgba(255,230,140,${.6 + .4 * Math.sin(S.t * 8)})`; g.lineWidth = 3; g.stroke(); }
+  text('ทีเด็ด: ' + P0.L.un, BTN_ULT[0] + BTN_ULT[2] / 2, BTN_ULT[1] + BTN_ULT[3] / 2 + 1, 10.5, ready ? '#fff' : '#a89080', 800);
+  if (ZOOM && (P0.hand.includes(ZOOM) || P0.board.includes(ZOOM) || P1.board.includes(ZOOM))) { g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, 0, VW, VH); drawCard(ZOOM, VW / 2, VH / 2 - 10, HCW, HCH, 0, { hand: true, scale: 2.4 }); }
+  if (S.msg) { const T = S.msg.t / S.msg.dur; g.globalAlpha = T < .15 ? T / .15 : T > .8 ? (1 - T) / .2 : 1; g.fillStyle = 'rgba(20,10,6,.65)'; rr(VW / 2 - 150, 160, 300, 38, 12); g.fill(); text(S.msg.text, VW / 2, 179, 20, S.msg.col, 800); g.globalAlpha = 1; }
+  drawCine();
+  if (S.phase === 'title') { g.fillStyle = 'rgba(16,8,4,.82)'; g.fillRect(0, 0, VW, VH); const im = img('art/cards/lubu_paint.png'); if (im.complete && im.naturalWidth) g.drawImage(im, 40, 40, 300, 310);
+    text('ศึกการ์ดอสูร', 560, 110, 46, '#ffe08a', 800, 'center', 'rgba(80,10,0,.95)', 7); text('เด็คลิโป้  ปะทะ  ราชาสุสาน', 560, 160, 18, '#ffd8b8', 600);
+    text('ลากการ์ดขึ้นไปลงกระดาน  ·  ลากการ์ดบนกระดานไปชนศัตรูเพื่อตี', 560, 196, 11, '#e8d0b8', 600); text('แถบโทสะเต็ม = กดทีเด็ด', 560, 214, 11, '#e8d0b8', 600);
+    g.fillStyle = '#c84a2a'; rr(...BTN_START, 14); g.fill(); g.strokeStyle = '#ffdcae'; g.lineWidth = 3; g.stroke(); text('เริ่มเล่น', BTN_START[0] + BTN_START[2] / 2, BTN_START[1] + BTN_START[3] / 2 + 1, 24, '#fff', 800); }
+  if (S.phase === 'over') { g.fillStyle = 'rgba(16,8,4,.78)'; g.fillRect(0, 0, VW, VH); const win = S.winner === 0;
+    text(win ? 'ชนะ!' : 'แพ้...', VW / 2, 150, 64, win ? '#ffe08a' : '#c9b0ff', 800, 'center', 'rgba(60,10,0,.95)', 8); text(win ? 'ลิโป้พิชิตราชาสุสาน' : 'ราชาสุสานชนะ ลองใหม่', VW / 2, 205, 18, '#ffe0c0', 600);
+    g.fillStyle = '#c84a2a'; rr(...BTN_AGAIN, 14); g.fill(); g.strokeStyle = '#ffdcae'; g.lineWidth = 3; g.stroke(); text('เล่นอีกครั้ง', BTN_AGAIN[0] + BTN_AGAIN[2] / 2, BTN_AGAIN[1] + BTN_AGAIN[3] / 2 + 1, 22, '#fff', 800); }
+}
+
+/* ---------- loop + test hooks */
+newGame();
+let last = performance.now();
+function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; update(dt); render(); CG.frames++; requestAnimationFrame(frame); }
+const CG = window.CG = { get S() { return S; }, frames: 0, newGame, endTurn, play, attack, ultimate, canAttack, legalTarget, playable, aiTurn,
+  step(sec, dt = 1 / 60) { for (let t = 0; t < sec; t += dt) update(dt); render(); } };
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
