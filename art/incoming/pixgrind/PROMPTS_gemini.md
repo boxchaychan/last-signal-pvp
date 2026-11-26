@@ -88,6 +88,12 @@ Three views on one pure white sheet, same size, feet on one line: front view, si
 ## แมพ (เลือกลองข้อไหนก็ได้ ข้อละ 1 รูป)
 แต่ละข้อมีสี แสง และจุดเด่นของตัวเอง ไม่มีน้ำตก วิหาร สะพาน เป็นของประจำ
 
+## ภาพทั้งแมพ (owner "เจนภาพแมพทั้งแมพมาก่อน ทำสวยๆ") = ทำอันนี้ก่อน
+แนบ 2 รูปตามลำดับ: 1) `art/incoming/pixgrind/target_map_v1_gemini.png` (ภาพแมพทะเลทรายที่คุณส่งมา = แบบสี) 2) `art/incoming/pixgrind/REF_layout_v1.png` (ผังแมพจริงของเรา) แล้ววางกล่องนี้
+```
+Picture 1 is the style: a screenshot of our pixel-art game. Picture 2 is the layout of our whole level seen from high above. Draw ONE beautiful overview picture of the WHOLE level from high above, like a level map in a polished pixel-art game, in exactly the style, colours and late golden afternoon light of picture 1, following the layout of picture 2: the same outline of the terracotta rock ledges (the upper level) with the sand ramps cut between them, the big oasis pool on the left middle, the small pond at the bottom left, the spring on the upper level at the top right of the middle, date palms around every pool. Make it beautiful and natural: rock ledges with irregular, weathered, layered shapes instead of straight boxy lines, dunes with flowing ripples, scattered boulders, dry shrubs and animal bones, a trail of footprints between the pools. The landmark: a colossal ancient stone head half buried in the sand on the far (north) bank of the big pool, with faint blue glowing eyes, clearly the biggest object on the map. Small extras: a wrecked wooden caravan cart on the east mesa, dark scorpion burrows in the open sand. Crisp pixel art with hard square pixels and a thin dark outline. Landscape 16:9. No UI, no text, no characters, no frame.
+```
+
 ## ชุดชิ้นส่วนแมพ (ทำหลังเห็นแมพทดลอง) = ทำอันนี้
 แนบภาพเป้าหมาย `art/incoming/pixgrind/target_map_v1_gemini.png` (ภาพแมพทะเลทรายที่คุณส่งมา) แล้ววางทีละกล่อง ได้รูปส่งมาเป็นไฟล์แนบ
 
