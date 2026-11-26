@@ -3287,3 +3287,21 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Icons: free, `tools/art/bag_craft_icons.py` → `art/bag3d/icons_all.png` (the 40 old icons + 12 crafted ones). Each = the main ingredient's icon graded toward the element colour with a glow + the second ingredient small in a disc. PixelLab icons (1 credit each) only if the owner asks.
   - Check `node tools/qa/bag3d_craft.js <out>`: hints, toast, book, a fight with crafted items, every button inside 844 x 390 and 740 x 360. No errors. Preview `art/bag3d/craft_preview.png`.
   - Not done: the enemy never uses crafted items; the balance bot (`BG.sim`) does not craft.
+- 2026-11-26 bag3d ★3 CRAFTING + GRAPHICS / VFX (owner "หาก3ดาวแล้วเอาไปผสมไอเทมได้", "ปรับกราฟฟิค เพิ่ม vfx"), 0 credits:
+  - ★3 RULE (`CRAFT_LV`): the MAIN item of a recipe (the first in each `CRAFT` row: sword, dagger, bow, axe, hammer, wand, claw, meteor, shield x2, meat, pig) must be ★3 first. The partner can be any ★. The crafted item comes out ★3.
+    - Not ready: nothing is bought or used, and the info line says "ต้องอัป X ให้ถึง ★★★ ก่อน (ตอนนี้ ★)".
+    - Flask hints and shop outlines appear only for READY pairs (`readyPair`).
+    - The description shows "(X ต้อง ★3 ก่อน)". The book marks every main item "★3".
+  - PIXEL VFX: 20 PVFX Foundry sheets (`art/pvfx`, CC0; `PVL`) on the 2D battle layer, drawn with each sheet's own foot point (`b.pv`, `pvHit`, `PVW` per weapon).
+    - Weapon hits: fireball impact (flame sword / fire wand), fire nova (archstaff), acid splash (poison), snowball impact (ice), blood splat (axe / claws / scythe), lightning strike + ground slam (thunder hammer), static burst (orb), meteor strike (comet / meteor), small explosion (bomb), soul drain (skull).
+    - Other hits: hit spark; crits add a crit burst + a flattened shock ring.
+    - Life steal: a soul-drain glow on the hero sometimes.
+    - Heals: holy heal. Big blocks: shield bubble. The skill: power-up aura.
+    - At most 10 at once and 2 a fighter per moment, so the fighters stay visible.
+  - FEEL:
+    - white hit flash on the 3D models (emissive, `flash3`, hero 70 %);
+    - camera punch = both canvases scale together a little (`b.punch`), so the 2D layer stays lined up;
+    - a white screen flash on crits / the comet / the KO;
+    - KO: slow motion x0.32 for 0.75 s on the 2D and 3D layers (`b.slow`, `D3.slow`), a big explosion + dust on the loser, and the result waits 1.6 s.
+  - LOOK: a vignette (red on bosses), a warm light from the top, the 3D canvas a little more saturated and contrasty (CSS filter). New slash colours for the crafted melee weapons.
+  - Checks: `node tools/qa/bag3d_craft.js` (★3 message, craft, book, buttons) and `node tools/qa/bag3d_vfx.js` (round-8 fight with crafted ★3 items). No errors. The bot sim is unchanged (`BG.sim(30,true)` avg round 10; the bot does not craft). Preview `art/bag3d/vfx_preview.png`.
