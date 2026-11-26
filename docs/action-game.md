@@ -3269,3 +3269,21 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Prompts in `PROMPTS_gemini.md`: 1-6 the soldiers, 7-10 the spells (one wide purple "เวท" bar instead of the stat bars). Rarity: R bronze 3 stars, SR silver-purple 4, SSR gold 5 (Lu Bu 6).
   - GPT is asked to write our REAL numbers and the Thai name. If it gets them wrong, the game paints them over (`tools/art/cards_paint.py` erase boxes + our numbers in its bars, like Lu Bu).
   - Each card still goes in as `p:<key>`: the art cut on the board / hand, the whole card on zoom.
+- 2026-11-26 CRAFTING in `bag3d.html` (owner "เอา3ดีทำต่อให้มีระบบผสมไอเทม"). The old rule stays: two of the SAME item = one more ★. New: two DIFFERENT items from a recipe = a new, stronger item. 0 credits.
+  - 12 recipes (`CRAFT`):
+    - weapons: ดาบรัตติกาล+อัญมณีเพลิง=ดาบเพลิงอัคนี, มีดเงา+พิษแม่มด=มีดอาบพิษ, ธนู+อัญมณีน้ำแข็ง=ธนูน้ำแข็ง, ขวาน+หน้ากากเขี้ยว=ขวานกระหายเลือด, ค้อน+ลูกแก้วสายฟ้า=ค้อนสายฟ้า, คทาเพลิง+ตำรา=คทาจอมเวท, กรงเล็บ+หัวใจแวมไพร์=กรงเล็บแวมไพร์, คัมภีร์อุกกาบาต+ระเบิด=ดาวหางมหาประลัย;
+    - defence: โล่+หมวก=โล่ป้อมปราการ, โล่+เกราะหนาม=โล่หนามเหล็ก;
+    - food: เนื้อ+ไวน์=งานเลี้ยงนักรบ;
+    - economy: กระปุกหมู+โคลเวอร์=เหรียญนำโชค (2 gold a round + 6 % crit).
+  - Crafted items: rarity 4, never in the shop. ★ = the lower ★ of the two. The new item sits where the target was (any rotation that fits), else where the other one was, else the first free spot. Crafted weapons borrow the base weapon's hero move (`base`, `MELEE`) and have their own hit effect (`WFX`). Gold now comes from every gold item (`gold` x ★).
+  - How to craft: drag one item onto its partner, from the bag, the tray or straight from the shop (buy + craft).
+  - Hints:
+    - a bobbing flask on owned items whose partner you own;
+    - an orange outline + flask on shop cards that combine with something you own;
+    - the item description lists its recipes (partner names in yellow when owned).
+  - Feedback and book:
+    - a "สูตรใหม่! ผสมสำเร็จ" pop with light;
+    - the recipe book: new button "สูตร", a 2-column list, made ones get ✓, remembered in `bag3d.made`.
+  - Icons: free, `tools/art/bag_craft_icons.py` → `art/bag3d/icons_all.png` (the 40 old icons + 12 crafted ones). Each = the main ingredient's icon graded toward the element colour with a glow + the second ingredient small in a disc. PixelLab icons (1 credit each) only if the owner asks.
+  - Check `node tools/qa/bag3d_craft.js <out>`: hints, toast, book, a fight with crafted items, every button inside 844 x 390 and 740 x 360. No errors. Preview `art/bag3d/craft_preview.png`.
+  - Not done: the enemy never uses crafted items; the balance bot (`BG.sim`) does not craft.
