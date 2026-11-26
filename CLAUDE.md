@@ -39,6 +39,9 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Per champion: GPT big-pixel 3-view sheet (free) → PixelLab redraw B at body 128 (1 credit; say the cost, the owner's "เทส" / "เจน" is the go-ahead) → for the bag game only the SIDE view is used, so clips are ordered east only: character 4 + idle 1 + attack combo 4 + hurt 1 + death 1 ≈ 12 credits, only on "เจน".
 - `bag.html` = the game being worked on ("ศึกแชมเปี้ยนเผ่า"): full-screen battle, bags along the bottom, generated item icons + arena, PVFX Foundry effects in `art/pvfx/` (CC0) not wired in yet.
 
+## NEWEST (owner 2026-11-26, latest of all): MONSTER CARD GAME, not built yet (start on "เกมการ์ดมอนสเตอร์")
+- Monsters come OUT of the cards onto 5 lanes a side; 2D pixel monsters from `art/horde/mobs`; vs computer first; our chibi girl = the summoner. Plan + picks: the MONSTER CARD GAME IDEA section at the end of `docs/action-game.md`. The pixgrind work below is paused (owner "มาแนวนี้คงไม่เวิค").
+
 ## NEWEST (owner 2026-11-26, latest): pixel 3D level grinder, ONE hero who changes weapons (start on "แมพพิกเซล ทำตัวเดียวเปลี่ยนอาวุธ")
 - Priorities: a beautiful map, smooth moves, strong slash effects. Map = target picture first (Gemini), then a matching kit; code only for light / shadow / moving life. Hero = cute adventurer girl (black hair, purple eyes, long red scarf), Pro Flash then shrunk to 60 px: `art/pixgrind/hero60.png` (owner "ย่อ60"); hybrid moves (shared moves + pinned weapon, attacks drawn per weapon). Page `pixgrind.html` (v1: wide desert oasis map, walk only, `?ov=1` whole map; check `node tools/qa/pixgrind_check.js`). Prompts `art/incoming/pixgrind/PROMPTS_gemini.md`; notes: the NEXT PLAN / PIXGRIND lines at the end of `docs/action-game.md`.
 
