@@ -5,6 +5,25 @@
 
 ขนาดในเกม (owner 2026-11-26 "80"): ตัวสูง 80 พิกเซล บนจอสูงราว 360-390 พิกเซลของแมพ = ประมาณ 1/5 ของความสูงจอ โลกสร้างใหญ่รอบตัว (ดูมาตรฐานขนาดใน docs/action-game.md)
 
+## 0. นักผจญภัยหญิงน่ารัก (owner 2026-11-26 "ขอตัวละครน่ารักๆ") = ทำอันนี้
+สูง 2.5 หัว หน้าโต ตาวิ้ง สีสวย มีจุดเด่นที่ทรงตัว (หูใหญ่ / ผมแกละ) ที่ 80 พิกเซลหน้ายังชัด
+
+### 0A. สาวน้อยฮู้ดจิ้งจอกทะเลทราย (ฮู้ดหูเฟนเนกใหญ่ ผ้าคาดสีฟ้าเขียวผูกโบ)
+```
+Design one original heroine for a 3D-pixel action RPG set in a desert oasis: a CUTE little adventurer girl. Big sparkling turquoise eyes, rosy cheeks, a cheerful brave smile, short fluffy caramel hair peeking out of a cream FENNEC-FOX HOOD with two huge fox ears on top (peach inside the ears). A short cream cape over the shoulders only, a coral-red tunic with a turquoise sash tied in a big bow at the back, a small gold bell at the neck, puffy cream shorts, wrapped legs and soft brown boots with turned-up toes, a fluffy fox-tail charm hanging from the belt.
+Style: cute chibi game art like a polished mobile game, about 2.5 heads tall with a big face, thick clean dark-brown outline, flat bright colours with soft cel shading, a pretty palette of cream, coral red, turquoise and gold. Big simple shapes so she stays clear when shrunk to 80 pixels tall: no tiny patterns, no thin straps.
+No weapon and no shield: both hands empty, small but clearly visible, a little apart from the body, closed as if gripping a handle; nothing covers the hands.
+Three views on one pure white sheet, same size, feet on one line: front view, side view facing right, back view. Cheerful standing pose, full body from head to feet, no ground, no shadow, no text.
+```
+
+### 0B. สาวน้อยนักเดินทางดวงดาว (ผมแกละชมพูม่วง โบกรมท่า ผ้าคลุมไหล่ลายดาว)
+```
+Design one original heroine for a 3D-pixel action RPG set in a desert oasis: a CUTE little star-traveller girl. Big sparkling violet eyes, rosy cheeks, a cheeky confident smile, long pink-lilac twin tails tied with big navy ribbons, a tiny gold star hair clip. A short navy capelet over the shoulders only with a few small gold stars and a round gold star clasp, a cream puffy-sleeved blouse with the sleeves pushed up, a navy pleated skirt over dark shorts, a wide brown belt with a small star-shaped pouch, navy knee socks, round-toed brown boots.
+Style: cute chibi game art like a polished mobile game, about 2.5 heads tall with a big face, thick clean dark-brown outline, flat bright colours with soft cel shading, a pretty palette of navy, cream, lilac pink and gold. Big simple shapes so she stays clear when shrunk to 80 pixels tall: no tiny patterns, no thin straps.
+No weapon and no shield: both hands empty, small but clearly visible, a little apart from the body, closed as if gripping a handle; nothing covers the hands.
+Three views on one pure white sheet, same size, feet on one line: front view, side view facing right, back view. Cheerful standing pose, full body from head to feet, no ground, no shadow, no text.
+```
+
 ## 1. นักผจญภัยหญิง แบบใหม่ (owner: แบบแรก "ไม่เท่ไม่สวย")
 แบบแรก (แว่นกันลม กระเป๋าย่าม กระติกน้ำ หัวโต 3 หัว) น่ารักเกินไป แบบใหม่สูง 4 หัว สีเข้ม มีสีเด่นแค่สีเดียว เงาร่างชัด
 
@@ -32,7 +51,7 @@ Three views on one pure white sheet, same size, feet on one line: front view, si
 ### แมพที่คุณเลือก: ทะเลทราย โอเอซิส (ทำอันนี้)
 ```
 PLACE: a desert oasis on a late golden afternoon. Wide rippled dunes of warm apricot sand, a deep turquoise oasis pool ringed by lush green grass, reeds and leaning date palms, low terracotta rock shelves rising in two gentle levels, dry shrubs and small rocks, sand blowing off the dune tops, dragonflies over the water. Palette: apricot and peach sand, deep turquoise water, emerald green, terracotta, long violet-blue shadows. Light: low warm sun from the upper left. Landmark: a colossal ancient stone head half buried in a dune beside the pool, cracked and weathered, its eyes glowing faint blue.
-MAP RULES: one gameplay screenshot of an original action RPG where a hero fights packs of monsters to gain levels. The world is REAL 3D (low-poly 3D terrain, 3D trees, rocks and buildings with real depth and real cast shadows) rendered through a PIXEL-ART filter: a low resolution of about 640 x 360 shown with hard square pixels, a thin dark outline on every depth edge, a small colour palette with crisp flat shading steps, no blur, no painterly brush strokes. Like a 3D diorama turned into pixel art. Camera: orthographic, high three-quarter top-down view, about 45 degrees down, landscape 16:9. Colours built around the palette named in PLACE, one clear sun direction. Open ground with room to fight. One adventurer (a young woman in a red capelet) slightly below the middle, about one fifth of the image height. The world is built BIG around her so she does not look big: date palms 3 to 4 times her height, each rock shelf taller than her, the stone head about 7 times her height, wide dune ripples, large calm ground shapes, few small props, more open ground ahead of her than behind. No UI, no text, no logo, no watermark, no frame. Original design, not copied from any existing game.
+MAP RULES: one gameplay screenshot of an original action RPG where a hero fights packs of monsters to gain levels. The world is REAL 3D (low-poly 3D terrain, 3D trees, rocks and buildings with real depth and real cast shadows) rendered through a PIXEL-ART filter: a low resolution of about 640 x 360 shown with hard square pixels, a thin dark outline on every depth edge, a small colour palette with crisp flat shading steps, no blur, no painterly brush strokes. Like a 3D diorama turned into pixel art. Camera: orthographic, high three-quarter top-down view, about 45 degrees down, landscape 16:9. Colours built around the palette named in PLACE, one clear sun direction. Open ground with room to fight. One cute adventurer girl slightly below the middle, about one fifth of the image height. The world is built BIG around her so she does not look big: date palms 3 to 4 times her height, each rock shelf taller than her, the stone head about 7 times her height, wide dune ripples, large calm ground shapes, few small props, more open ground ahead of her than behind. No UI, no text, no logo, no watermark, no frame. Original design, not copied from any existing game.
 ```
 
 ### แมพ A. ป่าเห็ดยักษ์เรืองแสง ยามพลบค่ำ

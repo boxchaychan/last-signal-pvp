@@ -3002,3 +3002,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - HUD small, in the corners.
   - Map many screens big (about 6 x 6 screens) with distinct zones, so the world feels large even with a large hero.
   - Prompts updated: the heroine reads at 80 px; the map boxes use a hero at 1/5 of the height with palms 3-4 x, rock shelves taller than her, the stone head about 7 x, large calm ground shapes.
+- 2026-11-26 (owner "ขอตัวละครน่ารักๆ", after the first cute adventurer was "ไม่เท่ไม่สวย" and before seeing the cool 1A / 1B): new CUTE heroines.
+  - Both about 2.5 heads tall, so the face is big and stays sharp at 80 px. Each has a strong silhouette feature, sparkling eyes, rosy cheeks and a polished mobile-game finish (the divine Zeus boy tone the owner liked), with empty hands for weapons.
+    - 0A desert fennec-hood girl: huge fox ears, cream / coral / turquoise / gold.
+    - 0B star-traveller girl: pink-lilac twin tails, navy star capelet.
+  - The first plain cute design failed because it had no strong feature, only goggles and a satchel. Cool 1A / 1B are kept in the file.
+  - The map box's scale hero is now "a cute adventurer girl". No wide-brim hats: the high camera would hide the face.
