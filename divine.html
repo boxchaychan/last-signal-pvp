@@ -498,8 +498,8 @@ function rivals() {   /* the other 4 players of this match */
 }
 
 /* ---------- drawing ---------- */
-function spr(k, x, y, h, flip, alpha) { const im = IMG[k]; if (!im) return; const w = im.width * h / im.height; g.save(); g.globalAlpha = alpha == null ? 1 : alpha; g.translate(x, y); if (flip) g.scale(-1, 1); g.drawImage(im, -w / 2, -h, w, h); g.restore(); }
-function sprA(k, x, y, h, ax, alpha) { const im = IMG[k]; if (!im) return; const w = im.width * h / im.height; g.save(); g.globalAlpha = alpha == null ? 1 : alpha; g.drawImage(im, x - w * ax, y - h, w, h); g.restore(); }
+function spr(k, x, y, h, flip, alpha) { const im = IMG[k]; if (!im) return; const w = im.width * h / im.height; g.save(); if (im.pix) g.imageSmoothingEnabled = false; g.globalAlpha = alpha == null ? 1 : alpha; g.translate(x, y); if (flip) g.scale(-1, 1); g.drawImage(im, -w / 2, -h, w, h); g.restore(); }
+function sprA(k, x, y, h, ax, alpha) { const im = IMG[k]; if (!im) return; const w = im.width * h / im.height; g.save(); if (im.pix) g.imageSmoothingEnabled = false; g.globalAlpha = alpha == null ? 1 : alpha; g.drawImage(im, x - w * ax, y - h, w, h); g.restore(); }
 function poseOf(u) { return u.skillT > 0 ? 'skill' : u.flash > 5 ? 'attack' : 'idle'; }
 function drawSet(set, pose, x, y, h, alpha) { const z = SETS[set][pose]; sprA(set + '_' + pose, x, y, h * z.h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h), z.ax, alpha); }
 function shadow(x, y, w) { g.fillStyle = 'rgba(20,10,6,.38)'; g.beginPath(); g.ellipse(x, y, w, w * .3, 0, 0, 6.3); g.fill(); }
@@ -545,7 +545,11 @@ function motion(u, seed) {
   }
   return m;
 }
+/* owner 2026-11-26 test "เอาตัวซุส ... พอดีช่อง ... ขอคมๆ proflash": ?pix=1 = Zeus as PixelLab Pro Flash pixel art at slot size
+   (art/divine/pix_zeus_idle.png, 43 x 60 = 1 pixel per game px for a mythic), drawn without smoothing; one picture for every pose, the code motion does the rest */
+const PIX = new URLSearchParams(location.search).get('pix') === '1';
 function poseImg(set, img, pose, h) {   /* the picture + its size and body anchor for this pose */
+  if (PIX && set === 'zeus' && IMG.pix_zeus_idle) { const im = IMG.pix_zeus_idle; return { im, w: im.width * h / im.height, h, ax: .541, pix: 1 }; }
   if (set) { const z = SETS[set][pose], im = IMG[set + '_' + pose]; if (!im) return null; const hh = h * z.h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h); return { im, w: im.width * hh / im.height, h: hh, ax: z.ax }; }
   const im = IMG[img]; if (!im) return null; return { im, w: im.width * h / im.height, h, ax: .5 };
 }
@@ -592,7 +596,7 @@ function drawFigure(u, x, y, h, set, img, seed) {
   g.save(); g.translate(x + m.dx * face, y + m.dy); g.rotate(m.rot * face); g.scale(m.sx * fs, m.sy);
   const rigged = false;   /* owner 2026-11-26 "ประกอบก็เละ": no cut-out puppets or rigs; every god uses Codex's own whole pictures (idle / attack / skill) with whole-body motion, like the reference game. drawPuppet / drawRig stay for later tests. */
   const cur = rigged ? null : poseImg(set, img, m.pose, h);
-  if (rigged && PUPS[set]) drawPuppet(set, h, pupAngles(u, seed), m.glow); else if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h);
+  if (rigged && PUPS[set]) drawPuppet(set, h, pupAngles(u, seed), m.glow); else if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) { if (cur.pix) g.imageSmoothingEnabled = false; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
   if (blend < 1 && u.pp && !(rigged && u.pp !== 'skill')) { const pr = poseImg(set, img, u.pp, h); if (pr) { g.globalAlpha = 1 - blend; g.drawImage(pr.im, -pr.w * pr.ax, -pr.h, pr.w, pr.h); g.globalAlpha = 1; } }
   if (m.glow > 0 && cur) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = m.glow; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
   g.restore();
@@ -832,6 +836,7 @@ function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; 
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}
   if (ARENA) try { IMG.arena = await load('art/divine/arena_gemini.jpg'); } catch (e) { console.warn(e); }
+  if (PIX) try { const im = await load('art/divine/pix_zeus_idle.png'); im.pix = true; IMG.pix_zeus_idle = im; IMG.zeus_idle = im; } catch (e) { console.warn(e); }
   BG = paintBG(); fresh(); renderLobby();
   window.DIVINE = { state: () => G, meta: () => META, startMatch, goLobby, endMatch, summon, fuse, merge, spawnBoss, chrono, upgrade, step, draw, place, makeUnit, setMode: m => { MODE = m; $('app').classList.toggle('lobby', m !== 'battle'); }, ready: true };
   requestAnimationFrame(frame);
