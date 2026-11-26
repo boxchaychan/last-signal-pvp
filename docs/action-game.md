@@ -3128,3 +3128,4 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - Phone testing by link, our whole cut / check pipeline is web, and Claude cannot see or drive the Godot editor from the cloud.
     - Godot's advantages (a visual editor to place props by hand, an app build) matter later, if the owner wants to arrange maps himself or ship an app.
   - The owner tries the run in `pixgrind.html` (deploy of v1 was running at 13:52 UTC).
+- 2026-11-26 (owner "ทำเป็นภาพวิ่งมาให้ดู ขี้เกียจรอ"): clip of the hero running round the oasis, recorded free by `node tools/qa/pixgrind_clip.js <out> [fps]` (frames stepped with `PG.sim`, ffmpeg -> mp4 x2 nearest + gif): `art/incoming/pixgrind/shots/v1_run.mp4` / `.gif` (11 s, 15 fps, phone 844 x 390).
