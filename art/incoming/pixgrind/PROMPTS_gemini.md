@@ -5,6 +5,22 @@
 
 ขนาดในเกม (owner 2026-11-26 "80"): ตัวสูง 80 พิกเซล บนจอสูงราว 360-390 พิกเซลของแมพ = ประมาณ 1/5 ของความสูงจอ โลกสร้างใหญ่รอบตัว (ดูมาตรฐานขนาดใน docs/action-game.md)
 
+## แก้รอบ 2 (owner "ขายาวไป ชุดขอดูนักผจญภัยกว่านี้") = ทำอันนี้
+แนบรูปล่าสุดที่ได้ (หรือรูปแรกที่คุณส่งมาก็ได้) แล้ววางกล่องนี้
+```
+Edit the attached character sheet. Keep the SAME girl: same face, big purple eyes, cheeky grin, messy black hair, same art style and outline, the same three views (front, side facing right, back), same standing pose, both hands empty fists, pure white background, and keep the LONG red scarf with two long tails flowing behind her.
+1. Proportions: make her more chibi, about 2.5 heads tall in total, with SHORT sturdy legs (the legs only about one third of her height). The head stays the same size.
+2. Outfit: make her look like a real travelling ADVENTURER, still cute:
+- a small brown leather BACKPACK with a rolled cream blanket strapped on top and a tin cup hanging at its side;
+- one wide leather strap across the chest to a satchel on her hip;
+- a soft leather shoulder guard on one shoulder only;
+- a short brown leather vest over the cream blouse, sleeves rolled up;
+- a belt with two pouches, a tiny glowing lantern and a brass compass hanging from it;
+- black shorts, cloth-wrapped shins, sturdy round-toed brown boots with a cream fold at the top;
+- leather bracers and fingerless gloves.
+Keep the shapes big and clear, no more than about 8 buckles in total, so she reads at 80 pixels tall. Colours: red scarf, cream blouse, warm browns, black shorts, brass gold. No weapon, no text.
+```
+
 ## ตัวละครที่คุณส่งมา (hero_v1_owner.png) แก้ชุดให้น่ารัก + ผ้าพันคอยาว = ทำอันนี้
 แนบรูปที่คุณส่งมาเมื่อกี้ (ผมผมดำ ตาม่วง ผ้าพันคอแดง) แล้ววางกล่องนี้
 ```
