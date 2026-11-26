@@ -279,11 +279,17 @@ function update(dt) {
 function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 function text(s, x, y, size, col, w = 800, align = 'center', stroke = 'rgba(30,14,8,.85)', sw = 3) { g.font = FONT(w, size); g.textAlign = align; g.textBaseline = 'middle'; if (stroke) { g.lineWidth = sw; g.strokeStyle = stroke; g.lineJoin = 'round'; g.strokeText(s, x, y); } g.fillStyle = col; g.fillText(s, x, y); }
 const RAR = [['#8f7f6c', '#5e5246'], ['#c9d1dc', '#7d8796'], ['#e8b84a', '#9a6a1c']];
+const BB = {};   /* opaque box of each art's first frame (frames carry empty margins), so every card fills its window the same way */
+function bboxOf(art) { if (BB[art]) return BB[art]; const F = frameOf(art, false, 0); if (!F || !F.im.complete || !F.im.naturalWidth) return null;
+  const c = document.createElement('canvas'); c.width = F.sw; c.height = F.sh; const x = c.getContext('2d'); x.drawImage(F.im, F.sx, F.sy, F.sw, F.sh, 0, 0, F.sw, F.sh);
+  const d = x.getImageData(0, 0, F.sw, F.sh).data; let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  for (let yy = 0; yy < F.sh; yy++) for (let xx = 0; xx < F.sw; xx++) if (d[(yy * F.sw + xx) * 4 + 3] > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+  return (BB[art] = x1 < 0 ? { x0: 0, y0: 0, x1: F.sw - 1, y1: F.sh - 1 } : { x0, y0, x1, y1 }); }
 function drawSprite(art, atk, t, cx, by, maxW, maxH, flipFace) {
-  const F = frameOf(art, atk, t); if (!F || !F.im.complete || !F.im.naturalWidth) return;
-  const s = Math.max(.5, Math.floor(Math.min(maxW / (F.fw || F.sw / F.px), maxH / (F.fh || F.sh / F.px)) * 2) / 2) / F.px;   /* half-step scales keep the pixels square enough */
+  const F = frameOf(art, atk, t); if (!F || !F.im.complete || !F.im.naturalWidth) return; const B = bboxOf(art); if (!B) return;
+  const bw = B.x1 - B.x0 + 1, bh = B.y1 - B.y0 + 1, s = Math.min(maxW / bw, maxH / bh), mx = (B.x0 + B.x1 + 1) / 2;
   g.save(); g.imageSmoothingEnabled = false; g.translate(cx, by); const flip = F.flip !== flipFace; if (flip) g.scale(-1, 1);
-  g.drawImage(F.im, F.sx, F.sy, F.sw, F.sh, -F.fx * s, -F.fy * s, F.sw * s, F.sh * s); g.restore();
+  g.drawImage(F.im, F.sx, F.sy, F.sw, F.sh, -mx * s, -(B.y1 + 1) * s, F.sw * s, F.sh * s); g.restore();
 }
 function icon(kind, x, y, s) {
   g.save(); g.translate(x, y); g.scale(s, s); g.lineJoin = 'round';
@@ -295,33 +301,54 @@ function icon(kind, x, y, s) {
   if (kind === 'sink') { g.fillStyle = '#c89860'; g.beginPath(); g.ellipse(0, 6, 22, 9, 0, 0, 7); g.fill(); g.fillStyle = '#6e4c34'; g.beginPath(); g.ellipse(0, 6, 10, 4, 0, 0, 7); g.fill(); }
   g.restore();
 }
+/* card look (owner 2026-11-26 "รูปแบบการ์ดยังไม่สวย"): FULL ART like the approved test card, no frame. Element-coloured glow
+   background, the pixel monster big in the middle, a dark fade at the bottom for the name, a thin light edge in the rarity colour,
+   a gold-rimmed shield (attack) and heart (HP), a faceted cost gem in the hand. */
+const ELBG = { war: ['#ffb060', '#a8201a', '#2a0604'], earth: ['#ffd890', '#a8642a', '#2a1406'], poison: ['#dcff90', '#3a9a3a', '#08200c'], undead: ['#ece0ff', '#7a5ab0', '#160c28'],
+  shadow: ['#dcb0ff', '#5a2a9a', '#10061c'], neutral: ['#fff2cc', '#b08a5a', '#22140a'], charm: ['#ffd8f2', '#c0408a', '#22081a'], sand: ['#fff2c8', '#c89050', '#2c180a'], fire: ['#ffe08a', '#e0501a', '#2a0804'] };
+const RARE = [['#d8c8b0', '#7a6a58'], ['#eef4ff', '#8a96a8'], ['#fff0a0', '#c8901a']];
+function cardEl(d) { if (d.spell) return { banner: 'war', drum: 'war', horse: 'fire', fan: 'charm', storm: 'sand', sink: 'sand' }[d.icon] || 'neutral'; if (d.art.startsWith('h:')) return 'war'; const m = MOBS[d.art.split(':')[1]]; return (m && ELBG[m.el]) ? m.el : 'earth'; }
+function gemHex(x, y, r, n) { g.save(); g.translate(x, y); g.fillStyle = '#e8b448'; g.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 - Math.PI / 2; g.lineTo(Math.cos(a) * (r + 2.5), Math.sin(a) * (r + 2.5)); } g.closePath(); g.fill();
+  const gr = g.createLinearGradient(-r, -r, r, r); gr.addColorStop(0, '#d6f2ff'); gr.addColorStop(.35, '#4aa8ff'); gr.addColorStop(1, '#0a2070'); g.fillStyle = gr; g.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 - Math.PI / 2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.ellipse(-r * .3, -r * .42, r * .3, r * .14, -.6, 0, 7); g.fill(); text(String(n), 0, 1, r * 1.25, '#fff', 800, '#0a1240', 3); g.restore(); }
+function statBadge(x, y, r, kind, n, warn, buff) { g.save(); g.translate(x, y);
+  if (kind === 'atk') { g.fillStyle = '#e8b448'; g.beginPath(); g.arc(0, 0, r + 2, 0, 7); g.fill(); const gr = g.createRadialGradient(-r * .3, -r * .4, 1, 0, 0, r); gr.addColorStop(0, '#ffb09a'); gr.addColorStop(.4, '#e0402a'); gr.addColorStop(1, '#5a0a06'); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill(); }
+  else { const hp = s => { g.beginPath(); g.moveTo(0, s * .95); g.bezierCurveTo(-s * 1.4, s * .05, -s * .95, -s * 1.1, 0, -s * .42); g.bezierCurveTo(s * .95, -s * 1.1, s * 1.4, s * .05, 0, s * .95); g.closePath(); };
+    g.fillStyle = '#e8b448'; hp(r + 2.5); g.fill(); const gr = g.createLinearGradient(-r, -r, r, r); gr.addColorStop(0, '#c8ffd0'); gr.addColorStop(.35, '#36c25a'); gr.addColorStop(1, '#063014'); g.fillStyle = gr; hp(r); g.fill(); }
+  text(String(n), 0, kind === 'atk' ? .5 : -.5, r * 1.25, warn ? '#ffb4a4' : buff ? '#ffe26a' : '#fff', 800, 'rgba(20,4,0,.95)', 3); g.restore(); }
 function drawCard(c, x, y, w, h, rot = 0, opts = {}) {
-  const d = c.d, R = RAR[d.r || 0], isHand = !!opts.hand; g.save(); g.translate(x, y); g.rotate(rot); if (opts.scale) g.scale(opts.scale, opts.scale);
-  if (opts.glow) { g.shadowColor = opts.glow; g.shadowBlur = 14; }
-  g.fillStyle = 'rgba(0,0,0,.35)'; rr(-w / 2 + 3, -h / 2 + 4, w, h, 7); g.fill(); g.shadowBlur = 0;
-  const taunt = c.kw && c.kw.includes('taunt');
-  g.fillStyle = R[1]; rr(-w / 2, -h / 2, w, h, 7); g.fill(); g.fillStyle = R[0]; rr(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 6); g.fill();
-  if (d.r === 2) { const sh = (S.t * .6 + c.id * .3) % 1.6 - .3; const gr = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); gr.addColorStop(clamp(sh - .15, 0, 1), 'rgba(255,255,255,0)'); gr.addColorStop(clamp(sh, 0, 1), 'rgba(255,255,255,.45)'); gr.addColorStop(clamp(sh + .15, 0, 1), 'rgba(255,255,255,0)'); g.fillStyle = gr; rr(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 6); g.fill(); }
-  const ah = isHand ? h * .55 : h - 10; const wy = -h / 2 + 5;
-  const bg = g.createLinearGradient(0, wy, 0, wy + ah); bg.addColorStop(0, d.spell ? '#4a2a5a' : '#7a4a2a'); bg.addColorStop(1, d.spell ? '#1c1428' : '#2a140c');   /* warm card windows that sit well on the painted desert table */ g.fillStyle = bg; rr(-w / 2 + 5, wy, w - 10, ah, 4); g.fill();
-  g.save(); rr(-w / 2 + 5, wy, w - 10, ah, 4); g.clip();
-  if (d.spell) icon(d.icon, 0, wy + ah / 2, isHand ? 1.05 : .9);
-  else drawSprite(d.art, c.atkAnim > 0, c.atkAnim > 0 ? c.atkAnim : 0, 0, wy + ah - 3, w - 14, ah - 6, c.owner === 0);
-  if (c.flash > 0) { g.fillStyle = `rgba(255,255,255,${c.flash * .6})`; g.fillRect(-w / 2, -h / 2, w, h); }
+  const d = c.d, R = RARE[d.r || 0], isHand = !!opts.hand, el = cardEl(d), B = ELBG[el] || ELBG.neutral; g.save(); g.translate(x, y); g.rotate(rot); if (opts.scale) g.scale(opts.scale, opts.scale);
+  const rad = Math.min(w, h) * .14, X = -w / 2, Y = -h / 2;
+  if (opts.glow) { g.shadowColor = opts.glow; g.shadowBlur = 16; } else { g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 8; g.shadowOffsetY = 3; }
+  g.fillStyle = B[2]; rr(X, Y, w, h, rad); g.fill(); g.shadowBlur = 0; g.shadowOffsetY = 0;
+  g.save(); rr(X, Y, w, h, rad); g.clip();
+  const bg = g.createRadialGradient(0, Y + h * .36, 2, 0, Y + h * .4, h * .75); bg.addColorStop(0, B[0]); bg.addColorStop(.38, B[1]); bg.addColorStop(1, B[2]); g.fillStyle = bg; g.fillRect(X, Y, w, h);
+  g.globalAlpha = .12; g.fillStyle = '#fff6d0'; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + S.t * .1 + c.id; g.beginPath(); g.moveTo(0, Y + h * .38); g.lineTo(Math.cos(a) * h, Y + h * .38 + Math.sin(a) * h); g.lineTo(Math.cos(a + .14) * h, Y + h * .38 + Math.sin(a + .14) * h); g.closePath(); g.fill(); } g.globalAlpha = 1;
+  const footY = Y + h * (isHand ? .64 : .78);
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(0, footY, w * .32, h * .04, 0, 0, 7); g.fill();
+  if (d.spell) icon(d.icon, 0, Y + h * .4, w / 44);
+  else drawSprite(d.art, c.atkAnim > 0, c.atkAnim > 0 ? c.atkAnim : 0, 0, footY + 1, w * .98, h * (isHand ? .58 : .72), c.owner === 0);
+  const fade = g.createLinearGradient(0, Y + h * .55, 0, Y + h); fade.addColorStop(0, 'rgba(10,2,2,0)'); fade.addColorStop(.55, 'rgba(10,2,2,.7)'); fade.addColorStop(1, 'rgba(6,1,1,.95)'); g.fillStyle = fade; g.fillRect(X, Y + h * .55, w, h * .45);
+  if (d.r === 2) { const sh = (S.t * .5 + c.id * .37) % 1.8 - .4, fo = g.createLinearGradient(X, Y, X + w, Y + h); const st = (v, col) => fo.addColorStop(clamp(v, 0, 1), col); st(sh - .15, 'rgba(255,255,255,0)'); st(sh, 'rgba(255,245,210,.4)'); st(sh + .15, 'rgba(255,255,255,0)'); g.fillStyle = fo; g.fillRect(X, Y, w, h); }
+  if (c.flash > 0) { g.fillStyle = `rgba(255,255,255,${c.flash * .6})`; g.fillRect(X, Y, w, h); }
+  if (c.frozen > 0) { g.fillStyle = 'rgba(255,130,210,.3)'; g.fillRect(X, Y, w, h); }
   g.restore();
-  if (taunt) { g.strokeStyle = '#d8dde6'; g.lineWidth = 3; rr(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3, 8); g.stroke(); g.strokeStyle = '#6a7484'; g.lineWidth = 1; rr(-w / 2 - 3, -h / 2 - 3, w + 6, h + 6, 9); g.stroke(); }
-  if (isHand) { text(d.n, 0, wy + ah + 9, d.n.length > 9 ? 8.5 : 10, '#fff6e0', 600, 'center', 'rgba(30,14,8,.9)', 2.5);
-    const desc = d.txt || (c.kw && c.kw.map(k => KWN[k]).join(' ')) || ''; if (desc) text(desc, 0, wy + ah + 21, 7, '#ffe8b0', 600, 'center', 'rgba(30,14,8,.8)', 2);
-    g.fillStyle = '#2e6ae6'; g.beginPath(); g.arc(-w / 2 + 7, -h / 2 + 7, 9, 0, 7); g.fill(); g.strokeStyle = '#dff0ff'; g.lineWidth = 1.5; g.stroke(); text(String(d.c), -w / 2 + 7, -h / 2 + 7.5, 12, '#fff', 800, 'center', null); }
-  if (!d.spell) { const a = c.a + (c.buff || 0), hh = c.h;
-    g.fillStyle = '#c8402e'; g.beginPath(); g.arc(-w / 2 + 7, h / 2 - 7, 8.5, 0, 7); g.fill(); text(String(a), -w / 2 + 7, h / 2 - 6.5, 11, c.buff ? '#ffe26a' : '#fff', 800, 'center', 'rgba(60,10,0,.8)', 2);
-    g.fillStyle = '#3c9a46'; g.beginPath(); g.arc(w / 2 - 7, h / 2 - 7, 8.5, 0, 7); g.fill(); text(String(hh), w / 2 - 7, h / 2 - 6.5, 11, hh < c.maxH ? '#ffb4a4' : '#fff', 800, 'center', 'rgba(0,40,10,.8)', 2); }
-  if (!isHand && c.kw) { let ix = -w / 2 + 6; if (c.kw.includes('poison')) { g.fillStyle = '#7cff4a'; g.beginPath(); g.arc(ix + 3, -h / 2 + 8, 4, 0, 7); g.fill(); ix += 10; } if (c.kw.includes('charge')) text('⚡', ix + 4, -h / 2 + 8, 9, '#ffe26a', 800, 'center', null); }
-  if (!isHand && c.owner === 0 && S.cur === 0 && canAttack(c) && !S.busy) { g.strokeStyle = `rgba(120,255,140,${.6 + .4 * Math.sin(S.t * 6)})`; g.lineWidth = 2.5; rr(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 8); g.stroke(); }
-  if (!isHand && (c.sleep && !c.kw.includes('charge')) && c.owner === S.cur) text('z', w / 2 - 8, -h / 2 + 9, 11, '#cfe0ff', 800, 'center', 'rgba(10,20,50,.8)', 2);
-  if (c.frozen > 0) { g.fillStyle = 'rgba(255,140,210,.28)'; rr(-w / 2, -h / 2, w, h, 7); g.fill(); text('💗', 0, -h / 2 + 10, 10, '#fff', 800, 'center', null); }
+  /* edge: thin light line in the rarity colour; taunt = a heavy silver guard frame */
+  const eg = g.createLinearGradient(X, Y, X + w, Y + h); eg.addColorStop(0, R[0]); eg.addColorStop(.5, R[1]); eg.addColorStop(1, R[0]); g.strokeStyle = eg; g.lineWidth = 1.6; rr(X + .8, Y + .8, w - 1.6, h - 1.6, rad); g.stroke();
+  if (c.kw && c.kw.includes('taunt')) { g.strokeStyle = '#e6ecf4'; g.lineWidth = 3; rr(X - 2, Y - 2, w + 4, h + 4, rad + 2); g.stroke(); g.strokeStyle = '#5a6474'; g.lineWidth = 1; rr(X - 3.5, Y - 3.5, w + 7, h + 7, rad + 3); g.stroke();
+    g.fillStyle = '#e6ecf4'; g.beginPath(); g.moveTo(0, Y - 6); g.lineTo(6, Y - 2); g.lineTo(5, Y + 4); g.lineTo(0, Y + 7); g.lineTo(-5, Y + 4); g.lineTo(-6, Y - 2); g.closePath(); g.fill(); }
+  if (isHand) {
+    const ny = Y + h * .76; text(d.n, 0, ny, d.n.length > 9 ? 8.3 : 9.5, '#ffe9a8', 800, 'rgba(30,8,4,.95)', 3);
+    const desc = d.txt || (c.kw && c.kw.map(k => KWN[k]).join(' · ')) || ''; if (desc) text(desc, 0, ny + 11, 6.6, '#ffe0c0', 600, 'rgba(0,0,0,.8)', 2);
+    gemHex(X + 8, Y + 9, 8, d.c);
+  }
+  if (!d.spell) { statBadge(X + 8, Y + h - 8, 7.5, 'atk', c.a + (c.buff || 0), false, !!c.buff); statBadge(X + w - 8, Y + h - 8, 7.5, 'hp', c.h, c.h < c.maxH); }
+  if (!isHand && c.kw) { let ix = X + 7; if (c.kw.includes('poison')) { g.fillStyle = '#7cff4a'; g.beginPath(); g.arc(ix + 2, Y + 8, 3.6, 0, 7); g.fill(); g.strokeStyle = '#0a3a0a'; g.lineWidth = 1; g.stroke(); ix += 9; } if (c.kw.includes('charge')) { icon2bolt(ix + 3, Y + 8); } }
+  if (!isHand && c.owner === 0 && S.cur === 0 && canAttack(c) && !S.busy) { g.strokeStyle = `rgba(120,255,140,${.6 + .4 * Math.sin(S.t * 6)})`; g.lineWidth = 2.5; rr(X - 2, Y - 2, w + 4, h + 4, rad + 2); g.stroke(); }
+  if (!isHand && (c.sleep && !c.kw.includes('charge')) && c.owner === S.cur) text('z', w / 2 - 8, Y + 9, 11, '#cfe0ff', 800, 'center', 'rgba(10,20,50,.8)', 2);
   g.restore();
 }
+function icon2bolt(x, y) { g.fillStyle = '#ffe26a'; g.strokeStyle = '#3a2000'; g.lineWidth = 1; g.beginPath(); g.moveTo(x + 1.5, y - 5); g.lineTo(x - 3, y + 1); g.lineTo(x, y + 1); g.lineTo(x - 1.5, y + 5); g.lineTo(x + 3, y - 1); g.lineTo(x, y - 1); g.closePath(); g.fill(); g.stroke(); }
 function drawLeader(P, x, y, isFoe) {
   const AR = ARENA_OK(), r = AR ? (isFoe ? 25 : 37) : 30; g.save(); if (P.hurtT > 0) g.translate((rnd() - .5) * 6, (rnd() - .5) * 6);
   if (!AR) { g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.arc(x + 2, y + 3, r + 4, 0, 7); g.fill();
