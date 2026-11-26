@@ -3239,3 +3239,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Board rows at y 131 / 244, cards 54 x 74 with gap 6. End turn on the right pillar, the ทีเด็ด button beside our medallion, mana on the lower right.
   - Card windows are warm brown now (navy clashed with the painting).
   - Shot `art/incoming/monstercards/v2_arena_shot.png`, bot clip `v2_arena_botgame.mp4`. Check: no errors.
+- 2026-11-26 CARDS v3 LOOK (owner "รูปแบบการ์ดยังไม่สวย"): in-game cards now use the FULL-ART style of the approved test card (no frame).
+  - Background: an element-coloured glow (war crimson for Lu Bu's humans, earth amber, poison green, undead violet, shadow purple, charm pink, sand), faint turning rays.
+  - Art: the pixel monster BIG in the middle, scaled by its real opaque box (`bboxOf`, cached), so margins in the sheets no longer shrink it; a ground shadow under it.
+  - Bottom: a dark fade, a thin light edge in the rarity colour (stone / silver / gold + sheen on legendaries), a heavy silver guard frame with a crest for taunt.
+  - Badges: gold-rimmed red shield (attack) and green heart (HP). Hand cards add a faceted cost gem, the name and a short ability line.
+  - Shots `art/incoming/monstercards/v3_fullart_shot.png`, `v3_tomb_ult.png`, clip `v3_fullart_botgame.mp4`. Check: no errors.
