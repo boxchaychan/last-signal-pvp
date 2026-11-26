@@ -2937,4 +2937,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - PixelLab Pro Flash makes crisp pixel stills from a painted picture; the standard converter was muddy.
   - 8-frame moves look the same as 16 at game size.
   - Pixel heroes must move in WHOLE pixels: no squash or tilt by code, or they flicker.
+- Owner's priority for this game (2026-11-26, "รอบนี้ให้เน้น แมพ และก็ท่า พวกเอฟเฟคตอนฟัน"):
+  1. a beautiful MAP;
+  2. smooth, good-looking MOVES;
+  3. strong SLASH / hit effects.
+  - Menus, shops and long systems come after these three.
+  - Size control for Pro Flash pixel stills (owner agreed): shrink the source to the target height first; a fixed canvas is possible with the edit / create modes; or shrink a crisp sprite afterwards.
 
