@@ -3232,3 +3232,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
 - 2026-11-26 (owner "ทำสนามรอก็ได้ ไปทำไมเหมือนทำอะไรก็ไม่สวยเลย"): honest answer. The pretty parts are the owner's painted art (Lu Bu). What Claude draws in code (the plain brown board of `cards.html`, frames, scenes) looks generic: the same lesson as the code maps.
   - The arena should be a PAINTED picture like the divine arena (Gemini), with the cards and effects on top.
   - Gemini box "สนามเล่นการ์ด" in `art/incoming/monstercards/PROMPTS_gemini.md`: a war table in a desert fortress at dusk, a clear middle split by a gold line, leader medallion sockets at the top centre and bottom left (matching `cards.html` positions), the Lu Bu painting attached for the style. When it comes: it replaces the code table in `cards.html` (cropped to 844 x 390 design size), and the layout is checked against it.
+- 2026-11-26 CARDS v2 ARENA (owner sent the Gemini arena after "ดูไม่เป็นเกมส์"; raw `art/incoming/monstercards/arena_gemini_raw.jpg` 2752 x 1536, game copy `art/cards/arena_desert.jpg` 1688 wide): `cards.html` draws the painted war table as the board (844 wide in design units, shifted up `AY` 62).
+  - The leaders sit in the picture's own sockets: Tomb King in the top medallion (424, 79); Lu Bu in the big bottom-left medallion (70, 343).
+  - Our HP is in its heart socket (120, 376). Our fury fills the gold arc round the medallion and glows orange when full.
+  - Enemy name left of its medallion, its fury bar to the right.
+  - Board rows at y 131 / 244, cards 54 x 74 with gap 6. End turn on the right pillar, the ทีเด็ด button beside our medallion, mana on the lower right.
+  - Card windows are warm brown now (navy clashed with the painting).
+  - Shot `art/incoming/monstercards/v2_arena_shot.png`, bot clip `v2_arena_botgame.mp4`. Check: no errors.

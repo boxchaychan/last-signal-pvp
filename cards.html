@@ -208,11 +208,12 @@ function popNum(x, y, s, col, size = 22) { S.nums.push({ x, y, s, col, size, t: 
 function popText(x, y, s, col) { popNum(x, y, s, col, 16); }
 
 /* ---------- layout */
-const CW = 58, CH = 80, HCW = 62, HCH = 86;
+const CW = 54, CH = 74, HCW = 62, HCH = 86, GAP = 6;
+const ARENA = img('art/cards/arena_desert.jpg'), AY = 62, ARENA_OK = () => ARENA.complete && ARENA.naturalWidth > 0;   /* owner's Gemini arena: war table in a desert fortress (art/incoming/monstercards/arena_gemini_raw.jpg); its sockets: enemy medallion (424, 79), our medallion (70, 343) with the gauge arc, heart socket (120, 377) */
 function layout() {
   const P0 = S.p[0], P1 = S.p[1];
-  P1.x = VW / 2; P1.y = 42; P0.x = 70; P0.y = 318;
-  for (const [P, y] of [[P1, 128], [P0, 228]]) { const n = P.board.length, w = n * CW + (n - 1) * 8; P.board.forEach((c, i) => { c.tx = VW / 2 - w / 2 + CW / 2 + i * (CW + 8); c.ty = y; }); }
+  P1.x = 424; P1.y = 79; P0.x = 70; P0.y = 343;
+  for (const [P, y] of [[P1, 131], [P0, 244]]) { const n = P.board.length, w = n * CW + (n - 1) * GAP; P.board.forEach((c, i) => { c.tx = VW / 2 + 2 - w / 2 + CW / 2 + i * (CW + GAP); c.ty = y; }); }
   const H = P0.hand, n = H.length, spread = Math.min(66, 420 / Math.max(1, n));
   H.forEach((c, i) => { const off = i - (n - 1) / 2; c.tx = VW / 2 + 10 + off * spread; c.ty = 372 + Math.abs(off) * 2.5; c.rot = off * .045; if (c === DRAG.card) { c.tx = DRAG.x; c.ty = DRAG.y; c.rot = 0; } else if (c === HOVER) { c.ty -= 40; c.rot = 0; } });
   P1.hand.forEach((c, i) => { c.tx = VW / 2 - (P1.hand.length - 1) * 9 + i * 18; c.ty = -18; c.rot = 0; });
@@ -224,7 +225,7 @@ const DRAG = { card: null, kind: null, x: 0, y: 0, sx: 0, sy: 0 }; let HOVER = n
 function toV(e) { return [(e.clientX - OX) / SC, (e.clientY - OY) / SC]; }
 function cardAt(list, x, y, w, h) { for (let i = list.length - 1; i >= 0; i--) { const c = list[i]; if (Math.abs(x - c.x) < w / 2 && Math.abs(y - c.y) < h / 2) return c; } return null; }
 function btnHit(x, y, b) { return x > b[0] && x < b[0] + b[2] && y > b[1] && y < b[1] + b[3]; }
-const BTN_END = [736, 170, 96, 40], BTN_ULT = [128, 290, 104, 34], BTN_START = [322, 262, 200, 52], BTN_AGAIN = [322, 262, 200, 52];
+const BTN_END = [742, 192, 92, 40], BTN_ULT = [150, 268, 104, 30], BTN_START = [322, 262, 200, 52], BTN_AGAIN = [322, 262, 200, 52];
 cv.addEventListener('pointerdown', e => {
   const [x, y] = toV(e); ZOOM = null;
   if (S.phase === 'title') { if (btnHit(x, y, BTN_START)) { S.phase = 'play'; startTurn(0); } return; }
@@ -302,7 +303,7 @@ function drawCard(c, x, y, w, h, rot = 0, opts = {}) {
   g.fillStyle = R[1]; rr(-w / 2, -h / 2, w, h, 7); g.fill(); g.fillStyle = R[0]; rr(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 6); g.fill();
   if (d.r === 2) { const sh = (S.t * .6 + c.id * .3) % 1.6 - .3; const gr = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); gr.addColorStop(clamp(sh - .15, 0, 1), 'rgba(255,255,255,0)'); gr.addColorStop(clamp(sh, 0, 1), 'rgba(255,255,255,.45)'); gr.addColorStop(clamp(sh + .15, 0, 1), 'rgba(255,255,255,0)'); g.fillStyle = gr; rr(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 6); g.fill(); }
   const ah = isHand ? h * .55 : h - 10; const wy = -h / 2 + 5;
-  const bg = g.createLinearGradient(0, wy, 0, wy + ah); bg.addColorStop(0, d.spell ? '#3a2a50' : '#2f4660'); bg.addColorStop(1, d.spell ? '#1c1428' : '#1a2434'); g.fillStyle = bg; rr(-w / 2 + 5, wy, w - 10, ah, 4); g.fill();
+  const bg = g.createLinearGradient(0, wy, 0, wy + ah); bg.addColorStop(0, d.spell ? '#4a2a5a' : '#7a4a2a'); bg.addColorStop(1, d.spell ? '#1c1428' : '#2a140c');   /* warm card windows that sit well on the painted desert table */ g.fillStyle = bg; rr(-w / 2 + 5, wy, w - 10, ah, 4); g.fill();
   g.save(); rr(-w / 2 + 5, wy, w - 10, ah, 4); g.clip();
   if (d.spell) icon(d.icon, 0, wy + ah / 2, isHand ? 1.05 : .9);
   else drawSprite(d.art, c.atkAnim > 0, c.atkAnim > 0 ? c.atkAnim : 0, 0, wy + ah - 3, w - 14, ah - 6, c.owner === 0);
@@ -322,17 +323,28 @@ function drawCard(c, x, y, w, h, rot = 0, opts = {}) {
   g.restore();
 }
 function drawLeader(P, x, y, isFoe) {
-  const r = 30; g.save(); if (P.hurtT > 0) g.translate((rnd() - .5) * 6, (rnd() - .5) * 6);
-  g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.arc(x + 2, y + 3, r + 4, 0, 7); g.fill();
-  g.fillStyle = isFoe ? '#3a2850' : '#4a1e16'; g.beginPath(); g.arc(x, y, r + 4, 0, 7); g.fill(); g.strokeStyle = isFoe ? '#c9a8ff' : '#ffcf6a'; g.lineWidth = 3; g.stroke();
+  const AR = ARENA_OK(), r = AR ? (isFoe ? 25 : 37) : 30; g.save(); if (P.hurtT > 0) g.translate((rnd() - .5) * 6, (rnd() - .5) * 6);
+  if (!AR) { g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.arc(x + 2, y + 3, r + 4, 0, 7); g.fill();
+    g.fillStyle = isFoe ? '#3a2850' : '#4a1e16'; g.beginPath(); g.arc(x, y, r + 4, 0, 7); g.fill(); g.strokeStyle = isFoe ? '#c9a8ff' : '#ffcf6a'; g.lineWidth = 3; g.stroke(); }
   g.save(); g.beginPath(); g.arc(x, y, r, 0, 7); g.clip(); g.fillStyle = isFoe ? '#2a1c38' : '#5a2418'; g.fillRect(x - r, y - r, r * 2, r * 2);
   if (P.lk === 'lubu') { const im = img('art/cards/lubu_paint.png'); if (im.complete && im.naturalWidth) g.drawImage(im, 120, 30, 260, 260, x - r * 1.25, y - r * 1.1, r * 2.5, r * 2.5); }
   else { const m = MOBS.boss_desert_tomb_king; if (m) { const im = img(m.f); if (im.complete && im.naturalWidth) { g.imageSmoothingEnabled = false; g.drawImage(im, 0, 0, m.w, m.h, x - r * 1.7, y - r * 1.35, r * 3.4, r * 3.4 * m.h / m.w); } } }
   g.restore();
-  g.fillStyle = '#b8282a'; g.beginPath(); g.arc(x + r * .8, y + r * .75, 11, 0, 7); g.fill(); g.strokeStyle = '#ffd0c0'; g.lineWidth = 1.5; g.stroke(); text(String(Math.max(0, P.hp)), x + r * .8, y + r * .76, 12, '#fff', 800, 'center', null);
-  text(P.L.n, x, y + r + 12, 11, isFoe ? '#e6d4ff' : '#ffe2b0', 800);
+  if (AR && P.hurtT > 0) { g.fillStyle = `rgba(255,60,40,${P.hurtT})`; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  if (AR && !isFoe) {   /* our HP sits in the arena's heart socket, the fury fills the gold arc round the medallion */
+    const hx = 120, hy = 376, hs = 15; g.fillStyle = '#c8282a'; g.beginPath(); g.moveTo(hx, hy + hs * .9); g.bezierCurveTo(hx - hs * 1.35, hy, hx - hs * .9, hy - hs * 1.05, hx, hy - hs * .42); g.bezierCurveTo(hx + hs * .9, hy - hs * 1.05, hx + hs * 1.35, hy, hx, hy + hs * .9); g.fill();
+    text(String(Math.max(0, P.hp)), hx, hy - 1, 14, '#fff', 800, 'center', 'rgba(60,0,0,.9)', 3);
+    const f = P.fury / FURY_MAX; g.lineCap = 'round'; g.lineWidth = 11; g.strokeStyle = 'rgba(40,20,10,.55)'; g.beginPath(); g.arc(x, y, 81, -Math.PI / 2 + .05, -.05); g.stroke();
+    if (f > 0) { const gr = g.createLinearGradient(x, y - 81, x + 81, y); gr.addColorStop(0, '#ffd24a'); gr.addColorStop(1, P.L.col);
+      if (f >= 1) { g.save(); g.shadowColor = `rgba(255,200,80,${.6 + .4 * Math.sin(S.t * 8)})`; g.shadowBlur = 16; }
+      g.strokeStyle = gr; g.lineWidth = 9; g.beginPath(); g.arc(x, y, 81, -Math.PI / 2 + .05, -Math.PI / 2 + .05 + (Math.PI / 2 - .1) * f); g.stroke();
+      if (f >= 1) { g.restore(); g.strokeStyle = `rgba(255,250,210,${.5 + .5 * Math.sin(S.t * 8)})`; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 81, -Math.PI / 2 + .05, -.05); g.stroke(); } }
+    g.lineCap = 'butt'; text(P.L.n, x, y - 52, 11, '#ffe2b0', 800); text('โทสะ ' + P.fury + '/' + FURY_MAX, 202, 258, 9, '#ffe8c8', 600); g.restore(); return; }
+  const hx = AR ? x + 30 : x + r * .8, hy = AR ? y + 16 : y + r * .75;
+  g.fillStyle = '#b8282a'; g.beginPath(); g.arc(hx, hy, 11, 0, 7); g.fill(); g.strokeStyle = '#ffd0c0'; g.lineWidth = 1.5; g.stroke(); text(String(Math.max(0, P.hp)), hx, hy + .5, 12, '#fff', 800, 'center', null);
+  text(P.L.n, AR ? x - 46 : x, AR ? y : y + r + 12, 11, isFoe ? '#e6d4ff' : '#ffe2b0', 800, AR ? 'right' : 'center');
   /* fury gauge */
-  const gx = isFoe ? x + 46 : 128, gy = isFoe ? y - 6 : 274, gw = 74; g.fillStyle = 'rgba(0,0,0,.45)'; rr(gx, gy, gw, 9, 4); g.fill();
+  const gx = isFoe ? x + 48 : 128, gy = isFoe ? (AR ? y - 4 : y - 6) : 274, gw = 74; g.fillStyle = 'rgba(0,0,0,.45)'; rr(gx, gy, gw, 9, 4); g.fill();
   const f = P.fury / FURY_MAX; const gr = g.createLinearGradient(gx, 0, gx + gw, 0); gr.addColorStop(0, '#ff8a2a'); gr.addColorStop(1, P.L.col); g.fillStyle = gr; rr(gx + 1, gy + 1, (gw - 2) * f, 7, 3); g.fill();
   text('โทสะ ' + P.fury + '/' + FURY_MAX, gx + gw / 2, gy - 7, 8.5, '#ffe8c8', 600);
   g.restore();
@@ -371,9 +383,10 @@ function render() {
   g.setTransform(DPR, 0, 0, DPR, 0, 0); g.fillStyle = '#241712'; g.fillRect(0, 0, innerWidth, innerHeight);
   g.setTransform(DPR * SC, 0, 0, DPR * SC, DPR * OX + (S.shake ? (rnd() - .5) * S.shake : 0) * SC * DPR, DPR * OY + (S.shake ? (rnd() - .5) * S.shake : 0) * SC * DPR);
   /* table: warm stone with a sand runner */
-  const bg = g.createRadialGradient(VW / 2, VH / 2, 40, VW / 2, VH / 2, 520); bg.addColorStop(0, '#7a5038'); bg.addColorStop(1, '#2a1a12'); g.fillStyle = bg; g.fillRect(-40, -40, VW + 80, VH + 80);
-  g.fillStyle = 'rgba(232,180,120,.18)'; rr(150, 82, 544, 196, 18); g.fill(); g.strokeStyle = 'rgba(255,214,150,.35)'; g.lineWidth = 2; g.stroke();
-  g.strokeStyle = 'rgba(255,220,160,.25)'; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(170, 178); g.lineTo(674, 178); g.stroke(); g.setLineDash([]);
+  if (ARENA_OK()) { const h = VW * ARENA.naturalHeight / ARENA.naturalWidth; g.drawImage(ARENA, 0, -AY, VW, h); }
+  else { const bg = g.createRadialGradient(VW / 2, VH / 2, 40, VW / 2, VH / 2, 520); bg.addColorStop(0, '#7a5038'); bg.addColorStop(1, '#2a1a12'); g.fillStyle = bg; g.fillRect(-40, -40, VW + 80, VH + 80);
+    g.fillStyle = 'rgba(232,180,120,.18)'; rr(150, 82, 544, 196, 18); g.fill(); g.strokeStyle = 'rgba(255,214,150,.35)'; g.lineWidth = 2; g.stroke();
+    g.strokeStyle = 'rgba(255,220,160,.25)'; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(170, 178); g.lineTo(674, 178); g.stroke(); g.setLineDash([]); }
   if (!S) return;
   const P0 = S.p[0], P1 = S.p[1];
   drawLeader(P1, P1.x, P1.y, true); drawLeader(P0, P0.x, P0.y, false);
@@ -391,8 +404,8 @@ function render() {
   if (DRAG.card && DRAG.kind === 'board') { const c = DRAG.card; g.strokeStyle = '#ffd56a'; g.lineWidth = 4; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(c.x, c.y); g.quadraticCurveTo((c.x + DRAG.x) / 2, Math.min(c.y, DRAG.y) - 40, DRAG.x, DRAG.y); g.stroke(); g.setLineDash([]); g.fillStyle = '#ffd56a'; g.beginPath(); g.arc(DRAG.x, DRAG.y, 7, 0, 7); g.fill(); }
   drawFx();
   /* mana, decks, buttons */
-  for (let i = 0; i < 10; i++) { const x = 600 + i * 15, y = 348, on = i < P0.mana, has = i < P0.maxMana; g.fillStyle = on ? '#4aa8ff' : has ? '#284060' : 'rgba(40,40,60,.5)'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 5, y); g.lineTo(x, y + 7); g.lineTo(x - 5, y); g.closePath(); g.fill(); }
-  text('มานา ' + P0.mana + '/' + P0.maxMana, 667, 332, 11, '#cfe8ff', 800);
+  for (let i = 0; i < 10; i++) { const x = 650 + i * 15, y = 364, on = i < P0.mana, has = i < P0.maxMana; g.fillStyle = on ? '#4aa8ff' : has ? '#284060' : 'rgba(40,40,60,.5)'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 5, y); g.lineTo(x, y + 7); g.lineTo(x - 5, y); g.closePath(); g.fill(); }
+  text('มานา ' + P0.mana + '/' + P0.maxMana, 717, 348, 11, '#cfe8ff', 800);
   text('สำรับ ' + P0.deck.length, 760, 300, 10, '#ffe2b0', 600); text('สำรับ ' + P1.deck.length, 330, 30, 10, '#e6d4ff', 600);
   const myTurn = S.cur === 0 && S.phase === 'play'; const nothing = myTurn && !P0.hand.some(c => playable(P0, c)) && !P0.board.some(canAttack);
   g.fillStyle = myTurn ? (nothing ? '#e6a23a' : '#b9542a') : '#5a4a40'; rr(...BTN_END, 12); g.fill(); g.strokeStyle = '#ffdcae'; g.lineWidth = 2; g.stroke(); text(myTurn ? 'จบตา' : 'ตาศัตรู', BTN_END[0] + BTN_END[2] / 2, BTN_END[1] + BTN_END[3] / 2 + 1, 15, '#fff', 800);
