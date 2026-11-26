@@ -173,7 +173,8 @@ const MOBS = [{ k: 'mob_robot_a', h: 80, sp: 1.05, face: 1 }, { k: 'mob_robot_b'
 const IMG = {};
 let SETS = null;   /* the gods' own poses + spirit + effect, drawn by Codex in the owner-approved style: art/divine/<set>_*.png, sizes in sets.json (tools/art/divine_sets.py) */
 const PSET = { greek: 'zeus', norse: 'thor', egypt: 'anubis' };   /* pantheon -> set; the others still use their single cut picture until Codex draws them */
-const VFX = {};   /* effects cut from the owner's videos (tools/art/divine_vfx.py): black-background sheets drawn with additive light */
+const VFX = {};
+let RIGS = {};   /* gods cut into body / head / weapon arm / free arm (tools/art/divine_rig.py): the arm really swings on a hit */   /* effects cut from the owner's videos (tools/art/divine_vfx.py): black-background sheets drawn with additive light */
 const setOf = p => SETS && PSET[p] && SETS[PSET[p]] ? PSET[p] : null;
 const FIT = { greek: 1, norse: 1.04, egypt: 1.06, asia: 1.02, soldier: .95 };   /* same HEAD size for everyone: helmets and jackal ears add height */
 const load = s => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(s); i.src = s; });
@@ -497,14 +498,32 @@ function poseImg(set, img, pose, h) {   /* the picture + its size and body ancho
   if (set) { const z = SETS[set][pose], im = IMG[set + '_' + pose]; if (!im) return null; const hh = h * z.h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h); return { im, w: im.width * hh / im.height, h: hh, ax: z.ax }; }
   const im = IMG[img]; if (!im) return null; return { im, w: im.width * h / im.height, h, ax: .5 };
 }
+/* the swing: wind-up back, a big overhead swing toward the target, settle, ease back; idle = small sway and a nodding head */
+function rigAngles(u, seed) {
+  const r = { arm: .07 * Math.sin(tt * 2.6 + seed + .8), arm2: -.09 * Math.sin(tt * 2.6 + seed), head: .045 * Math.sin(tt * 1.6 + seed) };
+  if (u.flash > 0 && !(u.skillT > 0)) { const a = 14 - u.flash;
+    if (a < 2) { const k = ease(a / 2); r.arm = -.4 * k; r.head = -.07 * k; r.arm2 = .15 * k; }
+    else if (a < 5) { const k = ease((a - 2) / 3); r.arm = -.4 + 1.55 * k; r.head = -.07 + .17 * k; r.arm2 = .15 - .5 * k; }
+    else if (a < 9) { const k = ease((a - 5) / 4); r.arm = 1.15 - .2 * k; r.head = .1; r.arm2 = -.35; }
+    else { const k = ease((a - 9) / 5); r.arm = .95 * (1 - k); r.head = .1 * (1 - k); r.arm2 = -.35 * (1 - k); } }
+  return r;
+}
+function drawRig(set, h, ang, glow) {
+  const R = RIGS[set], k = h / Math.max(SETS.zeus.idle.h, SETS[set].idle.h);
+  for (const pn of ['body', 'arm2', 'head', 'arm']) { const p = R[pn], im = IMG['rig_' + set + '_' + pn]; if (!im) continue; g.save();
+    if (pn !== 'body') { g.translate(p.px * k, p.py * k); g.rotate(ang[pn] || 0); g.translate(-p.px * k, -p.py * k); }
+    g.drawImage(im, p.x * k, p.y * k, p.w * k, p.h * k); if (glow > 0) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = glow; g.drawImage(im, p.x * k, p.y * k, p.w * k, p.h * k); } g.restore(); }
+}
 function drawFigure(u, x, y, h, set, img, seed) {
   const m = motion(u, seed); if (!set) m.pose = 'idle';
   if (u.cp !== m.pose) { u.pp = u.cp; u.cp = m.pose; u.pt = tt; }
   const blend = clamp((tt - (u.pt || 0)) / .09, 0, 1), face = u.face || 1;
   u.faceS = u.faceS == null ? face : u.faceS + (face - u.faceS) * .22; const fs = Math.abs(u.faceS) < .12 ? .12 * Math.sign(u.faceS || 1) : u.faceS;
   g.save(); g.translate(x + m.dx * face, y + m.dy); g.rotate(m.rot * face); g.scale(m.sx * fs, m.sy);
-  const cur = poseImg(set, img, m.pose, h); if (cur) g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h);
-  if (blend < 1 && u.pp) { const pr = poseImg(set, img, u.pp, h); if (pr) { g.globalAlpha = 1 - blend; g.drawImage(pr.im, -pr.w * pr.ax, -pr.h, pr.w, pr.h); g.globalAlpha = 1; } }
+  const rigged = set && RIGS[set] && m.pose !== 'skill'; if (rigged) { m.dx *= .45; }
+  const cur = rigged ? null : poseImg(set, img, m.pose, h);
+  if (rigged) drawRig(set, h, rigAngles(u, seed), m.glow); else if (cur) g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h);
+  if (blend < 1 && u.pp && !(rigged && u.pp !== 'skill')) { const pr = poseImg(set, img, u.pp, h); if (pr) { g.globalAlpha = 1 - blend; g.drawImage(pr.im, -pr.w * pr.ax, -pr.h, pr.w, pr.h); g.globalAlpha = 1; } }
   if (m.glow > 0 && cur) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = m.glow; g.drawImage(cur.im, -cur.w * cur.ax, -cur.h, cur.w, cur.h); }
   g.restore();
 }
@@ -660,6 +679,7 @@ function frame(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; 
 (async () => {
   const names = ['hero_greek', 'hero_norse', 'hero_egypt', 'hero_asia', 'soldier', 'spirit_greek', 'mob_robot_a', 'mob_robot_b', 'mob_robot_c', 'mob_ghoul', 'boss_ghoul', 'zeus_idle', 'zeus_attack', 'zeus_skill', 'zeus_spirit', 'zeus_fx', 'thor_idle', 'thor_attack', 'thor_skill', 'thor_spirit', 'thor_fx', 'anubis_idle', 'anubis_attack', 'anubis_skill', 'anubis_spirit', 'anubis_fx'];
   SETS = await fetch('art/divine/sets.json').then(r => r.json());
+  try { RIGS = await fetch('art/divine/rig.json').then(r => r.json()); await Promise.all(Object.keys(RIGS).flatMap(st => ['body', 'arm2', 'head', 'arm'].map(async pn => { IMG['rig_' + st + '_' + pn] = await load('art/divine/rig_' + st + '_' + pn + '.png'); }))); } catch (e) { RIGS = {}; }
   for (const v of ['zeus_storm', 'thor_quake', 'anubis_sand', 'wukong_firerain', 'summon', 'merge']) { try { const [j, im] = await Promise.all([fetch('art/divine/vfx_' + v + '.json').then(r => r.json()), load('art/divine/vfx_' + v + '.jpg')]); VFX[v] = { ...j, im }; } catch (e) {} }
   const ims = await Promise.all(names.map(n => load('art/divine/' + n + '.png'))); names.forEach((n, i) => IMG[n] = ims[i]);
   try { await document.fonts.load('800 20px Kanit'); } catch (e) {}

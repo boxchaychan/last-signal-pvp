@@ -2770,4 +2770,12 @@ Owner sent a small picture labelled "PROJECTILE SHAPE": "p เปลี่ยน
   - Same for the cut heroes and the soldier, and for the lobby showcase (random hits and skills).
   - Monsters hop with a squash on landing and a little waddle.
   - The real fix for smoothness is drawn in-between frames: ask Codex for 4-6 frame attack sheets per god if the owner wants more.
+- 2026-11-26 CUT-OUT RIG (owner "ตัวละครง่ายๆ เองนะ ตัวเล็กๆ", "ผิดหวังนะเนี่ย"; a web search found 111percent's job ad for this game's 2D designer: "Unity를 이용하여 키 프레임 애니메이션을 제작합니다", i.e. keyframed parts in Unity, so we do the same).
+  - `tools/art/divine_rig.py` cuts each Codex god's idle picture into body / head / weapon arm / free arm, with hand-set shapes and pivots in the 512 frame (feet = bottom of the picture, x 256), original pixels, and the body under-painted where parts covered it.
+  - Output: `art/divine/rig_<set>_<part>.png` + `rig.json`; check pictures in `art/incoming/divine_game/rig_check_<set>.png`.
+  - In game (`rigAngles` / `drawRig`), rigged gods use the parts for idle and hits:
+    - idle: a small arm sway and a nodding head;
+    - a hit: wind-up -0.4 rad, then an overhead swing to +1.15 toward the target, settle, ease back; the head and the free arm follow.
+    - The skill keeps Codex's skill picture plus the jump.
+  - Rigged: Zeus, Thor, Anubis. The Monkey King and the soldier still move as one piece until their Codex sets come; add their shapes to `RIG` in the tool.
 
