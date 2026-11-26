@@ -3245,3 +3245,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Bottom: a dark fade, a thin light edge in the rarity colour (stone / silver / gold + sheen on legendaries), a heavy silver guard frame with a crest for taunt.
   - Badges: gold-rimmed red shield (attack) and green heart (HP). Hand cards add a faceted cost gem, the name and a short ability line.
   - Shots `art/incoming/monstercards/v3_fullart_shot.png`, `v3_tomb_ult.png`, clip `v3_fullart_botgame.mp4`. Check: no errors.
+- 2026-11-26 NEW CARD ART, Lu Bu deck first (owner "เจนใหม่เลยนะภาพการ์ด เริ่มจากลิโป้", after the in-game pixel sprites looked small / blurry): every card gets a NEW painted chibi FULL-ART picture made by Gemini (free, the owner generates).
+  - Format: portrait 3:4, the character big (face in the upper third), a soft painted dusk background, the bottom fifth calmer / darker for the stats, no frame / text. Lu Bu's army = red / black / gold, so the deck reads as one.
+  - 11 boxes in `art/incoming/monstercards/PROMPTS_gemini.md`, the Lu Bu painting `art/cards/lubu_paint.png` attached as the style each time: 0 Lu Bu himself (a new legendary card, like the cardtest card), 1-6 the soldiers, 7-10 the spells (banner, drum, Red Hare, Diaochan's ruse).
+  - "ซามูไรดาบ" is drawn as a Three Kingdoms swordsman (box 5): rename the card "นักดาบ" when the art comes in.
+  - When the pictures come: crop to the card, show them full-art in `cards.html` instead of the pixel sprites (numbers / names / hit effects unchanged), the card lunge + effects stay. The Tomb King deck gets the same kind of boxes after.
+  - PixelLab was NOT used (0 credits); a pixel route would be 1 credit a card standard, offered only as a second option.
