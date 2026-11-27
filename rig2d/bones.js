@@ -131,8 +131,9 @@ const Bones2D = (() => {
     if (rig.shot) clipP0.push(one('_shot', rig.shot));
     const extra = rig.swaps ? [...new Set(Object.values(rig.swaps).flatMap(o => Object.values(o)))] : [];   /* faces: { part: 'head', idle: 'face0', attack: 'face1', ... } = the picture (same size) that piece shows during a move */
     const refP = rig.ref ? new Promise(ok => { const i = new Image(); i.onload = () => { rig.img._ref = i; ok(); }; i.onerror = () => ok(); i.src = rig.dir + rig.ref; }) : Promise.resolve();
+    const maskP = rig.refMask ? new Promise(ok => { const i = new Image(); i.onload = () => { rig.img._refMask = i; ok(); }; i.onerror = () => ok(); i.src = rig.dir + rig.refMask; }) : Promise.resolve();
     const clipP = []; for (const cn in rig.clips || {}) { const c = rig.clips[cn]; c.img = []; c.frames.forEach((f, i) => clipP.push(new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(); im.onerror = () => no(new Error('frame ' + im.src)); im.src = rig.dir + c.dir + f; c.img[i] = im; }))); c.dur = c.durs.reduce((a, b) => a + b, 0) / 1000; }
-    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP], clipP, clipP0)).then(() => { if (rig.seams === 'paint') seamless(rig); if (rig.bake) bake(rig); return rig; }); }
+    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP, maskP], clipP, clipP0)).then(() => { if (rig.seams === 'paint') seamless(rig); if (rig.bake) bake(rig); return rig; }); }
 
   /* SEAMS (owner 2026-11-27 "ประกอบเสร็จก็ลบเส้นออกด้วยสิ ทำให้เหมือนตอนยังไม่ต่อกระดูก"): once the pieces are put together, the edge of a piece
      that lies over another piece is painted with what the picture before rigging (rig.ref) shows there, so a joint line the drawing does not have
@@ -219,6 +220,108 @@ const Bones2D = (() => {
   }
   /* SEAMS IN MOVES: for every move, the share of the figure where a thin gap (no wider than 4 px) opens between exactly two joined pieces (a seam).
      Returns { move: { worst: 0..1, at: seconds } }. Used by the tool's "ตรวจ" button and by tools/qa/rig_check.js. */
+  /* MESH = how Spine bends a picture (owner 2026-11-28 "ถ้าไม่แยกใส่กระดูกได้ไหม", "Spine 2D ทำงานแบบไหน ... เอามาทำของเรา").
+     Every picture gets a triangle grid; every grid point follows one or more bones by WEIGHTS, so round a joint the two sides bend together like skin
+     instead of turning as two stiff cards (no crack, no hinge line, an elbow / waist / neck curves).
+     rig.mesh = { mode: 'pieces' = every piece is a mesh: round its own turning point it also follows its parent, round a child's turning point also that child
+                       | 'one' = the WHOLE front picture (rig.ref), NOT cut at all: each point follows the bone whose area it lies in at rest, smoothed over `soft`
+                         (fine for bends and breathing; where one part lies over another in the picture there is nothing behind it, so big moves stretch),
+                  step: grid px (12), soft: joint blend radius px (18), blend: the other bone's share right at the joint (.5) }.
+     Drawn with WebGL on one small hidden canvas shared by every rig and copied onto the game's canvas, so it costs about what plain pieces cost;
+     without WebGL the pieces are drawn stiff as before. Weapons stay stiff. rig._meshShow = true draws the grid (orange = points that blend bones). */
+  const fall = (d, s) => { const t = Math.min(1, d / s); return 1 - t * t * (3 - 2 * t); };
+  const NOKID = { weapon: 1, weaponB: 1, none: 1, hair: 1, cape: 1, tail: 1, wing: 1 };   /* a body does not bend toward its swinging hair / cape or a hidden filler */
+  function meshOpt(rig) { return Object.assign({ mode: 'pieces', step: 12, soft: 18, blend: .5 }, rig.mesh === true ? {} : rig.mesh || {}); }
+  function meshSig(rig) { let s = ''; for (const k of rig.order) { const q = rig.parts[k]; s += k + q.p + q.at + q.pv + q.r + q.s + q.fx + q.role + '|'; } return s + JSON.stringify(rig.mesh) + rig._feet; }
+  function meshMake(rig) {
+    prep(rig); const o = meshOpt(rig), M0 = world(rig, {}, null), inv0 = {}; for (const k in M0) inv0[k] = inv(M0[k]);
+    rig._mesh = { o, M0, inv0, sig: meshSig(rig), gen: (rig._mesh ? rig._mesh.gen : 0) + 1, one: o.mode === 'one' && rig.img._ref ? meshOne(rig, o, M0) : null }; return rig._mesh;
+  }
+  function meshGrid(W, H, st, has) {   /* cells of about st px over a W x H picture; triangles only on cells with something drawn in them */
+    const nx = Math.max(2, Math.ceil(W / st) + 1), ny = Math.max(2, Math.ceil(H / st) + 1), sx = W / (nx - 1), sy = H / (ny - 1), occ = new Uint8Array((nx - 1) * (ny - 1));
+    if (!has) occ.fill(1); else for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (has(x, y)) occ[Math.min(ny - 2, (y / sy) | 0) * (nx - 1) + Math.min(nx - 2, (x / sx) | 0)] = 1;
+    const id = new Int32Array(nx * ny).fill(-1), u = [], v = [], tri = [], vid = (i, j) => { const n = j * nx + i; if (id[n] < 0) { id[n] = u.length; u.push(i * sx); v.push(j * sy); } return id[n]; };
+    for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) if (occ[j * (nx - 1) + i]) { const a = vid(i, j), b = vid(i + 1, j), c = vid(i, j + 1), d = vid(i + 1, j + 1); tri.push(a, b, c, b, d, c); }
+    return { u, v, tri: Uint16Array.from(tri) };
+  }
+  const alphaOf = im => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0); return g.getImageData(0, 0, im.width, im.height).data; };
+  function meshPiece(rig, k, im) {   /* one piece's picture as a mesh, weights to itself, its parent (round its turning point) and its children (round theirs) */
+    const M = rig._mesh, o = M.o, q = rig.parts[k], W = im.width, H = im.height, rigid = q.role === 'weapon' || q.role === 'weaponB', m0 = M.M0[k];
+    const al = rigid ? null : alphaOf(im), G = meshGrid(W, H, rigid ? 1e9 : o.step, al && ((x, y) => al[(y * W + x) * 4 + 3] > 8));
+    const par = !rigid && q.p && rig.parts[q.p] && q.p !== k ? q.p : null, kids = rigid ? [] : Object.keys(rig.parts).filter(c => c !== k && rig.parts[c].p === k && !NOKID[rig.parts[c].role]);
+    const bones = [k].concat(par ? [par] : [], kids), n = G.u.length, rx = new Float32Array(n), ry = new Float32Array(n), uv = new Float32Array(n * 2), wb = [], ww = [], ox = q.pv[0] + (im._ox || 0), oy = q.pv[1] + (im._oy || 0);
+    for (let i = 0; i < n; i++) { const lx = G.u[i] - ox, ly = G.v[i] - oy, X = m0[0] * lx + m0[2] * ly + m0[4], Y = m0[1] * lx + m0[3] * ly + m0[5]; rx[i] = X; ry[i] = Y; uv[i * 2] = G.u[i] / W; uv[i * 2 + 1] = G.v[i] / H;
+      const b = [0], w = [1]; if (!rigid) { let s = 0; const add = (bi, J) => { const f = o.blend * fall(Math.hypot(X - J[4], Y - J[5]), o.soft); if (f > .01) { b.push(bi); w.push(f); s += f; } };
+        if (par) add(1, m0); kids.forEach((c, j) => add(1 + (par ? 1 : 0) + j, M.M0[c])); w[0] = Math.max(.2, 1 - s); const t = w.reduce((a, e) => a + e, 0); for (let j = 0; j < w.length; j++) w[j] /= t; }
+      wb.push(b); ww.push(w); }
+    return { k, gen: M.gen, bones, rx, ry, uv, tri: G.tri, wb, ww };
+  }
+  function meshOne(rig, o, M0) {   /* the whole reference picture as ONE mesh. Which bone each spot follows = which piece covers it at rest (rig.parts only say
+       where the bones are and which area is whose; their pictures are not drawn). Round a joint a spot also follows the bone on the other side (like 'pieces').
+       Where two areas meet away from a joint (an arm lying over the skirt) the sheet is TORN, so the arm lifts off instead of dragging the skirt with it. */
+    const R = rig.img._ref, [W, H] = rig.size, top = k => { while (k && rig.parts[k] && rig.parts[k].role === 'none' && rig.parts[k].p) k = rig.parts[k].p; return k; };
+    const bones = [...new Set(rig.order.filter(k => !/weapon/.test(rig.parts[k].role) && !(rig.swaps && rig.swaps[k])).map(top))], bi = Object.fromEntries(bones.map((k, i) => [k, i])), own = new Int16Array(W * H).fill(-1);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d', { willReadFrequently: true });
+    const cov = new Uint8Array(W * H); for (const k of rig.order) { if (/weapon/.test(rig.parts[k].role)) continue; const q = rig.parts[k], im = (rig.img0 && rig.img0[k]) || rig.img[k], b = top(k) in bi ? bi[top(k)] : -1; g.clearRect(0, 0, W, H); g.setTransform(...M0[k]); g.drawImage(im, -q.pv[0] - (im._ox || 0), -q.pv[1] - (im._oy || 0)); g.setTransform(1, 0, 0, 1, 0, 0);
+      const d = g.getImageData(0, 0, W, H).data; for (let i = 0; i < W * H; i++) if (d[i * 4 + 3] > 128) { cov[i] = 1; if (b >= 0) own[i] = b; } }
+    for (let pass = 0; pass < 3; pass++) { const n = Uint8Array.from(cov); for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; if (!cov[i] && (cov[i - 1] || cov[i + 1] || cov[i - W] || cov[i + W])) n[i] = 1; } cov.set(n); }
+    let tex; { const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(R, 0, 0, W, H); const d = g.getImageData(0, 0, W, H), mc = document.createElement('canvas'); mc.width = W; mc.height = H; const mg = mc.getContext('2d', { willReadFrequently: true }); if (rig.img._refMask) mg.drawImage(rig.img._refMask, 0, 0, W, H);
+      const md = mg.getImageData(0, 0, W, H).data; for (let i = 0; i < W * H; i++) d.data[i * 4 + 3] = Math.min(d.data[i * 4 + 3], rig.img._refMask ? (md[i * 4 + 3] < 250 ? md[i * 4 + 3] : md[i * 4]) : 255) * (cov[i] ? 1 : 0); g.putImageData(d, 0, 0); tex = c; }   /* the picture only where the pieces are at rest (+3 px), and inside rig.refMask when the reference is opaque: no background, no stray bits */
+    for (let pass = 0; pass < 24; pass++) for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; if (own[i] >= 0) continue; for (const j of [i - 1, i + 1, i - W, i + W]) if (own[j] >= 0) { own[i] = own[j]; break; } }
+    const J = b => M0[bones[b]], parOf = b => { const p = top(rig.parts[bones[b]].p); return p in bi && bi[p] !== b ? bi[p] : -1; }, kidsOf = bones.map((_, b) => bones.map((_, c) => c).filter(c => c !== b && parOf(c) === b && !NOKID[rig.parts[bones[c]].role]));
+    const ownAt = (x, y) => { for (let r = 0; r <= o.step * 2; r += 2) for (const [dx, dy] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r], [r, r], [-r, -r], [r, -r], [-r, r]]) { const X = Math.round(x + dx), Y = Math.round(y + dy); if (X >= 0 && Y >= 0 && X < W && Y < H && own[Y * W + X] >= 0) return own[Y * W + X]; } return 0; };
+    const wfun = (x, y, b) => { const l = [[b, 1]]; let s = 0; const add = (c, m) => { const f = o.blend * fall(Math.hypot(x - m[4], y - m[5]), o.soft); if (f > .01) { l.push([c, f]); s += f; } }; const p = parOf(b); if (p >= 0) add(p, J(b)); for (const c of kidsOf[b]) add(c, J(c));
+      l[0][1] = Math.max(.2, 1 - s); const t = l.reduce((a, e) => a + e[1], 0); return [l.map(e => e[0]), l.map(e => e[1] / t)]; };
+    const al = alphaOf(tex), G = meshGrid(W, H, o.step, (x, y) => al[(y * W + x) * 4 + 3] > 8), rx = [], ry = [], uv = [], wb = [], ww = [], vb = [], cut = [], tri = [];
+    const vert = (x, y, b, c) => { const [l, w] = wfun(x, y, b); rx.push(x); ry.push(y); uv.push(x / W, y / H); wb.push(l); ww.push(w); vb.push(b); cut.push(c); return rx.length - 1; };
+    const base = G.u.map((x, i) => vert(x, G.v[i], ownAt(x, G.v[i]), -1)); void base;
+    const ok = (a, b, cx, cy) => { if (a === b) return true; const ch = parOf(b) === a ? b : parOf(a) === b ? a : -1; if (ch < 0) return false; const m = J(ch); return Math.hypot(cx - m[4], cy - m[5]) < o.soft * 1.3; };
+    for (let t = 0; t < G.tri.length; t += 3) { const v = [G.tri[t], G.tri[t + 1], G.tri[t + 2]], cx = (rx[v[0]] + rx[v[1]] + rx[v[2]]) / 3, cy = (ry[v[0]] + ry[v[1]] + ry[v[2]]) / 3, B = v.map(i => vb[i]);
+      if (ok(B[0], B[1], cx, cy) && ok(B[1], B[2], cx, cy) && ok(B[0], B[2], cx, cy)) tri.push(...v);
+      else { const S = new Set(B); for (const [p, q2] of [[.33, .33], [.6, .2], [.2, .6], [.2, .2], [.5, .5], [0, .5], [.5, 0], [.1, .1], [.8, .1], [.1, .8]]) { const r = 1 - p - q2; S.add(ownAt(rx[v[0]] * r + rx[v[1]] * p + rx[v[2]] * q2, ry[v[0]] * r + ry[v[1]] * p + ry[v[2]] * q2)); }
+        for (const b of S) tri.push(...v.map(i => vert(rx[i], ry[i], b, b))); } }   /* torn: one copy of the triangle per area in it, each showing only its own area's pixels (cut exactly on the pixel line, not on the grid) */
+    const oc = document.createElement('canvas'); oc.width = W; oc.height = H; const og = oc.getContext('2d'), od = og.createImageData(W, H); for (let i = 0; i < W * H; i++) { od.data[i * 4] = own[i] + 1; od.data[i * 4 + 3] = 255; } og.putImageData(od, 0, 0);   /* whose area each pixel is, for the cut */
+    return { k: '_ref', tex, own: oc, bones, rx: Float32Array.from(rx), ry: Float32Array.from(ry), uv: Float32Array.from(uv), cut: Float32Array.from(cut), tri: Uint16Array.from(tri), wb, ww };
+  }
+  let GLR = null;
+  function glr() {   /* the shared WebGL drawer (false when the browser has none) */
+    if (GLR !== null) return GLR; GLR = false;
+    try { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('webgl', { premultipliedAlpha: true, preserveDrawingBuffer: true, antialias: false, alpha: true }); if (!g) return GLR;
+      const sh = (t, s) => { const o = g.createShader(t); g.shaderSource(o, s); g.compileShader(o); return o; }, pr = g.createProgram();
+      g.attachShader(pr, sh(g.VERTEX_SHADER, 'attribute vec4 a;attribute float b;uniform vec2 S;varying vec2 t;varying float c;void main(){t=a.zw;c=b;gl_Position=vec4(a.x/S.x*2.-1.,1.-a.y/S.y*2.,0.,1.);}'));
+      g.attachShader(pr, sh(g.FRAGMENT_SHADER, 'precision mediump float;uniform sampler2D T;uniform sampler2D O;uniform float A;varying vec2 t;varying float c;void main(){if(c>-.5&&abs(texture2D(O,t).r*255.-c-1.)>.5)discard;gl_FragColor=texture2D(T,t)*A;}'));
+      g.linkProgram(pr); if (!g.getProgramParameter(pr, g.LINK_STATUS)) return GLR; g.useProgram(pr);
+      const vb = g.createBuffer(), ib = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, vb); g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, ib); const la = g.getAttribLocation(pr, 'a'), lb = g.getAttribLocation(pr, 'b'); g.enableVertexAttribArray(la); g.enableVertexAttribArray(lb); g.uniform1i(g.getUniformLocation(pr, 'T'), 0); g.uniform1i(g.getUniformLocation(pr, 'O'), 1);
+      g.enable(g.BLEND); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA); g.enable(g.SCISSOR_TEST); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      GLR = { c, g, la, lb, S: g.getUniformLocation(pr, 'S'), A: g.getUniformLocation(pr, 'A'), tex: new WeakMap() };
+    } catch (e) { GLR = false; } return GLR;
+  }
+  function meshRender(rig, P, ctx, V, fade) {   /* true = drawn as meshes (the caller skips the stiff pieces) */
+    const R = glr(); if (!R) return false; let M = rig._mesh; if (!M || M.sig !== meshSig(rig)) M = meshMake(rig);
+    const T = {}, tb = b => T[b] || (T[b] = mul(V, mul(P.mats[b], M.inv0[b]))), items = [];
+    if (M.one) items.push({ m: M.one, im: M.one.tex, a: fade == null ? 1 : fade });
+    for (const k of P.order()) { const q = rig.parts[k]; if (M.one && !/weapon/.test(q.role) && !(rig.swaps && rig.swaps[k])) continue;   /* one picture: only weapons and swapping pieces (faces, fists) are drawn on it */ const a = (P.pose[k] && P.pose[k].a != null ? P.pose[k].a : 1) * (fade == null ? 1 : fade); if (a <= .01) continue;
+      const im = P.image(k); if (!im || !im.width) continue; let m = im._mesh; if (!m || m.k !== k || m.gen !== M.gen) m = im._mesh = meshPiece(rig, k, im); items.push({ m, im, a }); }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, nv = 0, ni = 0;
+    for (const it of items) { const m = it.m, n = m.rx.length, xy = it.xy = new Float32Array(n * 2); for (let i = 0; i < n; i++) { let x = 0, y = 0; const b = m.wb[i], w = m.ww[i], X = m.rx[i], Y = m.ry[i];
+        for (let j = 0; j < b.length; j++) { const t = tb(m.bones[b[j]]); x += w[j] * (t[0] * X + t[2] * Y + t[4]); y += w[j] * (t[1] * X + t[3] * Y + t[5]); }
+        xy[i * 2] = x; xy[i * 2 + 1] = y; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } nv += n; ni += m.tri.length; }
+    const cw = ctx.canvas.width, ch = ctx.canvas.height, bx = Math.max(0, Math.floor(x0) - 2), by = Math.max(0, Math.floor(y0) - 2), w = Math.min(cw, Math.ceil(x1) + 2) - bx, h = Math.min(ch, Math.ceil(y1) + 2) - by;
+    P._meshItems = items; if (w <= 0 || h <= 0) return true; const g = R.g, c = R.c;
+    if (c.width < w || c.height < h) { c.width = Math.max(c.width, Math.ceil(w / 256) * 256); c.height = Math.max(c.height, Math.ceil(h / 256) * 256); g.enable(g.SCISSOR_TEST); }
+    const vd = new Float32Array(nv * 5), id = new Uint16Array(ni); let vo = 0, io = 0;
+    for (const it of items) { const m = it.m, n = m.rx.length; it.vo = vo; it.io = io; for (let i = 0; i < n; i++) { const o5 = (vo + i) * 5; vd[o5] = it.xy[i * 2] - bx; vd[o5 + 1] = it.xy[i * 2 + 1] - by; vd[o5 + 2] = m.uv[i * 2]; vd[o5 + 3] = m.uv[i * 2 + 1]; vd[o5 + 4] = m.cut ? m.cut[i] : -1; } id.set(m.tri, io); vo += n; io += m.tri.length; }
+    g.viewport(0, c.height - h, w, h); g.scissor(0, c.height - h, w, h); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT); g.uniform2f(R.S, w, h);
+    g.bufferData(g.ARRAY_BUFFER, vd, g.STREAM_DRAW); g.bufferData(g.ELEMENT_ARRAY_BUFFER, id, g.STREAM_DRAW); const smooth = ctx.imageSmoothingEnabled !== false ? g.LINEAR : g.NEAREST;
+    const texOf = (im, f) => { let t = R.tex.get(im); if (!t) { t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); for (const [p, v] of [[g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE], [g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE]]) g.texParameteri(g.TEXTURE_2D, p, v); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); R.tex.set(im, t); } else g.bindTexture(g.TEXTURE_2D, t);
+      if (t._f !== f) { g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, f); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, f); t._f = f; } return t; };
+    for (const it of items) { g.activeTexture(g.TEXTURE1); if (it.m.own) { g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); texOf(it.m.own, g.NEAREST); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); } g.activeTexture(g.TEXTURE0); texOf(it.im, smooth);
+      g.vertexAttribPointer(R.la, 4, g.FLOAT, false, 20, it.vo * 20); g.vertexAttribPointer(R.lb, 1, g.FLOAT, false, 20, it.vo * 20 + 16); g.uniform1f(R.A, it.a); g.drawElements(g.TRIANGLES, it.m.tri.length, g.UNSIGNED_SHORT, it.io * 2); }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(c, 0, 0, w, h, bx, by, w, h);
+    if (rig._meshShow) { ctx.globalAlpha = 1; ctx.lineWidth = 1; for (const it of items) { const m = it.m, xy = it.xy; ctx.strokeStyle = '#ffffff55'; ctx.beginPath(); for (let t = 0; t < m.tri.length; t += 3) { const a = m.tri[t], b = m.tri[t + 1], d = m.tri[t + 2]; ctx.moveTo(xy[a * 2], xy[a * 2 + 1]); ctx.lineTo(xy[b * 2], xy[b * 2 + 1]); ctx.lineTo(xy[d * 2], xy[d * 2 + 1]); ctx.closePath(); } ctx.stroke();
+        for (let i = 0; i < m.rx.length; i++) if (m.ww[i].length > 1) { const s = 1 - m.ww[i][0]; ctx.fillStyle = `rgba(255,${160 - s * 160 | 0},40,${.4 + s})`; ctx.fillRect(xy[i * 2] - 2, xy[i * 2 + 1] - 2, 4, 4); } } }
+    ctx.restore(); return true;
+  }
   function figOf(rig) {   /* the figure of the reference picture (rig.size space): its alpha, or what differs from the border colours */
     if (rig._fig !== undefined) return rig._fig; const R = rig.img._ref; if (!R) return rig._fig = null; const [W, H] = rig.size, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(R, 0, 0, W, H); const a = g.getImageData(0, 0, W, H).data, d = new Uint8Array(W * H);
     let hasA = false; for (let i = 0; i < W * H; i++) if (a[i * 4 + 3] < 250) { hasA = true; break; }
@@ -289,12 +392,13 @@ const Bones2D = (() => {
     P.draw = (ctx, x, y, scale, left) => { if (P.clip) { P.lastClip = P.clip; if (P.cf > 0) { const f = P.cf / .08; drawBones(ctx, x, y, scale, left, f); P.drawClip(ctx, x, y, scale, left, 1 - f); } else P.drawClip(ctx, x, y, scale, left, 1); return; }
       if (P.fromClip > 0) { const f = P.fromClip / .1; P.fromClip -= 1 / 60; drawBones(ctx, x, y, scale, left, 1 - f); P.drawClip(ctx, x, y, scale, left, f); return; } drawBones(ctx, x, y, scale, left, 1); };
     const drawBones = (ctx, x, y, scale, left, fade) => { if (!P.mats) P.update(0); if (!P.mats) return; const F = rig._feet, sx = left ? -scale : scale, V = [sx, 0, 0, scale, x - F[0] * sx, y - F[1] * scale], a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha));
+      if (rig.mesh && meshRender(rig, P, ctx, V, fade)) { ctx.globalAlpha = a0; P.view = V; return; }   /* Spine-style bending meshes */
       for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); const pa = (P.pose[k] && P.pose[k].a != null ? P.pose[k].a : 1) * (fade == null ? 1 : fade); if (pa <= .01) continue; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha)) * pa; ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); const im = P.image(k); ctx.drawImage(im, -q.pv[0] - (im._ox || 0), -q.pv[1] - (im._oy || 0)); } ctx.globalAlpha = a0; P.view = V; };
     P.at = (k, lx, ly) => { const m = P.mats && P.mats[k], q = rig.parts[k]; if (!m) return null; const p = pt(m, (lx || 0) - 0, (ly || 0) - 0); return P.view ? pt(P.view, p[0], p[1]) : p; };   /* where a point of a piece (its picture px, from the turning point) is on screen after draw */
     P.centre = k => { const im = rig.img[k], q = rig.parts[k]; return im ? P.at(k, im.width / 2 - q.pv[0], im.height / 2 - q.pv[1]) : null; };
     P.angle = k => { const m = P.mats && P.mats[k]; if (!m) return 0; const V = P.view || [1, 0, 0, 1, 0, 0], n = mul(V, m); return Math.atan2(n[1], n[0]); };
     return P;
   }
-  return { load, images, seamless, unseam, bake, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
+  return { load, images, seamless, unseam, bake, meshMake, meshRender, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
 })();
 if (typeof module !== 'undefined') module.exports = Bones2D;
