@@ -47,7 +47,29 @@ P = dict(
  divinetome="a radiant divine holy book with golden angel wings and holy light",
  parrybuckler="a small round buckler with sharp parry spikes and a gauntlet behind it",
  honeybread="a loaf of bread glazed with dripping golden honey",
- soullantern="a cursed iron lantern with a purple skull-shaped flame inside")
+ soullantern="a cursed iron lantern with a purple skull-shaped flame inside",
+ # BUILD TREE (owner 2026-11-27 "เจนรูปไอเทมได้เลย"): 7 parts, 6 mid items, 8 ultimate items
+ p_blade="a bare forged steel sword blade with no hilt, polished and sharp, diagonal",
+ p_hide="a rolled thick brown beast hide with fur edges, tied with a leather cord",
+ p_plate="a single curved iron armor plate with round rivets",
+ p_feather="a single brown and white striped hawk feather",
+ p_crystal="a raw cluster of glowing purple magic crystal shards",
+ p_fang="a large curved ivory beast fang hanging on a leather cord",
+ p_herb="a small bundle of green wild herbs with tiny white flowers tied with twine",
+ m_edge="a short broad warrior blade of bright steel crossed with a white beast fang, its edge glowing orange",
+ m_mail="a chainmail shirt with leather trim and iron shoulder plates",
+ m_boots="a pair of fur-lined leather boots with brown hawk feathers on the ankles and a green swirl of wind",
+ m_orb="a round arcane crystal ball with glowing purple runes floating inside, on a small gold ring stand",
+ m_charm="a leaf-shaped green jade amulet wrapped in leather cord with herbs, soft green glow",
+ m_claws="three curved steel claw blades on a leather hand strap decorated with hawk feathers",
+ f_kingslayer="a legendary greatsword with a golden crown-shaped crossguard and a glowing red blade edge, diagonal",
+ f_bastion="a massive iron shield shaped like a castle gate with battlements on top and a glowing green gem in the middle",
+ f_stormstep="a pair of legendary steel boots wrapped in a swirling blue tornado with small lightning bolts",
+ f_archmage="an archmage crown of dark gold with tall purple crystal spikes and a glowing arcane gem",
+ f_bloodpact="a dark sealed scroll with a red wax skull seal dripping blood, glowing red",
+ f_titan="a huge titan chest armor of dark steel with big spiked shoulders and a glowing orange core",
+ f_lichstaff="a demon king staff of black bone topped with a horned skull holding a green flame, purple gems",
+ f_godbow="a legendary golden longbow with white angel wing limbs and a glowing arrow of light")
 out = 'art/incoming/bag3d/pl/'; os.makedirs(out, exist_ok=True)
 def call(tool, args): return subprocess.run(['python3', 'tools/pl_rpc.py', tool, json.dumps(args)], capture_output=True, text=True).stdout
 jobs, todo, left, t0 = {}, [k for k in sys.argv[1:] if not os.path.exists(out + k + '.png')], {}, time.time()
