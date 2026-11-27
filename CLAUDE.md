@@ -84,6 +84,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Owner stopped the 3D model ("หยุดก่อน", "ทำงาน 2D ก่อน") and asked how to make a good system of pictures in pieces joined on bones, like Slack Off Survivor / Lucky Defense.
 - Claude's answer + the proposed free test (parts-sheet template -> GPT / Gemini draws one hero as pieces -> our own bones, one shared skeleton and shared moves) are in the LAST section of `docs/action-game.md`.
 - Nothing is built: wait for "ทำเลย" and for which game (probably `lucky.html`, whose rule so far is "whole pictures, NO cut-out bones").
+- First job (owner): take ONE character of the reference clip apart to see how it really moves. YouTube clips cannot be fetched from the cloud (bot check, even with the host allowed): ask the owner to attach the file / a screen recording in the chat.
 
 ## NEWEST (owner 2026-11-27, latest of all, back to it the same day): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
 - The 2D backpack game with 3D fighters (wolf hunter vs Quaternius monsters).
