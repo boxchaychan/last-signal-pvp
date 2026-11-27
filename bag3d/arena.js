@@ -5,7 +5,8 @@
    - bag3d.html posts { bag: 'start', cfg }: cfg = round, boss, the champion's built numbers (build() in bag3d.html: life, armour, crit ...) and
      every working item with its own numbers after neighbour bonuses. This page answers { bag: 'ready' } once and { bag: 'end', win, ... }.
    - One champion (the wolf hunter) against the round's horde: all monsters of the wave must die. Items fire by themselves on their own
-     cooldown and stamina, each with its own move (BAGMOVE -> BAGFIRE). The player only walks (stick / W A S D), dashes, or leaves it on AUTO.
+     cooldown and stamina, each with its own move (BAGMOVE -> BAGFIRE). The fight is fully AUTOMATIC (owner: "ไม่ต้องบังคับดิ ให้มันออโต้"): the champion
+     walks and dashes by itself (bagAuto), the player only arranges the bag before the fight and may switch x1 / x2.
    - Numbers to tune: bagWave() (how many, how strong), BAGFIRE reach / area. Names here all start with bag / BAG (horde.html has none). */
 const BAG = { on: false, ready: false, cfg: null, st: {}, its: [], t: 0, mhp: 8, mdmg: 4, spd: 1, auto: true, man: 0, plan: [], pi: 0, total: 0, dur: 30, blk: 0, sta: 5, tk: 0, sk: null, done: false, bossWait: false, fear: 1.6, reach: 2, coinP: .2, img: null, tex: null, icr: 14, spr: [], pops: [], drops: [], hpShow: 0 };
 /* item id -> [move, colour, options]. An item made from another one (cfg item.base) that is not listed uses its base's move. */
@@ -125,7 +126,7 @@ function bagUpd(dt) {   /* instead of the weapons / director / shrines / ultimat
   if (BAG.t > BAG.dur && !BAG.raged) { BAG.raged = true; banner('ฝูงมอนคลั่ง!', 'รีบกวาดให้หมด: ยิ่งนานมอนยิ่งตีแรง', true, 2.2); }
   if (!BAG.done && BAG.pi >= BAG.plan.length && !BAG.bossWait && (!BAG.cfg.boss || BAG.bossed) && aliveN() === 0 && G.endT <= 0) { BAG.done = true; G.won = true; G.endT = 1.4; jingle('win'); banner('ชนะ!', 'กวาดฝูงมอนรอบ ' + BAG.cfg.round + ' หมดแล้ว', false, 1.6); for (const g of GEMS) g.pull = true; }
 }
-function bagAuto(dt) {   /* AUTO: the champion holds the ground and lets the bag fight: walks to the nearest monster when nothing is in reach, steps out of a boss's body and away from shots, picks up coins when it is quiet, dashes out when badly hurt in a crowd */
+function bagAuto(dt) {   /* the champion holds the ground and lets the bag fight: walks to the nearest monster when nothing is in reach, steps out of a boss's body and away from shots, picks up coins when it is quiet, dashes out when badly hurt in a crowd */
   const H = HERO.pos; let fx = 0, fz = 0, nd = 1e9, nm = null, close = 0, cx = 0, cz = 0;
   for (const m of MON) { if (m.dead) continue; const dx = H.x - m.x, dz = H.z - m.z, d2 = dx * dx + dz * dz; if (d2 < nd) { nd = d2; nm = m; } if (d2 < 4) { close++; cx += dx; cz += dz; } if (m.boss) { const R = 3 + m.r; if (d2 < R * R) { const w = 5 / (d2 + .3); fx += dx * w; fz += dz * w; } } }
   for (const b of BUL) { const dx = H.x - b.x, dz = H.z - b.z, d2 = dx * dx + dz * dz; if (d2 < 9) { fx += dx / (d2 + .2) * 2; fz += dz / (d2 + .2) * 2; } }
@@ -135,12 +136,11 @@ function bagAuto(dt) {   /* AUTO: the champion holds the ground and lets the bag
   const L = Math.hypot(fx, fz); if (L < .06) INP.x = INP.z = 0; else { INP.x = fx / L; INP.z = fz / L; }
   if (HERO.dashCd <= 0 && HERO.hp < HERO.max * .5 && close >= 4) { const c = Math.hypot(cx, cz) || 1; INP.x = cx / c; INP.z = cz / c; heroDash(); }
 }
-function bagInp(dt) { if (JOY.on) { BAG.man = 1; return; } const x = (KEYS.KeyD || KEYS.ArrowRight ? 1 : 0) - (KEYS.KeyA || KEYS.ArrowLeft ? 1 : 0), z = (KEYS.KeyS || KEYS.ArrowDown ? 1 : 0) - (KEYS.KeyW || KEYS.ArrowUp ? 1 : 0);
-  if (x || z) { INP.x = x; INP.z = z; BAG.man = 1; return; } if (BAG.man > 0) { BAG.man -= dt; INP.x = INP.z = 0; return; } if (BAG.auto && !HERO.dead && G.endT <= 0) bagAuto(dt); else INP.x = INP.z = 0; }
+function bagInp(dt) { JOY.on = false; if (!HERO.dead && G.endT <= 0) bagAuto(dt); else INP.x = INP.z = 0; }   /* owner 2026-11-27 "ไม่ต้องบังคับดิ ให้มันออโต้ โดยเราจัดกระเป๋าแบบเดิม": the player never steers, the fight is fully automatic */
 /* ---- start / end */
 function bagStart(cfg) {
   if (!BAG.ready || !HERO) return false; resize(); audioInit(); clearRun(); const M = HERO.M; HERO = makeHero(M); showHero(M); BAG.cfg = cfg; BAG.result = null; BAG.on = true; BAG.done = BAG.raged = BAG.bossed = false; BAG.bossWait = false; BAG.t = 0; BAG.tk = .5; BAG.man = 0;
-  const S = BAG.st = Object.assign({ armor: 0, mres: 0, dodge: 0, regen: 0, thorn: 0, haste: 0, crit: 0, critd: 2, stam: 5, sreg: 1, rage: 0, sblk: 0 }, cfg.st || {}); BAG.spd = cfg.spd > 1 ? 2 : 1; if (cfg.auto !== undefined) BAG.auto = !!cfg.auto; BAG.icr = cfg.icr || 14;
+  const S = BAG.st = Object.assign({ armor: 0, mres: 0, dodge: 0, regen: 0, thorn: 0, haste: 0, crit: 0, critd: 2, stam: 5, sreg: 1, rage: 0, sblk: 0 }, cfg.st || {}); BAG.spd = cfg.spd > 1 ? 2 : 1; BAG.icr = cfg.icr || 14;
   Object.assign(P, { pow: 1, cd: 1, area: 1, spd: 3.3, magnet: 2.4, crit: 0, critX: 2, armor: S.armor, regen: S.regen, xp: 0, gold: 1, luck: 1, multi: 0, dur: 1, steal: 0, numMin: 0 }); HERO.max = Math.round(cfg.hp); HERO.hp = HERO.max; BAG.hpShow = HERO.hp; BAG.blk = S.sblk || 0; BAG.sta = S.stam;
   BAG.its = (cfg.items || []).map(q => { const W = Object.assign({ t: Math.random() * .4, fl: 0 }, q); if (W.start != null) { W.once = true; W.dmg = W.start; } else if (W.blk || W.heal) W.self = true; return W; });
   const melee = BAG.its.some(W => !W.once && !W.self && ['stab', 'xcut', 'thrust', 'bonk', 'claws', 'reap', 'cut', 'cleave'].includes((BAGMOVE[W.id] || BAGMOVE[W.base] || ['cut'])[0])); BAG.reach = melee ? 1.8 : 5.5;
@@ -168,7 +168,7 @@ function bagDraw() {   /* once a frame, from fillBatches */
   for (let i = BAG.drops.length - 1; i >= 0; i--) { const o = BAG.drops[i]; o.t += dt; if (o.t > o.life + .1) { o.s.visible = false; BAG.drops.splice(i, 1); continue; } used.add(o.s); const k = Math.min(1, o.t / o.life); o.s.position.set(o.x, .6 + (1 - k * k) * 5, o.z); o.s.scale.set(1.5, 1.5, 1); o.s.material.rotation = -2.4 + k * 2.4; }
   for (const s of BAG.spr) if (s.visible && !used.has(s)) s.visible = false;
 }
-/* ---- the screen: life + shield + stamina, the wave, the items with their cooldowns, AUTO / speed / dash */
+/* ---- the screen: life + shield + stamina, the wave, the items with their cooldowns, the speed button */
 function bagDrawUI(dt) {
   if (G.state === 'pause') G.state = 'play'; const H = HERO, pad = 10 * S;
   if (!BAG.on && G.state !== 'bagdone') { ui.fillStyle = '#141a2a'; ui.fillRect(0, 0, SW, SH); txt(BAG.ready ? 'พร้อมสู้' : LOAD.msg, SW / 2, SH / 2, 16 * S, '#cfd8f0', 'center', 600); return; }
@@ -191,21 +191,15 @@ function bagDrawUI(dt) {
     if (G.boss && !G.boss.dead) { const bw = Math.min(360 * S, SW * .46), by = y + 62 * S; txt(MOBS[G.boss.k].name, SW / 2, by - 9 * S, 13 * S, '#ffb0a0'); bar(SW / 2 - bw / 2, by, bw, 12 * S, G.boss.hp / G.boss.max, '#ff7a5a', '#b81a2a'); } }
   /* coins, AUTO, speed */
   { const rx = SW - pad, y = pad, bh = 30 * S; button('bagspd', rx - 54 * S, y, 54 * S, bh, 'x' + BAG.spd, { c: BLUE, tc: '#fff', ts: 'rgba(0,0,40,.6)', size: 14 * S, fn: () => { BAG.spd = BAG.spd > 1 ? 1 : 2; try { parent.postMessage({ bag: 'spd', v: BAG.spd }, '*'); } catch (_) { } } });
-    button('bagauto', rx - 54 * S - 8 * S - 70 * S, y, 70 * S, bh, BAG.auto ? 'AUTO' : 'เดินเอง', { c: BAG.auto ? GREEN : GREY, tc: '#fff', ts: 'rgba(0,30,0,.6)', size: 13 * S, fn: () => { BAG.auto = !BAG.auto; BAG.man = 0; } });
-    coinIc(rx - 54 * S - 16 * S - 70 * S - 44 * S, y + bh / 2, 8 * S); txt(String(G.coins), rx - 54 * S - 16 * S - 70 * S - 32 * S, y + bh / 2 + 1, 13 * S, '#ffe08a', 'left'); }
+    coinIc(rx - 54 * S - 52 * S, y + bh / 2, 8 * S); txt(String(G.coins), rx - 54 * S - 40 * S, y + bh / 2 + 1, 13 * S, '#ffe08a', 'left'); }
   /* the items of the bag: a strip along the bottom, the dark part is the cooldown, a flash when one fires */
   if (BAG.img && BAG.img.width) { const L = BAG.its, n = L.length, z = Math.min(34 * S, (SW * .62) / Math.max(1, n) - 3 * S), w = n * (z + 3 * S), x0 = SW / 2 - w / 2, y = SH - pad - z; ui.imageSmoothingEnabled = false;
     L.forEach((W, i) => { const x = x0 + i * (z + 3 * S), k = W.once ? (W.done ? 0 : 1) : clamp(W.t / W.cd, 0, 1), col = W.self ? (W.heal ? '#3f8a3a' : '#2f5f98') : W.once ? '#8a6a1e' : W.ty === 'mag' ? '#6a3ad8' : '#a8402e'; rr(x, y, z, z, 6 * S); ui.fillStyle = 'rgba(10,12,24,.8)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = W.fl > 0 ? '#ffffff' : col; ui.stroke();
       if (W.ic != null) ui.drawImage(BAG.img, (W.ic % 8) * 64, Math.floor(W.ic / 8) * 64, 64, 64, x + 2 * S, y + 2 * S, z - 4 * S, z - 4 * S); if (k < 1 || (W.once && W.done)) { ui.fillStyle = 'rgba(6,8,18,.62)'; ui.fillRect(x + 1, y + 1, z - 2, (z - 2) * (W.once ? 1 : 1 - k)); } else if (!W.self && !W.once && BAG.sta < W.sta) { ui.fillStyle = 'rgba(160,30,20,.4)'; ui.fillRect(x + 1, y + 1, z - 2, z - 2); }
       if (W.fl > 0) { ui.globalAlpha = W.fl / .25 * .6; ui.fillStyle = '#fff'; ui.fillRect(x, y, z, z); ui.globalAlpha = 1; } }); ui.imageSmoothingEnabled = true; }
-  /* dash */
-  if (!H.dead && G.state === 'play') { const r = 25 * S, cx = SW - pad - r - 4 * S, cy = SH - pad - r - 4 * S, k = H.dashCd / DASH.cd, rdy = k <= 0; ui.save(); ui.globalAlpha = rdy ? .95 : .7; ui.beginPath(); ui.arc(cx, cy, r, 0, TAU); ui.fillStyle = rdy ? '#22305e' : '#1a2034'; ui.fill(); ui.lineWidth = 2.2 * S; ui.strokeStyle = rdy ? '#ffe9a8' : 'rgba(255,233,168,.35)'; ui.stroke();
-    ui.lineCap = 'round'; ui.lineJoin = 'round'; for (let i = 0; i < 3; i++) { const x0 = cx - r * .42 + i * r * .34; ui.beginPath(); ui.moveTo(x0, cy - r * .3); ui.lineTo(x0 + r * .3, cy); ui.lineTo(x0, cy + r * .3); ui.lineWidth = (3.4 - i * .5) * S; ui.strokeStyle = rdy ? `rgba(255,246,220,${.45 + i * .27})` : `rgba(160,170,196,${.3 + i * .2})`; ui.stroke(); }
-    if (!rdy) { ui.beginPath(); ui.moveTo(cx, cy); ui.arc(cx, cy, r - 1.5 * S, -Math.PI / 2, -Math.PI / 2 + TAU * k); ui.closePath(); ui.fillStyle = 'rgba(6,8,18,.62)'; ui.fill(); } ui.restore(); HIT.push({ x: cx - r * 1.25, y: cy - r * 1.25, w: r * 2.5, h: r * 2.5, fn: heroDash }); }
-  if (JOY.on && G.state === 'play') { ui.beginPath(); ui.arc(JOY.x0, JOY.y0, 46 * S, 0, TAU); ui.fillStyle = 'rgba(255,255,255,.08)'; ui.fill(); ui.lineWidth = 2 * S; ui.strokeStyle = 'rgba(255,255,255,.35)'; ui.stroke(); ui.beginPath(); ui.arc(JOY.x0 + INP.x * 40 * S, JOY.y0 + INP.z * 40 * S, 20 * S, 0, TAU); ui.fillStyle = 'rgba(255,240,200,.5)'; ui.fill(); }
   NOTES.forEach((n, i) => { n.t += dt; const a = clamp(Math.min(n.t * 5, (3 - n.t) * 2), 0, 1), ny = pad + 64 * S + i * 21 * S; ui.globalAlpha = a; txt(n.s, pad + 4 * S, ny, 11 * S, n.color, 'left', 600, 'rgba(0,0,0,.7)', 2.5); ui.globalAlpha = 1; }); while (NOTES.length && NOTES[0].t > 3) NOTES.shift();
   if (BANNER.t > 0) { BANNER.t -= dt; const k = clamp(Math.min((BANNER.max - BANNER.t) * 4, BANNER.t * 2.5), 0, 1), y = SH * .34; ui.globalAlpha = k; const g = ui.createLinearGradient(0, 0, SW, 0), c = BANNER.red ? '120,10,10' : '20,30,70'; g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(.5, `rgba(${c},.82)`); g.addColorStop(1, `rgba(${c},0)`); ui.fillStyle = g; ui.fillRect(0, y - 34 * S, SW, 68 * S);
     txt(BANNER.a, SW / 2, y - (BANNER.b ? 8 : 0) * S, 28 * S * (1 + (1 - k) * .3), BANNER.red ? '#ffd0c0' : '#ffe9a8'); if (BANNER.b) txt(BANNER.b, SW / 2, y + 19 * S, 15 * S, '#fff', 'center', 600); ui.globalAlpha = 1; }
-  if (BAG.t < 5 && G.state === 'play') { ui.globalAlpha = clamp(5 - BAG.t, 0, 1); txt(TOUCH ? 'ของในกระเป๋ายิงเอง · ลากนิ้วเพื่อเดินเอง · ปุ่มกลมขวาล่าง = พุ่งหลบ' : 'ของในกระเป๋ายิงเอง · W A S D เดินเอง · Space = พุ่งหลบ', SW / 2, SH * .8, 12.5 * S, '#fff6dc', 'center', 600); ui.globalAlpha = 1; }
+  if (BAG.t < 5 && G.state === 'play') { ui.globalAlpha = clamp(5 - BAG.t, 0, 1); txt('สู้อัตโนมัติ: แชมเปี้ยนเดินและใช้ของในกระเป๋าเองทั้งหมด', SW / 2, SH * .8, 12.5 * S, '#fff6dc', 'center', 600); ui.globalAlpha = 1; }
   if (H.dead || G.state === 'bagdone') { ui.fillStyle = 'rgba(6,8,18,.45)'; ui.fillRect(0, 0, SW, SH); txt(G.won && !H.dead ? 'ชนะ!' : 'แพ้...', SW / 2, SH * .45, 40 * S, G.won && !H.dead ? '#ffe08a' : '#ff9a8a'); }
 }
