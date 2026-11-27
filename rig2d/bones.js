@@ -99,7 +99,35 @@ const Bones2D = (() => {
   function images(rig) { prep(rig); rig.img = {}; const one = (key, file) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(); i.onerror = () => no(new Error('picture ' + i.src)); i.src = rig.dir + file; rig.img[key] = i; });
     if (rig.faces && !rig.swaps) { const f = rig.faces, o = {}; for (const k in f) if (k !== 'part') o[k] = f[k]; rig.swaps = { [f.part]: o }; }   /* old form: faces = one swapping piece */
     const extra = rig.swaps ? [...new Set(Object.values(rig.swaps).flatMap(o => Object.values(o)))] : [];   /* faces: { part: 'head', idle: 'face0', attack: 'face1', ... } = the picture (same size) that piece shows during a move */
-    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')))).then(() => rig); }
+    const refP = rig.ref ? new Promise(ok => { const i = new Image(); i.onload = () => { rig.img._ref = i; ok(); }; i.onerror = () => ok(); i.src = rig.dir + rig.ref; }) : Promise.resolve();
+    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP])).then(() => { if (rig.seams === 'paint') seamless(rig); return rig; }); }
+
+  /* SEAMS (owner 2026-11-27 "ประกอบเสร็จก็ลบเส้นออกด้วยสิ ทำให้เหมือนตอนยังไม่ต่อกระดูก"): once the pieces are put together, the edge of a piece
+     that lies over another piece is painted with what the picture before rigging (rig.ref) shows there, so a joint line the drawing does not have
+     goes away; lines the drawing really has (chin, cuffs, skirt hem) stay because the reference is dark there too. Silhouette edges (nothing under them)
+     are kept. Done once on load, in the rest pose; the original pictures stay in rig.img0. Only for rigs with seams: 'paint' (a rig cut from its own reference, like zeusgpt, already has no extra lines). */
+  function seamless(rig, band = 4, keepR = 1) {
+    const R = rig.img._ref; if (!R || !rig.order) return; prep(rig); const [W, H] = rig.size, cv = c => { const e = document.createElement('canvas'); e.width = c[0]; e.height = c[1]; return e; };
+    const rc = cv([W, H]), rg = rc.getContext('2d'); rg.drawImage(R, 0, 0, W, H); const ref = rg.getImageData(0, 0, W, H).data, lum = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) lum[i] = ref[i * 4] * .299 + ref[i * 4 + 1] * .587 + ref[i * 4 + 2] * .114;
+    const darkNear = new Uint8Array(W * H);   /* the reference has a line within keepR px */
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (lum[y * W + x] < 80) for (let dy = -keepR; dy <= keepR; dy++) for (let dx = -keepR; dx <= keepR; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && dx * dx + dy * dy <= keepR * keepR) darkNear[Y * W + X] = 1; }
+    const M = world(rig, {}, null), cov = cv([W, H]), cg = cov.getContext('2d'); rig.img0 = Object.assign({}, rig.img);
+    const alone = {}; for (const k of rig.order) { const c = cv([W, H]), g = c.getContext('2d'); for (const k2 of rig.order) { if (k2 === k) continue; const m2 = M[k2], q2 = rig.parts[k2]; g.setTransform(m2[0], m2[1], m2[2], m2[3], m2[4], m2[5]); g.drawImage(rig.img0[k2], -q2.pv[0], -q2.pv[1]); } alone[k] = g.getImageData(0, 0, W, H).data; }
+    const near = (a, j, r) => { const x0 = j % W, y0 = (j / W) | 0; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = x0 + dx, Y = y0 + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && a[(Y * W + X) * 4 + 3] > 200) return true; } return false; };
+    const pics = k => [k].concat(rig.swaps && rig.swaps[k] ? [...new Set(Object.values(rig.swaps[k]))].map(f => '@' + f) : []);
+    for (const k of rig.order) {   /* back to front: what is under this piece = everything drawn before it */
+      const q = rig.parts[k], m = M[k], under = cg.getImageData(0, 0, W, H).data;
+      for (const key of pics(k)) { const im = rig.img0[key]; if (!im || !im.width) continue; const c = cv([im.width, im.height]), g = c.getContext('2d'); g.drawImage(im, 0, 0); const d = g.getImageData(0, 0, c.width, c.height), p = d.data, w = c.width, h = c.height;
+        const edge = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) edge[i] = p[i * 4 + 3] < 128 ? 0 : 255;   /* distance (in px, up to band) to the outside of the piece */
+        const dist = new Uint8Array(w * h).fill(255); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (!edge[i]) { dist[i] = 0; continue; } let best = 255; for (let dy = -band; dy <= band && best > 1; dy++) for (let dx = -band; dx <= band; dx++) { const X = x + dx, Y = y + dy, o = X < 0 || Y < 0 || X >= w || Y >= h || !edge[Y * w + X]; if (o) { const dd = Math.max(Math.abs(dx), Math.abs(dy)); if (dd < best) best = dd; } } dist[i] = best; }
+        let n = 0;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (p[i * 4 + 3] < 8 || dist[i] > band) continue; const lx = x + .5 - q.pv[0], ly = y + .5 - q.pv[1], X = Math.floor(m[0] * lx + m[2] * ly + m[4]), Y = Math.floor(m[1] * lx + m[3] * ly + m[5]); if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+          const j = Y * W + X; if (darkNear[j] || !(under[j * 4 + 3] >= 200 || (dist[i] <= 2 && near(alone[k], j, 3) && lum[j] > 90))) continue;   /* over another piece, or a cut edge right next to another piece */ p[i * 4] = ref[j * 4]; p[i * 4 + 1] = ref[j * 4 + 1]; p[i * 4 + 2] = ref[j * 4 + 2]; p[i * 4 + 3] = 255; n++; }
+        g.putImageData(d, 0, 0); rig.img[key] = c; rig._seam = (rig._seam || 0) + n; }
+      cg.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); cg.drawImage(rig.img0[k], -q.pv[0], -q.pv[1]); cg.setTransform(1, 0, 0, 1, 0, 0); }
+  }
+  function unseam(rig) { if (rig.img0) Object.assign(rig.img, rig.img0); }
 
   function player(rig, opt) {
     opt = opt || {}; const P = { rig, base: opt.base === undefined ? 'idle' : opt.base, pop: opt.pop == null ? 1 : opt.pop, speed: 1, move: null, name: '', t: 0, done: false, pose: {}, root: Object.assign({}, REST), roles: {}, from: null, fade: 0, sw: {}, mats: null, alpha: 1 };
@@ -125,6 +153,6 @@ const Bones2D = (() => {
       for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); ctx.drawImage(P.image(k), -q.pv[0], -q.pv[1]); } ctx.globalAlpha = a0; };
     return P;
   }
-  return { load, images, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
+  return { load, images, seamless, unseam, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
 })();
 if (typeof module !== 'undefined') module.exports = Bones2D;
