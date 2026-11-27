@@ -15,7 +15,7 @@
   button.on { background: #7a4ad8; } button.g { background: #2f8a4a; } button.r { background: #a8362c; } button.mv { background: #2c5a8a; } button.mv.on { background: #e08a2a; }
   .row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin: 4px 0; }
   .row > * { flex: 1; }
-  .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 4px 0; } .g4 button { margin: 0; padding: 0 2px; }
+  .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 4px 0; } .g4 button { margin: 0; padding: 3px 2px; height: auto; min-height: 34px; line-height: 1.15; font-size: 12px; }
   label { display: block; margin-top: 6px; color: #aab; font-size: 12px; }
   input[type=range] { width: 100%; }
   h3 { margin: 10px 0 4px; font-size: 14px; color: #ffd24a; }
@@ -45,6 +45,11 @@
   <label>ต่อกับ (ชิ้นแม่)</label><select id="par" style="width:100%"></select>
   <div class="row"><button id="up">ชั้นขึ้น ▲</button><button id="dn">ชั้นลง ▼</button></div>
   <div class="row"><button id="flip">พลิกซ้าย-ขวา</button><button id="feet">ตั้งจุดเท้า</button></div>
+  <h3>ตรวจให้ตรง</h3>
+  <div class="row"><button id="fit1">จัดชิ้นนี้ให้ตรงรูป</button><button id="fitA">จัดทุกชิ้น</button></div>
+  <div class="row"><button id="undoF">ย้อนการจัด</button><button id="chk" class="g">ตรวจ</button></div>
+  <div class="row"><button id="seamB">ลบรอยต่อ</button><button id="diffB">ดูจุดที่ไม่ตรง</button></div>
+  <div id="score" style="font-size:12px;color:#cde;line-height:1.45;white-space:pre-wrap"></div>
   <h3>ภาพต้นแบบ</h3>
   <label>ความชัดของภาพต้นแบบ</label><input id="ro" type="range" min="0" max="1" step="0.05" value="0">
   <div class="row"><button id="zin">ซูม +</button><button id="zout">ซูม −</button></div>
@@ -58,7 +63,7 @@
 <button id="tg">☰</button>
 <div id="ttl"></div>
 <div id="hint"></div>
-<script src="rig2d/bones.js?v=9"></script>
+<script src="rig2d/bones.js?v=12"></script><script src="rig2d/fx.js?v=2"></script>
 <script>
 'use strict';
 /* Rig tool, version 2 (first made 2026-11-14 on the owner's "เอาทูลมา ฉันต่อเอง"; rebuilt 2026-11-27 after one hero of the owner's recording was taken
@@ -73,19 +78,19 @@ let R = null, R0 = null, names = [], PL = null;   /* the rig being edited, the r
 const ALPHA = {};
 const label = k => R.parts[k].n || k;
 function adopt(o) { if (!o.parts || !o.order) throw 'bad'; for (const k of names) { if (!o.parts[k]) o.parts[k] = JSON.parse(JSON.stringify(R0.parts[k])); if (!o.order.includes(k)) o.order.push(k); } for (const k in o.parts) if (!R0.parts[k]) delete o.parts[k]; o.order = o.order.filter(k => R0.parts[k]);
-  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size', 'view', 'faces', 'swaps']) o[c] = R0[c]; if (o.flip == null) o.flip = !!R0.flip; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; if (q.g == null && d.g != null) q.g = d.g; } o.img = R0.img; R = o; B.prep(R); PL = B.player(R); PL.pop = +$('#pop').value; }
+  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size', 'view', 'faces', 'swaps', 'clips', 'figH']) o[c] = R0[c]; if (o.flip == null) o.flip = !!R0.flip; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; if (q.g == null && d.g != null) q.g = d.g; } o.img = R0.img; R = o; B.prep(R); PL = B.player(R); PL.pop = +$('#pop').value; }
 const clean = () => { const o = JSON.parse(JSON.stringify(R, (k, v) => k === 'img' && typeof v === 'object' && !(typeof v === 'string') ? undefined : k[0] === '_' ? undefined : v)); for (const k of names) o.parts[k].img = R0.parts[k].img; return o; };
 function save() { try { localStorage.setItem(KEY, JSON.stringify(clean())); } catch (e) { } }
 
 /* ---- view */
-let HAD = false, DPR = 1, W = 0, H = 0, ZOOM = 1, PAN = [0, 0], MODE = 'A', SEL = '', PLAY = '', GAP = 0, POSE = {}, LEFT = false, BONES = false, LAST = 0, FEET = false;
+let DIFF = false, HAD = false, DPR = 1, W = 0, H = 0, ZOOM = 1, PAN = [0, 0], MODE = 'A', SEL = '', PLAY = '', GAP = 0, POSE = {}, LEFT = false, BONES = false, LAST = 0, FEET = false;
 function view() { const [w, h] = R.size, s = Math.min(W / w, H / h) * .78 * ZOOM, pw = $('#pn').classList.contains('hide') ? 0 : 262 * DPR; return [s, 0, 0, s, (W - pw) * .5 + PAN[0] - w / 2 * s, H * .52 + PAN[1] - h / 2 * s]; }
 function resize() { DPR = Math.min(3, devicePixelRatio || 1); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; }
 addEventListener('resize', resize);
 function mats() { B.prep(R); return PLAY ? PL.mats : B.world(R, POSE, null); }
 function draw(now) {
   const dt = Math.min(.05, (now - LAST) / 1000 || 0); LAST = now; B.prep(R);
-  if (PLAY) { PL.speed = +$('#spd').value; PL.pop = +$('#pop').value; const mv = B.MOVES[PLAY];
+  if (PLAY) { PL.speed = +$('#spd').value; PL.pop = +$('#pop').value; const mv = mvOf(PLAY);
     if (!mv.loop && !mv.fn && PL.name !== PLAY) { GAP -= dt; if (GAP <= 0) { PL.play(PLAY, { restart: true }); } }   /* a one-shot ended and fell back to standing: again after a short stand */
     else if (!mv.loop && !mv.fn && PL.done) { GAP -= dt; if (GAP <= 0) { PL.play(PLAY, { restart: true }); GAP = .7; } }
     PL.update(dt); if (!mv.loop && !mv.fn && PL.name === PLAY && !PL.done) GAP = mv.hold ? .9 : .55; }
@@ -93,9 +98,12 @@ function draw(now) {
   let V = view(); const F = R.feet; if (LEFT) V = B.mul(V, [-1, 0, 0, 1, 2 * F[0], 0]);
   ctx.setTransform(...V); ctx.fillStyle = '#3a4560'; ctx.fillRect(-3000, F[1], 6446, 900); ctx.fillStyle = '#00000030'; ctx.beginPath(); ctx.ellipse(F[0], F[1] + 4, R.size[0] * .22, R.size[1] * .022, 0, 0, 7); ctx.fill();
   const ro = +$('#ro').value; if (ro > 0 && R.img._ref && !PLAY) { ctx.globalAlpha = ro; ctx.drawImage(R.img._ref, 0, 0); ctx.globalAlpha = 1; }
-  const M = PLAY ? PL.mats : B.world(R, POSE, null); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.globalAlpha = PLAY ? Math.max(0, Math.min(1, PL.alpha)) : 1;
-  for (const k of (PLAY ? PL.order() : R.order)) { const q = R.parts[k], m = B.mul(V, M[k]); ctx.setTransform(...m); ctx.drawImage(PLAY ? PL.image(k) : R.img[k], -q.pv[0], -q.pv[1]);
+  const M = PLAY ? PL.mats : B.world(R, POSE, null); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.globalAlpha = 1;
+  if (PLAY) { const f = B.pt(V, F[0], F[1]); ctx.setTransform(1, 0, 0, 1, 0, 0); PL.draw(ctx, f[0], f[1], Math.abs(V[3]), LEFT); FX.step(PL, dt, { scale: Math.abs(V[3]) * R.size[1] / 426, left: LEFT, width: W, height: H, range: R.size[0] * 1.3 }); FX.draw(ctx); }   /* what a game draws: the player + its effects */
+  for (const k of (PLAY ? [] : R.order)) { const q = R.parts[k], m = B.mul(V, M[k]); ctx.setTransform(...m); ctx.drawImage(PLAY ? PL.image(k) : R.img[k], -q.pv[0], -q.pv[1]);
     if (k === SEL && !PLAY) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 3 / q.s / Math.abs(V[0]); ctx.strokeRect(-q.pv[0], -q.pv[1], R.img[k].width, R.img[k].height); } }
+  if (DIFF && !PLAY && R.img._ref) { const [w, h] = R.size; if (!DIFFC || DIFFC.key !== snap2()) { DIFFC = document.createElement('canvas'); DIFFC.width = w; DIFFC.height = h; DIFFC.key = snap2(); const g = DIFFC.getContext('2d'); g.drawImage(R.img._ref, 0, 0, w, h); const rf = g.getImageData(0, 0, w, h).data; g.clearRect(0, 0, w, h); const P = B.player(R, { base: null }); P.mats = B.world(R, POSE, null); P.draw(g, R.feet[0], R.feet[1], 1, false); g.setTransform(1, 0, 0, 1, 0, 0); const d = g.getImageData(0, 0, w, h); for (let i = 0; i < d.data.length; i += 4) { const e = d.data[i + 3] > 200 ? (Math.abs(d.data[i] - rf[i]) + Math.abs(d.data[i + 1] - rf[i + 1]) + Math.abs(d.data[i + 2] - rf[i + 2])) / 3 : 0; d.data[i] = 255; d.data[i + 1] = 30; d.data[i + 2] = 60; d.data[i + 3] = e > 40 ? 200 : 0; } g.putImageData(d, 0, 0); }
+    ctx.setTransform(...V); ctx.drawImage(DIFFC, 0, 0); }
   ctx.globalAlpha = 1; ctx.setTransform(1, 0, 0, 1, 0, 0);
   const dot = k => B.pt(B.mul(V, M[k]), 0, 0);
   if (BONES || !PLAY) { for (const k of R.order) { const q = R.parts[k]; if (!BONES && k !== SEL) continue; const p = dot(k);
@@ -130,13 +138,15 @@ cv.addEventListener('wheel', e => { ZOOM *= e.deltaY < 0 ? 1.1 : .9; e.preventDe
 /* ---- panel */
 function select(k) { SEL = k; const q = R.parts[k]; $('#sel').textContent = label(k); $('#pick').value = k; $('#sc').value = q.s; $('#vs').textContent = q.s.toFixed(2); $('#rt').value = q.r; $('#vr').textContent = q.r + '°'; $('#par').value = q.p || ''; $('#role').value = q.role || 'none'; $('#gn').value = q.g == null ? 1 : q.g; $('#vg').textContent = Math.round((q.g == null ? 1 : q.g) * 100) + '%'; }
 function stop() { PLAY = ''; for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', !b.dataset.mv); hint(); }
-function play(k) { if (!k) { stop(); return; } PLAY = k; POSE = {}; GAP = 0; PL = B.player(R); PL.play(B.MOVES[k].loop || B.MOVES[k].fn ? k : 'idle'); if (!(B.MOVES[k].loop || B.MOVES[k].fn)) GAP = .35; PL.update(0); for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', b.dataset.mv === k); hint(); }
+let DIFFC = null; const snap2 = () => JSON.stringify(R.parts) + JSON.stringify(POSE);
+const mvOf = k => B.MOVES[k] || { dur: R.clips[k].dur, clip: 1 }, FX = Bones2DFX.create();
+function play(k) { if (!k) { stop(); return; } PLAY = k; POSE = {}; GAP = 0; PL = B.player(R); const mk = mvOf(k); PL.play(mk.loop || mk.fn ? k : 'idle'); if (!(mk.loop || mk.fn)) GAP = .35; PL.update(0); for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', b.dataset.mv === k); hint(); }
 function boot() {
   let o = null; try { const s = localStorage.getItem(KEY); if (s) o = JSON.parse(s); } catch (e) { } HAD = !!o; try { adopt(o || JSON.parse(JSON.stringify(R0, (k, v) => k === 'img' && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); } catch (e) { adopt(JSON.parse(JSON.stringify(R0, (k, v) => k === 'img' && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); }
   $('#ttl').textContent = (R.title || CHAR) + ' · ' + names.length + ' ชิ้น';
   const opt = (sel, v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; $(sel).append(o); };
   for (const k of names) opt('#pick', k, label(k)); opt('#par', '', '(ไม่มี: ชิ้นหลัก)'); for (const k of names) opt('#par', k, label(k)); for (const r in B.ROLES) opt('#role', r, B.ROLES[r]);
-  for (const k of ['idle', 'attack', 'shoot', 'cast', 'hit', 'die', 'spawn', 'cheer', 'walk', 'run', '']) { if (R.view === 'front' && (k === 'walk' || k === 'run')) continue;   /* a hero seen from the front stands in its cell */ const b = document.createElement('button'); b.className = 'mv'; b.dataset.mv = k; b.textContent = k ? B.NAMES[k] : 'หยุด'; b.onclick = () => play(k); $('#mvs').append(b); }
+  for (const k of ['idle', ...Object.keys(R.clips || {}), 'throw', 'attack', 'shoot', 'cast', 'hit', 'die', 'spawn', 'cheer', 'walk', 'run', '']) { if (R.view === 'front' && (k === 'walk' || k === 'run')) continue;   /* a hero seen from the front stands in its cell */ const b = document.createElement('button'); b.className = 'mv'; b.dataset.mv = k; b.textContent = k ? ((B.MOVES[k] && B.MOVES[k].n) || B.NAMES[k] || (R.clips && R.clips[k] && (R.clips[k].n || k + ' (เฟรมวาด)'))) : 'หยุด'; b.onclick = () => play(k); $('#mvs').append(b); }
   $('#pick').onchange = e => select(e.target.value);
   $('#role').onchange = e => { R.parts[SEL].role = e.target.value; save(); };
   $('#gn').oninput = e => { R.parts[SEL].g = +e.target.value; $('#vg').textContent = Math.round(+e.target.value * 100) + '%'; save(); };
@@ -165,10 +175,20 @@ function boot() {
   $('#lo').onclick = () => { if (confirm('แยกทุกชิ้นออกมาวางเรียงข้างตัว ให้ต่อเองตั้งแต่ต้น?')) apart(); };
   $('#ld').onclick = () => { try { adopt(JSON.parse($('#tx').value)); save(); select(SEL); alert('โหลดแล้ว'); } catch (e) { alert('ข้อมูลไม่ถูกต้อง'); } };
   $('#tg').onclick = () => $('#pn').classList.toggle('hide');
+  /* ตรวจให้ตรง (owner: "ทำให้จัดกระดูก ภาพถูกต้อง ... ชอบใส่ตัวละครบิดไม่ตรง ... ลดรอยออก"): fit pieces onto the reference, score, seams, show what differs */
+  const snap = () => JSON.stringify(Object.fromEntries(Object.entries(R.parts).map(([k, q]) => [k, { at: q.at, r: q.r, s: q.s }]))); let UNDO = [];
+  const score = () => { if (!R.img._ref) { $('#score').textContent = 'ตัวนี้ไม่มีภาพต้นแบบให้เทียบ'; return; } const e = B.restScore(R); $('#score').textContent = 'ตรงกับรูปต้นแบบ: ' + Math.max(0, 100 - e * 2).toFixed(0) + '%  (ความต่างสี ' + e.toFixed(1) + ')'; };
+  const fit = keys => { if (!R.img._ref) { alert('ตัวนี้ไม่มีภาพต้นแบบ'); return; } stop(); UNDO.push(snap()); $('#score').textContent = 'กำลังจัด...'; setTimeout(() => { const r = B.autofit(R, keys); save(); select(SEL); score(); const lines = Object.entries(r).filter(([, v]) => v.after < v.before).map(([k, v]) => label(k) + ' ' + v.before + ' → ' + v.after); $('#score').textContent += '\n' + (lines.length ? 'จัดแล้ว: ' + lines.join(', ') : 'ตรงอยู่แล้ว'); }, 30); };
+  $('#fit1').onclick = () => fit([SEL]); $('#fitA').onclick = () => fit(null);
+  $('#undoF').onclick = () => { const s = UNDO.pop(); if (!s) return; const o = JSON.parse(s); for (const k in o) Object.assign(R.parts[k], o[k]); B.prep(R); save(); select(SEL); score(); };
+  $('#chk').onclick = () => { stop(); $('#score').textContent = 'กำลังตรวจทุกท่า...'; setTimeout(() => { score(); const s = B.seams(R), bad = Object.entries(s).filter(([, v]) => v.worst > .0005); $('#score').textContent += '\n' + (bad.length ? 'มีรอยแตกตอนขยับ: ' + bad.map(([k, v]) => (B.NAMES[k] || k) + ' ' + v.at + ' วิ').join(', ') : 'ไม่มีรอยต่อแตกในทุกท่า'); }, 30); };
+  $('#seamB').onclick = () => { if (R.img0) { B.unseam(R); R.img0 = null; $('#seamB').classList.remove('on'); } else { B.seamless(R); $('#seamB').classList.add('on'); } };
+  $('#diffB').onclick = () => { DIFF = !DIFF; $('#diffB').classList.toggle('on', DIFF); };
+  setTimeout(score, 50);
   resize(); select(names.includes('torso') ? 'torso' : names.find(k => R.parts[k].role === 'body') || names[0]); stop(); hint(); if (QS.get('apart') === '1') { if (!HAD) apart(); }   /* "let me join it myself": the first visit starts with the pieces apart beside a faint picture of the whole hero; a rig already saved in this browser is kept */
   else if (QS.get('play') !== '0') play(QS.get('play') || 'idle'); requestAnimationFrame(draw);
   window.RIG = { get R() { return R; }, get PL() { return PL; }, select, play, stop, B }; }
-function hint() { $('#hint').textContent = PLAY ? 'กำลังเล่นท่า "' + B.NAMES[PLAY] + '" · เลื่อน แรงพอง / ความเร็ว ได้ · แตะตัวละครหรือกด หยุด เพื่อกลับไปต่อชิ้น' : FEET ? 'แตะตรงพื้นใต้เท้าของตัวละคร (จุดที่ตัวยืน)'
+function hint() { $('#hint').textContent = PLAY ? 'กำลังเล่นท่า "' + ((B.MOVES[PLAY] && B.MOVES[PLAY].n) || (R.clips && R.clips[PLAY] && R.clips[PLAY].n) || B.NAMES[PLAY] || PLAY) + '" · เลื่อน แรงพอง / ความเร็ว ได้ · แตะตัวละครหรือกด หยุด เพื่อกลับไปต่อชิ้น' : FEET ? 'แตะตรงพื้นใต้เท้าของตัวละคร (จุดที่ตัวยืน)'
   : MODE === 'A' ? 'จัดวาง: แตะชิ้นเพื่อเลือก · ลากเพื่อย้าย · ลากจุดแดง = จุดหมุน (วางที่ข้อต่อ) · ลากที่ว่าง = เลื่อนจอ · ปรับขนาด / มุม / ชิ้นแม่ / ชั้น / หน้าที่ ในแถบขวา'
   : 'หมุนท่า: ลากชิ้นเพื่อหมุนรอบจุดแดง ชิ้นลูกหมุนตาม (ไว้ทดสอบว่าต่อถูก) · กดปุ่มท่ามาตรฐานเพื่อดูท่า'; }
 fetch('art/rigs/' + CHAR + '.json').then(r => { if (!r.ok) throw new Error('ไม่พบไฟล์ art/rigs/' + CHAR + '.json'); return r.json(); }).then(o => B.images(o)).then(rig => { R0 = rig; names = Object.keys(rig.parts);

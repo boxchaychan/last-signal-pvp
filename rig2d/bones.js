@@ -3,6 +3,8 @@
    - A RIG is data (art/rigs/<name>.json, made / fixed by hand in rig.html):
        { v: 2, name, dir: folder of the piece pictures, ref: optional reference picture, size: [w, h] of the reference space, feet: [x, y],
          zfront: true = raised arms may be drawn in front of the head (only for pieces without visible joint ends; default off = joints stay hidden under the body),
+         clips: { move: { dir, frames: [pngs], durs: [ms], foot: [x, y] in the frame, figH: figure height in the frame, ev: [[0..1, 'release']] } } = DRAWN-FRAME moves
+           (big moves bones cannot do, like a throw that turns the body) played in place of the pieces, sized to figH (the rig's own figure height), short cross-fades;
          view: 'front' for a hero seen from the front (its far arm mirrors the weapon arm; no walk / run), flip: true when the weapon side is the LEFT of the picture (moves mirrored),
          swaps: { piece: { idle: picture, attack: picture, ... } } = pictures of the SAME size a piece swaps between by move (faces, fists; 'none' = hidden),
          parts: { key: { img, n: Thai label, role, pv: [x, y] turning point inside the picture, at: [x, y] where that point sits, s: size,
@@ -24,7 +26,7 @@ const Bones2D = (() => {
   const pt = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
   const bind = q => trs(q.at[0], q.at[1], q.r || 0, q.s * (q.fx ? -1 : 1), q.s);
   const REST = { r: 0, x: 0, y: 0, sx: 1, sy: 1, a: 1, z: 0 };   /* z > .5 = this piece (and what hangs from it) is drawn in FRONT of everything while the key lasts */
-  const EASE = { lin: t => t, in: t => t * t * t, out: t => 1 - (1 - t) ** 3, io: t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2, back: t => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2, snap: t => 1 - (1 - t) ** 5 };
+  const EASE = { lin: t => t, in: t => t * t * t, out: t => 1 - (1 - t) ** 3, io: t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2, back: t => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2, hold: t => t >= 1 ? 1 : 0, snap: t => 1 - (1 - t) ** 5 };
   const ROLES = { body: 'ลำตัว', head: 'หัว', hair: 'ผม / หางม้า (แกว่งตาม)', cape: 'ผ้าคลุม (แกว่งตาม)', tail: 'หาง (แกว่งตาม)', armF: 'แขนหน้า (มืออาวุธ)', foreF: 'แขนล่าง หน้า', weapon: 'อาวุธ', armB: 'แขนหลัง', foreB: 'แขนล่าง หลัง',
     weaponB: 'อาวุธมือหลัง', legF: 'ขาหน้า', shinF: 'แข้งหน้า', legB: 'ขาหลัง', shinB: 'แข้งหลัง', wing: 'ปีก', none: 'ไม่ขยับเอง' };
   const SWING = { hair: [70, 9, .5], cape: [45, 7, .42], tail: [55, 8, .5] };   /* spring, damping, how hard the body's motion throws it */
@@ -73,7 +75,19 @@ const Bones2D = (() => {
   };
   /* a raised arm must not vanish behind a big chibi head: while these moves last the weapon arm (and, on front-view heroes, the far arm) is drawn in front, like the raised gun of the recording */
   for (const [mv, roles] of [['attack', ['armF']], ['shoot', ['armF']], ['cast', ['armF', 'armB']], ['cheer', ['armF', 'armB']]]) for (const ro of roles) { const tr = MOVES[mv].tracks[ro]; if (tr) tr.forEach((key, i) => { if (i < tr.length - 1) key[1].z = 1; }); }
-  const NAMES = { idle: 'ยืน', attack: 'ตี', shoot: 'ยิง', cast: 'ร่าย', hit: 'โดนตี', die: 'ตาย', spawn: 'เกิด', cheer: 'ดีใจ', walk: 'เดิน', run: 'วิ่ง' };
+  MOVES.throw = { n: 'ปาสายฟ้า (กระดูก)', dur: 1.1, ev: [[.5, 'release']], tracks: {   /* ปาสายฟ้า, after the owner's 16-frame row: bring the bolt up, cock it high overhead and lean away
+     (charge), whip it forward with the whole body, the bolt leaves the hand (event 'release'), follow through low, settle. Hero faces right = throws to the right. */
+      _root: [K(.12, {}), K(.3, { x: -2.5 }, 'io'), K(.46, { x: -3.5 }, 'lin'), K(.52, { x: 4.5 }, 'snap'), K(.66, { x: 5.5 }), K(.86, { x: 1 }, 'io'), K(1, {}, 'io')],
+      body: [K(.12, { r: -3, sy: 1.02 }), K(.3, { r: -16, sy: 1.08, sx: .94 }, 'io'), K(.46, { r: -19, sy: 1.1, sx: .93 }, 'lin'), K(.52, { r: 18, sy: .9, sx: 1.08 }, 'snap'), K(.66, { r: 22, sy: .84, sx: 1.1 }), K(.86, { r: 4, sy: 1.03 }, 'io'), K(1, {}, 'io')],
+      head: [K(.12, { r: -2 }), K(.3, { s: 1.12, r: -12 }, 'io'), K(.46, { s: 1.16, r: -14 }, 'lin'), K(.52, { s: 1.4, r: 14, y: 2 }, 'snap'), K(.6, { s: 1.24, r: 18, y: 4 }), K(.7, { s: 1.08, r: 12, y: 5 }), K(.86, { s: 1.02, r: 2 }, 'io'), K(1, {}, 'io')],
+      armF: [K(.12, { r: -32 }, 'io'), K(.3, { r: -114 }, 'io'), K(.46, { r: -120 }, 'lin'), K(.52, { r: -52 }, 'snap'), K(.62, { r: -36 }), K(.72, { r: -20 }), K(.86, { r: -5 }, 'io'), K(1, {}, 'io')],
+      foreF: [K(.12, { r: 20 }), K(.3, { r: 70 }, 'io'), K(.46, { r: 76 }, 'lin'), K(.52, { r: -6 }, 'snap'), K(.7, { r: 4 }), K(1, {}, 'io')],
+      weapon: [K(.12, { r: -10 }), K(.3, { r: -56, s: 1.45 }, 'io'), K(.46, { r: -60, s: 1.6 }, 'lin'), K(.5, { r: 10, s: 1.3 }, 'snap'), K(.505, { a: 0 }, 'hold'), K(.9, { a: 0 }), K(.95, { s: .4, a: 0 }, 'hold'), K(1, { a: 1 }, 'out')],
+      armB: [K(.12, { r: -10 }), K(.3, { r: -70 }, 'io'), K(.46, { r: -74 }, 'lin'), K(.52, { r: 30 }, 'snap'), K(.66, { r: 36 }), K(.86, { r: 6 }, 'io'), K(1, {}, 'io')],
+      foreB: [K(.3, { r: 30 }, 'io'), K(.52, { r: 0 }, 'snap'), K(1, {}, 'io')],
+      legF: [K(.3, { r: 6 }, 'io'), K(.52, { r: -14 }, 'snap'), K(.86, {}, 'io')], legB: [K(.3, { r: -8 }, 'io'), K(.52, { r: 12 }, 'snap'), K(.86, {}, 'io')],
+      wing: [K(.3, { r: -30 }, 'io'), K(.52, { r: 30 }, 'snap'), K(1, {}, 'io')] } };
+  const NAMES = { throw: 'ปาสายฟ้า', idle: 'ยืน', attack: 'ตี', shoot: 'ยิง', cast: 'ร่าย', hit: 'โดนตี', die: 'ตาย', spawn: 'เกิด', cheer: 'ดีใจ', walk: 'เดิน', run: 'วิ่ง' };
 
   function sample(mv, t, out) {   /* pose of every role at time t (seconds) of a move -> out[role] = { r, x, y, sx, sy, a } */
     for (const k in out) delete out[k];
@@ -100,7 +114,8 @@ const Bones2D = (() => {
     if (rig.faces && !rig.swaps) { const f = rig.faces, o = {}; for (const k in f) if (k !== 'part') o[k] = f[k]; rig.swaps = { [f.part]: o }; }   /* old form: faces = one swapping piece */
     const extra = rig.swaps ? [...new Set(Object.values(rig.swaps).flatMap(o => Object.values(o)))] : [];   /* faces: { part: 'head', idle: 'face0', attack: 'face1', ... } = the picture (same size) that piece shows during a move */
     const refP = rig.ref ? new Promise(ok => { const i = new Image(); i.onload = () => { rig.img._ref = i; ok(); }; i.onerror = () => ok(); i.src = rig.dir + rig.ref; }) : Promise.resolve();
-    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP])).then(() => { if (rig.seams === 'paint') seamless(rig); return rig; }); }
+    const clipP = []; for (const cn in rig.clips || {}) { const c = rig.clips[cn]; c.img = []; c.frames.forEach((f, i) => clipP.push(new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(); im.onerror = () => no(new Error('frame ' + im.src)); im.src = rig.dir + c.dir + f; c.img[i] = im; }))); c.dur = c.durs.reduce((a, b) => a + b, 0) / 1000; }
+    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP], clipP)).then(() => { if (rig.seams === 'paint') seamless(rig); return rig; }); }
 
   /* SEAMS (owner 2026-11-27 "ประกอบเสร็จก็ลบเส้นออกด้วยสิ ทำให้เหมือนตอนยังไม่ต่อกระดูก"): once the pieces are put together, the edge of a piece
      that lies over another piece is painted with what the picture before rigging (rig.ref) shows there, so a joint line the drawing does not have
@@ -129,17 +144,75 @@ const Bones2D = (() => {
   }
   function unseam(rig) { if (rig.img0) Object.assign(rig.img, rig.img0); }
 
+  /* AUTOFIT (owner 2026-11-27 "ทำให้จัดกระดูก ภาพถูกต้อง ... ครอสชอบใส่ตัวละครบิดไม่ตรง"): every piece is turned / sized / moved a little until it lies best
+     on the reference picture (rig.ref) at rest. At rest a piece is drawn at trs(at, r, s) whatever its parent, so each piece is fitted on its own.
+     Search near the present place (coarse then fine), robust colour error so a part the reference hides under another does not pull it away.
+     keys = pieces to fit (default all but hidden fillers / weapons). Returns { key: { before, after } } (mean colour error per channel, 0-255). */
+  function autofit(rig, keys, opt) {
+    opt = Object.assign({ shift: 16, turn: 14, size: .16 }, opt || {}); const R = rig.img._ref; if (!R) return {}; prep(rig);
+    const [W, H] = rig.size, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(R, 0, 0, W, H); const ref = g.getImageData(0, 0, W, H).data, res = {};
+    keys = keys || rig.order.filter(k => rig.parts[k].role !== 'none' && rig.parts[k].role !== 'weapon' && rig.parts[k].role !== 'weaponB');
+    for (const k of keys) {
+      const q = rig.parts[k], im = rig.img0 ? rig.img0[k] : rig.img[k]; if (!im || !im.width) continue; const pc = document.createElement('canvas'); pc.width = im.width; pc.height = im.height; const pg = pc.getContext('2d'); pg.drawImage(im, 0, 0); const d = pg.getImageData(0, 0, pc.width, pc.height).data;
+      const pts = []; const step = Math.max(1, Math.round(Math.sqrt(im.width * im.height / 3500)));
+      for (let y = 1; y < im.height - 1; y += step) for (let x = 1; x < im.width - 1; x += step) { const i = (y * im.width + x) * 4; if (d[i + 3] > 230 && d[i - 1] > 200 && d[i + 7] > 200) pts.push(x - q.pv[0], y - q.pv[1], d[i], d[i + 1], d[i + 2]); }
+      const n = pts.length / 5; if (n < 20) continue;
+      const err = (ax, ay, r, s) => { const cs = Math.cos(r * D2R) * s * (q.fx ? -1 : 1), sn = Math.sin(r * D2R) * s, cy = Math.cos(r * D2R) * s; let e = 0, m = 0;
+        for (let p = 0; p < pts.length; p += 5) { const lx = pts[p], ly = pts[p + 1], X = Math.round(cs * lx - sn * ly + ax), Y = Math.round((q.fx ? -sn : sn) * lx * (q.fx ? -1 : 1) + cy * ly + ay); if (X < 0 || Y < 0 || X >= W || Y >= H) { e += 60; m++; continue; } const j = (Y * W + X) * 4;
+          e += Math.min(60, (Math.abs(ref[j] - pts[p + 2]) + Math.abs(ref[j + 1] - pts[p + 3]) + Math.abs(ref[j + 2] - pts[p + 4])) / 3); m++; } return e / m; };
+      const before = err(q.at[0], q.at[1], q.r || 0, q.s); let best = [before, q.at[0], q.at[1], q.r || 0, q.s];
+      const search = (cx, cy, cr, cs_, sh, shStep, tr, trStep, sz, szStep) => { let b = null; for (let r = cr - tr; r <= cr + tr + 1e-6; r += trStep) for (let s = cs_ * (1 - sz); s <= cs_ * (1 + sz) + 1e-6; s += cs_ * szStep) for (let dy = -sh; dy <= sh; dy += shStep) for (let dx = -sh; dx <= sh; dx += shStep) { const e = err(cx + dx, cy + dy, r, s); if (!b || e < b[0]) b = [e, cx + dx, cy + dy, r, s]; } return b; };
+      let b = search(q.at[0], q.at[1], q.r || 0, q.s, opt.shift, 4, opt.turn, 3.5, opt.size, .04); if (b[0] < best[0]) best = b;
+      b = search(best[1], best[2], best[3], best[4], 4, 1, 3, 1, .04, .01); if (b[0] < best[0]) best = b;
+      b = search(best[1], best[2], best[3], best[4], 1, .5, 1, .5, .01, .005); if (b[0] < best[0]) best = b;
+      if (best[0] < before - .3) { q.at = [Math.round(best[1] * 10) / 10, Math.round(best[2] * 10) / 10]; q.r = Math.round(best[3] * 10) / 10; q.s = Math.round(best[4] * 1000) / 1000; }
+      res[k] = { before: +before.toFixed(1), after: +Math.min(before, best[0]).toFixed(1) }; }
+    prep(rig); return res;
+  }
+  /* SEAMS IN MOVES: for every move, the share of the figure where a thin gap (no wider than 4 px) opens between exactly two joined pieces (a seam).
+     Returns { move: { worst: 0..1, at: seconds } }. Used by the tool's "ตรวจ" button and by tools/qa/rig_check.js. */
+  function seams(rig, moves) {
+    prep(rig); const w = rig.size[0], h = rig.size[1], out = {}, cv = () => { const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 1.6; return [c, c.getContext('2d', { willReadFrequently: true })]; };
+    const crack = P => { const [c, g] = cv(); P.draw(g, w, h * 1.4, 1, false); g.setTransform(1, 0, 0, 1, 0, 0); const d = g.getImageData(0, 0, c.width, c.height), a = d.data, W2 = d.width, H2 = d.height, seen = new Uint8Array(W2 * H2), q = []; let fig = 0;
+      for (let i = 0; i < W2 * H2; i++) if (a[i * 4 + 3] > 60) fig++; for (let x = 0; x < W2; x++) q.push(x, (H2 - 1) * W2 + x); for (let y = 0; y < H2; y++) q.push(y * W2, y * W2 + W2 - 1);
+      while (q.length) { const i = q.pop(); if (seen[i] || a[i * 4 + 3] > 60) continue; seen[i] = 1; const x = i % W2, y = (i / W2) | 0; if (x > 0) q.push(i - 1); if (x < W2 - 1) q.push(i + 1); if (y > 0) q.push(i - W2); if (y < H2 - 1) q.push(i + W2); }
+      const opaqueNear = i => { const x = i % W2, y = (i / W2) | 0; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < W2 && Y < H2 && a[(Y * W2 + X) * 4 + 3] > 60) return true; } return false; };
+      let masks = null, hole = 0; const lab = new Uint8Array(W2 * H2);
+      for (let i = 0; i < W2 * H2; i++) { if (seen[i] || a[i * 4 + 3] > 60 || lab[i]) continue; const st = [i], comp = []; lab[i] = 1; let wide = false; while (st.length) { const j = st.pop(); comp.push(j); if (!wide && !opaqueNear(j)) wide = true; const x = j % W2, y = (j / W2) | 0; for (const k of [x > 0 ? j - 1 : -1, x < W2 - 1 ? j + 1 : -1, y > 0 ? j - W2 : -1, y < H2 - 1 ? j + W2 : -1]) if (k >= 0 && !lab[k] && !seen[k] && a[k * 4 + 3] <= 60) { lab[k] = 1; st.push(k); } }
+        if (wide || P.clip || !P.view) continue;
+        if (!masks) { masks = {}; for (const k of rig.order) { if ((P.pose[k] && P.pose[k].a != null ? P.pose[k].a : 1) < .05) continue; const [c2, g2] = cv(), qq = rig.parts[k]; g2.setTransform(...mul(P.view, P.mats[k])); g2.drawImage(P.image(k), -qq.pv[0], -qq.pv[1]); masks[k] = g2.getImageData(0, 0, c2.width, c2.height).data; } }
+        const near = new Set(); for (const j of comp) { const x = j % W2, y = (j / W2) | 0; for (const k in masks) { if (near.has(k)) continue; const mk = masks[k]; for (let dy = -3; dy <= 3 && !near.has(k); dy++) for (let dx = -3; dx <= 3; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < W2 && Y < H2 && mk[(Y * W2 + X) * 4 + 3] > 60) { near.add(k); break; } } } }
+        const top = k => { while (k && rig.parts[k] && rig.parts[k].role === 'none' && rig.parts[k].p) k = rig.parts[k].p; return k; }, ns = [...new Set([...near].map(top))];
+        if (ns.length === 2 && (rig.parts[ns[0]].p === ns[1] || rig.parts[ns[1]].p === ns[0])) hole += comp.length; }
+      return hole / Math.max(1, fig); };
+    const P0 = player(rig, { base: null }); P0.mats = world(rig, {}, null); const base = crack(P0);
+    for (const mv of moves || Object.keys(MOVES).concat(Object.keys(rig.clips || {}))) { if (rig.view === 'front' && (mv === 'walk' || mv === 'run')) continue; const P = player(rig, { base: null }); P.play(mv); const dur = (MOVES[mv] && MOVES[mv].dur) || (rig.clips && rig.clips[mv] && rig.clips[mv].dur) || 1; let worst = 0, at = 0;
+      for (let t = 0; t < dur; t += 1 / 15) { P.update(1 / 15); const k = crack(P) - base; if (k > worst) { worst = k; at = t; } } out[mv] = { worst, at: +at.toFixed(2) }; }
+    return out;
+  }
+  /* how well the rest pose matches the reference: mean colour error (0-255) of every visible piece pixel, and per piece */
+  function restScore(rig) {
+    const R = rig.img._ref; if (!R) return null; prep(rig); const [W, H] = rig.size, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(R, 0, 0, W, H); const ref = g.getImageData(0, 0, W, H).data;
+    const P = player(rig, { base: null }); P.mats = world(rig, {}, null); g.clearRect(0, 0, W, H); P.draw(g, rig.feet[0], rig.feet[1], 1, false); g.setTransform(1, 0, 0, 1, 0, 0); const d = g.getImageData(0, 0, W, H).data; let e = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 240) { n++; e += (Math.abs(d[i] - ref[i]) + Math.abs(d[i + 1] - ref[i + 1]) + Math.abs(d[i + 2] - ref[i + 2])) / 3; } return n ? e / n : 0;
+  }
+
   function player(rig, opt) {
     opt = opt || {}; const P = { rig, base: opt.base === undefined ? 'idle' : opt.base, pop: opt.pop == null ? 1 : opt.pop, speed: 1, move: null, name: '', t: 0, done: false, pose: {}, root: Object.assign({}, REST), roles: {}, from: null, fade: 0, sw: {}, mats: null, alpha: 1 };
     const tmp = {};
-    P.play = (name, o) => { const mv = MOVES[name]; if (!mv) return P; o = o || {}; if (P.move && P.name !== name || o.restart) { P.from = { pose: JSON.parse(JSON.stringify(P.pose)), root: Object.assign({}, P.root) }; P.fade = o.fade == null ? .07 : o.fade; P.fadeT = 0; }
+    P.play = (name, o) => { const cl = rig.clips && rig.clips[name]; if (cl) { o = o || {}; P.clip = cl; P.clipName = name; if (P.name !== name || o.restart || P.done) { P.t = 0; P.done = false; } P.name = name; P.move = { dur: cl.dur, ev: cl.ev, clip: 1 }; P.cf = 0; return P; }
+      P.clip = null; const mv = MOVES[name]; if (!mv) return P; o = o || {}; if (P.move && P.name !== name || o.restart) { P.from = { pose: JSON.parse(JSON.stringify(P.pose)), root: Object.assign({}, P.root) }; P.fade = o.fade == null ? .07 : o.fade; P.fadeT = 0; }
       if (P.name !== name || o.restart || P.done) { P.t = 0; P.done = false; } P.move = mv; P.name = name; if (o.speed) P.speed = o.speed; return P; };
-    P.update = dt => { if (!P.move) return; const mv = P.move; P.t += dt * P.speed;
+    P.fired = []; P.update = dt => { if (!P.move) return; const mv = P.move, t0 = P.t; P.t += dt * P.speed; P.fired = [];
+      if (P.clip) { const c = P.clip; for (const [u, nm] of c.ev || []) { const te = u * c.dur; if (t0 < te && P.t >= te) P.fired.push(nm); } if (P.cf > 0) P.cf -= dt;
+        if (P.t >= c.dur) { P.done = true; if (P.base && MOVES[P.base]) { const left = P.t - c.dur; P.clip = null; P.play(P.base, { fade: 0 }); P.t = left; P.fromClip = 0; } else P.t = c.dur - 1e-6; }
+        if (P.clip) { let t = P.t * 1000, i = 0; while (i < c.durs.length - 1 && t >= c.durs[i]) { t -= c.durs[i]; i++; } P.frame = i; if (!P.mats) P.mats = world(rig, {}, null); return; } }
+      if (mv.ev && mv.dur) for (const [u, nm] of mv.ev) { const te = u * mv.dur; if (t0 < te && P.t >= te || (dt === 0 && false)) P.fired.push(nm); }   /* move events (the bolt leaves the hand ...) crossed this frame */
       if (!mv.fn && P.t >= mv.dur) { if (mv.hold) { P.t = mv.dur; P.done = true; } else if (mv.loop) P.t %= mv.dur; else { P.done = true; if (P.base && MOVES[P.base]) { const left = P.t - mv.dur; P.play(P.base, { fade: .1 }); P.t = left; } else P.t = mv.dur; } }
       sample(P.move, P.t, tmp); P.roles = tmp; const pop = P.pop, pose = P.pose; for (const k in pose) delete pose[k];
-      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && tmp[ro]; if (!o) continue; const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, z: !rig.zfront || (far && !front) ? 0 : o.z || 0 }; if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
+      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && tmp[ro]; if (!o) continue; const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, a: o.a == null ? 1 : o.a, z: !rig.zfront || (far && !front) ? 0 : o.z || 0 }; if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
       const r0 = tmp._root ? tmp._root : REST; for (const c in REST) P.root[c] = r0[c] == null ? REST[c] : r0[c]; if (fl < 0) { P.root.r = -P.root.r; P.root.x = -P.root.x; }
-      if (P.from) { P.fadeT += dt; const f = P.fade > 0 ? Math.min(1, P.fadeT / P.fade) : 1; if (f >= 1) P.from = null; else { for (const k in rig.parts) { const a = P.from.pose[k] || REST, b = pose[k] || (pose[k] = Object.assign({}, REST)); for (const c of ['r', 'x', 'y', 'sx', 'sy']) b[c] = a[c] + (b[c] - a[c]) * f; } for (const c in REST) P.root[c] = P.from.root[c] + (P.root[c] - P.from.root[c]) * f; } }
+      if (P.from) { P.fadeT += dt; const f = P.fade > 0 ? Math.min(1, P.fadeT / P.fade) : 1; if (f >= 1) P.from = null; else { for (const k in rig.parts) { const a = P.from.pose[k] || REST, b = pose[k] || (pose[k] = Object.assign({}, REST)); for (const c of ['r', 'x', 'y', 'sx', 'sy', 'a']) b[c] = (a[c] == null ? 1 : a[c]) + ((b[c] == null ? 1 : b[c]) - (a[c] == null ? 1 : a[c])) * f; } for (const c in REST) P.root[c] = P.from.root[c] + (P.root[c] - P.from.root[c]) * f; } }
       /* hair / cape / tail: a spring thrown by how fast their turning point moves */
       let mats = world(rig, pose, P.root); const h = Math.min(dt, .05);
       for (const k in rig.parts) { const sp = SWING[rig.parts[k].role]; if (!sp) continue; const m = mats[k], s = P.sw[k] || (P.sw[k] = { a: 0, v: 0, x: m[4], y: m[5] }); const vx = (m[4] - s.x) / Math.max(h, 1e-3), vy = (m[5] - s.y) / Math.max(h, 1e-3); s.x = m[4]; s.y = m[5];
@@ -149,10 +222,18 @@ const Bones2D = (() => {
     const isFront = k => { for (let n = 0; k && n < 8; n++, k = rig.parts[k].p) { if (P.pose[k] && P.pose[k].z > .5) return true; if (!rig.parts[k]) break; } return false; };
     P.image = k => { const f = rig.swaps && rig.swaps[k]; if (f) { const im = rig.img['@' + (f[P.name] || f.idle)]; if (im) return im; } return rig.img[k]; };   /* the picture of a piece right now (faces change with the move) */
     P.order = () => { const a = [], f = []; for (const k of rig.order) (isFront(k) ? f : a).push(k); return f.length ? a.concat(f) : rig.order; };   /* back to front for this pose */
-    P.draw = (ctx, x, y, scale, left) => { if (!P.mats) P.update(0); if (!P.mats) return; const F = rig._feet, sx = left ? -scale : scale, V = [sx, 0, 0, scale, x - F[0] * sx, y - F[1] * scale], a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha));
-      for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); ctx.drawImage(P.image(k), -q.pv[0], -q.pv[1]); } ctx.globalAlpha = a0; };
+    P.drawClip = (ctx, x, y, scale, left, a) => { const c = P.clip || P.lastClip, im = c && c.img[P.clip ? P.frame : c.img.length - 1]; if (!im) return; const k = scale * (rig.figH || rig.size[1]) / c.figH, a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * a;
+      ctx.setTransform(left ? -k : k, 0, 0, k, x, y); ctx.drawImage(im, -c.foot[0], -c.foot[1]); P.clipV = [left ? -k : k, k, x, y, c]; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a0; };
+    P.clipPoint = p => { const v = P.clipV; return v ? [v[2] + (p[0] - v[4].foot[0]) * v[0], v[3] + (p[1] - v[4].foot[1]) * v[1]] : null; };   /* a point of the drawn frame on screen */
+    P.draw = (ctx, x, y, scale, left) => { if (P.clip) { P.lastClip = P.clip; if (P.cf > 0) { const f = P.cf / .08; drawBones(ctx, x, y, scale, left, f); P.drawClip(ctx, x, y, scale, left, 1 - f); } else P.drawClip(ctx, x, y, scale, left, 1); return; }
+      if (P.fromClip > 0) { const f = P.fromClip / .1; P.fromClip -= 1 / 60; drawBones(ctx, x, y, scale, left, 1 - f); P.drawClip(ctx, x, y, scale, left, f); return; } drawBones(ctx, x, y, scale, left, 1); };
+    const drawBones = (ctx, x, y, scale, left, fade) => { if (!P.mats) P.update(0); if (!P.mats) return; const F = rig._feet, sx = left ? -scale : scale, V = [sx, 0, 0, scale, x - F[0] * sx, y - F[1] * scale], a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha));
+      for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); const pa = (P.pose[k] && P.pose[k].a != null ? P.pose[k].a : 1) * (fade == null ? 1 : fade); if (pa <= .01) continue; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha)) * pa; ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); ctx.drawImage(P.image(k), -q.pv[0], -q.pv[1]); } ctx.globalAlpha = a0; P.view = V; };
+    P.at = (k, lx, ly) => { const m = P.mats && P.mats[k], q = rig.parts[k]; if (!m) return null; const p = pt(m, (lx || 0) - 0, (ly || 0) - 0); return P.view ? pt(P.view, p[0], p[1]) : p; };   /* where a point of a piece (its picture px, from the turning point) is on screen after draw */
+    P.centre = k => { const im = rig.img[k], q = rig.parts[k]; return im ? P.at(k, im.width / 2 - q.pv[0], im.height / 2 - q.pv[1]) : null; };
+    P.angle = k => { const m = P.mats && P.mats[k]; if (!m) return 0; const V = P.view || [1, 0, 0, 1, 0, 0], n = mul(V, m); return Math.atan2(n[1], n[0]); };
     return P;
   }
-  return { load, images, seamless, unseam, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
+  return { load, images, seamless, unseam, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
 })();
 if (typeof module !== 'undefined') module.exports = Bones2D;

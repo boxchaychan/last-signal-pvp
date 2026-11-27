@@ -140,6 +140,11 @@ def fitted_mask(key, f, pv):
     Mx = np.array([[c, -s_, f['at'][0] - (c * pv[0] - s_ * pv[1])], [s_, c, f['at'][1] - (s_ * pv[0] + c * pv[1])]], np.float32); return cv2.warpAffine(al, Mx, (REF.shape[1], REF.shape[0])) > .5
 REFL = LUM[RY:RY + REF.shape[0], RX:RX + REF.shape[1]]; DARK = REFL < 62
 fl_ = ~nd.binary_dilation(DARK); lab, n = nd.label(fl_); edge = (set(lab[0]) | set(lab[-1]) | set(lab[:, 0]) | set(lab[:, -1])) - {0}; BODY = ~np.isin(lab, list(edge)); BODY &= ~(nd.binary_dilation(~BODY) & ~DARK)
+# the background of the front view is a dark brown gradient (dark like the outlines at the top corners): take it out by its own colour, row by row,
+# from the picture's border, so no piece ever carries background (the head did: "a box round the head")
+_bgrow = np.median(np.concatenate([REF[:, :14], REF[:, -14:]], 1).astype(np.float32), 1)[:, None, :]; _near = np.abs(REF.astype(np.float32) - _bgrow).sum(2) < 42
+_lab, _n = nd.label(_near); _edge = (set(_lab[0]) | set(_lab[-1]) | set(_lab[:, 0]) | set(_lab[:, -1])) - {0}; _bg = np.isin(_lab, list(_edge)); _bg = nd.binary_opening(_bg, iterations=1)
+BODY &= ~_bg; Image.fromarray((BODY * 255).astype(np.uint8)).save(os.path.join(OUT, 'ref_mask.png'))   # the figure of the reference, for the checks
 TAKEN = np.zeros(BODY.shape, bool)
 for k, orig in (('arm_r', ORIG_R), ('arm_l', ORIG_L)): a_ = np.asarray(IMG[k])[..., 3] > 40; ys, xs = np.nonzero(a_); TAKEN[ys + orig[1], xs + orig[0]] = True
 for hm in HMASK: TAKEN |= hm[RY:RY + REF.shape[0], RX:RX + REF.shape[1]]
@@ -164,7 +169,16 @@ left = BODY & ~COVER; lab4, n4 = nd.label(left)
 for i in range(1, n4 + 1):
     m = lab4 == i
     if (nd.binary_dilation(m, iterations=3) & (OWN['torso'] | COVER & ~HEADM)).any() and np.argwhere(m)[:, 0].mean() > 170: OWN['torso'] |= m & CHEST   # only next to the body, below the chin (hair specks stay out)
-OWN['torso'] |= BODY & nd.binary_dilation(OWN['torso'], iterations=3) & ~nd.binary_dilation(HEADM, iterations=1) & CHEST   # a little over the soft cut edge of the arms (the torso is drawn above them), so no thin line shows
+OWN['torso'] |= BODY & nd.binary_dilation(OWN['torso'], iterations=3) & ~nd.binary_dilation(HEADM, iterations=1) & CHEST & ~(TAKEN & DARK)   # a little over the soft cut edge of the arms (the torso is drawn above them), so no thin line shows
+# under the arms: the torso the drawing never showed (the arms lie over it) is painted with the torso's own nearest skin / cloth colours, inside the
+# box torso's shape, so a raised arm uncovers a clean body and no line (owner: "ลดรอยออก ทำให้เนียน")
+ARMS = np.zeros(BODY.shape, bool)
+for k, orig in (('arm_r', ORIG_R), ('arm_l', ORIG_L)): a_ = np.asarray(IMG[k])[..., 3] > 40; ys, xs = np.nonzero(a_); ARMS[ys + orig[1], xs + orig[0]] = True
+for hm in HMASK: ARMS |= hm[RY:RY + REF.shape[0], RX:RX + REF.shape[1]]
+UNDER = nd.binary_dilation(ARMS, iterations=3) & nd.binary_dilation(OWN['torso'] | fitted_mask('torso', F['torso'], PV['torso']), iterations=6) & CHEST & ~nd.binary_dilation(HEADM, iterations=2)
+SRC = OWN['torso'] & ~DARK & (REFL > 120); _, (iy, ix) = nd.distance_transform_edt(~SRC, return_indices=True); FILL = REF.copy(); FILL[UNDER] = REF[iy[UNDER], ix[UNDER]]
+FILL[UNDER] = nd.uniform_filter(FILL.astype(np.float32), size=(5, 5, 1))[UNDER]; CH = (UNDER | OWN['torso']); RIM = CH & ~nd.binary_erosion(CH, iterations=2) & ~nd.binary_dilation(OWN['torso'] & ~DARK, iterations=1); FILL[RIM & UNDER] = (24, 16, 12); print('  under the arms painted', int(UNDER.sum()), 'px')   # a hidden chest layer UNDER the arms (rest pose unchanged)
+ys, xs = np.nonzero(CH); cy0, cy1, cx0, cx1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1; CHIM = Image.fromarray(np.dstack([FILL[cy0:cy1, cx0:cx1], CH[cy0:cy1, cx0:cx1] * 255]).astype(np.uint8), 'RGBA'); CHIM.save(os.path.join(OUT, 'u_chest.png'))
 FVO = {}
 for k in BOXK:
     m = OWN[k]; ys, xs = np.nonzero(m); y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1; a_ = m[y0:y1, x0:x1].astype(np.float32)
@@ -182,15 +196,30 @@ PARTS = {
   'bolt': part('bolt', 'สายฟ้า', 'weapon', F['bolt'], 'hand_r', PV['bolt']),
   'hand_r': part('hand_r', 'มือขวา (ถืออาวุธ)', 'foreF', H_R, 'arm_r', g=.35), 'arm_r': part('arm_r', 'แขนขวา', 'armF', A_R, 'torso', g=.9),
   'hand_l': part('hand_l', 'มือซ้าย', 'foreB', H_L, 'arm_l', g=.35), 'arm_l': part('arm_l', 'แขนซ้าย', 'armB', A_L, 'torso', g=.9),
-  'torso': part('torso', 'ลำตัว', 'body', F['torso'], '', PV['torso']), 'skirt': part('skirt', 'กระโปรง', 'cape', F['skirt'], 'torso', PV['skirt'], g=.35), 'head': part('face0', 'หัว', 'head', F['head'], 'torso', PV['head']),
+  'torso': part('torso', 'ลำตัว', 'body', F['torso'], '', PV['torso']), 'skirt': part('skirt', 'กระโปรง', 'none', F['skirt'], 'torso', PV['skirt']), 'head': part('face0', 'หัว', 'head', F['head'], 'torso', PV['head']),
 }
-FIST = ('attack', 'shoot', 'cast', 'cheer')   # moves that clench the fists
-SW = {'head': dict(idle='face0', attack='face1', shoot='face1', cast='face2', hit='face4', die='face3', spawn='face0', cheer='face3')}
+FIST = ('attack', 'shoot', 'cast', 'cheer', 'throw')   # moves that clench the fists
+SW = {'head': dict(idle='face0', throw='face1', attack='face1', shoot='face1', cast='face2', hit='face4', die='face3', spawn='face0', cheer='face3')}
 for sd in 'rl': SW['hand_' + sd] = {mv: 'fist_' + sd for mv in FIST} | dict(idle='hand_' + sd)
 for k in BOXK:   # the front-view layer on top, the fitted box picture as its filler underneath (same bone)
     q = PARTS[k]; pvw = q['at']; ox, oy = FVO[k]; PARTS['u_' + k] = dict(q, n=q['n'] + ' (ชั้นรอง)', role='none', p=k)
     PARTS[k] = dict(q, img='fv_' + k + '.png', pv=[round(pvw[0] - ox, 1), round(pvw[1] - oy, 1)], at=pvw, r=0, s=1)
-ORDER = ['u_thigh_r', 'u_thigh_l', 'u_foot_r', 'u_foot_l', 'u_torso', 'u_skirt',   # fillers first: at rest nothing of them shows
+hq = PARTS['head']; c_, s_ = np.cos(np.radians(hq['r'])) * hq['s'], np.sin(np.radians(hq['r'])) * hq['s']; fw, fh = IMG['face0'].size
+yy, xx = np.mgrid[0:fh, 0:fw].astype(np.float32); X = c_ * (xx - hq['pv'][0]) - s_ * (yy - hq['pv'][1]) + hq['at'][0]; Yv = s_ * (xx - hq['pv'][0]) + c_ * (yy - hq['pv'][1]) + hq['at'][1]
+HEADFV = BODY & (nd.binary_dilation(HEADM, iterations=6) | (np.arange(REF.shape[0])[:, None] < 176)) & ~ARMS & (np.arange(REF.shape[0])[:, None] < 196) & ~CHEST | (BODY & HEADM & ~ARMS & (np.arange(REF.shape[0])[:, None] < 190))
+lab5, n5 = nd.label(HEADFV); HEADFV = lab5 == (np.bincount(lab5.ravel())[1:].argmax() + 1)
+X = X.astype(np.float32); Yv = Yv.astype(np.float32); rgbH = np.dstack([cv2.remap(REF[..., i].astype(np.float32), X, Yv, cv2.INTER_LINEAR) for i in range(3)]); aH = cv2.remap(HEADFV.astype(np.float32), X, Yv, cv2.INTER_LINEAR)
+Image.fromarray(np.dstack([rgbH, aH * 255]).clip(0, 255).astype(np.uint8), 'RGBA').save(os.path.join(OUT, 'face_fv.png')); PARTS['head']['img'] = 'face_fv.png'; SW['head']['idle'] = 'face_fv'
+# under the skirt: the dark inside of the skirt between the thighs, hidden at rest, planted like the legs (a squashed body never opens a gap there)
+sk = OWN['skirt']; sy_ = np.nonzero(sk.any(1))[0]; hem = int(np.percentile(np.nonzero(sk)[0], 97)); legs = OWN['thigh_r'] | OWN['thigh_l']
+zone = np.zeros(BODY.shape, bool); zone[hem - 30:hem + 4, :] = True; hull = np.zeros(BODY.shape, np.uint8); pts = np.argwhere(legs & zone)[:, ::-1].astype(np.int32); cv2.fillConvexPoly(hull, cv2.convexHull(pts), 1)   # between the thighs only, never wider than the legs
+HIP = hull.astype(bool) & zone & nd.binary_erosion(nd.binary_fill_holes(sk | legs), iterations=2); gray = REF[sk & (REFL > 90) & (REFL < 190) & (np.abs(REF[..., 0].astype(int) - REF[..., 2]) < 25)]
+col = np.median(gray, 0) if len(gray) else np.array([150, 150, 160]); ys, xs = np.nonzero(HIP); hy0, hx0 = ys.min(), xs.min(); hip = np.zeros((ys.max() - hy0 + 1, xs.max() - hx0 + 1, 4), np.uint8); hip[ys - hy0, xs - hx0, :3] = col * .8; hip[ys - hy0, xs - hx0, 3] = 255
+Image.fromarray(hip, 'RGBA').save(os.path.join(OUT, 'u_hips.png'))
+PARTS['u_hips'] = dict(img='u_hips.png', n='ใต้กระโปรง (ชั้นรอง)', role='none', p='skirt', pv=[round(PARTS['torso']['at'][0] - hx0, 1), round(PARTS['torso']['at'][1] - hy0, 1)], at=PARTS['torso']['at'], r=0, s=1)
+PARTS['u_chest'] = dict(img='u_chest.png', n='อกใต้แขน (ชั้นรอง)', role='none', p='torso', pv=[round(PARTS['torso']['at'][0] - cx0, 1), round(PARTS['torso']['at'][1] - cy0, 1)], at=PARTS['torso']['at'], r=0, s=1)
+ORDER = ['u_hips', 'u_torso', 'u_chest', 'u_thigh_r', 'u_thigh_l', 'u_foot_r', 'u_foot_l', 'u_skirt',   # fillers first: at rest nothing of them shows
          'thigh_r', 'thigh_l', 'foot_r', 'foot_l', 'bolt', 'hand_r', 'arm_r', 'hand_l', 'arm_l', 'torso', 'skirt', 'head']   # hands under the cuffs, arms under the torso
-rig = dict(v=2, name='zeusgpt', title='ซุส (จากแผ่นของคุณ)', dir='art/rigs/zeusgpt/', ref='ref.png', size=[380, 426], feet=[182, 418], view='front', flip=True, parts=PARTS, order=ORDER, swaps=SW)
+CLIPS = {'throw2': dict(dir='throw/', frames=[f't{i:02d}.png' for i in range(16)], durs=[80, 90, 80, 80, 90, 80, 80, 90, 80, 80, 90, 80, 80, 90, 80, 80], foot=[188, 463], figH=311, ev=[[.56, 'release']], release=[400, 303], dirx=1, boltScale=.5, n='ปาสายฟ้า')}   # the owner's GPT throw (art/incoming/zeus_sheet/gpt_throw_reference.gif split into art/rigs/zeusgpt/throw/), drawn frames
+rig = dict(v=2, name='zeusgpt', title='ซุส (จากแผ่นของคุณ)', dir='art/rigs/zeusgpt/', ref='ref.png', size=[380, 426], feet=[182, 418], view='front', flip=True, figH=410, refMask='ref_mask.png', parts=PARTS, order=ORDER, swaps=SW, clips=CLIPS)
 json.dump(rig, open(os.path.join(R, 'art/rigs/zeusgpt.json'), 'w'), ensure_ascii=False, indent=1); print('art/rigs/zeusgpt.json', len(PARTS), 'pieces')
