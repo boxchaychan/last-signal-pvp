@@ -50,6 +50,11 @@
   <div class="row"><button id="undoF">ย้อนการจัด</button><button id="chk" class="g">ตรวจ</button></div>
   <div class="row"><button id="seamB">ลบรอยต่อ</button><button id="diffB">ดูจุดที่ไม่ตรง</button></div>
   <div id="score" style="font-size:12px;color:#cde;line-height:1.45;white-space:pre-wrap"></div>
+  <h3>ข้อต่องอได้ (แบบ Spine)</h3>
+  <div class="row"><button id="mshP">ชิ้นงอได้</button><button id="mshO">รูปเดียว ไม่ตัดชิ้น</button></div>
+  <label>ความนุ่มของข้อต่อ <span id="vms"></span></label><input id="msoft" type="range" min="4" max="40" step="1" value="18">
+  <div class="row"><button id="mshV">ดูตาข่าย</button></div>
+  <div style="font-size:12px;color:#9ab;line-height:1.4">ชิ้นงอได้ = ข้อต่อโค้งเหมือนผิว ไม่หักเป็นแผ่น. รูปเดียว = ใช้ภาพทั้งตัวภาพเดียว ไม่ต้องตัดชิ้น (ท่าเล็กสวย ท่าใหญ่ที่แขนบังตัวจะเห็นช่อง)</div>
   <h3>ภาพต้นแบบ</h3>
   <label>ความชัดของภาพต้นแบบ</label><input id="ro" type="range" min="0" max="1" step="0.05" value="0">
   <div class="row"><button id="zin">ซูม +</button><button id="zout">ซูม −</button></div>
@@ -63,7 +68,7 @@
 <button id="tg">☰</button>
 <div id="ttl"></div>
 <div id="hint"></div>
-<script src="rig2d/bones.js?v=16"></script><script src="rig2d/fx.js?v=4"></script>
+<script src="rig2d/bones.js?v=17"></script><script src="rig2d/fx.js?v=4"></script>
 <script>
 'use strict';
 /* Rig tool, version 2 (first made 2026-11-14 on the owner's "เอาทูลมา ฉันต่อเอง"; rebuilt 2026-11-27 after one hero of the owner's recording was taken
@@ -78,7 +83,7 @@ let R = null, R0 = null, names = [], PL = null;   /* the rig being edited, the r
 const ALPHA = {};
 const label = k => R.parts[k].n || k;
 function adopt(o) { if (!o.parts || !o.order) throw 'bad'; delete o.img0; delete o.img; for (const k of names) { if (!o.parts[k]) o.parts[k] = JSON.parse(JSON.stringify(R0.parts[k])); if (!o.order.includes(k)) o.order.push(k); } for (const k in o.parts) if (!R0.parts[k]) delete o.parts[k]; o.order = o.order.filter(k => R0.parts[k]);
-  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size', 'view', 'faces', 'swaps', 'clips', 'figH', 'refMask', 'checks']) o[c] = R0[c]; if (o.bake == null) o.bake = !!R0.bake; o.img = R0.img; if (R0.img0) { Object.assign(R0.img, R0.img0); R0.img0 = null; } if (o.flip == null) o.flip = !!R0.flip; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; if (q.g == null && d.g != null) q.g = d.g; } o.img = R0.img; R = o; B.prep(R); if (R.bake) B.bake(R); PL = B.player(R); PL.pop = +$('#pop').value; }
+  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size', 'view', 'faces', 'swaps', 'clips', 'figH', 'refMask', 'checks']) o[c] = R0[c]; if (o.bake == null) o.bake = !!R0.bake; if (o.mesh === undefined && R0.mesh) o.mesh = R0.mesh; o.img = R0.img; if (R0.img0) { Object.assign(R0.img, R0.img0); R0.img0 = null; } if (o.flip == null) o.flip = !!R0.flip; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; if (q.g == null && d.g != null) q.g = d.g; } o.img = R0.img; R = o; B.prep(R); if (R.bake) B.bake(R); PL = B.player(R); PL.pop = +$('#pop').value; }
 const clean = () => { const o = JSON.parse(JSON.stringify(R, (k, v) => (k === 'img' || k === 'img0') && typeof v === 'object' && !(typeof v === 'string') ? undefined : k[0] === '_' ? undefined : v)); for (const k of names) o.parts[k].img = R0.parts[k].img; return o; };
 function save() { try { localStorage.setItem(KEY, JSON.stringify(clean())); } catch (e) { } }
 
@@ -185,6 +190,12 @@ function boot() {
   const seamUI = () => $('#seamB').classList.toggle('on', !!R.bake);
   $('#seamB').onclick = () => { stop(); if (R.bake) { B.unseam(R); R.bake = false; } else { if (!R.img._ref) { alert('ตัวนี้ไม่มีภาพต้นแบบ'); return; } R.bake = true; B.bake(R); } save(); seamUI(); score(); };
   seamUI();
+  const meshUI = () => { const m = R.mesh && R.mesh.mode; $('#mshP').classList.toggle('on', m === 'pieces'); $('#mshO').classList.toggle('on', m === 'one'); $('#mshV').classList.toggle('on', !!R._meshShow); const s = (R.mesh && R.mesh.soft) || 18; $('#msoft').value = s; $('#vms').textContent = s + ' px'; };
+  const meshSet = mode => { if (mode === 'one' && !R.img._ref) { alert('ตัวนี้ไม่มีภาพต้นแบบ'); return; } R.mesh = R.mesh && R.mesh.mode === mode ? false : Object.assign({}, R.mesh || {}, { mode });   /* false (not deleted) so a saved 'off' is kept over the file's setting */ R._mesh = null; save(); meshUI(); if (!PLAY) play('idle'); };
+  $('#mshP').onclick = () => meshSet('pieces'); $('#mshO').onclick = () => meshSet('one');
+  $('#msoft').oninput = () => { if (!R.mesh) R.mesh = { mode: 'pieces' }; R.mesh.soft = +$('#msoft').value; R._mesh = null; save(); meshUI(); };
+  $('#mshV').onclick = () => { R._meshShow = !R._meshShow; meshUI(); };
+  meshUI();
   $('#diffB').onclick = () => { DIFF = !DIFF; $('#diffB').classList.toggle('on', DIFF); };
   setTimeout(score, 50);
   resize(); select(names.includes('torso') ? 'torso' : names.find(k => R.parts[k].role === 'body') || names[0]); stop(); hint(); if (QS.get('apart') === '1') { if (!HAD) apart(); }   /* "let me join it myself": the first visit starts with the pieces apart beside a faint picture of the whole hero; a rig already saved in this browser is kept */
