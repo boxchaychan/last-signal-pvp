@@ -228,7 +228,7 @@ const D3 = { ready: false, hero: null, foe: null, mon: {}, k: null, W: 0, H: 0, 
 const MON3 = { shroom: ['Mushnub', 1.5, 'Idle', 'Bite_Front', 'HitRecieve'], wolf: ['Demon', 2.1, 'Idle', 'Weapon', 'HitReact'], goblin_archer: ['Tribal', 1.9, 'Idle', 'Weapon', 'HitReact'],
   wisp: ['Ghost', 1.7, 'Flying_Idle', 'Headbutt', 'HitReact'], skeleton: ['Orc', 2.1, 'Idle', 'Weapon', 'HitReact'], boar_guard: ['Yeti', 2.4, 'Idle', 'Punch', 'HitReact'], golem: ['MushroomKing', 2.3, 'Idle', 'Punch', 'HitReact'] };
 function rigTripo(gl, kscene, clips) {
-  let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
+  let J = null, CH = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) { J = JSON.parse(o.userData.joints); CH = o.userData.chains ? JSON.parse(o.userData.chains) : null; } if (o.isSkinnedMesh) sms.push(o); });
   const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
   r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
   const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new TV3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new TV3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
@@ -238,8 +238,10 @@ function rigTripo(gl, kscene, clips) {
   r.traverse(o => { if (!o.isBone) return; const n = o.name, pn = o.parent && o.parent.isBone ? o.parent.name : null, rot = new THREE.Quaternion();   /* each KayKit bone moved to HER joint, turned to point where her limb points */
     if (DIR[n] && J[n] && J[DIR[n]]) rot.setFromUnitVectors(kw[DIR[n]].clone().sub(kw[n]).normalize(), new TV3(...J[DIR[n]]).sub(new TV3(...J[n])).normalize()); else if (pn && n !== 'head') rot.copy(Rq[pn]);
     Rq[n] = rot; W.compose(J[n] ? new TV3(...J[n]) : new TV3(), rot.clone().multiply(kq[n]), ksc[n]); o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true); });
-  const src = sms[0].material, m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughness: .72, metalness: 0 }), skel = new THREE.Skeleton(ks.bones), meshes = {};
-  for (const sm of sms) { const g = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
+  const allB = ks.bones.slice();   /* + the model's own spring bones (ponytail, scarf: bag3d/spring.js), put under the KayKit bone their parent became */
+  if (CH) { gl.scene.updateMatrixWorld(true); for (let pass = 0; pass < 4; pass++) for (const sb of sms[0].skeleton.bones) { const pb = sb.parent && bone[sb.parent.name]; if (bone[sb.name] || !pb) continue; const nb = new THREE.Bone(); nb.name = sb.name; pb.add(nb); pb.updateMatrixWorld(true); inv.copy(pb.matrixWorld).invert().multiply(sb.matrixWorld).decompose(nb.position, nb.quaternion, nb.scale); nb.updateMatrixWorld(true); bone[sb.name] = nb; allB.push(nb); } }
+  const src = sms[0].material, m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughness: .72, metalness: 0 }), skel = new THREE.Skeleton(allB), meshes = {};
+  for (const sm of sms) { const g = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, map = j => allB.indexOf(bone[names[j]]);
     for (let i = 0; i < si.count; i++) si.setXYZW(i, map(si.getX(i)), map(si.getY(i)), map(si.getZ(i)), map(si.getW(i)));
     const me = new THREE.SkinnedMesh(g, m); me.name = sm.name; me.castShadow = true; me.frustumCulled = false; r.add(me); r.updateMatrixWorld(true); me.bind(skel, new THREE.Matrix4()); meshes[sm.name] = me; }
   const herHips = bone.hips.position.clone();
@@ -247,7 +249,7 @@ function rigTripo(gl, kscene, clips) {
     if (t.name !== 'hips.position') return t; const v = t.values.slice(); for (let i = 0; i < v.length; i += 3) { v[i] = herHips.x + (v[i] - kkHips.x) * k; v[i + 1] = herHips.y + (v[i + 1] - kkHips.y) * k; v[i + 2] = herHips.z + (v[i + 2] - kkHips.z) * k; }
     return new THREE.VectorKeyframeTrack(t.name, t.times, v); })));
   const body = meshes.body || Object.values(meshes)[0]; body.geometry.computeBoundingBox(); const bb = body.geometry.boundingBox;
-  return { root: r, h: bb.max.y - bb.min.y, meshes, bone, clips: mine, skel, k }; }
+  const T = { root: r, h: bb.max.y - bb.min.y, meshes, bone, clips: mine, skel, k, chains: CH }; T.springs = CH && window.springMake ? springMake(T) : null; return T; }
 
 const r3 = new THREE.WebGLRenderer({ canvas: document.getElementById('c3d'), antialias: true }); r3.outputEncoding = THREE.sRGBEncoding; r3.toneMapping = THREE.ACESFilmicToneMapping; r3.toneMappingExposure = .9;
 r3.shadowMap.enabled = true; r3.shadowMap.type = THREE.PCFSoftShadowMap;

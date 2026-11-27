@@ -28,7 +28,8 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=3"></script>
+<script src="bag3d/spring.js?v=1"></script>
+<script src="bag3d/arena.js?v=4"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -547,12 +548,14 @@ const HEROES = {
     idle: 'Q_Spell_Simple_Idle_Loop', run: 'Running_A', atks: ['Q_Spell_Simple_Shoot'], col: ['#c89aff', '#4a2a7a'] },
   wolf: { name: 'นักล่าหมาป่า', role: 'แชมเปี้ยนของเกมกระเป๋า', file: 'art/grind3d/wolf_girl.glb', cls: 'bow', start: 'arrow', hp: 68, spd: 3.6, perk: '', bonus: {},   /* bag mode only (not in HKEYS) */
     idle: 'Ranged_Bow_Idle', run: 'Running_HoldingBow', col: ['#ffd9a0', '#8a5a3a'],   /* atks = every clip the bag mode plays (BAGANIM in bag3d/arena.js) */
-    atks: ['Ranged_Bow_Release', 'Ranged_Bow_Release_Up', 'Q_Sword_Regular_A', 'Q_Sword_Regular_B', 'Q_Sword_Regular_C', 'Melee_1H_Attack_Stab', 'Melee_1H_Attack_Jump_Chop', 'Melee_2H_Attack_Spin', 'Q_Sword_Dash', 'Q_OverhandThrow', 'Q_Spell_Simple_Shoot', 'Ranged_Magic_Summon', 'Melee_Block', 'Use_Item', 'Q_Roll', 'Hit_A', 'Spawn_Ground'] },
+    atks: ['Ranged_Bow_Release', 'Ranged_Bow_Release_Up', 'Q_Sword_Regular_A', 'Q_Sword_Regular_B', 'Q_Sword_Regular_C', 'Melee_1H_Attack_Stab', 'Melee_1H_Attack_Jump_Chop', 'Melee_2H_Attack_Spin', 'Q_Sword_Dash', 'Q_OverhandThrow', 'Q_Spell_Simple_Shoot', 'Ranged_Magic_Summon', 'Melee_Block', 'Use_Item', 'Q_Roll', 'Hit_A', 'Spawn_Ground'] },  /* the adventurer (owner 2026-11-27 "ทำโมเดลสวยเท่ๆรักผจญภัย", no Tripo): modelled in code, tools/blender/adventurer_model.py; her own sword and bow meshes (bagHold), spring ponytail + scarf */
+  adv: { name: 'นักผจญภัย', role: 'แชมเปี้ยนของเกมกระเป๋า', file: 'art/bag3d/adventurer.glb', cls: 'bow', own: true, start: 'arrow', hp: 68, spd: 3.6, perk: '', bonus: {}, idle: 'Q_Sword_Idle', run: 'Running_A', col: ['#8ff0e0', '#1c6468'] },
 };
+HEROES.adv.atks = HEROES.wolf.atks;
 const HKEYS = ['archer', 'wing', 'demon', 'dark', 'hood'], HERO_H = 1.35, WEAP = {}, BASE = {}, HCACHE = {};
 let HERO = null;
 function rigTripo(gl, kscene, clips) {
-  let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
+  let J = null, CH = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) { J = JSON.parse(o.userData.joints); CH = o.userData.chains ? JSON.parse(o.userData.chains) : null; } if (o.isSkinnedMesh) sms.push(o); });
   const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
   r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
   const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new V3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new V3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
@@ -568,9 +571,11 @@ function rigTripo(gl, kscene, clips) {
   });
   const src = sms[0].material, rmM = src.roughnessMap || src.metalnessMap || null;
   const m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughnessMap: rmM, metalnessMap: rmM, roughness: rmM ? 1 : .72, metalness: rmM ? 1 : 0, envMapIntensity: .6 });
-  const skel = new THREE.Skeleton(ks.bones), meshes = {};
+  const allB = ks.bones.slice();   /* + the model's own spring bones (ponytail, scarf: bag3d/spring.js), put under the KayKit bone their parent became */
+  if (CH) { gl.scene.updateMatrixWorld(true); for (let pass = 0; pass < 4; pass++) for (const sb of sms[0].skeleton.bones) { const pb = sb.parent && bone[sb.parent.name]; if (bone[sb.name] || !pb) continue; const nb = new THREE.Bone(); nb.name = sb.name; pb.add(nb); pb.updateMatrixWorld(true); inv.copy(pb.matrixWorld).invert().multiply(sb.matrixWorld).decompose(nb.position, nb.quaternion, nb.scale); nb.updateMatrixWorld(true); bone[sb.name] = nb; allB.push(nb); } }
+  const skel = new THREE.Skeleton(allB), meshes = {};
   for (const sm of sms) {
-    const g = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
+    const g = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, map = j => allB.indexOf(bone[names[j]]);
     for (let i = 0; i < si.count; i++) si.setXYZW(i, map(si.getX(i)), map(si.getY(i)), map(si.getZ(i)), map(si.getW(i)));
     const me = new THREE.SkinnedMesh(g, m); me.name = sm.name; me.castShadow = true; me.frustumCulled = false; r.add(me); r.updateMatrixWorld(true); me.bind(skel, new THREE.Matrix4()); meshes[sm.name] = me;
   }
@@ -581,7 +586,7 @@ function rigTripo(gl, kscene, clips) {
     return new THREE.VectorKeyframeTrack(t.name, t.times, v);
   })));
   const body = meshes.body || Object.values(meshes)[0]; body.geometry.computeBoundingBox(); const bb = body.geometry.boundingBox;
-  return { root: r, h: bb.max.y - bb.min.y, meshes, bone, mat: m, clips: mine, k };
+  const T = { root: r, h: bb.max.y - bb.min.y, meshes, bone, mat: m, clips: mine, k, chains: CH }; T.springs = CH && window.springMake ? springMake(T) : null; return T;
 }
 /* the archer's bow string: the Tripo string mesh is hidden and redrawn as 2 thin rods; the nock follows her right hand while the move draws */
 const PULL = { Ranged_Bow_Release: [-1, 0, .2, .27] }, STRM = new THREE.MeshBasicMaterial({ color: 0xf4ead0 }), CYL = new THREE.CylinderGeometry(1, 1, 1, 5);
@@ -618,7 +623,7 @@ async function loadHeroModel(hk) {   /* one model per hero, kept: {T, mixer, act
   for (const c of T.clips) { acts[c.name + '_up'] = mixer.clipAction(new THREE.AnimationClip(c.name + '_up', c.duration, c.tracks.filter(t => !LOWER.test(t.name)))); acts[c.name + '_lo'] = mixer.clipAction(new THREE.AnimationClip(c.name + '_lo', c.duration, c.tracks.filter(t => LOWER.test(t.name)))); }
   { const body = T.meshes.body || Object.values(T.meshes)[0], xm = new THREE.MeshBasicMaterial({ color: new THREE.Color(D.col[0]).multiplyScalar(.62), depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false }), xr = new THREE.SkinnedMesh(body.geometry, xm); xr.frustumCulled = false; xr.renderOrder = 1; T.root.add(xr); xr.bind(body.skeleton, body.bindMatrix); T.xray = xr; T.root.traverse(o => { if (o.isMesh && o !== xr) o.renderOrder = 2; }); }
   const M = HCACHE[hk] = { k: hk, D, T, mixer, acts, U: null, L: null, idle: acts[D.idle + '_up'] ? D.idle : 'Idle', run: acts[D.run + '_up'] ? D.run : 'Running_A' };
-  if (D.cls === 'bow') setupString(M); return M;
+  if (D.cls === 'bow') setupString(M); if (D.own && T.meshes.bow) T.meshes.bow.visible = false; return M;
 }
 function chPlay(M, ch, name, once, ts = 1) { const a = M.acts[name + (ch === 'U' ? '_up' : '_lo')]; if (!a) return 0; if (M[ch] === a && !once) return 0; a.reset(); a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity); a.clampWhenFinished = !!once; a.timeScale = ts; a.play();
   if (M[ch] && M[ch] !== a) { M[ch].fadeOut(.12); a.fadeIn(.12); } M[ch] = a; return a.getClip().duration / ts; }
@@ -672,7 +677,7 @@ function updHero(dt) {
   const R = Math.hypot(H.pos.x, H.pos.z); if (R > ARENA - .6) { H.pos.x *= (ARENA - .6) / R; H.pos.z *= (ARENA - .6) / R; }
   if (H.dodgeT > 0) H.dodgeT -= dt; else chPlay(M, 'L', H.moving ? M.run : M.idle, false, H.moving ? P.spd / 3.3 : 1); if (H.atkT <= 0) chPlay(M, 'U', H.moving ? M.run : M.idle, false, H.moving ? P.spd / 3.3 : 1);
   place();
-  function place() { M.T.root.position.set(H.pos.x, 0, H.pos.z); M.T.root.rotation.y = H.face; M.T.root.visible = !(H.inv > 0 && !H.dead && Math.floor(NOW * 20) % 2 === 0 && H.hurtT <= 0 && H.inv > .45 && !(H.shT > 0)); updString(M); HRING.position.x = H.pos.x; HRING.position.z = H.pos.z; }
+  function place() { M.T.root.position.set(H.pos.x, 0, H.pos.z); M.T.root.rotation.y = H.face; M.T.root.visible = !(H.inv > 0 && !H.dead && Math.floor(NOW * 20) % 2 === 0 && H.hurtT <= 0 && H.inv > .45 && !(H.shT > 0)); updString(M); if (M.T.springs) springStep(M.T.springs, dt); HRING.position.x = H.pos.x; HRING.position.z = H.pos.z; }
 }
 function heroSwing(ang, ts = 1.3) {   /* the hero's own weapon fired: play the attack move on the upper body (the whole body when standing) */
   const H = HERO, M = H.M, an = H.D.atks[H.combo++ % H.D.atks.length]; H.atkT = Math.min(.7, chPlay(M, 'U', an, true, ts) * .8); if (!H.moving) H.aim = ang;
@@ -1429,7 +1434,7 @@ async function boot() {
   resize(); try { await document.fonts.load('800 20px Kanit', 'ก'); } catch (_) { }
   const ld = new THREE.GLTFLoader();
   PFXLIST.forEach(loadPfx); try { LOAD.msg = 'กำลังสร้างแมพ...'; LOAD.f = .2; const [IDX] = await Promise.all([fetch('art/horde/mobs/index.json').then(r => r.json()), loadBase(ld), NORENDER ? null : loadScenery(ld)]); MOBS = IDX.mobs; LOAD.f = .7; LOAD.msg = 'กำลังเรียกฮีโร่...';
-    let hk = Q.get('hero'); if (!HEROES[hk]) { try { hk = localStorage.getItem('horde_hero'); } catch (_) { } } await selectHero(BAGM ? 'wolf' : HEROES[hk] && hk !== 'wolf' ? hk : 'archer'); if (!HERO) throw new Error('hero');
+    let hk = Q.get('hero'); if (!HEROES[hk]) { try { hk = localStorage.getItem('horde_hero'); } catch (_) { } } await selectHero(BAGM ? (Q.get('champ') === 'wolf' ? 'wolf' : 'adv') : HEROES[hk] && hk !== 'wolf' && hk !== 'adv' ? hk : 'archer'); if (!HERO) throw new Error('hero');
   } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
   G.dl = clamp(+Q.get('dl') || SAVE.dl[MAPK] || 1, 1, 5); while (G.dl > 1 && !dlOpen(MAPK, G.dl)) G.dl--;
   if (BAGM) bagBoot(); else if (Q.get('go') === '1') startRun(); else { G.state = 'title'; setMusic('calm'); }
