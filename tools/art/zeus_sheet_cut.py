@@ -130,6 +130,47 @@ for sd, (hk, hpv), fp in (('r', ('hand_r', HPV_R), FISTS[0]), ('l', ('hand_l', H
 for k in ('arm_r', 'arm_l', 'hand_r', 'hand_l', 'fist_r', 'fist_l'): IMG[k].save(os.path.join(OUT, k + '.png'))
 S = {k: im.size for k, im in IMG.items()}
 
+# ---- LOOK LIKE BEFORE RIGGING (owner 2026-11-27 "ประกอบไม่ถูก มันไม่ชิด", "ประกอบเสร็จก็ลบเส้นออกด้วยสิ ทำให้เหมือนตอนยังไม่ต่อกระดูก"):
+#      the box's torso, skirt, legs and sandals are drawn a little narrower than the front view, so their joints show lines the drawing does not have.
+#      Each of them gets TWO layers on the same bone: on top the front view's own pixels of that part (every closed area of the front view goes to the piece
+#      whose fitted box picture covers it most, outlines go with the areas they border), and under ALL top layers the fitted box picture, which fills
+#      whatever opens when a part moves. At rest the hero is pixel for pixel the front view.
+def fitted_mask(key, f, pv):
+    al = np.asarray(IMG[key])[..., 3].astype(np.float32) / 255; c, s_ = np.cos(np.radians(f['r'])) * f['s'], np.sin(np.radians(f['r'])) * f['s']
+    Mx = np.array([[c, -s_, f['at'][0] - (c * pv[0] - s_ * pv[1])], [s_, c, f['at'][1] - (s_ * pv[0] + c * pv[1])]], np.float32); return cv2.warpAffine(al, Mx, (REF.shape[1], REF.shape[0])) > .5
+REFL = LUM[RY:RY + REF.shape[0], RX:RX + REF.shape[1]]; DARK = REFL < 62
+fl_ = ~nd.binary_dilation(DARK); lab, n = nd.label(fl_); edge = (set(lab[0]) | set(lab[-1]) | set(lab[:, 0]) | set(lab[:, -1])) - {0}; BODY = ~np.isin(lab, list(edge)); BODY &= ~(nd.binary_dilation(~BODY) & ~DARK)
+TAKEN = np.zeros(BODY.shape, bool)
+for k, orig in (('arm_r', ORIG_R), ('arm_l', ORIG_L)): a_ = np.asarray(IMG[k])[..., 3] > 40; ys, xs = np.nonzero(a_); TAKEN[ys + orig[1], xs + orig[0]] = True
+for hm in HMASK: TAKEN |= hm[RY:RY + REF.shape[0], RX:RX + REF.shape[1]]
+HEADM = fitted_mask('face0', F['head'], PV['head']); TAKEN |= BODY & (nd.binary_dilation(HEADM, iterations=8) | (np.arange(REF.shape[0])[:, None] < 178))   # the head stays the sheet's face picture (it swaps faces)
+BOXK = ['torso', 'skirt', 'thigh_r', 'thigh_l', 'foot_r', 'foot_l']; FM = {k: nd.binary_dilation(fitted_mask(k, F[k], PV[k]), iterations=2) for k in BOXK}
+inner = BODY & ~DARK & ~TAKEN; lab, n = nd.label(inner); OWN = {k: np.zeros(BODY.shape, bool) for k in BOXK}
+for i in range(1, n + 1):
+    m = lab == i; votes = [(FM[k] & m).sum() for k in BOXK]
+    if max(votes) == 0: cy, cx = np.argwhere(m).mean(0); k = min(BOXK, key=lambda k: np.hypot(*(np.argwhere(FM[k]).mean(0) - [cy, cx])))
+    else: k = BOXK[int(np.argmax(votes))]
+    OWN[k] |= m
+for k in BOXK:
+    lab3, n3 = nd.label(nd.binary_dilation(OWN[k], iterations=3))   # stray specks out: keep the main area and what touches it
+    if n3 > 1: big = np.bincount(lab3[OWN[k]].ravel(), minlength=n3 + 1); big[0] = 0; OWN[k] &= lab3 == big.argmax()
+    OWN[k] |= DARK & BODY & ~TAKEN & nd.binary_dilation(OWN[k], iterations=4)   # the outlines it borders
+CHEST = np.zeros(BODY.shape, bool); CHEST[172:262, 128:240] = True   # leftovers only count on the chest / neck, never round the hands or legs
+COVER = HEADM.copy()   # whatever of the front view no piece shows (next to the neck, under the chin) goes to the torso layer, so no hole shows at rest
+for k, orig in (('arm_r', ORIG_R), ('arm_l', ORIG_L)): a_ = np.asarray(IMG[k])[..., 3] > 40; ys, xs = np.nonzero(a_); COVER[ys + orig[1], xs + orig[0]] = True
+for hm in HMASK: COVER |= hm[RY:RY + REF.shape[0], RX:RX + REF.shape[1]]
+for k in BOXK: COVER |= OWN[k]
+left = BODY & ~COVER; lab4, n4 = nd.label(left)
+for i in range(1, n4 + 1):
+    m = lab4 == i
+    if (nd.binary_dilation(m, iterations=3) & (OWN['torso'] | COVER & ~HEADM)).any() and np.argwhere(m)[:, 0].mean() > 170: OWN['torso'] |= m & CHEST   # only next to the body, below the chin (hair specks stay out)
+OWN['torso'] |= BODY & nd.binary_dilation(OWN['torso'], iterations=3) & ~nd.binary_dilation(HEADM, iterations=1) & CHEST   # a little over the soft cut edge of the arms (the torso is drawn above them), so no thin line shows
+FVO = {}
+for k in BOXK:
+    m = OWN[k]; ys, xs = np.nonzero(m); y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1; a_ = m[y0:y1, x0:x1].astype(np.float32)
+    im = Image.fromarray(np.dstack([REF[y0:y1, x0:x1], a_ * 255]).astype(np.uint8), 'RGBA'); IMG['fv_' + k] = im; im.save(os.path.join(OUT, 'fv_' + k + '.png')); FVO[k] = (x0, y0); print('  front-view layer', k, im.size)
+S = {k: im.size for k, im in IMG.items()}
+
 # ---- the rig: the rest pose IS the owner's front view (arms and hands at their own places, the rest fitted); joints hidden under the torso / cuffs
 SHO = {'r': (133, 205), 'l': (231, 209)}   # shoulder turning points (under the torso)
 def placed(k, orig, pvw): return dict(pv=[round(pvw[0] - orig[0], 1), round(pvw[1] - orig[1], 1)], at=[pvw[0], pvw[1]], r=0, s=1)
@@ -146,6 +187,10 @@ PARTS = {
 FIST = ('attack', 'shoot', 'cast', 'cheer')   # moves that clench the fists
 SW = {'head': dict(idle='face0', attack='face1', shoot='face1', cast='face2', hit='face4', die='face3', spawn='face0', cheer='face3')}
 for sd in 'rl': SW['hand_' + sd] = {mv: 'fist_' + sd for mv in FIST} | dict(idle='hand_' + sd)
-ORDER = ['thigh_r', 'thigh_l', 'foot_r', 'foot_l', 'bolt', 'hand_r', 'arm_r', 'hand_l', 'arm_l', 'torso', 'skirt', 'head']   # hands under the cuffs, arms under the torso
+for k in BOXK:   # the front-view layer on top, the fitted box picture as its filler underneath (same bone)
+    q = PARTS[k]; pvw = q['at']; ox, oy = FVO[k]; PARTS['u_' + k] = dict(q, n=q['n'] + ' (ชั้นรอง)', role='none', p=k)
+    PARTS[k] = dict(q, img='fv_' + k + '.png', pv=[round(pvw[0] - ox, 1), round(pvw[1] - oy, 1)], at=pvw, r=0, s=1)
+ORDER = ['u_thigh_r', 'u_thigh_l', 'u_foot_r', 'u_foot_l', 'u_torso', 'u_skirt',   # fillers first: at rest nothing of them shows
+         'thigh_r', 'thigh_l', 'foot_r', 'foot_l', 'bolt', 'hand_r', 'arm_r', 'hand_l', 'arm_l', 'torso', 'skirt', 'head']   # hands under the cuffs, arms under the torso
 rig = dict(v=2, name='zeusgpt', title='ซุส (จากแผ่นของคุณ)', dir='art/rigs/zeusgpt/', ref='ref.png', size=[380, 426], feet=[182, 418], view='front', flip=True, parts=PARTS, order=ORDER, swaps=SW)
 json.dump(rig, open(os.path.join(R, 'art/rigs/zeusgpt.json'), 'w'), ensure_ascii=False, indent=1); print('art/rigs/zeusgpt.json', len(PARTS), 'pieces')
