@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=3"></script>
+<script src="bag3d/arena.js?v=5"></script><script src="bag3d/classes.js?v=1"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -598,6 +598,16 @@ function updString(M) {
   B.handslotr.getWorldPosition(_h); S.nock.lerpVectors(_g.addVectors(_a, _b).multiplyScalar(.5), _h, pull); const rad = .008; rod(S.rods[0], _a, S.nock, rad); rod(S.rods[1], S.nock, _b, rad);
 }
 const LOWER = /^(root|hips|upperleg|lowerleg|foot|toes)/;
+/* the classes of the backpack game (bag3d/classes.js): KayKit bodies, bag mode only (horde.html?bag=1&cls=knight) */
+if (typeof BAGCLS !== 'undefined') for (const k in BAGCLS) { const C = BAGCLS[k], W = HEROES.wolf; HEROES['kk_' + k] = { name: C.n, role: C.r, kk: C.kk, wp: C.wp, cls: 'kk', start: 'arrow', hp: C.base.hp, spd: 3.5, perk: '', bonus: {}, idle: C.anim.idle, run: C.anim.run, col: C.col,
+  atks: [...new Set(W.atks.concat([C.anim.melee, C.anim.shoot, C.anim.magic, ...C.anim.skill, C.anim.hit || 'Hit_A', 'Melee_2H_Attack_Chop', 'Melee_2H_Attack_Slice', 'Melee_2H_Attack_Spinning', 'Dodge_Forward', 'Melee_Block_Attack']))] }; }
+async function kkModel(D, used) {   /* a KayKit body as it is (already on our skeleton) + its own weapons on the hand slots, painted with the body's own texture */
+  const G = await new THREE.GLTFLoader().loadAsync('art/tribe3d/people/' + D.kk + '.glb'), root = THREE.SkeletonUtils.clone(G.scene), bone = {}, meshes = {}; let mat = null;
+  root.traverse(o => { if (o.isBone) bone[o.name] = o; if (o.isSkinnedMesh || o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (o.isSkinnedMesh) { mat = mat || o.material; meshes[/body/i.test(o.name) ? 'body' : o.name] = o; } } });
+  for (const [w, b] of D.wp || []) { const src = WEAP[w], bn = bone[b]; if (!src || !bn) continue; const c = src.clone(); c.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; } }); bn.add(c); }
+  root.updateMatrixWorld(true); const bb = new THREE.Box3(); root.traverse(o => { if (o.isSkinnedMesh) { o.geometry.computeBoundingBox(); bb.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+  return { root, clips: BASE.clips.filter(c => used.has(c.name)), h: bb.max.y - bb.min.y || 2, k: 1, bone, meshes };
+}
 async function loadBase(ld) {
   const [KN, AN, WPN] = await Promise.all([ld.loadAsync('art/tribe3d/people/Knight.glb'), ld.loadAsync('art/grind3d/hero_anims.glb'), ld.loadAsync('art/tribe3d/people/weapons.glb')]);
   for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.');
@@ -605,11 +615,11 @@ async function loadBase(ld) {
   for (const c of WPN.scene.children) WEAP[c.name] = c; BASE.KN = KN; BASE.clips = AN.animations;
 }
 async function loadHeroModel(hk) {   /* one model per hero, kept: {T, mixer, acts} */
-  if (HCACHE[hk]) return HCACHE[hk]; const D = HEROES[hk], ld = new THREE.GLTFLoader(), parts = [ld.loadAsync(D.file)];
-  if (D.cls !== 'bow') parts.push(TL.loadAsync(D.cls === 'mage' ? 'art/tribe3d/people/tex_mage_1.png' : 'art/tribe3d/people/tex_knigh_2.png'));
+  if (HCACHE[hk]) return HCACHE[hk]; const D = HEROES[hk], ld = new THREE.GLTFLoader(), parts = [D.kk ? null : ld.loadAsync(D.file)];
+  if (D.cls !== 'bow' && !D.kk) parts.push(TL.loadAsync(D.cls === 'mage' ? 'art/tribe3d/people/tex_mage_1.png' : 'art/tribe3d/people/tex_knigh_2.png'));
   const [HU, WT] = await Promise.all(parts), used = new Set([D.idle, D.run, ...D.atks, 'Death_A', 'Cheer', 'Idle', 'Running_A', 'Dodge_Forward']);
-  const T = rigTripo(HU, BASE.KN.scene, BASE.clips.filter(c => used.has(c.name)));
-  if (D.cls !== 'bow') {
+  const T = D.kk ? await kkModel(D, used) : rigTripo(HU, BASE.KN.scene, BASE.clips.filter(c => used.has(c.name)));
+  if (D.cls !== 'bow' && !D.kk) {
     WT.flipY = false; WT.encoding = THREE.sRGBEncoding; const sm = new THREE.MeshStandardMaterial({ map: WT, roughness: .45, metalness: .4, envMapIntensity: .9 });
     const hold = (n, bn, k = 1) => { const src = WEAP[n]; if (!src || !bn) return null; const w = src.clone(); w.traverse(o => { if (o.isMesh) { o.material = sm; o.castShadow = true; } }); w.scale.setScalar(T.k * .5 * k); bn.add(w); return w; };
     if (D.cls === 'mage') hold('staff', T.bone.handslotr, 1.15); else { hold(D.ss ? 'sword_1handed' : 'sword_2handed_color', T.bone.handslotr, D.ss ? .9 : 1); if (D.ss) hold('shield_badge_color', T.bone.handslotl, .7); T.h /= 1.12; }
@@ -618,7 +628,7 @@ async function loadHeroModel(hk) {   /* one model per hero, kept: {T, mixer, act
   for (const c of T.clips) { acts[c.name + '_up'] = mixer.clipAction(new THREE.AnimationClip(c.name + '_up', c.duration, c.tracks.filter(t => !LOWER.test(t.name)))); acts[c.name + '_lo'] = mixer.clipAction(new THREE.AnimationClip(c.name + '_lo', c.duration, c.tracks.filter(t => LOWER.test(t.name)))); }
   { const body = T.meshes.body || Object.values(T.meshes)[0], xm = new THREE.MeshBasicMaterial({ color: new THREE.Color(D.col[0]).multiplyScalar(.62), depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false }), xr = new THREE.SkinnedMesh(body.geometry, xm); xr.frustumCulled = false; xr.renderOrder = 1; T.root.add(xr); xr.bind(body.skeleton, body.bindMatrix); T.xray = xr; T.root.traverse(o => { if (o.isMesh && o !== xr) o.renderOrder = 2; }); }
   const M = HCACHE[hk] = { k: hk, D, T, mixer, acts, U: null, L: null, idle: acts[D.idle + '_up'] ? D.idle : 'Idle', run: acts[D.run + '_up'] ? D.run : 'Running_A' };
-  if (D.cls === 'bow') setupString(M); return M;
+  if (D.cls === 'bow' && !D.kk) setupString(M); return M;
 }
 function chPlay(M, ch, name, once, ts = 1) { const a = M.acts[name + (ch === 'U' ? '_up' : '_lo')]; if (!a) return 0; if (M[ch] === a && !once) return 0; a.reset(); a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity); a.clampWhenFinished = !!once; a.timeScale = ts; a.play();
   if (M[ch] && M[ch] !== a) { M[ch].fadeOut(.12); a.fadeIn(.12); } M[ch] = a; return a.getClip().duration / ts; }
@@ -1429,7 +1439,7 @@ async function boot() {
   resize(); try { await document.fonts.load('800 20px Kanit', 'ก'); } catch (_) { }
   const ld = new THREE.GLTFLoader();
   PFXLIST.forEach(loadPfx); try { LOAD.msg = 'กำลังสร้างแมพ...'; LOAD.f = .2; const [IDX] = await Promise.all([fetch('art/horde/mobs/index.json').then(r => r.json()), loadBase(ld), NORENDER ? null : loadScenery(ld)]); MOBS = IDX.mobs; LOAD.f = .7; LOAD.msg = 'กำลังเรียกฮีโร่...';
-    let hk = Q.get('hero'); if (!HEROES[hk]) { try { hk = localStorage.getItem('horde_hero'); } catch (_) { } } await selectHero(BAGM ? 'wolf' : HEROES[hk] && hk !== 'wolf' ? hk : 'archer'); if (!HERO) throw new Error('hero');
+    let hk = Q.get('hero'); if (!HEROES[hk]) { try { hk = localStorage.getItem('horde_hero'); } catch (_) { } } await selectHero(BAGM ? (HEROES['kk_' + Q.get('cls')] ? 'kk_' + Q.get('cls') : 'wolf') : HEROES[hk] && hk !== 'wolf' ? hk : 'archer'); if (!HERO) throw new Error('hero');
   } catch (e) { LOAD.msg = 'โหลดไม่สำเร็จ: ' + e.message; console.error(e); return; }
   G.dl = clamp(+Q.get('dl') || SAVE.dl[MAPK] || 1, 1, 5); while (G.dl > 1 && !dlOpen(MAPK, G.dl)) G.dl--;
   if (BAGM) bagBoot(); else if (Q.get('go') === '1') startRun(); else { G.state = 'title'; setMusic('calm'); }
