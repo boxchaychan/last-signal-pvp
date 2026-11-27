@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
   for (const [W, H] of [[844, 390], [740, 360]]) {
     const pg = await (await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dsf })).newPage();
     pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-    await pg.goto('http://localhost:8000/bag3d.html'); await pg.waitForTimeout(2000); await pg.click('#start'); await pg.waitForTimeout(400);
+    await pg.goto('http://localhost:8000/bag3d.html?fight=side'); await pg.waitForTimeout(2000); await pg.click('#start'); await pg.waitForTimeout(400);
     const sch = await pg.evaluate(() => Array.from({ length: 15 }, (_, i) => kindOf(i + 1)[0]).join(''));
     say(W + ' schedule ' + sch, sch === 'mmpmbpmmpbmpmmb');
     say(W + ' track in the top bar', await pg.evaluate(() => document.querySelectorAll('#top .trk i').length === 5 && !!document.querySelector('#top .trk i.on')));

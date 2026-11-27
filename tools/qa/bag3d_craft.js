@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
   for (const [W, H] of [[844, 390], [740, 360]]) {
     const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dsf }); const pg = await ctx.newPage();
     pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-    await pg.goto('http://localhost:8000/bag3d.html'); await pg.waitForTimeout(1500); await pg.click('#start'); await pg.waitForTimeout(800);
+    await pg.goto('http://localhost:8000/bag3d.html?fight=side'); await pg.waitForTimeout(1500); await pg.click('#start'); await pg.waitForTimeout(800);
     await pg.evaluate(() => { G.gold = 60; give('ember'); give('shield', 0, 1, 0); give('helm'); G.open['0,1'] = G.open['1,1'] = 1; G.shop[0] = { id: 'poison' }; G.shop[1] = { id: 'cactus' }; draw(); });
     await pg.waitForTimeout(300); await pg.screenshot({ path: `${out}/${W}_1_hints.png` });
     const no = await pg.evaluate(() => { const sw = G.items.find(o => o.id === 'sword'), em = G.items.find(o => o.id === 'ember'); return tryCraft(em, sw); }); await pg.waitForTimeout(100);

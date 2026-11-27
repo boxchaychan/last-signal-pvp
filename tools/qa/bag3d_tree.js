@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
   for (const [W, H] of [[844, 390], [740, 360]]) {
     const pg = await (await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dsf })).newPage();
     pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-    await pg.goto('http://localhost:8000/bag3d.html'); await pg.waitForTimeout(1500); await pg.click('#start'); await pg.waitForTimeout(500);
+    await pg.goto('http://localhost:8000/bag3d.html?fight=side'); await pg.waitForTimeout(1500); await pg.click('#start'); await pg.waitForTimeout(500);
     await pg.evaluate(() => { G.gold = 80; for (let y = 0; y < 5; y++) for (let x = 0; x < 8; x++) G.open[x + ',' + y] = 1; draw(); $('#bk').click(); });
     await pg.waitForTimeout(300); await pg.screenshot({ path: `${out}/${W}_1_shop.png` });
     const r = await pg.evaluate(() => { const R = {}, g0 = G.gold;
