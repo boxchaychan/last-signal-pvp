@@ -123,7 +123,7 @@ const Bones2D = (() => {
     const extra = rig.swaps ? [...new Set(Object.values(rig.swaps).flatMap(o => Object.values(o)))] : [];   /* faces: { part: 'head', idle: 'face0', attack: 'face1', ... } = the picture (same size) that piece shows during a move */
     const refP = rig.ref ? new Promise(ok => { const i = new Image(); i.onload = () => { rig.img._ref = i; ok(); }; i.onerror = () => ok(); i.src = rig.dir + rig.ref; }) : Promise.resolve();
     const clipP = []; for (const cn in rig.clips || {}) { const c = rig.clips[cn]; c.img = []; c.frames.forEach((f, i) => clipP.push(new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(); im.onerror = () => no(new Error('frame ' + im.src)); im.src = rig.dir + c.dir + f; c.img[i] = im; }))); c.dur = c.durs.reduce((a, b) => a + b, 0) / 1000; }
-    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP], clipP)).then(() => { if (rig.seams === 'paint') seamless(rig); return rig; }); }
+    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP], clipP)).then(() => { if (rig.seams === 'paint') seamless(rig); if (rig.bake) bake(rig); return rig; }); }
 
   /* SEAMS (owner 2026-11-27 "ประกอบเสร็จก็ลบเส้นออกด้วยสิ ทำให้เหมือนตอนยังไม่ต่อกระดูก"): once the pieces are put together, the edge of a piece
      that lies over another piece is painted with what the picture before rigging (rig.ref) shows there, so a joint line the drawing does not have
@@ -150,7 +150,38 @@ const Bones2D = (() => {
         g.putImageData(d, 0, 0); rig.img[key] = c; rig._seam = (rig._seam || 0) + n; }
       cg.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); cg.drawImage(rig.img0[k], -q.pv[0], -q.pv[1]); cg.setTransform(1, 0, 0, 1, 0, 0); }
   }
-  function unseam(rig) { if (rig.img0) Object.assign(rig.img, rig.img0); }
+  function unseam(rig) { if (rig.img0) Object.assign(rig.img, rig.img0); rig.img0 = null; }
+
+  /* BAKE = "ลบรอยต่อ" (owner 2026-11-28 "ลบรอยทำไมใช้ไม่ได้"): after the pieces are put together, every pixel of the reference picture's figure goes to the
+     piece drawn on top there at rest (gaps go to the nearest piece), and that piece shows the reference's OWN colour there; elsewhere it keeps its own
+     picture (hidden under other pieces at rest, it fills what opens when they move). So at rest the hero is the reference, pixel for pixel: no joint
+     line, no gap, no piece sticking out past the outline. Works for any rig with a ref picture; rig.bake = true keeps it on (games get it on load).
+     The pictures before are kept in rig.img0 (unseam = undo). Pieces that swap pictures (faces, fists) are left as they are. */
+  function bake(rig, pad = 8) {
+    const R = rig.img._ref; if (!R || !rig.order) return 0; if (rig.img0) unseam(rig); prep(rig); const [W, H] = rig.size, cv = (w, h) => { const e = document.createElement('canvas'); e.width = w; e.height = h; return [e, e.getContext('2d', { willReadFrequently: true })]; };
+    const [rc, rg] = cv(W, H); rg.drawImage(R, 0, 0, W, H); const ref = rg.getImageData(0, 0, W, H).data; let fig = new Uint8Array(W * H), hasA = false;
+    for (let i = 0; i < W * H; i++) if (ref[i * 4 + 3] < 250) { hasA = true; break; }
+    if (hasA) for (let i = 0; i < W * H; i++) fig[i] = ref[i * 4 + 3] > 128 ? 1 : 0;
+    else {   /* an opaque reference: the background = what is close to the border colours, reached from the border */
+      const bc = []; for (let x = 0; x < W; x += 7) bc.push(x, (H - 1) * W + x); for (let y = 0; y < H; y += 7) bc.push(y * W, y * W + W - 1);
+      const seen = new Uint8Array(W * H), q = bc.slice(); const near = (i, j) => Math.abs(ref[i * 4] - ref[j * 4]) + Math.abs(ref[i * 4 + 1] - ref[j * 4 + 1]) + Math.abs(ref[i * 4 + 2] - ref[j * 4 + 2]) < 40;
+      for (const i of bc) seen[i] = 1; while (q.length) { const i = q.pop(), x = i % W, y = (i / W) | 0; for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1]) if (j >= 0 && !seen[j] && near(i, j)) { seen[j] = 1; q.push(j); } }
+      for (let i = 0; i < W * H; i++) fig[i] = seen[i] ? 0 : 1; }
+    const M = world(rig, {}, null), top = new Int16Array(W * H).fill(-1), keys = rig.order.filter(k => !(rig.swaps && rig.swaps[k]) && rig.parts[k].role !== 'weapon' && rig.parts[k].role !== 'weaponB');
+    keys.forEach((k, idx) => { const [c, g] = cv(W, H), q = rig.parts[k], m = M[k]; g.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); g.drawImage(rig.img[k], -q.pv[0], -q.pv[1]); const d = g.getImageData(0, 0, W, H).data; for (let i = 0; i < W * H; i++) if (d[i * 4 + 3] > 128) top[i] = rig.order.indexOf(k); });
+    /* figure pixels no piece covers: to the nearest covered pixel's piece (a few px) */
+    const own = Int16Array.from(top); for (let pass = 0; pass < pad; pass++) { const nx = Int16Array.from(own); for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; if (own[i] >= 0 || !fig[i]) continue; for (const j of [i - 1, i + 1, i - W, i + W]) if (own[j] >= 0) { nx[i] = own[j]; break; } } own.set(nx); }
+    rig.img0 = Object.assign({}, rig.img); let n = 0;
+    for (const k of keys) {
+      const q = rig.parts[k], im = rig.img0[k], ki = rig.order.indexOf(k), m = M[k], ox = pad + (((m[4] - q.pv[0]) % 1) + 1) % 1, oy = pad + (((m[5] - q.pv[1]) % 1) + 1) % 1, w = im.width + 2 * pad + 1, h = im.height + 2 * pad + 1, [c, g] = cv(w, h);
+      g.drawImage(im, ox, oy); const d = g.getImageData(0, 0, w, h), p = d.data;   /* ox, oy: the new picture lands on whole screen pixels at rest (no blur) */
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const lx = x + .5 - ox - q.pv[0], ly = y + .5 - oy - q.pv[1], X = Math.floor(m[0] * lx + m[2] * ly + m[4]), Y = Math.floor(m[1] * lx + m[3] * ly + m[5]), o = (y * w + x) * 4;
+        if (X < 0 || Y < 0 || X >= W || Y >= H) { p[o + 3] = 0; continue; } const j = Y * W + X;
+        if (own[j] === ki) { p[o] = ref[j * 4]; p[o + 1] = ref[j * 4 + 1]; p[o + 2] = ref[j * 4 + 2]; p[o + 3] = 255; n++; }   /* this piece shows here at rest: the reference's own colour */
+        else if (!fig[j] && top[j] === ki) p[o + 3] = 0; }   /* on top but outside the figure: cut off */
+      g.putImageData(d, 0, 0); c._ox = ox; c._oy = oy; rig.img[k] = c; }   /* _off = the picture grew by pad on every side */
+    rig._bakePad = pad; rig._baked = true; return n;
+  }
 
   /* AUTOFIT (owner 2026-11-27 "ทำให้จัดกระดูก ภาพถูกต้อง ... ครอสชอบใส่ตัวละครบิดไม่ตรง"): every piece is turned / sized / moved a little until it lies best
      on the reference picture (rig.ref) at rest. At rest a piece is drawn at trs(at, r, s) whatever its parent, so each piece is fitted on its own.
@@ -236,12 +267,12 @@ const Bones2D = (() => {
     P.draw = (ctx, x, y, scale, left) => { if (P.clip) { P.lastClip = P.clip; if (P.cf > 0) { const f = P.cf / .08; drawBones(ctx, x, y, scale, left, f); P.drawClip(ctx, x, y, scale, left, 1 - f); } else P.drawClip(ctx, x, y, scale, left, 1); return; }
       if (P.fromClip > 0) { const f = P.fromClip / .1; P.fromClip -= 1 / 60; drawBones(ctx, x, y, scale, left, 1 - f); P.drawClip(ctx, x, y, scale, left, f); return; } drawBones(ctx, x, y, scale, left, 1); };
     const drawBones = (ctx, x, y, scale, left, fade) => { if (!P.mats) P.update(0); if (!P.mats) return; const F = rig._feet, sx = left ? -scale : scale, V = [sx, 0, 0, scale, x - F[0] * sx, y - F[1] * scale], a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha));
-      for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); const pa = (P.pose[k] && P.pose[k].a != null ? P.pose[k].a : 1) * (fade == null ? 1 : fade); if (pa <= .01) continue; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha)) * pa; ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); ctx.drawImage(P.image(k), -q.pv[0], -q.pv[1]); } ctx.globalAlpha = a0; P.view = V; };
+      for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); const pa = (P.pose[k] && P.pose[k].a != null ? P.pose[k].a : 1) * (fade == null ? 1 : fade); if (pa <= .01) continue; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha)) * pa; ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); const im = P.image(k); ctx.drawImage(im, -q.pv[0] - (im._ox || 0), -q.pv[1] - (im._oy || 0)); } ctx.globalAlpha = a0; P.view = V; };
     P.at = (k, lx, ly) => { const m = P.mats && P.mats[k], q = rig.parts[k]; if (!m) return null; const p = pt(m, (lx || 0) - 0, (ly || 0) - 0); return P.view ? pt(P.view, p[0], p[1]) : p; };   /* where a point of a piece (its picture px, from the turning point) is on screen after draw */
     P.centre = k => { const im = rig.img[k], q = rig.parts[k]; return im ? P.at(k, im.width / 2 - q.pv[0], im.height / 2 - q.pv[1]) : null; };
     P.angle = k => { const m = P.mats && P.mats[k]; if (!m) return 0; const V = P.view || [1, 0, 0, 1, 0, 0], n = mul(V, m); return Math.atan2(n[1], n[0]); };
     return P;
   }
-  return { load, images, seamless, unseam, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
+  return { load, images, seamless, unseam, bake, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
 })();
 if (typeof module !== 'undefined') module.exports = Bones2D;
