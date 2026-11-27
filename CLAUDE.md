@@ -88,7 +88,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
   - smooth glow VFX (`?fx=pixel` = old pixel look), zone leaves / snow / embers, a polished shop / bag;
   - 44 PixelLab icons (`art/incoming/bag3d/gen.py`, 1 credit each);
   - shooting weapons point at the enemy (a code-drawn crossbow pop).
-- NEXT: the owner wants a MOBA-style item build-up (parts → mid → final items). See the newest lines at the end of `docs/action-game.md` and ask the owner the open picks before building.
+- 2026-11-27 night: MOBA-style BUILD TREE built (button "ประกอบ": 7 parts → 6 mid → 8 ultimate items, pay only for missing pieces, one ultimate of each, enemies use them late; placeholder icons). Check `node tools/qa/bag3d_tree.js`, balance `bag3d_sim.js` (tree mode). Open picks for the owner: newest lines at the end of `docs/action-game.md`.
 - Notes: the BAG 3D section and the newest lines at the end of `docs/action-game.md`. Card game concept (not built): the CARD GAME CONCEPT section.
 
 ## NEWEST (owner 2026-11-21): zombie city `zcity.html` "เมืองสุดท้าย"

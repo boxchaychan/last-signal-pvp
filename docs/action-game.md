@@ -3446,3 +3446,23 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Build order for the cloud (ship each batch to main, link `lucky.html?v=N`): (1) merge: 3 of one hero in a cell -> one random hero of the next rank, tap a cell = info card with range ring + sell; (2) ENHANCE panel (coins raise attack per rank, like the reference's row of stats), WISH (clovers: three slots with odds), clovers from bosses and every 5th wave; (3) MYTHIC recipes panel (named heroes on the board -> one mythic; placeholders until set 2 art); (4) boss every 10th wave with its own timer bar, 40 waves, win / lose screens, speed x2; (5) feel: attack effects per hero kind, damage feed for big hits, summon banner for epic+, sounds (mute switch; keep test pages muted); (6) a real bot partner that uses the same summon / merge rules with its own coins; (7) balance with a bot run (`LK.sim`) and a start screen.
   - Checks in the cloud: node + Playwright exist there (not on the PC): write `tools/qa/lucky_check.js` (phone 390 x 844, no console errors, summon / merge / wave flow) and use it before every ship.
 
+- 2026-11-27 bag3d MOBA BUILD TREE BUILT (owner "ทำเลยโมบ้ากระเป๋าฉันนอนก่อน": build it, owner asleep, picks made by Claude), 0 credits:
+  - 3 tiers, 21 items (`tree` 1 / 2 / 3, `from` = parts, `fee` = joining cost, `c` = full price):
+    - 7 parts, 2-3 gold, small stats, 1 cell: ใบมีดเหล็กกล้า +5 % weapons, หนังสัตว์หนา +12 HP, แผ่นเกราะเหล็ก, ขนนกเหยี่ยว, ผลึกเวท, เขี้ยวสัตว์ป่า, สมุนไพรป่า;
+    - 6 mid items = 2 parts + fee: คมดาบนักรบ, เสื้อเกราะโซ่, รองเท้าวายุ, ลูกแก้วอาคม, เครื่องรางชีวา, กรงเล็บนักล่า;
+    - 8 ULTIMATE items, one of each per run = mid + mid / mid + part + fee: ดาบสังหารราชันย์, ป้อมเหล็กไม่ล้ม, รองเท้าพายุคลั่ง, มงกุฎจอมเวท, สัญญาโลหิต, เกราะไททัน, and two weapons (คทาราชาอสูร, ธนูพิฆาตเทพ).
+  - The build shop: the button "ประกอบ" (was "สูตร"), with tabs ประกอบของ / สูตรผสม ★3.
+    - Pay only for the missing pieces (`treePlan` / `treeCost`: owned pieces count, the rest are bought). The full price is struck through when it is cheaper.
+    - Owned counts are shown, owned ultimates are greyed "มีแล้ว".
+  - Placing and joining:
+    - a buy goes into the bag where the used pieces were, else the first free spot, else the tray (`placeNew`);
+    - dropping one piece onto its partner joins them for the fee (`tryBuild`).
+  - Rules:
+    - tree items are not in the random shop and do not level by ★;
+    - descriptions show "ทำจาก ..." and "ประกอบเป็น ...";
+    - enemies carry mid items from round 7 and ultimates from round 11 (always ★1).
+  - New global stats: `gmdmg` (magic weapon damage %) and `gls` (life steal added to every weapon).
+  - Icons: code-made placeholders (`TREEICONS` in `tools/art/bag_craft_icons.py`, made from the finished icons). Sheet = 14 rows, `ico()` sets the sheet size inline. PixelLab icons: 21 x 1 credit, only on "เจน". When ordered, put them in `art/incoming/bag3d/pl/<id>.png` and they replace the placeholders.
+  - Balance (`node tools/qa/bag3d_sim.js 80`, the bot now has a tree mode: build toward one ultimate before shopping): smart 10.0, random 12.0, smart+tree 10.2. The tree helps a little and is not overpowered; enemy tree items did not raise the difficulty.
+  - Checks: `node tools/qa/bag3d_tree.js` (partial prices 3 / 6 / 6, unique, join fee 3, not in the shop, stats count, buttons inside 844 x 390 and 740 x 360, a round-9 fight) = TREE OK, no errors. `bag3d_craft` / `bag3d_vfx` / `bag3d_pops` also show no errors. Preview `art/bag3d/moba_tree_preview.png`.
+  - Open for the owner: whether the parts should cost bag space (now they do), whether to keep "one of each" for ultimates, PixelLab icons for the 21.
