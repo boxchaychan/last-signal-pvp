@@ -58,7 +58,7 @@
 <button id="tg">☰</button>
 <div id="ttl"></div>
 <div id="hint"></div>
-<script src="rig2d/bones.js?v=5"></script>
+<script src="rig2d/bones.js?v=6"></script>
 <script>
 'use strict';
 /* Rig tool, version 2 (first made 2026-11-14 on the owner's "เอาทูลมา ฉันต่อเอง"; rebuilt 2026-11-27 after one hero of the owner's recording was taken
@@ -78,7 +78,7 @@ const clean = () => { const o = JSON.parse(JSON.stringify(R, (k, v) => k === 'im
 function save() { try { localStorage.setItem(KEY, JSON.stringify(clean())); } catch (e) { } }
 
 /* ---- view */
-let DPR = 1, W = 0, H = 0, ZOOM = 1, PAN = [0, 0], MODE = 'A', SEL = '', PLAY = '', GAP = 0, POSE = {}, LEFT = false, BONES = false, LAST = 0, FEET = false;
+let HAD = false, DPR = 1, W = 0, H = 0, ZOOM = 1, PAN = [0, 0], MODE = 'A', SEL = '', PLAY = '', GAP = 0, POSE = {}, LEFT = false, BONES = false, LAST = 0, FEET = false;
 function view() { const [w, h] = R.size, s = Math.min(W / w, H / h) * .78 * ZOOM, pw = $('#pn').classList.contains('hide') ? 0 : 262 * DPR; return [s, 0, 0, s, (W - pw) * .5 + PAN[0] - w / 2 * s, H * .52 + PAN[1] - h / 2 * s]; }
 function resize() { DPR = Math.min(3, devicePixelRatio || 1); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; }
 addEventListener('resize', resize);
@@ -132,7 +132,7 @@ function select(k) { SEL = k; const q = R.parts[k]; $('#sel').textContent = labe
 function stop() { PLAY = ''; for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', !b.dataset.mv); hint(); }
 function play(k) { if (!k) { stop(); return; } PLAY = k; POSE = {}; GAP = 0; PL = B.player(R); PL.play(B.MOVES[k].loop || B.MOVES[k].fn ? k : 'idle'); if (!(B.MOVES[k].loop || B.MOVES[k].fn)) GAP = .35; PL.update(0); for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', b.dataset.mv === k); hint(); }
 function boot() {
-  let o = null; try { const s = localStorage.getItem(KEY); if (s) o = JSON.parse(s); } catch (e) { } try { adopt(o || JSON.parse(JSON.stringify(R0, (k, v) => k === 'img' && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); } catch (e) { adopt(JSON.parse(JSON.stringify(R0, (k, v) => k === 'img' && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); }
+  let o = null; try { const s = localStorage.getItem(KEY); if (s) o = JSON.parse(s); } catch (e) { } HAD = !!o; try { adopt(o || JSON.parse(JSON.stringify(R0, (k, v) => k === 'img' && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); } catch (e) { adopt(JSON.parse(JSON.stringify(R0, (k, v) => k === 'img' && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); }
   $('#ttl').textContent = (R.title || CHAR) + ' · ' + names.length + ' ชิ้น';
   const opt = (sel, v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; $(sel).append(o); };
   for (const k of names) opt('#pick', k, label(k)); opt('#par', '', '(ไม่มี: ชิ้นหลัก)'); for (const k of names) opt('#par', k, label(k)); for (const r in B.ROLES) opt('#role', r, B.ROLES[r]);
@@ -157,12 +157,16 @@ function boot() {
   $('#cp').onclick = () => { const s = JSON.stringify(clean()); $('#tx').value = s; (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(() => alert('คัดลอกแล้ว: วางในแชตส่งให้ Claude ได้เลย'), () => { $('#tx').select(); alert('กดค้างที่กล่องข้อความแล้วคัดลอกเอง'); }); };
   $('#dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(clean(), null, 1)], { type: 'application/json' })); a.download = CHAR + '.json'; a.click(); };
   $('#rs').onclick = () => { if (confirm('เริ่มใหม่จากไฟล์ตั้งต้น?')) { try { localStorage.removeItem(KEY); } catch (e) { } adopt(JSON.parse(JSON.stringify(R0, (k, v) => k === 'img' && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); POSE = {}; select(SEL); } };
-  $('#lo').onclick = () => { if (!confirm('แยกทุกชิ้นออกมาวางเรียงข้างตัว ให้ต่อเองตั้งแต่ต้น?')) return; stop(); let x = -R.size[0], y = 0, rh = 0;   /* spread the pieces in rows left of the reference, straight, size kept */
-    for (const k of names) { const q = R.parts[k], w = R.img[k].width * q.s, h = R.img[k].height * q.s; if (x + w > -20) { x = -R.size[0]; y += rh + 20; rh = 0; } q.r = 0; q.fx = false; q.at = [x + q.pv[0] * q.s, y + q.pv[1] * q.s]; x += w + 20; rh = Math.max(rh, h); }
-    POSE = {}; PAN = [W * .2, 0]; $('#ro').value = .35; save(); select(SEL); };
+  const apart = () => { stop(); let x = -R.size[0] * 1.15, y = 0, rh = 0;   /* spread the pieces in rows left of the reference, straight, size kept */
+    for (const k of names) { const q = R.parts[k], w = R.img[k].width * q.s, h = R.img[k].height * q.s; if (x + w > -14) { x = -R.size[0] * 1.15; y += rh + 14; rh = 0; } q.r = 0; q.fx = false; q.at = [x + q.pv[0] * q.s, y + q.pv[1] * q.s]; x += w + 14; rh = Math.max(rh, h); }
+    let x0 = 0, y0 = 0, x1 = R.size[0], y1 = R.size[1]; for (const k of names) { const q = R.parts[k], l = q.at[0] - q.pv[0] * q.s, t = q.at[1] - q.pv[1] * q.s; x0 = Math.min(x0, l); y0 = Math.min(y0, t); x1 = Math.max(x1, l + R.img[k].width * q.s); y1 = Math.max(y1, t + R.img[k].height * q.s); }
+    const pw = $('#pn').classList.contains('hide') ? 0 : 262 * DPR, s0 = Math.min(W / R.size[0], H / R.size[1]) * .78, fit = Math.min((W - pw) * .95 / (x1 - x0), H * .8 / (y1 - y0)); ZOOM = fit / s0;   /* everything on screen: the pieces and the faint whole picture */
+    PAN = [(R.size[0] / 2 - (x0 + x1) / 2) * fit, (R.size[1] / 2 - (y0 + y1) / 2) * fit - H * .06]; POSE = {}; $('#ro').value = .4; save(); select(SEL); };
+  $('#lo').onclick = () => { if (confirm('แยกทุกชิ้นออกมาวางเรียงข้างตัว ให้ต่อเองตั้งแต่ต้น?')) apart(); };
   $('#ld').onclick = () => { try { adopt(JSON.parse($('#tx').value)); save(); select(SEL); alert('โหลดแล้ว'); } catch (e) { alert('ข้อมูลไม่ถูกต้อง'); } };
   $('#tg').onclick = () => $('#pn').classList.toggle('hide');
-  resize(); select(names.includes('torso') ? 'torso' : names.find(k => R.parts[k].role === 'body') || names[0]); stop(); hint(); if (QS.get('play') !== '0') play(QS.get('play') || 'idle'); requestAnimationFrame(draw);
+  resize(); select(names.includes('torso') ? 'torso' : names.find(k => R.parts[k].role === 'body') || names[0]); stop(); hint(); if (QS.get('apart') === '1') { if (!HAD) apart(); }   /* "let me join it myself": the first visit starts with the pieces apart beside a faint picture of the whole hero; a rig already saved in this browser is kept */
+  else if (QS.get('play') !== '0') play(QS.get('play') || 'idle'); requestAnimationFrame(draw);
   window.RIG = { get R() { return R; }, get PL() { return PL; }, select, play, stop, B }; }
 function hint() { $('#hint').textContent = PLAY ? 'กำลังเล่นท่า "' + B.NAMES[PLAY] + '" · เลื่อน แรงพอง / ความเร็ว ได้ · แตะตัวละครหรือกด หยุด เพื่อกลับไปต่อชิ้น' : FEET ? 'แตะตรงพื้นใต้เท้าของตัวละคร (จุดที่ตัวยืน)'
   : MODE === 'A' ? 'จัดวาง: แตะชิ้นเพื่อเลือก · ลากเพื่อย้าย · ลากจุดแดง = จุดหมุน (วางที่ข้อต่อ) · ลากที่ว่าง = เลื่อนจอ · ปรับขนาด / มุม / ชิ้นแม่ / ชั้น / หน้าที่ ในแถบขวา'

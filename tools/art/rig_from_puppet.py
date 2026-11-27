@@ -14,5 +14,5 @@ for q in P['parts']:
     x, y, a = world(q['n']); parts[q['n']] = dict(img=f"pup_zeus_{q['n']}.png", n=NAME[q['n']], role=ROLE[q['n']], pv=[round(-q['ox'], 1), round(-q['oy'], 1)], at=[round(FX + x, 1), round(FY + y, 1)], s=1, r=round(math.degrees(a), 1), p=q['p'] or '')
 parts['handW']['g'] = parts['handF']['g'] = .15; parts['armW']['g'] = parts['armF']['g'] = .9   # his arms bend outward at the elbow: a full raise would put both fists before his face
 parts['torso']['pv'][1] += 26; parts['torso']['at'][1] += 26   # the body turns at the HIP line (where the legs join), so a lean does not swing the skirt off the legs
-rig = dict(v=2, name='zeus', title='ซุส (9 ชิ้น หันหน้าตรง)', dir='art/divine/', size=[W, H], feet=[FX, FY], view='front', flip=True, parts=parts, order=[q['n'] for q in P['parts']])   # flip: his weapon arm is on the left of the picture
+rig = dict(v=2, name='zeus', title='ซุส (9 ชิ้น หันหน้าตรง)', dir='art/divine/', ref='../rigs/zeus_ref.png', size=[W, H], feet=[FX, FY], view='front', flip=True, parts=parts, order=[q['n'] for q in P['parts']])   # flip: his weapon arm is on the left of the picture
 json.dump(rig, open(os.path.join(R, 'art/rigs/zeus.json'), 'w'), ensure_ascii=False, indent=1); print('art/rigs/zeus.json', len(parts), 'pieces')

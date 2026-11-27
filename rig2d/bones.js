@@ -2,6 +2,7 @@
    apart = about 8 rigid pieces, each MOVED, TURNED and SCALED; numbers in docs/action-game.md). No Spine, no engine: one small file.
    - A RIG is data (art/rigs/<name>.json, made / fixed by hand in rig.html):
        { v: 2, name, dir: folder of the piece pictures, ref: optional reference picture, size: [w, h] of the reference space, feet: [x, y],
+         zfront: true = raised arms may be drawn in front of the head (only for pieces without visible joint ends; default off = joints stay hidden under the body),
          view: 'front' for a hero seen from the front (its far arm mirrors the weapon arm; no walk / run), flip: true when the weapon side is the LEFT of the picture (moves mirrored),
          parts: { key: { img, n: Thai label, role, pv: [x, y] turning point inside the picture, at: [x, y] where that point sits, s: size,
                          r: start angle (deg), p: parent key or '', fx: mirrored, g: how far the shared moves turn THIS piece (1 = as written; fits a move to a hero's own build) } }, order: [keys back to front] }
@@ -40,7 +41,7 @@ const Bones2D = (() => {
       _root: [K(.1, { x: -1.5 }, 'snap'), K(.3, { x: 3.5 }, 'snap'), K(.7, { x: 1 }), K(1, {})],
       body: [K(.1, { r: -11, sy: 1.12, sx: .95 }, 'snap'), K(.3, { r: 13, sy: .92, sx: 1.07 }, 'snap'), K(.6, { r: 4, sy: 1.02 }), K(1, {}, 'io')],
       head: [K(.1, { s: 1.34, r: -7 }, 'snap'), K(.3, { s: 1.12, r: 11 }, 'snap'), K(.6, { s: 1.03, r: 4 }), K(1, {}, 'io')],
-      armF: [K(.1, { r: -158 }, 'snap'), K(.3, { r: -38 }, 'snap'), K(.6, { r: -14 }), K(1, {}, 'io')], foreF: [K(.1, { r: 58 }, 'snap'), K(.3, { r: 14 }, 'snap'), K(.6, { r: 4 }), K(1, {}, 'io')],
+      armF: [K(.1, { r: -128 }, 'snap'), K(.3, { r: -38 }, 'snap'), K(.6, { r: -14 }), K(1, {}, 'io')], foreF: [K(.1, { r: 58 }, 'snap'), K(.3, { r: 14 }, 'snap'), K(.6, { r: 4 }), K(1, {}, 'io')],
       weapon: [K(.1, { r: -34 }, 'snap'), K(.3, { r: 30, s: 1.18 }, 'snap'), K(.6, { r: 8 }), K(1, {}, 'io')],
       armB: [K(.1, { r: -26 }, 'snap'), K(.3, { r: 30 }, 'snap'), K(1, {}, 'io')], legF: [K(.3, { r: -12 }, 'snap'), K(1, {}, 'io')], legB: [K(.3, { r: 10 }, 'snap'), K(1, {}, 'io')], wing: [K(.1, { r: -25 }), K(.3, { r: 30 }), K(1, {}, 'io')] } },
     shoot: { dur: .4, tracks: {   /* the gunner of the recording, key by key (its head: 140 % / 16 deg at once, 132 / 24, 116 / 32, 108 / 44, 100 / 36, 100 / 20, 108 / 0, then still) */
@@ -50,8 +51,8 @@ const Bones2D = (() => {
       weapon: [K(.06, { r: -8, s: 1.12 }, 'snap'), K(.14, { r: -24, s: 1.2 }, 'snap'), K(.31, { r: -16, s: 1.1 }), K(.56, {}, 'io')], armB: [K(.06, { r: 22 }, 'snap'), K(.31, { r: 28 }), K(.56, {}, 'io')], wing: [K(.06, { r: -20 }, 'snap'), K(.46, { r: 8 }), K(.7, {})] } },
     cast: { dur: .7, tracks: {   /* arms up, held, thrown down */
       body: [K(.2, { sy: 1.1, sx: .95, r: -5 }, 'snap'), K(.55, { sy: 1.12, sx: .94, r: -6 }, 'lin'), K(.68, { sy: .92, sx: 1.07, r: 8 }, 'snap'), K(1, {}, 'io')],
-      head: [K(.2, { s: 1.22, r: -10 }, 'snap'), K(.55, { s: 1.18, r: -12 }, 'lin'), K(.68, { s: 1.08, r: 10 }, 'snap'), K(1, {}, 'io')],
-      armF: [K(.2, { r: -118 }, 'snap'), K(.55, { r: -126 }, 'lin'), K(.68, { r: -30 }, 'snap'), K(1, {}, 'io')], armB: [K(.2, { r: -110 }, 'snap'), K(.55, { r: -118 }, 'lin'), K(.68, { r: -24 }, 'snap'), K(1, {}, 'io')],
+      head: [K(.2, { s: 1.14, r: -8 }, 'snap'), K(.55, { s: 1.12, r: -10 }, 'lin'), K(.68, { s: 1.08, r: 10 }, 'snap'), K(1, {}, 'io')],
+      armF: [K(.2, { r: -100 }, 'snap'), K(.55, { r: -106 }, 'lin'), K(.68, { r: -30 }, 'snap'), K(1, {}, 'io')], armB: [K(.2, { r: -96 }, 'snap'), K(.55, { r: -102 }, 'lin'), K(.68, { r: -24 }, 'snap'), K(1, {}, 'io')],
       foreF: [K(.2, { r: 68 }, 'snap'), K(.55, { r: 72 }, 'lin'), K(.68, { r: 10 }, 'snap'), K(1, {}, 'io')], foreB: [K(.2, { r: 64 }, 'snap'), K(.55, { r: 68 }, 'lin'), K(.68, { r: 10 }, 'snap'), K(1, {}, 'io')],
       weapon: [K(.2, { r: -20, s: 1.15 }, 'snap'), K(.55, { r: -26, s: 1.2 }, 'lin'), K(.68, { r: 25 }, 'snap'), K(1, {}, 'io')], _root: [K(.2, { y: -2 }, 'snap'), K(.55, { y: -2.6 }, 'lin'), K(.68, { y: 0 }, 'snap'), K(1, {})], wing: [K(.2, { r: -30 }), K(.68, { r: 25 }, 'snap'), K(1, {})] } },
     hit: { dur: .3, tracks: {   /* knocked back, squashed, back up */
@@ -67,7 +68,7 @@ const Bones2D = (() => {
     cheer: { dur: .9, tracks: {   /* two happy hops, arms up */
       _root: [K(.12, { y: 0 }), K(.3, { y: -9 }, 'out'), K(.48, { y: 0 }, 'in'), K(.56, { y: 0 }), K(.72, { y: -6 }, 'out'), K(.88, { y: 0 }, 'in'), K(1, {})],
       body: [K(.12, { sy: .9, sx: 1.08 }, 'snap'), K(.3, { sy: 1.1, sx: .94 }), K(.5, { sy: .9, sx: 1.08 }, 'in'), K(.72, { sy: 1.08, sx: .95 }), K(.9, { sy: .94, sx: 1.05 }, 'in'), K(1, {})],
-      head: [K(.3, { s: 1.14, r: -8 }), K(.5, { r: 4 }), K(.72, { s: 1.1, r: -6 }), K(1, {})], armF: [K(.3, { r: -122 }, 'snap'), K(.5, { r: -98 }), K(.72, { r: -126 }), K(1, {}, 'io')], armB: [K(.3, { r: -116 }, 'snap'), K(.5, { r: -94 }), K(.72, { r: -120 }), K(1, {}, 'io')], foreF: [K(.3, { r: 66 }, 'snap'), K(.5, { r: 50 }), K(.72, { r: 68 }), K(1, {}, 'io')], foreB: [K(.3, { r: 62 }, 'snap'), K(.5, { r: 48 }), K(.72, { r: 64 }), K(1, {}, 'io')], weapon: [K(.3, { r: -20 }), K(1, {}, 'io')] } },
+      head: [K(.3, { s: 1.14, r: -8 }), K(.5, { r: 4 }), K(.72, { s: 1.1, r: -6 }), K(1, {})], armF: [K(.3, { r: -104 }, 'snap'), K(.5, { r: -84 }), K(.72, { r: -106 }), K(1, {}, 'io')], armB: [K(.3, { r: -100 }, 'snap'), K(.5, { r: -80 }), K(.72, { r: -102 }), K(1, {}, 'io')], foreF: [K(.3, { r: 66 }, 'snap'), K(.5, { r: 50 }), K(.72, { r: 68 }), K(1, {}, 'io')], foreB: [K(.3, { r: 62 }, 'snap'), K(.5, { r: 48 }), K(.72, { r: 64 }), K(1, {}, 'io')], weapon: [K(.3, { r: -20 }), K(1, {}, 'io')] } },
   };
   /* a raised arm must not vanish behind a big chibi head: while these moves last the weapon arm (and, on front-view heroes, the far arm) is drawn in front, like the raised gun of the recording */
   for (const [mv, roles] of [['attack', ['armF']], ['shoot', ['armF']], ['cast', ['armF', 'armB']], ['cheer', ['armF', 'armB']]]) for (const ro of roles) { const tr = MOVES[mv].tracks[ro]; if (tr) tr.forEach((key, i) => { if (i < tr.length - 1) key[1].z = 1; }); }
@@ -104,7 +105,7 @@ const Bones2D = (() => {
     P.update = dt => { if (!P.move) return; const mv = P.move; P.t += dt * P.speed;
       if (!mv.fn && P.t >= mv.dur) { if (mv.hold) { P.t = mv.dur; P.done = true; } else if (mv.loop) P.t %= mv.dur; else { P.done = true; if (P.base && MOVES[P.base]) { const left = P.t - mv.dur; P.play(P.base, { fade: .1 }); P.t = left; } else P.t = mv.dur; } }
       sample(P.move, P.t, tmp); P.roles = tmp; const pop = P.pop, pose = P.pose; for (const k in pose) delete pose[k];
-      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && tmp[ro]; if (!o) continue; const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, z: far && !front ? 0 : o.z || 0 }; if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
+      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && tmp[ro]; if (!o) continue; const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, z: !rig.zfront || (far && !front) ? 0 : o.z || 0 }; if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
       const r0 = tmp._root ? tmp._root : REST; for (const c in REST) P.root[c] = r0[c] == null ? REST[c] : r0[c]; if (fl < 0) { P.root.r = -P.root.r; P.root.x = -P.root.x; }
       if (P.from) { P.fadeT += dt; const f = P.fade > 0 ? Math.min(1, P.fadeT / P.fade) : 1; if (f >= 1) P.from = null; else { for (const k in rig.parts) { const a = P.from.pose[k] || REST, b = pose[k] || (pose[k] = Object.assign({}, REST)); for (const c of ['r', 'x', 'y', 'sx', 'sy']) b[c] = a[c] + (b[c] - a[c]) * f; } for (const c in REST) P.root[c] = P.from.root[c] + (P.root[c] - P.from.root[c]) * f; } }
       /* hair / cape / tail: a spring thrown by how fast their turning point moves */

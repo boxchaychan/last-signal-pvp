@@ -3548,4 +3548,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - `g` per piece = how far the shared moves turn THAT piece (Zeus: arms 0.9, hands 0.15; slider "ท่ามาตรฐานหมุนชิ้นนี้แรงแค่ไหน"); lower arms unfold when the arm is raised (the girl's elbow is drawn bent).
   - Lesson: shared moves only fit heroes drawn to ONE piece layout (arms hanging at the sides, same joints). The parts-sheet template for new heroes must fix that layout: the Zeus sheet (head, body, 2 upper arms, 2 hands, weapon, 2 legs) is the model.
   - Still NOT checked: a real phone; many heroes at once in a game; a hero with wings / a robot (the recording has both).
+- Owner on the proof picture (2026-11-27 late): "ซ่อนข้อต่อ", "สรุปเฟรมหรือกระดูก งง", "เอาตัวซุสมาให้ฉันต่อกระดูกเอง".
+  - Answer given: BONES (pieces moved on bones), not drawn frames; "frame by frame" only meant stopping the recording picture by picture to measure it. Say "กระดูก" and avoid the word "เฟรม" when talking about this system.
+  - Joints hidden: arms stay BEHIND the body in every move (the ball ends of the Zeus arms showed when a raised arm was drawn in front). `z` keys only count when a rig sets `zfront: true` (art without visible joint ends). Raises are wide instead of straight up (cast / cheer about 100 degrees, attack wind-up 128), so the hand and weapon end beside the head.
+  - The owner joins Zeus himself: `rig.html?char=zeus&apart=1` = first visit starts with the 9 pieces apart beside a faint picture of the whole hero (`art/rigs/zeus_ref.png`, `ref` of the rig), fitted to the screen; a rig already saved in that browser is kept. Parents and turning points start as Claude set them; the owner can change everything and send it back with "คัดลอกส่ง Claude".
 
