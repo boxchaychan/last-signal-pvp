@@ -64,8 +64,8 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 ## NEWEST (owner 2026-11-22): `dragonrig.html` = the painted dragon as a 2D skeletal rig (25 parts, 48 bones, original pixels). Notes: the DRAGON RIG section at the end of `docs/action-game.md`; start there on "rig มังกร".
 
 ## NEWEST (owner 2026-11-27, latest of all): `lucky.html` "ผู้กล้าเสี่ยงดวง" (start on "เกมอัญเชิญ" / "Slack Off")
-- 4th try at the random-summon merge defence the owner likes (reference clip: genre only). New page, PixelLab pixel heroes (48 px, `create_map_object`, 1 credit each), pond scene, two boards, monsters walk the brick ring.
-- A LOOK TEST is built and shown; the systems (merge, mythic recipes, wish, enhance, bosses) wait for the owner's verdict. Notes: the LUCKY section at the end of `docs/action-game.md`.
+- 4th try at the random-summon merge defence the owner likes (reference clip: genre only). The pixel look test did NOT pass; it is now SMOOTH 2D: cartoon art by Codex (`docs/codex/lucky/ART1.md`, run with `codex exec` straight in `art/incoming/lucky2d/`, cut by `tools/art/lucky2d_cut.py`), vector UI in code.
+- Heroes are whole pictures moved by code, NO cut-out bones (owner 2026-11-26). The 2D look test is built and shown; the systems (merge, mythic recipes, wish, enhance, bosses) wait for the owner's verdict. Notes: the LUCKY section at the end of `docs/action-game.md`.
 
 ## PARKED 2026-11-27: level grinder `quest.html` "ผู้กล้าแดนพิกเซล" (made the same day; owner after two batches: "ผิดหวังไม่สวย ... กลับไปทำเกมส์กระเป๋า")
 - The owner found it NOT pretty and went back to the backpack game `bag3d.html`. Leave `quest.html` as it is; no work on it unless the owner asks. Do not start another grinder without asking.
