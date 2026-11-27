@@ -43,3 +43,11 @@ Skills can carry scripts that run on the owner's PC, so read before installing. 
 
 ## Nothing fits
 Say so plainly, and offer to build a small one with `skill-creator`. Project skills go in `.claude/skills/<name>/SKILL.md`.
+
+## Outside packs the owner pointed at
+- 2026-11-27, owner sent the link with "เอาติดไว้": `gamedev-skills/awesome-gamedev-agent-skills` on GitHub (Apache-2.0, 79 skills + a router that picks by engine and task).
+  - Read so far: the README, the router and one three.js skill. They are plain guidance text with code snippets and a few terminal commands for the agent; no keys asked for. NOT read: the other 78 skill bodies, `scripts/` (4 maintainer Python scripts), `.claude-plugin/`.
+  - 50 of the 79 are for engines we do not use (Godot, Unity, Unreal, Roblox, Bevy, pygame, LÖVE, Defold, Ebitengine).
+  - The ones that fit our single-file HTML / three.js games: threejs-scene-setup, threejs-gltf-loading, threejs-materials-lighting, game-feel, performance-optimization, create-game-assets, game-ui-ux, input-systems, camera-systems, shader-programming, save-systems, audio-design, tower-defense, rpg, card-game, roguelike.
+  - NOT installed yet. The cloud session was refused when it tried to attach that repository, and all 79 would make every chat's skill list longer (token cost). Waiting for the owner's pick: the 16 that fit, all 79, or none.
+  - To install: read each file first, then copy `skills/<group>/<name>/` to `.claude/skills/<name>/`. Do not run the pack's scripts.
