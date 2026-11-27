@@ -97,6 +97,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
   - monster / boss rounds are fought in `horde.html?bag=1` inside an iframe (bag mode = `bag3d/arena.js`, hooks `if (BAGM)` in `horde.html`); duels keep the side view; `?fight=side` = old fight;
   - one champion vs the round's horde, every bag item fires by itself with its own 3D move; the fight is FULLY AUTOMATIC (owner "ไม่ต้องบังคับดิให้มันออโต้โดยเราจัดกระเป๋าแบบเดิม": the player only arranges the bag, no steering, no dash button);
   - checks `node tools/qa/bag3d_horde.js` (+ `bal` for balance); after touching `horde.html` also run `horde_check.js`.
+  - the champion plays a body move per item move (`BAGANIM`); a new ADVENTURER model is ordered from the owner (GPT on the body guide -> Tripo -> Claude rigs): `art/incoming/basebody/PROMPT_GPT_adventurer_set.txt`.
 - Notes: the BAG 3D section and the newest lines at the end of `docs/action-game.md`. Card game concept (not built): the CARD GAME CONCEPT section.
 
 ## NEWEST (owner 2026-11-21): zombie city `zcity.html` "เมืองสุดท้าย"

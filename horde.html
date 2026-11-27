@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=2"></script>
+<script src="bag3d/arena.js?v=3"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -546,7 +546,8 @@ const HEROES = {
   hood: { name: 'นักเวทฮู้ด', role: 'เวทวงกว้าง ร่ายเร็ว เลเวลไว', file: 'art/grind3d/hood_knight.glb', cls: 'mage', start: 'fire', hp: 85, spd: 3.45, perk: 'คูลดาวน์ -10% ค่าประสบการณ์ +10%', bonus: { haste: .1, xp: .1 },
     idle: 'Q_Spell_Simple_Idle_Loop', run: 'Running_A', atks: ['Q_Spell_Simple_Shoot'], col: ['#c89aff', '#4a2a7a'] },
   wolf: { name: 'นักล่าหมาป่า', role: 'แชมเปี้ยนของเกมกระเป๋า', file: 'art/grind3d/wolf_girl.glb', cls: 'bow', start: 'arrow', hp: 68, spd: 3.6, perk: '', bonus: {},   /* bag mode only (not in HKEYS) */
-    idle: 'Ranged_Bow_Idle', run: 'Running_HoldingBow', atks: ['Ranged_Bow_Release'], col: ['#ffd9a0', '#8a5a3a'] },
+    idle: 'Ranged_Bow_Idle', run: 'Running_HoldingBow', col: ['#ffd9a0', '#8a5a3a'],   /* atks = every clip the bag mode plays (BAGANIM in bag3d/arena.js) */
+    atks: ['Ranged_Bow_Release', 'Ranged_Bow_Release_Up', 'Q_Sword_Regular_A', 'Q_Sword_Regular_B', 'Q_Sword_Regular_C', 'Melee_1H_Attack_Stab', 'Melee_1H_Attack_Jump_Chop', 'Melee_2H_Attack_Spin', 'Q_Sword_Dash', 'Q_OverhandThrow', 'Q_Spell_Simple_Shoot', 'Ranged_Magic_Summon', 'Melee_Block', 'Use_Item', 'Q_Roll', 'Hit_A', 'Spawn_Ground'] },
 };
 const HKEYS = ['archer', 'wing', 'demon', 'dark', 'hood'], HERO_H = 1.35, WEAP = {}, BASE = {}, HCACHE = {};
 let HERO = null;
@@ -656,7 +657,7 @@ function hurtHero(d, src) {
 const DASH = { cd: 3, t: .2, spd: 15 };
 function heroDash() { const H = HERO; if (!H || G.state !== 'play' || H.dead || H.dashCd > 0) return false; let dx = INP.x, dz = INP.z; const L = Math.hypot(dx, dz); if (L > .12) { dx /= L; dz /= L; } else { dx = Math.sin(H.face); dz = Math.cos(H.face); }
   H.dashT = DASH.t; H.dashCd = DASH.cd; H.ddx = dx; H.ddz = dz; H.face = Math.atan2(dx, dz); H.inv = Math.max(H.inv, DASH.t + .14); G.dashes = (G.dashes || 0) + 1; sfx('whoosh', .7, 1.7);
-  H.dodgeT = Math.min(.45, chPlay(H.M, 'L', 'Dodge_Forward', true, 2.2) || 0); if (H.atkT <= 0) { chPlay(H.M, 'U', 'Dodge_Forward', true, 2.2); H.atkT = H.dodgeT; }
+  const dc = BAGM && H.M.acts.Q_Roll_lo ? 'Q_Roll' : 'Dodge_Forward'; const dts = dc === 'Q_Roll' ? 3 : 2.2; H.dodgeT = Math.min(.45, chPlay(H.M, 'L', dc, true, dts) || 0); if (H.atkT <= 0 || BAGM) { chPlay(H.M, 'U', dc, true, dts); H.atkT = H.dodgeT; }
   decal('shock', H.pos.x, H.pos.z, 2.6, H.D.col[0], 0xffffff, { life: .3, y: .09 }); pfx('smoke/dust-puff', H.pos.x, H.pos.z, 1.6, { opacity: .8, speed: 1.8 }); return true; }
 function updHero(dt) {
   const H = HERO, M = H.M; M.mixer.update(dt); H.inv = Math.max(0, H.inv - dt); H.hurtT = Math.max(0, H.hurtT - dt); H.atkT -= dt; H.dashCd = Math.max(0, H.dashCd - dt); if (H.shT > 0) H.shT -= dt;
