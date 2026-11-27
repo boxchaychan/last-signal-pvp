@@ -3358,3 +3358,18 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Checks: `node tools/qa/bag3d_pops.js` (freezes a fight and holds each weapon's pop / shot for both sides), `bag3d_aim.js` (the hero's pose + hand directions during a bow fight). No errors. Picture `art/bag3d/shoot_facing.png`.
 - 2026-11-27 (owner "ธนูกลับด้านปะ" after the picture of the previous fix): the flipped crossbow pop read as BACKWARDS. On the old crossbow icon the arrow feathers sit at the bottom-left, so people read the tips as pointing up-right. Now `POPAIM.bow = [no flip, +45°]`: lying flat, feathers behind, tips at the enemy. The frost crossbow uses the same +45°. The 3D bow in her hand was measured: the string lies on her side and the bow's back faces the enemy, so it is the right way round. Picture `art/bag3d/bow_direction.png`.
 - 2026-11-27 (owner "ลูกธนูมันกลับฝั่ง" after the second try): the old crossbow icon has feather-like tips at BOTH ends, so its direction could not be read whichever way it was turned. The `bow` pop is now a side-view crossbow drawn in code (`xbow()`): stock behind, curved prod in front, string drawn back, a bolt with a steel head in front and red feathers behind. It points at the target and is mirrored for the enemy. The shop icon is unchanged. A 1-credit PixelLab side-view crossbow icon was tried, but the permission check blocked it because the owner had not said "เจน" for that job, so nothing was generated. Picture `art/bag3d/bow_direction.png`.
+- 2026-11-27 NEXT (owner "ทำให้มีของเพิ่มอีกแบบ moba ผสมของ", then "ย้ายไปทำในpc"): MOBA-style item BUILD-UP for `bag3d.html`, not built yet. The owner moved the work to the PC chat.
+  - Idea to propose there, genre only, nothing copied:
+    - cheap BASIC parts (e.g. iron shard, wood stave, magic dust, leather strip, gem chip) → MID items made from 2 parts → FINAL items made from a mid item + a part / another mid item;
+    - a build tree in the recipe book (which parts lead where), the shop showing "builds into";
+    - partial-price building (you only pay the missing parts);
+    - keep the ★3 rule for the old recipes, or make the tree its own track.
+  - Decide with the owner before building:
+    - how many tiers;
+    - whether parts take bag space;
+    - whether FINAL items are unique (one per bag);
+    - whether the enemy builds too.
+  - Icons for new parts / items: PixelLab pixen 64x64 with `art/incoming/bag3d/gen.py` (1 credit each, only on "เจน"; say the count first). Free placeholders: `tools/art/bag_craft_icons.py` (`var` / `pair`).
+  - Where things are now:
+    - items `IT`, recipes `CRAFT` + `CRAFT_LV` (★3 main item), crafting `tryCraft` / `canCraftWith` / `readyPair`, recipe book `bookHtml()`;
+    - icon sheet `art/bag3d/icons_all.png` (11 rows, `ICR`), checks `tools/qa/bag3d_*.js`, balance `node tools/qa/bag3d_sim.js 80`.
