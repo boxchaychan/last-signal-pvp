@@ -63,8 +63,8 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 
 ## NEWEST (owner 2026-11-22): `dragonrig.html` = the painted dragon as a 2D skeletal rig (25 parts, 48 bones, original pixels). Notes: the DRAGON RIG section at the end of `docs/action-game.md`; start there on "rig มังกร".
 
-## NEWEST (owner 2026-11-27, latest of all): THE level grinder `quest.html` "ผู้กล้าแดนพิกเซล" (start on "เกมเก็บเลเวล" / "ผู้กล้าแดนพิกเซล")
-- The ONE pixel level grinder to FINISH (the owner keeps switching games: do not start another grinder).
+## PARKED 2026-11-27: level grinder `quest.html` "ผู้กล้าแดนพิกเซล" (made the same day; owner after two batches: "ผิดหวังไม่สวย ... กลับไปทำเกมส์กระเป๋า")
+- The owner found it NOT pretty and went back to the backpack game `bag3d.html`. Leave `quest.html` as it is; no work on it unless the owner asks. Do not start another grinder without asking.
 - Look: a 3D land in code (ground, water, grass, sun shadows) drawn as pixels + PixelLab pixel sprites for hero, monsters and every map object, 1 sprite pixel = 1 texel.
 - Owner's rules for this game:
   - no KayKit;
@@ -76,7 +76,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Code `quest/*.js`, art `art/quest/`, raw art `art/incoming/quest/`, tools `tools/art/quest_sheet.py` / `quest_mob.py` / `quest_props.py`.
 - Notes, what is not done yet: the QUEST section at the end of `docs/action-game.md`.
 
-## NEWEST (owner 2026-11-27): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
+## NEWEST (owner 2026-11-27, latest of all, back to it the same day): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
 - The 2D backpack game with 3D fighters (wolf hunter vs Quaternius monsters).
 - Built 2026-11-26/27:
   - 64 shop items + 20 crafting recipes (two different items; the main one must be ★3 first; result ★3; recipe book "สูตร");
