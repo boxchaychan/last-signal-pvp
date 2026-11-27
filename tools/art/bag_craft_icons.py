@@ -28,9 +28,20 @@ NEWITEMS = [('twinblades', 'pair', 'dagger', 'dagger', (190, 200, 255)), ('rapie
 CRAFTED2 = [('stormblades', 'twinblades', 'feather', (150, 220, 255)), ('luckrapier', 'rapier', 'clover', (140, 255, 120)), ('executioner', 'greatsword', 'fang', (255, 50, 60)),
     ('frostlance', 'javelin', 'frost', (120, 215, 255)), ('divinetome', 'holytome', 'ring', (255, 235, 140)), ('parrybuckler', 'buckler', 'glove', (255, 200, 110)),
     ('honeybread', 'bread', 'juice', (255, 190, 70)), ('soullantern', 'lantern', 'skull', (190, 90, 255))]
+# build tree (2026-11-27, MOBA-style parts -> mid -> ultimate): code-made from the finished icons until PixelLab ones are ordered
+TREEICONS = [('p_blade', 'var', 'dagger', (200, 205, 215), .45, -20, .8, False), ('p_hide', 'var', 'cloak', (170, 110, 60), .55, 0, .8, False), ('p_plate', 'var', 'plate', (150, 160, 175), .45, 0, .78, False),
+    ('p_feather', 'var', 'feather', (230, 190, 110), .55, 0, .8, False), ('p_crystal', 'var', 'frost', (190, 120, 255), .6, 0, .78, False), ('p_fang', 'var', 'fang', (240, 230, 200), .5, 0, .78, False),
+    ('p_herb', 'var', 'clover', (90, 220, 90), .4, 0, .78, False),
+    ('m_edge', 'pair', 'sword', 'fang', (255, 200, 120)), ('m_mail', 'var', 'plate', (200, 210, 225), .5, 0, .95, False), ('m_boots', 'var', 'boots', (120, 220, 255), .45, 0, .95, False),
+    ('m_orb', 'var', 'orb', (190, 110, 255), .55, 0, .95, False), ('m_charm', 'var', 'amulet', (110, 255, 140), .55, 0, .95, False), ('m_claws', 'var', 'claw', (255, 200, 90), .5, 0, .95, False),
+    ('f_kingslayer', 'var', 'greatsword', (255, 210, 80), .55, 0, 1.0, False), ('f_bastion', 'var', 'towershield', (255, 210, 90), .5, 0, 1.0, False), ('f_stormstep', 'var', 'boots', (90, 200, 255), .65, 0, 1.0, True),
+    ('f_archmage', 'var', 'crown', (180, 100, 255), .6, 0, 1.0, False), ('f_bloodpact', 'var', 'heart', (200, 20, 40), .55, 0, 1.0, False), ('f_titan', 'var', 'plate', (230, 180, 70), .6, 0, 1.0, True),
+    ('f_lichstaff', 'var', 'archstaff', (150, 60, 220), .55, 0, 1.0, False), ('f_godbow', 'var', 'frostbow', (255, 215, 120), .65, 0, 1.0, False)]
 SRC = Image.open('art/bag/icons.png').convert('RGBA')
 MADE = {}
+CODE = {}
 def cell(k):
+    if k in CODE: return CODE[k].copy()
     if k in MADE: return MADE[k].copy()
     i = ORDER.index(k); return SRC.crop((i % 8 * 64, i // 8 * 64, i % 8 * 64 + 64, i // 8 * 64 + 64))
 def var(src, col, amt, rot, sc, flip):
@@ -78,11 +89,17 @@ def from_sheet(path, cols=4, rows=3):
         cell = Image.new('RGBA', (64, 64), (0, 0, 0, 0)); cell.alpha_composite(c, ((64 - w) // 2, (64 - h) // 2)); out.append(cell)
     return out
 # the order of the IT table in bag3d.html after the 40 originals: CRAFTED, NEWITEMS, CRAFTED2
-ALL = [k for k, *_ in CRAFTED] + [k for k, *_ in NEWITEMS] + [k for k, *_ in CRAFTED2]
+ALL = [k for k, *_ in CRAFTED] + [k for k, *_ in NEWITEMS] + [k for k, *_ in CRAFTED2] + [k for k, *_ in TREEICONS]
 for k, op, *a in NEWITEMS: MADE[k] = var(a[0], *a[1:]) if op == 'var' else pair(a[0], a[1], a[2])
 code = {k: icon(a, b, c) for k, a, b, c in CRAFTED}; code.update({k: MADE[k] for k, *_ in NEWITEMS}); code.update({k: icon(a, b, c) for k, a, b, c in CRAFTED2})
 # PixelLab icons (art/incoming/bag3d/gen.py, the same recipe as the 40 originals, used raw like them) replace the code-made ones
 for k in ALL:
+    f = f'art/incoming/bag3d/pl/{k}.png'
+    if os.path.exists(f): code[k] = Image.open(f).convert('RGBA').resize((64, 64), Image.NEAREST)
+CODE.update(code)   # tree icons are made from the finished icons (PixelLab ones where they exist)
+for k, op, *a in TREEICONS:
+    if k not in code: code[k] = var(a[0], *a[1:]) if op == 'var' else pair(a[0], a[1], a[2])
+for k in ALL:   # PixelLab tree icons, when ordered later, replace the code-made ones
     f = f'art/incoming/bag3d/pl/{k}.png'
     if os.path.exists(f): code[k] = Image.open(f).convert('RGBA').resize((64, 64), Image.NEAREST)
 # owner's ChatGPT sheets that already came in (art/incoming/bag3d/sheet_<first id>_<cols>x<rows>.png, kept and re-used), then a new one:
