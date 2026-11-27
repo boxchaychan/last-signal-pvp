@@ -80,6 +80,9 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Code `quest/*.js`, art `art/quest/`, raw art `art/incoming/quest/`, tools `tools/art/quest_sheet.py` / `quest_mob.py` / `quest_props.py`.
 - Notes, what is not done yet: the QUEST section at the end of `docs/action-game.md`.
 
+## NEWEST (owner 2026-11-27 night, latest of all): GPT's "Chibi Live Studio" = `chibistudio.html` (start on "Chibi Live Studio" / "ทูล GPT")
+- The owner's own GPT-made 2D animation tool (owner: "เอาของ GPT ไปใช้สิ"): a whole-picture MESH rig of Zeus (no seams), IK, keyframes, face / hand slots, springs, export PNG / GIF / sprite sheet / frames JSON. Source + its QA in `tools/chibistudio/` (`python3 tools/chibistudio/build.py chibistudio.html` rebuilds; test `node tools/chibistudio/qa/browser.cjs chibistudio.html`). Our own `rig.html` stays but is no longer the main tool. Notes: the last lines of `docs/action-game.md`.
+
 ## NEWEST (owner 2026-11-27 night, latest of all): 2D PIECES ON BONES = `rig.html` + `rig2d/bones.js` (start on "ต่อกระดูก 2D")
 - Why: one hero of the owner's Slack Off Survivor recording taken apart = about 8 rigid pieces, each moved / turned / SCALED, attack 0.4 s with a 140 % head pop. Owner stopped the 3D model for this ("ทำงาน 2D ก่อน").
 - Built: the owner's old tool `rig.html` is version 2 (put pieces together, give each a ROLE, play the shared moves with pop / speed sliders) and `rig2d/bones.js` is the small player a game loads (`Bones2D.load`, `.player`, `play / update / draw`). Rigs are data in `art/rigs/<name>.json`: `zeusgpt` (the default: 12 pieces CUT from the owner's own GPT sheet by `tools/art/zeus_sheet_cut.py`, 6 faces that swap by move), `zeus` (Codex's 9-piece puppet), `dagger` (14 pieces, side view). Moves are written once per role and play on every rig.

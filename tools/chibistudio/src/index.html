@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chibi Live Studio</title>
+<style>/*CSS*/</style>
+</head>
+<body>
+<header class="top"><div class="brand"><span class="bolt" aria-hidden="true">ϟ</span><div><h1>Chibi Live Studio</h1><span id="projectName">Zeus</span></div></div><button id="quickSave" aria-label="บันทึกโปรเจกต์">↓ JSON</button></header>
+<main>
+<section class="preview" aria-label="พื้นที่ตัวอย่าง">
+  <div class="preview-title"><span id="sceneLabel">Zeus</span><span id="stageInfo">กำลังโหลด…</span><div id="zoomControls" hidden><button id="zoomOut" aria-label="ย่อมุมมอง">−</button><button id="pan" aria-label="ลากเลื่อนมุมมอง">เลื่อน</button><button id="zoomIn" aria-label="ขยายมุมมอง">+</button></div></div>
+  <div class="viewport"><canvas id="view" width="530" height="490" aria-label="ตัวอย่างแอนิเมชันและพื้นที่แก้ไข"></canvas></div>
+  <div class="transport">
+    <button id="play" aria-label="หยุด / เล่น">▶︎</button><button id="rewind" aria-label="กลับไปต้นคลิป">↶</button>
+    <input type="range" id="seek" min="0" max="1.42" step=".001" aria-label="ตำแหน่ง Timeline">
+    <output id="time">0.00 / 1.42</output>
+  </div>
+  <div id="markers" class="markers" aria-label="Keyframe"></div>
+  <button id="stageCut" class="accent" hidden>แยกชิ้นในกรอบ</button>
+</section>
+<section class="editor" aria-label="เครื่องมือ">
+  <nav aria-label="เครื่องมือ">
+    <button data-tab="animate" aria-pressed="true">คลิป</button><button data-tab="rig">Rig</button><button data-tab="art">ชิ้นส่วน</button><button data-tab="battle">ต่อสู้</button><button data-tab="export">ส่งออก</button>
+  </nav>
+  <div id="status" role="status" aria-live="polite">กำลังโหลดตัวละคร</div>
+  <section id="animate" class="panel">
+    <div id="clipList" class="row clip-list"></div>
+    <div class="row"><button id="newClip">+ คลิป</button><button id="putKey" class="accent">◆ เพิ่ม / แก้ Key</button><button id="dropKey">ลบ Key</button></div>
+    <details id="editClip"><summary>ตั้งค่าคลิปและ Keyframe</summary>
+      <div class="grid"><label>ชื่อคลิป <input id="clipName" maxlength="70"></label><label>ความยาว (วินาที)<input id="duration" type="number" min=".1" max="12" step=".05"></label></div>
+      <div class="grid"><label>Interpolation <select id="ease"><option value="smooth">Smooth</option><option value="linear">Linear</option><option value="hold">Hold</option></select></label><label class="check"><input id="clipLoop" type="checkbox"> เล่นวน</label></div>
+      <div class="row"><button id="exportClip">บันทึกคลิป</button><button id="importClip">นำเข้าคลิป</button></div>
+    </details>
+    <details id="editPose"><summary>แก้ท่าและสลับภาพ</summary>
+      <div class="row"><label class="check"><input id="poseBones" type="checkbox"> ไกด์กระดูก</label><label class="check"><input id="poseIK" type="checkbox" checked> IK มือ / เท้า</label></div>
+      <div class="grid"><label>กระดูก<select id="poseBone"></select></label><label>มุม (°)<input id="poseAngle" type="number" min="-180" max="180" step="1"></label></div>
+      <div class="grid"><label>X<input id="poseX" type="number" step="1"></label><label>Y<input id="poseY" type="number" step="1"></label></div>
+      <div id="slotFields" class="grid slots"></div>
+    </details>
+  </section>
+  <section id="rig" class="panel" hidden>
+    <div class="grid"><label>กระดูก<select id="bone"></select></label><label>กระดูกแม่ <select id="parent"></select></label></div>
+    <div class="row"><label class="check"><input id="snap" type="checkbox" checked> Snap</label><label class="check"><input id="bindPose" type="checkbox" checked> แก้ Rig ท่าพัก</label></div>
+    <div class="grid three"><label>X<input id="boneX" type="number" step="1"></label><label>Y<input id="boneY" type="number" step="1"></label><label>มุม (°)<input id="boneA" type="number" step="1"></label></div>
+    <div class="hint">ลากจุดกระดูกเพื่อจัดตำแหน่งในท่าพัก ปิดท่าพักแล้วลากจุดมือหรือเท้าเพื่อใช้ IK</div>
+    <details><summary>เพิ่มหรือลบกระดูก</summary><div class="row"><input id="newBoneName" placeholder="ชื่อกระดูก a–z, _" maxlength="40"><button id="addBone">+ กระดูก</button><button id="dropBone">ลบกระดูกปลาย</button></div></details>
+    <details><summary>ฟิสิกส์ผมและผ้า</summary>
+      <label class="check"><input id="springOn" type="checkbox"> เปิดสปริงของกระดูกที่เลือก</label>
+      <div class="grid three"><label>ความแข็ง<input id="stiffness" type="number" min="20" max="190"></label><label>แรงหน่วง<input id="damping" type="number" min="2" max="28"></label><label>ปริมาณ<input id="amount" type="number" min="0" max="2" step=".1"></label></div>
+    </details>
+  </section>
+  <section id="art" class="panel" hidden>
+    <div class="row"><select id="pngMode" aria-label="วิธีแยกภาพ"><option value="single">ทั้งภาพ PNG</option><option value="alpha">แยกด้วยช่องโปร่งใส</option><option value="green">แยกจากพื้นเขียว</option></select><button id="importPNG" class="accent">+ PNG</button></div>
+    <div class="grid"><label>ชิ้นส่วน <select id="part"></select></label><label>ผูกกับกระดูก <select id="partBone"></select></label></div>
+    <div class="row"><button id="snapPart">Snap เข้ากระดูก</button><button id="layerUp">ขึ้นชั้น</button><button id="layerDown">ลงชั้น</button></div>
+    <details><summary>ตำแหน่งและภาพสลับ</summary>
+      <div class="grid"><label>X<input id="partX" type="number" step="1"></label><label>Y<input id="partY" type="number" step="1"></label><label>มุม (°)<input id="partA" type="number" step="1"></label><label>ขนาด<input id="partScale" type="number" min=".02" max="6" step=".01"></label></div>
+      <div class="row"><label class="check"><input id="partVisible" type="checkbox" checked> แสดงชิ้นนี้</label><button id="removePart">ลบชิ้นส่วน</button></div>
+      <div class="grid"><label>Slot<select id="partSlot"><option value="">ไม่มี</option><option value="hand">มือ</option><option value="face">สีหน้า</option><option value="weapon">อาวุธ</option></select></label><label>ชื่อภาพสลับ<input id="variantName" placeholder="เช่น smile" maxlength="40"></label></div>
+      <button id="variantPNG">+ PNG ภาพสลับ</button>
+    </details>
+    <details><summary>ตัดชิ้นจากภาพ</summary>
+      <div class="row"><button id="cut">ลากกรอบตัด</button><button id="applyCut" disabled>แยกออกจากต้นฉบับ</button></div>
+      <p class="hint">ลากกรอบในท่าพักเพื่อเลือกพื้นที่ ภาพที่ตัดจะแยกเป็นชิ้นใหม่บนตำแหน่งเดิม</p>
+    </details>
+    <details open><summary>Live Mesh และ Weight Paint</summary>
+      <div class="grid"><label>การผูกภาพ<select id="binding"><option value="rigid">กระดูกเดียว</option><option value="auto">เมชหลายกระดูก</option><option value="zeus">เมชซุส</option></select></label><label class="check"><input id="seam" type="checkbox" checked> รักษาขอบเมช</label></div>
+      <div class="row"><button id="mergeMesh">รวมกับชั้นล่างและลดรอยต่อ</button></div>
+      <div class="row"><button id="paint">แปรง Weight</button><button id="undoPaint">เลิกระบายล่าสุด</button></div>
+      <div class="grid"><label>กระดูกที่ระบาย<select id="weightBone"></select></label><label>ขนาดแปรง<input id="radius" type="range" min="8" max="95" value="33"></label><label>แรงแปรง<input id="strength" type="range" min=".05" max="1" step=".05" value=".6"></label><label>โหมดแปรง <select id="brushMode"><option value="add">เพิ่ม</option><option value="erase">ลด</option></select></label></div>
+    </details>
+  </section>
+  <section id="battle" class="panel" hidden>
+    <div class="row"><button id="battleAttack" class="accent">ปาสายฟ้า</button><button id="battleHit">จำลองโดนตี</button><button id="battleReset">เริ่มใหม่</button></div>
+    <p class="hint">ทดสอบจังหวะโจมตีกับเป้าฝึกในสนาม พลังชีวิตจะลดเมื่อสายฟ้าเข้าระยะ</p>
+  </section>
+  <section id="export" class="panel" hidden>
+    <div class="grid"><label>ขนาดเฟรม<select id="size"><option value="512">512 × 512</option><option value="256">256 × 256</option><option value="384">384 × 384</option></select></label><label>เฟรมต่อวินาที<select id="fps"><option>24</option><option>12</option><option>16</option><option>30</option></select></label><label>คอลัมน์ Sprite Sheet<select id="columns"><option>6</option><option>4</option><option>8</option></select></label></div>
+    <div class="row"><button id="exportPNG">PNG เฟรมนี้</button><button id="exportGIF">GIF</button><button id="exportSheet">Sprite Sheet</button><button id="exportMeta">JSON เฟรม</button></div>
+    <details><summary>โปรเจกต์</summary>
+      <label>ชื่อตัวละคร <input id="characterName" maxlength="70"></label>
+      <div class="row"><button id="saveProject">บันทึก JSON</button><button id="loadProject">เปิด JSON</button><button id="recover">เปิดฉบับที่บันทึกในเครื่อง</button></div>
+      <div class="row"><button id="zeus">ซุส</button><button id="dummy">หุ่นฝึก</button><button id="blank">Rig เปล่า</button></div>
+      <p class="hint">ใช้ JSON โปรเจกต์เพื่อเก็บภาพ กระดูก น้ำหนัก และคลิปไว้แก้ไข</p>
+    </details>
+  </section>
+</section>
+</main>
+<input id="filePNG" type="file" accept="image/png,.png" multiple hidden>
+<input id="fileVariant" type="file" accept="image/png,.png" hidden>
+<input id="fileJson" type="file" accept="application/json,.json" hidden>
+<script>/*SCRIPT*/</script>
+</body>
+</html>
