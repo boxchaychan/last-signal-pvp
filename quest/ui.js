@@ -27,6 +27,7 @@ function sfx(n) { if (!SAVE.snd || !AC || AC.state !== 'running') return; const 
 /* ---------- input */
 const KEYMOVE = { KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1], KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0] };
 addEventListener('keydown', e => { if (e.repeat) return; IN.keys[e.code] = 1; if (!G.started) { if (e.code === 'Enter' || e.code === 'Space') startGame(); return; }
+  if (typeof metaKey === 'function' && metaKey(e.code)) return;
   const si = { KeyQ: 0, KeyE: 1, KeyR: 2, Digit1: 0, Digit2: 1, Digit3: 2 }[e.code];
   if (si !== undefined) { if (IN.mouseAim && IN.aim) trySkill(si, IN.aim.x, IN.aim.z); else trySkill(si); }
   if (e.code === 'Space' || e.code === 'ShiftLeft') { dodge(); e.preventDefault(); } if (e.code === 'KeyM') { SAVE.snd = SAVE.snd ? 0 : 1; saveGame(); } });
@@ -38,6 +39,7 @@ function btnAt(x, y) { for (const b of UI.btn) if (Math.hypot(x - b.x, y - b.y) 
 hiC.addEventListener('pointerdown', e => { audioOn(); e.preventDefault();
   if (!G.started) { startGame(e.pointerType !== 'mouse'); return; }
   const [x, y] = cssToLo(e.clientX, e.clientY);
+  if (typeof metaPointer === 'function' && metaPointer(x, y)) return;
   if (x > UI.W - 16 * UI.u && y < 16 * UI.u) { SAVE.snd = SAVE.snd ? 0 : 1; saveGame(); return; }
   if (e.pointerType === 'mouse') { IN.touch = false; const b = btnAt(x, y); if (b && b.id !== 'atk') { if (b.id === 'dodge') dodge(); else trySkill(b.i); return; }
     if (e.button === 2) dodge(); else if (e.button === 0) { IN.mouseAtk = true; IN.mouseAim = true; IN.aim = groundAt(x, y); } return; }
@@ -72,8 +74,8 @@ function updAim() {   /* the spot a dragged skill will land on */
 function layoutUI() {
   UI.W = PX.w; UI.H = PX.h; UI.u = Math.max(1, Math.round(2 / PX.T)); const c = v => v / PX.T, W = UI.W, H = UI.H; UI.btn = [];
   if (IN.touch) { const ax = W - c(64), ay = H - c(64);
-    UI.btn.push({ id: 'atk', x: ax, y: ay, r: c(40) }, { id: 'sk', i: 0, x: ax - c(86), y: ay + c(4), r: c(26) }, { id: 'sk', i: 1, x: ax - c(62), y: ay - c(62), r: c(26) }, { id: 'sk', i: 2, x: ax + c(4), y: ay - c(86), r: c(26) }, { id: 'dodge', x: ax - c(146), y: ay + c(14), r: c(24) }); }
-  else { const s = 13 * UI.u, gap = 4 * UI.u, n = 4, x0 = W / 2 - (n * (s * 2 + gap) - gap) / 2 + s, y = H - s - 5 * UI.u;
+    UI.btn.push({ id: 'atk', x: ax, y: ay, r: c(40) }, { id: 'sk', i: 0, x: ax - c(92), y: ay + c(4), r: c(30) }, { id: 'sk', i: 1, x: ax - c(66), y: ay - c(66), r: c(30) }, { id: 'sk', i: 2, x: ax + c(4), y: ay - c(92), r: c(30) }, { id: 'dodge', x: ax - c(160), y: ay + c(14), r: c(27) }); }
+  else { const s = 19 * UI.u, gap = 4 * UI.u, n = 4, x0 = W / 2 - (n * (s * 2 + gap) - gap) / 2 + s, y = H - s - 5 * UI.u;
     for (let i = 0; i < 3; i++) UI.btn.push({ id: 'sk', i, x: x0 + i * (s * 2 + gap), y, r: s, key: 'QER'[i], sq: true }); UI.btn.push({ id: 'dodge', x: x0 + 3 * (s * 2 + gap), y, r: s, key: 'SPACE', sq: true }); }
 }
 const DIG = { 0: '111101101101111', 1: '010110010010111', 2: '111001111100111', 3: '111001111001111', 4: '101101111001001', 5: '111100111001111', 6: '111100111101111', 7: '111001010010010', 8: '111101111101111', 9: '111101111001111', '+': '000010111010000', '!': '010010010000010', '-': '000000111000000' };
@@ -115,13 +117,14 @@ function drawHUD(dt) {
   /* buttons */
   for (const b of UI.btn) { const cd = b.id === 'sk' ? P.cds[b.i] / SK[b.i].cd : b.id === 'dodge' ? P.dodgeCd / .85 : 0, down = (b.id === 'atk' && IN.atkId !== null) || (IN.sk && b.id === 'sk' && IN.sk.i === b.i);
     if (b.sq) { const s = b.r; g.fillStyle = '#120a1c'; g.fillRect(b.x - s - 1, b.y - s - 1, s * 2 + 2, s * 2 + 2); g.fillStyle = cd > 0 ? '#241a34' : '#3a2a58'; g.fillRect(b.x - s, b.y - s, s * 2, s * 2); g.fillStyle = cd > 0 ? '#2e2444' : '#5a4688'; g.fillRect(b.x - s, b.y - s, s * 2, u);
-      icon(g, b.id === 'sk' ? b.i : b.id, b.x, b.y - u, Math.max(1, Math.round(s / 7)), cd > 0); if (cd > 0) { g.fillStyle = 'rgba(8,4,16,.6)'; const h = Math.round(s * 2 * cd); g.fillRect(b.x - s, b.y + s - h, s * 2, h); }
-      T(b.key, b.x, b.y + s - 1.5 * u, b.key.length > 1 ? 8 : 10, cd > 0 ? '#8a80a0' : '#ffe9a8', 'center'); }
+      icon(g, b.id === 'sk' ? b.i : b.id, b.x, b.y - u, b.r, cd > 0); if (cd > 0) { g.fillStyle = 'rgba(8,4,16,.6)'; const h = Math.round(s * 2 * cd); g.fillRect(b.x - s, b.y + s - h, s * 2, h); }
+      T(b.key, b.x, b.y + s - 1 * u, b.key.length > 1 ? 8 : 10, cd > 0 ? '#8a80a0' : '#ffe9a8', 'center'); }
     else { pixCircle(g, b.x, b.y, b.r, down ? '#5a4688' : 'rgba(40,28,64,.72)', b.id === 'atk' ? '#ffe9a8' : cd > 0 ? '#4a4060' : '#8fd8ff');
-      icon(g, b.id === 'sk' ? b.i : b.id, b.x, b.y, Math.max(1, Math.round(b.r / 9)), cd > 0);
+      icon(g, b.id === 'sk' ? b.i : b.id, b.x, b.y, b.r, cd > 0);
       if (cd > 0) { g.fillStyle = 'rgba(8,4,16,.62)'; const h = Math.round(b.r * 2 * cd); g.save(); g.beginPath(); g.rect(b.x - b.r, b.y + b.r - h, b.r * 2, h); g.clip(); pixCircle(g, b.x, b.y, b.r - 1, 'rgba(8,4,16,.62)', 'rgba(8,4,16,.62)'); g.restore(); if (b.id === 'sk') T(Math.ceil(P.cds[b.i]) + '', b.x, b.y + 5 * u / 2, 15, '#fff', 'center'); } } }
   if (IN.joy) { const j = IN.joy, x0 = j.x0 / PX.T, y0 = j.y0 / PX.T, dx = j.x - j.x0, dy = j.y - j.y0, l = Math.hypot(dx, dy), m = Math.min(l, 44) / (l || 1) / PX.T; pixCircle(g, x0, y0, 46 / PX.T, 'rgba(30,22,50,.35)', 'rgba(160,220,255,.5)'); pixCircle(g, x0 + dx * m, y0 + dy * m, 18 / PX.T, 'rgba(150,215,255,.75)', '#ffffff'); }
   /* boss bar */
+  if (typeof drawMeta === 'function') drawMeta(g, W, H, u, dt);
   const b = G.boss; if (b && b.alive) { const w = Math.min(W * .5, 150 * u), x = Math.round(W / 2 - w / 2), y = 14 * u; bar(g, x, y, w, 5 * u, b.hp / b.max, '#d83ad0', '#ff9aee'); T(b.d.name, W / 2, y - 3 * u, 14, '#ffd0f4', 'center'); }
 }
 function drawText(dt) {
@@ -152,9 +155,9 @@ function zoneLook(dt) {   /* light and grade follow the zone: warm afternoon -> 
 function tick(dt) {
   G.time += dt; TIMEU.value = G.time; readInput();
   let g = dt; if (G.stop > 0) { G.stop -= dt; g = dt * .05; }
-  if (!G.started) { IN.mx = IN.mz = 0; IN.atk = false; }
-  updHero(g);
-  if (G.started) { updPacks(g); for (let i = ACT.length - 1; i >= 0; i--) updMob(ACT[i], g); updProj(g); updPick(g); updTimers(g); }
+  if (!G.started || G.paused) { IN.mx = IN.mz = 0; IN.atk = false; }
+  updHero(G.paused ? 0 : g);
+  if (G.started && !G.paused) { updPacks(g); for (let i = ACT.length - 1; i >= 0; i--) updMob(ACT[i], g); updProj(g); updPick(g); updTimers(g); }
   const hw = PX.bw * TW / 2, hd = PX.bh * TW / 2 / SP, tx = clamp(P.x + IN.mx * 1.6, -62 + hw, 62 - hw), tz = clamp(P.z - 1.1 + IN.mz * 1.2, -60 + hd, 58 - hd * .6), k = 1 - Math.exp(-dt * 7);
   CAMT.x += (tx - CAMT.x) * k; CAMT.z += (tz - CAMT.z) * k; CAMT.y += (P.y - CAMT.y) * k;
   zoneLook(dt); GRASSU.uCam.value.set(CAMT.x, CAMT.z); GRASSU.uHero.value.set(P.x, P.y, P.z);

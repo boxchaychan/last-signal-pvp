@@ -149,7 +149,7 @@ function buildGrass() {
 
 /* ---------- props: pixel sprites made for this game (PixelLab) standing as upright cards. One atlas, one mesh a map chunk.
    1 sprite pixel = 1 texel: a card is w * TW wide and h * TW / cos(pitch) tall, its foot point snapped to the texel grid. */
-const TL = new THREE.TextureLoader(), CP = Math.cos(PITCH), SP = Math.sin(PITCH), TWC = TW / CP, VER = '4';
+const TL = new THREE.TextureLoader(), CP = Math.cos(PITCH), SP = Math.sin(PITCH), TWC = TW / CP, VER = '5';
 const SPRTINT = { value: new THREE.Color(1, 1, 1) };
 let PROPS = null;
 function pixTex(t) { t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.encoding = THREE.LinearEncoding; return t; }

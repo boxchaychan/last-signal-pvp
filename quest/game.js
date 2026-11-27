@@ -2,7 +2,7 @@
    Heroes and monsters are PixelLab pixel sprites made for this game; 1 sprite pixel = 1 texel (see tools/art/quest_sheet.py, quest_mob.py). */
 'use strict';
 const SAVE_KEY = 'quest_save_v1';
-let SAVE = { gold: 0, lv: 1, xp: 0, up: { atk: 0, hp: 0 }, boss: 0, snd: 1 };
+let SAVE = { gold: 0, lv: 1, xp: 0, up: { atk: 0, hp: 0 }, boss: 0, snd: 1, q: 0, qn: 0 };
 function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s && s.lv) Object.assign(SAVE, s); } catch (e) { } if (Q.get('mute') === '1') SAVE.snd = 0; if (Q.has('lv')) { SAVE.lv = +Q.get('lv'); SAVE.xp = 0; } }
 function saveGame() { if (Q.has('lv')) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { } }
 const xpNeed = lv => Math.round(25 * Math.pow(lv, 1.6) + 15);
@@ -216,7 +216,7 @@ function damage(m, mult, o = {}) {
 }
 function killMob(m) {
   m.alive = false; m.t = 0; m.hp = 0; if (m.tel) { m.tel.end = null; m.tel.t = m.tel.life; m.tel = null; }
-  deathPoof(m.x, m.y, m.z, m.hW, m.d.col); gainXP(Math.round(m.d.xp * (1 + .3 * (m.lv - 1))));
+  deathPoof(m.x, m.y, m.z, m.hW, m.d.col); if (typeof questEvent === 'function') questEvent('kill', m.type); gainXP(Math.round(m.d.xp * (1 + .3 * (m.lv - 1))));
   const g = Math.max(1, Math.round(m.d.gold * (1 + .25 * (m.lv - 1)) * rnd(.7, 1.3))), n = clamp(Math.ceil(g / 3), 1, m.d.boss ? 24 : m.d.big ? 10 : 4);
   for (let i = 0; i < n; i++) dropItem('coin', m.x, m.y + .5, m.z, g / n); if (Math.random() < (m.d.big ? 1 : .13)) dropItem('heart', m.x, m.y + .5, m.z, 0);
   if (m.d.big) { explosion(m.x, m.z, m.d.boss ? 5 : 3.2, { c2: m.d.boss ? 0xff5ad0 : 0xffb040, pow: 1.6, scorch: false }); hitStop(.14); G.msg = { t: 0, life: 3, txt: 'ปราบ ' + m.d.name + ' สำเร็จ!', big: true, col: '#ffe27a' }; sfx('level'); if (m.d.boss) { SAVE.boss++; } saveGame(); }

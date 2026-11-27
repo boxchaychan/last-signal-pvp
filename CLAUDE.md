@@ -69,9 +69,10 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Owner's rules for this game:
   - no KayKit;
   - generate art that fits instead of reusing old assets;
-  - PixelLab at most 300 credits (83 used on 2026-11-27): say the spend in every report, no need to wait for an answer;
+  - PixelLab at most 300 credits (91 used on 2026-11-27): say the spend in every report, no need to wait for an answer;
   - Pro Flash only for a hero's base picture, moves with the normal tools;
   - one class (sword) + one map first, bow and magic later.
+- Done: sword hero, one map of 3 zones, 6 monsters + mushroom king + dragon boss, blacksmith upgrades, 9 quests, minimap. Next: bow, then magic.
 - Code `quest/*.js`, art `art/quest/`, raw art `art/incoming/quest/`, tools `tools/art/quest_sheet.py` / `quest_mob.py` / `quest_props.py`.
 - Notes, what is not done yet: the QUEST section at the end of `docs/action-game.md`.
 
