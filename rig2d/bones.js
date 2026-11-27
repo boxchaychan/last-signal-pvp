@@ -34,6 +34,7 @@ const Bones2D = (() => {
   /* ---- the shared moves. Timing of attack / shoot follows the recording: no wind-up, a hard size pop inside 1/30 s, fast out, slower back,
      size leads and tilt follows. The hero faces RIGHT: minus = lean / swing back, plus = forward. */
   const K = (t, o, e) => [t, o, e || 'out'];
+  const GUARD_IN = 22, GUARD_UP = 62;   /* front-view arm guard: most an upper arm turns inward (deg), how high it lifts before it is drawn in front */
   const MOVES = {
     idle: { loop: true, fn(t) { const b = S(t / .64 * TAU), b2 = S(t / .64 * TAU - .7); return { _root: { sy: 1 + .036 * b, sx: 1 - .02 * b }, body: { sy: 1 + .012 * b }, head: { r: 1.6 * b2 }, armF: { r: 3 * b2 }, armB: { r: -3 * b2 }, weapon: { r: 2.5 * b2 }, weaponB: { r: -2 * b2 }, wing: { r: 10 * b, sy: 1 + .08 * b } }; } },
     walk: { loop: true, fn(t) { const p = t / .9 * TAU, s = S(p), c = C(p); return { _root: { y: -Math.abs(c) * 1 }, body: { r: 4, sy: 1 + .02 * Math.abs(c) }, head: { r: -3 }, armF: { r: 20 * s }, armB: { r: -20 * s }, foreF: { r: -10 }, foreB: { r: -10 },
@@ -47,28 +48,28 @@ const Bones2D = (() => {
       armF: [K(.1, { r: -128 }, 'snap'), K(.3, { r: -38 }, 'snap'), K(.6, { r: -14 }), K(1, {}, 'io')], foreF: [K(.1, { r: 58 }, 'snap'), K(.3, { r: 14 }, 'snap'), K(.6, { r: 4 }), K(1, {}, 'io')],
       weapon: [K(.1, { r: -34 }, 'snap'), K(.3, { r: 30, s: 1.18 }, 'snap'), K(.6, { r: 8 }), K(1, {}, 'io')],
       armB: [K(.1, { r: -26 }, 'snap'), K(.3, { r: 30 }, 'snap'), K(1, {}, 'io')], legF: [K(.3, { r: -12 }, 'snap'), K(1, {}, 'io')], legB: [K(.3, { r: 10 }, 'snap'), K(1, {}, 'io')], wing: [K(.1, { r: -25 }), K(.3, { r: 30 }), K(1, {}, 'io')] } },
-    shoot: { dur: .4, tracks: {   /* the gunner of the recording, key by key (its head: 140 % / 16 deg at once, 132 / 24, 116 / 32, 108 / 44, 100 / 36, 100 / 20, 108 / 0, then still) */
+    shoot: { upright: true, dur: .4, tracks: {   /* the gunner of the recording, key by key (its head: 140 % / 16 deg at once, 132 / 24, 116 / 32, 108 / 44, 100 / 36, 100 / 20, 108 / 0, then still) */
       body: [K(.06, { r: -9, sy: 1.12, sx: .96 }, 'snap'), K(.14, { r: -14, sy: 1.1, sx: .96 }, 'lin'), K(.21, { r: -18, sy: 1.07, sx: .97 }, 'lin'), K(.31, { r: -24, sy: 1.03, sx: .985 }, 'lin'), K(.39, { r: -20 }, 'lin'), K(.46, { r: -11, sy: .97, sx: 1.02 }, 'lin'), K(.56, { r: 0, sy: 1.03 }, 'lin'), K(.66, { r: 2 }), K(.8, {})],
       head: [K(.06, { s: 1.46, r: -7 }, 'snap'), K(.14, { s: 1.375, r: -10 }, 'lin'), K(.21, { s: 1.2, r: -14 }, 'lin'), K(.31, { s: 1.1, r: -20 }, 'lin'), K(.39, { r: -16 }, 'lin'), K(.46, { r: -9 }, 'lin'), K(.56, { s: 1.08, r: 0 }, 'lin'), K(.64, {}, 'lin')],
       armF: [K(.06, { r: -82 }, 'snap'), K(.14, { r: -112 }, 'lin'), K(.31, { r: -125 }), K(.46, { r: -48 }, 'io'), K(.56, { r: -9 }), K(.68, {})], foreF: [K(.06, { r: 52 }, 'snap'), K(.31, { r: 62 }), K(.56, {}, 'io')],
       weapon: [K(.06, { r: -8, s: 1.12 }, 'snap'), K(.14, { r: -24, s: 1.2 }, 'snap'), K(.31, { r: -16, s: 1.1 }), K(.56, {}, 'io')], armB: [K(.06, { r: 22 }, 'snap'), K(.31, { r: 28 }), K(.56, {}, 'io')], wing: [K(.06, { r: -20 }, 'snap'), K(.46, { r: 8 }), K(.7, {})] } },
-    cast: { dur: .7, tracks: {   /* arms up, held, thrown down */
+    cast: { upright: true, dur: .7, tracks: {   /* arms up, held, thrown down */
       body: [K(.2, { sy: 1.1, sx: .95, r: -5 }, 'snap'), K(.55, { sy: 1.12, sx: .94, r: -6 }, 'lin'), K(.68, { sy: .92, sx: 1.07, r: 8 }, 'snap'), K(1, {}, 'io')],
       head: [K(.2, { s: 1.14, r: -8 }, 'snap'), K(.55, { s: 1.12, r: -10 }, 'lin'), K(.68, { s: 1.08, r: 10 }, 'snap'), K(1, {}, 'io')],
       armF: [K(.2, { r: -100 }, 'snap'), K(.55, { r: -106 }, 'lin'), K(.68, { r: -30 }, 'snap'), K(1, {}, 'io')], armB: [K(.2, { r: -96 }, 'snap'), K(.55, { r: -102 }, 'lin'), K(.68, { r: -24 }, 'snap'), K(1, {}, 'io')],
       foreF: [K(.2, { r: 68 }, 'snap'), K(.55, { r: 72 }, 'lin'), K(.68, { r: 10 }, 'snap'), K(1, {}, 'io')], foreB: [K(.2, { r: 64 }, 'snap'), K(.55, { r: 68 }, 'lin'), K(.68, { r: 10 }, 'snap'), K(1, {}, 'io')],
       weapon: [K(.2, { r: -20, s: 1.15 }, 'snap'), K(.55, { r: -26, s: 1.2 }, 'lin'), K(.68, { r: 25 }, 'snap'), K(1, {}, 'io')], _root: [K(.2, { y: -2 }, 'snap'), K(.55, { y: -2.6 }, 'lin'), K(.68, { y: 0 }, 'snap'), K(1, {})], wing: [K(.2, { r: -30 }), K(.68, { r: 25 }, 'snap'), K(1, {})] } },
-    hit: { dur: .3, tracks: {   /* knocked back, squashed, back up */
+    hit: { upright: true, dur: .3, tracks: {   /* knocked back, squashed, back up */
       _root: [K(.2, { x: -4 }, 'snap'), K(1, {}, 'io')], body: [K(.2, { r: -13, sy: .88, sx: 1.1 }, 'snap'), K(.6, { r: 3, sy: 1.04 }), K(1, {})],
       head: [K(.2, { r: -18, s: 1.12 }, 'snap'), K(.6, { r: 5 }), K(1, {})], armF: [K(.2, { r: -32 }, 'snap'), K(1, {}, 'io')], armB: [K(.2, { r: -26 }, 'snap'), K(1, {}, 'io')], weapon: [K(.2, { r: -18 }, 'snap'), K(1, {}, 'io')] } },
-    die: { dur: .8, hold: true, tracks: {   /* a hop, fall on the back, fade */
+    die: { upright: true, dur: .8, hold: true, tracks: {   /* a hop, fall on the back, fade */
       _root: [K(.15, { y: -5, r: -8 }, 'out'), K(.5, { y: 0, r: -84 }, 'in'), K(.58, { r: -78 }), K(.66, { r: -84 }), K(.8, { r: -84 }, 'lin'), K(1, { r: -84, a: 0 }, 'lin')],
       body: [K(.15, { sy: 1.1, sx: .94 }, 'snap'), K(.5, { sy: .9, sx: 1.08 }, 'in'), K(.66, { sy: 1 }), K(1, {})], head: [K(.15, { r: 12, s: 1.15 }, 'snap'), K(.5, { r: -10 }, 'in'), K(1, { r: -6 })],
       armF: [K(.15, { r: -60 }, 'snap'), K(.5, { r: -110 }, 'in'), K(1, { r: -100 })], armB: [K(.15, { r: 50 }, 'snap'), K(.5, { r: 70 }, 'in'), K(1, { r: 60 })], legF: [K(.5, { r: 22 }, 'in'), K(1, { r: 18 })], legB: [K(.5, { r: -10 }, 'in'), K(1, { r: -8 })] } },
-    spawn: { dur: .5, tracks: {   /* pops out of nothing, overshoots, settles */
+    spawn: { upright: true, dur: .5, tracks: {   /* pops out of nothing, overshoots, settles */
       _root: [K(0, { s: .05, a: 0 }), K(.3, { s: 1.18, a: 1, y: -3 }, 'snap'), K(.55, { s: .94, y: 0 }, 'io'), K(.8, { s: 1.03 }), K(1, {})],
       body: [K(.3, { sy: 1.12, sx: .92 }, 'snap'), K(.55, { sy: .9, sx: 1.1 }, 'io'), K(1, {})], head: [K(.3, { s: 1.15 }, 'snap'), K(.55, { s: .97 }), K(1, {})], armF: [K(.3, { r: -70 }, 'snap'), K(1, {}, 'io')], armB: [K(.3, { r: 60 }, 'snap'), K(1, {}, 'io')] } },
-    cheer: { dur: .9, tracks: {   /* two happy hops, arms up */
+    cheer: { upright: true, dur: .9, tracks: {   /* two happy hops, arms up */
       _root: [K(.12, { y: 0 }), K(.3, { y: -9 }, 'out'), K(.48, { y: 0 }, 'in'), K(.56, { y: 0 }), K(.72, { y: -6 }, 'out'), K(.88, { y: 0 }, 'in'), K(1, {})],
       body: [K(.12, { sy: .9, sx: 1.08 }, 'snap'), K(.3, { sy: 1.1, sx: .94 }), K(.5, { sy: .9, sx: 1.08 }, 'in'), K(.72, { sy: 1.08, sx: .95 }), K(.9, { sy: .94, sx: 1.05 }, 'in'), K(1, {})],
       head: [K(.3, { s: 1.14, r: -8 }), K(.5, { r: 4 }), K(.72, { s: 1.1, r: -6 }), K(1, {})], armF: [K(.3, { r: -104 }, 'snap'), K(.5, { r: -84 }), K(.72, { r: -106 }), K(1, {}, 'io')], armB: [K(.3, { r: -100 }, 'snap'), K(.5, { r: -80 }), K(.72, { r: -102 }), K(1, {}, 'io')], foreF: [K(.3, { r: 66 }, 'snap'), K(.5, { r: 50 }), K(.72, { r: 68 }), K(1, {}, 'io')], foreB: [K(.3, { r: 62 }, 'snap'), K(.5, { r: 48 }), K(.72, { r: 64 }), K(1, {}, 'io')], weapon: [K(.3, { r: -20 }), K(1, {}, 'io')] } },
@@ -103,8 +104,78 @@ const Bones2D = (() => {
       foreB: [K(.3, { r: 30 }, 'io'), K(.52, { r: 0 }, 'snap'), K(1, {}, 'io')],
       legF: [K(.3, { r: 6 }, 'io'), K(.52, { r: -14 }, 'snap'), K(.86, {}, 'io')], legB: [K(.3, { r: -8 }, 'io'), K(.52, { r: 12 }, 'snap'), K(.86, {}, 'io')],
       wing: [K(.3, { r: -30 }, 'io'), K(.52, { r: 30 }, 'snap'), K(1, {}, 'io')] } };
+  /* FRONT-VIEW ARM POSES (owner 2026-11-28 "แขนยังพันกันอยู่เลย"). The shared moves are written for a hero facing right; on a hero drawn from the
+     front the same numbers give different poses on every hero (each one's arms hang at their own angle, the weapon side may be mirrored), and a
+     forearm "bent up" in side view hangs down or crosses the chest. So for front-view heroes these moves key the ARM CHAIN in plain angles:
+     o = how far the piece points OUTWARD from hanging straight down, in degrees, in the body's frame (0 = down along the body, 90 = straight out to
+     the side, 180 = straight up); weapon o: 180 = upright as drawn. Same times and eases as the move; {} = back to the standing pose.
+     armF / foreF / weapon = the weapon side, armB / foreB / weaponB = the other side (mirrored by itself). Converted per hero by frontTracks(). */
+  const F = (t, o, e) => K(t, o == null ? {} : { o }, e), FT = (a) => a.map(([t, o, e]) => F(t, o, e));
+  const sym = (arm, fore) => ({ armF: FT(arm), foreF: FT(fore), armB: FT(arm), foreB: FT(fore) });
+  MOVES.cheer.front = sym([[.3, 150, 'snap'], [.5, 132], [.72, 152], [1, null, 'io']], [[.3, 172, 'snap'], [.5, 150], [.72, 175], [1, null, 'io']]);
+  MOVES.cast.front = sym([[.2, 118, 'snap'], [.55, 122, 'lin'], [.68, 88, 'snap'], [1, null, 'io']], [[.2, 172, 'snap'], [.55, 176, 'lin'], [.68, 92, 'snap'], [1, null, 'io']]);
+  MOVES.hit.front = sym([[.2, 48, 'snap'], [1, null, 'io']], [[.2, 30, 'snap'], [1, null, 'io']]);
+  MOVES.spawn.front = sym([[.3, 78, 'snap'], [1, null, 'io']], [[.3, 70, 'snap'], [1, null, 'io']]);
+  MOVES.die.front = { armF: FT([[.15, 70, 'snap'], [.5, 120, 'in'], [1, 110]]), foreF: FT([[.15, 60, 'snap'], [.5, 115, 'in'], [1, 105]]), armB: FT([[.15, 60, 'snap'], [.5, 100, 'in'], [1, 95]]), foreB: FT([[.15, 50, 'snap'], [.5, 95, 'in'], [1, 90]]) };
+  MOVES.shoot.front = { armF: FT([[.06, 92, 'snap'], [.14, 100, 'lin'], [.31, 104], [.46, 60, 'io'], [.56, 25], [.68, null]]), foreF: FT([[.06, 96, 'snap'], [.14, 104, 'lin'], [.31, 108], [.46, 60, 'io'], [.56, 25], [.68, null]]),
+    armB: FT([[.06, 22, 'snap'], [.31, 26], [.56, null, 'io']]), foreB: FT([[.06, 22, 'snap'], [.31, 26], [.56, null, 'io']]) };
+  MOVES.attack.front = { armF: FT([[.1, 158, 'snap'], [.3, 52, 'snap'], [.6, 32], [1, null, 'io']]), foreF: FT([[.1, 176, 'snap'], [.3, 40, 'snap'], [.6, 24], [1, null, 'io']]), weapon: FT([[.1, 176, 'snap'], [.3, 70, 'snap'], [.6, 60], [1, null, 'io']]),
+    armB: FT([[.1, 30, 'snap'], [.3, 18, 'snap'], [1, null, 'io']]), foreB: FT([[.1, 30, 'snap'], [.3, 18, 'snap'], [1, null, 'io']]) };
+  MOVES.throw.front = { armF: FT([[.12, 60], [.3, 150, 'io'], [.46, 156, 'lin'], [.52, 72, 'snap'], [.62, 52], [.72, 36], [.86, 14, 'io'], [1, null, 'io']]), foreF: FT([[.12, 62], [.3, 176, 'io'], [.46, 180, 'lin'], [.52, 66, 'snap'], [.62, 46], [.72, 30], [.86, 12, 'io'], [1, null, 'io']]),
+    weapon: FT([[.12, 176], [.3, 186, 'io'], [.46, 188, 'lin'], [.52, 100, 'snap'], [1, null, 'io']]),
+    armB: FT([[.3, 72, 'io'], [.46, 76, 'lin'], [.52, 30, 'snap'], [.66, 34], [.86, 8, 'io'], [1, null, 'io']]), foreB: FT([[.3, 80, 'io'], [.46, 84, 'lin'], [.52, 30, 'snap'], [.66, 34], [.86, 8, 'io'], [1, null, 'io']]) };
+  MOVES.thrust.front = { armF: FT([[.3, 58, 'io'], [.42, 92, 'snap'], [.6, 90], [1, null, 'io']]), foreF: FT([[.3, 30, 'io'], [.42, 92, 'snap'], [.6, 90], [1, null, 'io']]), weapon: FT([[.3, 120, 'io'], [.42, 92, 'snap'], [.6, 90], [1, null, 'io']]),
+    armB: FT([[.3, 24, 'io'], [.42, 34, 'snap'], [1, null, 'io']]), foreB: FT([[.3, 24, 'io'], [.42, 34, 'snap'], [1, null, 'io']]) };
+  /* the plain angles of a front move turned into this hero's own turns (cached per hero and move): an arm's turn = target - its standing angle,
+     a forearm's = its target - its standing angle - what the arm already turned, a weapon's = target - upright - what arm + forearm turned */
+  function frontTracks(rig, mv) {
+    const c = rig._fr || (rig._fr = new Map()); if (c.has(mv)) return c.get(mv); let out = null;
+    if (mv.front && rig.view === 'front' && rig._side) { const M0 = world(rig, {}, null), parts = rig.parts, roleK = r => Object.keys(parts).find(k => parts[k].role === r);
+      const ang = (v, sd) => Math.atan2(v[0] * sd, v[1]) * 180 / Math.PI, imC = k => { const im = rig.img && rig.img[k], q = parts[k]; if (!im) return [0, 1]; const a = pt(M0[k], im.width / 2 - q.pv[0], im.height / 2 - q.pv[1]); return [a[0] - M0[k][4], a[1] - M0[k][5]]; };
+      const at = (tr, u) => { if (!tr) return null; let a = null, b = null; for (const k of tr) { if (k[0] <= u + 1e-6) a = k; else { b = k; break; } } const va = k => k && k[1].o != null ? k[1].o : null; if (!a) return va(b) == null ? null : (b[0] ? null : va(b));
+        if (!b || Math.abs(a[0] - u) < 1e-6) return va(a); const A = va(a), Bv = va(b); if (A == null || Bv == null) return Math.abs(u - a[0]) < Math.abs(u - b[0]) ? A : Bv; return A + (Bv - A) * (u - a[0]) / (b[0] - a[0]); };
+      out = { tracks: {}, fx: {} }; const tracks = out.tracks;
+      for (const [ar, fr, wr] of [['armF', 'foreF', 'weapon'], ['armB', 'foreB', 'weaponB']]) { const a = roleK(ar); if (!a || !rig._side[a]) continue; const sd = rig._side[a], f = roleK(fr), w = roleK(wr), fxs = k => parts[k].fx ? -1 : 1;
+        const a0 = ang(f ? [M0[f][4] - M0[a][4], M0[f][5] - M0[a][5]] : imC(a), sd), f0 = f ? ang(imC(f), sd) : 0, T = mv.front;
+        const conv = (role, fn) => { const tr = T[role]; if (!tr) return; tracks[role] = tr.map(([u, o, e]) => { if (o.o == null) return [u, {}, e]; const r = fn(u, o.o); return [u, { r: r == null ? 0 : -sd * r }, e]; }); };
+        conv(ar, (u, o) => o - a0);
+        if (f) conv(fr, (u, o) => { const A = at(T[ar], u); return o - f0 - (A == null ? 0 : A - a0); });
+        if (w) conv(wr, (u, o) => { const Fv = f ? at(T[fr], u) : null, A = at(T[ar], u); const turned = f ? (Fv == null ? (A == null ? 0 : A - a0) : Fv - f0) : (A == null ? 0 : A - a0); return o - 180 - turned; });
+        for (const k of [a, f, w]) if (k) out.fx[parts[k].role] = fxs(k); } }
+    c.set(mv, out); return out;
+  }
   const NAMES = { throw: 'ปาสายฟ้า', idle: 'ยืน', attack: 'ตี', shoot: 'ยิง', cast: 'ร่าย', hit: 'โดนตี', die: 'ตาย', spawn: 'เกิด', cheer: 'ดีใจ', walk: 'เดิน', run: 'วิ่ง' };
 
+  /* UPRIGHT WEAPON, front view (owner 2026-11-28 "แขนยังพันกันอยู่เลย"): in moves where the weapon is not the action (cast, cheer, hit, shoot, spawn,
+     die: flagged upright) the weapon keeps its standing angle (plus the move's own small tilt) whatever the arm and forearm do, so a flexed fist does
+     not lay a long trident across the face and the other arm. Smooth: it only cancels the arm's turn, every frame the same way. */
+  function upright(rig, pose) {
+    const fx = k => rig.parts[k].fx ? -1 : 1;
+    for (const k in rig.parts) { const q = rig.parts[k]; if (q.role !== 'weapon' && q.role !== 'weaponB') continue; let sum = 0, c = q.p;
+      while (c && rig.parts[c] && rig.parts[c].role !== 'body') { if (pose[c]) sum += (pose[c].r || 0) * fx(c); c = rig.parts[c].p; }
+      const w = pose[k] || (pose[k] = Object.assign({}, REST)); w.r = ((w.r || 0) * fx(k) - sum) * fx(k); }
+  }
+  /* FACE PUSH, front view (owner 2026-11-28 "แขนยังพันกันอยู่เลย"): heroes differ in arm length and head size, so a fist raised beside the head can still
+     land on one hero's cheek. When a hand (or a weapon it holds) lies over the face, the upper arm opens outward by just the angle that moves it off,
+     measured from how deep it is: no choice between fixes, so the motion stays smooth frame to frame. A key with z 2 (a reach on purpose) is left alone. */
+  function facePush(rig, pose, root) {
+    const parts = rig.parts, hk = rig._hk !== undefined ? rig._hk : (rig._hk = Object.keys(parts).find(k => parts[k].role === 'head') || null); if (!hk || !rig.img || !rig.img[hk]) return;
+    const kids = k => Object.keys(parts).filter(c => parts[c].p === k && c !== k), down = k => kids(k).flatMap(c => [c, ...down(c)]);
+    const chains = rig._chain || (rig._chain = Object.keys(rig._side).map(a => { const f = kids(a).find(c => /^fore[FB]$/.test(parts[c].role)) || null; return { a, f, tips: [f || a].concat(down(f || a).filter(c => /weapon/.test(parts[c].role))) }; }));
+    const him = rig.img[hk], hq = parts[hk], GRID = { hand: [[.5, .5], [.5, .85]], weapon: [[.5, .1], [.5, .3], [.5, .5], [.5, .7], [.5, .9]] };
+    const depth = (M, ch, sd, skipHidden) => { const Hi = inv(M[hk]); let deep = 0, at = null;   /* how far (head px) the deepest hand / weapon point is inside the face, from this arm's own side */
+      for (const k of ch.tips) { const im = rig.img[k], q = parts[k]; if (!im || !M[k] || skipHidden && pose[k] && pose[k].a != null && pose[k].a < .1) continue;
+        for (const [u, v] of GRID[/weapon/.test(q.role) ? 'weapon' : 'hand']) { const p = pt(M[k], im.width * u - q.pv[0], im.height * v - q.pv[1]), l = pt(Hi, p[0], p[1]), x = (l[0] + hq.pv[0]) / him.width, y = (l[1] + hq.pv[1]) / him.height;
+          if (y > .3 && y < .88 && x > .2 && x < .8) { const d = (sd < 0 ? x - .2 : .8 - x) * him.width * (hq.s || 1); if (d > deep) { deep = d; at = p; } } } } return [deep, at]; };
+    if (!rig._deep0) { const M0 = world(rig, {}, root && null); rig._deep0 = chains.map(ch => depth(M0, ch, rig._side[ch.a], false)[0]); }   /* what the standing picture itself already has */
+    chains.forEach((ch, ci) => { const pa = pose[ch.a]; if (!pa || pa._key2) return; const sd = rig._side[ch.a];
+      for (let it = 0; it < 4; it++) { const M = world(rig, pose, root), [d, at] = depth(M, ch, sd, true), deep = d - rig._deep0[ci] - 2; if (deep <= 0 || !at) break;
+        /* turn the joint whose turn moves that point sideways OUT the most: the shoulder, or the elbow when the hand is level with the shoulder */
+        const J = [[ch.a, pa]].concat(ch.f && pose[ch.f] ? [[ch.f, pose[ch.f]]] : []); let best = null;
+        for (const [k, pz] of J) { const vx = at[0] - M[k][4], vy = at[1] - M[k][5], L = Math.hypot(vx, vy); if (L < 4) continue; const gain = Math.abs(vy) / L; if (!best || gain > best[2]) best = [pz, vy, gain, L, k]; }
+        if (!best || best[2] < .15) break; const [pz, vy, , L, k] = best, fx = parts[k].fx ? -1 : 1;
+        pz.r += fx * Math.sign(-sd * vy) * Math.min(30, Math.asin(Math.min(1, (deep + 2) / (L * best[2]) * .9)) * 180 / Math.PI); } });
+  }
   /* a move by name: the rig's own moves made in the tool's timeline (rig.moves, same form as MOVES: { n, dur, loop, tracks: { role: [[t 0-1, { r, x, y, sx, sy, a, z }, ease]] }, ev })
      first, then the shared ones. addMoves(o) = a game loads a moves file once and every rig can play them. */
   const moveOf = (rig, name) => (rig && rig.moves && rig.moves[name]) || MOVES[name];
@@ -120,7 +191,9 @@ const Bones2D = (() => {
   function full(o) { const q = Object.assign({}, REST); if (o) { for (const c in o) if (c === 's') q.sx = q.sy = o.s; else q[c] = o[c]; if (o.s != null) { if (o.sx != null) q.sx = o.sx; if (o.sy != null) q.sy = o.sy; } } return q; }
 
   /* ---- a rig posed: world matrix of every part. pose = { partKey: { r, x, y, sx, sy } }, root = { x, y, r, sx, sy } about the feet */
-  function prep(rig) { const B = {}, BI = {}; for (const k in rig.parts) { B[k] = bind(rig.parts[k]); BI[k] = inv(B[k]); } rig._b = B; rig._bi = BI; rig._plant = {}; for (const k in rig.parts) { const q = rig.parts[k], p = q.p && rig.parts[q.p]; rig._plant[k] = !!(p && (q.role === 'legF' || q.role === 'legB') && p.role === 'body'); } rig._u = (rig.size ? rig.size[1] : 500) / 100; rig._feet = rig.feet || [rig.size[0] / 2, rig.size[1]]; return rig; }
+  function prep(rig) { const B = {}, BI = {}; for (const k in rig.parts) { B[k] = bind(rig.parts[k]); BI[k] = inv(B[k]); } rig._b = B; rig._bi = BI; rig._plant = {}; for (const k in rig.parts) { const q = rig.parts[k], p = q.p && rig.parts[q.p]; rig._plant[k] = !!(p && (q.role === 'legF' || q.role === 'legB') && p.role === 'body'); } rig._u = (rig.size ? rig.size[1] : 500) / 100; rig._feet = rig.feet || [rig.size[0] / 2, rig.size[1]];
+    /* front view: which side of the body each arm hangs on (-1 = left of the picture, 1 = right), for the arm guard in the player */
+    const bk = Object.keys(rig.parts).find(k => rig.parts[k].role === 'body'), bx = bk ? rig.parts[bk].at[0] : rig._feet[0]; rig._fr = null; rig._deep0 = null; rig._chain = null; rig._side = {}; for (const k in rig.parts) if (/^arm[FB]$/.test(rig.parts[k].role)) rig._side[k] = rig.parts[k].at[0] < bx ? -1 : 1; return rig; }
   function world(rig, pose, root, memo) {
     memo = memo || {}; const F = rig._feet, u = rig._u, R0 = root || REST;
     const base = mul(trs(F[0] + (R0.x || 0) * u, F[1] + (R0.y || 0) * u, R0.r || 0, R0.sx == null ? 1 : R0.sx, R0.sy == null ? 1 : R0.sy), [1, 0, 0, 1, -F[0], -F[1]]);
@@ -367,7 +440,7 @@ const Bones2D = (() => {
 
   function player(rig, opt) {
     opt = opt || {}; const P = { rig, base: opt.base === undefined ? 'idle' : opt.base, pop: opt.pop == null ? 1 : opt.pop, speed: 1, move: null, name: '', t: 0, done: false, pose: {}, root: Object.assign({}, REST), roles: {}, from: null, fade: 0, sw: {}, mats: null, alpha: 1 };
-    const tmp = {};
+    const tmp = {}, tmpF = {};
     P.play = (name, o) => { const cl = rig.clips && rig.clips[name]; if (cl) { o = o || {}; P.clip = cl; P.clipName = name; if (P.name !== name || o.restart || P.done) { P.t = 0; P.done = false; } P.name = name; P.move = { dur: cl.dur, ev: cl.ev, clip: 1 }; P.cf = 0; return P; }
       P.clip = null; const mv = moveOf(rig, name); if (!mv) return P; o = o || {}; if (P.move && P.name !== name || o.restart) { P.from = { pose: JSON.parse(JSON.stringify(P.pose)), root: Object.assign({}, P.root) }; P.fade = o.fade == null ? .07 : o.fade; P.fadeT = 0; }
       if (P.name !== name || o.restart || P.done) { P.t = 0; P.done = false; } P.move = mv; P.name = name; if (o.speed) P.speed = o.speed; return P; };
@@ -377,8 +450,14 @@ const Bones2D = (() => {
         if (P.clip) { let t = P.t * 1000, i = 0; while (i < c.durs.length - 1 && t >= c.durs[i]) { t -= c.durs[i]; i++; } P.frame = i; if (!P.mats) P.mats = world(rig, {}, null); return; } }
       if (mv.ev && mv.dur) for (const [u, nm] of mv.ev) { const te = u * mv.dur; if (t0 < te && P.t >= te || (dt === 0 && false)) P.fired.push(nm); }   /* move events (the bolt leaves the hand ...) crossed this frame */
       if (!mv.fn && P.t >= mv.dur) { if (mv.hold) { P.t = mv.dur; P.done = true; } else if (mv.loop) P.t %= mv.dur; else { P.done = true; if (P.base && MOVES[P.base]) { const left = P.t - mv.dur; P.play(P.base, { fade: .1 }); P.t = left; } else P.t = mv.dur; } }
-      sample(P.move, P.t, tmp); P.roles = tmp; const pop = P.pop, pose = P.pose; for (const k in pose) delete pose[k];
-      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && tmp[ro]; if (!o) continue; const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, a: o.a == null ? 1 : o.a, z: (o.z || 0) > 1.5 ? o.z : !rig.zfront || (far && !front) ? 0 : o.z || 0 };   /* z 2 = in front whatever the rig says (a move that needs it, like the bow pull) */ if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
+      sample(P.move, P.t, tmp); P.roles = tmp; const FR = P.move.front && rig.view === 'front' ? frontTracks(rig, P.move) : null; if (FR) sample({ dur: P.move.dur, tracks: FR.tracks }, P.t, tmpF);  const pop = P.pop, pose = P.pose; for (const k in pose) delete pose[k];
+      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && (tmp[ro] || (FR && FR.tracks[ro] && tmpF[ro] && REST)); if (!o) continue;   /* a role only the front angles key still moves */ const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, a: o.a == null ? 1 : o.a, z: (o.z || 0) > 1.5 ? o.z : !rig.zfront || (far && !front) ? 0 : o.z || 0 };
+        /* ARM GUARD, front view (owner 2026-11-28 "แขนยังพันกันอยู่เลย"): moves are written for a hero facing right, so on a hero seen from the front an
+           arm could swing ACROSS the chest / face and tangle with the other arm. An upper arm may turn inward only a little, unless the key says z 2 (a
+           deliberate reach across, like the bow pull); an arm lifted high is drawn in FRONT, or the big chibi head hides it and only the forearm shows. */
+        if ((o.z || 0) > 1.5) q._key2 = 1;
+        if (FR && FR.tracks[ro] && tmpF[ro]) q.r = tmpF[ro].r * (FR.fx[ro] || 1);   /* front view: this hero's own turn for the plain angle of the move */
+        if (front && rig._side && rig._side[k] && !((o.z || 0) > 1.5)) { const sd = rig._side[k], out = -sd * q.r; if (out < -GUARD_IN) q.r = sd * GUARD_IN; if (out > GUARD_UP) q.z = 2; }   /* z 2 = in front whatever the rig says (a move that needs it, like the bow pull) */ if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
       const r0 = tmp._root ? tmp._root : REST; for (const c in REST) P.root[c] = r0[c] == null ? REST[c] : r0[c]; if (fl < 0) { P.root.r = -P.root.r; P.root.x = -P.root.x; }
       if (P.from) { P.fadeT += dt; const f = P.fade > 0 ? Math.min(1, P.fadeT / P.fade) : 1; if (f >= 1) P.from = null; else { for (const k in rig.parts) { const a = P.from.pose[k] || REST, b = pose[k] || (pose[k] = Object.assign({}, REST)); for (const c of ['r', 'x', 'y', 'sx', 'sy', 'a']) b[c] = (a[c] == null ? 1 : a[c]) + ((b[c] == null ? 1 : b[c]) - (a[c] == null ? 1 : a[c])) * f; } for (const c in REST) P.root[c] = P.from.root[c] + (P.root[c] - P.from.root[c]) * f; } }
       /* hair / cape / tail: a spring thrown by how fast their turning point moves */
@@ -386,6 +465,8 @@ const Bones2D = (() => {
       for (const k in rig.parts) { const sp = SWING[rig.parts[k].role]; if (!sp) continue; const m = mats[k], s = P.sw[k] || (P.sw[k] = { a: 0, v: 0, x: m[4], y: m[5] }); const vx = (m[4] - s.x) / Math.max(h, 1e-3), vy = (m[5] - s.y) / Math.max(h, 1e-3); s.x = m[4]; s.y = m[5];
         const im = rig.img && rig.img[k], lx = (im ? im.width / 2 : 0) - rig.parts[k].pv[0], ly = (im ? im.height / 2 : 40) - rig.parts[k].pv[1], dx = m[0] * lx + m[2] * ly, dy = m[1] * lx + m[3] * ly, dl = Math.hypot(dx, dy) || 1;   /* which way the piece hangs from its turning point: it lags behind the motion */
         const push = Math.max(-900, Math.min(900, (dy * vx - dx * vy) / dl * sp[2] / rig._u)); s.v += (-sp[0] * s.a - sp[1] * s.v + push * 6) * h; s.a = Math.max(-55, Math.min(55, s.a + s.v * h)); const q = pose[k] || (pose[k] = Object.assign({}, REST)); q.r += s.a; }
+      if (rig.view === 'front' && P.move && P.move.upright && !(P.move.front && P.move.front.weapon)) upright(rig, pose);
+      if (rig.view === 'front' && rig._side) facePush(rig, pose, P.root);
       P.mats = world(rig, pose, P.root); P.alpha = P.root.a == null ? 1 : P.root.a; };
     const isFront = k => { for (let n = 0; k && n < 8; n++, k = rig.parts[k].p) { if (P.pose[k] && P.pose[k].z > .5) return true; if (!rig.parts[k]) break; } return false; };
     P.image = k => { const f = rig.swaps && rig.swaps[k]; if (f) { const im = rig.img['@' + (f[P.name] || f.idle)]; if (im) return im; } return rig.img[k]; };   /* the picture of a piece right now (faces change with the move) */
@@ -403,6 +484,6 @@ const Bones2D = (() => {
     P.angle = k => { const m = P.mats && P.mats[k]; if (!m) return 0; const V = P.view || [1, 0, 0, 1, 0, 0], n = mul(V, m); return Math.atan2(n[1], n[0]); };
     return P;
   }
-  return { load, images, seamless, unseam, bake, meshMake, meshRender, moveOf, addMoves, full, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
+  return { load, images, seamless, unseam, bake, meshMake, meshRender, moveOf, addMoves, full, frontTracks, facePush, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
 })();
 if (typeof module !== 'undefined') module.exports = Bones2D;

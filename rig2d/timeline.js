@@ -64,7 +64,15 @@ function tlInit() {
 }
 const tlNewKey = () => { let i = 1; while ((R.moves && R.moves['my' + i]) || B.MOVES['my' + i]) i++; return 'my' + i; };
 function tlCopy(k) {   /* a shared move as keys; a move made of a formula (idle / walk / run) is sampled into 16 keys over one round */
-  const m = B.MOVES[k]; if (!m.fn) { const o = JSON.parse(JSON.stringify({ dur: m.dur, loop: !!m.loop, hold: !!m.hold, tracks: m.tracks, ev: m.ev || [] })); o.n = (m.n || B.NAMES[k] || k) + ' (แก้)'; return o; }
+  const m = B.MOVES[k]; if (!m.fn) { const o = JSON.parse(JSON.stringify({ dur: m.dur, loop: !!m.loop, hold: !!m.hold, upright: !!m.upright, tracks: m.tracks, ev: m.ev || [] })); o.n = (m.n || B.NAMES[k] || k) + ' (แก้)';
+    /* a hero seen from the front plays this move's front arm angles (bones.js frontTracks): copy THOSE, as this hero's own role values, so the copy looks the same */
+    const FR = R.view === 'front' && m.front ? B.frontTracks(R, m) : null; if (FR) { const fl = R.flip ? -1 : 1;
+      for (const role in FR.tracks) { const pk = Object.keys(R.parts).find(q => R.parts[q].role === role); if (!pk) continue; const q = R.parts[pk], sg = /armB|foreB|weaponB/.test(role) ? -fl : fl, g = q.g == null ? 1 : (q.g || 1), fx = FR.fx[role] || 1;
+        /* turn from the front angles, every other channel (size, fade, in front) from the move's own keys: keys at both sets of times */
+        const side = m.tracks[role] || [], ft = FR.tracks[role], times = [...new Set(side.filter(k => Object.keys(k[1]).some(c => c !== 'r')).map(k => k[0]).concat(ft.map(k => k[0])))].sort((x, y) => x - y)   /* side keys only where they carry more than a turn (size, fade) */, sv = {}, fv = {};
+        o.tracks[role] = times.map(u => { B.sample({ dur: 1, tracks: { a: side } }, u, sv); B.sample({ dur: 1, tracks: { a: ft } }, u, fv); const v = tlCompact(Object.assign({}, B.REST, sv.a || {}, { r: (fv.a ? fv.a.r : 0) * fx / (sg * g) }));
+          const kf = ft.find(k => Math.abs(k[0] - u) < 1e-6), ks = side.find(k => Math.abs(k[0] - u) < 1e-6); return [u, v, (kf || ks)[2]]; }); } }
+    return o; }
   const dur = TL_PERIOD[k] || 1, tracks = {}, out = {}, N = 16; for (let i = 0; i <= N; i++) { const o = m.fn(dur * i / N); for (const r in o) { const f = Object.assign({}, B.REST, o[r]); (tracks[r] = tracks[r] || []).push([+(i / N).toFixed(4), tlCompact(f), 'lin']); } } void out;
   return { n: (B.NAMES[k] || k) + ' (แก้)', dur, loop: true, tracks, ev: [] };
 }
