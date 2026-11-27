@@ -33,11 +33,13 @@
   <label>แรงพอง (ย่อ-ขยาย) <span id="vp"></span></label><input id="pop" type="range" min="0" max="1.8" step="0.05" value="1">
   <label>ความเร็ว <span id="vsp"></span></label><input id="spd" type="range" min="0.1" max="1.6" step="0.05" value="1">
   <div class="row"><button id="left">หันซ้าย</button><button id="bones">ดูกระดูก</button></div>
+  <div class="row"><button id="wside">อาวุธอยู่ฝั่งซ้ายของรูป (กลับทิศท่า)</button></div>
   <h3>ต่อชิ้น</h3>
   <div class="row"><button id="mA" class="on">จัดวาง</button><button id="mP">หมุนท่า</button></div>
   <div>ชิ้นที่เลือก: <span id="sel">-</span></div>
   <select id="pick" style="width:100%"></select>
   <label>หน้าที่ของชิ้นนี้ (ท่ามาตรฐานขยับตามหน้าที่)</label><select id="role" style="width:100%"></select>
+  <label>ท่ามาตรฐานหมุนชิ้นนี้แรงแค่ไหน <span id="vg"></span></label><input id="gn" type="range" min="0" max="1.6" step="0.05">
   <label>ขนาด <span id="vs"></span></label><input id="sc" type="range" min="0.1" max="2" step="0.01">
   <label>มุมตั้งต้น <span id="vr"></span></label><input id="rt" type="range" min="-180" max="180" step="1">
   <label>ต่อกับ (ชิ้นแม่)</label><select id="par" style="width:100%"></select>
@@ -56,7 +58,7 @@
 <button id="tg">☰</button>
 <div id="ttl"></div>
 <div id="hint"></div>
-<script src="rig2d/bones.js?v=1"></script>
+<script src="rig2d/bones.js?v=5"></script>
 <script>
 'use strict';
 /* Rig tool, version 2 (first made 2026-11-14 on the owner's "เอาทูลมา ฉันต่อเอง"; rebuilt 2026-11-27 after one hero of the owner's recording was taken
@@ -65,13 +67,13 @@
    - ท่ามาตรฐาน: the shared moves of rig2d/bones.js played on this rig, with the pop strength and speed; what you see is what a game draws
      (same file, Bones2D.player). One-shot moves repeat with a short stand between.
    - Saves itself in the browser; "คัดลอกส่ง Claude" copies the rig as text for the chat; Claude puts it into art/rigs/<name>.json. */
-const QS = new URLSearchParams(location.search), CHAR = QS.get('char') || 'dagger', KEY = 'rig2dv2_' + CHAR;
+const QS = new URLSearchParams(location.search), CHAR = QS.get('char') || 'zeus', KEY = 'rig2dv2_' + CHAR;
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d'), $ = s => document.querySelector(s), B = Bones2D;
 let R = null, R0 = null, names = [], PL = null;   /* the rig being edited, the rig of the file, part keys, the player */
 const ALPHA = {};
 const label = k => R.parts[k].n || k;
 function adopt(o) { if (!o.parts || !o.order) throw 'bad'; for (const k of names) { if (!o.parts[k]) o.parts[k] = JSON.parse(JSON.stringify(R0.parts[k])); if (!o.order.includes(k)) o.order.push(k); } for (const k in o.parts) if (!R0.parts[k]) delete o.parts[k]; o.order = o.order.filter(k => R0.parts[k]);
-  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size']) o[c] = R0[c]; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; } o.img = R0.img; R = o; B.prep(R); PL = B.player(R); PL.pop = +$('#pop').value; }
+  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size', 'view']) o[c] = R0[c]; if (o.flip == null) o.flip = !!R0.flip; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; if (q.g == null && d.g != null) q.g = d.g; } o.img = R0.img; R = o; B.prep(R); PL = B.player(R); PL.pop = +$('#pop').value; }
 const clean = () => { const o = JSON.parse(JSON.stringify(R, (k, v) => k === 'img' && typeof v === 'object' && !(typeof v === 'string') ? undefined : k[0] === '_' ? undefined : v)); for (const k of names) o.parts[k].img = R0.parts[k].img; return o; };
 function save() { try { localStorage.setItem(KEY, JSON.stringify(clean())); } catch (e) { } }
 
@@ -92,7 +94,7 @@ function draw(now) {
   ctx.setTransform(...V); ctx.fillStyle = '#3a4560'; ctx.fillRect(-3000, F[1], 6446, 900); ctx.fillStyle = '#00000030'; ctx.beginPath(); ctx.ellipse(F[0], F[1] + 4, R.size[0] * .22, R.size[1] * .022, 0, 0, 7); ctx.fill();
   const ro = +$('#ro').value; if (ro > 0 && R.img._ref && !PLAY) { ctx.globalAlpha = ro; ctx.drawImage(R.img._ref, 0, 0); ctx.globalAlpha = 1; }
   const M = PLAY ? PL.mats : B.world(R, POSE, null); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.globalAlpha = PLAY ? Math.max(0, Math.min(1, PL.alpha)) : 1;
-  for (const k of R.order) { const q = R.parts[k], m = B.mul(V, M[k]); ctx.setTransform(...m); ctx.drawImage(R.img[k], -q.pv[0], -q.pv[1]);
+  for (const k of (PLAY ? PL.order() : R.order)) { const q = R.parts[k], m = B.mul(V, M[k]); ctx.setTransform(...m); ctx.drawImage(R.img[k], -q.pv[0], -q.pv[1]);
     if (k === SEL && !PLAY) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 3 / q.s / Math.abs(V[0]); ctx.strokeRect(-q.pv[0], -q.pv[1], R.img[k].width, R.img[k].height); } }
   ctx.globalAlpha = 1; ctx.setTransform(1, 0, 0, 1, 0, 0);
   const dot = k => B.pt(B.mul(V, M[k]), 0, 0);
@@ -126,7 +128,7 @@ const up = () => { if (DRAG && DRAG.k !== 'pan') save(); DRAG = null; }; cv.addE
 cv.addEventListener('wheel', e => { ZOOM *= e.deltaY < 0 ? 1.1 : .9; e.preventDefault(); }, { passive: false });
 
 /* ---- panel */
-function select(k) { SEL = k; const q = R.parts[k]; $('#sel').textContent = label(k); $('#pick').value = k; $('#sc').value = q.s; $('#vs').textContent = q.s.toFixed(2); $('#rt').value = q.r; $('#vr').textContent = q.r + '°'; $('#par').value = q.p || ''; $('#role').value = q.role || 'none'; }
+function select(k) { SEL = k; const q = R.parts[k]; $('#sel').textContent = label(k); $('#pick').value = k; $('#sc').value = q.s; $('#vs').textContent = q.s.toFixed(2); $('#rt').value = q.r; $('#vr').textContent = q.r + '°'; $('#par').value = q.p || ''; $('#role').value = q.role || 'none'; $('#gn').value = q.g == null ? 1 : q.g; $('#vg').textContent = Math.round((q.g == null ? 1 : q.g) * 100) + '%'; }
 function stop() { PLAY = ''; for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', !b.dataset.mv); hint(); }
 function play(k) { if (!k) { stop(); return; } PLAY = k; POSE = {}; GAP = 0; PL = B.player(R); PL.play(B.MOVES[k].loop || B.MOVES[k].fn ? k : 'idle'); if (!(B.MOVES[k].loop || B.MOVES[k].fn)) GAP = .35; PL.update(0); for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', b.dataset.mv === k); hint(); }
 function boot() {
@@ -134,9 +136,10 @@ function boot() {
   $('#ttl').textContent = (R.title || CHAR) + ' · ' + names.length + ' ชิ้น';
   const opt = (sel, v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; $(sel).append(o); };
   for (const k of names) opt('#pick', k, label(k)); opt('#par', '', '(ไม่มี: ชิ้นหลัก)'); for (const k of names) opt('#par', k, label(k)); for (const r in B.ROLES) opt('#role', r, B.ROLES[r]);
-  for (const k of ['idle', 'attack', 'shoot', 'cast', 'hit', 'die', 'spawn', 'cheer', 'walk', 'run', '']) { const b = document.createElement('button'); b.className = 'mv'; b.dataset.mv = k; b.textContent = k ? B.NAMES[k] : 'หยุด'; b.onclick = () => play(k); $('#mvs').append(b); }
+  for (const k of ['idle', 'attack', 'shoot', 'cast', 'hit', 'die', 'spawn', 'cheer', 'walk', 'run', '']) { if (R.view === 'front' && (k === 'walk' || k === 'run')) continue;   /* a hero seen from the front stands in its cell */ const b = document.createElement('button'); b.className = 'mv'; b.dataset.mv = k; b.textContent = k ? B.NAMES[k] : 'หยุด'; b.onclick = () => play(k); $('#mvs').append(b); }
   $('#pick').onchange = e => select(e.target.value);
   $('#role').onchange = e => { R.parts[SEL].role = e.target.value; save(); };
+  $('#gn').oninput = e => { R.parts[SEL].g = +e.target.value; $('#vg').textContent = Math.round(+e.target.value * 100) + '%'; save(); };
   $('#sc').oninput = e => { R.parts[SEL].s = +e.target.value; $('#vs').textContent = (+e.target.value).toFixed(2); save(); };
   $('#rt').oninput = e => { R.parts[SEL].r = +e.target.value; $('#vr').textContent = e.target.value + '°'; save(); };
   const sl = () => { $('#vp').textContent = Math.round(+$('#pop').value * 100) + '%'; $('#vsp').textContent = 'x' + (+$('#spd').value).toFixed(2); }; $('#pop').oninput = sl; $('#spd').oninput = sl; sl();
@@ -147,6 +150,7 @@ function boot() {
   $('#feet').onclick = () => { stop(); FEET = !FEET; $('#feet').classList.toggle('on', FEET); hint(); };
   $('#left').onclick = () => { LEFT = !LEFT; $('#left').classList.toggle('on', LEFT); };
   $('#bones').onclick = () => { BONES = !BONES; $('#bones').classList.toggle('on', BONES); };
+  $('#wside').classList.toggle('on', !!R.flip); $('#wside').onclick = () => { R.flip = !R.flip; $('#wside').classList.toggle('on', R.flip); save(); };
   $('#mA').onclick = () => { stop(); MODE = 'A'; POSE = {}; $('#mA').classList.add('on'); $('#mP').classList.remove('on'); hint(); };
   $('#mP').onclick = () => { stop(); MODE = 'P'; $('#mP').classList.add('on'); $('#mA').classList.remove('on'); hint(); };
   $('#zin').onclick = () => ZOOM *= 1.2; $('#zout').onclick = () => ZOOM /= 1.2;

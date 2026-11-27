@@ -82,7 +82,8 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 
 ## NEWEST (owner 2026-11-27 night, latest of all): 2D PIECES ON BONES = `rig.html` + `rig2d/bones.js` (start on "ต่อกระดูก 2D")
 - Why: one hero of the owner's Slack Off Survivor recording taken apart = about 8 rigid pieces, each moved / turned / SCALED, attack 0.4 s with a 140 % head pop. Owner stopped the 3D model for this ("ทำงาน 2D ก่อน").
-- Built: the owner's old tool `rig.html` is version 2 (put pieces together, give each a ROLE, play the shared moves with pop / speed sliders) and `rig2d/bones.js` is the small player a game loads (`Bones2D.load`, `.player`, `play / update / draw`). Rigs are data in `art/rigs/<name>.json` (first: `dagger`). Moves are written once per role and play on every rig.
+- Built: the owner's old tool `rig.html` is version 2 (put pieces together, give each a ROLE, play the shared moves with pop / speed sliders) and `rig2d/bones.js` is the small player a game loads (`Bones2D.load`, `.player`, `play / update / draw`). Rigs are data in `art/rigs/<name>.json`: `zeus` (9 pieces, front view, like the recording's heroes; the default) and `dagger` (14 pieces, side view). Moves are written once per role and play on every rig.
+- RULE (owner: "ให้มันงานได้ตรงตามที่บอกก่อน"): check a result against the reference yourself BEFORE giving the owner a link; `shoot` is keyed from the recording and `node tools/qa/rig_check.js [out] [char]` fails when the head curve drifts from it.
 - Web, not Godot (owner asked; Godot is not in the cloud and would mean rewriting the games). Check `node tools/qa/rig_check.js`.
 - Next (ask first): a parts-sheet template + prompt so GPT / Codex draw a new hero as ~8 pieces, then a game (`lucky.html`) using it. Notes: the RIG 2D TOOL section at the end of `docs/action-game.md`.
 - YouTube clips cannot be fetched from the cloud (bot check): ask the owner to attach a file / screen recording.
