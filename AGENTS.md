@@ -2,7 +2,9 @@
 
 The owner speaks Thai and is not a programmer: reply in Thai, short and plain.
 
-NEWEST (2026-11-20, latest of all): the DRAGON spear warrior in painted 2D: ALL moves in one go = `docs/codex/dragon/MOVES.md` ("ทำท่ามังกรทั้งหมด": 12 sheets of 16 frames, branch `codex/dragon-moves`, pictures in `art/incoming/dragon_moves/`); then "ทำมอนทะเลทราย" (`docs/codex/dragon/MONSTERS.md`) and "ทำมังกรคลาส 2" (`docs/codex/dragon/CLASS2.md`); walk only = `docs/codex/dragon/WALK.md` ("ทำท่าเดินมังกร" = 16-frame walk sheets, side / front / back, blue background; branch `codex/dragon-walk`, pictures in `art/incoming/dragon_walk/`).
+NEWEST (2026-11-27, latest of all): `lucky.html` "ผู้กล้าเสี่ยงดวง", a summon-and-merge defence in smooth 2D cartoon. Picture job: `docs/codex/lucky/ART2.md` ("ทำภาพเกมเสี่ยงดวงชุด 2" = 12 more heroes, attack poses, monsters, bosses, icons; branch `codex/lucky-art2`, pictures in `art/incoming/lucky2d_b/`). Set 1 (`docs/codex/lucky/ART1.md`) is done.
+
+Older (2026-11-20): the DRAGON spear warrior in painted 2D: ALL moves in one go = `docs/codex/dragon/MOVES.md` ("ทำท่ามังกรทั้งหมด": 12 sheets of 16 frames, branch `codex/dragon-moves`, pictures in `art/incoming/dragon_moves/`); then "ทำมอนทะเลทราย" (`docs/codex/dragon/MONSTERS.md`) and "ทำมังกรคลาส 2" (`docs/codex/dragon/CLASS2.md`); walk only = `docs/codex/dragon/WALK.md` ("ทำท่าเดินมังกร" = 16-frame walk sheets, side / front / back, blue background; branch `codex/dragon-walk`, pictures in `art/incoming/dragon_walk/`).
 Earlier the same day: the TIGER hero goes 3D: `docs/codex/pixmap/TIGER3D.md` ("ทำรูปเสือ 3D" = T-pose front / back / side pictures of the painted tiger, flat 2D drawings, short tail, for Tripo image-to-3D).
 Older the same day: the pixel map `pixmap.html` (3D map drawn as pixel art + a 2D pixel TIGER hero). Picture jobs: `docs/codex/pixmap/TIGER.md` ("ทำเฟรมเสือวิ่ง", "ทำเฟรมเสือยืน", "ทำเฟรมเสือฟัน"; on hold: the owner now wants the tiger in 3D, not 8-bit).
 
