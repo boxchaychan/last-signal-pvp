@@ -3356,3 +3356,4 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
     - `STRAIGHT` = javelins / the ice lance fly point first;
     - the rest still spin.
   - Checks: `node tools/qa/bag3d_pops.js` (freezes a fight and holds each weapon's pop / shot for both sides), `bag3d_aim.js` (the hero's pose + hand directions during a bow fight). No errors. Picture `art/bag3d/shoot_facing.png`.
+- 2026-11-27 (owner "ธนูกลับด้านปะ" after the picture of the previous fix): the flipped crossbow pop read as BACKWARDS. On the old crossbow icon the arrow feathers sit at the bottom-left, so people read the tips as pointing up-right. Now `POPAIM.bow = [no flip, +45°]`: lying flat, feathers behind, tips at the enemy. The frost crossbow uses the same +45°. The 3D bow in her hand was measured: the string lies on her side and the bow's back faces the enemy, so it is the right way round. Picture `art/bag3d/bow_direction.png`.
