@@ -10,7 +10,7 @@ const { chromium } = require('playwright'), fs = require('fs'), { execFileSync }
     const B = Bones2D, rig = await B.load(`art/rigs/${ch}.json?` + Date.now()), S = +size || 360, W = Math.round(S * 1.9), H = S, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
     const P = B.player(rig, { base: 'idle' }), FX = Bones2DFX.create(), sc = (H * .78) / (rig.figH || rig.size[1]), fx0 = W * ((rig.clips && rig.clips[mv] ? (rig.clips[mv].dirx || 1) < 0 : rig.flip) ? .66 : .3), fy = H * .9, frames = [], ev = [];
     P.play('idle'); const steps = Math.round((+pre || .25) * 30); for (let i = 0; i < steps; i++) P.update(1 / 30);
-    P.play(mv, { restart: true }); const dur = (B.MOVES[mv] && B.MOVES[mv].dur) || (rig.clips && rig.clips[mv] && rig.clips[mv].dur) || 1, n = Math.round((dur + .55) * 30);
+    P.play(mv, { restart: true }); if (rig.bake) B.bake(rig); const dur = (B.MOVES[mv] && B.MOVES[mv].dur) || (rig.clips && rig.clips[mv] && rig.clips[mv].dur) || 1, n = Math.round((dur + .55) * 30);
     for (let i = 0; i < n; i++) { P.update(1 / 30); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#36407a'); gr.addColorStop(1, '#1d2244'); g.fillStyle = gr; g.fillRect(0, 0, W, H); g.fillStyle = '#2c3566'; g.fillRect(0, fy, W, H - fy); g.fillStyle = '#00000044'; g.beginPath(); g.ellipse(fx0, fy + 3, 70 * sc * 2.2, 9, 0, 0, 7); g.fill();
       P.draw(g, fx0, fy, sc, false); FX.step(P, 1 / 30, { scale: sc * 2.4, width: W, height: H, range: W * .55 }); FX.draw(g); if (P.fired.length) ev.push([i, P.fired.join(',')]); frames.push(c.toDataURL('image/png')); }
     return { frames, ev, n }; }, [ch, mv, pre, size]);

@@ -18,7 +18,16 @@ const Bones2DFX = (() => {
         const k = Math.min(1, (u - .22) / .22); F.charge = { x: c[0], y: c[1], k, r: 40 * sc * (.6 + .6 * k) };
         for (let i = 0; i < 3; i++) { const a = rnd(0, TAU), d = rnd(30, 70) * sc; spark(c[0] + Math.cos(a) * d, c[1] + Math.sin(a) * d, -Math.cos(a) * d * 3.5, -Math.sin(a) * d * 3.5, .22, rnd(2, 4) * sc); }
       } else F.charge = null;
-      if (!cl && P.fired.includes('release') && c) {
+      /* BOW: the string from both bow tips to the pulling hand, an arrow nocked on it while drawing; on release the arrow flies (rig.shot picture) */
+      F.bow = null; const bk = P.name === 'bowshot' && wk, pull = bk && Object.keys(rig.parts).find(k => rig.parts[k].role === 'armB');
+      if (bk && pull && P.mats) { const im = rig.img[wk], q = rig.parts[wk], t1 = P.at(wk, im.width * .45 - q.pv[0], 3 - q.pv[1]), t2 = P.at(wk, im.width * .45 - q.pv[0], im.height - 3 - q.pv[1]), mid = P.centre(wk);
+        if (!rig._handPt) { const hi = rig.img0 ? rig.img0[pull] : rig.img[pull], hq = rig.parts[pull], c2 = document.createElement('canvas'); c2.width = hi.width; c2.height = hi.height; const g2 = c2.getContext('2d'); g2.drawImage(hi, 0, 0); const d2 = g2.getImageData(0, 0, hi.width, hi.height).data; let best = [0, 0, -1];
+          for (let y = 0; y < hi.height; y += 2) for (let x = 0; x < hi.width; x += 2) if (d2[(y * hi.width + x) * 4 + 3] > 200) { const dd = (x - hq.pv[0]) ** 2 + (y - hq.pv[1]) ** 2; if (dd > best[2]) best = [x, y, dd]; } rig._handPt = [best[0] - hq.pv[0], best[1] - hq.pv[1]]; }
+        const hand = P.at(pull, rig._handPt[0], rig._handPt[1]), drawn = u > .28 && u < .55; F.bow = { t1, t2, hand, mid, drawn, nock: drawn && rig.img._shot, k: Math.min(1, (u - .28) / .1) };
+        if (P.fired.includes('release') && mid) { const ai = rig.img._shot || im, kk = P.view ? Math.hypot(P.view[0], P.view[1]) : 1;
+          F.shots.push({ x: mid[0], y: mid[1], vx: dir * 1700 * sc, vy: 0, ang: dir > 0 ? Math.PI / 2 : -Math.PI / 2, ta: dir > 0 ? Math.PI / 2 : -Math.PI / 2, im: ai, w: ai.width * kk, h: ai.height * kk, t: 0, life: (o.range || 520) * sc / (1700 * sc), trail: [] });
+          for (let i = 0; i < 18; i++) { const a = rnd(-1, 1) + (dir > 0 ? 0 : Math.PI), v = rnd(150, 520) * sc; spark(mid[0], mid[1], Math.cos(a) * v, Math.sin(a) * v, rnd(.2, .4), rnd(2, 4) * sc); } F.ring = { x: mid[0], y: mid[1], t: 0, r: 50 * sc }; F.flash = .06; } }
+      if (!cl && P.name !== 'bowshot' && P.fired.includes('release') && c) {
         const im = P.image(wk), ang = P.angle(wk), s = Math.hypot(P.view ? P.view[0] : 1, P.view ? P.view[1] : 0) * (rig.parts[wk].s || 1);
         F.shots.push({ x: c[0], y: c[1], vx: dir * 1500 * sc, vy: 0, ang, ta: dir > 0 ? Math.PI / 2 : -Math.PI / 2, im, w: im.width * s * .9, h: im.height * s * .9, t: 0, life: (o.range || 520) * sc / (1500 * sc), trail: [] });
         for (let i = 0; i < 26; i++) { const a = rnd(0, TAU), v = rnd(150, 520) * sc; spark(c[0], c[1], Math.cos(a) * v + dir * 200 * sc, Math.sin(a) * v, rnd(.2, .45), rnd(2, 5) * sc); }
@@ -41,6 +50,10 @@ const Bones2DFX = (() => {
     F.draw = ctx => {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter'; const [r, g, b] = F.col, [cr, cg, cb] = F.core;
       const glow = (x, y, rad, a) => { const gr = ctx.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`); gr.addColorStop(.35, `rgba(${r},${g},${b},${a * .6})`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, rad, 0, TAU); ctx.fill(); };
+      if (F.bow && F.bow.t1 && F.bow.hand) { const B = F.bow; ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(255,246,214,.95)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(B.t1[0], B.t1[1]);
+        if (B.drawn) ctx.lineTo(B.hand[0], B.hand[1]); ctx.lineTo(B.t2[0], B.t2[1]); ctx.stroke();
+        if (B.nock) { const im = B.nock, dx = B.mid[0] - B.hand[0], dy = B.mid[1] - B.hand[1], L = Math.hypot(dx, dy) * 1.05, h = L, w = im.width * h / im.height; ctx.translate(B.hand[0], B.hand[1]); ctx.rotate(Math.atan2(dy, dx) + Math.PI / 2); ctx.drawImage(im, -w / 2, -h, w, h); }
+        ctx.restore(); if (B.drawn) glow(B.mid[0], B.mid[1], 26 * (.6 + .4 * B.k), .25 + .35 * B.k); }
       if (F.charge) { const c = F.charge, fl = .75 + .25 * Math.sin(performance.now() / 40); glow(c.x, c.y, c.r * fl, .55 * c.k + .2); }
       for (const s of F.shots) {
         for (let i = 0; i < s.trail.length; i++) { const [x, y] = s.trail[i], k = (i + 1) / s.trail.length; glow(x, y, s.h * .35 * k, .35 * k); }
