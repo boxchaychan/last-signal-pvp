@@ -6,7 +6,7 @@ Out: art/bag3d/icons_all.png = art/bag/icons.png (5 rows) + 2 rows of crafted ic
    --sheet <png> [cols 4] [rows 3]: use the owner's ChatGPT sheet instead (12 icons in a grid on flat magenta, PROMPT in
    art/incoming/bag3d/PROMPT_craft_icons.txt): each cell is keyed off magenta, trimmed, fitted into 60 px (nearest step-down to keep
    it crisp) and centred in its 64 px cell; cells it cannot read fall back to the code-made icon. The raw sheet stays in art/incoming/bag3d/."""
-import sys
+import sys, glob, os, shutil
 from PIL import Image, ImageFilter, ImageChops
 ORDER = ['dagger','sword','bow','axe','hammer','wand','poison','bomb','shield','helm','cactus','feather','apple','meat','juice','stone','glove','clover','ember','frost',
          'heart','star','pig','crown','spear','claw','scythe','shuriken','club','orb','icestaff','skull','book','meteor','plate','cloak','ring','wine','fang','hourglass']
@@ -81,9 +81,12 @@ def from_sheet(path, cols=4, rows=3):
 ALL = [k for k, *_ in CRAFTED] + [k for k, *_ in NEWITEMS] + [k for k, *_ in CRAFTED2]
 for k, op, *a in NEWITEMS: MADE[k] = var(a[0], *a[1:]) if op == 'var' else pair(a[0], a[1], a[2])
 code = {k: icon(a, b, c) for k, a, b, c in CRAFTED}; code.update({k: MADE[k] for k, *_ in NEWITEMS}); code.update({k: icon(a, b, c) for k, a, b, c in CRAFTED2})
+# PixelLab icons (art/incoming/bag3d/gen.py, the same recipe as the 40 originals, used raw like them) replace the code-made ones
+for k in ALL:
+    f = f'art/incoming/bag3d/pl/{k}.png'
+    if os.path.exists(f): code[k] = Image.open(f).convert('RGBA').resize((64, 64), Image.NEAREST)
 # owner's ChatGPT sheets that already came in (art/incoming/bag3d/sheet_<first id>_<cols>x<rows>.png, kept and re-used), then a new one:
 #   python3 tools/art/bag_craft_icons.py --sheet <png> <first id> [cols 4] [rows 3]
-import glob, os, shutil
 if len(sys.argv) > 3 and sys.argv[1] == '--sheet':
     c, r = (int(v) for v in (sys.argv[4:6] if len(sys.argv) > 5 else (4, 3))); dst = f'art/incoming/bag3d/sheet_{sys.argv[3]}_{c}x{r}.png'
     if os.path.abspath(sys.argv[2]) != os.path.abspath(dst): shutil.copy(sys.argv[2], dst)
