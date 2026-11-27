@@ -80,6 +80,11 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Code `quest/*.js`, art `art/quest/`, raw art `art/incoming/quest/`, tools `tools/art/quest_sheet.py` / `quest_mob.py` / `quest_props.py`.
 - Notes, what is not done yet: the QUEST section at the end of `docs/action-game.md`.
 
+## NEWEST (owner 2026-11-27 night, latest of all): 2D PIECES ON BONES (asked, NOT built)
+- Owner stopped the 3D model ("หยุดก่อน", "ทำงาน 2D ก่อน") and asked how to make a good system of pictures in pieces joined on bones, like Slack Off Survivor / Lucky Defense.
+- Claude's answer + the proposed free test (parts-sheet template -> GPT / Gemini draws one hero as pieces -> our own bones, one shared skeleton and shared moves) are in the LAST section of `docs/action-game.md`.
+- Nothing is built: wait for "ทำเลย" and for which game (probably `lucky.html`, whose rule so far is "whole pictures, NO cut-out bones").
+
 ## NEWEST (owner 2026-11-27, latest of all, back to it the same day): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
 - The 2D backpack game with 3D fighters (wolf hunter vs Quaternius monsters).
 - Built 2026-11-26/27:
@@ -97,7 +102,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
   - monster / boss rounds are fought in `horde.html?bag=1` inside an iframe (bag mode = `bag3d/arena.js`, hooks `if (BAGM)` in `horde.html`); duels keep the side view; `?fight=side` = old fight;
   - one champion vs the round's horde, every bag item fires by itself with its own 3D move; the fight is FULLY AUTOMATIC (owner "ไม่ต้องบังคับดิให้มันออโต้โดยเราจัดกระเป๋าแบบเดิม": the player only arranges the bag, no steering, no dash button);
   - checks `node tools/qa/bag3d_horde.js` (+ `bal` for balance); after touching `horde.html` also run `horde_check.js`.
-  - the champion plays a body move per item move (`BAGANIM`); a new ADVENTURER model is ordered from the owner (GPT on the body guide -> Tripo -> Claude rigs): `art/incoming/basebody/PROMPT_GPT_adventurer_set.txt`.
+  - the champion plays a body move per item move (`BAGANIM`); the code-made ADVENTURER model (owner: no Tripo) is PAUSED on the unmerged branch `claude/bag3d-adventurer` (owner "หยุดก่อน"); do not continue unless asked.
 - Notes: the BAG 3D section and the newest lines at the end of `docs/action-game.md`. Card game concept (not built): the CARD GAME CONCEPT section.
 
 ## NEWEST (owner 2026-11-21): zombie city `zcity.html` "เมืองสุดท้าย"
