@@ -105,6 +105,10 @@ const Bones2D = (() => {
       wing: [K(.3, { r: -30 }, 'io'), K(.52, { r: 30 }, 'snap'), K(1, {}, 'io')] } };
   const NAMES = { throw: 'ปาสายฟ้า', idle: 'ยืน', attack: 'ตี', shoot: 'ยิง', cast: 'ร่าย', hit: 'โดนตี', die: 'ตาย', spawn: 'เกิด', cheer: 'ดีใจ', walk: 'เดิน', run: 'วิ่ง' };
 
+  /* a move by name: the rig's own moves made in the tool's timeline (rig.moves, same form as MOVES: { n, dur, loop, tracks: { role: [[t 0-1, { r, x, y, sx, sy, a, z }, ease]] }, ev })
+     first, then the shared ones. addMoves(o) = a game loads a moves file once and every rig can play them. */
+  const moveOf = (rig, name) => (rig && rig.moves && rig.moves[name]) || MOVES[name];
+  function addMoves(o) { for (const k in o || {}) { MOVES[k] = o[k]; if (o[k].n) NAMES[k] = o[k].n; } return MOVES; }
   function sample(mv, t, out) {   /* pose of every role at time t (seconds) of a move -> out[role] = { r, x, y, sx, sy, a } */
     for (const k in out) delete out[k];
     if (mv.fn) { const o = mv.fn(t); for (const k in o) out[k] = Object.assign({}, REST, o[k]); return out; }
@@ -350,7 +354,7 @@ const Bones2D = (() => {
         hole += comp.length; }
       return hole / Math.max(1, fig); };
     const P0 = player(rig, { base: null }); P0.mats = world(rig, {}, null); const REST0 = P0.mats; const base = crack(P0);
-    for (const mv of moves || Object.keys(MOVES).concat(Object.keys(rig.clips || {}))) { if (rig.view === 'front' && (mv === 'walk' || mv === 'run')) continue; const P = player(rig, { base: null }); P.play(mv); const dur = (MOVES[mv] && MOVES[mv].dur) || (rig.clips && rig.clips[mv] && rig.clips[mv].dur) || 1; let worst = 0, at = 0;
+    for (const mv of moves || Object.keys(MOVES).concat(Object.keys(rig.moves || {}), Object.keys(rig.clips || {}))) { if (rig.view === 'front' && (mv === 'walk' || mv === 'run')) continue; const P = player(rig, { base: null }); P.play(mv); const dur = (moveOf(rig, mv) && moveOf(rig, mv).dur) || (rig.clips && rig.clips[mv] && rig.clips[mv].dur) || 1; let worst = 0, at = 0;
       for (let t = 0; t < dur; t += 1 / 15) { P.update(1 / 15); const k = crack(P) - base; if (k > worst) { worst = k; at = t; } } out[mv] = { worst, at: +at.toFixed(2) }; }
     return out;
   }
@@ -365,7 +369,7 @@ const Bones2D = (() => {
     opt = opt || {}; const P = { rig, base: opt.base === undefined ? 'idle' : opt.base, pop: opt.pop == null ? 1 : opt.pop, speed: 1, move: null, name: '', t: 0, done: false, pose: {}, root: Object.assign({}, REST), roles: {}, from: null, fade: 0, sw: {}, mats: null, alpha: 1 };
     const tmp = {};
     P.play = (name, o) => { const cl = rig.clips && rig.clips[name]; if (cl) { o = o || {}; P.clip = cl; P.clipName = name; if (P.name !== name || o.restart || P.done) { P.t = 0; P.done = false; } P.name = name; P.move = { dur: cl.dur, ev: cl.ev, clip: 1 }; P.cf = 0; return P; }
-      P.clip = null; const mv = MOVES[name]; if (!mv) return P; o = o || {}; if (P.move && P.name !== name || o.restart) { P.from = { pose: JSON.parse(JSON.stringify(P.pose)), root: Object.assign({}, P.root) }; P.fade = o.fade == null ? .07 : o.fade; P.fadeT = 0; }
+      P.clip = null; const mv = moveOf(rig, name); if (!mv) return P; o = o || {}; if (P.move && P.name !== name || o.restart) { P.from = { pose: JSON.parse(JSON.stringify(P.pose)), root: Object.assign({}, P.root) }; P.fade = o.fade == null ? .07 : o.fade; P.fadeT = 0; }
       if (P.name !== name || o.restart || P.done) { P.t = 0; P.done = false; } P.move = mv; P.name = name; if (o.speed) P.speed = o.speed; return P; };
     P.fired = []; P.update = dt => { if (!P.move) return; const mv = P.move, t0 = P.t; P.t += dt * P.speed; P.fired = [];
       if (P.clip) { const c = P.clip; for (const [u, nm] of c.ev || []) { const te = u * c.dur; if (t0 < te && P.t >= te) P.fired.push(nm); } if (P.cf > 0) P.cf -= dt;
@@ -399,6 +403,6 @@ const Bones2D = (() => {
     P.angle = k => { const m = P.mats && P.mats[k]; if (!m) return 0; const V = P.view || [1, 0, 0, 1, 0, 0], n = mul(V, m); return Math.atan2(n[1], n[0]); };
     return P;
   }
-  return { load, images, seamless, unseam, bake, meshMake, meshRender, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
+  return { load, images, seamless, unseam, bake, meshMake, meshRender, moveOf, addMoves, full, autofit, restScore, seams, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
 })();
 if (typeof module !== 'undefined') module.exports = Bones2D;
