@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
   require('fs').mkdirSync(out, { recursive: true });
   const b = await chromium.launch(), pg = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 1 })).newPage(), errs = [];
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await pg.goto('http://localhost:8000/bag3d.html?mute=1'); await pg.waitForTimeout(2500); await pg.click('#start'); await pg.waitForTimeout(400);
+  await pg.goto('http://localhost:8000/bag3d.html?fight=side&mute=1'); await pg.waitForTimeout(2500); await pg.click('#start'); await pg.waitForTimeout(400);
   await pg.evaluate(() => { G.round = 4; $('#go').click(); }); await pg.waitForTimeout(2500);
   const ids = await pg.evaluate(only => { window.tick = () => {}; window.requestAnimationFrame = () => 0; BT.px.length = 0; BT.wp.length = 0; BT.fx.length = 0; $('#mybag').style.display = $('#fbag').style.display = 'none';
     return only || Object.keys(IT).filter(k => CAST[k] || CASTSELF[k]); }, only);
