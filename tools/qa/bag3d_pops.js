@@ -3,7 +3,7 @@
 const { chromium } = require('playwright');
 (async () => {
   const out = process.argv[2] || '/tmp/bag3d_pops', ids = (process.argv[3] || 'bow,frostbow,javelin,frostlance,wand').split(','); require('fs').mkdirSync(out, { recursive: true });
-  const b = await chromium.launch(); const errs = []; const pg = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 1 })).newPage(); pg.on('pageerror', e => errs.push(e.message));
+  const b = await chromium.launch(); const errs = []; const pg = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: +(process.env.DSF || 1) })).newPage(); pg.on('pageerror', e => errs.push(e.message));
   await pg.goto('http://localhost:8000/bag3d.html'); await pg.waitForTimeout(2000); await pg.click('#start'); await pg.waitForTimeout(400);
   await pg.evaluate(() => { G.items = []; give('plate', 0, 0, 0).lv = 3; give('bow', 3, 0, 0); draw(); $('#go').click(); }); await pg.waitForTimeout(1500); await pg.evaluate(() => { spd = 1e-9; });
   for (const id of ids) for (const [tag, t] of [['pop', .22], ['fly', .1]]) {
