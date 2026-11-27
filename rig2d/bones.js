@@ -4,6 +4,7 @@
        { v: 2, name, dir: folder of the piece pictures, ref: optional reference picture, size: [w, h] of the reference space, feet: [x, y],
          zfront: true = raised arms may be drawn in front of the head (only for pieces without visible joint ends; default off = joints stay hidden under the body),
          view: 'front' for a hero seen from the front (its far arm mirrors the weapon arm; no walk / run), flip: true when the weapon side is the LEFT of the picture (moves mirrored),
+         faces: { part, idle, attack, ... } = pictures of one size the named piece swaps between by move,
          parts: { key: { img, n: Thai label, role, pv: [x, y] turning point inside the picture, at: [x, y] where that point sits, s: size,
                          r: start angle (deg), p: parent key or '', fx: mirrored, g: how far the shared moves turn THIS piece (1 = as written; fits a move to a hero's own build) } }, order: [keys back to front] }
    - MOVES are written once for ROLES (body, head, armF, weapon, legF ...), not for one hero: every rig whose pieces carry those roles plays them.
@@ -95,7 +96,9 @@ const Bones2D = (() => {
   }
 
   function load(url) { return fetch(url).then(r => { if (!r.ok) throw new Error(url + ' ' + r.status); return r.json(); }).then(rig => images(rig)); }
-  function images(rig) { prep(rig); rig.img = {}; return Promise.all(Object.keys(rig.parts).map(k => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(); i.onerror = () => no(new Error('picture ' + i.src)); i.src = rig.dir + (rig.parts[k].img || k + '.png'); rig.img[k] = i; }))).then(() => rig); }
+  function images(rig) { prep(rig); rig.img = {}; const one = (key, file) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(); i.onerror = () => no(new Error('picture ' + i.src)); i.src = rig.dir + file; rig.img[key] = i; });
+    const extra = rig.faces ? [...new Set(Object.keys(rig.faces).filter(k => k !== 'part').map(k => rig.faces[k]))] : [];   /* faces: { part: 'head', idle: 'face0', attack: 'face1', ... } = the picture (same size) that piece shows during a move */
+    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')))).then(() => rig); }
 
   function player(rig, opt) {
     opt = opt || {}; const P = { rig, base: opt.base === undefined ? 'idle' : opt.base, pop: opt.pop == null ? 1 : opt.pop, speed: 1, move: null, name: '', t: 0, done: false, pose: {}, root: Object.assign({}, REST), roles: {}, from: null, fade: 0, sw: {}, mats: null, alpha: 1 };
@@ -115,9 +118,10 @@ const Bones2D = (() => {
         const push = Math.max(-900, Math.min(900, (dy * vx - dx * vy) / dl * sp[2] / rig._u)); s.v += (-sp[0] * s.a - sp[1] * s.v + push * 6) * h; s.a = Math.max(-55, Math.min(55, s.a + s.v * h)); const q = pose[k] || (pose[k] = Object.assign({}, REST)); q.r += s.a; }
       P.mats = world(rig, pose, P.root); P.alpha = P.root.a == null ? 1 : P.root.a; };
     const isFront = k => { for (let n = 0; k && n < 8; n++, k = rig.parts[k].p) { if (P.pose[k] && P.pose[k].z > .5) return true; if (!rig.parts[k]) break; } return false; };
+    P.image = k => { const f = rig.faces; if (f && f.part === k) { const im = rig.img['@' + (f[P.name] || f.idle)]; if (im) return im; } return rig.img[k]; };   /* the picture of a piece right now (faces change with the move) */
     P.order = () => { const a = [], f = []; for (const k of rig.order) (isFront(k) ? f : a).push(k); return f.length ? a.concat(f) : rig.order; };   /* back to front for this pose */
     P.draw = (ctx, x, y, scale, left) => { if (!P.mats) P.update(0); if (!P.mats) return; const F = rig._feet, sx = left ? -scale : scale, V = [sx, 0, 0, scale, x - F[0] * sx, y - F[1] * scale], a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * Math.max(0, Math.min(1, P.alpha));
-      for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); ctx.drawImage(rig.img[k], -q.pv[0], -q.pv[1]); } ctx.globalAlpha = a0; };
+      for (const k of P.order()) { const q = rig.parts[k], m = mul(V, P.mats[k]); ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); ctx.drawImage(P.image(k), -q.pv[0], -q.pv[1]); } ctx.globalAlpha = a0; };
     return P;
   }
   return { load, images, prep, player, world, sample, bind, mul, inv, pt, trs, MOVES, NAMES, ROLES, EASE, REST };
