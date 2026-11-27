@@ -21,6 +21,18 @@ const BAGMOVE = {
   poison: ['flask', 0x82ff5a], skull: ['curse', 0xaa6eff], holytome: ['skyray', 0xffeb96], divinetome: ['skyray', 0xfff5be, { big: 1 }], voidorb: ['implode', 0x9650ff], f_lichstaff: ['lich', 0x78ffa0],
   bomb: ['bombtoss', 0xffaa50], meteor: ['meteor', 0xff6a30], comet: ['meteor', 0xff6a30, { big: 1 }], lantern: ['wisps', 0x78c8ff, { n: 3 }], soullantern: ['wisps', 0xff5a8c, { n: 6 }],
 };
+/* THE CHAMPION'S MOVES (owner 2026-11-27 "ท่าอนิเมชั่นสวยๆ เท่ๆ"): every item move plays its own body move: [clips (taken in turn), speed, weight].
+   A move in progress is only cut short by a heavier one (weight 3 > 2 > 1 > 0). Weight 2+ uses the whole body when the champion stands still.
+   Clips = KayKit + Quaternius Universal Animation Library (both CC0), already on our skeleton (art/grind3d/hero_anims.glb, ual_anims.json). */
+const BAGANIM = { cut: [['Q_Sword_Regular_A', 'Q_Sword_Regular_B'], .45, 1], wave: [['Q_Sword_Regular_A', 'Q_Sword_Regular_B'], .46, 1], xcut: [['Q_Sword_Regular_B', 'Q_Sword_Regular_A'], .4, 1], claws: [['Q_Sword_Regular_A', 'Q_Sword_Regular_B'], .34, 1],
+  stab: [['Melee_1H_Attack_Stab'], .45, 1], thrust: [['Melee_1H_Attack_Stab'], .42, 1], pierce: [['Melee_1H_Attack_Stab'], .55, 1], iai: [['Q_Sword_Dash'], .6, 2], bonk: [['Q_Sword_Regular_B'], .5, 1],
+  cleave: [['Melee_1H_Attack_Jump_Chop'], .7, 2], guillotine: [['Melee_1H_Attack_Jump_Chop'], .75, 2], slam: [['Melee_1H_Attack_Jump_Chop'], .7, 2], reap: [['Melee_2H_Attack_Spin'], .8, 2],
+  toss: [['Q_OverhandThrow'], .5, 1], star: [['Q_OverhandThrow'], .36, 1], disc: [['Q_OverhandThrow'], .5, 1], flask: [['Q_OverhandThrow'], .55, 1], bombtoss: [['Q_OverhandThrow'], .6, 2],
+  arrows: [['Ranged_Bow_Release'], .55, 1], fireball: [['Q_Spell_Simple_Shoot'], .45, 1], icicle: [['Q_Spell_Simple_Shoot'], .45, 1], chain: [['Q_Spell_Simple_Shoot'], .4, 1], curse: [['Q_Spell_Simple_Shoot'], .5, 1], skyray: [['Q_Spell_Simple_Shoot'], .5, 1],
+  lich: [['Ranged_Magic_Summon'], .9, 2], implode: [['Ranged_Magic_Summon'], .9, 2], meteor: [['Ranged_Magic_Summon'], 1, 2], wisps: [['Ranged_Magic_Summon'], 1, 2],
+  skill: [['Ranged_Bow_Release_Up'], .8, 3], block: [['Melee_Block'], .5, 0], eat: [['Use_Item'], .6, 0], hurt: [['Hit_A'], .32, 0] };   /* [clips taken in turn, seconds the move takes, weight] */
+function bagSwing(mv, ang) { const H = HERO, M = H.M, A = BAGANIM[mv] || BAGANIM.cut; if (H.dead || BAG.done) return; if (H.atkT > 0 && A[2] <= (H.apr || 0)) return; const an = A[0][(H.combo = (H.combo | 0) + 1) % A[0].length], act = M.acts[an + '_up']; if (!act) return;
+  const ts = act.getClip().duration / A[1]; chPlay(M, 'U', an, true, ts); H.atkT = A[1] * .88; H.apr = A[2]; if (ang != null && !H.moving) H.aim = ang; if (A[2] >= 2 && !H.moving) { chPlay(M, 'L', an, true, ts); H.dodgeT = A[1] * .88; } }
 const bagPos = () => HERO.pos, bagNear = R => nearest(HERO.pos.x, HERO.pos.z, R), bagFx = f => { if (!NORENDER) f(); };
 const bagAngD = (a, b) => Math.abs(((a - b + Math.PI) % TAU + TAU) % TAU - Math.PI);
 function bagLine(x, z, a, L, c, w) { bagFx(() => boltFx(new V3(x, .7, z), new V3(x + Math.sin(a) * L, .7, z + Math.cos(a) * L), c, w)); }
@@ -77,13 +89,13 @@ const BAGFIRE = {
   wisps(W, C, O) { if (!bagNear(12)) return false; const n = O.n || 3; for (let i = 0; i < n; i++) shootP('spirit', Math.random() * TAU, { bag: W, mul: 1.5 / n, spd: 8, life: 3.5, r: .45, y: 1, c: C, boomR: 1.2 }); return true; },
   cut(W, C) { const m = bagNear(2.8); if (!m) return false; const a = dirTo(m), P0 = bagPos(); inCircle(P0.x, P0.z, 2.6, q => { if (bagAngD(dirTo(q), a) < 1.1) bagHit(W, q, 1, { kb: 2 }); }); arcFx(P0.x, P0.z, a, 2.6, C, .22, 1); sfx('slash', .4, 1.1); return a; },   /* an item this page does not know */
 };
-function bagFire(W) { const M = BAGMOVE[W.id] || BAGMOVE[W.base] || (W.ty === 'mag' ? ['fireball', 0xbe8cff, { n: 1 }] : ['cut', 0xffe2a0]), f = BAGFIRE[M[0]], r = f(W, M[1], M[2] || {}); if (r !== false) for (let h = 1; h < (W.hits || 1); h++) after(h * .13, () => { if (!HERO.dead) f(W, M[1], M[2] || {}); }); return r; }
+function bagFire(W) { const M = BAGMOVE[W.id] || BAGMOVE[W.base] || (W.ty === 'mag' ? ['fireball', 0xbe8cff, { n: 1 }] : ['cut', 0xffe2a0]), f = BAGFIRE[M[0]], r = f(W, M[1], M[2] || {}); W.mv = M[0]; if (r !== false) for (let h = 1; h < (W.hits || 1); h++) after(h * .13, () => { if (!HERO.dead) f(W, M[1], M[2] || {}); }); return r; }
 function bagSelf(W) {   /* shields and food work on the champion */
   const H = HERO, P0 = H.pos; if (W.blk) { BAG.blk = Math.min(H.max * .6, BAG.blk + W.blk); ring(P0, 0x8fc8ff, .5, 1.5, .35, .8); spark(P0.x, 1, P0.z, { n: 4, color: 0x8fc8ff, spd: 1.5, up: 1.5, size: .22, life: .3 }); }
   if (W.heal) { const h = Math.min(W.heal, H.max - H.hp); healHero(W.heal); if (h >= 1) num(P0.x, 1.9, P0.z, '+' + Math.round(h), '#9fe870'); spark(P0.x, .5, P0.z, { n: 3 + Math.min(5, W.heal / 3 | 0), color: 0x9fe870, spd: .8, up: 3, grav: 1, size: .22, life: .6 }); if (W.heal >= 8) pfx('holy/holy-heal', P0.x, P0.z, 1.6, { follow: P0 }); }
 }
 function bagSkill() {   /* the champion's own skill (the wolf hunter: a fan of piercing arrows, the middle one a crit) */
-  const K = BAG.sk, m = bagNear(10); if (!m) return; const a = dirTo(m); heroSwing(a, 1.2); banner(K.n, '', false, 1.1); const W = { id: 'skill', dmg: K.pw, crit: 0, ty: 'phy' };
+  const K = BAG.sk, m = bagNear(10); if (!m) return; const a = dirTo(m); bagSwing('skill', a); banner(K.n, '', false, 1.1); const W = { id: 'skill', dmg: K.pw, crit: 0, ty: 'phy' };
   for (let i = -2; i <= 2; i++) after(.18 + Math.abs(i) * .05, () => { if (!HERO.dead) shootP('arrow', a + i * .16, { bag: i ? W : Object.assign({}, W, { crit: 1 }), mul: .45, pierce: 4, spd: 19, life: .8, r: .42, kb: 2, c: 0xffe178 }); }); sfx('twang', .8, .8); pfx('status/power-up-aura', HERO.pos.x, HERO.pos.z, 1.8, { follow: HERO.pos, speed: 1.6 });
 }
 /* ---- what the engine asks (hooks in horde.html) */
@@ -91,7 +103,7 @@ function bagHurt(d, src) {   /* before armour: magic resist for shots, dodge, th
   const H = HERO, S = BAG.st, P0 = H.pos; if (BAG.t > BAG.dur) d *= 1 + (BAG.t - BAG.dur) * .05; if (!src) d *= 1 - (S.mres || 0); else if (S.dodge && Math.random() < S.dodge) { num(P0.x, 1.8, P0.z, 'หลบ', '#cfe8ff'); H.inv = .25; return 0; }
   if (src && S.thorn && !src.dead) hitMon(src, S.thorn * 2.5, { w: 'thorn', color: '#c8e8a0' });
   if (BAG.blk > 0) { const a = Math.min(BAG.blk, d); BAG.blk -= a; d -= a; if (d < .5) { H.inv = .3; num(P0.x, 1.8, P0.z, 'กัน', '#8fc8ff'); spark(P0.x, 1, P0.z, { n: 4, color: 0x8fc8ff, spd: 2.5, size: .22, life: .25 }); sfx('tick', .3, 1.6); return 0; } }
-  return d; }
+  if (d >= 1) bagSwing('hurt', null); return d; }
 function bagKill(m) {   /* no xp gems in this mode: a few coins (bonus gold for the shop), a rare heart */
   if (m.boss) { G.boss = null; shake(.6); sfx('boom', 1, .6); FLASH.w = .4; for (let i = 0; i < 3; i++) after(i * .22, () => pfx('explosions/big-explosion', m.x + rnd(-1, 1), m.z + rnd(-.6, .6), 4.5)); ring(m, 0xffd060, .5, 7, .8); column(m, 0xffd060, 1, 1, 6); for (let i = 0; i < 5; i++) drop('coin', m.x + rnd(-1.4, 1.4), m.z + rnd(-1.4, 1.4), 1); return; }
   if (m.elite) { pfx('explosions/arcane-burst', m.x, m.z, 3); sfx('boom', .6, 1.2); shake(.25); for (let i = 0; i < 2; i++) drop('coin', m.x + rnd(-.6, .6), m.z + rnd(-.6, .6), 1); return; }
@@ -114,17 +126,17 @@ function bagBoss() { const bi = Math.min(3, Math.floor(BAG.cfg.round / 5) - 1), 
   loadKind(k).then(() => { const K = KIND[k]; if (!K || !K.ok || !BAG.on) { BAG.bossWait = false; BAG.total--; return; } const [x, z] = ringPos(Math.min(SPAWNR - 1, 11)), m = spawnMon(k, x, z, { boss: true, bi: Math.max(0, bi), spd: .85, dmg: .75 }); BAG.bossWait = false; if (!m) { BAG.total--; return; }
     m.hp = m.max = BAG.bossHp; m.r = Math.max(m.r, .8); G.boss = m; banner('บอสบุก!', MOBS[k].name, true, 2.6); setMusic('drums'); shake(.4); sfx('boom', .9, .6); sfx('roar', 1); G.slow = 1.2; CAM.focus = { m, t: 0, dur: 2 }; }); }
 function bagUpd(dt) {   /* instead of the weapons / director / shrines / ultimate of the normal game */
-  const S = BAG.st, H = HERO; BAG.t += dt; while (BAG.pi < BAG.plan.length && BAG.plan[BAG.pi].t <= BAG.t) bagSpawn(BAG.plan[BAG.pi++]); if (BAG.cfg.boss && !BAG.bossed && BAG.t > 4) { BAG.bossed = true; bagBoss(); }
+  const S = BAG.st, H = HERO; BAG.t += dt; if (H.atkT <= 0) H.apr = 0; while (BAG.pi < BAG.plan.length && BAG.plan[BAG.pi].t <= BAG.t) bagSpawn(BAG.plan[BAG.pi++]); if (BAG.cfg.boss && !BAG.bossed && BAG.t > 4) { BAG.bossed = true; bagBoss(); }
   BAG.sta = Math.min(S.stam, BAG.sta + S.sreg * dt); const hs = 1 + (S.haste || 0);
   for (const W of BAG.its) { if (W.fl > 0) W.fl -= dt;
-    if (W.once) { if (!W.done && BAG.t >= 3.5 && bagFire(W) !== false) { W.done = 1; W.fl = .4; bagPop(W); } continue; }
-    W.t += dt * hs; if (W.t < W.cd) continue; if (W.self) { W.t = 0; W.fl = .25; bagSelf(W); continue; } if (BAG.sta < W.sta) continue;
-    const r = bagFire(W); if (r === false) { W.t = W.cd - .12; continue; } W.t = 0; BAG.sta -= W.sta; W.fl = .25; bagPop(W); if (typeof r === 'number' && H.atkT <= 0) heroSwing(r, 1.5); }
+    if (W.once) { if (!W.done && BAG.t >= 3.5 && bagFire(W) !== false) { W.done = 1; W.fl = .4; bagPop(W); bagSwing(W.mv, null); } continue; }
+    W.t += dt * hs; if (W.t < W.cd) continue; if (W.self) { W.t = 0; W.fl = .25; bagSelf(W); bagSwing(W.blk ? 'block' : 'eat', null); continue; } if (BAG.sta < W.sta) continue;
+    const r = bagFire(W); if (r === false) { W.t = W.cd - .12; continue; } W.t = 0; BAG.sta -= W.sta; W.fl = .25; bagPop(W); bagSwing(W.mv, typeof r === 'number' ? r : null); }
   if (BAG.sk) { BAG.sk.g += dt * hs; if (BAG.sk.g >= BAG.sk.cd && bagNear(10)) { BAG.sk.g = 0; bagSkill(); } }
   BAG.tk -= dt; if (BAG.tk <= 0) { BAG.tk = .5; for (const m of MON) if (!m.dead && m.poi > 0) hitMon(m, m.poi * .5, { w: 'poison', color: '#c8f080' }); }
   if (BAG.raged) { BAG.rk = (BAG.rk || 0) - dt; if (BAG.rk <= 0) { BAG.rk = 1; for (const m of MON) if (!m.dead && m.spd < 6) m.spd *= 1.04; } }
   if (BAG.t > BAG.dur && !BAG.raged) { BAG.raged = true; banner('ฝูงมอนคลั่ง!', 'รีบกวาดให้หมด: ยิ่งนานมอนยิ่งตีแรง', true, 2.2); }
-  if (!BAG.done && BAG.pi >= BAG.plan.length && !BAG.bossWait && (!BAG.cfg.boss || BAG.bossed) && aliveN() === 0 && G.endT <= 0) { BAG.done = true; G.won = true; G.endT = 1.4; jingle('win'); banner('ชนะ!', 'กวาดฝูงมอนรอบ ' + BAG.cfg.round + ' หมดแล้ว', false, 1.6); for (const g of GEMS) g.pull = true; }
+  if (!BAG.done && BAG.pi >= BAG.plan.length && !BAG.bossWait && (!BAG.cfg.boss || BAG.bossed) && aliveN() === 0 && G.endT <= 0) { { const M = H.M; chPlay(M, 'U', 'Cheer', true, 1.2); chPlay(M, 'L', 'Cheer', true, 1.2); H.atkT = H.dodgeT = 3; H.apr = 9; } BAG.done = true; G.won = true; G.endT = 1.4; jingle('win'); banner('ชนะ!', 'กวาดฝูงมอนรอบ ' + BAG.cfg.round + ' หมดแล้ว', false, 1.6); for (const g of GEMS) g.pull = true; }
 }
 function bagAuto(dt) {   /* the champion holds the ground and lets the bag fight: walks to the nearest monster when nothing is in reach, steps out of a boss's body and away from shots, picks up coins when it is quiet, dashes out when badly hurt in a crowd */
   const H = HERO.pos; let fx = 0, fz = 0, nd = 1e9, nm = null, close = 0, cx = 0, cz = 0;
@@ -136,10 +148,10 @@ function bagAuto(dt) {   /* the champion holds the ground and lets the bag fight
   const L = Math.hypot(fx, fz); if (L < .06) INP.x = INP.z = 0; else { INP.x = fx / L; INP.z = fz / L; }
   if (HERO.dashCd <= 0 && HERO.hp < HERO.max * .5 && close >= 4) { const c = Math.hypot(cx, cz) || 1; INP.x = cx / c; INP.z = cz / c; heroDash(); }
 }
-function bagInp(dt) { JOY.on = false; if (!HERO.dead && G.endT <= 0) bagAuto(dt); else INP.x = INP.z = 0; }   /* owner 2026-11-27 "ไม่ต้องบังคับดิ ให้มันออโต้ โดยเราจัดกระเป๋าแบบเดิม": the player never steers, the fight is fully automatic */
+function bagInp(dt) { JOY.on = false; if (!HERO.dead && G.endT <= 0 && BAG.t > .7) bagAuto(dt); else INP.x = INP.z = 0; }   /* owner 2026-11-27 "ไม่ต้องบังคับดิ ให้มันออโต้ โดยเราจัดกระเป๋าแบบเดิม": the player never steers, the fight is fully automatic */
 /* ---- start / end */
 function bagStart(cfg) {
-  if (!BAG.ready || !HERO) return false; resize(); audioInit(); clearRun(); const M = HERO.M; HERO = makeHero(M); showHero(M); BAG.cfg = cfg; BAG.result = null; BAG.on = true; BAG.done = BAG.raged = BAG.bossed = false; BAG.bossWait = false; BAG.t = 0; BAG.tk = .5; BAG.man = 0;
+  if (!BAG.ready || !HERO) return false; CAM.zoom = 1.22; resize(); audioInit(); clearRun();   /* closer than the survival game: the champion and the item effects read bigger */ const M = HERO.M; HERO = makeHero(M); showHero(M); BAG.cfg = cfg; BAG.result = null; BAG.on = true; BAG.done = BAG.raged = BAG.bossed = false; BAG.bossWait = false; BAG.t = 0; BAG.tk = .5; BAG.man = 0;
   const S = BAG.st = Object.assign({ armor: 0, mres: 0, dodge: 0, regen: 0, thorn: 0, haste: 0, crit: 0, critd: 2, stam: 5, sreg: 1, rage: 0, sblk: 0 }, cfg.st || {}); BAG.spd = cfg.spd > 1 ? 2 : 1; BAG.icr = cfg.icr || 14;
   Object.assign(P, { pow: 1, cd: 1, area: 1, spd: 3.3, magnet: 2.4, crit: 0, critX: 2, armor: S.armor, regen: S.regen, xp: 0, gold: 1, luck: 1, multi: 0, dur: 1, steal: 0, numMin: 0 }); HERO.max = Math.round(cfg.hp); HERO.hp = HERO.max; BAG.hpShow = HERO.hp; BAG.blk = S.sblk || 0; BAG.sta = S.stam;
   BAG.its = (cfg.items || []).map(q => { const W = Object.assign({ t: Math.random() * .4, fl: 0 }, q); if (W.start != null) { W.once = true; W.dmg = W.start; } else if (W.blk || W.heal) W.self = true; return W; });
@@ -147,12 +159,12 @@ function bagStart(cfg) {
   BAG.sk = cfg.sk ? { n: cfg.sk.n, cd: cfg.sk.cd, pw: cfg.sk.pw, g: cfg.sk.cd * .4 } : null; G.seed = (Math.random() * 1e9) | 0; G.hpMul = G.dmgMul = G.rateMul = 1; G.revive = 0; G.pend = 0; G.hk = HERO.k;
   const kinds = bagWave(cfg.round, !!cfg.boss); DIR.cur = kinds; kinds.forEach(loadKind); if (cfg.boss) loadKind(MAP.boss[Math.max(0, Math.min(3, Math.floor(cfg.round / 5) - 1)) % MAP.boss.length]);
   CAM.look.set(0, 0, 0); INP.x = INP.z = 0; JOY.on = false; G.state = 'load'; LOAD.msg = 'กำลังเรียกฝูงมอน...'; LOAD.f = .6;
-  Promise.all(kinds.map(loadKind)).then(() => { if (BAG.cfg !== cfg) return; G.state = 'play'; setMusic(MAP.music === 'calm' ? 'battle' : MAP.music); banner(cfg.boss ? 'รอบ ' + cfg.round + ' · บอส' : 'รอบ ' + cfg.round, cfg.name || '', !!cfg.boss, 1.8); }); return true;
+  Promise.all(kinds.map(loadKind)).then(() => { if (BAG.cfg !== cfg) return; G.state = 'play'; { const M = HERO.M, d = chPlay(M, 'U', 'Spawn_Ground', true, 1.5); chPlay(M, 'L', 'Spawn_Ground', true, 1.5); HERO.atkT = HERO.dodgeT = Math.min(.8, d || 0); HERO.apr = 9; }   /* the champion rises out of the ground */ setMusic(MAP.music === 'calm' ? 'battle' : MAP.music); banner(cfg.boss ? 'รอบ ' + cfg.round + ' · บอส' : 'รอบ ' + cfg.round, cfg.name || '', !!cfg.boss, 1.8); }); return true;
 }
 function bagFinish() {   /* the wave is cleared or the champion fell: tell bag3d.html */
   const left = aliveN() + BAG.plan.slice(BAG.pi).reduce((s, p) => s + p.n, 0), r = { bag: 'end', win: !!G.won && !HERO.dead, t: +BAG.t.toFixed(1), kills: G.kills, total: BAG.total, left, coins: G.coins, hp: Math.max(0, Math.round(HERO.hp)), dmg: Object.assign({}, STATS) };
   BAG.result = r; BAG.on = false; G.state = 'bagdone'; INP.x = INP.z = 0; JOY.on = false; setMusic('calm'); try { if (parent !== window) parent.postMessage(r, '*'); } catch (_) { } }
-function bagBoot() { BAG.ready = true; G.state = 'bagidle'; if (!NORENDER) bagIcons(); try { if (parent !== window) parent.postMessage({ bag: 'ready', map: MAPK }, '*'); } catch (_) { } if (BAG.wait) { const c = BAG.wait; BAG.wait = null; bagStart(c); } }
+function bagBoot() { BAG.ready = true; G.state = 'bagidle'; HERO.M.T.root.scale.multiplyScalar(1.15); if (!NORENDER) bagIcons(); try { if (parent !== window) parent.postMessage({ bag: 'ready', map: MAPK }, '*'); } catch (_) { } if (BAG.wait) { const c = BAG.wait; BAG.wait = null; bagStart(c); } }
 function bagIcons() { if (BAG.img) return true; BAG.img = new Image(); BAG.img.src = 'art/bag3d/icons_all.png?v=3'; BAG.tex = TL.load('art/bag3d/icons_all.png?v=3'); BAG.tex.magFilter = THREE.NearestFilter; BAG.tex.encoding = THREE.sRGBEncoding; return true; }
 addEventListener('message', e => { const d = e.data; if (!d || !d.bag || !BAGM) return; if (d.bag === 'start') { if (BAG.ready) bagStart(d.cfg); else BAG.wait = d.cfg; } else if (d.bag === 'spd') BAG.spd = d.v > 1 ? 2 : 1; else if (d.bag === 'stop') { BAG.on = false; G.state = 'bagidle'; clearRun(); } });
 window.BAGAPI = { BAG, start: c => bagStart(c), fire: bagFire, moves: BAGMOVE };
