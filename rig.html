@@ -20,7 +20,7 @@
   input[type=range] { width: 100%; }
   h3 { margin: 10px 0 4px; font-size: 14px; color: #ffd24a; }
   #sel { font-size: 15px; color: #fff; }
-  #hint { position: fixed; left: 8px; bottom: 8px; right: 272px; color: #ccd; font-size: 12px; pointer-events: none; text-shadow: 0 1px 2px #000; }
+  #hint { position: fixed; left: 8px; bottom: 8px; right: 272px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccd; font-size: 12px; pointer-events: none; text-shadow: 0 1px 2px #000; }
   #ttl { position: fixed; left: 10px; top: 8px; font: 800 15px system-ui; color: #ffd24a; text-shadow: 0 1px 2px #000; pointer-events: none; }
   textarea { width: 100%; height: 70px; font: 11px monospace; background: #0d1018; color: #9fe; border: 1px solid #4a557a; box-sizing: border-box; }
 </style>
@@ -68,7 +68,7 @@
 <button id="tg">☰</button>
 <div id="ttl"></div>
 <div id="hint"></div>
-<script src="rig2d/bones.js?v=17"></script><script src="rig2d/fx.js?v=4"></script>
+<script src="rig2d/bones.js?v=18"></script><script src="rig2d/fx.js?v=4"></script>
 <script>
 'use strict';
 /* Rig tool, version 2 (first made 2026-11-14 on the owner's "เอาทูลมา ฉันต่อเอง"; rebuilt 2026-11-27 after one hero of the owner's recording was taken
@@ -83,19 +83,19 @@ let R = null, R0 = null, names = [], PL = null;   /* the rig being edited, the r
 const ALPHA = {};
 const label = k => R.parts[k].n || k;
 function adopt(o) { if (!o.parts || !o.order) throw 'bad'; delete o.img0; delete o.img; for (const k of names) { if (!o.parts[k]) o.parts[k] = JSON.parse(JSON.stringify(R0.parts[k])); if (!o.order.includes(k)) o.order.push(k); } for (const k in o.parts) if (!R0.parts[k]) delete o.parts[k]; o.order = o.order.filter(k => R0.parts[k]);
-  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size', 'view', 'faces', 'swaps', 'clips', 'figH', 'refMask', 'checks']) o[c] = R0[c]; if (o.bake == null) o.bake = !!R0.bake; if (o.mesh === undefined && R0.mesh) o.mesh = R0.mesh; o.img = R0.img; if (R0.img0) { Object.assign(R0.img, R0.img0); R0.img0 = null; } if (o.flip == null) o.flip = !!R0.flip; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; if (q.g == null && d.g != null) q.g = d.g; } o.img = R0.img; R = o; B.prep(R); if (R.bake) B.bake(R); PL = B.player(R); PL.pop = +$('#pop').value; }
+  for (const c of ['v', 'name', 'title', 'dir', 'ref', 'size', 'view', 'faces', 'swaps', 'clips', 'figH', 'refMask', 'checks']) o[c] = R0[c]; if (o.bake == null) o.bake = !!R0.bake; if (o.mesh === undefined && R0.mesh) o.mesh = R0.mesh; if (o.moves === undefined && R0.moves) o.moves = JSON.parse(JSON.stringify(R0.moves)); o.img = R0.img; if (R0.img0) { Object.assign(R0.img, R0.img0); R0.img0 = null; } if (o.flip == null) o.flip = !!R0.flip; if (!o.feet) o.feet = R0.feet.slice(); for (const k of names) { const q = o.parts[k], d = R0.parts[k]; q.img = d.img; if (!q.n) q.n = d.n; if (!q.role) q.role = d.role || 'none'; if (q.g == null && d.g != null) q.g = d.g; } o.img = R0.img; R = o; B.prep(R); if (R.bake) B.bake(R); PL = B.player(R); PL.pop = +$('#pop').value; }
 const clean = () => { const o = JSON.parse(JSON.stringify(R, (k, v) => (k === 'img' || k === 'img0') && typeof v === 'object' && !(typeof v === 'string') ? undefined : k[0] === '_' ? undefined : v)); for (const k of names) o.parts[k].img = R0.parts[k].img; return o; };
 function save() { try { localStorage.setItem(KEY, JSON.stringify(clean())); } catch (e) { } }
 
 /* ---- view */
 let DIFF = false, HAD = false, DPR = 1, W = 0, H = 0, ZOOM = 1, PAN = [0, 0], MODE = 'A', SEL = '', PLAY = '', GAP = 0, POSE = {}, LEFT = false, BONES = false, LAST = 0, FEET = false;
-function view() { const [w, h] = R.size, s = Math.min(W / w, H / h) * .78 * ZOOM, pw = $('#pn').classList.contains('hide') ? 0 : 262 * DPR; return [s, 0, 0, s, (W - pw) * .5 + PAN[0] - w / 2 * s, H * .52 + PAN[1] - h / 2 * s]; }
+function view() { const [w, h] = R.size, hb = tlOn() ? 104 * DPR : 0, Hv = H - hb, s = Math.min(W / w, Hv / h) * .78 * ZOOM, pw = $('#pn').classList.contains('hide') ? 0 : 262 * DPR; return [s, 0, 0, s, (W - pw) * .5 + PAN[0] - w / 2 * s, Hv * .52 + PAN[1] - h / 2 * s]; }   /* the timeline bar takes the bottom while it is open */
 function resize() { DPR = Math.min(3, devicePixelRatio || 1); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; }
 addEventListener('resize', resize);
 function mats() { B.prep(R); return PLAY ? PL.mats : B.world(R, POSE, null); }
 function draw(now) {
   const dt = Math.min(.05, (now - LAST) / 1000 || 0); LAST = now; B.prep(R);
-  if (PLAY) { PL.speed = +$('#spd').value; PL.pop = +$('#pop').value; const mv = mvOf(PLAY);
+  if (tlOn()) tlTick(dt); else if (PLAY) { PL.speed = +$('#spd').value; PL.pop = +$('#pop').value; const mv = mvOf(PLAY);
     if (!mv.loop && !mv.fn && PL.name !== PLAY) { GAP -= dt; if (GAP <= 0) { PL.play(PLAY, { restart: true }); } }   /* a one-shot ended and fell back to standing: again after a short stand */
     else if (!mv.loop && !mv.fn && PL.done) { GAP -= dt; if (GAP <= 0) { PL.play(PLAY, { restart: true }); GAP = .7; } }
     PL.update(dt); if (!mv.loop && !mv.fn && PL.name === PLAY && !PL.done) GAP = mv.hold ? .9 : .55; }
@@ -115,6 +115,7 @@ function draw(now) {
       if (q.p && R.parts[q.p]) { const pp = dot(q.p); ctx.strokeStyle = BONES ? '#7fe7c4' : '#ff3a6a88'; ctx.lineWidth = (BONES ? 3 : 2) * DPR; ctx.setLineDash(BONES ? [] : [6 * DPR, 6 * DPR]); ctx.beginPath(); ctx.moveTo(pp[0], pp[1]); ctx.lineTo(p[0], p[1]); ctx.stroke(); ctx.setLineDash([]); }
       ctx.fillStyle = k === SEL && !PLAY ? '#ff3a6a' : '#7fe7c4'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * DPR; ctx.beginPath(); ctx.arc(p[0], p[1], (k === SEL && !PLAY ? 9 : 5) * DPR, 0, 7); ctx.fill(); ctx.stroke(); } }
   if (!PLAY) { const f = B.pt(V, F[0], F[1]); ctx.strokeStyle = FEET ? '#ffd24a' : '#ffffff66'; ctx.lineWidth = 2 * DPR; ctx.beginPath(); ctx.moveTo(f[0] - 16 * DPR, f[1]); ctx.lineTo(f[0] + 16 * DPR, f[1]); ctx.moveTo(f[0], f[1] - 10 * DPR); ctx.lineTo(f[0], f[1] + 4 * DPR); ctx.stroke(); }
+  if (tlOn()) tlDraw();   /* the timeline bar + joint dots (rig2d/timeline.js) */
   requestAnimationFrame(draw); }
 
 /* ---- input: tap a piece to pick it; drag it to move (จัดวาง) or turn it (หมุนท่า); drag the red dot to move the turning point */
@@ -123,29 +124,30 @@ const vnow = () => { let V = view(); if (LEFT) V = B.mul(V, [-1, 0, 0, 1, 2 * R.
 function hit(x, y) { const V = vnow(), M = mats();
   for (let i = R.order.length - 1; i >= 0; i--) { const k = R.order[i], q = R.parts[k], l = B.pt(B.inv(B.mul(V, M[k])), x, y), px = Math.round(l[0] + q.pv[0]), py = Math.round(l[1] + q.pv[1]), a = ALPHA[k];
     if (px >= 0 && py >= 0 && px < a.w && py < a.h && a.d[(py * a.w + px) * 4 + 3] > 40) return k; } return null; }
-cv.addEventListener('pointerdown', e => { const x = e.clientX * DPR, y = e.clientY * DPR; cv.setPointerCapture(e.pointerId); if (PLAY) stop(); const V = vnow(), M = mats();
+cv.addEventListener('pointerdown', e => { if (tlOn() && tlDown(e)) return; const x = e.clientX * DPR, y = e.clientY * DPR; cv.setPointerCapture(e.pointerId); if (PLAY) stop(); const V = vnow(), M = mats();
   if (FEET) { const l = B.pt(B.inv(V), x, y); R.feet = [Math.round(l[0]), Math.round(l[1])]; FEET = false; $('#feet').classList.remove('on'); save(); hint(); return; }
   const p = B.pt(B.mul(V, M[SEL]), 0, 0);
   if (Math.hypot(x - p[0], y - p[1]) < 16 * DPR) { DRAG = { k: 'pivot', x, y }; return; }
   const k = hit(x, y); if (!k) { DRAG = { k: 'pan', x, y, p0: PAN.slice() }; return; } select(k);
   const q = R.parts[k], c = B.pt(B.mul(V, M[k]), 0, 0);
   DRAG = MODE === 'A' ? { k: 'move', x, y, at0: q.at.slice() } : { k: 'turn', a0: Math.atan2(y - c[1], x - c[0]), p0: (POSE[k] || B.REST).r, c }; });
-cv.addEventListener('pointermove', e => { if (!DRAG) return; const x = e.clientX * DPR, y = e.clientY * DPR, V = vnow(), sc = V[3], dir = LEFT ? -1 : 1;
+cv.addEventListener('pointermove', e => { if (tlOn() && tlMove(e)) return; if (!DRAG) return; const x = e.clientX * DPR, y = e.clientY * DPR, V = vnow(), sc = V[3], dir = LEFT ? -1 : 1;
   if (DRAG.k === 'pan') { PAN = [DRAG.p0[0] + x - DRAG.x, DRAG.p0[1] + y - DRAG.y]; return; }
   const q = R.parts[SEL];
   if (DRAG.k === 'move') { q.at = [DRAG.at0[0] + (x - DRAG.x) / sc * dir, DRAG.at0[1] + (y - DRAG.y) / sc]; }
   else if (DRAG.k === 'turn') { const a = Math.atan2(y - DRAG.c[1], x - DRAG.c[0]); POSE[SEL] = Object.assign({}, B.REST, { r: DRAG.p0 + (a - DRAG.a0) * 180 / Math.PI * dir }); }
   else if (DRAG.k === 'pivot') {   /* move the turning point inside the piece, keep the picture where it is */
     const M = mats(), l = B.pt(B.inv(B.mul(V, M[SEL])), x, y), np = [q.pv[0] + l[0], q.pv[1] + l[1]], bw = B.pt(B.bind(q), np[0] - q.pv[0], np[1] - q.pv[1]); q.pv = [Math.round(np[0]), Math.round(np[1])]; q.at = bw; } });
-const up = () => { if (DRAG && DRAG.k !== 'pan') { if (R.bake && DRAG.k !== 'turn') B.bake(R); save(); } DRAG = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+const up = () => { if (tlOn() && tlUp()) return; if (DRAG && DRAG.k !== 'pan') { if (R.bake && DRAG.k !== 'turn') B.bake(R); save(); } DRAG = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
 cv.addEventListener('wheel', e => { ZOOM *= e.deltaY < 0 ? 1.1 : .9; e.preventDefault(); }, { passive: false });
 
 /* ---- panel */
 function select(k) { SEL = k; const q = R.parts[k]; $('#sel').textContent = label(k); $('#pick').value = k; $('#sc').value = q.s; $('#vs').textContent = q.s.toFixed(2); $('#rt').value = q.r; $('#vr').textContent = q.r + '°'; $('#par').value = q.p || ''; $('#role').value = q.role || 'none'; $('#gn').value = q.g == null ? 1 : q.g; $('#vg').textContent = Math.round((q.g == null ? 1 : q.g) * 100) + '%'; }
-function stop() { PLAY = ''; for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', !b.dataset.mv); hint(); }
+function stop() { if (typeof tlLeave === 'function') tlLeave(); PLAY = ''; for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', !b.dataset.mv); hint(); }
 let DIFFC = null; const snap2 = () => JSON.stringify(R.parts) + JSON.stringify(POSE);
-const mvOf = k => B.MOVES[k] || { dur: R.clips[k].dur, clip: 1 }, FX = Bones2DFX.create();
-function play(k) { if (!k) { stop(); return; } PLAY = k; POSE = {}; GAP = 0; PL = B.player(R); const mk = mvOf(k); PL.play(mk.loop || mk.fn ? k : 'idle'); if (!(mk.loop || mk.fn)) GAP = .35; PL.update(0); for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', b.dataset.mv === k); hint(); }
+const tlOn = () => typeof TLON === 'function' && TLON();   /* rig2d/timeline.js may load a moment after this script */
+const mvOf = k => (R.moves && R.moves[k]) || B.MOVES[k] || { dur: R.clips[k].dur, clip: 1 }, FX = Bones2DFX.create();
+function play(k) { if (!k) { stop(); return; } if (typeof tlLeave === 'function') tlLeave(); PLAY = k; POSE = {}; GAP = 0; PL = B.player(R); const mk = mvOf(k); PL.play(mk.loop || mk.fn ? k : 'idle'); if (!(mk.loop || mk.fn)) GAP = .35; PL.update(0); for (const b of document.querySelectorAll('#mvs button')) b.classList.toggle('on', b.dataset.mv === k); hint(); }
 function boot() {
   let o = null; try { const s = localStorage.getItem(KEY); if (s) o = JSON.parse(s); } catch (e) { } HAD = !!o; try { adopt(o || JSON.parse(JSON.stringify(R0, (k, v) => (k === 'img' || k === 'img0') && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); } catch (e) { adopt(JSON.parse(JSON.stringify(R0, (k, v) => (k === 'img' || k === 'img0') && typeof v === 'object' ? undefined : k[0] === '_' ? undefined : v))); }
   $('#ttl').textContent = (R.title || CHAR) + ' · ' + names.length + ' ชิ้น';
@@ -196,17 +198,19 @@ function boot() {
   $('#msoft').oninput = () => { if (!R.mesh) R.mesh = { mode: 'pieces' }; R.mesh.soft = +$('#msoft').value; R._mesh = null; save(); meshUI(); };
   $('#mshV').onclick = () => { R._meshShow = !R._meshShow; meshUI(); };
   meshUI();
+  if (typeof tlInit === 'function') tlInit(); else addEventListener('load', () => tlInit());   /* the timeline: make moves in the tool (rig2d/timeline.js) */
   $('#diffB').onclick = () => { DIFF = !DIFF; $('#diffB').classList.toggle('on', DIFF); };
   setTimeout(score, 50);
   resize(); select(names.includes('torso') ? 'torso' : names.find(k => R.parts[k].role === 'body') || names[0]); stop(); hint(); if (QS.get('apart') === '1') { if (!HAD) apart(); }   /* "let me join it myself": the first visit starts with the pieces apart beside a faint picture of the whole hero; a rig already saved in this browser is kept */
   else if (QS.get('play') !== '0') play(QS.get('play') || 'idle'); requestAnimationFrame(draw);
   window.RIG = { get R() { return R; }, get PL() { return PL; }, select, play, stop, B }; }
-function hint() { $('#hint').textContent = PLAY ? 'กำลังเล่นท่า "' + ((B.MOVES[PLAY] && B.MOVES[PLAY].n) || (R.clips && R.clips[PLAY] && R.clips[PLAY].n) || B.NAMES[PLAY] || PLAY) + '" · เลื่อน แรงพอง / ความเร็ว ได้ · แตะตัวละครหรือกด หยุด เพื่อกลับไปต่อชิ้น' : FEET ? 'แตะตรงพื้นใต้เท้าของตัวละคร (จุดที่ตัวยืน)'
+function hint() { if (tlOn()) { $('#hint').textContent = tlHint(); return; } $('#hint').textContent = PLAY ? 'กำลังเล่นท่า "' + ((mvOf(PLAY) && mvOf(PLAY).n) || (R.clips && R.clips[PLAY] && R.clips[PLAY].n) || B.NAMES[PLAY] || PLAY) + '" · เลื่อน แรงพอง / ความเร็ว ได้ · แตะตัวละครหรือกด หยุด เพื่อกลับไปต่อชิ้น' : FEET ? 'แตะตรงพื้นใต้เท้าของตัวละคร (จุดที่ตัวยืน)'
   : MODE === 'A' ? 'จัดวาง: แตะชิ้นเพื่อเลือก · ลากเพื่อย้าย · ลากจุดแดง = จุดหมุน (วางที่ข้อต่อ) · ลากที่ว่าง = เลื่อนจอ · ปรับขนาด / มุม / ชิ้นแม่ / ชั้น / หน้าที่ ในแถบขวา'
   : 'หมุนท่า: ลากชิ้นเพื่อหมุนรอบจุดแดง ชิ้นลูกหมุนตาม (ไว้ทดสอบว่าต่อถูก) · กดปุ่มท่ามาตรฐานเพื่อดูท่า'; }
 fetch('art/rigs/' + CHAR + '.json').then(r => { if (!r.ok) throw new Error('ไม่พบไฟล์ art/rigs/' + CHAR + '.json'); return r.json(); }).then(o => B.images(o)).then(rig => { R0 = rig; names = Object.keys(rig.parts);
   for (const k of names) { const i = rig.img[k], c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d'); g.drawImage(i, 0, 0); ALPHA[k] = { w: i.width, h: i.height, d: g.getImageData(0, 0, i.width, i.height).data }; }
   if (rig.ref) return new Promise(ok => { const i = new Image(); i.onload = () => { rig.img._ref = i; ok(); }; i.onerror = () => ok(); i.src = rig.dir + rig.ref; }); }).then(boot).catch(e => { $('#hint').textContent = 'เปิดไม่ได้: ' + (e.message || e); });
 </script>
+<script src="rig2d/timeline.js?v=1"></script>
 </body>
 </html>

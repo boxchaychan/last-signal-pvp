@@ -89,6 +89,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - RULE (owner: "รูปร่างเปลี่ยนไม่สวย ฉันต้องการคงเดิมไว้"): a picture the owner likes is CUT by code into pieces, never sent back to GPT to be redrawn.
 - RULE (owner: "ให้มันงานได้ตรงตามที่บอกก่อน"): check a result against the reference yourself BEFORE giving the owner a link; `shoot` is keyed from the recording and `node tools/qa/rig_check.js [out] [char]` fails when the head curve drifts from it.
 - Web, not Godot. Checks `node tools/qa/rig_check.js <out> <char>` (rest = picture, no background, no seams, throw, the checker tests itself) and GIFs `tools/qa/rig_gif.js`. Big moves (a throw that turns the body) = DRAWN FRAMES in `rig.clips`, bones for the rest; effects `rig2d/fx.js`. The tool has autofit / check / seam / difference buttons. Night batch notes: the RIG TOOL, NIGHT BATCH section of `docs/action-game.md`.
+- SPINE-STYLE (owner 2026-11-28 "Spine ทำงานแบบไหน ... ทำของเรา"): bending meshes (`rig.mesh` pieces / one picture, WebGL) + a TIMELINE in the tool to make moves (`rig2d/timeline.js`, saved as `rig.moves`, games `Bones2D.addMoves`). Notes: the SPINE-STYLE MESH section of `docs/action-game.md`.
 - Next (ask first): a parts-sheet template + prompt so GPT / Codex draw a new hero as ~8 pieces, then a game (`lucky.html`) using it. Notes: the RIG 2D TOOL section at the end of `docs/action-game.md`.
 - YouTube clips cannot be fetched from the cloud (bot check): ask the owner to attach a file / screen recording.
 

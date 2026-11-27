@@ -209,6 +209,7 @@ yy, xx = np.mgrid[0:fh, 0:fw].astype(np.float32); X = c_ * (xx - hq['pv'][0]) - 
 HEADFV = BODY & (nd.binary_dilation(HEADM, iterations=6) | (np.arange(REF.shape[0])[:, None] < 176)) & ~ARMS & (np.arange(REF.shape[0])[:, None] < 196) & ~CHEST | (BODY & HEADM & ~ARMS & (np.arange(REF.shape[0])[:, None] < 190))
 lab5, n5 = nd.label(HEADFV); HEADFV = lab5 == (np.bincount(lab5.ravel())[1:].argmax() + 1)
 X = X.astype(np.float32); Yv = Yv.astype(np.float32); rgbH = np.dstack([cv2.remap(REF[..., i].astype(np.float32), X, Yv, cv2.INTER_LINEAR) for i in range(3)]); aH = cv2.remap(HEADFV.astype(np.float32), X, Yv, cv2.INTER_LINEAR)
+aH *= nd.binary_dilation(np.asarray(IMG['face0'])[..., 3] > 40, iterations=3)   # 2026-11-28: the junky mask let background blobs round the hair in (a brown box round the head); keep only the head's own outline + 3 px
 Image.fromarray(np.dstack([rgbH, aH * 255]).clip(0, 255).astype(np.uint8), 'RGBA').save(os.path.join(OUT, 'face_fv.png')); PARTS['head']['img'] = 'face_fv.png'; SW['head']['idle'] = 'face_fv'
 # under the skirt: the dark inside of the skirt between the thighs, hidden at rest, planted like the legs (a squashed body never opens a gap there)
 sk = OWN['skirt']; sy_ = np.nonzero(sk.any(1))[0]; hem = int(np.percentile(np.nonzero(sk)[0], 97)); legs = OWN['thigh_r'] | OWN['thigh_l']

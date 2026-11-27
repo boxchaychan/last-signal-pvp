@@ -44,7 +44,10 @@ miss = FIG & (owner < 0); _, (iy, ix) = nd.distance_transform_edt(owner < 0, ret
 PARTS = {}; UNDER = 14 * K // 2
 for j, k in enumerate(keys):
     role, par, tp, _ = C['parts'][k]; own = owner == j
-    zone = nd.binary_dilation(own, iterations=UNDER * (2 if role == 'body' else 1)) & FIG & ~own if k not in ('head',) else np.zeros_like(own)   # the chest a deeper way under the arms (they uncover it most)   # under-paint into the neighbours' area (hidden at rest)
+    # under-paint ONLY into the area of pieces drawn ABOVE this one (hidden there at rest; under a piece drawn below it would cover that piece and leave
+    # a ghost of it when it moves). (A full-depth fill under the arms was tried 2026-11-28: brown streaks where the background should show; shallow is better.)
+    above = np.isin(owner, [j2 for j2, k2 in enumerate(keys) if k2 in C['order'] and C['order'].index(k2) > C['order'].index(k)]) if k in C['order'] else np.zeros_like(own)
+    deep = role in ('body', 'none'); zone = nd.binary_dilation(own, iterations=UNDER * (2 if role == 'body' else 1)) & FIG & ~own & above if k not in ('head',) else np.zeros_like(own)
     src = own & (np.asarray(SH.crop(C['box']).resize((W, H)).convert('L')) > 70); _, (jy, jx) = nd.distance_transform_edt(~src, return_indices=True)
     rgb = A.copy(); rgb[zone] = A[jy[zone], jx[zone]]; m = own | zone; ys, xs = np.nonzero(m); bx0, by0, bx1, by1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
     alpha = np.where(own, AL, np.where(zone, 1, 0)); Image.fromarray(np.dstack([rgb[by0:by1, bx0:bx1], alpha[by0:by1, bx0:bx1] * 255]).astype(np.uint8), 'RGBA').save(os.path.join(OUT, k + '.png'))
