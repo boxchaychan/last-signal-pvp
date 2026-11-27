@@ -308,7 +308,7 @@ const Bones2D = (() => {
      without WebGL the pieces are drawn stiff as before. Weapons stay stiff. rig._meshShow = true draws the grid (orange = points that blend bones). */
   const fall = (d, s) => { const t = Math.min(1, d / s); return 1 - t * t * (3 - 2 * t); };
   const NOKID = { weapon: 1, weaponB: 1, none: 1, hair: 1, cape: 1, tail: 1, wing: 1 };   /* a body does not bend toward its swinging hair / cape or a hidden filler */
-  function meshOpt(rig) { return Object.assign({ mode: 'pieces', step: 12, soft: 18, blend: .5 }, rig.mesh === true ? {} : rig.mesh || {}); }
+  function meshOpt(rig) { return Object.assign({ mode: 'pieces', step: 12, soft: 18, blend: .5, skin: .45, pull: .45, reach: .35 }, rig.mesh === true ? {} : rig.mesh || {}); }
   function meshSig(rig) { let s = ''; for (const k of rig.order) { const q = rig.parts[k]; s += k + q.p + q.at + q.pv + q.r + q.s + q.fx + q.role + '|'; } return s + JSON.stringify(rig.mesh) + rig._feet; }
   function meshMake(rig) {
     prep(rig); const o = meshOpt(rig), M0 = world(rig, {}, null), inv0 = {}; for (const k in M0) inv0[k] = inv(M0[k]);
@@ -322,17 +322,35 @@ const Bones2D = (() => {
     return { u, v, tri: Uint16Array.from(tri) };
   }
   const alphaOf = im => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0); return g.getImageData(0, 0, im.width, im.height).data; };
-  function meshPiece(rig, k, im) {   /* one piece's picture as a mesh, weights to itself, its parent (round its turning point) and its children (round theirs) */
+  /* SKIN round the limb joints (owner 2026-11-28 "รักแร้ก็ขาด ... ไม่แก้ที่ต้นเหตุ เมชกระดูกเข้าหรือเมชชิ้นส่วนไม่ได้หรือ"): a small circle round the
+     turning point was too little, the armpit tore open when an arm went up. For a LIMB (arm, forearm, leg, shin) the skin is shared over the whole
+     shoulder / hip / elbow: the limb's own points near its root follow the body part above it (fading out along the limb's length), and the body
+     part's points near the limb's upper half follow the limb (fading out over a third of the limb's length). Measured from each limb's own size,
+     so a new hero gets it without setting anything. */
+  const LIMB = { armF: 1, armB: 1, foreF: 1, foreB: 1, legF: 1, legB: 1, shinF: 1, shinB: 1 };
+  function limbAxis(rig, k) {   /* a limb at rest: turning point, unit direction down the limb, length (world px), from the farthest corner of its picture */
+    const M = rig._mesh, m = M.M0[k], im = rig.img[k], q = rig.parts[k]; if (!im) return null; let best = null;
+    for (const [u, v] of [[0, 0], [1, 0], [0, 1], [1, 1], [.5, 1], [.5, 0], [0, .5], [1, .5]]) { const p = pt(m, im.width * u - q.pv[0] - (im._ox || 0), im.height * v - q.pv[1] - (im._oy || 0)), d = Math.hypot(p[0] - m[4], p[1] - m[5]); if (!best || d > best[2]) best = [p[0], p[1], d]; }
+    const c = pt(m, im.width / 2 - q.pv[0] - (im._ox || 0), im.height / 2 - q.pv[1] - (im._oy || 0)), dx = c[0] - m[4], dy = c[1] - m[5], dl = Math.hypot(dx, dy) || 1;
+    return { J: [m[4], m[5]], A: [dx / dl, dy / dl], L: Math.max(10, Math.min(best[2], dl * 2.2)) };
+  }
+  function meshPiece(rig, k, im) {   /* one piece's picture as a mesh, weights to itself, its parent and its children (see SKIN above) */
     const M = rig._mesh, o = M.o, q = rig.parts[k], W = im.width, H = im.height, rigid = q.role === 'weapon' || q.role === 'weaponB', m0 = M.M0[k];
     const al = rigid ? null : alphaOf(im), G = meshGrid(W, H, rigid ? 1e9 : o.step, al && ((x, y) => al[(y * W + x) * 4 + 3] > 8));
     const par = !rigid && q.p && rig.parts[q.p] && q.p !== k ? q.p : null, kids = rigid ? [] : Object.keys(rig.parts).filter(c => c !== k && rig.parts[c].p === k && !NOKID[rig.parts[c].role]);
+    const myAx = LIMB[q.role] && par ? limbAxis(rig, k) : null, kidAx = kids.map(c => LIMB[rig.parts[c].role] ? limbAxis(rig, c) : null);
     const bones = [k].concat(par ? [par] : [], kids), n = G.u.length, rx = new Float32Array(n), ry = new Float32Array(n), uv = new Float32Array(n * 2), wb = [], ww = [], ox = q.pv[0] + (im._ox || 0), oy = q.pv[1] + (im._oy || 0);
+    const segD = (X, Y, ax, f) => { const ex = ax.J[0] + ax.A[0] * ax.L * f, ey = ax.J[1] + ax.A[1] * ax.L * f, vx = ex - ax.J[0], vy = ey - ax.J[1], t = Math.max(0, Math.min(1, ((X - ax.J[0]) * vx + (Y - ax.J[1]) * vy) / (vx * vx + vy * vy || 1))); return Math.hypot(X - ax.J[0] - vx * t, Y - ax.J[1] - vy * t); };
     for (let i = 0; i < n; i++) { const lx = G.u[i] - ox, ly = G.v[i] - oy, X = m0[0] * lx + m0[2] * ly + m0[4], Y = m0[1] * lx + m0[3] * ly + m0[5]; rx[i] = X; ry[i] = Y; uv[i * 2] = G.u[i] / W; uv[i * 2 + 1] = G.v[i] / H;
-      const b = [0], w = [1]; if (!rigid) { let s = 0; const add = (bi, J) => { const f = o.blend * fall(Math.hypot(X - J[4], Y - J[5]), o.soft); if (f > .01) { b.push(bi); w.push(f); s += f; } };
-        if (par) add(1, m0); kids.forEach((c, j) => add(1 + (par ? 1 : 0) + j, M.M0[c])); w[0] = Math.max(.2, 1 - s); const t = w.reduce((a, e) => a + e, 0); for (let j = 0; j < w.length; j++) w[j] /= t; }
+      const b = [0], w = [1]; if (!rigid) { let s = 0; const push = (bi, f) => { if (f > .01) { b.push(bi); w.push(f); s += f; } };
+        if (par) { if (myAx) { const t = ((X - myAx.J[0]) * myAx.A[0] + (Y - myAx.J[1]) * myAx.A[1]) / myAx.L; push(1, o.blend * fall(Math.max(0, t), o.skin)); }   /* down the limb from its root */
+          else push(1, o.blend * fall(Math.hypot(X - m0[4], Y - m0[5]), o.soft)); }
+        kids.forEach((c, j) => { const ax = kidAx[j]; push(1 + (par ? 1 : 0) + j, ax ? o.pull * fall(segD(X, Y, ax, .5), ax.L * o.reach) : o.blend * fall(Math.hypot(X - M.M0[c][4], Y - M.M0[c][5]), o.soft)); });   /* the body near a limb's upper half follows it */
+        w[0] = Math.max(.2, 1 - s); const t = w.reduce((a, e) => a + e, 0); for (let j = 0; j < w.length; j++) w[j] /= t; }
       wb.push(b); ww.push(w); }
     return { k, gen: M.gen, bones, rx, ry, uv, tri: G.tri, wb, ww };
   }
+
   function meshOne(rig, o, M0) {   /* the whole reference picture as ONE mesh. Which bone each spot follows = which piece covers it at rest (rig.parts only say
        where the bones are and which area is whose; their pictures are not drawn). Round a joint a spot also follows the bone on the other side (like 'pieces').
        Where two areas meet away from a joint (an arm lying over the skirt) the sheet is TORN, so the arm lifts off instead of dragging the skirt with it. */
