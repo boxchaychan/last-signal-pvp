@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><title>class portraits</title>
+<!-- Renders the KayKit class bodies of bag3d/classes.js (with their weapons, in 3 poses) to transparent 450 x 150 sheets (3 cells of 150) for the
+     title cards and top bar of bag3d.html. Free, no generated art. Run: python3 -m http.server 8000 ; node tools/art/cls_portraits.js -->
+<body style="margin:0;background:#333">
+<script src="../../vendor/threejs/three.min.js"></script><script src="../../vendor/threejs/GLTFLoader.js"></script><script src="../../vendor/threejs/SkeletonUtils.js"></script>
+<script src="../../bag3d/classes.js"></script>
+<script>
+const R = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); R.setSize(150 * 2, 150 * 2); R.setPixelRatio(1); R.outputEncoding = THREE.sRGBEncoding; document.body.appendChild(R.domElement);
+const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 50); S.add(new THREE.HemisphereLight(0xfff2e0, 0x404060, 1.1)); const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(2, 4, 3); S.add(sun);
+const ld = new THREE.GLTFLoader();
+window.render = async () => {
+  const [AN, WP] = await Promise.all([ld.loadAsync('../../art/grind3d/hero_anims.glb'), ld.loadAsync('../../art/tribe3d/people/weapons.glb')]);
+  for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.'); const W = {}; for (const c of WP.scene.children) W[c.name] = c; const out = {};
+  for (const k in BAGCLS) { const C = BAGCLS[k], G = await ld.loadAsync('../../art/tribe3d/people/' + C.kk + '.glb'), root = THREE.SkeletonUtils.clone(G.scene), bone = {}; let mat = null;
+    root.traverse(o => { if (o.isBone) bone[o.name] = o; if (o.isSkinnedMesh) mat = mat || o.material; if (o.isMesh) o.frustumCulled = false; });
+    for (const [w, b] of C.wp) { const c = W[w] && W[w].clone(); if (!c || !bone[b]) continue; c.traverse(o => { if (o.isMesh) o.material = mat; }); bone[b].add(c); }
+    S.add(root); root.rotation.y = .5; const mix = new THREE.AnimationMixer(root), clip = n => AN.animations.find(c => c.name === n);
+    const sheet = document.createElement('canvas'); sheet.width = 450; sheet.height = 150; const g = sheet.getContext('2d');
+    const poses = [[C.anim.idle, .3], [C.anim.melee, .45], [C.anim.skill[C.anim.skill.length - 1], .5]];
+    for (let i = 0; i < 3; i++) { mix.stopAllAction(); const c = clip(poses[i][0]) || clip('Idle'), a = mix.clipAction(c); a.play(); mix.setTime(c.duration * poses[i][1]); root.updateMatrixWorld(true);
+      cam.position.set(0, 1.25, 6.2); cam.lookAt(0, 1.05, 0); R.setClearColor(0, 0); R.render(S, cam); g.drawImage(R.domElement, i * 150, 0, 150, 150); }
+    S.remove(root); out[k] = sheet.toDataURL('image/png'); }
+  return out;
+};
+</script>

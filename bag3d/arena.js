@@ -31,7 +31,16 @@ const BAGANIM = { cut: [['Q_Sword_Regular_A', 'Q_Sword_Regular_B'], .45, 1], wav
   arrows: [['Ranged_Bow_Release'], .55, 1], fireball: [['Q_Spell_Simple_Shoot'], .45, 1], icicle: [['Q_Spell_Simple_Shoot'], .45, 1], chain: [['Q_Spell_Simple_Shoot'], .4, 1], curse: [['Q_Spell_Simple_Shoot'], .5, 1], skyray: [['Q_Spell_Simple_Shoot'], .5, 1],
   lich: [['Ranged_Magic_Summon'], .9, 2], implode: [['Ranged_Magic_Summon'], .9, 2], meteor: [['Ranged_Magic_Summon'], 1, 2], wisps: [['Ranged_Magic_Summon'], 1, 2],
   skill: [['Ranged_Bow_Release_Up'], .8, 3], block: [['Melee_Block'], .5, 0], eat: [['Use_Item'], .6, 0], hurt: [['Hit_A'], .32, 0] };   /* [clips taken in turn, seconds the move takes, weight] */
-function bagSwing(mv, ang) { const H = HERO, M = H.M, A = BAGANIM[mv] || BAGANIM.cut; if (H.dead || BAG.done) return; if (H.atkT > 0 && A[2] <= (H.apr || 0)) return; const an = A[0][(H.combo = (H.combo | 0) + 1) % A[0].length], act = M.acts[an + '_up']; if (!act) return;
+/* class moves (bag3d/classes.js, owner 2026-11-28): the same item move looks like the class that does it: the axe barbarian swings two-handed, the
+   mage casts what others throw, the knight cuts with sword and shield, the ranger keeps the bow. bagStart fills BAG.anim from cfg.cls. */
+const BAGCLSANIM = {
+  barbarian: { cut: [['Melee_2H_Attack_Chop', 'Melee_2H_Attack_Slice'], .55, 1], wave: [['Melee_2H_Attack_Slice', 'Melee_2H_Attack_Chop'], .55, 1], xcut: [['Melee_2H_Attack_Slice'], .5, 1], bonk: [['Melee_2H_Attack_Chop'], .55, 1], claws: [['Melee_2H_Attack_Slice'], .45, 1], cleave: [['Melee_2H_Attack_Chop'], .7, 2], slam: [['Melee_2H_Attack_Chop'], .7, 2], guillotine: [['Melee_2H_Attack_Chop'], .75, 2], arrows: [['Q_OverhandThrow'], .5, 1] },
+  mage: { arrows: [['Q_Spell_Simple_Shoot'], .45, 1], toss: [['Q_Spell_Simple_Shoot'], .45, 1], star: [['Q_Spell_Simple_Shoot'], .36, 1], disc: [['Q_Spell_Simple_Shoot'], .45, 1], cut: [['Melee_1H_Attack_Stab'], .45, 1], wave: [['Melee_1H_Attack_Stab'], .45, 1] },
+  knight: { arrows: [['Q_OverhandThrow'], .5, 1], cut: [['Melee_1H_Attack_Slice_Horizontal', 'Q_Sword_Regular_A'], .45, 1], block: [['Melee_Block_Attack'], .5, 0] },
+  rogue: { cut: [['Melee_1H_Attack_Stab', 'Melee_1H_Attack_Slice_Diagonal'], .34, 1], wave: [['Melee_1H_Attack_Slice_Diagonal', 'Melee_1H_Attack_Stab'], .36, 1], arrows: [['Q_OverhandThrow'], .4, 1] },
+  ranger: {},
+};
+function bagSwing(mv, ang) { const H = HERO, M = H.M, A = (BAG.anim && BAG.anim[mv]) || BAGANIM[mv] || BAGANIM.cut; if (H.dead || BAG.done) return; if (H.atkT > 0 && A[2] <= (H.apr || 0)) return; const an = A[0][(H.combo = (H.combo | 0) + 1) % A[0].length], act = M.acts[an + '_up']; if (!act) return;
   const ts = act.getClip().duration / A[1]; chPlay(M, 'U', an, true, ts); H.atkT = A[1] * .88; H.apr = A[2]; if (ang != null && !H.moving) H.aim = ang; if (A[2] >= 2 && !H.moving) { chPlay(M, 'L', an, true, ts); H.dodgeT = A[1] * .88; } }
 const bagPos = () => HERO.pos, bagNear = R => nearest(HERO.pos.x, HERO.pos.z, R), bagFx = f => { if (!NORENDER) f(); };
 const bagAngD = (a, b) => Math.abs(((a - b + Math.PI) % TAU + TAU) % TAU - Math.PI);
@@ -94,9 +103,15 @@ function bagSelf(W) {   /* shields and food work on the champion */
   const H = HERO, P0 = H.pos; if (W.blk) { BAG.blk = Math.min(H.max * .6, BAG.blk + W.blk); ring(P0, 0x8fc8ff, .5, 1.5, .35, .8); spark(P0.x, 1, P0.z, { n: 4, color: 0x8fc8ff, spd: 1.5, up: 1.5, size: .22, life: .3 }); }
   if (W.heal) { const h = Math.min(W.heal, H.max - H.hp); healHero(W.heal); if (h >= 1) num(P0.x, 1.9, P0.z, '+' + Math.round(h), '#9fe870'); spark(P0.x, .5, P0.z, { n: 3 + Math.min(5, W.heal / 3 | 0), color: 0x9fe870, spd: .8, up: 3, grav: 1, size: .22, life: .6 }); if (W.heal >= 8) pfx('holy/holy-heal', P0.x, P0.z, 1.6, { follow: P0 }); }
 }
-function bagSkill() {   /* the champion's own skill (the wolf hunter: a fan of piercing arrows, the middle one a crit) */
-  const K = BAG.sk, m = bagNear(10); if (!m) return; const a = dirTo(m); bagSwing('skill', a); banner(K.n, '', false, 1.1); const W = { id: 'skill', dmg: K.pw, crit: 0, ty: 'phy' };
-  for (let i = -2; i <= 2; i++) after(.18 + Math.abs(i) * .05, () => { if (!HERO.dead) shootP('arrow', a + i * .16, { bag: i ? W : Object.assign({}, W, { crit: 1 }), mul: .45, pierce: 4, spd: 19, life: .8, r: .42, kb: 2, c: 0xffe178 }); }); sfx('twang', .8, .8); pfx('status/power-up-aura', HERO.pos.x, HERO.pos.z, 1.8, { follow: HERO.pos, speed: 1.6 });
+function bagSkill() {   /* the champion's own skill, by class (bag3d/classes.js sk.kind); the old wolf hunter = the arrow fan */
+  const K = BAG.sk, kind = K.kind || 'fan', m = bagNear(kind === 'bash' || kind === 'spin' ? 4 : 10); if (!m) return; const a = dirTo(m), P = HERO.pos; bagSwing('skill', a); banner(K.n, '', false, 1.1);
+  const W = Object.assign({ id: 'skill', dmg: K.pw, crit: 0, ty: 'phy' }, K.w || {}); pfx('status/power-up-aura', P.x, P.z, 1.8, { follow: P, speed: 1.6 });
+  if (kind === 'fan') { for (let i = -2; i <= 2; i++) after(.18 + Math.abs(i) * .05, () => { if (!HERO.dead) shootP('arrow', a + i * .16, { bag: i ? W : Object.assign({}, W, { crit: 1 }), mul: .45, pierce: 4, spd: 19, life: .8, r: .42, kb: 2, c: 0xffe178 }); }); sfx('twang', .8, .8); }
+  else if (kind === 'bash') { after(.3, () => { if (HERO.dead) return; bagBoom(Object.assign({}, W, { stun: 1 }), P.x, P.z, 2.8, 1.3, { kb: 4, c: 0xbfe4ff }); BAG.blk += K.pw * .8; sfx('boom', .8, .9); }); }
+  else if (kind === 'spin') { for (let i = 0; i < 3; i++) after(.12 + i * .28, () => { if (!HERO.dead) bagBoom(W, P.x, P.z, 2.9, i === 2 ? .8 : .55, { kb: 2.5, c: 0xffb070 }); }); }
+  else if (kind === 'meteor') { const t = bagDense(12, 2.5) || m; for (let i = 0; i < 3; i++) after(.35 + i * .25, () => { if (HERO.dead) return; const x = t.x + (Math.random() - .5) * 2.4, z = t.z + (Math.random() - .5) * 2.4; bagBoom(Object.assign({}, W, { burn: 1.5 }), x, z, 2.2, .7, { kb: 2, c: 0xff7a30 }); }); }
+  else if (kind === 'venom') { const ms = MON.filter(q => !q.dead && (q.x - P.x) ** 2 + (q.z - P.z) ** 2 < 36).sort((p, q) => ((p.x - P.x) ** 2 + (p.z - P.z) ** 2) - ((q.x - P.x) ** 2 + (q.z - P.z) ** 2)).slice(0, 5);
+    ms.forEach((q, i) => after(.15 + i * .1, () => { if (HERO.dead || q.dead) return; bagHit(Object.assign({}, W, { poi: (W.poi || 2) * 1.5 }), q, .7, { fx: P.x, fz: P.z, kb: 1.5 }); bagLine(P.x, P.z, Math.atan2(q.x - P.x, q.z - P.z), Math.hypot(q.x - P.x, q.z - P.z), 0x9cff7a, 2); })); }
 }
 /* ---- what the engine asks (hooks in horde.html) */
 function bagHurt(d, src) {   /* before armour: magic resist for shots, dodge, thorns, the shield */
@@ -113,15 +128,21 @@ function bagWave(round, boss) {   /* how many monsters, how strong, when they co
   const L = MAP.mobs[tier].filter(k => MOBS[k]).slice(); for (let i = L.length - 1; i > 0; i--) { const j = R() * (i + 1) | 0;[L[i], L[j]] = [L[j], L[i]]; } const kinds = L.slice(0, 3); if (tier > 0) { const O = MAP.mobs[tier - 1].filter(k => MOBS[k]); kinds.push(O[R() * O.length | 0]); }
   BAG.mhp = 4 + round * 1.6 + round * round * .1; BAG.mdmg = 2.2 + round * .42; G.spdMul = 1.2 + Math.min(.4, round * .025); BAG.dur = dur + 12;   /* monsters are faster here than in the survival game: the champion cannot simply outrun them */ BAG.kinds = kinds;
   const n0 = Math.round(N * .34); let left = N - n0; for (let i = 0; i < n0;) { const c = Math.min(n0 - i, 2 + (R() * 3 | 0)), a = R() * TAU; plan.push({ t: .3, n: c, a, d: 7.5 + R() * 4, k: kinds[R() * kinds.length | 0] }); i += c; }
-  const sw = round >= 3 ? Math.min(left, Math.min(26, 6 + round)) : 0; left -= sw; for (let i = 0; i < left;) { const c = Math.min(left - i, 2 + (R() * 4 | 0)); plan.push({ t: 2.5 + (dur - 2.5) * (i / Math.max(1, left)), n: c, a: R() * TAU, d: 0, k: kinds[R() * kinds.length | 0] }); i += c; }
+  const sw = round >= 3 ? Math.min(left, Math.min(26, 6 + round)) : 0; left -= sw;
+  /* PACKS (owner 2026-11-28 "ให้มอนวิ่งมารุมตามรอบ"): the rest come as packs that RUN IN from one side at a time (a red arrow at the screen edge warns
+     .9 s before), a pack every ~3 s, bigger every round (6 -> 14), the side turning round the champion so they swarm from everywhere */
+  const pk = Math.min(14, 5 + Math.round(round * .8)), np = Math.max(1, Math.ceil(left / pk)); let a0 = R() * TAU;
+  for (let i = 0, j = 0; i < left; j++) { const c = Math.min(left - i, pk), t = 2.5 + (dur - 2.5) * (j / np); a0 += 1.9 + R() * 1.4; plan.push({ t, n: c, a: a0, d: 0, pack: 1, k: kinds[R() * kinds.length | 0] }); if (c >= 4) plan.push({ t: Math.max(.6, t - .9), n: 0, warn: a0 }); i += c; }
   if (sw) plan.push({ t: dur * .55, n: sw, ring: 1, k: kinds[0], o: { hp: .55, spd: .85 } });
   if (!boss && round >= 4) for (let e = 0; e < (round >= 9 ? 2 : 1); e++) plan.push({ t: dur * (.4 + e * .3), n: 1, a: R() * TAU, d: 0, k: kinds[R() * kinds.length | 0], o: { hp: 5 + round * .3, sc: 1.65, dmg: 1.5, elite: true, tint: [1.45, 1.2, .5] }, note: 'มอนหัวหน้าฝูงปรากฏ' });
-  plan.sort((p, q) => p.t - q.t); BAG.plan = plan; BAG.pi = 0; BAG.total = plan.reduce((s, p) => s + p.n, 0) + (boss ? 1 : 0); BAG.bossHp = Math.round(110 + round * round * 8 + round * 20); return kinds;
+  plan.sort((p, q) => p.t - q.t); BAG.warn = []; BAG.plan = plan; BAG.pi = 0; BAG.total = plan.reduce((s, p) => s + p.n, 0) + (boss ? 1 : 0); BAG.bossHp = Math.round(110 + round * round * 8 + round * 20); return kinds;
 }
 function bagFair(k, o) { const K = KIND[k], q = Object.assign({}, o); if (K && K.st) { q.hp = (q.hp || 1) * Math.pow(K.st.hp, -.4); q.dmg = (q.dmg || 1) * Math.pow(K.st.dmg, -.4); } return q; }   /* big kinds are tougher, but less than in the survival game: the round's level already makes them stronger */
 function bagSpawn(e) {
+  if (e.warn != null) { BAG.warn.push({ a: e.warn, t: 1.3 }); return; }
   if (e.ring) { for (let i = 0; i < e.n; i++) { const [x, z] = ringPos(Math.min(SPAWNR - .5, 11.5), i / e.n * TAU); spawnMon(e.k, x, z, bagFair(e.k, e.o)); } banner('ฝูงใหญ่ล้อมแล้ว!', 'ฝ่าวงล้อมออกไป', true, 1.8); sfx('hurt', .6, .6); return; }
-  for (let i = 0; i < e.n; i++) { const [x, z] = ringPos((e.d || SPAWNR + rnd(0, 2)) + rnd(0, 1.2), e.a + rnd(-.22, .22)); const m = spawnMon(e.k, x, z, bagFair(e.k, e.o)); if (m && e.d) spark(x, .3, z, { n: 3, color: 0xd8d0c0, spd: 1.5, up: 2, size: .25, life: .35 }); } if (e.note) note(e.note, '#ffd86a'); }
+  if (e.pack && e.n >= 4) note('ฝูงมอนวิ่งมารุม! ×' + e.n, '#ff9a7a');
+  for (let i = 0; i < e.n; i++) { const [x, z] = ringPos((e.d || SPAWNR + rnd(0, 2)) + rnd(0, e.pack ? 2.4 : 1.2), e.a + rnd(e.pack ? -.38 : -.22, e.pack ? .38 : .22)); const m = spawnMon(e.k, x, z, bagFair(e.k, e.o)); if (m && e.d) spark(x, .3, z, { n: 3, color: 0xd8d0c0, spd: 1.5, up: 2, size: .25, life: .35 }); } if (e.note) note(e.note, '#ffd86a'); }
 function bagBoss() { const bi = Math.min(3, Math.floor(BAG.cfg.round / 5) - 1), k = MAP.boss[Math.max(0, bi) % MAP.boss.length]; BAG.bossWait = true;
   loadKind(k).then(() => { const K = KIND[k]; if (!K || !K.ok || !BAG.on) { BAG.bossWait = false; BAG.total--; return; } const [x, z] = ringPos(Math.min(SPAWNR - 1, 11)), m = spawnMon(k, x, z, { boss: true, bi: Math.max(0, bi), spd: .85, dmg: .75 }); BAG.bossWait = false; if (!m) { BAG.total--; return; }
     m.hp = m.max = BAG.bossHp; m.r = Math.max(m.r, .8); G.boss = m; banner('บอสบุก!', MOBS[k].name, true, 2.6); setMusic('drums'); shake(.4); sfx('boom', .9, .6); sfx('roar', 1); G.slow = 1.2; CAM.focus = { m, t: 0, dur: 2 }; }); }
@@ -156,7 +177,8 @@ function bagStart(cfg) {
   Object.assign(P, { pow: 1, cd: 1, area: 1, spd: 3.3, magnet: 2.4, crit: 0, critX: 2, armor: S.armor, regen: S.regen, xp: 0, gold: 1, luck: 1, multi: 0, dur: 1, steal: 0, numMin: 0 }); HERO.max = Math.round(cfg.hp); HERO.hp = HERO.max; BAG.hpShow = HERO.hp; BAG.blk = S.sblk || 0; BAG.sta = S.stam;
   BAG.its = (cfg.items || []).map(q => { const W = Object.assign({ t: Math.random() * .4, fl: 0 }, q); if (W.start != null) { W.once = true; W.dmg = W.start; } else if (W.blk || W.heal) W.self = true; return W; });
   const melee = BAG.its.some(W => !W.once && !W.self && ['stab', 'xcut', 'thrust', 'bonk', 'claws', 'reap', 'cut', 'cleave'].includes((BAGMOVE[W.id] || BAGMOVE[W.base] || ['cut'])[0])); BAG.reach = melee ? 1.8 : 5.5;
-  BAG.sk = cfg.sk ? { n: cfg.sk.n, cd: cfg.sk.cd, pw: cfg.sk.pw, g: cfg.sk.cd * .4 } : null; G.seed = (Math.random() * 1e9) | 0; G.hpMul = G.dmgMul = G.rateMul = 1; G.revive = 0; G.pend = 0; G.hk = HERO.k;
+  BAG.sk = cfg.sk ? { n: cfg.sk.n, cd: cfg.sk.cd, pw: cfg.sk.pw, g: cfg.sk.cd * .4, kind: cfg.sk.kind, w: cfg.sk.w } : null; BAG.cname = cfg.cname || ''; BAG.anim = Object.assign({}, BAGCLSANIM[cfg.cls] || {});
+  if (cfg.cls && typeof BAGCLS !== 'undefined' && BAGCLS[cfg.cls]) BAG.anim.skill = [BAGCLS[cfg.cls].anim.skill.slice(-1), .8, 3];   /* the class's own skill move */ G.seed = (Math.random() * 1e9) | 0; G.hpMul = G.dmgMul = G.rateMul = 1; G.revive = 0; G.pend = 0; G.hk = HERO.k;
   const kinds = bagWave(cfg.round, !!cfg.boss); DIR.cur = kinds; kinds.forEach(loadKind); if (cfg.boss) loadKind(MAP.boss[Math.max(0, Math.min(3, Math.floor(cfg.round / 5) - 1)) % MAP.boss.length]);
   CAM.look.set(0, 0, 0); INP.x = INP.z = 0; JOY.on = false; G.state = 'load'; LOAD.msg = 'กำลังเรียกฝูงมอน...'; LOAD.f = .6;
   Promise.all(kinds.map(loadKind)).then(() => { if (BAG.cfg !== cfg) return; G.state = 'play'; { const M = HERO.M, d = chPlay(M, 'U', 'Spawn_Ground', true, 1.5); chPlay(M, 'L', 'Spawn_Ground', true, 1.5); HERO.atkT = HERO.dodgeT = Math.min(.8, d || 0); HERO.apr = 9; }   /* the champion rises out of the ground */ setMusic(MAP.music === 'calm' ? 'battle' : MAP.music); banner(cfg.boss ? 'รอบ ' + cfg.round + ' · บอส' : 'รอบ ' + cfg.round, cfg.name || '', !!cfg.boss, 1.8); }); return true;
@@ -183,6 +205,13 @@ function bagDraw() {   /* once a frame, from fillBatches */
 /* ---- the screen: life + shield + stamina, the wave, the items with their cooldowns, the speed button */
 function bagDrawUI(dt) {
   if (G.state === 'pause') G.state = 'play'; const H = HERO, pad = 10 * S;
+  if (BAG.on && BAG.warn && BAG.warn.length && HERO && G.state === 'play') {   /* where the next pack runs in from: red chevrons at the screen edge */
+    const [hx, hy] = toScreen(HERO.pos.x, .5, HERO.pos.z);
+    for (const w of BAG.warn) { w.t -= dt; if (w.t <= 0) continue; const [px, py] = toScreen(HERO.pos.x + Math.cos(w.a) * 8, .5, HERO.pos.z + Math.sin(w.a) * 8), an = Math.atan2(py - hy, px - hx), m = 34 * S;
+      const k = Math.min((SW / 2 - m) / Math.max(1e-3, Math.abs(Math.cos(an))), (SH / 2 - m) / Math.max(1e-3, Math.abs(Math.sin(an)))), ex = SW / 2 + Math.cos(an) * k, ey = SH / 2 + Math.sin(an) * k, pul = .55 + .45 * Math.sin(NOW * 14);
+      ui.save(); ui.translate(ex, ey); ui.rotate(an); ui.globalAlpha = Math.min(1, w.t * 2.5) * pul; ui.fillStyle = '#ff3a2a'; ui.strokeStyle = 'rgba(60,0,0,.9)'; ui.lineWidth = 2.5 * S;
+      for (const o of [-12, 0]) { ui.beginPath(); ui.moveTo((o + 12) * S, 0); ui.lineTo((o - 4) * S, -12 * S); ui.lineTo((o - 4) * S, 12 * S); ui.closePath(); ui.fill(); ui.stroke(); } ui.restore(); }
+    BAG.warn = BAG.warn.filter(w => w.t > 0); }
   if (!BAG.on && G.state !== 'bagdone') { ui.fillStyle = '#141a2a'; ui.fillRect(0, 0, SW, SH); txt(BAG.ready ? 'พร้อมสู้' : LOAD.msg, SW / 2, SH / 2, 16 * S, '#cfd8f0', 'center', 600); return; }
   if (G.state === 'load') { ui.fillStyle = '#141a2a'; ui.fillRect(0, 0, SW, SH); txt('รอบ ' + BAG.cfg.round, SW / 2, SH * .42, 38 * S, '#ffe08a'); txt(LOAD.msg, SW / 2, SH * .56, 15 * S, '#cfd8f0', 'center', 600); return; }
   { const g0 = ui.createRadialGradient(SW / 2, SH / 2, SH * .5, SW / 2, SH / 2, Math.hypot(SW, SH) * .56); g0.addColorStop(0, 'rgba(4,6,16,0)'); g0.addColorStop(1, 'rgba(4,6,16,.4)'); ui.fillStyle = g0; ui.fillRect(0, 0, SW, SH); }
@@ -195,7 +224,7 @@ function bagDrawUI(dt) {
   { const w = Math.min(230 * S, SW * .36), x = pad, y = pad, hp = H.hp / H.max; BAG.hpShow += (H.hp - BAG.hpShow) * Math.min(1, dt * 8); rr(x, y, w, 46 * S, 10 * S); ui.fillStyle = 'rgba(10,14,30,.74)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = 'rgba(255,233,168,.65)'; ui.stroke();
     bar(x + 8 * S, y + 8 * S, w - 16 * S, 15 * S, BAG.hpShow / H.max, hp < .3 ? '#ff7a5a' : '#ff6a7a', hp < .3 ? '#b81a1a' : '#c8283c'); if (BAG.blk > 0) { ui.save(); ui.globalAlpha = .85; bar(x + 8 * S, y + 8 * S, (w - 16 * S) * Math.min(1, BAG.blk / H.max), 5 * S, 1, '#bfe4ff', '#5aa8f0', 'rgba(0,0,0,0)'); ui.restore(); }
     txt(Math.ceil(H.hp) + ' / ' + H.max + (BAG.blk >= 1 ? '   โล่ ' + Math.round(BAG.blk) : ''), x + w / 2, y + 16 * S, 10.5 * S, '#fff', 'center', 800, 'rgba(60,0,0,.8)', 2.5);
-    bar(x + 8 * S, y + 27 * S, (w - 16 * S) * .62, 5 * S, BAG.sta / BAG.st.stam, '#ffe27a', '#e0a020'); txt('นักล่าหมาป่า', x + w - 8 * S, y + 36 * S, 10 * S, '#ffe9a8', 'right', 600, 'rgba(0,0,0,.7)', 2);
+    bar(x + 8 * S, y + 27 * S, (w - 16 * S) * .62, 5 * S, BAG.sta / BAG.st.stam, '#ffe27a', '#e0a020'); txt(BAG.cname || 'นักล่าหมาป่า', x + w - 8 * S, y + 36 * S, 10 * S, '#ffe9a8', 'right', 600, 'rgba(0,0,0,.7)', 2);
     if (BAG.sk) { const k = Math.min(1, BAG.sk.g / BAG.sk.cd); bar(x + 8 * S, y + 35 * S, (w - 16 * S) * .62, 5 * S, k, k >= 1 ? '#ffffff' : '#ffb020', '#e07a10'); } }
   /* the wave */
   { const left = Math.max(0, BAG.total - G.kills), tw0 = 190 * S, x = SW / 2 - tw0 / 2, y = pad; rr(x, y, tw0, 40 * S, 10 * S); ui.fillStyle = 'rgba(10,14,30,.75)'; ui.fill(); ui.lineWidth = 1.5 * S; ui.strokeStyle = BAG.cfg.boss ? 'rgba(255,150,130,.8)' : 'rgba(255,233,168,.7)'; ui.stroke();
