@@ -94,6 +94,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - YouTube clips cannot be fetched from the cloud (bot check): ask the owner to attach a file / screen recording.
 
 ## NEWEST (owner 2026-11-27, latest of all, back to it the same day): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
+- NEWEST of all (owner 2026-11-28): back to the bag game after the 2D bones were stopped ("พอๆ ทรงจะไม่ได้"): use the KayKit models (allowed here), champions split BY CLASS, monsters run in and swarm every round. Plan: the BAG 3D NEXT section at the end of `docs/action-game.md`. The 2D rig arm fixes wait unmerged on `claude/rig-arms`.
 - The 2D backpack game with 3D fighters (wolf hunter vs Quaternius monsters).
 - Built 2026-11-26/27:
   - 64 shop items + 20 crafting recipes (two different items; the main one must be ★3 first; result ★3; recipe book "สูตร");

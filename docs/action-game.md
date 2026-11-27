@@ -3621,3 +3621,11 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
 - Apollo rebuilt by `rig_from_front.py`: a piece is under-painted ONLY into areas of pieces drawn above it (under a piece drawn below, the bake gave it that piece's colours = a ghost of the arm left behind when it moved). A full-depth fill under the arms was tried and looked worse (brown streaks where the background should show).
 - zeusgpt standing face `face_fv.png`: background blobs round the hair (the junky ref_mask let them in = a faint brown box round the head in idle) trimmed to the sheet head's own outline + 3 px; `zeus_sheet_cut.py` does the same now.
 - Checks: `rig_check.js` RIG OK zeusgpt (with `wave`), apollo, poseidon; timeline driven in a browser at 1280 x 720 and 844 x 390 (key, drag, ease, release, save, ★ button, kept after reload), no errors.
+
+## BAG 3D NEXT (owner 2026-11-28, after stopping the 2D bone rig: "พอๆ ทรงจะไม่ได้" then "เอาเกมส์กระเป๋าทำต่อ ละเอาพวกโมเดล KayKit มาใช้ เป็นแบ่งตามคลาส ละให้มอนวิ่งมารุมตามรอบ")
+- 2D bones PAUSED. The arm / armpit fixes of 2026-11-28 (front-view arm angles, arm guard, face push, shoulder skin, capsule cut, `tools/qa/rig_tangle.js`) are on the UNMERGED branch `claude/rig-arms`; main keeps the mesh + timeline (PRs #936, #937). Do not continue the rig unless the owner asks.
+- Bag game `bag3d.html` "ศึกแชมเปี้ยน 3D" continues. The owner's three asks:
+  1. use the free KayKit models (Adventurers 2.0 already in the repo: `art/tribe3d/people/` Barbarian, Knight, Mage, Ranger, Rogue, Rogue_Hooded + `anims.glb`; Fantasy Weapons Bits `fweapons.glb`; licence `vendor/kaykit`). KayKit IS allowed for the bag game (the "no KayKit" rule was only for `quest.html`);
+  2. the champions are split BY CLASS (one KayKit body per class: e.g. knight = sword & shield, barbarian = two-handed, mage = staff, ranger = bow, rogue = daggers), each class with its own item leanings / starting bag;
+  3. monsters RUN IN AND SWARM each round (the horde rounds in `horde.html?bag=1` already do this; make it read clearly: packs running at the champion from the edges, bigger every round, boss on the 5th).
+- Free (no PixelLab credits). Start by reading the BAG 3D section and its newest lines above, `bag3d.html`, `bag3d/arena.js`, the horde bag mode in `horde.html` (`BAGM`), and how tribe3d loads the KayKit people (`tools/art/kaykit2_build.mjs`, `tribe3d_people.js` check).
