@@ -63,7 +63,16 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 
 ## NEWEST (owner 2026-11-22): `dragonrig.html` = the painted dragon as a 2D skeletal rig (25 parts, 48 bones, original pixels). Notes: the DRAGON RIG section at the end of `docs/action-game.md`; start there on "rig มังกร".
 
-## NEWEST (owner 2026-11-21, latest): `bag3d.html` "ศึกแชมเปี้ยน 3D" = the 2D backpack game `bag.html` with 3D fighters only (wolf hunter vs Quaternius monsters); notes: the BAG 3D section at the end of `docs/action-game.md`; start there on "กระเป๋า 3D". Card game concept (not built): the CARD GAME CONCEPT section.
+## NEWEST (owner 2026-11-27, latest of all): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
+- The 2D backpack game with 3D fighters (wolf hunter vs Quaternius monsters).
+- Built 2026-11-26/27:
+  - 64 shop items + 20 crafting recipes (two different items; the main one must be ★3 first; result ★3; recipe book "สูตร");
+  - new mechanics: multi-hit, finisher, rage, poison / stun gems;
+  - smooth glow VFX (`?fx=pixel` = old pixel look), zone leaves / snow / embers, a polished shop / bag;
+  - 44 PixelLab icons (`art/incoming/bag3d/gen.py`, 1 credit each);
+  - shooting weapons point at the enemy (a code-drawn crossbow pop).
+- NEXT: the owner wants a MOBA-style item build-up (parts → mid → final items). See the newest lines at the end of `docs/action-game.md` and ask the owner the open picks before building.
+- Notes: the BAG 3D section and the newest lines at the end of `docs/action-game.md`. Card game concept (not built): the CARD GAME CONCEPT section.
 
 ## NEWEST (owner 2026-11-21): zombie city `zcity.html` "เมืองสุดท้าย"
 - High-angle 3D city builder + zombie nights, first playable, free KayKit / Quaternius art only. Notes: the ZCITY section at the end of `docs/action-game.md`; start there on "เกมซอมบี้".
