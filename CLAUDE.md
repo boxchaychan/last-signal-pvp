@@ -80,11 +80,12 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - Code `quest/*.js`, art `art/quest/`, raw art `art/incoming/quest/`, tools `tools/art/quest_sheet.py` / `quest_mob.py` / `quest_props.py`.
 - Notes, what is not done yet: the QUEST section at the end of `docs/action-game.md`.
 
-## NEWEST (owner 2026-11-27 night, latest of all): 2D PIECES ON BONES (asked, NOT built)
-- Owner stopped the 3D model ("หยุดก่อน", "ทำงาน 2D ก่อน") and asked how to make a good system of pictures in pieces joined on bones, like Slack Off Survivor / Lucky Defense.
-- Claude's answer + the proposed free test (parts-sheet template -> GPT / Gemini draws one hero as pieces -> our own bones, one shared skeleton and shared moves) are in the LAST section of `docs/action-game.md`.
-- Nothing is built: wait for "ทำเลย" and for which game (probably `lucky.html`, whose rule so far is "whole pictures, NO cut-out bones").
-- Done: ONE hero of the owner's screen recording taken apart (the gunner): about 8 rigid pieces (one-piece head, body, short arms + hands, weapons, short legs), each moved / turned / SCALED, attack 0.4 s with a 140 % head pop; numbers in the last section of `docs/action-game.md`. YouTube clips cannot be fetched from the cloud (bot check): ask the owner to attach a file / screen recording.
+## NEWEST (owner 2026-11-27 night, latest of all): 2D PIECES ON BONES = `rig.html` + `rig2d/bones.js` (start on "ต่อกระดูก 2D")
+- Why: one hero of the owner's Slack Off Survivor recording taken apart = about 8 rigid pieces, each moved / turned / SCALED, attack 0.4 s with a 140 % head pop. Owner stopped the 3D model for this ("ทำงาน 2D ก่อน").
+- Built: the owner's old tool `rig.html` is version 2 (put pieces together, give each a ROLE, play the shared moves with pop / speed sliders) and `rig2d/bones.js` is the small player a game loads (`Bones2D.load`, `.player`, `play / update / draw`). Rigs are data in `art/rigs/<name>.json` (first: `dagger`). Moves are written once per role and play on every rig.
+- Web, not Godot (owner asked; Godot is not in the cloud and would mean rewriting the games). Check `node tools/qa/rig_check.js`.
+- Next (ask first): a parts-sheet template + prompt so GPT / Codex draw a new hero as ~8 pieces, then a game (`lucky.html`) using it. Notes: the RIG 2D TOOL section at the end of `docs/action-game.md`.
+- YouTube clips cannot be fetched from the cloud (bot check): ask the owner to attach a file / screen recording.
 
 ## NEWEST (owner 2026-11-27, latest of all, back to it the same day): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
 - The 2D backpack game with 3D fighters (wolf hunter vs Quaternius monsters).
