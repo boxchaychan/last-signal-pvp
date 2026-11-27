@@ -75,6 +75,14 @@ const Bones2D = (() => {
   };
   /* a raised arm must not vanish behind a big chibi head: while these moves last the weapon arm (and, on front-view heroes, the far arm) is drawn in front, like the raised gun of the recording */
   for (const [mv, roles] of [['attack', ['armF']], ['shoot', ['armF']], ['cast', ['armF', 'armB']], ['cheer', ['armF', 'armB']]]) for (const ro of roles) { const tr = MOVES[mv].tracks[ro]; if (tr) tr.forEach((key, i) => { if (i < tr.length - 1) key[1].z = 1; }); }
+  MOVES.bowshot = { n: 'ยิงธนู', dur: 1.05, ev: [[.55, 'release']], tracks: {   /* raise the bow arm level, the other hand pulls the string back (fx.js draws string + arrow), hold, release: the arrow leaves (event), the pull hand flies back, recoil */
+      _root: [K(.3, {}), K(.55, { x: -1 }, 'lin'), K(.6, { x: -3 }, 'snap'), K(1, {}, 'io')],
+      body: [K(.3, { r: -3, sy: 1.04, sx: .98 }, 'io'), K(.55, { r: -4, sy: 1.05 }, 'lin'), K(.6, { r: 3, sy: .94, sx: 1.04 }, 'snap'), K(.8, { r: 1, sy: 1.02 }), K(1, {}, 'io')],
+      head: [K(.3, { s: 1.06, r: -3 }, 'io'), K(.55, { s: 1.08, r: -4 }, 'lin'), K(.6, { s: 1.28, r: 4 }, 'snap'), K(.75, { s: 1.08, r: 2 }), K(1, {}, 'io')],
+      armF: [K(.15, { r: -40 }, 'io'), K(.3, { r: -84 }, 'snap'), K(.55, { r: -86 }, 'lin'), K(.6, { r: -78 }, 'snap'), K(.8, { r: -70 }), K(1, {}, 'io')],
+      weapon: [K(.15, { r: 40 }, 'io'), K(.3, { r: 84, s: 1.05 }, 'snap'), K(.55, { r: 86, s: 1.05 }, 'lin'), K(.6, { r: 78, s: 1.15 }, 'snap'), K(.8, { r: 70 }), K(1, {}, 'io')],
+      armB: [K(.15, { r: 40, z: 2 }, 'io'), K(.3, { r: 100, z: 2 }, 'io'), K(.55, { r: 88, z: 2 }, 'lin'), K(.6, { r: -60 }, 'snap'), K(.8, { r: -30 }), K(1, {}, 'io')],   /* the pull hand comes across the chest (in front), pulls back, flies out on release */
+      legF: [K(.3, { r: -6 }, 'io'), K(1, {}, 'io')], legB: [K(.3, { r: 6 }, 'io'), K(1, {}, 'io')], cape: [K(.3, { r: -4 }), K(.6, { r: 8 }, 'snap'), K(1, {}, 'io')] } };
   MOVES.thrust = { n: 'แทง', dur: .62, ev: [[.42, 'hit']], tracks: {   /* a spear / trident stab: pull back with the point level, lunge, stab out at full reach (event 'hit'), hold a beat, recover */
       _root: [K(.3, { x: -3 }, 'io'), K(.42, { x: 6 }, 'snap'), K(.6, { x: 6.5 }), K(1, {}, 'io')],
       body: [K(.3, { r: -10, sy: 1.06, sx: .96 }, 'io'), K(.42, { r: 14, sy: .92, sx: 1.07 }, 'snap'), K(.6, { r: 12, sy: .95 }), K(1, {}, 'io')],
@@ -118,12 +126,13 @@ const Bones2D = (() => {
   }
 
   function load(url) { return fetch(url).then(r => { if (!r.ok) throw new Error(url + ' ' + r.status); return r.json(); }).then(rig => images(rig)); }
-  function images(rig) { prep(rig); rig.img = {}; const one = (key, file) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(); i.onerror = () => no(new Error('picture ' + i.src)); i.src = rig.dir + file; rig.img[key] = i; });
+  function images(rig) { prep(rig); rig.img = {}; const clipP0 = []; const one = (key, file) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(); i.onerror = () => no(new Error('picture ' + i.src)); i.src = rig.dir + file; rig.img[key] = i; });
     if (rig.faces && !rig.swaps) { const f = rig.faces, o = {}; for (const k in f) if (k !== 'part') o[k] = f[k]; rig.swaps = { [f.part]: o }; }   /* old form: faces = one swapping piece */
+    if (rig.shot) clipP0.push(one('_shot', rig.shot));
     const extra = rig.swaps ? [...new Set(Object.values(rig.swaps).flatMap(o => Object.values(o)))] : [];   /* faces: { part: 'head', idle: 'face0', attack: 'face1', ... } = the picture (same size) that piece shows during a move */
     const refP = rig.ref ? new Promise(ok => { const i = new Image(); i.onload = () => { rig.img._ref = i; ok(); }; i.onerror = () => ok(); i.src = rig.dir + rig.ref; }) : Promise.resolve();
     const clipP = []; for (const cn in rig.clips || {}) { const c = rig.clips[cn]; c.img = []; c.frames.forEach((f, i) => clipP.push(new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(); im.onerror = () => no(new Error('frame ' + im.src)); im.src = rig.dir + c.dir + f; c.img[i] = im; }))); c.dur = c.durs.reduce((a, b) => a + b, 0) / 1000; }
-    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP], clipP)).then(() => { if (rig.seams === 'paint') seamless(rig); if (rig.bake) bake(rig); return rig; }); }
+    return Promise.all(Object.keys(rig.parts).map(k => one(k, rig.parts[k].img || k + '.png')).concat(extra.map(f => one('@' + f, f + '.png')), [refP], clipP, clipP0)).then(() => { if (rig.seams === 'paint') seamless(rig); if (rig.bake) bake(rig); return rig; }); }
 
   /* SEAMS (owner 2026-11-27 "ประกอบเสร็จก็ลบเส้นออกด้วยสิ ทำให้เหมือนตอนยังไม่ต่อกระดูก"): once the pieces are put together, the edge of a piece
      that lies over another piece is painted with what the picture before rigging (rig.ref) shows there, so a joint line the drawing does not have
@@ -210,6 +219,12 @@ const Bones2D = (() => {
   }
   /* SEAMS IN MOVES: for every move, the share of the figure where a thin gap (no wider than 4 px) opens between exactly two joined pieces (a seam).
      Returns { move: { worst: 0..1, at: seconds } }. Used by the tool's "ตรวจ" button and by tools/qa/rig_check.js. */
+  function figOf(rig) {   /* the figure of the reference picture (rig.size space): its alpha, or what differs from the border colours */
+    if (rig._fig !== undefined) return rig._fig; const R = rig.img._ref; if (!R) return rig._fig = null; const [W, H] = rig.size, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(R, 0, 0, W, H); const a = g.getImageData(0, 0, W, H).data, d = new Uint8Array(W * H);
+    let hasA = false; for (let i = 0; i < W * H; i++) if (a[i * 4 + 3] < 250) { hasA = true; break; }
+    if (hasA) for (let i = 0; i < W * H; i++) d[i] = a[i * 4 + 3] > 128 ? 1 : 0; else { const b0 = [a[0], a[1], a[2]]; for (let i = 0; i < W * H; i++) d[i] = Math.abs(a[i * 4] - b0[0]) + Math.abs(a[i * 4 + 1] - b0[1]) + Math.abs(a[i * 4 + 2] - b0[2]) > 40 ? 1 : 0; }
+    return rig._fig = { w: W, h: H, d };
+  }
   function seams(rig, moves) {
     prep(rig); const w = rig.size[0], h = rig.size[1], out = {}, cv = () => { const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 1.6; return [c, c.getContext('2d', { willReadFrequently: true })]; };
     const crack = P => { const [c, g] = cv(); P.draw(g, w, h * 1.4, 1, false); g.setTransform(1, 0, 0, 1, 0, 0); const d = g.getImageData(0, 0, c.width, c.height), a = d.data, W2 = d.width, H2 = d.height, seen = new Uint8Array(W2 * H2), q = []; let fig = 0;
@@ -222,9 +237,16 @@ const Bones2D = (() => {
         if (!masks) { masks = {}; for (const k of rig.order) { if ((P.pose[k] && P.pose[k].a != null ? P.pose[k].a : 1) < .05) continue; const [c2, g2] = cv(), qq = rig.parts[k]; g2.setTransform(...mul(P.view, P.mats[k])); g2.drawImage(P.image(k), -qq.pv[0], -qq.pv[1]); masks[k] = g2.getImageData(0, 0, c2.width, c2.height).data; } }
         const near = new Set(); for (const j of comp) { const x = j % W2, y = (j / W2) | 0; for (const k in masks) { if (near.has(k)) continue; const mk = masks[k]; for (let dy = -3; dy <= 3 && !near.has(k); dy++) for (let dx = -3; dx <= 3; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < W2 && Y < H2 && mk[(Y * W2 + X) * 4 + 3] > 60) { near.add(k); break; } } } }
         const top = k => { while (k && rig.parts[k] && rig.parts[k].role === 'none' && rig.parts[k].p) k = rig.parts[k].p; return k; }, ns = [...new Set([...near].map(top))];
-        if (ns.length === 2 && (rig.parts[ns[0]].p === ns[1] || rig.parts[ns[1]].p === ns[0])) hole += comp.length; }
+        if (!(ns.length === 2 && (rig.parts[ns[0]].p === ns[1] || rig.parts[ns[1]].p === ns[0]))) continue;
+        /* a gap the DRAWING has (background between an arm and the body) is not a seam: map the gap back to the rest pose through each of the two pieces;
+           it is a seam only if, at rest, that spot was inside the figure of the reference */
+        const fig = figOf(rig); if (fig) { const ox = P.view[4], oy = P.view[5]; let inside = 0, n2 = 0;
+          for (let c = 0; c < comp.length; c += Math.max(1, (comp.length / 24) | 0)) { const j = comp[c], X = j % W2 - ox, Y = ((j / W2) | 0) - oy; n2++;
+            for (const k of ns) { const l = pt(inv(P.mats[k]), X, Y), r = pt(REST0[k], l[0], l[1]), rx = Math.round(r[0]), ry = Math.round(r[1]); if (rx >= 0 && ry >= 0 && rx < fig.w && ry < fig.h && fig.d[ry * fig.w + rx]) { inside++; break; } } }
+          if (inside < n2 * .3) continue; }
+        hole += comp.length; }
       return hole / Math.max(1, fig); };
-    const P0 = player(rig, { base: null }); P0.mats = world(rig, {}, null); const base = crack(P0);
+    const P0 = player(rig, { base: null }); P0.mats = world(rig, {}, null); const REST0 = P0.mats; const base = crack(P0);
     for (const mv of moves || Object.keys(MOVES).concat(Object.keys(rig.clips || {}))) { if (rig.view === 'front' && (mv === 'walk' || mv === 'run')) continue; const P = player(rig, { base: null }); P.play(mv); const dur = (MOVES[mv] && MOVES[mv].dur) || (rig.clips && rig.clips[mv] && rig.clips[mv].dur) || 1; let worst = 0, at = 0;
       for (let t = 0; t < dur; t += 1 / 15) { P.update(1 / 15); const k = crack(P) - base; if (k > worst) { worst = k; at = t; } } out[mv] = { worst, at: +at.toFixed(2) }; }
     return out;
@@ -249,7 +271,7 @@ const Bones2D = (() => {
       if (mv.ev && mv.dur) for (const [u, nm] of mv.ev) { const te = u * mv.dur; if (t0 < te && P.t >= te || (dt === 0 && false)) P.fired.push(nm); }   /* move events (the bolt leaves the hand ...) crossed this frame */
       if (!mv.fn && P.t >= mv.dur) { if (mv.hold) { P.t = mv.dur; P.done = true; } else if (mv.loop) P.t %= mv.dur; else { P.done = true; if (P.base && MOVES[P.base]) { const left = P.t - mv.dur; P.play(P.base, { fade: .1 }); P.t = left; } else P.t = mv.dur; } }
       sample(P.move, P.t, tmp); P.roles = tmp; const pop = P.pop, pose = P.pose; for (const k in pose) delete pose[k];
-      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && tmp[ro]; if (!o) continue; const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, a: o.a == null ? 1 : o.a, z: !rig.zfront || (far && !front) ? 0 : o.z || 0 }; if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
+      const fl = rig.flip ? -1 : 1, front = rig.view === 'front'; for (const k in rig.parts) { const ro = rig.parts[k].role, o = ro && tmp[ro]; if (!o) continue; const far = ro === 'armB' || ro === 'foreB' || ro === 'weaponB', sg = front && far ? -fl : fl, q = pose[k] = { r: o.r * sg * (rig.parts[k].g == null ? 1 : rig.parts[k].g), x: o.x * fl, y: o.y, sx: o.sx, sy: o.sy, a: o.a == null ? 1 : o.a, z: (o.z || 0) > 1.5 ? o.z : !rig.zfront || (far && !front) ? 0 : o.z || 0 };   /* z 2 = in front whatever the rig says (a move that needs it, like the bow pull) */ if (pop !== 1 && (ro === 'head' || ro === 'body' || ro === 'weapon')) { q.sx = 1 + (q.sx - 1) * pop; q.sy = 1 + (q.sy - 1) * pop; } }
       const r0 = tmp._root ? tmp._root : REST; for (const c in REST) P.root[c] = r0[c] == null ? REST[c] : r0[c]; if (fl < 0) { P.root.r = -P.root.r; P.root.x = -P.root.x; }
       if (P.from) { P.fadeT += dt; const f = P.fade > 0 ? Math.min(1, P.fadeT / P.fade) : 1; if (f >= 1) P.from = null; else { for (const k in rig.parts) { const a = P.from.pose[k] || REST, b = pose[k] || (pose[k] = Object.assign({}, REST)); for (const c of ['r', 'x', 'y', 'sx', 'sy', 'a']) b[c] = (a[c] == null ? 1 : a[c]) + ((b[c] == null ? 1 : b[c]) - (a[c] == null ? 1 : a[c])) * f; } for (const c in REST) P.root[c] = P.from.root[c] + (P.root[c] - P.from.root[c]) * f; } }
       /* hair / cape / tail: a spring thrown by how fast their turning point moves */
