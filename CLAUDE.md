@@ -93,9 +93,9 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
   - rounds = 2 monster rounds, then a duel with a rival PLAYER (`PVP_EVERY=3`), boss every 5th; rivals = our 5 other Tripo champions with bot-filled real bags and own skills (no server yet); a duel win = trophy + 3 gold;
   - every firing item casts its own effect: `bag3d/cast.js` (`CAST` / `CASTSELF`; raise `?v=N` in the script tag on every change);
   - checks `node tools/qa/bag3d_rounds.js`, `bag3d_cast.js` (+ `bag3d_cast_sheet.py`).
-- 2026-11-27 night: HORDE FIGHT built, owner has not seen it yet ("ตัวเดียวสู้กับฝูงมอนตามไอเทมในกระเป๋าเรา", "แนวๆ แวมไพร์เราก็ได้ แต่เอาระบบกระเป๋าเข้าไป"):
+- 2026-11-27 night: HORDE FIGHT built ("ตัวเดียวสู้กับฝูงมอนตามไอเทมในกระเป๋าเรา", "แนวๆ แวมไพร์เราก็ได้ แต่เอาระบบกระเป๋าเข้าไป"):
   - monster / boss rounds are fought in `horde.html?bag=1` inside an iframe (bag mode = `bag3d/arena.js`, hooks `if (BAGM)` in `horde.html`); duels keep the side view; `?fight=side` = old fight;
-  - one champion vs the round's horde, every bag item fires by itself with its own 3D move, AUTO walking on by default;
+  - one champion vs the round's horde, every bag item fires by itself with its own 3D move; the fight is FULLY AUTOMATIC (owner "ไม่ต้องบังคับดิให้มันออโต้โดยเราจัดกระเป๋าแบบเดิม": the player only arranges the bag, no steering, no dash button);
   - checks `node tools/qa/bag3d_horde.js` (+ `bal` for balance); after touching `horde.html` also run `horde_check.js`.
 - Notes: the BAG 3D section and the newest lines at the end of `docs/action-game.md`. Card game concept (not built): the CARD GAME CONCEPT section.
 
