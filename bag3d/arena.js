@@ -120,6 +120,7 @@ function bagHurt(d, src) {   /* before armour: magic resist for shots, dodge, th
   if (BAG.blk > 0) { const a = Math.min(BAG.blk, d); BAG.blk -= a; d -= a; if (d < .5) { H.inv = .3; num(P0.x, 1.8, P0.z, 'กัน', '#8fc8ff'); spark(P0.x, 1, P0.z, { n: 4, color: 0x8fc8ff, spd: 2.5, size: .22, life: .25 }); sfx('tick', .3, 1.6); return 0; } }
   if (d >= 1) bagSwing('hurt', null); return d; }
 function bagKill(m) {   /* no xp gems in this mode: a few coins (bonus gold for the shop), a rare heart */
+  bagCheer(m.boss ? 1.6 : m.elite ? .35 : .025, m.boss);   /* the arena crowd: louder with every kill, wild for a boss */
   if (m.boss) { G.boss = null; shake(.6); sfx('boom', 1, .6); FLASH.w = .4; for (let i = 0; i < 3; i++) after(i * .22, () => pfx('explosions/big-explosion', m.x + rnd(-1, 1), m.z + rnd(-.6, .6), 4.5)); ring(m, 0xffd060, .5, 7, .8); column(m, 0xffd060, 1, 1, 6); for (let i = 0; i < 5; i++) drop('coin', m.x + rnd(-1.4, 1.4), m.z + rnd(-1.4, 1.4), 1); return; }
   if (m.elite) { pfx('explosions/arcane-burst', m.x, m.z, 3); sfx('boom', .6, 1.2); shake(.25); for (let i = 0; i < 2; i++) drop('coin', m.x + rnd(-.6, .6), m.z + rnd(-.6, .6), 1); return; }
   const r = Math.random(); if (r < BAG.coinP) drop('coin', m.x, m.z, 1); else if (r < BAG.coinP + .012) drop('heart', m.x, m.z, 1); }
@@ -137,16 +138,23 @@ function bagWave(round, boss) {   /* how many monsters, how strong, when they co
   if (!boss && round >= 4) for (let e = 0; e < (round >= 9 ? 2 : 1); e++) plan.push({ t: dur * (.4 + e * .3), n: 1, a: R() * TAU, d: 0, k: kinds[R() * kinds.length | 0], o: { hp: 5 + round * .3, sc: 1.65, dmg: 1.5, elite: true, tint: [1.45, 1.2, .5] }, note: 'มอนหัวหน้าฝูงปรากฏ' });
   plan.sort((p, q) => p.t - q.t); BAG.warn = []; BAG.plan = plan; BAG.pi = 0; BAG.total = plan.reduce((s, p) => s + p.n, 0) + (boss ? 1 : 0); BAG.bossHp = Math.round(110 + round * round * 8 + round * 20); return kinds;
 }
+/* THE ARENA (horde.html map=arena): every pack runs out of the gate nearest its side; the boss comes through the main gate (far side) */
+const bagIsArena = () => typeof MAPK !== 'undefined' && MAPK === 'arena' && typeof ARENA_GATES !== 'undefined' && ARENA_GATES;
+function bagGate(a) { let best = ARENA_GATES[0], bd = 9; for (const g of ARENA_GATES) { const d = bagAngD(a, g); if (d < bd) { bd = d; best = g; } } return best; }
+function bagCheer(v, hold) { if (typeof CROWDU !== 'undefined') CROWDU.value = hold ? Math.max(CROWDU.value, v) : Math.min(1.7, CROWDU.value + v); }
 function bagFair(k, o) { const K = KIND[k], q = Object.assign({}, o); if (K && K.st) { q.hp = (q.hp || 1) * Math.pow(K.st.hp, -.4); q.dmg = (q.dmg || 1) * Math.pow(K.st.dmg, -.4); } return q; }   /* big kinds are tougher, but less than in the survival game: the round's level already makes them stronger */
 function bagSpawn(e) {
-  if (e.warn != null) { BAG.warn.push({ a: e.warn, t: 1.3 }); return; }
+  if (e.warn != null) { BAG.warn.push({ a: bagIsArena() ? bagGate(e.warn) : e.warn, t: 1.3 }); return; }
+  if (bagIsArena() && !e.ring) { const g = bagGate(e.a), cx = Math.cos(g), cz = Math.sin(g); if (e.n >= 4) note('ฝูงมอนวิ่งออกจากประตู! ×' + e.n, '#ff9a7a');   /* out of the gate, spread across its mouth */
+    for (let i = 0; i < e.n; i++) { const r = ARENA - .7 - rnd(0, Math.min(2.4, e.n * .18)), t = rnd(-1, 1); spawnMon(e.k, cx * r - cz * t, cz * r + cx * t, bagFair(e.k, e.o)); } pfx('smoke/dust-puff', cx * (ARENA - 1), cz * (ARENA - 1), 2.6); if (e.note) note(e.note, '#ffd86a'); return; }
   if (e.ring) { for (let i = 0; i < e.n; i++) { const [x, z] = ringPos(Math.min(SPAWNR - .5, 11.5), i / e.n * TAU); spawnMon(e.k, x, z, bagFair(e.k, e.o)); } banner('ฝูงใหญ่ล้อมแล้ว!', 'ฝ่าวงล้อมออกไป', true, 1.8); sfx('hurt', .6, .6); return; }
   if (e.pack && e.n >= 4) note('ฝูงมอนวิ่งมารุม! ×' + e.n, '#ff9a7a');
   for (let i = 0; i < e.n; i++) { const [x, z] = ringPos((e.d || SPAWNR + rnd(0, 2)) + rnd(0, e.pack ? 2.4 : 1.2), e.a + rnd(e.pack ? -.38 : -.22, e.pack ? .38 : .22)); const m = spawnMon(e.k, x, z, bagFair(e.k, e.o)); if (m && e.d) spark(x, .3, z, { n: 3, color: 0xd8d0c0, spd: 1.5, up: 2, size: .25, life: .35 }); } if (e.note) note(e.note, '#ffd86a'); }
 function bagBoss() { const bi = Math.min(3, Math.floor(BAG.cfg.round / 5) - 1), k = MAP.boss[Math.max(0, bi) % MAP.boss.length]; BAG.bossWait = true;
-  loadKind(k).then(() => { const K = KIND[k]; if (!K || !K.ok || !BAG.on) { BAG.bossWait = false; BAG.total--; return; } const [x, z] = ringPos(Math.min(SPAWNR - 1, 11)), m = spawnMon(k, x, z, { boss: true, bi: Math.max(0, bi), spd: .85, dmg: .75 }); BAG.bossWait = false; if (!m) { BAG.total--; return; }
-    m.hp = m.max = BAG.bossHp; m.r = Math.max(m.r, .8); G.boss = m; banner('บอสบุก!', MOBS[k].name, true, 2.6); setMusic('drums'); shake(.4); sfx('boom', .9, .6); sfx('roar', 1); G.slow = 1.2; CAM.focus = { m, t: 0, dur: 2 }; }); }
+  loadKind(k).then(() => { const K = KIND[k]; if (!K || !K.ok || !BAG.on) { BAG.bossWait = false; BAG.total--; return; } const [x, z] = bagIsArena() ? [0, -(ARENA - 1.4)] : ringPos(Math.min(SPAWNR - 1, 11)), m = spawnMon(k, x, z, { boss: true, bi: Math.max(0, bi), spd: .85, dmg: .75 }); BAG.bossWait = false; if (!m) { BAG.total--; return; }
+    m.hp = m.max = BAG.bossHp; m.r = Math.max(m.r, .8); G.boss = m; banner('บอสบุก!', MOBS[k].name, true, 2.6); bagCheer(1.5, true); setMusic('drums'); shake(.4); sfx('boom', .9, .6); sfx('roar', 1); G.slow = 1.2; CAM.focus = { m, t: 0, dur: 2 }; }); }
 function bagUpd(dt) {   /* instead of the weapons / director / shrines / ultimate of the normal game */
+  if (typeof CROWDU !== 'undefined') CROWDU.value += (.32 - CROWDU.value) * Math.min(1, dt * .45);   /* the cheer dies down */
   const S = BAG.st, H = HERO; BAG.t += dt; if (H.atkT <= 0) H.apr = 0; while (BAG.pi < BAG.plan.length && BAG.plan[BAG.pi].t <= BAG.t) bagSpawn(BAG.plan[BAG.pi++]); if (BAG.cfg.boss && !BAG.bossed && BAG.t > 4) { BAG.bossed = true; bagBoss(); }
   BAG.sta = Math.min(S.stam, BAG.sta + S.sreg * dt); const hs = 1 + (S.haste || 0);
   for (const W of BAG.its) { if (W.fl > 0) W.fl -= dt;
@@ -157,7 +165,7 @@ function bagUpd(dt) {   /* instead of the weapons / director / shrines / ultimat
   BAG.tk -= dt; if (BAG.tk <= 0) { BAG.tk = .5; for (const m of MON) if (!m.dead && m.poi > 0) hitMon(m, m.poi * .5, { w: 'poison', color: '#c8f080' }); }
   if (BAG.raged) { BAG.rk = (BAG.rk || 0) - dt; if (BAG.rk <= 0) { BAG.rk = 1; for (const m of MON) if (!m.dead && m.spd < 6) m.spd *= 1.04; } }
   if (BAG.t > BAG.dur && !BAG.raged) { BAG.raged = true; banner('ฝูงมอนคลั่ง!', 'รีบกวาดให้หมด: ยิ่งนานมอนยิ่งตีแรง', true, 2.2); }
-  if (!BAG.done && BAG.pi >= BAG.plan.length && !BAG.bossWait && (!BAG.cfg.boss || BAG.bossed) && aliveN() === 0 && G.endT <= 0) { { const M = H.M; chPlay(M, 'U', 'Cheer', true, 1.2); chPlay(M, 'L', 'Cheer', true, 1.2); H.atkT = H.dodgeT = 3; H.apr = 9; } BAG.done = true; G.won = true; G.endT = 1.4; jingle('win'); banner('ชนะ!', 'กวาดฝูงมอนรอบ ' + BAG.cfg.round + ' หมดแล้ว', false, 1.6); for (const g of GEMS) g.pull = true; }
+  if (!BAG.done && BAG.pi >= BAG.plan.length && !BAG.bossWait && (!BAG.cfg.boss || BAG.bossed) && aliveN() === 0 && G.endT <= 0) { { const M = H.M; bagCheer(1.8, true); chPlay(M, 'U', 'Cheer', true, 1.2); chPlay(M, 'L', 'Cheer', true, 1.2); H.atkT = H.dodgeT = 3; H.apr = 9; } BAG.done = true; G.won = true; G.endT = 1.4; jingle('win'); banner('ชนะ!', 'กวาดฝูงมอนรอบ ' + BAG.cfg.round + ' หมดแล้ว', false, 1.6); for (const g of GEMS) g.pull = true; }
 }
 function bagAuto(dt) {   /* the champion holds the ground and lets the bag fight: walks to the nearest monster when nothing is in reach, steps out of a boss's body and away from shots, picks up coins when it is quiet, dashes out when badly hurt in a crowd */
   const H = HERO.pos; let fx = 0, fz = 0, nd = 1e9, nm = null, close = 0, cx = 0, cz = 0;
@@ -165,14 +173,14 @@ function bagAuto(dt) {   /* the champion holds the ground and lets the bag fight
   for (const b of BUL) { const dx = H.x - b.x, dz = H.z - b.z, d2 = dx * dx + dz * dz; if (d2 < 9) { fx += dx / (d2 + .2) * 2; fz += dz / (d2 + .2) * 2; } }
   if (!close) { let gd = 7, gx = 0, gz = 0; for (const g of GEMS) { const d = Math.hypot(g.x - H.x, g.z - H.z); if (d < gd) { gd = d; gx = g.x - H.x; gz = g.z - H.z; } } if (gd < 7) { fx += gx / (gd || 1) * .8; fz += gz / (gd || 1) * .8; } }
   if (nm && !nm.boss) { const d = Math.sqrt(nd); if (d > BAG.reach) { fx += (nm.x - H.x) / d; fz += (nm.z - H.z) / d; } } else if (nm && nd > 36) { const d = Math.sqrt(nd); fx += (nm.x - H.x) / d; fz += (nm.z - H.z) / d; }
-  const R = Math.hypot(H.x, H.z); if (R > ARENA - 6) { fx -= H.x / R * (R - ARENA + 6) * .6; fz -= H.z / R * (R - ARENA + 6) * .6; }
+  const R = Math.hypot(H.x, H.z), eg = bagIsArena() ? 3 : 6; if (R > ARENA - eg) { fx -= H.x / R * (R - ARENA + eg) * .6; fz -= H.z / R * (R - ARENA + eg) * .6; }   /* the arena is small: keep off its wall, not off half of it */
   const L = Math.hypot(fx, fz); if (L < .06) INP.x = INP.z = 0; else { INP.x = fx / L; INP.z = fz / L; }
   if (HERO.dashCd <= 0 && HERO.hp < HERO.max * .5 && close >= 4) { const c = Math.hypot(cx, cz) || 1; INP.x = cx / c; INP.z = cz / c; heroDash(); }
 }
 function bagInp(dt) { JOY.on = false; if (!HERO.dead && G.endT <= 0 && BAG.t > .7) bagAuto(dt); else INP.x = INP.z = 0; }   /* owner 2026-11-27 "ไม่ต้องบังคับดิ ให้มันออโต้ โดยเราจัดกระเป๋าแบบเดิม": the player never steers, the fight is fully automatic */
 /* ---- start / end */
 function bagStart(cfg) {
-  if (!BAG.ready || !HERO) return false; CAM.zoom = 1.22; resize(); audioInit(); clearRun();   /* closer than the survival game: the champion and the item effects read bigger */ const M = HERO.M; HERO = makeHero(M); showHero(M); BAG.cfg = cfg; BAG.result = null; BAG.on = true; BAG.done = BAG.raged = BAG.bossed = false; BAG.bossWait = false; BAG.t = 0; BAG.tk = .5; BAG.man = 0;
+  if (!BAG.ready || !HERO) return false; CAM.zoom = bagIsArena() ? .74 : 1.22; if (bagIsArena()) CAM.dir.copy(CAM.arenaDir); resize();   /* the arena: a little farther back, so its stands are on screen */ audioInit(); clearRun();   /* closer than the survival game: the champion and the item effects read bigger */ const M = HERO.M; HERO = makeHero(M); showHero(M); BAG.cfg = cfg; BAG.result = null; BAG.on = true; BAG.done = BAG.raged = BAG.bossed = false; BAG.bossWait = false; BAG.t = 0; BAG.tk = .5; BAG.man = 0;
   const S = BAG.st = Object.assign({ armor: 0, mres: 0, dodge: 0, regen: 0, thorn: 0, haste: 0, crit: 0, critd: 2, stam: 5, sreg: 1, rage: 0, sblk: 0 }, cfg.st || {}); BAG.spd = cfg.spd > 1 ? 2 : 1; BAG.icr = cfg.icr || 14;
   Object.assign(P, { pow: 1, cd: 1, area: 1, spd: 3.3, magnet: 2.4, crit: 0, critX: 2, armor: S.armor, regen: S.regen, xp: 0, gold: 1, luck: 1, multi: 0, dur: 1, steal: 0, numMin: 0 }); HERO.max = Math.round(cfg.hp); HERO.hp = HERO.max; BAG.hpShow = HERO.hp; BAG.blk = S.sblk || 0; BAG.sta = S.stam;
   BAG.its = (cfg.items || []).map(q => { const W = Object.assign({ t: Math.random() * .4, fl: 0 }, q); if (W.start != null) { W.once = true; W.dmg = W.start; } else if (W.blk || W.heal) W.self = true; return W; });
@@ -186,7 +194,7 @@ function bagStart(cfg) {
 function bagFinish() {   /* the wave is cleared or the champion fell: tell bag3d.html */
   const left = aliveN() + BAG.plan.slice(BAG.pi).reduce((s, p) => s + p.n, 0), r = { bag: 'end', win: !!G.won && !HERO.dead, t: +BAG.t.toFixed(1), kills: G.kills, total: BAG.total, left, coins: G.coins, hp: Math.max(0, Math.round(HERO.hp)), dmg: Object.assign({}, STATS) };
   BAG.result = r; BAG.on = false; G.state = 'bagdone'; INP.x = INP.z = 0; JOY.on = false; setMusic('calm'); try { if (parent !== window) parent.postMessage(r, '*'); } catch (_) { } }
-function bagBoot() { BAG.ready = true; G.state = 'bagidle'; HERO.M.T.root.scale.multiplyScalar(1.15); if (!NORENDER) bagIcons(); try { if (parent !== window) parent.postMessage({ bag: 'ready', map: MAPK }, '*'); } catch (_) { } if (BAG.wait) { const c = BAG.wait; BAG.wait = null; bagStart(c); } }
+function bagBoot() { BAG.ready = true; G.state = 'bagidle'; HERO.M.T.root.scale.multiplyScalar(1.15); if (!NORENDER) bagIcons(); try { if (parent !== window) parent.postMessage({ bag: 'ready', map: MAPK === 'arena' ? 'arena:' + (Q.get('land') || 'forest') : MAPK }, '*');   /* the arena answers with its land, so a page of an older land is not taken */ } catch (_) { } if (BAG.wait) { const c = BAG.wait; BAG.wait = null; bagStart(c); } }
 function bagIcons() { if (BAG.img) return true; BAG.img = new Image(); BAG.img.src = 'art/bag3d/icons_all.png?v=3'; BAG.tex = TL.load('art/bag3d/icons_all.png?v=3'); BAG.tex.magFilter = THREE.NearestFilter; BAG.tex.encoding = THREE.sRGBEncoding; return true; }
 addEventListener('message', e => { const d = e.data; if (!d || !d.bag || !BAGM) return; if (d.bag === 'start') { if (BAG.ready) bagStart(d.cfg); else BAG.wait = d.cfg; } else if (d.bag === 'spd') BAG.spd = d.v > 1 ? 2 : 1; else if (d.bag === 'stop') { BAG.on = false; G.state = 'bagidle'; clearRun(); } });
 window.BAGAPI = { BAG, start: c => bagStart(c), fire: bagFire, moves: BAGMOVE };

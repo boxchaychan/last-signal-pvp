@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=5"></script><script src="bag3d/classes.js?v=1"></script>
+<script src="bag3d/arena.js?v=6"></script><script src="bag3d/classes.js?v=3"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -73,9 +73,16 @@ const MAPS = {
       ['mob_snow_mortar_witch', 'mob_snow_glacier_titan', 'mob_sky_cloudsage', 'mob_sky_gustfang', 'mob_sky_haven_warden', 'mob_sky_spear_maiden', 'mob_sky_stormtalon']],
     boss: ['boss_snow_frostfang_alpha', 'boss_sky_gale_knight', 'boss_sky_winged_arbiter', 'boss_snow_tri_crown_wyrm'], extra: ['boss_jotun'] },
 };
+/* THE ARENA (owner 2026-11-28 "เจนสนามอารีน่า 3D สวยๆ", free: all made in code here, no generated art): a colosseum for the backpack game's swarm fights
+   (horde.html?bag=1&map=arena&land=<land>): raked sand, a ring wall with six gates the monster packs run out of, stands full of a cheering crowd, banners,
+   braziers. Cut away on the camera's side like a diorama, so nothing hides the fight. The monsters and bosses are those of the land of the round. */
+{ const L = MAPS[Q.get('land')] || MAPS.forest;
+  MAPS.arena = { name: 'สนามประลองแชมเปี้ยน', sub: 'อารีน่ากลางแดดบ่าย ฝูงมอนวิ่งออกมาจากประตู', diff: 1, sky: 0xe8c898, fog: [0xe6c494, 30, 70], sun: [0xffdcaa, 1.15], hemi: [0xffeedc, 0x6a5034, .42], amb: [.96, .9, .82], lamp: 0,
+    g: { base: '#c49a62', blot: ['#b48654', '#d4ae78', '#aa7c4a'], tuft: ['#a87a48', '#dcb880'], fl: ['#d8bc8c'], peb: ['#8a6a46', '#6e5236'], dirt: '#a47a48', edge: '#5a4026' },
+    trees: [], tint: {}, flowers: false, props: 'arena', air: 'pollen', music: 'battle', icon: '#ffc860', mobs: L.mobs, boss: L.boss, extra: L.extra }; }
 const MAPKEYS = ['forest', 'grave', 'volcano', 'snow'];
 let MAPK = Q.get('map'); if (!MAPS[MAPK]) { try { MAPK = localStorage.getItem('horde_map'); } catch (_) { } } if (!MAPS[MAPK]) MAPK = 'forest';
-const MAP = MAPS[MAPK], ARENA = 30, WORLD = 96;   /* the hero stays inside a circle of ARENA units; the ground picture covers WORLD x WORLD */
+const MAP = MAPS[MAPK], ARENA = MAPK === 'arena' ? 8 : 30, WORLD = 96;   /* the arena is smaller: its stands are on screen and the swarm is closer */   /* the hero stays inside a circle of ARENA units; the ground picture covers WORLD x WORLD */
 
 /* ---------- renderer, light, camera */
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
@@ -139,6 +146,16 @@ const macroTex = canvasTex(1024, 1024, (g, T) => {   /* 160 = no change; lighter
   const R = rng(MAPK.length * 31 + 9), k = T / WORLD, X = x => T / 2 + x * k, Y = z => T / 2 - z * k; g.fillStyle = 'rgb(160,160,160)'; g.fillRect(0, 0, T, T);
   for (let i = 0; i < 110; i++) { const x = R() * T, y = R() * T, r = (3 + R() * 7) * k, v = R() < .5 ? [205, 205, 190] : [118, 126, 118], gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${v},.5)`); gr.addColorStop(1, `rgba(${v},0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
   const dc = new THREE.Color(MAP.g.dirt), bc = new THREE.Color(MAP.g.base), d = [0, 1, 2].map(i => Math.round(clamp(160 * [dc.r, dc.g, dc.b][i] / Math.max(.05, [bc.r, bc.g, bc.b][i]), 60, 255)));
+  if (MAPK === 'arena') { const ring = (r, w, v, a) => { g.beginPath(); g.arc(T / 2, T / 2, r * k, 0, TAU); g.lineWidth = w * k; g.strokeStyle = `rgba(${v},${v},${v * .96},${a})`; g.stroke(); };
+    for (let r = 3.2, i = 0; r < ARENA - .8; r += .42, i++) ring(r, .13, i % 2 ? 186 : 136, .28);   /* raked sand */
+    for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * TAU / 6; for (let j = 0; j < 40; j++) { const t = j / 40, r = ARENA - .4 - t * 7.5, x = X(Math.cos(a) * r + Math.sin(a) * (R() - .5) * 2.4 * (1 - t * .6)), y = Y(Math.sin(a) * r - Math.cos(a) * (R() - .5) * 2.4 * (1 - t * .6)), q = (.9 + R()) * k; g.fillStyle = `rgba(96,80,60,${.18 * (1 - t)})`; g.beginPath(); g.ellipse(x, y, q, q * .6, R() * 3, 0, TAU); g.fill(); } }   /* trodden lanes from the gates */
+    { const c = T / 2, gr = g.createRadialGradient(c, c, 0, c, c, 2.9 * k); gr.addColorStop(0, 'rgba(204,196,176,.55)'); gr.addColorStop(.78, 'rgba(150,138,116,.5)'); gr.addColorStop(1, 'rgba(150,138,116,0)'); g.fillStyle = gr; g.beginPath(); g.arc(c, c, 2.9 * k, 0, TAU); g.fill();
+      ring(2.55, .2, 92, .7); ring(2.25, .08, 110, .6); ring(.95, .14, 92, .6); g.save(); g.translate(c, c); g.strokeStyle = 'rgba(96,86,70,.6)'; g.lineWidth = .12 * k;   /* the crest: rings, an eight-point star, crossed blades */
+      for (let i = 0; i < 24; i++) { const a = i * TAU / 24, r1 = 1.05 * k, r2 = (i % 2 ? 1.6 : 2.0) * k; g.beginPath(); g.moveTo(Math.cos(a) * r1, Math.sin(a) * r1); g.lineTo(Math.cos(a) * r2, Math.sin(a) * r2); g.stroke(); }   /* sun rays */
+      for (const sg of [-1, 1]) { g.save(); g.rotate(sg * .7); g.fillStyle = 'rgba(110,98,80,.55)'; g.fillRect(-.07 * k, -1.7 * k, .14 * k, 3.4 * k); g.fillRect(-.36 * k, .9 * k, .72 * k, .12 * k); g.restore(); } g.restore(); }
+    for (let i = 0; i < 90; i++) { const a = R() * TAU, r = 3 + R() * (ARENA - 4), s = (.18 + R() * .3) * k; g.fillStyle = R() < .5 ? 'rgba(110,96,74,.32)' : 'rgba(226,214,186,.32)'; g.beginPath(); g.ellipse(X(Math.cos(a) * r), Y(Math.sin(a) * r), s, s * .55, R() * 3, 0, TAU); g.fill(); }   /* scuffs */
+    { const gr = g.createRadialGradient(T / 2, T / 2, (ARENA - 2.2) * k, T / 2, T / 2, (ARENA + .5) * k); gr.addColorStop(0, 'rgba(110,96,80,0)'); gr.addColorStop(1, 'rgba(110,96,80,.7)'); g.fillStyle = gr; g.fillRect(0, 0, T, T); }
+    return; }
   g.lineCap = g.lineJoin = 'round'; const trail = () => { g.beginPath(); for (let i = 0; i <= 160; i++) { const a = i / 160 * TAU, r = ringR(a); i ? g.lineTo(X(Math.cos(a) * r), Y(Math.sin(a) * r)) : g.moveTo(X(Math.cos(a) * r), Y(Math.sin(a) * r)); } for (const s of PATHS.spokes) { g.moveTo(X(Math.cos(s) * 2), Y(Math.sin(s) * 2)); const n = 12, rr = ringR(s); for (let i = 1; i <= n; i++) { const r = 2 + (rr - 2) * i / n, w = Math.sin(i * 1.3 + s * 5) * .35 * Math.sin(i / n * Math.PI); g.lineTo(X(Math.cos(s) * r - Math.sin(s) * w), Y(Math.sin(s) * r + Math.cos(s) * w)); } } };
   for (const [w, a] of [[3.0, .22], [2.2, .34], [1.5, .5], [.9, .5]]) { trail(); g.lineWidth = w * k; g.strokeStyle = `rgba(${d},${a})`; g.stroke(); }
   { const r = 4.2 * k, gr = g.createRadialGradient(T / 2, T / 2, r * .35, T / 2, T / 2, r); gr.addColorStop(0, `rgba(${d},.85)`); gr.addColorStop(1, `rgba(${d},0)`); g.fillStyle = gr; g.fillRect(T / 2 - r, T / 2 - r, r * 2, r * 2); }
@@ -177,6 +194,7 @@ function mergeGeo(list) {   /* [geometry, colour, matrix] -> one non-indexed geo
     for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i); if (mat) v.applyMatrix4(mat); pos.push(v.x, v.y, v.z); v.fromBufferAttribute(N, i); if (mat) v.applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); } }
   const o = new THREE.BufferGeometry(); o.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); o.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); o.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); return o;
 }
+const smoothstep = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const M4 = (x, y, z, sx = 1, sy = sx, sz = sx, ry = 0, rz = 0) => new THREE.Matrix4().compose(new V3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, rz)), new V3(sx, sy, sz));
 function codeProps() {   /* tombstones, crosses, broken pillars / lava rocks with a glow / ice crystals: simple shapes, flat colours */
   const B = new THREE.BoxGeometry(1, 1, 1), C = new THREE.CylinderGeometry(1, 1, 1, 10), O = new THREE.OctahedronGeometry(1), K = new THREE.ConeGeometry(1, 1, 6), D = new THREE.DodecahedronGeometry(1), S = {};
@@ -198,7 +216,7 @@ function pushOut(p, rad, slide) {   /* keep a body (p.x, p.z) out of the obstacl
   const a = OGRID.get(ogk(p.x, p.z)); if (!a) return; for (const o of a) { const dx = p.x - o.x, dz = p.z - o.z, rr = o.r + rad; if (Math.abs(dx) < rr && Math.abs(dz) < rr) { const d = Math.hypot(dx, dz); if (d < rr && d > 1e-4) { p.x = o.x + dx / d * rr; p.z = o.z + dz / d * rr; if (slide) { p.x += -dz / d * slide; p.z += dx / d * slide; } } } }
 }
 /* pools: water (forest), swamp (graveyard), lava (volcano), ice (snow): a flat disc with a small moving-noise shader, wobbly shore; nobody walks through (fliers do) */
-const POOLKIND = { forest: ['#1c6a94', '#3aa8cc', '#e6f8ff', 1, .92], grave: ['#0e1c1a', '#1f4a3c', '#86d8a8', .5, .92], volcano: ['#6a1404', '#ff5a10', '#ffe070', .7, 1], snow: ['#86bcdc', '#bfe4f6', '#ffffff', .0, .96] }[MAPK];
+const POOLKIND = { arena: ['#2a7aa0', '#5ac8e8', '#f0fcff', 1, .92], forest: ['#1c6a94', '#3aa8cc', '#e6f8ff', 1, .92], grave: ['#0e1c1a', '#1f4a3c', '#86d8a8', .5, .92], volcano: ['#6a1404', '#ff5a10', '#ffe070', .7, 1], snow: ['#86bcdc', '#bfe4f6', '#ffffff', .0, .96] }[MAPK];
 const POOLM = new THREE.ShaderMaterial({ uniforms: { t: TIMEU, c0: { value: new THREE.Color(POOLKIND[0]) }, c1: { value: new THREE.Color(POOLKIND[1]) }, c2: { value: new THREE.Color(POOLKIND[2]) }, sp: { value: POOLKIND[3] }, al: { value: POOLKIND[4] } }, transparent: true, depthWrite: false,
   vertexShader: 'varying vec2 vUv; varying vec2 vW; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }',
   fragmentShader: 'uniform float t, sp, al; uniform vec3 c0, c1, c2; varying vec2 vUv; varying vec2 vW; float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }' +
@@ -208,6 +226,61 @@ const POOLM = new THREE.ShaderMaterial({ uniforms: { t: TIMEU, c0: { value: new 
 const POOLG = new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), SHOREM = new THREE.MeshBasicMaterial({ map: TEX.blob, transparent: true, depthWrite: false, opacity: .55 });
 function addPool(x, z, r) { const sh = new THREE.Mesh(GEO.plane, SHOREM); sh.position.set(x, .025, z); sh.scale.set(r * 2.3, 1, r * 2.3); sh.renderOrder = 0; scene.add(sh); const m = new THREE.Mesh(POOLG, POOLM); m.position.set(x, .04, z); m.scale.set(r, 1, r); m.renderOrder = 1; scene.add(m); POOLS.push({ x, z, r }); addObst(x, z, r * .86, true);
   if (MAPK === 'volcano') LIGHTS.push({ x, y: .5, z, c: 0xff5a10, s: r * 2.6, ph: x }); }
+const CROWDU = { value: .35 };   /* how hard the crowd cheers (bag3d/arena.js raises it on kills, a boss, a win) */
+const ARENA_GATES = MAPK === 'arena' ? [0, 1, 2, 3, 4, 5].map(i => -Math.PI / 2 + i * TAU / 6) : null;   /* the arena's gate angles (bag3d/arena.js sends the packs through them; set even without drawing) */
+function colosseum(SRC) {
+  const R = rng(97), B = new THREE.BoxGeometry(1, 1, 1), CY = new THREE.CylinderGeometry(1, 1, 1, 12), r0 = ARENA + .4, GATES = ARENA_GATES, GW = .17;   /* GW = half the angle a gate takes */
+  const cut = a => smoothstep(-.12, .55, Math.sin(a)), atA = (a, r, y, sx, sy, sz, c, L) => L.push([B, c, M4(Math.cos(a) * r, y, Math.sin(a) * r, sx, sy, sz, -a - Math.PI / 2)]);   /* cut = 0 far side (full stands) .. 1 camera side (low wall only) */
+  const gateD = a => Math.min(...GATES.map(g => Math.abs(((a - g + Math.PI) % TAU + TAU) % TAU - Math.PI))), pick = (L) => L[R() * L.length | 0];
+  const STONE = ['#b9a07a', '#ab926e', '#c5ae88', '#b29874'], SEAT = ['#c9af86', '#bca078', '#d2b892'], TEAM = ['#c8342a', '#2a62c8', '#e0a020', '#7a3ac8', '#2a9a4a', '#d8602a'];
+  const BODY = ['#c84a3a', '#3a6ac8', '#e0b030', '#8a4ac8', '#3aa060', '#e07a3a', '#efe9dc', '#5a4a3a', '#c8608a', '#4ab0b8'], SKIN = ['#f2c8a0', '#d8a070', '#a8704a', '#ffd8b8', '#c08860'];
+  const crowd = [], sectors = [];
+  for (let sct = 0; sct < 6; sct++) { const L = [], a0 = GATES[sct] + GW, a1 = GATES[(sct + 1) % 6] + (sct === 5 ? TAU : 0) - GW, mid = (a0 + a1) / 2;
+    /* the ring wall: blocks with courses, a plinth and a coping; low on the camera side */
+    const n = Math.ceil((a1 - a0) * (r0 + .45) / 1.1);
+    for (let i = 0; i < n; i++) { const a = a0 + (i + .5) / n * (a1 - a0), c = cut(a), h = 1.7 - c * .8, w = (a1 - a0) / n * (r0 + .45) + .02;
+      atA(a, r0 + .45, h / 2, w, h, .9, pick(STONE), L); atA(a, r0 + .4, .14, w + .02, .28, 1.04, '#8a7458', L); atA(a, r0 + .45, h + .09, w + .04, .18, 1.08, '#dccaa4', L);
+      for (const y of [.72, 1.42]) if (y < h - .2) atA(a, r0 - .02, y, w, .05, .04, '#8c7a62', L);
+      if (c < .5 && i % 2 === 0) atA(a, r0 + .7, h + .34, w * .55, .32, .4, '#d4c29c', L); }   /* merlons */
+    /* the stands: four tiers rising outward, full on the far side, gone on the camera side */
+    for (let tr = 0; tr < 4; tr++) { const rt = r0 + 1.35 + tr * .95, m = Math.ceil((a1 - a0) * rt / 1.25);
+      for (let i = 0; i < m; i++) { const a = a0 + (i + .5) / m * (a1 - a0), f = 1 - cut(a); if (f < .3) continue; const h = (1.85 + tr * .5) * f, w = (a1 - a0) / m * rt + .03;
+        atA(a, rt, h / 2, w, h, .96, pick(SEAT), L); atA(a, rt - .4, h + .03, w, .07, .2, '#e6d6b2', L);
+        for (let k = 0; k < 2; k++) { if (R() > .8) continue; const b = a + (k - .5) * (a1 - a0) / m * .5, rr = rt + (R() - .5) * .3; crowd.push([Math.cos(b) * rr, h, Math.sin(b) * rr, pick(BODY), pick(SKIN), .85 + R() * .3]); } } }
+    /* the back wall with dark arches and banners, far side only */
+    { const rb = r0 + 1.35 + 4 * .95 + .15, m = Math.ceil((a1 - a0) * rb / 1.4);
+      for (let i = 0; i < m; i++) { const a = a0 + (i + .5) / m * (a1 - a0), f = 1 - cut(a); if (f < .3) continue; const h = 4.1 * f, w = (a1 - a0) / m * rb + .03;
+        atA(a, rb, h / 2, w, h, .8, pick(STONE), L); atA(a, rb, h + .12, w + .04, .24, .96, '#dccaa4', L); if (f > .8) { atA(a, rb - .41, h - .8, w * .52, .9, .04, '#3a2c20', L); } } }
+    sectors.push(L); }
+  /* the gates: two towers, a lintel, a dark tunnel, the raised portcullis, a banner and torches */
+  const glist = [];
+  GATES.forEach((g, i) => { const c = cut(g), f = 1 - c * .62, tw = .2, gx = Math.cos(g), gz = Math.sin(g);
+    for (const sd of [-1, 1]) { const a = g + sd * (GW + tw * .5); atA(a, r0 + .5, 1.35 * f, 1.0, 2.7 * f, 1.4, '#b49a74', glist); atA(a, r0 + .5, 2.75 * f, 1.16, .2, 1.56, '#dccaa4', glist); atA(a, r0 - .22, 1.7 * f, .7, .9 * f, .06, TEAM[i], glist);
+      const tx = Math.cos(a) * (r0 - .3), tz = Math.sin(a) * (r0 - .3); LIGHTS.push({ x: tx, y: 2.0 * f + .5, z: tz, c: 0xffa040, s: 1.9, ph: R() * 9 }); PERS.push({ nm: 'fire/campfire', x: tx, z: tz, size: .9, y: 2.0 * f + .1 }); }
+    atA(g, r0 + .5, 2.35 * f, GW * 2 * (r0 + .5) + .1, .6 * f, 1.3, '#a48a66', glist); atA(g, r0 + 1.3, 1.1 * f, GW * 2 * (r0 + 1.3), 2.2 * f, 1.4, '#1c1610', glist);
+    for (let k = -3; k <= 3; k++) { const a = g + k * GW / 4; atA(a, r0 + .3, 1.92 * f, .05, .34 * f, .05, '#3a3a40', glist); } atA(g, r0 + .3, 2.08 * f, GW * 2 * (r0 + .3), .06, .05, '#3a3a40', glist); });
+  /* braziers on the wall between the gates */
+  for (let i = 0; i < 6; i++) for (const t of [.33, .67]) { const a = GATES[i] + GW + t * (TAU / 6 - 2 * GW), c = cut(a), h = 1.7 - c * .8, x = Math.cos(a) * (r0 + .2), z = Math.sin(a) * (r0 + .2);
+    glist.push([CY, '#5a4a3a', M4(x, h + .32, z, .28, .26, .28)], [CY, '#3a3028', M4(x, h + .18, z, .1, .3, .1)]); LIGHTS.push({ x, y: h + .7, z, c: 0xff8a30, s: 2.2, ph: R() * 9 }); PERS.push({ nm: 'fire/campfire', x, z, size: 1.1, y: h + .38 }); }
+  const add = (L, cast) => { const geo = mergeGeo(L); geo.computeBoundingSphere(); const m = new THREE.Mesh(geo, VCM); m.castShadow = !!cast; m.receiveShadow = true; m.matrixAutoUpdate = false; scene.add(m); return m; };
+  sectors.forEach(L => add(L, true)); add(glist, true);
+  /* banners on the back wall, waving */
+  { const BL = [], PG = new THREE.PlaneGeometry(1, 1, 1, 6); for (let i = 0; i < 6; i++) for (const t of [.25, .5, .75]) { const a = GATES[i] + GW + t * (TAU / 6 - 2 * GW); if (cut(a) > .25) continue; const rb = r0 + 1.35 + 4 * .95 - .3;
+      BL.push([PG, TEAM[(i + (t === .5 ? 3 : 0)) % 6], M4(Math.cos(a) * rb, 3.2, Math.sin(a) * rb, .55, 1.6, 1, -a - Math.PI / 2)]); }
+    const bm = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }); bm.onBeforeCompile = sh => { sh.uniforms.t = TIMEU; sh.vertexShader = 'uniform float t;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n float sw = smoothstep(4.0, 2.4, position.y); transformed.x += sin(t * 2.4 + position.y * 2.3 + position.z * .9) * .09 * sw; transformed.z += cos(t * 2.0 + position.y * 2.0 + position.x * .7) * .09 * sw;'); };
+    const geo = mergeGeo(BL); const m = new THREE.Mesh(geo, bm); m.matrixAutoUpdate = false; scene.add(m); }
+  /* the crowd: one instanced batch of bodies and one of heads, bobbing (harder when CROWDU rises) */
+  { const n = crowd.length, TOR = new THREE.CylinderGeometry(1, .7, 1, 8), ARM = new THREE.BoxGeometry(1, 1, 1), arm = sd => new THREE.Matrix4().compose(new V3(sd * .19, .5, 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, sd * -.5)), new V3(.075, .34, .075)),
+      bodyG = mergeGeo([[TOR, '#ffffff', M4(0, .2, 0, .2, .4, .15)], [ARM, '#ffffff', arm(-1)], [ARM, '#ffffff', arm(1)]]), headG = mergeGeo([[new THREE.SphereGeometry(1, 10, 8), '#ffffff', M4(0, .52, 0, .14)]]),   /* shoulders + two arms up in a V: a cheering crowd, read even when tiny */ mk = () => { const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+      m.onBeforeCompile = sh => { sh.uniforms.t = TIMEU; sh.uniforms.amp = CROWDU; sh.vertexShader = 'uniform float t; uniform float amp;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\n float ph = instanceMatrix[3][0] * 1.7 + instanceMatrix[3][2] * 2.3; transformed.y += amp * max(0., sin(t * (4.5 + fract(ph) * 3.5) + ph)) * .5 / max(.5, instanceMatrix[1][1]);\n#endif'); }; return m; };
+    const bodies = new THREE.InstancedMesh(bodyG, mk(), n), heads = new THREE.InstancedMesh(headG, mk(), n), mt = new THREE.Matrix4(), col = new THREE.Color();
+    crowd.forEach(([x, y, z, bc, hc, sc], i) => { mt.compose(new V3(x, y, z), new THREE.Quaternion().setFromAxisAngle(UP, -Math.atan2(z, x) - Math.PI / 2), new V3(sc, sc, sc)); bodies.setMatrixAt(i, mt); heads.setMatrixAt(i, mt); bodies.setColorAt(i, col.set(bc).convertSRGBToLinear()); heads.setColorAt(i, col.set(hc).convertSRGBToLinear()); });
+    for (const m of [bodies, heads]) { m.frustumCulled = false; m.matrixAutoUpdate = false; scene.add(m); } }
+  /* a little on the sand: a broken spear and shields from earlier fights (not in the way) */
+  { const D = []; for (let i = 0; i < 9; i++) { const a = R() * TAU, r = 4 + R() * (ARENA - 6); if (gateD(a) < .3) continue; const x = Math.cos(a) * r, z = Math.sin(a) * r, ry = R() * TAU;
+      if (i % 2) D.push([CY, '#8a5a30', M4(x, .04, z, .3, .05, .3, ry)], [CY, '#a8a8b0', M4(x, .07, z, .1, .03, .1, ry)]); else D.push([B, '#7a5a3a', M4(x, .04, z, 1.3, .05, .05, ry)], [B, '#b8b8c0', M4(x + Math.cos(ry) * .7, .05, z - Math.sin(ry) * .7, .2, .04, .1, ry)]); }
+    if (D.length) { const m = new THREE.Mesh(mergeGeo(D), VCM); m.receiveShadow = true; scene.add(m); } }
+}
 async function loadScenery(ld) {
   const SRC = codeProps(), names = [...MAP.trees, 'Bush', 'Bush_Flowers', 'Grass_Large', 'Grass_Small']; if (MAP.flowers) names.push('Flower_1_Clump', 'Flower_3_Clump', 'Flower_4_Clump', 'Flower_5_Clump');
   const grab = (n, file, nat) => ld.loadAsync(file).then(g => { g.scene.updateMatrixWorld(true); const parts = [], b = new THREE.Box3().setFromObject(g.scene), dn = new THREE.Matrix4().makeTranslation(-(b.min.x + b.max.x) / 2 * (nat ? 0 : 1), -b.min.y, -(b.min.z + b.max.z) / 2 * (nat ? 0 : 1));
@@ -220,6 +293,7 @@ async function loadScenery(ld) {
   const K = 'art/tribe3d/kenney/', M = 'art/tribe3d/models/', RT = 'art/tribe3d/rts/', extra = { tent: K + 'tent.glb', fence: K + 'fence.glb', sign: K + 'signpost.glb', log: K + 'tree-log.glb', bedroll: K + 'bedroll.glb', campfire: M + 'campfire.glb', totem: M + 'totem.glb', woodpile: M + 'woodpile.glb', stonepile: M + 'stonepile.glb', bonehut: M + 'hut_bone.glb', stake: M + 'palisade_log.glb',
     temple: RT + 'Temple_FirstAge_Level1.glb', temple2: RT + 'Temple_FirstAge_Level2.glb', tower: RT + 'WatchTower_FirstAge_Level1.glb', wonder: RT + 'Wonder_FirstAge_Level1.glb', store: RT + 'Storage_FirstAge_Level1.glb' };
   await Promise.all([...names.map(n => grab(n, `art/tribe3d/nature/${n}.glb`, true)), ...[0, 1, 2].map(i => grab('rock' + i, `art/tribe3d/models/rock_${i}.glb`, false)), ...Object.entries(extra).map(([n, f]) => grab(n, f, false))]);
+  if (MAPK === 'arena') { colosseum(SRC); return; }
   const R = rng(MAPK.length * 13 + 3), q = new THREE.Quaternion(), per = {}, taken = [];
   /* put(model, x, z, height, solid, shadow, turn, chunk): solid = true (a radius from the model) or a radius; turn = facing angle (random when undefined) */
   const put = (nm, x, z, h, solid, shadow, turn, chunk = CHUNK) => { const S0 = SRC[nm]; if (!S0) return; const sc = h / S0.h; q.setFromAxisAngle(UP, turn === undefined ? R() * TAU : turn); const key = nm + '|' + (shadow ? 1 : 0) + '|' + chunk + '|' + Math.floor((x + WORLD / 2) / chunk) + '|' + Math.floor((z + WORLD / 2) / chunk);
@@ -396,7 +470,7 @@ function spark(x, y, z, o = {}) { const { n = 6, color = 0xffe08a, spd = 3, up =
   for (let i = 0; i < n && PARTS.length < 520; i++) { const a = Math.random() * TAU, sp = spd * rnd(.3, 1); PARTS.push({ x, y, z, vx: Math.cos(a) * sp, vy: up * rnd(.3, 1.3), vz: Math.sin(a) * sp, t: 0, life: life * rnd(.7, 1.25), s: size * rnd(.7, 1.3), c: color, g: grav }); } }
 function updParts(dt) { for (let i = PARTS.length - 1; i >= 0; i--) { const p = PARTS[i]; p.t += dt; if (p.t >= p.life) { PARTS[i] = PARTS[PARTS.length - 1]; PARTS.pop(); continue; } p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; const d = Math.max(0, 1 - 3 * dt); p.vx *= d; p.vz *= d; if (p.y < .03) { p.y = .03; p.vy = 0; } } }
 const AIR = []; for (let i = 0; i < (TOUCH ? 36 : 60); i++) AIR.push({ x: rnd(-14, 14), y: rnd(.3, 3.5), z: rnd(-10, 10), ph: rnd(0, 9), s: rnd(.6, 1.3) });
-const CAM = { shake: 0, look: new V3(), dist: 15.5, zoom: clamp(+(() => { try { return localStorage.getItem('horde_zoom'); } catch (_) { return 0; } })() || 1, .7, 1.4), dir: new V3(0, .8, .6).normalize(), over: null }, shake = a => { CAM.shake = Math.max(CAM.shake, a); };
+const CAM = { shake: 0, look: new V3(), dist: 15.5, arenaDir: new V3(0, .64, .77).normalize(), zoom: clamp(+(() => { try { return localStorage.getItem('horde_zoom'); } catch (_) { return 0; } })() || 1, .7, 1.4), dir: new V3(0, .8, .6).normalize(), over: null }, shake = a => { CAM.shake = Math.max(CAM.shake, a); };
 
 /* ---------- sound (Kenney CC0 clips already in the repo + a few synthesized ones), music (OpenGameArt CC0) */
 const AU = { ctx: null, buf: {} }, SND = { on: Q.get('snd') !== '0' };
@@ -471,7 +545,7 @@ function spawnMon(k, x, z, o = {}) {
     slowT: 0, slowK: 1, frzT: 0, burnT: 0, atkT: rnd(0, .5), dead: false, deadT: 0, xp: Math.round(S.xp * (o.xp || 1) * (1 + G.t / 420)), y: K.fly ? .55 : 0, tint: o.tint || null, elite: !!o.elite, boss: !!o.boss, bi: o.bi, skT: 3, seed: Math.random() * 9 };
   MON.push(m); return m;
 }
-function ringPos(d, a = Math.random() * TAU) { let x = HERO.pos.x + Math.cos(a) * d, z = HERO.pos.z + Math.sin(a) * d; const L = Math.hypot(x, z), mx = ARENA + 2.5; if (L > mx) { x *= mx / L; z *= mx / L; } return [x, z]; }
+function ringPos(d, a = Math.random() * TAU) { let x = HERO.pos.x + Math.cos(a) * d, z = HERO.pos.z + Math.sin(a) * d; const L = Math.hypot(x, z), mx = MAPK === 'arena' ? ARENA - .8 : ARENA + 2.5; if (L > mx) { x *= mx / L; z *= mx / L; } return [x, z]; }
 const NUMS = []; function num(x, y, z, text, color, big) { if (NUMS.length > 46) { if (!big) return; NUMS.shift(); } NUMS.push({ x: x + rnd(-.2, .2), y, z, text: typeof text === 'number' ? fmtN(text) : String(text), color, t: 0, big, dx: rnd(-.25, .25) }); }
 function hitMon(m, dmg, o = {}) {
   if (m.dead) return 0; let d = dmg * P.pow * (G.rage > 0 ? 1.5 : 1) * (m.boss && o.w === 'ult' ? .5 : 1), crit = !!o.crit; if (!crit && Math.random() < P.crit) { d *= P.critX; crit = true; } d = Math.max(1, Math.round(d * rnd(.9, 1.1)));
@@ -1404,7 +1478,7 @@ addEventListener('resize', resize);
 function updCam(dt) {
   { const f = TITLEST[G.state] || (G.state === 'load' && !G.t) ? 80 : CAM.far || 60; if (camera.far !== f) { camera.far = f; camera.updateProjectionMatrix(); } }
   if (TITLEST[G.state] || (G.state === 'load' && !G.t)) { CAM.look.set(0, 0, 0); const wide = SW / SH; camera.position.set(wide > 1.5 ? -.1 : 0, 1.3, wide > 1.5 ? 5.0 : 7.5); camera.lookAt(0, .78, 0); }
-  else { const H = HERO.pos; let tx = H.x, tz = H.z; if (CAM.focus) { const F = CAM.focus; F.t += dt; const w = Math.sin(Math.min(1, F.t / F.dur) * Math.PI) * .5; tx += clamp(F.m.x - H.x, -9, 9) * w; tz += clamp(F.m.z - H.z, -6, 6) * w; if (F.t >= F.dur || F.m.dead) CAM.focus = null; }
+  else { const H = HERO.pos; let tx = H.x, tz = H.z; if (MAPK === 'arena') { tx *= .4; tz = tz * .4 - 2.0; }   /* the arena: a broadcast camera, it follows the champion only partly (a little toward the far stands) so the colosseum stays on screen */ if (CAM.focus) { const F = CAM.focus; F.t += dt; const w = Math.sin(Math.min(1, F.t / F.dur) * Math.PI) * .5; tx += clamp(F.m.x - H.x, -9, 9) * w; tz += clamp(F.m.z - H.z, -6, 6) * w; if (F.t >= F.dur || F.m.dead) CAM.focus = null; }
     CAM.look.x = lerp(CAM.look.x, tx, 1 - Math.exp(-dt * 9)); CAM.look.z = lerp(CAM.look.z, tz, 1 - Math.exp(-dt * 9)); camera.position.copy(CAM.look).addScaledVector(CAM.dir, CAM.dist); camera.lookAt(CAM.look);
     if (CAM.shake > 0) { camera.position.x += (Math.random() - .5) * CAM.shake; camera.position.y += (Math.random() - .5) * CAM.shake; CAM.shake = Math.max(0, CAM.shake - dt * 1.2); } }
   camera.updateMatrixWorld(); CAMR.set(1, 0, 0).applyQuaternion(camera.quaternion); CAMU.set(0, 1, 0).applyQuaternion(camera.quaternion);
