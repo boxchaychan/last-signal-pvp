@@ -89,6 +89,10 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
   - 44 PixelLab icons (`art/incoming/bag3d/gen.py`, 1 credit each);
   - shooting weapons point at the enemy (a code-drawn crossbow pop).
 - 2026-11-27 night: MOBA-style BUILD TREE built (button "ประกอบ": 7 parts → 6 mid → 8 ultimate items, pay only for missing pieces, one ultimate of each, enemies use them late; placeholder icons). Check `node tools/qa/bag3d_tree.js`, balance `bag3d_sim.js` (tree mode). Open picks for the owner: newest lines at the end of `docs/action-game.md`.
+- 2026-11-27 late: ROUND FORMAT + ITEM SKILL EFFECTS built (owner "มอนเก่งขึ้นเรื่อย ... สลับเจอผู้เล่นทุก 2 รอบ ... ไอเท็มก็ออกคล้ายสกิล"):
+  - rounds = 2 monster rounds, then a duel with a rival PLAYER (`PVP_EVERY=3`), boss every 5th; rivals = our 5 other Tripo champions with bot-filled real bags and own skills (no server yet); a duel win = trophy + 3 gold;
+  - every firing item casts its own effect: `bag3d/cast.js` (`CAST` / `CASTSELF`; raise `?v=N` in the script tag on every change);
+  - checks `node tools/qa/bag3d_rounds.js`, `bag3d_cast.js` (+ `bag3d_cast_sheet.py`).
 - Notes: the BAG 3D section and the newest lines at the end of `docs/action-game.md`. Card game concept (not built): the CARD GAME CONCEPT section.
 
 ## NEWEST (owner 2026-11-21): zombie city `zcity.html` "เมืองสุดท้าย"
