@@ -24,6 +24,12 @@ const Bones2DFX = (() => {
         for (let i = 0; i < 26; i++) { const a = rnd(0, TAU), v = rnd(150, 520) * sc; spark(c[0], c[1], Math.cos(a) * v + dir * 200 * sc, Math.sin(a) * v, rnd(.2, .45), rnd(2, 5) * sc); }
         F.flash = .12; F.ring = { x: c[0], y: c[1], t: 0, r: 70 * sc };
       }
+      if (P.fired.includes('hit') && wk && !cl) {   /* a stab lands: a burst + a streak at the weapon's point (the top of its picture) */
+        const im = rig.img[wk], q = rig.parts[wk], tip = P.at(wk, im.width / 2 - q.pv[0], 4 - q.pv[1]), base = P.at(wk, im.width / 2 - q.pv[0], im.height * .6 - q.pv[1]);
+        if (tip) { const dx = tip[0] - base[0], dy = tip[1] - base[1], dl = Math.hypot(dx, dy) || 1; F.streak = { x: tip[0], y: tip[1], ux: dx / dl, uy: dy / dl, t: 0, L: 120 * sc };
+          for (let i = 0; i < 30; i++) { const a = Math.atan2(dy, dx) + rnd(-.9, .9), v = rnd(200, 700) * sc; spark(tip[0], tip[1], Math.cos(a) * v, Math.sin(a) * v, rnd(.2, .5), rnd(2, 5) * sc); }
+          F.ring2 = { x: tip[0], y: tip[1], t: 0, r: 80 * sc }; F.flash = Math.max(F.flash, .05); } }
+      if (F.streak) F.streak.t += dt;
       for (const s of F.shots) { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.ang += (s.ta - s.ang) * Math.min(1, dt * 18); s.trail.push([s.x, s.y]); if (s.trail.length > 9) s.trail.shift();
         if (Math.random() < .9) spark(s.x - dir * rnd(0, 30) * sc, s.y + rnd(-14, 14) * sc, -s.vx * .12, rnd(-90, 90) * sc, .25, rnd(1.5, 3.5) * sc);
         if (s.t >= s.life && !s.hit) { s.hit = 1; F.ring2 = { x: s.x, y: s.y, t: 0, r: 110 * sc }; F.flash = Math.max(F.flash, .08); for (let i = 0; i < 40; i++) { const a = rnd(0, TAU), v = rnd(200, 700) * sc; spark(s.x, s.y, Math.cos(a) * v, Math.sin(a) * v - 120 * sc, rnd(.25, .6), rnd(2, 6) * sc); } if (F.on) F.on('impact', s); } }
@@ -41,6 +47,8 @@ const Bones2DFX = (() => {
         glow(s.x, s.y, s.h * .55, .7); ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.translate(s.x, s.y); ctx.rotate(s.ang); ctx.drawImage(s.im, -s.w / 2, -s.h / 2, s.w, s.h); ctx.restore(); }
       for (const p of F.parts) { const k = 1 - p.t / p.life; ctx.fillStyle = `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${k})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (.5 + k * .5), 0, TAU); ctx.fill(); ctx.fillStyle = `rgba(255,255,255,${k * .8})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * .4, 0, TAU); ctx.fill(); }
       for (const ri of [F.ring, F.ring2]) { if (!ri || ri.t > .35) continue; const k = ri.t / .35; ctx.strokeStyle = `rgba(${r},${g},${b},${(1 - k) * .9})`; ctx.lineWidth = 10 * (1 - k) + 2; ctx.beginPath(); ctx.arc(ri.x, ri.y, ri.r * (.3 + k), 0, TAU); ctx.stroke(); glow(ri.x, ri.y, ri.r * .6 * (1 - k * .5), .6 * (1 - k)); }
+      if (F.streak && F.streak.t < .22) { const s = F.streak, k = s.t / .22, L = s.L * (.4 + k), x0 = s.x - s.ux * L * .6, y0 = s.y - s.uy * L * .6, x1 = s.x + s.ux * L * .5, y1 = s.y + s.uy * L * .5, gr = ctx.createLinearGradient(x0, y0, x1, y1);
+        gr.addColorStop(0, `rgba(${r},${g},${b},0)`); gr.addColorStop(.7, `rgba(${cr},${cg},${cb},${(1 - k) * .95})`); gr.addColorStop(1, `rgba(255,255,255,0)`); ctx.strokeStyle = gr; ctx.lineWidth = 16 * (1 - k) + 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
       if (F.flash > 0 && F.W) { ctx.fillStyle = `rgba(255,255,255,${F.flash * 1.6})`; ctx.fillRect(0, 0, F.W, F.H); }
       ctx.restore();
     };

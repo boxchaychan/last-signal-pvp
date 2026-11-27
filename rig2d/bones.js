@@ -75,6 +75,14 @@ const Bones2D = (() => {
   };
   /* a raised arm must not vanish behind a big chibi head: while these moves last the weapon arm (and, on front-view heroes, the far arm) is drawn in front, like the raised gun of the recording */
   for (const [mv, roles] of [['attack', ['armF']], ['shoot', ['armF']], ['cast', ['armF', 'armB']], ['cheer', ['armF', 'armB']]]) for (const ro of roles) { const tr = MOVES[mv].tracks[ro]; if (tr) tr.forEach((key, i) => { if (i < tr.length - 1) key[1].z = 1; }); }
+  MOVES.thrust = { n: 'แทง', dur: .62, ev: [[.42, 'hit']], tracks: {   /* a spear / trident stab: pull back with the point level, lunge, stab out at full reach (event 'hit'), hold a beat, recover */
+      _root: [K(.3, { x: -3 }, 'io'), K(.42, { x: 6 }, 'snap'), K(.6, { x: 6.5 }), K(1, {}, 'io')],
+      body: [K(.3, { r: -10, sy: 1.06, sx: .96 }, 'io'), K(.42, { r: 14, sy: .92, sx: 1.07 }, 'snap'), K(.6, { r: 12, sy: .95 }), K(1, {}, 'io')],
+      head: [K(.3, { s: 1.1, r: -6 }, 'io'), K(.42, { s: 1.34, r: 8 }, 'snap'), K(.6, { s: 1.12, r: 6 }), K(1, {}, 'io')],
+      armF: [K(.3, { r: -30 }, 'io'), K(.42, { r: -86 }, 'snap'), K(.6, { r: -82 }), K(1, {}, 'io')], foreF: [K(.3, { r: 70 }, 'io'), K(.42, { r: -4 }, 'snap'), K(.6, { r: 0 }), K(1, {}, 'io')],
+      weapon: [K(.3, { r: 60, s: 1.08 }, 'io'), K(.42, { r: 172, s: 1.22 }, 'snap'), K(.6, { r: 168, s: 1.12 }), K(1, {}, 'io')],   /* the arm's own turn carries the weapon: these angles leave the point level and forward */
+      armB: [K(.3, { r: 20 }, 'io'), K(.42, { r: 34 }, 'snap'), K(1, {}, 'io')], legF: [K(.42, { r: -16 }, 'snap'), K(.7, { r: -14 }), K(1, {}, 'io')], legB: [K(.42, { r: 14 }, 'snap'), K(.7, { r: 12 }), K(1, {}, 'io')],
+      cape: [K(.3, { r: 6 }), K(.42, { r: -10 }, 'snap'), K(1, {}, 'io')], wing: [K(.3, { r: -20 }), K(.42, { r: 25 }, 'snap'), K(1, {}, 'io')] } };
   MOVES.throw = { n: 'ปาสายฟ้า (กระดูก)', dur: 1.1, ev: [[.5, 'release']], tracks: {   /* ปาสายฟ้า, after the owner's 16-frame row: bring the bolt up, cock it high overhead and lean away
      (charge), whip it forward with the whole body, the bolt leaves the hand (event 'release'), follow through low, settle. Hero faces right = throws to the right. */
       _root: [K(.12, {}), K(.3, { x: -2.5 }, 'io'), K(.46, { x: -3.5 }, 'lin'), K(.52, { x: 4.5 }, 'snap'), K(.66, { x: 5.5 }), K(.86, { x: 1 }, 'io'), K(1, {}, 'io')],
@@ -193,7 +201,7 @@ const Bones2D = (() => {
   /* how well the rest pose matches the reference: mean colour error (0-255) of every visible piece pixel, and per piece */
   function restScore(rig) {
     const R = rig.img._ref; if (!R) return null; prep(rig); const [W, H] = rig.size, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(R, 0, 0, W, H); const ref = g.getImageData(0, 0, W, H).data;
-    const P = player(rig, { base: null }); P.mats = world(rig, {}, null); g.clearRect(0, 0, W, H); P.draw(g, rig.feet[0], rig.feet[1], 1, false); g.setTransform(1, 0, 0, 1, 0, 0); const d = g.getImageData(0, 0, W, H).data; let e = 0, n = 0;
+    const P = player(rig, { base: null }); P.mats = world(rig, {}, null); P.pose = {}; for (const k in rig.parts) if (rig.parts[k].role === 'weapon' || rig.parts[k].role === 'weaponB') P.pose[k] = { a: 0 }; g.clearRect(0, 0, W, H); P.draw(g, rig.feet[0], rig.feet[1], 1, false);   /* a weapon not in the reference does not count */ g.setTransform(1, 0, 0, 1, 0, 0); const d = g.getImageData(0, 0, W, H).data; let e = 0, n = 0;
     for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 240) { n++; e += (Math.abs(d[i] - ref[i]) + Math.abs(d[i + 1] - ref[i + 1]) + Math.abs(d[i + 2] - ref[i + 2])) / 3; } return n ? e / n : 0;
   }
 
