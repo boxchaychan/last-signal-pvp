@@ -3347,3 +3347,12 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - Balance (`node tools/qa/bag3d_sim.js 80`): smart bot avg round 9.9 (was 10.0), random bot 11.8 (was 11.7). Not changed by the new pool; the bots do not craft.
   - Preview `art/bag3d/items_v2_preview.png`.
 - 2026-11-26 bag3d PIXELLAB ICONS (owner "ไม่พอก็เจนเพิ่ม"): all 44 new icons (12 crafted, 24 new shop items, 8 crafted 2) are now PixelLab pixen 64x64 in the same recipe as the 40 originals, 45 credits (job log at the top). This session moved to the "boxchaychan games" environment (PixelLab host + key) because the default one blocks api.pixellab.ai. `tools/art/bag_craft_icons.py` priority: owner ChatGPT sheet > PixelLab raw > code-made. The ChatGPT prompts in `art/incoming/bag3d/` are now optional. Preview `art/bag3d/icons_pl_preview.png`.
+- 2026-11-27 bag3d SHOOTING FACES THE ENEMY (owner "หน้าเวลายิงหันให้ถูกด้าน"):
+  - Measured the hero's bow clips in her root space. The bow hand points 0..0.3 rad off her forward the whole time, so her body already aims at the enemy (side-on archer stance). The body is left as it was; `?aimy=<rad>` = an optional extra turn while shooting, default 0.
+  - The real fault was the 2D weapon pops and shots. The old crossbow icon (`bow`) points LEFT, so it popped above her pointing away from the enemy. Every non-`bow` shooter (the frost crossbow, the javelins) flew as a spinning picture.
+  - Now:
+    - `POPAIM` (flip, turn) makes each shooting weapon pop up pointing at its target; the enemy's side is mirrored;
+    - `ARROW` = every crossbow fires an arrow (ice-blue for the frost crossbow);
+    - `STRAIGHT` = javelins / the ice lance fly point first;
+    - the rest still spin.
+  - Checks: `node tools/qa/bag3d_pops.js` (freezes a fight and holds each weapon's pop / shot for both sides), `bag3d_aim.js` (the hero's pose + hand directions during a bow fight). No errors. Picture `art/bag3d/shoot_facing.png`.
