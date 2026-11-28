@@ -3704,3 +3704,87 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - tapping "เริ่มศึก" also asks for full screen and turns the phone sideways (Android / PC Chrome; `goFull()`).
 - iPhone Safari has no full screen for web pages: the button explains "แชร์ → เพิ่มไปยังหน้าจอโฮม". The page now has `bag3d.webmanifest` (fullscreen, landscape) + Apple web-app tags + an icon (`art/bag3d/app192.png` / `app512.png`, the knight), so from the home-screen icon it opens without browser bars.
 - Check `node tools/qa/bag3d_fit.js [out]` = FIT OK. It tests 844x390, 844x340, 800x330, 740x300, 667x320 and 640x280: the start button is on screen and tappable, every shop button is inside after start, the full-screen button and start tap work, and the manifest and icon load.
+
+## BAG 3D: BIG ITEM DESIGN, talked through with the owner 2026-11-28 (to be BUILT while the owner sleeps; pictures later in ONE generation pass)
+- Owner: "เอาคุณสมบัติไอเทมแบบ Dota มาเลย ... คนละรูป" → item MECHANICS may follow Dota / HoN (game rules are not protected); our own names, pictures, text and numbers; no character, item name, icon or description copied. "เดี๋ยวค่อยเจนทีเดียว รูป เอาอาวุธก่อน": until the picture pass, new items use recoloured copies of our icons (`tools/art/bag_craft_icons.py`, free). "คิดอาวุธก่อน พวกนี้ทำตอนฉันนอนได้": design first, build at night.
+- Rules agreed:
+  - shooting items work ONLY for ranged heroes (ranger, mage; rivals archer / hood) and only on ranged shots; melee items only for melee heroes;
+  - physical ranged items lean AGI, magic items lean INT; spell items can be used by everyone but their damage counts INT (a mage hits much harder);
+  - a chance effect of the same kind does not stack (two lightning bows = still 10 %); extra-arrow counts stack with a cap (+4);
+  - crit must FEEL big (owner "คริอยากให้ออกเวิร์ค ... ไอเทมนับฮิตจะไม่เด่น"): chance crits with a big number, flash, shake; no "every Nth hit" crit items except the charge bow below;
+  - lifesteal: only a few items, small numbers ("อย่าให้เยอะเกิน").
+- SHOOTING (ranged only, 8):
+  1. spread bow: 3 arrows a shot (extras at 40 %);
+  2. lightning bow: 10 % an arrow becomes lightning that chains to 5;
+  3. double-shot bow: 20 % two shots;
+  4. piercing arrows: an arrow goes through several in a row (duel: ignores 50 % armour / shield);
+  5. quiver: bows placed next to it shoot +1 arrow;
+  6. rapid bow: shooting the SAME target speeds up +10 % a shot, 5 stacks (+50 %), resets on a new target;
+  7. charge bow: every 6th shot is a sure crit;
+  8. shock bow: 25 % a short mini-stun (a jolt) ("ธนูยิงมินิสตัน ... แบบกระตุก").
+  - cut by the owner: bounce, explosive arrows; "fatal shot" moved to crit; homing moved to accuracy; fire / ice / poison tips moved to status.
+- MELEE (melee only, 7):
+  1. spin sword: 15 % to spin and hit all round (owner: a sweep on every hit would be too strong);
+  2. double-strike sword: 20 % two hits;
+  3. bash hammer: 15 % stun 1 s;
+  4. ramp sword: the same target +8 % damage a hit, 5 stacks;
+  5. wave sword: every 4th hit sends a long sword wave forward;
+  6. dash blade: leaps to a far enemy;
+  7. counter: 25 % to strike back when hit (melee only).
+  - the "fighter's glove" became a general attack-speed item.
+- MAGIC (everyone can use, damage from INT, 22 = "เอาหมด"):
+  - multicast tome 20 % casts again; exploding staff (small area); beam staff (pierces the line); soul orb (15 % of magic damage back as life);
+  - spirit staff (every 3rd cast a spirit flies in); magic-pierce stone (ignores 30 % magic resist); haste tome (hero skill 20 % sooner);
+  - owner's own: storm push (a storm round the hero knocks monsters back); guard stones (stones circle the hero and take hits, stone life from INT);
+  - owner's own: blink cloak (blinks away when about to be hit, 8 s cooldown); lightning ball (a ball that hits many times and pushes back; own name, NOT the RO skill name);
+  - summons: skeleton staff (2 skeletons for 10 s), fire sprite (circles and shoots), magic totem (planted, shoots);
+  - disrupt: time stop (1.5 s round the hero), hex (turns the strongest into a frog 3 s), vines (2 s cannot move), silence (duel: rival skill blocked);
+  - curses: weakness (-25 % damage dealt), brittle (+20 % damage taken), death mark (below 15 % life dies), spreading curse (spreads on death);
+  - the meteor item exists already (no copy).
+- STATUS / ELEMENTS (owner's idea, to design in full): element gems placed next to a weapon; a weapon with TWO elements ALTERNATES (hit 1 fire, hit 2 ice ...); same element stacks on the enemy; two elements meeting make a REACTION with its own name and a heavy effect (owner examples: fire + ice = wet, wet + lightning = a heavy shock, fire + lightning = overload). Claude's proposal: see the next lines once the owner answers.
+- Elements, Claude's proposal shown to the owner:
+  - 4 elements: fire, ice, lightning, poison; 5 stacks of one = its big effect (blaze, frozen 1.5 s, lightning strike, corrode);
+  - reactions: fire + ice = WET; wet + lightning = a heavy SHOCK (x2, chains to other wet ones, stun); fire + lightning = OVERLOAD (blast, knock-back); ice + lightning = SHATTER (big hit, armour broken); fire + poison = gas blast; ice + poison = frozen poison (long slow, poison stays); lightning + poison = spreading poison;
+  - items: 4 element stones + an elements tome (reactions stronger by INT).
+- General items, Claude's proposal:
+  - crit: crit sword 20 % x2.5, crit ring +50 % crit damage, big executioner axe 25 % x3;
+  - accuracy: ONE big item (never miss, a little magic damage; it counters dodge builds);
+  - speed: glove +15 %, wind blade +25 % + AGI, wind boots, sprint boots;
+  - armour: iron armour, magic coat, big armour (slows attackers round you);
+  - blink dagger for melee (every 6 s); lifesteal fang 10 % (only one); hunter skull (+1 damage a kill, to 20 a round);
+  - survival: emergency potion, revive stone, spell shield, anti-stun stone.
+- SHOP STRUCTURE (owner "แบ่งเป็นของที่ซื้อได้กับวัสดุที่ต้องหาในร้านมาผสม"), like Dota:
+  - (1) basic items, bought and used at once; (2) ~10 MATERIALS, cheap, crafting only (wood, feather, iron, hide, blade, fang, magic crystal, magic cloth, soul, herb);
+  - (3) crafted = every special item above, made from basic + materials with the existing "ประกอบ" button (pay only for missing pieces, recipe book); the biggest items = two crafted items;
+  - where materials are kept: asked (a) a separate materials pouch (recommended) or (b) in the bag; no answer yet, so (a) by default;
+  - owner "ของในร้านจะมีของปกติที่ราคาถูกกว่าการซื้อ", read as: buying the pieces and crafting is cheaper than buying a finished item outright; plain items stay cheap.
+- DUELS like the monster rounds (owner "รอบคนสู้กัน ให้ทำแบบมอนเลย"): the player-vs-player rounds move into the 3D arena too: our champion vs the rival champion, both auto, every bag item firing on both sides (no side view).
+- Starting class (owner "อาชีพเริ่มต้น เอาอัศวินดำเข้าเลย ตัวอื่นฉันจะเจนเพิ่มถ้าว่าง"): the BLACK KNIGHT is the first playable champion; the owner will generate the others later. Read as the black horned knight (rival `dark`), to confirm.
+- Auto-fight movement (owner noticed the axe hero "runs away then comes back" while the archer walks and shoots): today every hero dashes out of a crowd at < 50 % life with 4+ monsters close, wanders to coins when nothing is close, and dodges bosses and shots; melee is surrounded more, so it flees more.
+- Decided (owner "สายใกล้ไม่ควรหนีไหม ... เจอยิงไกลมันก็แพ้ 100 %"):
+  - melee never flees; ranged steps back only a little, to stay in range, and walks slower while shooting;
+  - melee walks ~15 % faster; the arena is small; melee keeps more life / armour;
+  - NO built-in gap-closers or point-blank bow penalty (owner "4 6 เอาออก ... ให้แก้ทางโดยการออกของ"): matchups are answered by ITEMS (boots, blink, slows, stuns, accuracy vs dodge, magic coat vs mages);
+  - balance with bot duels melee vs ranged to about 50 / 50.
+- BOOTS line (owner "เพิ่มไอเทมรองเท้าด้วย"), only ONE pair worn:
+  - plain boots (+10 % speed, buy) → wind boots (+20 %, 10 % dodge), sprint boots (a hit gives a 2 s burst), leap boots (every 8 s leap at the enemy), armoured boots (speed + armour), magic boots (speed + INT, skill sooner), retreat boots (ranged: when an enemy is close, back off fast).
+- CLASS SHOPS (owner "ไอเทมเฉพาะ ไกล ใกล้ ให้เปลี่ยนเป็นของคลาสตัวเอง ... สายประชิดไม่ต้องให้มันมีไอเทมของตีไกล"):
+  - weapons and type items belong to classes: melee classes never see ranged weapons / shooting items (they get melee ones instead), ranged classes never see melee weapons;
+  - knight: swords, shields + melee items; barbarian: axes, hammers, heavy weapons + melee items; rogue: daggers, poison, crit + melee items;
+  - ranger: bows + the shooting items; mage: staffs, wands + magic items;
+  - for every class: boots, armour, crit, survival, element stones, lifesteal and the INT-scaled spell items;
+  - rivals follow their own class the same way.
+- TYPE ITEMS, final (owner "มีไอเทมประจำคลาสทั้งหมดประมาณ 7-8 ชิ้น ... กายภาพประชิด ไกลกายภาพ กับเวทย์"): three TYPES, each with its own item set (replaces the per-class lists above).
+  - melee physical (knight, barbarian, rogue): the 7 melee items + all melee weapons;
+  - ranged physical (ranger): the 8 shooting items + all bows / throwing weapons;
+  - magic (mage): 7 = multicast tome, exploding staff, beam staff, soul orb, spirit staff, magic-pierce stone, haste tome + all magic weapons;
+  - everyone: the other 15 spell items (INT-scaled: storm push, guard stones, blink cloak, lightning ball, 3 summons, 4 disrupts, 4 curses), boots, armour, crit, accuracy, survival, element stones, lifesteal.
+- Shop rolls stay as they are (owner "ทำสุ่มแบบเดิมได้แล้วถูกไหม"): 8 slots, re-roll, locks, rarer items by round; the pool is only what the player's type can use + the everyone items + 2-3 material slots a roll + a finished crafted item now and then at a higher price.
+- Every fight in the 3D arena (owner "ระบบต่อสู้เป็นแบบมอน ไม่ใช้ด้านข้าง"): monster rounds, boss rounds AND player duels; the side view goes away.
+- The knight class changes body (owner "เอาอัศวินปีศาจเข้าแทนคลาสอัศวินเลย"): the Tripo DEMON KNIGHT (`art/tribe3d/people/demon_knight.glb`, rival `demon` today) replaces the KayKit knight. Still to confirm: the earlier "อัศวินดำ เป็นอาชีพเริ่มต้น" = this same demon knight, or the black horned knight (`art/grind3d/dark_knight.glb`, rival `dark`)?
+- STATE on 2026-11-28 night: NOTHING of this section is built (owner "อย่าเพิ่งทำนะ"). Wait for "ทำเลย".
+- The owner moves to the PC for it (owner "ย้ายไป PC จะได้เจนรูปจาก GPT, VFX Meta, Gemini ละก็ทำแมพให้สวยได้"):
+  - item pictures from GPT in ONE pass once the item list is final (give the owner the list + prompts in the chat; Codex can be started from the PC chat);
+  - skill / element effects from Meta AI clips, cut with our tools (`vfxcut.html`, sprite-importer skill);
+  - a prettier arena / map with Gemini target pictures first.
+- Build order proposed for when the owner says go: (1) type shops + materials + crafting book; (2) shooting and melee items; (3) elements and reactions; (4) magic and general items, boots; (5) duels in the arena + movement rules (melee never flees, ranged backs off a little) + melee-vs-ranged bot balance; (6) the demon knight as the knight.
