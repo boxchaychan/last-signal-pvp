@@ -94,7 +94,11 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - YouTube clips cannot be fetched from the cloud (bot check): ask the owner to attach a file / screen recording.
 
 ## NEWEST (owner 2026-11-27, latest of all, back to it the same day): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
-- NEWEST of all (owner 2026-11-28 night): a BIG ITEM REDESIGN is agreed but NOT built (owner "อย่าเพิ่งทำนะ": wait for "ทำเลย"):
+- NEWEST of all (owner 2026-11-28, PC chat: "ทำเลย"): the BIG ITEM REDESIGN is BEING BUILT on the branch `claude/item-system-3d-field-c2fb8c` (pushed, NOT on main: the code is half done). Continue ON THAT BRANCH (`git fetch origin claude/item-system-3d-field-c2fb8c`, work on top of it), read its `docs/action-game.md` section "BAG 3D: BIG ITEM REDESIGN, BUILD IN PROGRESS" first:
+  - all the art is generated and in that branch (72 icons by Codex, 51 Meta AI skill effects cut into `art/bag3d/fx`, the arena target picture, title / shop backdrops, UI ornaments);
+  - code done there: `bag3d/items2.js` (61 new items), the type shop, materials pouch, build shop; NOT done: the arena mechanics, duels in the arena, the demon knight body, the look;
+  - owner: make the 3D arena, the effects and the UI beautiful; generating is done on the PC, the code may be done from the cloud; the starting class "อัศวินดำ" = the demon knight (replaces the knight).
+- The design it follows (owner 2026-11-28 night, agreed before the build):
   - three item types (melee / ranged / magic) with 7-8 type items each; Dota-like mechanics with our own names and art;
   - materials + crafting, elements with reactions, a boots line, shops filtered by type;
   - every fight in the 3D arena (duels too, no side view); the demon knight replaces the knight class;
