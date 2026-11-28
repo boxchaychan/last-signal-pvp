@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=16"></script><script src="bag3d/classes.js?v=4"></script><script src="bag3d/itemskills.js?v=1"></script>
+<script src="bag3d/arena.js?v=17"></script><script src="bag3d/classes.js?v=4"></script><script src="bag3d/itemskills.js?v=1"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -1100,7 +1100,7 @@ function updMons(dt) {
 /* ---------- drawing the crowd: fill the instanced buffers once a frame */
 function fillBatches() {
   for (const k in KIND) KIND[k].n = 0; let bn = 0; const B = BLOBS.a.array;
-  for (const m of MON) { const K = m.K; if (!K.mesh || K.n >= K.cap) continue; const i = K.n++ * 4, fl = m.dead && m.lvy !== undefined, sc = m.sc * (m.dead ? (fl ? Math.max(0, Math.min(1, (.75 - m.deadT) / .2)) : Math.max(0, 1 - m.deadT / .16)) : 1), Pp = K.aPos.array, F = K.aFr.array, T = K.aTint.array;
+  for (const m of (BAGM ? bagMonsDraw() : MON)) {   /* the bag fight adds its skeleton warriors (bag3d/arena.js) */ const K = m.K; if (!K.mesh || K.n >= K.cap) continue; const i = K.n++ * 4, fl = m.dead && m.lvy !== undefined, sc = m.sc * (m.dead ? (fl ? Math.max(0, Math.min(1, (.75 - m.deadT) / .2)) : Math.max(0, 1 - m.deadT / .16)) : 1), Pp = K.aPos.array, F = K.aFr.array, T = K.aTint.array;
     Pp[i] = m.x; Pp[i + 1] = m.y; Pp[i + 2] = m.z; Pp[i + 3] = sc; F[i] = Math.floor(m.fr) % K.cols; F[i + 1] = K.rows > 1 ? m.row : 0; F[i + 2] = fl ? (Math.floor(m.deadT * 16) % 2 ? m.flip : -m.flip) : m.flip; F[i + 3] = m.dead ? (fl ? .45 : 1) : m.flash * .85;
     if (m.frzT > 0) { T[i] = .6; T[i + 1] = .9; T[i + 2] = 1.5; } else if (m.windT > 0) { const b = Math.floor(NOW * 18) % 2 ? 1.9 : 1.1; T[i] = b; T[i + 1] = b * .8; T[i + 2] = b * .8; } else if (m.tint) { T[i] = m.tint[0]; T[i + 1] = m.tint[1]; T[i + 2] = m.tint[2]; } else if (m.burnT > 0) { T[i] = 1.3; T[i + 1] = .82; T[i + 2] = .62; } else if (m.slowT > 0) { T[i] = .78; T[i + 1] = .92; T[i + 2] = 1.2; } else { T[i] = T[i + 1] = T[i + 2] = 1; }
     if (bn < BLOBN && !m.dead) { const j = bn++ * 4, s = m.r * 2.5 * (m.K.fly ? .7 : 1); B[j] = m.x; B[j + 1] = m.z; B[j + 2] = s; B[j + 3] = s * .62; } }

@@ -205,7 +205,7 @@ Object.assign(BAGFIRE, {
     for (let k = 0; k < 10; k++) after(k * .45, () => { if (HERO.dead) return; const Q = HERO.pos; inCircle(Q.x, Q.z, 1.9, q => bagHit(W, q, .5, { kb: 2, fx: Q.x, fz: Q.z })); for (let i = 0; i < 3; i++) { const b = k * .9 + i * 2.09; spark(Q.x + Math.cos(b) * 1.5, .7, Q.z + Math.sin(b) * 1.5, { n: 2, color: 0xd8c8a8, spd: .6, size: .3, life: .4 }); } }); return true; },
   ball(W) { const m = bagNear(10); if (!m) return false; const p = { x: HERO.pos.x, z: HERO.pos.z }; let a = dirTo(m); mfx('ball', p.x, p.z, 2.2, { pri: 1, dur: 4, follow: p, y: .8 });
     for (let k = 1; k <= 13; k++) after(k * .3, () => { const t = nearest(p.x, p.z, 6); if (t) a = Math.atan2(t.x - p.x, t.z - p.z); [p.x, p.z] = bagKeep(p.x + Math.sin(a) * .8, p.z + Math.cos(a) * .8); inCircle(p.x, p.z, 1.5, q => bagHit(W, q, .7, { kb: 1.8, fx: p.x, fz: p.z })); if (k % 3 === 0) sfx('zap', .3, 1.3); }); return a; },
-  skel(W) { if (!bagNear(11)) return false; const P0 = HERO.pos; mfx('summon', P0.x, P0.z, 3.2, { pri: 1 }); for (let i = 0; i < 4; i++) after(.3 + i * .15, () => shootP('spirit', Math.random() * TAU, { bag: W, mul: 1.1, spd: 6.5, life: 6, r: .5, y: .9, c: 0xe8e0d0, boomR: 1.2 })); return true; },
+  skel(W) { if (!bagNear(11)) return false; const P0 = HERO.pos; mfx('summon', P0.x, P0.z, 3.2, { pri: 1 }); loadKind(BAG_SKEL); for (let i = 0; i < 2; i++) after(.35 + i * .25, () => { if (!HERO.dead) bagAlly(W, HERO.pos.x + (i ? 1 : -1) * .9, HERO.pos.z + .5); }); sfx('chime', .6, .7); return true; },   /* two real skeleton warriors (bagAlly) */
   sprite(W) { if (!bagNear(11)) return false; const H = HERO; mfx('summon', H.pos.x, H.pos.z, 2.6, { pri: 1 }); mfx('st_burn', H.pos.x, H.pos.z, 1.1, { dur: 8, follow: H.pos, y: 2.2 });
     for (let k = 1; k <= 10; k++) after(k * .8, () => { if (HERO.dead) return; const m = bagNear(9); if (m) shootP('fire', dirTo(m), { bag: W, mul: 1, spd: 10, life: Math.max(.15, Math.hypot(m.x - HERO.pos.x, m.z - HERO.pos.z) / 10), r: 1.2, c: 0xff8a3a }); }); return true; },
   totem(W) { if (!bagNear(9)) return false; const x = HERO.pos.x, z = HERO.pos.z; mfx('summon', x, z, 2.6, { pri: 1 }); mfx('st_shock', x, z, 1.4, { dur: 8, y: 1.2 });
@@ -229,6 +229,7 @@ function bagHurt(d, src, o) {   /* before armour: magic resist for shots, dodge,
   else { if (BAG.t > BAG.dur) d *= 1 + (BAG.t - BAG.dur) * .05; if (!src) d *= 1 - (S.mres || 0); else if (S.dodge && Math.random() < S.dodge) { num(P0.x, 1.8, P0.z, 'หลบ', '#cfe8ff'); H.inv = .25; return 0; } }
   if (src && src.weakT > BAG.t) d *= .75;   /* weakness curse */
   const X = S.gx || {}, t = BAG.t;   /* whole-bag item effects (bag3d/items2.js gx) */
+  if (X.sprint && src && d > 0) { if (!(BAG.spT > t)) { mfx('dash', P0.x, P0.z, 2); num(P0.x, 2.1, P0.z, 'เร่งฝีเท้า!', '#bfffd0'); } BAG.spT = t + 2; }   /* sprint boots: any hit that was not dodged, even one the shield takes */
   if (X.blink && src && d >= H.max * .08 && !(BAG.blT > t)) { BAG.blT = t + X.blink; mfx('blink', P0.x, P0.z, 2.2, { pri: 1 }); const a = Math.atan2(P0.z - src.z, P0.x - src.x); let x = P0.x + Math.cos(a) * 3.2, z = P0.z + Math.sin(a) * 3.2; const L = Math.hypot(x, z), mx = ARENA - .8; if (L > mx) { x *= mx / L; z *= mx / L; } P0.x = x; P0.z = z; mfx('blink', x, z, 2.2, { pri: 1 }); H.inv = .4; sfx('whoosh', .6, 1.6); return 0; }   /* blink cloak: out of a heavy hit */
   if (X.sshield && d >= H.max * .05 && !(BAG.ssT > t)) { BAG.ssT = t + X.sshield; mfx('guard', P0.x, P0.z, 2.4, { pri: 1 }); num(P0.x, 1.8, P0.z, 'กันเวท', '#bfe4ff'); H.inv = .3; return 0; }   /* spell shield: one big hit every few seconds */
   if (X.counter && src && !src.dead && !q.ref && Math.random() < X.counter) { const W = BAG.its.filter(q => q.dmg > 0 && !q.self && !q.once).sort((p, q) => q.dmg - p.dmg)[0]; if (W) { bagHit(W, src, .8, { kb: 2, ref: 1 }); mfx('parry', src.x, src.z, 1.6); } }   /* counter strike */
@@ -288,6 +289,7 @@ function bagUpd(dt) {   /* instead of the weapons / director / shrines / ultimat
 }
 function bagSideUpd(dt) {   /* ONE champion's bag: stamina, the items, boots, the class skill, the poison on what it hit. A duel runs it for both sides (bagWith); a stunned / frog champion does nothing, a slowed one is slower */
   const S = BAG.st, H = HERO, me = BAG.duel && CUR ? CUR.me : null, stun = !!me && (me.frzT > 0 || me.hexT > BAG.t); if (H.atkT <= 0) H.apr = 0;
+  if (BAG.mv0) P.spd = BAG.mv0 * (BAG.spT > BAG.t ? 1.6 : 1);   /* sprint boots: +60 % for 2 s after a hit */ if (!stun && !H.dead) bagRetreat(S.gx || {}); bagAllies(dt);
   BAG.sta = Math.min(S.stam, BAG.sta + S.sreg * dt); const hs = (1 + (S.haste || 0)) * (me && me.slowT > 0 ? .5 + .5 * me.slowK : 1);
   if (!stun) {
   for (const W of BAG.its) { if (W.fl > 0) W.fl -= dt;
@@ -311,6 +313,26 @@ function bagAuto(dt) {   /* the champion holds the ground and lets the bag fight
   if (TY !== 'mel' && HERO.dashCd <= 0 && HERO.hp < HERO.max * .5 && close >= 4) {   /* melee never runs away */ const c = Math.hypot(cx, cz) || 1; INP.x = cx / c; INP.z = cz / c; heroDash(); }
 }
 function bagInp(dt) { JOY.on = false; if (!HERO.dead && G.endT <= 0 && BAG.t > .7) bagAuto(dt); else INP.x = INP.z = 0; }   /* owner 2026-11-27 "ไม่ต้องบังคับดิ ให้มันออโต้ โดยเราจัดกระเป๋าแบบเดิม": the player never steers, the fight is fully automatic */
+/* RETREAT BOOTS (gx.retreat = seconds between two, ranged / mages only): an enemy within 1.9 = a quick roll away (along the wall when the wall is
+   behind), the roll's short dodge included. SKELETON WARRIORS (the skeleton staff, mv 'skel'): two real allies (BAG.allies, a bone-guard card in a
+   ghostly green; a duel rival's in red) that walk to the nearest enemy and strike it every .8 s (.4 of the staff's hit, with its elements) for 10 s.
+   Monsters do not attack them (they are not in MON); horde.html fillBatches draws them through bagMonsDraw. */
+const BAG_SKEL = 'mob_graveyard_bone_guard';
+function bagRetreat(X) { const H = HERO; if (!X.retreat || BAG.ty === 'mel' || BAG.rtT > BAG.t || H.dashCd > 0 || H.dashT > 0 || G.state !== 'play' || BAG.t < 1) return; const m = nearest(H.pos.x, H.pos.z, 1.9); if (!m) return;
+  let ax = H.pos.x - m.x, az = H.pos.z - m.z; const L = Math.hypot(ax, az) || 1; ax /= L; az /= L; if (Math.hypot(H.pos.x + ax * 3, H.pos.z + az * 3) > ARENA - 1) { const R = Math.hypot(H.pos.x, H.pos.z) || 1, tx = -H.pos.z / R, tz = H.pos.x / R, sg = tx * ax + tz * az >= 0 ? 1 : -1; ax = tx * sg - H.pos.x / R * .4; az = tz * sg - H.pos.z / R * .4; const L2 = Math.hypot(ax, az) || 1; ax /= L2; az /= L2; }
+  INP.x = ax; INP.z = az; if (heroDash()) { BAG.rtT = BAG.t + X.retreat; mfx('dash', H.pos.x, H.pos.z, 2.2); num(H.pos.x, 2.1, H.pos.z, 'ถอยฉาก!', '#cfe8ff'); } }
+function bagAlly(W, x, z) { const K = KIND[BAG_SKEL]; if (!K || !K.ok || !BAG.allies || BAG.allies.length >= 6) return; [x, z] = bagKeep(x, z);
+  BAG.allies.push({ ally: 1, k: BAG_SKEL, K, x, z, kx: 0, kz: 0, hp: 1, max: 1, r: K.rad, sc: K.bsc * 1.05, fr: Math.random() * 4, row: 0, flip: 1, flash: 0, dead: false, deadT: 0, y: 0, tint: CUR && CUR.k ? [1.45, .75, .7] : [.75, 1.35, 1.2], atkT: .5, life: 10, W, slowT: 0, frzT: 0, burnT: 0 });
+  pfx('smoke/dust-puff', x, z, 1.6, { opacity: .8 }); spark(x, .5, z, { n: 6, color: 0xc8f0d8, spd: 2, up: 3, size: .25, life: .5 }); }
+function bagAllies(dt) { const A = BAG.allies; if (!A || !A.length) return; const H = HERO;
+  for (let i = A.length - 1; i >= 0; i--) { const a = A[i]; if (a.dead) { a.deadT += dt; if (a.deadT > .3) A.splice(i, 1); continue; } a.life -= dt; a.atkT -= dt; a.flash = Math.max(0, a.flash - dt * 7);
+    if (a.life <= 0 || H.dead) { a.dead = true; a.deadT = 0; pfx('smoke/dust-puff', a.x, a.z, 1.4, { opacity: .8 }); continue; }
+    const m = nearest(a.x, a.z, 14); a.row = 0; let dx, dz;
+    if (m) { dx = m.x - a.x; dz = m.z - a.z; const d = Math.hypot(dx, dz) || 1, reach = m.r + a.r + .25; if (d > reach) { a.x += dx / d * 3.4 * dt; a.z += dz / d * 3.4 * dt; } else { if (a.K.rows > 1) a.row = 1; if (a.atkT <= 0) { a.atkT = .8; bagHit(a.W, m, .4, { kb: .8, fx: a.x, fz: a.z }); spark(m.x, .6, m.z, { n: 2, color: 0xd8f0e0, spd: 2, size: .2, life: .25 }); } } }
+    else { dx = H.pos.x - a.x; dz = H.pos.z - a.z; const d = Math.hypot(dx, dz) || 1; if (d > 1.8) { a.x += dx / d * 3.4 * dt; a.z += dz / d * 3.4 * dt; } }
+    for (const b of A) { if (b === a || b.dead) continue; const ex = a.x - b.x, ez = a.z - b.z, e = Math.hypot(ex, ez); if (e > 1e-4 && e < .7) { a.x += ex / e * (.7 - e) * .5; a.z += ez / e * (.7 - e) * .5; } }
+    [a.x, a.z] = bagKeep(a.x, a.z); if (Math.abs(dx) > .15) a.flip = dx > 0 ? -1 : 1; a.fr += dt * (a.row ? 8 : 6); } }
+function bagMonsDraw() { let L = MON; for (const sd of SIDES) { const A = sd === CUR ? BAG.allies : sd.b.allies; if (A && A.length) L = L.concat(A); } return L; }   /* the monster cards to draw: the monsters + every side's skeletons */
 /* ITEM SKILLS (bag3d/itemskills.js, owner 2026-11-28 "ไอเทมมีสกิลเฉพาะ", "vfx สวยๆ"): every `every` uses of an item its own named skill goes off,
    built from the CC0 pixel effects of art/pvfx + the arena's rings, beams, bolts, decals and sparks. A kind returns false when it has nothing to hit
    (then the next use tries again). The name floats over the champion in the item's colour and the item's icon pops. */
@@ -376,7 +398,7 @@ function bagIskUse(W) { if (!W.isk || HERO.dead) return; if (++W.iskN < W.iskE) 
    then the life. Statuses on a champion: stun (frzT, at most 1.2 s a hit), slow, burn, poison, frog (hex), silence (no skill gauge), knock-back (small).
    Win = the rival falls; from 28 s both lose (t - 28) x 0.8 life a second (the side view's fatigue); at 90 s the one with less life share falls. */
 const SIDES = []; let CUR = null;
-const SIDEF = ['st', 'its', 'sta', 'blk', 'sk', 'anim', 'skull', 'potion', 'blT', 'ssT', 'lpT', 'critT', 'iskSw', 'calls', 'iskUsed', 'reach', 'cname', 'ty', 'tk', 'spT', 'rtT'], SIDEP = ['pow', 'crit', 'critX', 'steal', 'numMin', 'armor', 'spd', 'regen', 'area'];
+const SIDEF = ['st', 'its', 'sta', 'blk', 'sk', 'anim', 'skull', 'potion', 'blT', 'ssT', 'lpT', 'critT', 'iskSw', 'calls', 'iskUsed', 'reach', 'cname', 'ty', 'tk', 'spT', 'rtT', 'mv0', 'allies'], SIDEP = ['pow', 'crit', 'critX', 'steal', 'numMin', 'armor', 'spd', 'regen', 'area'];
 function bagSwap(s) { const c = CUR; for (const k of SIDEF) c.b[k] = BAG[k]; for (const k of SIDEP) c.p[k] = P[k]; c.hero = HERO; c.rev = G.revive; c.mon = MON; c.proj = PROJ; c.zones = ZONES;
   for (const k of SIDEF) BAG[k] = s.b[k]; for (const k of SIDEP) P[k] = s.p[k]; HERO = s.hero; G.revive = s.rev; MON = s.mon; PROJ = s.proj; ZONES = s.zones; CUR = s; regrid(); }
 function bagWith(s, fn) { if (!s || s === CUR || !BAG.duel) return fn(); const o = CUR; bagSwap(s); try { return fn(); } finally { bagSwap(o); } }
@@ -464,6 +486,7 @@ function bagSideInit(cfg) {   /* one champion's numbers from its cfg, on the sid
   const melee = BAG.its.some(W => !W.once && !W.self && ['stab', 'xcut', 'thrust', 'bonk', 'claws', 'reap', 'cut', 'cleave'].includes((BAGMOVE[W.id] || BAGMOVE[W.base] || ['cut'])[0])); BAG.reach = melee ? 1.8 : 5.5;
   BAG.sk = cfg.sk ? { n: cfg.sk.n, cd: cfg.sk.cd, pw: cfg.sk.pw, g: cfg.sk.cd * .4, kind: cfg.sk.kind, w: cfg.sk.w } : null; BAG.cname = cfg.cname || ''; BAG.anim = Object.assign({}, BAGCLSANIM[cfg.cls] || {});
   if (cfg.cls && typeof BAGCLS !== 'undefined' && BAGCLS[cfg.cls]) BAG.anim.skill = [BAGCLS[cfg.cls].anim.skill.slice(-1), .8, 3];   /* the class's own skill move */ G.revive = cfg.st && cfg.st.gx && cfg.st.gx.revive ? 1 : 0; BAG.potion = 0; BAG.skull = 0; BAG.blT = BAG.ssT = BAG.lpT = 0; if (cfg.st && cfg.st.mspd) P.spd *= 1 + cfg.st.mspd; if (cfg.ty === 'mel') P.spd *= 1.15;   /* melee walks 15 % faster */   /* revive stone, boots */
+  BAG.mv0 = P.spd; BAG.spT = BAG.rtT = 0; BAG.allies = []; if (BAG.its.some(W => W.mv === 'skel' || W.id === 'sp_skel')) loadKind(BAG_SKEL);   /* the skeleton warriors' card loads before the fight needs it */
 }
 function bagFinish() {   /* the wave is cleared or the champion fell: tell bag3d.html */
   const left = aliveN() + BAG.plan.slice(BAG.pi).reduce((s, p) => s + p.n, 0), r = { bag: 'end', win: !!G.won && !HERO.dead, t: +BAG.t.toFixed(1), kills: G.kills, total: BAG.total, left, coins: G.coins, hp: Math.max(0, Math.round(HERO.hp)), dmg: Object.assign({}, STATS) };
