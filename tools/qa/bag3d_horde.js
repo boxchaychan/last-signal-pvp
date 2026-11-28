@@ -26,7 +26,7 @@ const mode = process.argv[2] === 'bal' ? 'bal' : 'flow';
     const pg = await (await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dsf })).newPage(); watch(pg);
     await pg.goto('http://localhost:8000/bag3d.html?mute=1'); await pg.waitForTimeout(1500); await pg.click('#start'); await pg.waitForTimeout(300);
     say(W + ' the info line names the horde', /ฝูงมอน/.test(await pg.evaluate(() => { document.querySelector('#top .rd').click(); const t = $('#info').textContent + $('#pop div').textContent; closePop(); return t; })));
-    await pg.evaluate(() => { give('bow', 0, 1, 0); give('wand', 6, 1, 0); draw(); $('#go').click(); });
+    await pg.evaluate(() => { give('hammer', 0, 1, 0); give('club', 6, 1, 0);   /* the knight is melee: since the item redesign bows and wands do nothing for it */ draw(); $('#go').click(); });
     await pg.waitForFunction(() => HZ.ready, null, { timeout: 60000 });
     const fr = pg.frames().find(f => /horde\.html/.test(f.url())); say(W + ' the arena iframe is there and shown', !!fr && await pg.evaluate(() => getComputedStyle(document.getElementById('hz')).display === 'block'));
     await fr.waitForFunction(() => window.GAME && GAME.G.state === 'play', null, { timeout: 60000 }); await pg.waitForTimeout(2600); await pg.screenshot({ path: `${out}/${W}_1_fight.png` });
