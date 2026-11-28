@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RigForge 2D — เครื่องมือแอนิเมชัน 2D สไตล์ Chibi Auto-Battler</title>
+  <link rel="icon" href="data:,">
   <!-- RigForge 2D (owner's GPT tool, 2026-11-28). Tailwind is compiled once (vendor/rigforge/tailwind.css) and Lucide is kept locally, so the page needs no CDN -->
   <link rel="stylesheet" href="vendor/rigforge/tailwind.css">
   <script src="vendor/rigforge/lucide.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
-
     body {
       font-family: 'Noto Sans Thai', 'Inter', system-ui, -apple-system, sans-serif;
       background-color: #0e1017;
@@ -176,6 +175,7 @@
             <button id="btnSubAnimate" class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-indigo-600 text-white transition" title="โหมดแอนิเมต: ลากมือ/เท้าแบบ 2-Bone IK หรือหมุนข้อต่อ">Animate</button>
             <button id="btnSubSetup" class="px-2.5 py-0.5 rounded text-[11px] font-semibold text-slate-400 hover:text-white transition" title="โหมด Setup: ลากจัดตำแหน่งชิ้นส่วนบนภาพดราฟต้นแบบ">Setup</button>
           </div>
+          <button id="btnJointGuides" class="px-2 py-1 rounded-md bg-slate-800 text-slate-200 text-[11px]" aria-pressed="true" aria-label="แสดงข้อต่อบนตัวละคร">ซ่อนข้อต่อ</button>
           <button id="btnToggleIK" class="px-2 py-1 rounded-md bg-rose-600/25 border border-rose-500/50 text-rose-200 flex items-center gap-1 text-[11px] transition" title="เปิดจุดจับ 2-Bone IK">
             <i data-lucide="target" class="w-3 h-3"></i>
             <span>2-Bone IK</span>
@@ -862,6 +862,7 @@
       time: 0,
       speed: 1.0,
       zoom: 1.0,
+      jointGuides: true,
       showBones: false,
       showPivots: false,
       showAura: true,
@@ -991,12 +992,13 @@
       let prev = kfs[0];
       let next = kfs[kfs.length - 1];
       for (let i = 0; i < kfs.length - 1; i++) {
-        if (normT >= kfs[i].t && normT <= kfs[i + 1].t) {
+        if (normT >= kfs[i].t && normT < kfs[i + 1].t) {
           prev = kfs[i];
           next = kfs[i + 1];
           break;
         }
       }
+      if (normT >= next.t) return structuredClone(next.pose);
       const span = next.t - prev.t;
       const rawAlpha = span > 0.0001 ? (normT - prev.t) / span : 0;
       const alpha = applyEasing(rawAlpha, clip.easing || 'snappy');
@@ -1032,7 +1034,8 @@
             y: delta.y !== undefined ? delta.y : (sampled[id]?.y || 0),
             rot: delta.rot !== undefined ? delta.rot : (sampled[id]?.rot || 0),
             sx: delta.sx !== undefined ? delta.sx : (sampled[id]?.sx !== undefined ? sampled[id].sx : 1),
-            sy: delta.sy !== undefined ? delta.sy : (sampled[id]?.sy !== undefined ? sampled[id].sy : 1)
+            sy: delta.sy !== undefined ? delta.sy : (sampled[id]?.sy !== undefined ? sampled[id].sy : 1),
+            vis: delta.vis ?? sampled[id]?.vis ?? 1
           };
         });
       }
@@ -1081,6 +1084,7 @@
             flipX: p.flipX
           };
         }
+        transforms[id].visible = b.visible && d.vis !== 0;
         return transforms[id];
       }
 
@@ -1612,8 +1616,7 @@
       const tEnd   = state.worldJoints[chain.end];
       const bUpper = state.bones.find(b => b.id === chain.upper);
       const bLower = state.bones.find(b => b.id === chain.lower);
-      const bEnd   = state.bones.find(b => b.id === chain.end);
-      const tParent = state.worldJoints[bUpper.parent];
+      const tParent = state.worldJoints[bUpper?.parent];
       if (!tUpper || !tLower || !tEnd || !tParent) return;
 
       const L1 = Math.hypot(tLower.x - tUpper.x, tLower.y - tUpper.y);
@@ -1631,8 +1634,8 @@
       const worldAng2 = worldAng1 - chain.bend * (Math.PI - Math.acos(cosB));
 
       // Account for the bone's intrinsic rest vector direction
-      const restVec1 = Math.atan2(bLower.y, bLower.x);
-      const restVec2 = Math.atan2(bEnd.y, bEnd.x);
+      const restVec1 = Math.atan2(tLower.y - tUpper.y, tLower.x - tUpper.x) - tUpper.rot;
+      const restVec2 = Math.atan2(tEnd.y - tLower.y, tEnd.x - tLower.x) - tLower.rot;
 
       let deg1 = (worldAng1 - tParent.rot - restVec1) * 180 / Math.PI - bUpper.rot;
       let deg2 = (worldAng2 - (tParent.rot + (bUpper.rot + deg1) * Math.PI / 180) - restVec2) * 180 / Math.PI - bLower.rot;
@@ -1760,6 +1763,22 @@
     }
 
     const singlePinScreenPos = {};
+    const meshCols = 8, meshRows = 10;
+    let meshWeights = null;
+    let meshPinLayout = [];
+    function getMeshWeights() {
+      // Vertex influences depend on rest positions, not the current pose or zoom.
+      if (meshWeights && SINGLE_PINS.every((pin, i) => pin.u === meshPinLayout[i].u && pin.v === meshPinLayout[i].v)) return meshWeights;
+      meshPinLayout = SINGLE_PINS.map(({u, v}) => ({u, v}));
+      meshWeights = Array.from({length: meshRows + 1}, (_, r) =>
+        Array.from({length: meshCols + 1}, (_, c) => {
+          const weights = SINGLE_PINS.map(pin =>
+            1 / (Math.hypot(c / meshCols - pin.u, r / meshRows - pin.v) ** 2.7 + 0.008));
+          const total = weights.reduce((sum, weight) => sum + weight, 0);
+          return weights.map(weight => weight / total);
+        }));
+      return meshWeights;
+    }
     function drawSingleImageMeshPuppet(ctx, clipId, originX, originY, baseScale, flipX = 1, opts = {}) {
       const {
         drawGuides = false,
@@ -1791,7 +1810,8 @@
       // Scale image so its height fits nicely (~315px at 1.0x)
       const normScale = (245 / Math.max(1, img.height)) * baseScale;
       const W = img.width, H = img.height;
-      const cols = 8, rows = 10;
+      const cols = meshCols, rows = meshRows;
+      const weights = getMeshWeights();
 
       ctx.save();
       ctx.translate(originX + anim.rootX * baseScale * flipX, groundY + anim.rootY * baseScale);
@@ -1807,19 +1827,17 @@
         const v = r / rows;
         for (let c = 0; c <= cols; c++) {
           const u = c / cols;
-          let sumW = 0, dxAcc = 0, dyAcc = 0;
+          let dxAcc = 0, dyAcc = 0;
           for (let i = 0; i < SINGLE_PINS.length; i++) {
             const pin = SINGLE_PINS[i];
-            const dist = Math.hypot(u - pin.u, v - pin.v);
-            const w = 1 / (Math.pow(dist, 2.7) + 0.008);
-            const po = anim.off[pin.id] || { dx: 0, dy: 0 };
-            sumW += w;
+            const w = weights[r][c][i];
+            const po = anim.off[pin.id];
             dxAcc += po.dx * w;
             dyAcc += po.dy * w;
           }
           rowPts.push({
-            x: ox + u * W + dxAcc / sumW,
-            y: oy + v * H + dyAcc / sumW,
+            x: ox + u * W + dxAcc,
+            y: oy + v * H + dyAcc,
             u: u * W,
             v: v * H
           });
@@ -1837,7 +1855,7 @@
       }
 
       // Optional live Mesh Wireframe overlay
-      if (drawGuides && state.showMeshWire) {
+      if (drawGuides && state.jointGuides && state.showMeshWire) {
         ctx.strokeStyle = 'rgba(52, 211, 153, 0.72)';
         ctx.lineWidth = 1.1;
         for (let r = 0; r < rows; r++) {
@@ -1858,12 +1876,12 @@
       }
 
       // Draw Draggable Puppet Bone Pins in Editor Mode
-      if (drawGuides && (state.showIK || state.showBones || state.showPivots || state.subMode === 'setup')) {
+      if (drawGuides && meshPinsVisible()) {
         SINGLE_PINS.forEach(pin => {
           const po = anim.off[pin.id] || { dx: 0, dy: 0 };
           const sx = originX + anim.rootX * baseScale * flipX + (ox + pin.u * W + po.dx) * normScale * anim.rootSx * flipX;
           const sy = groundY + anim.rootY * baseScale + (oy + pin.v * H + po.dy) * normScale * anim.rootSy;
-          singlePinScreenPos[pin.id] = { x: sx, y: sy };
+          singlePinScreenPos[pin.id] = { x: sx, y: sy, scaleX: normScale * anim.rootSx, scaleY: normScale * anim.rootSy, width: W, height: H };
 
           const isSel = state.selectedPin === pin.id;
           ctx.save();
@@ -1942,10 +1960,8 @@
       };
 
       sorted.forEach(b => {
-        const slotPose = pose[b.id];
-        if (!b.visible || !b.part || !partImages[b.part]) return;
-        if (slotPose && slotPose.vis === 0) return;
-        if (state.seamlessJoints && seamJoints.includes(b.id)) drawJointBridge(b.id);
+        if (!transforms[b.id].visible || !b.part || !partImages[b.part]) return;
+        if (state.seamlessJoints && seamJoints.includes(b.id) && transforms[b.parent]?.visible) drawJointBridge(b.id);
         const img = partImages[b.part];
         const t = transforms[b.id];
         ctx.save();
@@ -1963,7 +1979,7 @@
         }
         if ((b.id === 'cape' || b.id === 'skirt') && !hitFlash) {
           const clothStrength = b.id === 'cape' ? 11.5 : 4.5;
-          drawDeformedClothMesh(ctx, img, b.px, b.py, gTime, clothStrength, drawGuides && state.showMeshWire);
+          drawDeformedClothMesh(ctx, img, b.px, b.py, gTime, clothStrength, drawGuides && state.jointGuides && state.showMeshWire);
         } else {
           ctx.drawImage(img, -img.width * b.px, -img.height * b.py);
         }
@@ -2065,7 +2081,7 @@
           ctx.restore();
         }
 
-        if (drawGuides && b.id === state.selectedBone) {
+        if (drawGuides && state.jointGuides && b.id === state.selectedBone) {
           ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
           ctx.lineWidth = 2 / Math.max(0.2, t.sx);
           ctx.setLineDash([5 / Math.max(0.2, t.sx), 4 / Math.max(0.2, t.sx)]);
@@ -2080,10 +2096,10 @@
       }
 
       // Skeleton overlay
-      if (drawGuides) {
+      if (drawGuides && state.jointGuides) {
         if (state.showBones) {
           state.bones.forEach(b => {
-            if (!b.parent || !b.visible) return;
+            if (!transforms[b.id].visible || !transforms[b.parent]?.visible) return;
             const p = transforms[b.parent];
             const c = transforms[b.id];
             ctx.save();
@@ -2098,7 +2114,7 @@
         }
         if (state.showPivots) {
           state.bones.forEach(b => {
-            if (!b.visible) return;
+            if (!transforms[b.id].visible) return;
             const t = transforms[b.id];
             const isSel = b.id === state.selectedBone;
             ctx.save();
@@ -2114,10 +2130,10 @@
         }
       }
       // Draw draggable 2-Bone IK Target Handles in Animate Mode!
-      if (drawGuides && state.subMode === 'animate' && state.showIK) {
+      if (drawGuides && state.jointGuides && state.subMode === 'animate' && state.showIK) {
         IK_CHAINS.forEach(ch => {
           const endT = transforms[ch.end];
-          if (!endT) return;
+          if (!chainVisible(ch, transforms)) return;
           const isAct = state.activeIK && state.activeIK.id === ch.id;
           ctx.save();
           ctx.translate(endT.x, endT.y);
@@ -2137,7 +2153,7 @@
         });
       }
       // Spine-style Circular Rotation Ring Gizmo around selected bone for super-easy posing!
-      if (drawGuides && state.subMode === 'animate' && transforms[state.selectedBone]) {
+      if (drawGuides && state.jointGuides && state.subMode === 'animate' && transforms[state.selectedBone]?.visible) {
         const st = transforms[state.selectedBone];
         ctx.save();
         ctx.translate(st.x, st.y);
@@ -2494,8 +2510,10 @@
       const container = document.getElementById('stageContainer');
       if (!container) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
-      const w = Math.max(280, container.clientWidth || 360);
-      const h = Math.max(280, container.clientHeight || 380);
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (!w || !h) return;
+      if (w === lastStageW && h === lastStageH && stageCanvas.width === Math.floor(w * dpr) && stageCanvas.height === Math.floor(h * dpr)) return;
       lastStageW = w;
       lastStageH = h;
       stageCanvas.width = Math.floor(w * dpr);
@@ -2510,12 +2528,6 @@
       lastTs = ts;
       state.globalTime += dt;
 
-      const container = document.getElementById('stageContainer');
-      const cw = container ? container.clientWidth : 0;
-      const ch = container ? container.clientHeight : 0;
-      if (cw > 0 && ch > 0 && (cw !== lastStageW || ch !== lastStageH)) {
-        resizeStage();
-      }
       const w = lastStageW || 360;
       const h = lastStageH || 380;
       stageCtx.clearRect(0, 0, w, h);
@@ -2576,7 +2588,10 @@
             hitFlash: isHitFlash
           });
         }
-        if (state.isPlaying) syncInspectorValues(pose);
+        if (state.isPlaying && state.rigMode !== 'single' && ts - lastInspectorUpdate >= 66) {
+          syncInspectorValues(pose);
+          lastInspectorUpdate = ts;
+        }
       } else {
         updateAndRenderPlaytest(dt, w, h);
       }
@@ -2587,17 +2602,27 @@
     // =========================================================================
     // Canvas Pointer Interaction (Click bone -> drag to rotate)
     // =========================================================================
+    let lastInspectorUpdate = 0;
+    function meshPinsVisible() {
+      return state.jointGuides && (state.showIK || state.showBones || state.showPivots || state.subMode === 'setup');
+    }
+    function chainVisible(chain, joints) {
+      return joints[chain.upper]?.visible && joints[chain.lower]?.visible && joints[chain.end]?.visible;
+    }
     function getStagePoint(e) {
       const rect = stageCanvas.getBoundingClientRect();
-      const cx = e.touches ? e.touches[0].clientX : e.clientX;
-      const cy = e.touches ? e.touches[0].clientY : e.clientY;
-      return { x: cx - rect.left, y: cy - rect.top };
+      return { x: (e.clientX - rect.left) * lastStageW / rect.width, y: (e.clientY - rect.top) * lastStageH / rect.height };
     }
 
-    stageCanvas.addEventListener('mousedown', onStageDown);
-    stageCanvas.addEventListener('touchstart', onStageDown, { passive: false });
-    window.addEventListener('mousemove', onStageMove);
-    window.addEventListener('touchmove', onStageMove, { passive: false });
+    let stageDrag = null;
+    stageCanvas.addEventListener('pointerdown', e => {
+      if (!e.isPrimary || e.button !== 0 || stageDrag) return;
+      onStageDown(e);
+      if (!state.isDragging) return;
+      stageDrag = { id: e.pointerId, start: getStagePoint(e), moved: false, pose: structuredClone(state.manualPose) };
+      stageCanvas.setPointerCapture(e.pointerId);
+    });
+    stageCanvas.addEventListener('pointermove', onStageMove);
     function commitAutoKeyIfEnabled() {
       if (state.subMode !== 'animate' || !state.autoKey) return;
       const clip = state.clips[state.currentClip];
@@ -2614,24 +2639,40 @@
       pushHistory();
     }
 
-    function onStageUp() {
-      if (state.isDragging && state.subMode === 'animate') {
-        commitAutoKeyIfEnabled();
+    function finishStageDrag(cancelled) {
+      if (!stageDrag) return;
+      if (stageDrag.moved) {
+        if (cancelled) {
+          state.manualPose = stageDrag.pose;
+          if (state.dragPin) Object.assign(state.dragPin, state.dragInitialXY);
+          if (state.dragMode === 'setupMove') Object.assign(state.bones.find(b => b.id === state.selectedBone), state.dragInitialXY);
+          syncInspectorValues(getActivePose());
+        } else if (state.rigMode !== 'single') {
+          if (state.subMode === 'setup') pushHistory();
+          else commitAutoKeyIfEnabled();
+        }
       }
+      const id = stageDrag.id;
+      stageDrag = null;
       state.isDragging = false;
       state.dragMode = null;
       state.activeIK = null;
       state.dragPin = null;
+      if (stageCanvas.hasPointerCapture(id)) stageCanvas.releasePointerCapture(id);
     }
-    window.addEventListener('mouseup', onStageUp);
-    window.addEventListener('touchend', onStageUp);
+    for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+      stageCanvas.addEventListener(event, e => {
+        if (e.pointerId === stageDrag?.id) finishStageDrag(event !== 'pointerup');
+      });
+    }
 
     function onStageDown(e) {
-      if (state.mode !== 'editor') return;
+      if (state.mode !== 'editor' || !state.jointGuides) return;
       e.preventDefault();
       const ptClick = getStagePoint(e);
 
       if (state.rigMode === 'single') {
+        if (!meshPinsVisible()) return;
         let bestPin = null, bestD = 28;
         SINGLE_PINS.forEach(pin => {
           const sp = singlePinScreenPos[pin.id];
@@ -2641,6 +2682,7 @@
           }
         });
         if (bestPin) {
+          if (state.isPlaying) setPlaying(false);
           state.selectedPin = bestPin.id;
           state.dragPin = bestPin;
           state.isDragging = true;
@@ -2653,28 +2695,39 @@
 
       // 1. Check 2-Bone IK Target Handles first in Animate Mode!
       if (state.subMode === 'animate' && state.showIK) {
+        let nearestChain = null, nearestDistance = e.pointerType === 'touch' ? 24 : 15;
         for (const ch of IK_CHAINS) {
           const endT = state.worldJoints[ch.end];
-          if (endT && Math.hypot(ptClick.x - endT.x, ptClick.y - endT.y) < 24) {
-            if (state.isPlaying) setPlaying(false);
-            state.isDragging = true;
-            state.dragMode = 'ik';
-            state.activeIK = ch;
-            selectBone(ch.lower);
-            return;
+          if (!chainVisible(ch, state.worldJoints)) continue;
+          const distance = Math.hypot(ptClick.x - endT.x, ptClick.y - endT.y);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestChain = ch;
           }
+        }
+        if (nearestChain) {
+          if (state.isPlaying) setPlaying(false);
+          state.isDragging = true;
+          state.dragMode = 'ik';
+          state.activeIK = nearestChain;
+          selectBone(nearestChain.lower);
+          return;
         }
       }
 
       // 2. Otherwise pick nearest bone joint
-      let bestId = null, bestDist = 42;
+      let bestId = null, bestDist = e.pointerType === 'touch' ? 24 : 16;
       state.bones.forEach(b => {
-        if (!b.visible || !state.worldJoints[b.id]) return;
+        if (!state.worldJoints[b.id]?.visible) return;
         const j = state.worldJoints[b.id];
         const d = Math.hypot(ptClick.x - j.x, ptClick.y - j.y);
         if (d < bestDist) { bestDist = d; bestId = b.id; }
       });
-      if (bestId) selectBone(bestId);
+      const selected = state.worldJoints[state.selectedBone];
+      const onRing = state.subMode === 'animate' && selected?.visible &&
+        Math.abs(Math.hypot(ptClick.x - selected.x, ptClick.y - selected.y) - 34) <= 7;
+      if (!bestId && !onRing) return;
+      if (bestId && (!onRing || bestDist < 7)) selectBone(bestId);
 
       const selJoint = state.worldJoints[state.selectedBone];
       if (!selJoint) return;
@@ -2695,19 +2748,22 @@
     }
 
     function onStageMove(e) {
-      if (!state.isDragging || state.mode !== 'editor') return;
+      if (e.pointerId !== stageDrag?.id || state.mode !== 'editor') return;
       e.preventDefault();
       const p = getStagePoint(e);
+      if (!stageDrag.moved && Math.hypot(p.x - stageDrag.start.x, p.y - stageDrag.start.y) < 2) return;
+      stageDrag.moved = true;
 
       if (state.rigMode === 'single' && state.dragPin) {
         const dx = p.x - state.dragStartPt.x;
         const dy = p.y - state.dragStartPt.y;
+        const pin = singlePinScreenPos[state.dragPin.id];
         if (state.subMode === 'setup') {
-          state.dragPin.u = Math.max(0.05, Math.min(0.95, state.dragInitialXY.u + dx / 220));
-          state.dragPin.v = Math.max(0.05, Math.min(0.95, state.dragInitialXY.v + dy / 315));
+          state.dragPin.u = Math.max(0.05, Math.min(0.95, state.dragInitialXY.u + dx / (pin.width * pin.scaleX)));
+          state.dragPin.v = Math.max(0.05, Math.min(0.95, state.dragInitialXY.v + dy / (pin.height * pin.scaleY)));
         } else {
-          state.dragPin.dx = Math.max(-90, Math.min(90, state.dragInitialXY.dx + dx * 0.8));
-          state.dragPin.dy = Math.max(-90, Math.min(90, state.dragInitialXY.dy + dy * 0.8));
+          state.dragPin.dx = Math.max(-90, Math.min(90, state.dragInitialXY.dx + dx / pin.scaleX));
+          state.dragPin.dy = Math.max(-90, Math.min(90, state.dragInitialXY.dy + dy / pin.scaleY));
         }
         return;
       }
@@ -2722,10 +2778,11 @@
         const bone = state.bones.find(b => b.id === state.selectedBone);
         const w = lastStageW || 360, h = lastStageH || 380;
         const fitZoom = Math.min(1, Math.min(w, h) / 360) * state.zoom;
-        const parentScale = bone.parent && state.worldJoints[bone.parent] ? state.worldJoints[bone.parent].sx : fitZoom;
-        const div = Math.max(0.2, parentScale);
-        bone.x = Math.round(state.dragInitialXY.x + (p.x - state.dragStartPt.x) / div);
-        bone.y = Math.round(state.dragInitialXY.y + (p.y - state.dragStartPt.y) / div);
+        const parent = state.worldJoints[bone.parent];
+        const cos = Math.cos(parent?.rot || 0), sin = Math.sin(parent?.rot || 0);
+        const dx = p.x - state.dragStartPt.x, dy = p.y - state.dragStartPt.y;
+        bone.x = Math.round(state.dragInitialXY.x + (dx * cos + dy * sin) / (parent?.sx || fitZoom));
+        bone.y = Math.round(state.dragInitialXY.y + (dy * cos - dx * sin) / (parent?.sy || fitZoom));
         return;
       }
 
@@ -2794,11 +2851,15 @@
         label.textContent = b.name;
 
         const eyeBtn = document.createElement('button');
+        eyeBtn.title = (b.visible ? 'ซ่อน ' : 'แสดง ') + b.name;
+        eyeBtn.setAttribute('aria-label', eyeBtn.title);
+        eyeBtn.setAttribute('aria-pressed', String(b.visible));
         eyeBtn.className = `p-0.5 rounded hover:bg-slate-700 shrink-0 ${b.visible ? 'text-slate-400' : 'text-rose-400'}`;
         eyeBtn.innerHTML = `<i data-lucide="${b.visible ? 'eye' : 'eye-off'}" class="w-3.5 h-3.5"></i>`;
         eyeBtn.addEventListener('click', ev => {
           ev.stopPropagation();
           b.visible = !b.visible;
+          pushHistory();
           renderBoneTree();
         });
 
@@ -3050,6 +3111,7 @@
 
     // Mode Switching
     function setMode(mode) {
+      finishStageDrag(true);
       state.mode = mode;
       const isEd = mode === 'editor';
       document.getElementById('btnModeEditor').className = `px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition ${isEd ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white'}`;
@@ -3077,6 +3139,12 @@
     document.getElementById('ptAttack').addEventListener('click', triggerArenaUltimate);
 
     // Viewport Toggles
+    document.getElementById('btnJointGuides').addEventListener('click', e => {
+      finishStageDrag(true);
+      state.jointGuides = !state.jointGuides;
+      e.currentTarget.textContent = state.jointGuides ? 'ซ่อนข้อต่อ' : 'แสดงข้อต่อ';
+      e.currentTarget.setAttribute('aria-pressed', String(state.jointGuides));
+    });
     document.getElementById('btnToggleAura').addEventListener('click', e => {
       state.showAura = !state.showAura;
       e.currentTarget.className = `px-2 py-1 rounded-md flex items-center gap-1 text-[11px] transition ${state.showAura ? 'bg-cyan-600/25 border border-cyan-500/40 text-cyan-300' : 'bg-slate-800 text-slate-400'}`;
@@ -3460,46 +3528,40 @@ this.anims.create({
       const idata = ctx.getImageData(0, 0, w, h);
       const d = idata.data;
 
-      // Sample median-like warm skin color from the part
-      let rSum = 0, gSum = 0, bSum = 0, cnt = 0;
-      for (let i = 0; i < w * h; i++) {
-        const r = d[i*4], g = d[i*4+1], b = d[i*4+2], a = d[i*4+3];
-        if (a > 200 && r > 185 && g > 125 && g < 225 && b > 85 && b < 190) {
-          rSum += r; gSum += g; bSum += b; cnt++;
-        }
-      }
-      const sr = cnt > 20 ? Math.round(rSum / cnt) : 248;
-      const sg = cnt > 20 ? Math.round(gSum / cnt) : 186;
-      const sb = cnt > 20 ? Math.round(bSum / cnt) : 142;
-
+      // Work in the opaque part's bounds: imported frames may have wide transparent margins.
+      let left = w, right = -1, top = h, bottom = -1;
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
-          let inCap = false;
-          let fade = 1;
-          if (side === 'top' && y < h * frac && x > w * 0.12 && x < w * 0.88) {
-            inCap = true;
-            fade = Math.max(0, Math.min(1, (y - h * 0.03) / (h * frac * 0.65)));
-          } else if (side === 'bottom' && y > h * (1 - frac) && x > w * 0.12 && x < w * 0.88) {
-            inCap = true;
-            fade = Math.max(0, Math.min(1, ((h - 1 - y) - h * 0.03) / (h * frac * 0.65)));
-          } else if (side === 'left' && x < w * frac && y > h * 0.1 && y < h * 0.9) {
-            inCap = true;
-            fade = Math.max(0, Math.min(1, (x - w * 0.03) / (w * frac * 0.65)));
-          } else if (side === 'right' && x > w * (1 - frac) && y > h * 0.1 && y < h * 0.9) {
-            inCap = true;
-            fade = Math.max(0, Math.min(1, ((w - 1 - x) - w * 0.03) / (w * frac * 0.65)));
-          }
-          if (!inCap) continue;
-          const idx = (y * w + x) * 4;
-          const a = d[idx + 3];
-          if (a < 20) continue;
-          const lum = 0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2];
-          if (lum < 105) {
-            d[idx] = sr;
-            d[idx + 1] = sg;
-            d[idx + 2] = sb;
-          }
-          d[idx + 3] = Math.round(a * fade);
+          if (d[(y * w + x) * 4 + 3] < 20) continue;
+          left = Math.min(left, x); right = Math.max(right, x);
+          top = Math.min(top, y); bottom = Math.max(bottom, y);
+        }
+      }
+      const vertical = side === 'top' || side === 'bottom';
+      const span = vertical ? right - left + 1 : bottom - top + 1;
+      const depth = vertical ? bottom - top + 1 : right - left + 1;
+      const limit = Math.ceil(depth * frac);
+      const index = (line, step) => {
+        const x = vertical ? left + line : side === 'left' ? left + step : right - step;
+        const y = vertical ? side === 'top' ? top + step : bottom - step : top + line;
+        return (y * w + x) * 4;
+      };
+      // Follow only the outside ink into adjacent material. Keep alpha, side outlines and interior details.
+      for (let line = Math.ceil(span * 0.12); line < span * 0.88; line++) {
+        let step = 0;
+        while (step < limit && d[index(line, step) + 3] < 20) step++;
+        const start = step;
+        while (step < limit) {
+          const i = index(line, step);
+          if (d[i + 3] < 20 || 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2] >= 105) break;
+          step++;
+        }
+        if (step === start || step === limit) continue;
+        const sample = index(line, step);
+        if (d[sample + 3] < 200) continue;
+        for (let k = start; k < step; k++) {
+          const i = index(line, k);
+          d[i] = d[sample]; d[i+1] = d[sample+1]; d[i+2] = d[sample+2];
         }
       }
       ctx.putImageData(idata, 0, 0);
@@ -3544,6 +3606,7 @@ this.anims.create({
     // Spine-Class Controls: Setup/Animate, 2-Bone IK, Mesh Wire, Ghosting, Auto-Key, Bezier Graph
     // =========================================================================
     function setSubMode(sub) {
+      finishStageDrag(true);
       state.subMode = sub;
       const isAnim = sub === 'animate';
       document.getElementById('btnSubAnimate').className = `px-2 py-0.5 rounded text-[11px] font-semibold transition ${isAnim ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`;
@@ -3826,21 +3889,31 @@ this.anims.create({
     // Rig Mode Switcher (Single-Image Mesh Puppet vs Multi-Part Cutout) & Upload
     // =========================================================================
     function setRigMode(rm) {
+      finishStageDrag(true);
       // Save current rig edits before switching
       if (state.rigMode === 'zeus' || state.rigMode === 'parts') {
-        RIG_STORE[state.rigMode] = { bones: state.bones, clips: state.clips, selected: state.selectedBone };
+        RIG_STORE[state.rigMode] = { bones: state.bones, clips: state.clips, selected: state.selectedBone,
+          history: state.history, historyIndex: state.historyIndex };
       }
       state.rigMode = rm;
       if (rm === 'zeus' || rm === 'parts') {
         state.bones = RIG_STORE[rm].bones;
         state.clips = RIG_STORE[rm].clips;
         state.selectedBone = RIG_STORE[rm].selected;
+        state.history = RIG_STORE[rm].history || [];
+        state.historyIndex = RIG_STORE[rm].historyIndex ?? -1;
         if (!state.clips[state.currentClip]) state.currentClip = Object.keys(state.clips)[0];
         state.manualPose = {};
+        if (!state.history.length) pushHistory();
+        else updateUndoButtons();
         renderClipBar();
         renderBoneTree();
         renderKeyframeMarkers();
         syncInspectorValues(getActivePose());
+      } else {
+        state.history = [];
+        state.historyIndex = -1;
+        updateUndoButtons();
       }
       document.getElementById('btnRigZeus').className = `px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition ${rm === 'zeus' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:text-white'}`;
       document.getElementById('btnRigParts').className = `px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition ${rm === 'parts' ? 'bg-indigo-600 text-white shadow' : 'text-slate-300 hover:text-white'}`;
