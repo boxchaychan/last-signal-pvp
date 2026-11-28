@@ -3779,3 +3779,12 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - ranged physical (ranger): the 8 shooting items + all bows / throwing weapons;
   - magic (mage): 7 = multicast tome, exploding staff, beam staff, soul orb, spirit staff, magic-pierce stone, haste tome + all magic weapons;
   - everyone: the other 15 spell items (INT-scaled: storm push, guard stones, blink cloak, lightning ball, 3 summons, 4 disrupts, 4 curses), boots, armour, crit, accuracy, survival, element stones, lifesteal.
+- Shop rolls stay as they are (owner "ทำสุ่มแบบเดิมได้แล้วถูกไหม"): 8 slots, re-roll, locks, rarer items by round; the pool is only what the player's type can use + the everyone items + 2-3 material slots a roll + a finished crafted item now and then at a higher price.
+- Every fight in the 3D arena (owner "ระบบต่อสู้เป็นแบบมอน ไม่ใช้ด้านข้าง"): monster rounds, boss rounds AND player duels; the side view goes away.
+- The knight class changes body (owner "เอาอัศวินปีศาจเข้าแทนคลาสอัศวินเลย"): the Tripo DEMON KNIGHT (`art/tribe3d/people/demon_knight.glb`, rival `demon` today) replaces the KayKit knight. Still to confirm: the earlier "อัศวินดำ เป็นอาชีพเริ่มต้น" = this same demon knight, or the black horned knight (`art/grind3d/dark_knight.glb`, rival `dark`)?
+- STATE on 2026-11-28 night: NOTHING of this section is built (owner "อย่าเพิ่งทำนะ"). Wait for "ทำเลย".
+- The owner moves to the PC for it (owner "ย้ายไป PC จะได้เจนรูปจาก GPT, VFX Meta, Gemini ละก็ทำแมพให้สวยได้"):
+  - item pictures from GPT in ONE pass once the item list is final (give the owner the list + prompts in the chat; Codex can be started from the PC chat);
+  - skill / element effects from Meta AI clips, cut with our tools (`vfxcut.html`, sprite-importer skill);
+  - a prettier arena / map with Gemini target pictures first.
+- Build order proposed for when the owner says go: (1) type shops + materials + crafting book; (2) shooting and melee items; (3) elements and reactions; (4) magic and general items, boots; (5) duels in the arena + movement rules (melee never flees, ranged backs off a little) + melee-vs-ranged bot balance; (6) the demon knight as the knight.

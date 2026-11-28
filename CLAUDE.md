@@ -94,6 +94,12 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
 - YouTube clips cannot be fetched from the cloud (bot check): ask the owner to attach a file / screen recording.
 
 ## NEWEST (owner 2026-11-27, latest of all, back to it the same day): `bag3d.html` "ศึกแชมเปี้ยน 3D" (start on "กระเป๋า 3D")
+- NEWEST of all (owner 2026-11-28 night): a BIG ITEM REDESIGN is agreed but NOT built (owner "อย่าเพิ่งทำนะ": wait for "ทำเลย"):
+  - three item types (melee / ranged / magic) with 7-8 type items each; Dota-like mechanics with our own names and art;
+  - materials + crafting, elements with reactions, a boots line, shops filtered by type;
+  - every fight in the 3D arena (duels too, no side view); the demon knight replaces the knight class;
+  - the owner moves to the PC for the art (GPT pictures in one pass, Meta AI effects, Gemini, a prettier map);
+  - notes and the build order: the BIG ITEM DESIGN section at the end of `docs/action-game.md`.
 - NEWEST of all (owner 2026-11-28, latest): the owner's GPT tool RigForge 2D is on the site as `rigforge.html` (2D bones + mesh + timeline + game test + sprite-sheet export; CDN scripts made local in `vendor/rigforge/`; check `tools/qa/rigforge_check.js`; notes: RIGFORGE 2D section at the end of `docs/action-game.md`). What to use it for is not decided: ask.
 - NEWEST of all (owner 2026-11-28, latest): every repeating item has its OWN named skill ("ไอเทมมีสกิลเฉพาะ", `bag3d/itemskills.js`, 16 kinds), set off every few uses of that item:
   - in the arena: full skills with big pixel effects (`BAGISK` in `bag3d/arena.js`), a callout over the item bar and a charge bar under each item;
