@@ -3774,3 +3774,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - ranger: bows + the shooting items; mage: staffs, wands + magic items;
   - for every class: boots, armour, crit, survival, element stones, lifesteal and the INT-scaled spell items;
   - rivals follow their own class the same way.
+- TYPE ITEMS, final (owner "มีไอเทมประจำคลาสทั้งหมดประมาณ 7-8 ชิ้น ... กายภาพประชิด ไกลกายภาพ กับเวทย์"): three TYPES, each with its own item set (replaces the per-class lists above).
+  - melee physical (knight, barbarian, rogue): the 7 melee items + all melee weapons;
+  - ranged physical (ranger): the 8 shooting items + all bows / throwing weapons;
+  - magic (mage): 7 = multicast tome, exploding staff, beam staff, soul orb, spirit staff, magic-pierce stone, haste tome + all magic weapons;
+  - everyone: the other 15 spell items (INT-scaled: storm push, guard stones, blink cloak, lightning ball, 3 summons, 4 disrupts, 4 curses), boots, armour, crit, accuracy, survival, element stones, lifesteal.
