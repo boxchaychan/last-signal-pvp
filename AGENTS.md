@@ -2,6 +2,8 @@
 
 The owner speaks Thai and is not a programmer: reply in Thai, short and plain.
 
+NEWEST (2026-11-28, latest of all): GPT / Codex TAKES OVER RigForge 2D (`rigforge.html`, the owner's own GPT-made 2D rig tool; owner: "จะให้ gpt รับต่อ"). Read `docs/codex/rigforge/TAKEOVER.md` first: for RigForge tasks you may edit `rigforge.html`, `vendor/rigforge/`, `tools/rigforge/` (an exception to the .html rule below), branch `codex/rigforge-<task>`, run `node tools/qa/rigforge_check.js` before the pull request.
+
 NEWEST (2026-11-27, latest of all): `lucky.html` "ผู้กล้าเสี่ยงดวง", a summon-and-merge defence in smooth 2D cartoon. Picture job: `docs/codex/lucky/ART2.md` ("ทำภาพเกมเสี่ยงดวงชุด 2" = 12 more heroes, attack poses, monsters, bosses, icons; branch `codex/lucky-art2`, pictures in `art/incoming/lucky2d_b/`). Set 1 (`docs/codex/lucky/ART1.md`) is done.
 
 Older (2026-11-20): the DRAGON spear warrior in painted 2D: ALL moves in one go = `docs/codex/dragon/MOVES.md` ("ทำท่ามังกรทั้งหมด": 12 sheets of 16 frames, branch `codex/dragon-moves`, pictures in `art/incoming/dragon_moves/`); then "ทำมอนทะเลทราย" (`docs/codex/dragon/MONSTERS.md`) and "ทำมังกรคลาส 2" (`docs/codex/dragon/CLASS2.md`); walk only = `docs/codex/dragon/WALK.md` ("ทำท่าเดินมังกร" = 16-frame walk sheets, side / front / back, blue background; branch `codex/dragon-walk`, pictures in `art/incoming/dragon_walk/`).
