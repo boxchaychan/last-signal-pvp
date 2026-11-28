@@ -40,6 +40,8 @@ FX = {
     # fight and screen moments
     'ko': D(12, 4, 70), 'bossin': D(18, 8, 170, flat=1), 'clash': D(20, 8, 180), 'victory': D(20, 4, 175), 'coins': D(18, 4, 175), 'craft': D(18, 8, 170),
     # projectiles (they stay in the middle of the video and loop; they fly to the right)
+    # loops that sit on a fighter: the power-up aura and the four element statuses (rad = keep only this share of the picture round the middle: the burn clip came with a frame)
+    'aura': D(14, 60, 110, loop=1, ease=1), 'st_burn': D(10, 60, 90, loop=1, ease=1, rad=.6), 'st_shock': D(10, 60, 90, loop=1, ease=1), 'st_poison': D(12, 60, 110, loop=1, ease=1), 'st_chill': D(10, 60, 100, loop=1, ease=1),
     'p_fire': D(10, 40, 70, loop=1, ease=1), 'p_ice': D(10, 40, 70, loop=1, ease=1), 'p_arcane': D(10, 40, 70, loop=1, ease=1), 'p_poison': D(10, 40, 70, loop=1, ease=1), 'p_light': D(10, 60, 90, loop=1, ease=1),
 }
 def frames_of(path, only=None):
@@ -67,7 +69,7 @@ def cut(key):
     n = C.get('n', 20); ease = C.get('ease', 1.5); idx = sorted(set(int(round(a + (b - a) * (i / (n - 1)) ** ease)) for i in range(n))); n = len(idx)
     fr, _, _ = frames_of(path, idx); H = W = WORK
     # the border fade: 1 in the middle, 0 at the picture edge (a smooth round window, the corners go first)
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32); r = np.hypot((xx - W / 2) / (W / 2), (yy - H / 2) / (H / 2)); win = np.clip((1.0 - r) / .2, 0, 1); win = win * win * (3 - 2 * win)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32); r = np.hypot((xx - W / 2) / (W / 2), (yy - H / 2) / (H / 2)); win = np.clip((C.get('rad', 1.0) - r) / .2, 0, 1); win = win * win * (3 - 2 * win)
     cells = []
     for im in fr:
         im = im.astype(np.float32) / 255; v = im.max(axis=2); v = np.clip((v - .06) / .94, 0, 1)   # lift the black haze
