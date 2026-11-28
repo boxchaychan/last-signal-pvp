@@ -3850,3 +3850,8 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - the title card text: name "อัศวินดำ", role "แนวหน้า · ดาบใหญ่สองมือ", skill renamed "ดาบทมิฬทลายพสุธา" (ฟาดดาบใหญ่ลงพื้น ศัตรูรอบตัวมึน 1 วิ และได้โล่; same numbers);
   - the home-screen icon `art/bag3d/app192.png` / `app512.png` = the demon knight too (`node tools/art/cls_portraits.js --icon` then `python3 tools/art/bag_app_icon.py`);
   - `?fight=side` and `?kk=knight` still use the old KayKit knight body (`kk`, `wp`, `anim` in classes.js were kept for them). Cache numbers: classes.js `?v=4`, portraits `?v=2`, iframe `&v=16`.
+- CLOUD BATCH 3 (2026-11-28): the last item mechanics of the arena (`bag3d/arena.js`):
+  - sprint boots (`gx.sprint`): any hit that is not dodged (even one the shield takes) = +60 % walking speed for 2 s ("เร่งฝีเท้า!", the painted dash effect once);
+  - retreat boots (`gx.retreat`, ranged / mages only): an enemy within 1.9 = a quick roll away every 4 s (along the wall when the wall is behind; the roll's short dodge included);
+  - the skeleton staff (`mv: 'skel'`) calls TWO REAL SKELETON WARRIORS (`bagAlly`, the bone-guard monster card in a ghostly green; a duel rival's ones in red) that walk to the nearest enemy and strike every 0.8 s (0.4 of the staff's hit, its elements too) for 10 s, then crumble. Monsters do not attack them (they are not in `MON`); `horde.html` draws them with the monsters (`bagMonsDraw`). They hit the rival champion in a duel.
+  - Check `node tools/qa/bag3d_mech.js [out]` = MECH OK (2 skeletons up and hitting, a retreat roll, sprint speed after a hit, skeletons hitting in a duel).
