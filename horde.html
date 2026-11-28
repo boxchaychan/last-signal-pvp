@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=7"></script><script src="bag3d/classes.js?v=3"></script><script src="bag3d/itemskills.js?v=1"></script>
+<script src="bag3d/arena.js?v=8"></script><script src="bag3d/classes.js?v=3"></script><script src="bag3d/itemskills.js?v=1"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -82,7 +82,21 @@ const MAPS = {
     trees: [], tint: {}, flowers: false, props: 'arena', air: 'pollen', music: 'battle', icon: '#ffc860', mobs: L.mobs, boss: L.boss, extra: L.extra }; }
 const MAPKEYS = ['forest', 'grave', 'volcano', 'snow'];
 let MAPK = Q.get('map'); if (!MAPS[MAPK]) { try { MAPK = localStorage.getItem('horde_map'); } catch (_) { } } if (!MAPS[MAPK]) MAPK = 'forest';
-const MAP = MAPS[MAPK], ARENA = MAPK === 'arena' ? 8 : 30, WORLD = 96;   /* the arena is smaller: its stands are on screen and the swarm is closer */   /* the hero stays inside a circle of ARENA units; the ground picture covers WORLD x WORLD */
+/* THE PAINTED ARENA (owner 2026-11-28 "ทำเกมส์ให้สวยเลยนะ 3D ทำให้ดูดี", "สนามเดียวพอ สวยๆ 3D"): the arena of the backpack game is the picture
+   art/bag3d/ui/arena_forest.jpg (Codex painted it over a screenshot of our own arena, same view). The camera is LOCKED on the view the picture was
+   painted from (PA: found by tools/art/arena_calib.py from the medallion, the far wall and the side gates), the picture hangs behind the 3D world, and
+   the champion, the monsters, their shadows and every floor effect are drawn in real 3D on the painted sand. PA is in world units of the fight:
+   the play circle (radius ARENA) has its middle PA.zc north of the painted medallion, so it reaches from the far wall to the bottom of a phone screen.
+   ?paint=0 = the old code-built colosseum. */
+const PAINT = MAPK === 'arena' && Q.get('paint') !== '0';
+/* PA.k = how many world units the painted arena is across compared with the first fit (radius 8): owner 2026-11-28 "สนามกว้างกว่านี้" = a wider field,
+   so the same picture now stands for a bigger place (the fighters are smaller against the walls and gates, like people in a real colosseum);
+   then "ตัวละครเล็กลง 1/4" = the fighters a quarter smaller, which is k = 4 / 3 (?pk= tries another) */
+const PA = (() => { const k = Math.max(.8, +Q.get('pk') || 4 / 3), g = (x, z) => [x * k, z * k];
+  return { k, zc: 2.2 * k, r: 5.4 * k, cam: [0, 7.065 * k, 12.319 * k], look: 1.486 * k, fov: 41.42, asp: 1.5, top: .4, over: .03, img: 'art/bag3d/ui/arena_forest.jpg',
+    gates: [g(0, -5.8), g(-6.82, -1.98), g(6.82, -1.98), g(-4.6, 7.4), g(4.6, 7.4)],   /* far gate, left gate, right gate, and two ways in from below the screen (the cut-away side) */
+    fires: [[335, 58, 1], [528, 44, 1], [1022, 44, 1], [1234, 66, 1]], glows: [[785, 186, 1.5], [197, 286, 1.2], [1375, 286, 1.2], [140, 296, .5], [270, 236, .5], [1300, 236, .5], [1432, 296, .5]] }; })();   /* picture pixels (1536 x 1024): the brazier flames, the torch-lit tunnels */
+const MAP = MAPS[MAPK], ARENA = MAPK === 'arena' ? (PAINT ? PA.r : 8) : 30, WORLD = 96;   /* the arena is smaller: its stands are on screen and the swarm is closer */   /* the hero stays inside a circle of ARENA units; the ground picture covers WORLD x WORLD */
 
 /* ---------- renderer, light, camera */
 const glc = document.getElementById('gl'), uic = document.getElementById('ui'), ui = uic.getContext('2d');
@@ -228,6 +242,26 @@ function addPool(x, z, r) { const sh = new THREE.Mesh(GEO.plane, SHOREM); sh.pos
   if (MAPK === 'volcano') LIGHTS.push({ x, y: .5, z, c: 0xff5a10, s: r * 2.6, ph: x }); }
 const CROWDU = { value: .35 };   /* how hard the crowd cheers (bag3d/arena.js raises it on kills, a boss, a win) */
 const ARENA_GATES = MAPK === 'arena' ? [0, 1, 2, 3, 4, 5].map(i => -Math.PI / 2 + i * TAU / 6) : null;   /* the arena's gate angles (bag3d/arena.js sends the packs through them; set even without drawing) */
+function paintedArena() {   /* the picture behind the world, a floor that only shows shadows, living fire and a cheering crowd on top of the still picture */
+  ground.visible = false; scene.fog = null; SUNDIR.set(-11, 17, -5).normalize(); sun.color.set(0xffdca8); sun.intensity = 1.3; HEMI.color.set(0xffe9cc); HEMI.groundColor.set(0x8a6238); HEMI.intensity = .62; rim.color.set(0xa8c8ff); rim.intensity = .5; rim.position.set(9, 7, 10);
+  const d = 140, h = 2 * d * Math.tan(PA.fov * Math.PI / 360), w = h * PA.asp, tex = TL.load(PA.img); tex.encoding = THREE.LinearEncoding; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+  const U = PA.U = { map: { value: tex }, uT: TIMEU, uC: CROWDU };
+  const bg = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.ShaderMaterial({ uniforms: U, depthTest: false, depthWrite: false, fog: false,
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform sampler2D map; uniform float uT, uC; varying vec2 vUv; void main(){ vec2 u = vUv; float lo = mix(.905, .8, pow(abs(u.x - .5) * 2., 1.6)); float band = smoothstep(lo, lo + .05, u.y);' +
+      ' float col = floor(u.x * 120.); u.y += sin(uT * (5. + mod(col, 3.) * 1.5) + col * 1.7) * .0026 * band * (.35 + uC); gl_FragColor = vec4(texture2D(map, u).rgb, 1.); }' }));   /* the crowd in the stands bobs, harder when it cheers */
+  bg.position.set(0, 0, -d); bg.renderOrder = -1000; bg.frustumCulled = false; camera.add(bg); scene.add(camera);
+  const px = (x, y, z) => new V3((x / 1536 - .5) * w, (.5 - y / 1024) * h, z), gl = new THREE.SpriteMaterial({ map: TEX.soft, color: 0xffb060, transparent: true, depthTest: false, depthWrite: false, fog: false, blending: THREE.AdditiveBlending });
+  PA.lights = PA.glows.map(([x, y, s], i) => { const sp = new THREE.Sprite(gl.clone()); sp.position.copy(px(x, y, .5)); sp.scale.setScalar(s * h * .075); sp.renderOrder = -990; sp.userData = { s: s * h * .075, ph: i * 1.7 }; bg.add(sp); return sp; });
+  TL.load('art/bag3d/fx/st_burn.webp', t => { t.encoding = THREE.sRGBEncoding; PA.flames = PA.fires.map(([x, y, s], i) => { const m = t.clone(); m.needsUpdate = true; m.repeat.set(1 / 6, 1 / 2); const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: m, transparent: true, depthTest: false, depthWrite: false, fog: false, blending: THREE.AdditiveBlending, opacity: .9 }));
+      sp.center.set(.5, .2); sp.position.copy(px(x, y + 26, .6)); sp.scale.setScalar(s * h * .085); sp.renderOrder = -980; sp.userData = { m, ph: i * 2.3 }; bg.add(sp); return sp; }); });   /* our own flame loop over each painted brazier */
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(60, 60).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: .34, color: 0x3a1c08 })); sh.position.y = .012; sh.receiveShadow = true; sh.renderOrder = -900; scene.add(sh);   /* the painted sand takes real shadows */
+  PA.upd = () => { const t = RT; for (const sp of PA.lights) { const u = sp.userData, f = .78 + .16 * Math.sin(t * 9 + u.ph) + .1 * Math.sin(t * 23 + u.ph * 2); sp.scale.setScalar(u.s * f); sp.material.opacity = .5 * f; }
+    if (PA.flames) for (const sp of PA.flames) { const u = sp.userData, fr = Math.floor(t * 11 + u.ph) % 9; u.m.offset.set((fr % 6) / 6, 1 - (Math.floor(fr / 6) + 1) / 2); } };
+}
+function fitPaint(jx = 0, jy = 0) {   /* the camera of the picture: the whole 3:2 view covers the screen (a little over, so a shake never shows an edge); a wider screen loses more of the bottom than of the top */
+  const o = 1 + PA.over, a = SW / SH; let fw, fh; if (a >= PA.asp) { fw = SW * o; fh = fw / PA.asp; } else { fh = SH * o; fw = fh * PA.asp; }
+  camera.fov = PA.fov; camera.aspect = PA.asp; camera.far = 200; camera.setViewOffset(fw, fh, (fw - SW) / 2 + jx, (fh - SH) * PA.top + jy, SW, SH); camera.position.set(PA.cam[0], PA.cam[1], PA.cam[2]); camera.lookAt(0, 0, PA.look); camera.updateMatrixWorld(); }
 function colosseum(SRC) {
   const R = rng(97), B = new THREE.BoxGeometry(1, 1, 1), CY = new THREE.CylinderGeometry(1, 1, 1, 12), r0 = ARENA + .4, GATES = ARENA_GATES, GW = .17;   /* GW = half the angle a gate takes */
   const cut = a => smoothstep(-.12, .55, Math.sin(a)), atA = (a, r, y, sx, sy, sz, c, L) => L.push([B, c, M4(Math.cos(a) * r, y, Math.sin(a) * r, sx, sy, sz, -a - Math.PI / 2)]);   /* cut = 0 far side (full stands) .. 1 camera side (low wall only) */
@@ -293,7 +327,7 @@ async function loadScenery(ld) {
   const K = 'art/tribe3d/kenney/', M = 'art/tribe3d/models/', RT = 'art/tribe3d/rts/', extra = { tent: K + 'tent.glb', fence: K + 'fence.glb', sign: K + 'signpost.glb', log: K + 'tree-log.glb', bedroll: K + 'bedroll.glb', campfire: M + 'campfire.glb', totem: M + 'totem.glb', woodpile: M + 'woodpile.glb', stonepile: M + 'stonepile.glb', bonehut: M + 'hut_bone.glb', stake: M + 'palisade_log.glb',
     temple: RT + 'Temple_FirstAge_Level1.glb', temple2: RT + 'Temple_FirstAge_Level2.glb', tower: RT + 'WatchTower_FirstAge_Level1.glb', wonder: RT + 'Wonder_FirstAge_Level1.glb', store: RT + 'Storage_FirstAge_Level1.glb' };
   await Promise.all([...names.map(n => grab(n, `art/tribe3d/nature/${n}.glb`, true)), ...[0, 1, 2].map(i => grab('rock' + i, `art/tribe3d/models/rock_${i}.glb`, false)), ...Object.entries(extra).map(([n, f]) => grab(n, f, false))]);
-  if (MAPK === 'arena') { colosseum(SRC); return; }
+  if (MAPK === 'arena') { if (PAINT) paintedArena(); else colosseum(SRC); return; }
   const R = rng(MAPK.length * 13 + 3), q = new THREE.Quaternion(), per = {}, taken = [];
   /* put(model, x, z, height, solid, shadow, turn, chunk): solid = true (a radius from the model) or a radius; turn = facing angle (random when undefined) */
   const put = (nm, x, z, h, solid, shadow, turn, chunk = CHUNK) => { const S0 = SRC[nm]; if (!S0) return; const sc = h / S0.h; q.setFromAxisAngle(UP, turn === undefined ? R() * TAU : turn); const key = nm + '|' + (shadow ? 1 : 0) + '|' + chunk + '|' + Math.floor((x + WORLD / 2) / chunk) + '|' + Math.floor((z + WORLD / 2) / chunk);
@@ -1472,10 +1506,13 @@ function keysInp() { if (JOY.on || BOT.on) return; const x = (KEYS.KeyD || KEYS.
 function resize() { if (BAGM && !(innerWidth && innerHeight)) return;   /* the hidden iframe of bag3d.html has no size yet */ SW = innerWidth; SH = innerHeight; DPR = Math.min(2, devicePixelRatio || 1); uic.width = SW * DPR; uic.height = SH * DPR; camera.aspect = SW / SH; camera.updateProjectionMatrix(); S = clamp(Math.min(SW, SH) / 400, .75, 1.5);
   applyQ(); fitView(); }
 function fitView() {   /* how far the camera stands (zoom) and how far away monsters must appear to be off screen */
+  if (PAINT) { fitPaint(); SPAWNR = ARENA + 2; CAM.far = 200; return; }
   CAM.dist = (SW < SH ? 23 : 14.4) / CAM.zoom; camera.position.copy(CAM.dir).multiplyScalar(CAM.dist); camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); const rc = new THREE.Raycaster(), pl = new THREE.Plane(UP, 0), p = new V3(); let far = 10;
   let fd = 20; for (const [x, y] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { rc.setFromCamera(new THREE.Vector2(x, y), camera); if (rc.ray.intersectPlane(pl, p)) { far = Math.max(far, p.length()); fd = Math.max(fd, p.distanceTo(camera.position)); } } SPAWNR = Math.min(24, far + 1.3); CAM.far = fd + 7; }
 addEventListener('resize', resize);
 function updCam(dt) {
+  if (PAINT && !(TITLEST[G.state] || (G.state === 'load' && !G.t))) { CAM.look.set(0, 0, 0); if (CAM.shake > 0) { fitPaint((Math.random() - .5) * CAM.shake * 34 * S, (Math.random() - .5) * CAM.shake * 34 * S); CAM.shake = Math.max(0, CAM.shake - dt * 1.2); CAM.shook = true; } else if (CAM.shook) { CAM.shook = false; fitPaint(); }
+    if (PA.upd) PA.upd(); CAMR.set(1, 0, 0).applyQuaternion(camera.quaternion); CAMU.set(0, 1, 0).applyQuaternion(camera.quaternion); sun.position.copy(CAM.look).addScaledVector(SUNDIR, 40); sun.target.position.copy(CAM.look); if (HERO) CARDU.lamp.value.set(HERO.pos.x, 0, HERO.pos.z, 0); return; }
   { const f = TITLEST[G.state] || (G.state === 'load' && !G.t) ? 80 : CAM.far || 60; if (camera.far !== f) { camera.far = f; camera.updateProjectionMatrix(); } }
   if (TITLEST[G.state] || (G.state === 'load' && !G.t)) { CAM.look.set(0, 0, 0); const wide = SW / SH; camera.position.set(wide > 1.5 ? -.1 : 0, 1.3, wide > 1.5 ? 5.0 : 7.5); camera.lookAt(0, .78, 0); }
   else { const H = HERO.pos; let tx = H.x, tz = H.z; if (MAPK === 'arena') { tx *= .4; tz = tz * .4 - 2.0; }   /* the arena: a broadcast camera, it follows the champion only partly (a little toward the far stands) so the colosseum stays on screen */ if (CAM.focus) { const F = CAM.focus; F.t += dt; const w = Math.sin(Math.min(1, F.t / F.dur) * Math.PI) * .5; tx += clamp(F.m.x - H.x, -9, 9) * w; tz += clamp(F.m.z - H.z, -6, 6) * w; if (F.t >= F.dur || F.m.dead) CAM.focus = null; }

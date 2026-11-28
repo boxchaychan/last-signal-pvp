@@ -140,18 +140,22 @@ function bagWave(round, boss) {   /* how many monsters, how strong, when they co
 }
 /* THE ARENA (horde.html map=arena): every pack runs out of the gate nearest its side; the boss comes through the main gate (far side) */
 const bagIsArena = () => typeof MAPK !== 'undefined' && MAPK === 'arena' && typeof ARENA_GATES !== 'undefined' && ARENA_GATES;
+const bagPaint = () => typeof PAINT !== 'undefined' && PAINT;
+function bagGateP(a) { let best = PA.gates[0], bd = 9; for (const g of PA.gates) { const d = bagAngD(a, Math.atan2(g[1], g[0])); if (d < bd) { bd = d; best = g; } } return best; }   /* the painted arena: the way in nearest to that side */
 function bagGate(a) { let best = ARENA_GATES[0], bd = 9; for (const g of ARENA_GATES) { const d = bagAngD(a, g); if (d < bd) { bd = d; best = g; } } return best; }
 function bagCheer(v, hold) { if (typeof CROWDU !== 'undefined') CROWDU.value = hold ? Math.max(CROWDU.value, v) : Math.min(1.7, CROWDU.value + v); }
 function bagFair(k, o) { const K = KIND[k], q = Object.assign({}, o); if (K && K.st) { q.hp = (q.hp || 1) * Math.pow(K.st.hp, -.4); q.dmg = (q.dmg || 1) * Math.pow(K.st.dmg, -.4); } return q; }   /* big kinds are tougher, but less than in the survival game: the round's level already makes them stronger */
 function bagSpawn(e) {
-  if (e.warn != null) { BAG.warn.push({ a: bagIsArena() ? bagGate(e.warn) : e.warn, t: 1.3 }); return; }
+  if (e.warn != null) { if (bagPaint()) { const g = bagGateP(e.warn); BAG.warn.push({ a: Math.atan2(g[1] - HERO.pos.z, g[0] - HERO.pos.x), t: 1.3 }); } else BAG.warn.push({ a: bagIsArena() ? bagGate(e.warn) : e.warn, t: 1.3 }); return; }
+  if (bagPaint() && !e.ring) { const g = bagGateP(e.a), L = Math.hypot(g[0], g[1]), tx = -g[1] / L, tz = g[0] / L; if (e.n >= 4) note('ฝูงมอนวิ่งออกจากประตู! ×' + e.n, '#ff9a7a');   /* out of a painted gate, spread across its mouth and a little behind it */
+    for (let i = 0; i < e.n; i++) { const t = rnd(-.9, .9), b = rnd(0, Math.min(2.2, e.n * .16)); spawnMon(e.k, g[0] + tx * t + g[0] / L * b, g[1] + tz * t + g[1] / L * b, bagFair(e.k, e.o)); } pfx('smoke/dust-puff', g[0] * .93, g[1] * .93, 2.6); if (e.note) note(e.note, '#ffd86a'); return; }
   if (bagIsArena() && !e.ring) { const g = bagGate(e.a), cx = Math.cos(g), cz = Math.sin(g); if (e.n >= 4) note('ฝูงมอนวิ่งออกจากประตู! ×' + e.n, '#ff9a7a');   /* out of the gate, spread across its mouth */
     for (let i = 0; i < e.n; i++) { const r = ARENA - .7 - rnd(0, Math.min(2.4, e.n * .18)), t = rnd(-1, 1); spawnMon(e.k, cx * r - cz * t, cz * r + cx * t, bagFair(e.k, e.o)); } pfx('smoke/dust-puff', cx * (ARENA - 1), cz * (ARENA - 1), 2.6); if (e.note) note(e.note, '#ffd86a'); return; }
   if (e.ring) { for (let i = 0; i < e.n; i++) { const [x, z] = ringPos(Math.min(SPAWNR - .5, 11.5), i / e.n * TAU); spawnMon(e.k, x, z, bagFair(e.k, e.o)); } banner('ฝูงใหญ่ล้อมแล้ว!', 'ฝ่าวงล้อมออกไป', true, 1.8); sfx('hurt', .6, .6); return; }
   if (e.pack && e.n >= 4) note('ฝูงมอนวิ่งมารุม! ×' + e.n, '#ff9a7a');
   for (let i = 0; i < e.n; i++) { const [x, z] = ringPos((e.d || SPAWNR + rnd(0, 2)) + rnd(0, e.pack ? 2.4 : 1.2), e.a + rnd(e.pack ? -.38 : -.22, e.pack ? .38 : .22)); const m = spawnMon(e.k, x, z, bagFair(e.k, e.o)); if (m && e.d) spark(x, .3, z, { n: 3, color: 0xd8d0c0, spd: 1.5, up: 2, size: .25, life: .35 }); } if (e.note) note(e.note, '#ffd86a'); }
 function bagBoss() { const bi = Math.min(3, Math.floor(BAG.cfg.round / 5) - 1), k = MAP.boss[Math.max(0, bi) % MAP.boss.length]; BAG.bossWait = true;
-  loadKind(k).then(() => { const K = KIND[k]; if (!K || !K.ok || !BAG.on) { BAG.bossWait = false; BAG.total--; return; } const [x, z] = bagIsArena() ? [0, -(ARENA - 1.4)] : ringPos(Math.min(SPAWNR - 1, 11)), m = spawnMon(k, x, z, { boss: true, bi: Math.max(0, bi), spd: .85, dmg: .75 }); BAG.bossWait = false; if (!m) { BAG.total--; return; }
+  loadKind(k).then(() => { const K = KIND[k]; if (!K || !K.ok || !BAG.on) { BAG.bossWait = false; BAG.total--; return; } const [x, z] = bagPaint() ? [PA.gates[0][0], PA.gates[0][1] + .6] : bagIsArena() ? [0, -(ARENA - 1.4)] : ringPos(Math.min(SPAWNR - 1, 11)), m = spawnMon(k, x, z, { boss: true, bi: Math.max(0, bi), spd: .85, dmg: .75 }); BAG.bossWait = false; if (!m) { BAG.total--; return; }
     m.hp = m.max = BAG.bossHp; m.r = Math.max(m.r, .8); G.boss = m; banner('บอสบุก!', MOBS[k].name, true, 2.6); bagCheer(1.5, true); setMusic('drums'); shake(.4); sfx('boom', .9, .6); sfx('roar', 1); G.slow = 1.2; CAM.focus = { m, t: 0, dur: 2 }; }); }
 function bagUpd(dt) {   /* instead of the weapons / director / shrines / ultimate of the normal game */
   if (typeof CROWDU !== 'undefined') CROWDU.value += (.32 - CROWDU.value) * Math.min(1, dt * .45);   /* the cheer dies down */
@@ -173,7 +177,7 @@ function bagAuto(dt) {   /* the champion holds the ground and lets the bag fight
   for (const b of BUL) { const dx = H.x - b.x, dz = H.z - b.z, d2 = dx * dx + dz * dz; if (d2 < 9) { fx += dx / (d2 + .2) * 2; fz += dz / (d2 + .2) * 2; } }
   if (!close) { let gd = 7, gx = 0, gz = 0; for (const g of GEMS) { const d = Math.hypot(g.x - H.x, g.z - H.z); if (d < gd) { gd = d; gx = g.x - H.x; gz = g.z - H.z; } } if (gd < 7) { fx += gx / (gd || 1) * .8; fz += gz / (gd || 1) * .8; } }
   if (nm && !nm.boss) { const d = Math.sqrt(nd); if (d > BAG.reach) { fx += (nm.x - H.x) / d; fz += (nm.z - H.z) / d; } } else if (nm && nd > 36) { const d = Math.sqrt(nd); fx += (nm.x - H.x) / d; fz += (nm.z - H.z) / d; }
-  const R = Math.hypot(H.x, H.z), eg = bagIsArena() ? 3 : 6; if (R > ARENA - eg) { fx -= H.x / R * (R - ARENA + eg) * .6; fz -= H.z / R * (R - ARENA + eg) * .6; }   /* the arena is small: keep off its wall, not off half of it */
+  const R = Math.hypot(H.x, H.z), eg = bagPaint() ? 1 : bagIsArena() ? 3 : 6; if (R > ARENA - eg) { fx -= H.x / R * (R - ARENA + eg) * .6; fz -= H.z / R * (R - ARENA + eg) * .6; }   /* the arena is small: keep off its wall, not off half of it */
   const L = Math.hypot(fx, fz); if (L < .06) INP.x = INP.z = 0; else { INP.x = fx / L; INP.z = fz / L; }
   if (HERO.dashCd <= 0 && HERO.hp < HERO.max * .5 && close >= 4) { const c = Math.hypot(cx, cz) || 1; INP.x = cx / c; INP.z = cz / c; heroDash(); }
 }
