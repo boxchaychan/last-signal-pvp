@@ -3694,3 +3694,13 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - now: rounds 1-12 won, 13 83 %, 14 67 %, 15 boss 83 %, close to the curve before the skills (14 83 %, 15 67 %);
   - real bags are weaker than the bots', so this is the top end.
 - `?isk=0` on horde.html / `ISK=0` in the balance run = no item skills, to compare.
+
+## BAG 3D: START SCREEN FITS + FULL SCREEN (owner 2026-11-28 "ทำเต็มจอหน่อย กดเข้าเกมไม่ได้")
+- Cause: on a phone in landscape with the browser bar showing, the screen is only ~280-340 px high. The 5 class cards (with their trait lines) pushed "▶ เริ่มศึก" below the bottom edge, and the start screen could not scroll.
+- Fix:
+  - the start screen is one box (`#homeIn`) that `fitHome()` shrinks to fit the screen (CSS zoom, down to x.5, then it scrolls). It runs on load, resize, turning the phone and full screen;
+  - short screens get tighter cards;
+  - a "⛶ เต็มจอ" button top right;
+  - tapping "เริ่มศึก" also asks for full screen and turns the phone sideways (Android / PC Chrome; `goFull()`).
+- iPhone Safari has no full screen for web pages: the button explains "แชร์ → เพิ่มไปยังหน้าจอโฮม". The page now has `bag3d.webmanifest` (fullscreen, landscape) + Apple web-app tags + an icon (`art/bag3d/app192.png` / `app512.png`, the knight), so from the home-screen icon it opens without browser bars.
+- Check `node tools/qa/bag3d_fit.js [out]` = FIT OK. It tests 844x390, 844x340, 800x330, 740x300, 667x320 and 640x280: the start button is on screen and tappable, every shop button is inside after start, the full-screen button and start tap work, and the manifest and icon load.
