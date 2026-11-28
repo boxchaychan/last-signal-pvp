@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=6"></script><script src="bag3d/classes.js?v=3"></script>
+<script src="bag3d/arena.js?v=7"></script><script src="bag3d/classes.js?v=3"></script><script src="bag3d/itemskills.js?v=1"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -453,7 +453,7 @@ let PFXN = 0; const PXMAX = .036;   /* world units per effect pixel at most (mon
 function updPers() { for (const q of PERS) { const E = PFX[q.nm]; if (!E || !E.ok) continue; if (!q.sp) { q.tex = E.t.clone(); q.tex.needsUpdate = true; q.tex.repeat.set(1 / E.cols, 1 / E.rows); q.sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: q.tex, transparent: true, depthWrite: false, fog: false })); q.sp.center.set(E.piv[0] / E.w, 1 - E.piv[1] / E.h); q.sp.scale.set(q.size, q.size * E.h / E.w, 1); q.sp.position.set(q.x, q.y || .05, q.z); scene.add(q.sp); }
     const fr = Math.floor((RT * 1.2 + q.x) / E.dur * E.n) % E.n; q.tex.offset.set((fr % E.cols) / E.cols, 1 - (Math.floor(fr / E.cols) + 1) / E.rows); } }
 function pfx(nm, x, z, size, o = {}) {   /* size = width of a frame in world units; o.follow = a position to stay on, o.dur = play time (loops when longer than the clip), o.y, o.cut = play only this first part of the sheet */
-  const E = PFX[nm]; if (!E || !E.ok || PFXN >= 22) return; PFXN++; size = Math.min(size, E.w * PXMAX); const tex = E.t.clone(); tex.needsUpdate = true; tex.repeat.set(1 / E.cols, 1 / E.rows); tex.offset.set(0, 1 - 1 / E.rows);
+  const E = PFX[nm]; if (!E || !E.ok || PFXN >= (o.pri ? 30 : 22)) return; PFXN++; size = Math.min(size, E.w * (o.max || PXMAX));   /* o.pri / o.max: item skills (bag3d/arena.js ipfx) */ const tex = E.t.clone(); tex.needsUpdate = true; tex.repeat.set(1 / E.cols, 1 / E.rows); tex.offset.set(0, 1 - 1 / E.rows);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false, opacity: o.opacity || 1 })); sp.center.set(E.piv[0] / E.w, 1 - E.piv[1] / E.h); sp.scale.set(size, size * E.h / E.w, 1); sp.position.set(x, o.y || .05, z); sp.renderOrder = 5;
   const N = Math.max(1, Math.round(E.n * (o.cut || 1))), clip = E.dur * (o.cut || 1) / (o.speed || 1.25), life = o.dur || clip; addFx(sp, life, (q, k, dt, f) => { const fr = o.dur ? Math.floor(f.t / clip * E.n) % E.n : Math.min(N - 1, Math.floor(k * N)); if (o.cut) q.material.opacity = (o.opacity || 1) * Math.min(1, (1 - k) * 4); tex.offset.set((fr % E.cols) / E.cols, 1 - (Math.floor(fr / E.cols) + 1) / E.rows); if (o.follow) q.position.set(o.follow.x, o.y || .05, o.follow.z); if (o.dur) q.material.opacity = (o.opacity || 1) * Math.min(1, (life - f.t) * 3); }, () => { PFXN--; tex.dispose(); sp.material.dispose(); });
 }
