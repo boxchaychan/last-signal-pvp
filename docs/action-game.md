@@ -3760,3 +3760,11 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - owner "ของในร้านจะมีของปกติที่ราคาถูกกว่าการซื้อ", read as: buying the pieces and crafting is cheaper than buying a finished item outright; plain items stay cheap.
 - DUELS like the monster rounds (owner "รอบคนสู้กัน ให้ทำแบบมอนเลย"): the player-vs-player rounds move into the 3D arena too: our champion vs the rival champion, both auto, every bag item firing on both sides (no side view).
 - Starting class (owner "อาชีพเริ่มต้น เอาอัศวินดำเข้าเลย ตัวอื่นฉันจะเจนเพิ่มถ้าว่าง"): the BLACK KNIGHT is the first playable champion; the owner will generate the others later. Read as the black horned knight (rival `dark`), to confirm.
+- Auto-fight movement (owner noticed the axe hero "runs away then comes back" while the archer walks and shoots): today every hero dashes out of a crowd at < 50 % life with 4+ monsters close, wanders to coins when nothing is close, and dodges bosses and shots; melee is surrounded more, so it flees more.
+- Decided (owner "สายใกล้ไม่ควรหนีไหม ... เจอยิงไกลมันก็แพ้ 100 %"):
+  - melee never flees; ranged steps back only a little, to stay in range, and walks slower while shooting;
+  - melee walks ~15 % faster; the arena is small; melee keeps more life / armour;
+  - NO built-in gap-closers or point-blank bow penalty (owner "4 6 เอาออก ... ให้แก้ทางโดยการออกของ"): matchups are answered by ITEMS (boots, blink, slows, stuns, accuracy vs dodge, magic coat vs mages);
+  - balance with bot duels melee vs ranged to about 50 / 50.
+- BOOTS line (owner "เพิ่มไอเทมรองเท้าด้วย"), only ONE pair worn:
+  - plain boots (+10 % speed, buy) → wind boots (+20 %, 10 % dodge), sprint boots (a hit gives a 2 s burst), leap boots (every 8 s leap at the enemy), armoured boots (speed + armour), magic boots (speed + INT, skill sooner), retreat boots (ranged: when an enemy is close, back off fast).
