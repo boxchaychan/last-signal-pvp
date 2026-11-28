@@ -3742,3 +3742,21 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - curses: weakness (-25 % damage dealt), brittle (+20 % damage taken), death mark (below 15 % life dies), spreading curse (spreads on death);
   - the meteor item exists already (no copy).
 - STATUS / ELEMENTS (owner's idea, to design in full): element gems placed next to a weapon; a weapon with TWO elements ALTERNATES (hit 1 fire, hit 2 ice ...); same element stacks on the enemy; two elements meeting make a REACTION with its own name and a heavy effect (owner examples: fire + ice = wet, wet + lightning = a heavy shock, fire + lightning = overload). Claude's proposal: see the next lines once the owner answers.
+- Elements, Claude's proposal shown to the owner:
+  - 4 elements: fire, ice, lightning, poison; 5 stacks of one = its big effect (blaze, frozen 1.5 s, lightning strike, corrode);
+  - reactions: fire + ice = WET; wet + lightning = a heavy SHOCK (x2, chains to other wet ones, stun); fire + lightning = OVERLOAD (blast, knock-back); ice + lightning = SHATTER (big hit, armour broken); fire + poison = gas blast; ice + poison = frozen poison (long slow, poison stays); lightning + poison = spreading poison;
+  - items: 4 element stones + an elements tome (reactions stronger by INT).
+- General items, Claude's proposal:
+  - crit: crit sword 20 % x2.5, crit ring +50 % crit damage, big executioner axe 25 % x3;
+  - accuracy: ONE big item (never miss, a little magic damage; it counters dodge builds);
+  - speed: glove +15 %, wind blade +25 % + AGI, wind boots, sprint boots;
+  - armour: iron armour, magic coat, big armour (slows attackers round you);
+  - blink dagger for melee (every 6 s); lifesteal fang 10 % (only one); hunter skull (+1 damage a kill, to 20 a round);
+  - survival: emergency potion, revive stone, spell shield, anti-stun stone.
+- SHOP STRUCTURE (owner "แบ่งเป็นของที่ซื้อได้กับวัสดุที่ต้องหาในร้านมาผสม"), like Dota:
+  - (1) basic items, bought and used at once; (2) ~10 MATERIALS, cheap, crafting only (wood, feather, iron, hide, blade, fang, magic crystal, magic cloth, soul, herb);
+  - (3) crafted = every special item above, made from basic + materials with the existing "ประกอบ" button (pay only for missing pieces, recipe book); the biggest items = two crafted items;
+  - where materials are kept: asked (a) a separate materials pouch (recommended) or (b) in the bag; no answer yet, so (a) by default;
+  - owner "ของในร้านจะมีของปกติที่ราคาถูกกว่าการซื้อ", read as: buying the pieces and crafting is cheaper than buying a finished item outright; plain items stay cheap.
+- DUELS like the monster rounds (owner "รอบคนสู้กัน ให้ทำแบบมอนเลย"): the player-vs-player rounds move into the 3D arena too: our champion vs the rival champion, both auto, every bag item firing on both sides (no side view).
+- Starting class (owner "อาชีพเริ่มต้น เอาอัศวินดำเข้าเลย ตัวอื่นฉันจะเจนเพิ่มถ้าว่าง"): the BLACK KNIGHT is the first playable champion; the owner will generate the others later. Read as the black horned knight (rival `dark`), to confirm.
