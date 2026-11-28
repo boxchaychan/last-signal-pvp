@@ -37,6 +37,27 @@ TREEICONS = [('p_blade', 'var', 'dagger', (200, 205, 215), .45, -20, .8, False),
     ('f_kingslayer', 'var', 'greatsword', (255, 210, 80), .55, 0, 1.0, False), ('f_bastion', 'var', 'towershield', (255, 210, 90), .5, 0, 1.0, False), ('f_stormstep', 'var', 'boots', (90, 200, 255), .65, 0, 1.0, True),
     ('f_archmage', 'var', 'crown', (180, 100, 255), .6, 0, 1.0, False), ('f_bloodpact', 'var', 'heart', (200, 20, 40), .55, 0, 1.0, False), ('f_titan', 'var', 'plate', (230, 180, 70), .6, 0, 1.0, True),
     ('f_lichstaff', 'var', 'archstaff', (150, 60, 220), .55, 0, 1.0, False), ('f_godbow', 'var', 'frostbow', (255, 215, 120), .65, 0, 1.0, False)]
+# BIG ITEM REDESIGN (2026-11-28, bag3d/items2.js IT2 order, then the UI emblems): stand-ins made from our icons; the real ones = 6 sheets
+# (art/incoming/bag3d/PROMPTS_items3.md, Codex brief art/incoming/bag3d/items3/BRIEF.md), cut in with --sheet <png> <first id> 4 3
+V = lambda k, src, col, amt=.5, rot=0, sc=1.0, flip=False: (k, 'var', src, col, amt, rot, sc, flip)
+ITEMS3 = [V('p_wood', 'club', (150, 100, 60), .5, 0, .8), V('p_cloth', 'cloak', (170, 110, 255), .5, 0, .8), V('p_soul', 'lantern', (150, 220, 255), .6, 0, .8),
+    ('b_spread', 'pair', 'bow', 'bow', (255, 230, 170)), V('b_thunder', 'bow', (170, 190, 255), .6), ('b_double', 'pair', 'bow', 'bow', (200, 255, 200)), V('a_pierce', 'spear', (220, 225, 235), .5, 30, .8),
+    V('quiver', 'javelin', (190, 130, 80), .5, 0, .9), V('b_rapid', 'bow', (150, 255, 180), .55), V('b_charge', 'bow', (255, 220, 110), .6), V('b_shock', 'bow', (255, 255, 120), .6, 0, 1, True),
+    V('s_spin', 'sword', (160, 230, 255), .5, 45), ('s_double', 'pair', 'sword', 'sword', (220, 230, 255)), V('h_bash', 'club', (255, 220, 130), .5), V('s_ramp', 'sword', (255, 70, 70), .55),
+    V('s_wave', 'sword', (110, 180, 255), .6, -20), V('s_dash', 'dagger', (140, 255, 230), .55, -30), V('g_counter', 'glove', (255, 170, 90), .5), V('blinkdagger', 'dagger', (200, 120, 255), .6),
+    V('t_multi', 'book', (200, 140, 255), .5), V('st_blast', 'wand', (255, 120, 40), .4, 0, 1, True), V('st_beam', 'icestaff', (255, 255, 255), .5), V('o_soul', 'orb', (120, 255, 170), .6),
+    V('st_spirit', 'wand', (160, 230, 255), .6), V('g_mpierce', 'stone', (190, 110, 255), .6), V('t_haste', 'book', (255, 225, 130), .5, 0, 1, True),
+    V('sp_storm', 'stone', (150, 230, 255), .6), V('sp_stones', 'stone', (200, 200, 215), .4, 0, .9, True), V('sp_blink', 'cloak', (120, 170, 255), .5), V('sp_ball', 'orb', (150, 200, 255), .55),
+    V('sp_skel', 'skull', (235, 235, 225), .6), V('sp_sprite', 'ember', (255, 170, 60), .4, 0, .85), V('sp_totem', 'club', (170, 255, 200), .55, 0, 1, True), V('sp_time', 'hourglass', (140, 220, 255), .55),
+    V('sp_hex', 'wand', (120, 255, 110), .6), V('sp_vine', 'clover', (110, 220, 90), .5, 0, .9, True), V('sp_silence', 'bomb', (190, 140, 255), .6), V('sp_weak', 'ragemask', (170, 130, 200), .6),
+    V('sp_brittle', 'stone', (255, 90, 90), .55), V('sp_mark', 'skull', (255, 60, 60), .55), V('sp_spread', 'voidorb', (170, 60, 200), .5, 0, .95, True), V('t_elem', 'holytome', (255, 180, 255), .4),
+    V('critedge', 'p_blade', (255, 90, 90), .5, 0, 1.2), V('critring', 'ring', (255, 60, 60), .55), V('execaxe', 'axe', (255, 60, 60), .5), V('trueeye', 'amulet', (255, 220, 90), .6, 0, .9, True),
+    V('windblade', 'katana', (160, 255, 200), .5), V('magecoat', 'cloak', (90, 150, 255), .55, 0, 1, True), V('frostplate', 'plate', (150, 220, 255), .55), V('bloodfang', 'p_fang', (255, 60, 70), .55, 0, 1.2),
+    V('hunterskull', 'skull', (240, 225, 190), .5, 0, .95, True), V('autopotion', 'potion', (255, 110, 110), .3, 0, .85), V('revive', 'star', (255, 235, 150), .5, 0, .9), V('spellshield', 'buckler', (120, 180, 255), .6),
+    V('nostun', 'frost', (120, 200, 255), .4, 0, .85), V('bt_wind', 'boots', (200, 255, 255), .5), V('bt_sprint', 'boots', (255, 110, 70), .55), V('bt_leap', 'boots', (190, 255, 130), .55, 0, 1, True),
+    V('bt_armor', 'boots', (170, 180, 200), .6), V('bt_magic', 'boots', (190, 120, 255), .6), V('bt_retreat', 'boots', (90, 170, 110), .6, 0, 1, True),
+    V('ui_pouch', 'goldbag', (190, 150, 110), .6), V('ui_anvil', 'hammer', (170, 175, 190), .5), ('ui_mel', 'pair', 'sword', 'axe', (255, 120, 90)), V('ui_rng', 'bow', (140, 230, 120), .6), V('ui_mag', 'wand', (190, 140, 255), .6),
+    V('el_f', 'ember', (255, 110, 50), .3, 0, .9), V('el_i', 'frost', (120, 210, 255), .3, 0, .9), V('el_l', 'thunderstone', (255, 225, 80), .6, 0, .9), V('el_p', 'venomgland', (130, 230, 80), .4, 0, .9), V('ui_cup', 'crown', (255, 215, 90), .4), V('ui_dice', 'stone', (245, 240, 225), .7)]
 SRC = Image.open('art/bag/icons.png').convert('RGBA')
 MADE = {}
 CODE = {}
@@ -75,13 +96,15 @@ def icon(main, small, col):
     return out
 def from_sheet(path, cols=4, rows=3):
     im = Image.open(path).convert('RGBA'); W, H = im.size; out = []
+    k0 = im.getpixel((2, 2)); clear = k0[3] < 16   # a transparent sheet is used as it is; else the corner colour is the background
     for n in range(cols * rows):
         c = im.crop((n % cols * W // cols, n // cols * H // rows, (n % cols + 1) * W // cols, (n // cols + 1) * H // rows)); px = c.load()
-        for y in range(c.height):
+        for y in range(0 if clear else c.height):
             for x in range(c.width):
-                r, g, b, a = px[x, y]
-                if r > 150 and b > 150 and g < 110 and abs(r - b) < 90: px[x, y] = (0, 0, 0, 0)   # flat magenta key
-                elif r > 120 and b > 120 and g < r * .55 and g < b * .55: px[x, y] = (r, g, b, int(a * .25))   # magenta fringe
+                r, g, b, a = px[x, y]; d = abs(r - k0[0]) + abs(g - k0[1]) + abs(b - k0[2])
+                if d < 90: px[x, y] = (0, 0, 0, 0)   # the flat background (keyed by distance to the corner colour, so purple icons survive)
+                elif d < 170: px[x, y] = (r, g, b, int(a * (d - 90) / 80))   # its fringe
+        if clear: c.putalpha(c.split()[3].point(lambda v: 0 if v < 40 else v))   # drop faint leftovers (soft shadows) so the trim box is tight
         bb = c.getbbox()
         if not bb or (bb[2] - bb[0]) < 8: out.append(None); continue
         c = c.crop(bb); k = 60 / max(c.size); w, h = max(1, round(c.width * k)), max(1, round(c.height * k))
@@ -89,7 +112,7 @@ def from_sheet(path, cols=4, rows=3):
         cell = Image.new('RGBA', (64, 64), (0, 0, 0, 0)); cell.alpha_composite(c, ((64 - w) // 2, (64 - h) // 2)); out.append(cell)
     return out
 # the order of the IT table in bag3d.html after the 40 originals: CRAFTED, NEWITEMS, CRAFTED2
-ALL = [k for k, *_ in CRAFTED] + [k for k, *_ in NEWITEMS] + [k for k, *_ in CRAFTED2] + [k for k, *_ in TREEICONS]
+ALL = [k for k, *_ in CRAFTED] + [k for k, *_ in NEWITEMS] + [k for k, *_ in CRAFTED2] + [k for k, *_ in TREEICONS] + [k for k, *_ in ITEMS3]
 for k, op, *a in NEWITEMS: MADE[k] = var(a[0], *a[1:]) if op == 'var' else pair(a[0], a[1], a[2])
 code = {k: icon(a, b, c) for k, a, b, c in CRAFTED}; code.update({k: MADE[k] for k, *_ in NEWITEMS}); code.update({k: icon(a, b, c) for k, a, b, c in CRAFTED2})
 # PixelLab icons (art/incoming/bag3d/gen.py, the same recipe as the 40 originals, used raw like them) replace the code-made ones
@@ -102,6 +125,9 @@ for k, op, *a in TREEICONS:
 for k in ALL:   # PixelLab tree icons, when ordered later, replace the code-made ones
     f = f'art/incoming/bag3d/pl/{k}.png'
     if os.path.exists(f): code[k] = Image.open(f).convert('RGBA').resize((64, 64), Image.NEAREST)
+CODE.update(code)
+for k, op, *a in ITEMS3:
+    if k not in code: code[k] = var(a[0], *a[1:]) if op == 'var' else pair(a[0], a[1], a[2])
 # owner's ChatGPT sheets that already came in (art/incoming/bag3d/sheet_<first id>_<cols>x<rows>.png, kept and re-used), then a new one:
 #   python3 tools/art/bag_craft_icons.py --sheet <png> <first id> [cols 4] [rows 3]
 if len(sys.argv) > 3 and sys.argv[1] == '--sheet':
