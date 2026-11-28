@@ -52,7 +52,7 @@ function bagHit(W, m, mul, o) {
   if (W.exe && m.hp < m.max * .3) d *= 1 + W.exe; if (S.rage) d *= 1 + S.rage * Math.max(0, 1 - HERO.hp / HERO.max); if (W.pierce && (m.elite || m.boss)) d *= 1 + W.pierce * .5;
   const q = Object.assign({ w: W.id, crit, color: W.ty === 'mag' ? '#e0c4ff' : undefined }, o); if (q.kb) q.kb *= .45;   /* small pushes: the horde must be able to reach the champion */ if (W.burn) q.burn = W.burn * .3; if (W.frz) { q.slow = Math.min(.6, W.frz * 1.2); q.slowT = 2; } if (W.stun) q.frz = W.stun; if (X && X.bash && Math.random() < X.bash[0]) { q.frz = Math.max(q.frz || 0, X.bash[1]); num(m.x, 1.5, m.z, 'มึน!', '#ffe08a'); } if (X && X.jolt && Math.random() < X.jolt[0]) q.frz = Math.max(q.frz || 0, X.jolt[1]);
   if (crit && d > 0 && !(BAG.critT > BAG.t)) { BAG.critT = BAG.t + .45; mfx('crit', m.x, m.z, 1.7 + Math.min(1, d / Math.max(10, m.max)) * .8); }   /* not every crit: the screen would fill */
-  const dealt = hitMon(m, d, q); if (W.el && W.id !== 'skill') bagEl(W, m); if (S.gx && S.gx.soul && W.ty === 'mag' && dealt) healHero(Math.min(dealt * S.gx.soul * .35, HERO.max * .02)); if (W.poi && !m.dead) m.poi = Math.min((m.poi || 0) + W.poi * .5, W.poi * 4); if (W.ls && dealt) healHero(Math.min(dealt * W.ls * .35, HERO.max * .03)); return dealt;
+  const dealt = hitMon(m, d, q); if (!m.dead && m.mark > BAG.t && m.hp < m.max * (m.boss ? .06 : .15)) { mfx('curse', m.x, m.z, 1.8); hitMon(m, m.hp + 1, { w: 'mark', color: '#ff8a8a' }); } if (W.el && W.id !== 'skill') bagEl(W, m); if (S.gx && S.gx.soul && W.ty === 'mag' && dealt) healHero(Math.min(dealt * S.gx.soul * .35, HERO.max * .02)); if (W.poi && !m.dead) m.poi = Math.min((m.poi || 0) + W.poi * .5, W.poi * 4); if (W.ls && dealt) healHero(Math.min(dealt * W.ls * .35, HERO.max * .03)); return dealt;
 }
 function bagBoom(W, x, z, r, mul, o = {}) {   /* everything in the circle (o.main = that one takes the full hit, the others half) */
   inCircle(x, z, r, m => bagHit(W, m, (mul || 1) * (o.main && m !== o.main ? .5 : 1), { fx: x, fz: z, kb: o.kb === undefined ? 2.5 : o.kb })); const c = o.c || 0xffa040;
@@ -100,7 +100,7 @@ const BAGFIRE = {
   wisps(W, C, O) { if (!bagNear(12)) return false; const n = O.n || 3; for (let i = 0; i < n; i++) shootP('spirit', Math.random() * TAU, { bag: W, mul: 1.5 / n, spd: 8, life: 3.5, r: .45, y: 1, c: C, boomR: 1.2 }); return true; },
   cut(W, C) { const m = bagNear(2.8); if (!m) return false; const a = dirTo(m), P0 = bagPos(); inCircle(P0.x, P0.z, 2.6, q => { if (bagAngD(dirTo(q), a) < 1.1) bagHit(W, q, 1, { kb: 2 }); }); arcFx(P0.x, P0.z, a, 2.6, C, .22, 1); sfx('slash', .4, 1.1); return a; },   /* an item this page does not know */
 };
-function bagFire(W) { const M = BAGMOVE[W.id] || BAGMOVE[W.base] || (W.ty === 'mag' ? ['fireball', 0xbe8cff, { n: 1 }] : ['cut', 0xffe2a0]), f = BAGFIRE[M[0]]; let O = M[2] || {};
+function bagFire(W) { const M = (W.mv && BAGFIRE[W.mv] && [W.mv, W.ty === 'mag' ? 0xc8a8ff : 0xffe2a0]) || BAGMOVE[W.id] || BAGMOVE[W.base] || (W.ty === 'mag' ? ['fireball', 0xbe8cff, { n: 1 }] : ['cut', 0xffe2a0]), f = BAGFIRE[M[0]]; let O = M[2] || {};
   if (W.x && (W.x.multi || W.x.xarr) && M[0] === 'arrows') O = Object.assign({}, O, { n: (W.x.multi || O.n || 1) + (W.x.xarr || 0), xm: .4 });   /* more arrows: the extras at 40 % */
   if (W.x) bagFireX(W); const r = f(W, M[1], O); W.sure = 0; { const G = BAG.st.gx || {}; if (r !== false && G.multicast && W.ty === 'mag' && !W.once && Math.random() < G.multicast) after(.16, () => { if (!HERO.dead) { f(W, M[1], O); num(HERO.pos.x, 2.1, HERO.pos.z, 'ร่ายซ้ำ!', '#d8b8ff'); } }); } W.mv = M[0]; if (r !== false) for (let h = 1; h < (W.hits || 1); h++) after(h * .13, () => { if (!HERO.dead) f(W, M[1], O); }); return r; }
 function bagSelf(W) {   /* shields and food work on the champion */
@@ -185,9 +185,41 @@ function mfx(k, x, z, size, o = {}) {   /* size = width in world units; o.pri, o
   return true;
 }
 function bagMfx(nm, x, z, size, o) { mfxInit(); if (!BAGM || !MFX.on) return false; const k = MF_PF[nm]; if (!k) return false; return mfx(k, x, z, size * 1.12, { pri: o.pri, dur: o.dur && MFX.J && MFX.J[k] && MFX.J[k].loop ? o.dur : 0, follow: o.follow, speed: o.speed ? Math.min(1.6, o.speed / 1.25) : 1, opacity: o.opacity }); }
+
+/* THE SPELL ITEMS AND THE NEW MOVES (bag3d/items2.js mv; everyone may use the spells, their power is from INT): each one a few lines with its
+   painted Meta effect. Return false = nothing to hit (the item waits a moment). */
+const bagStrong = (R, n) => MON.filter(q => !q.dead && (q.x - HERO.pos.x) ** 2 + (q.z - HERO.pos.z) ** 2 < R * R).sort((p, q) => q.hp - p.hp).slice(0, n);
+const bagKeep = (x, z) => { const L = Math.hypot(x, z), mx = ARENA - .8; return L > mx ? [x * mx / L, z * mx / L] : [x, z]; };
+Object.assign(BAGFIRE, {
+  blast(W, C) { const m = bagDense(9, 2.5) || bagNear(9); if (!m) return false; const a = dirTo(m), d = Math.hypot(m.x - HERO.pos.x, m.z - HERO.pos.z), T = Math.max(.12, d / 11), x = m.x, z = m.z; shootP('fire', a, { bag: W, mul: 1, spd: 11, life: T, r: 2.3, c: C }); after(T, () => mfx('react_overload', x, z, 3.2)); sfx('whoosh', .5, 1.2); return a; },
+  beam(W, C) { const m = bagNear(9); if (!m) return false; const a = dirTo(m), x0 = HERO.pos.x, z0 = HERO.pos.z, sx = Math.sin(a), sz = Math.cos(a), L = 9; for (const q of MON) { if (q.dead) continue; const dx = q.x - x0, dz = q.z - z0, t = dx * sx + dz * sz; if (t > 0 && t < L && Math.abs(dx * sz - dz * sx) < .9 + q.r) bagHit(W, q, 1, { kb: 1.5 }); }
+    bagLine(x0, z0, a, L, 0xe8f4ff, .2); bagLine(x0, z0, a, L, C, .4); sfx('zap', .6, 1.4); return a; },
+  storm(W) { if (!bagNear(4)) return false; const P0 = HERO.pos; mfx('storm', P0.x, P0.z, 7.5, { pri: 1 }); inCircle(P0.x, P0.z, 3.6, q => bagHit(W, q, 1, { kb: 7, fx: P0.x, fz: P0.z })); sfx('whoosh', .8, .7); return true; },
+  stones(W) { const H = HERO; BAG.blk = Math.min(H.max * .6, BAG.blk + W.dmg * 3); mfx('guard', H.pos.x, H.pos.z, 2.4, { pri: 1, follow: H.pos }); num(H.pos.x, 2, H.pos.z, 'ศิลาพิทักษ์', '#d8d0c0');
+    for (let k = 0; k < 10; k++) after(k * .45, () => { if (HERO.dead) return; const Q = HERO.pos; inCircle(Q.x, Q.z, 1.9, q => bagHit(W, q, .5, { kb: 2, fx: Q.x, fz: Q.z })); for (let i = 0; i < 3; i++) { const b = k * .9 + i * 2.09; spark(Q.x + Math.cos(b) * 1.5, .7, Q.z + Math.sin(b) * 1.5, { n: 2, color: 0xd8c8a8, spd: .6, size: .3, life: .4 }); } }); return true; },
+  ball(W) { const m = bagNear(10); if (!m) return false; const p = { x: HERO.pos.x, z: HERO.pos.z }; let a = dirTo(m); mfx('ball', p.x, p.z, 2.2, { pri: 1, dur: 4, follow: p, y: .8 });
+    for (let k = 1; k <= 13; k++) after(k * .3, () => { const t = nearest(p.x, p.z, 6); if (t) a = Math.atan2(t.x - p.x, t.z - p.z); [p.x, p.z] = bagKeep(p.x + Math.sin(a) * .8, p.z + Math.cos(a) * .8); inCircle(p.x, p.z, 1.5, q => bagHit(W, q, .7, { kb: 1.8, fx: p.x, fz: p.z })); if (k % 3 === 0) sfx('zap', .3, 1.3); }); return a; },
+  skel(W) { if (!bagNear(11)) return false; const P0 = HERO.pos; mfx('summon', P0.x, P0.z, 3.2, { pri: 1 }); for (let i = 0; i < 4; i++) after(.3 + i * .15, () => shootP('spirit', Math.random() * TAU, { bag: W, mul: 1.1, spd: 6.5, life: 6, r: .5, y: .9, c: 0xe8e0d0, boomR: 1.2 })); return true; },
+  sprite(W) { if (!bagNear(11)) return false; const H = HERO; mfx('summon', H.pos.x, H.pos.z, 2.6, { pri: 1 }); mfx('st_burn', H.pos.x, H.pos.z, 1.1, { dur: 8, follow: H.pos, y: 2.2 });
+    for (let k = 1; k <= 10; k++) after(k * .8, () => { if (HERO.dead) return; const m = bagNear(9); if (m) shootP('fire', dirTo(m), { bag: W, mul: 1, spd: 10, life: Math.max(.15, Math.hypot(m.x - HERO.pos.x, m.z - HERO.pos.z) / 10), r: 1.2, c: 0xff8a3a }); }); return true; },
+  totem(W) { if (!bagNear(9)) return false; const x = HERO.pos.x, z = HERO.pos.z; mfx('summon', x, z, 2.6, { pri: 1 }); mfx('st_shock', x, z, 1.4, { dur: 8, y: 1.2 });
+    for (let k = 1; k <= 11; k++) after(k * .7, () => { const m = nearest(x, z, 6.5); if (!m) return; bagFx(() => boltFx(new V3(x, 1.2, z), new V3(m.x, .6, m.z), 0xb8a8ff, .08)); bagHit(W, m, 1, {}); }); return true; },
+  tstop(W) { if (!bagNear(5)) return false; const P0 = HERO.pos; mfx('timestop', P0.x, P0.z, 9, { pri: 1 }); inCircle(P0.x, P0.z, 5, q => { q.frzT = Math.max(q.frzT, q.boss ? .6 : 1.5); }); sfx('chime', .8, .6); return true; },
+  hex(W) { const m = bagStrong(8, 1)[0]; if (!m) return false; mfx('hex', m.x, m.z, 2.4, { pri: 1 }); m.frzT = Math.max(m.frzT, m.boss ? 1.5 : 3); m.hexT = BAG.t + (m.boss ? 1.5 : 3); m.brit = BAG.t + 3; num(m.x, 1.7, m.z, 'กลายเป็นกบ!', '#b8ff8a', true); return dirTo(m); },
+  vine(W) { const m = bagDense(9, 2.4) || bagNear(9); if (!m) return false; const x = m.x, z = m.z; mfx('vines', x, z, 3, { pri: 1 }); inCircle(x, z, 2.4, q => { q.frzT = Math.max(q.frzT, q.boss ? .7 : 2); bagHit(W, q, 1, { kb: 0 }); }); return dirTo(m); },
+  silence(W) { if (!bagNear(5)) return false; const P0 = HERO.pos; mfx('silence', P0.x, P0.z, 7, { pri: 1 }); inCircle(P0.x, P0.z, 5, q => { q.atkT = Math.max(q.atkT, 4); q.slowT = Math.max(q.slowT, 2); q.slowK = Math.min(q.slowK, .7); }); return true; },
+  weak(W) { const m = bagDense(9, 3) || bagNear(9); if (!m) return false; mfx('curse', m.x, m.z, 2.6, { pri: 1 }); inCircle(m.x, m.z, 3, q => { q.weakT = BAG.t + 5; }); return dirTo(m); },
+  brittle(W) { const m = bagDense(9, 3) || bagNear(9); if (!m) return false; mfx('curse', m.x, m.z, 2.6, { pri: 1 }); inCircle(m.x, m.z, 3, q => { q.brit = BAG.t + 5; }); return dirTo(m); },
+  mark(W) { const L = bagStrong(9, 3); if (!L.length) return false; for (const q of L) { q.mark = BAG.t + 6; mfx('curse', q.x, q.z, 1.6); bagHit(W, q, 1, {}); } return dirTo(L[0]); },
+  spread(W) { const m = bagNear(9); if (!m) return false; mfx('poisoncloud', m.x, m.z, 2.4); m.spread = 1; m.poi = (m.poi || 0) + W.dmg * 1.5; bagHit(W, m, 1, {}); return dirTo(m); },
+  leapcut(W) { const m = MON.filter(q => !q.dead).sort((p, q) => Math.hypot(q.x - HERO.pos.x, q.z - HERO.pos.z) - Math.hypot(p.x - HERO.pos.x, p.z - HERO.pos.z)).find(q => Math.hypot(q.x - HERO.pos.x, q.z - HERO.pos.z) < 10); if (!m) return false; const H = HERO.pos;
+    mfx('dash', H.x, H.z, 2.2); H.x = m.x - (m.x - H.x) * .12; H.z = m.z - (m.z - H.z) * .12; inCircle(H.x, H.z, 2.4, q => bagHit(W, q, 1, { kb: 2.5 })); mfx('spin', H.x, H.z, 5); sfx('slash', .6, 1); return dirTo(m); },
+  blinkstab(W) { const m = bagStrong(9, 1)[0]; if (!m) return false; const H = HERO.pos; mfx('blink', H.x, H.z, 2); const a = dirTo(m); [H.x, H.z] = bagKeep(m.x + Math.sin(a) * .9, m.z + Math.cos(a) * .9); mfx('blink', H.x, H.z, 2); after(.08, () => { if (!m.dead) { bagHit(bagW(W, { crit: 1 }), m, 2, { kb: 2 }); mfx('crit', m.x, m.z, 2); } }); sfx('slash', .7, 1.3); return a + Math.PI; },
+});
 /* ---- what the engine asks (hooks in horde.html) */
 function bagHurt(d, src) {   /* before armour: magic resist for shots, dodge, thorns, the shield */
   const H = HERO, S = BAG.st, P0 = H.pos; if (BAG.t > BAG.dur) d *= 1 + (BAG.t - BAG.dur) * .05; if (!src) d *= 1 - (S.mres || 0); else if (S.dodge && Math.random() < S.dodge) { num(P0.x, 1.8, P0.z, 'หลบ', '#cfe8ff'); H.inv = .25; return 0; }
+  if (src && src.weakT > BAG.t) d *= .75;   /* weakness curse */
   const X = S.gx || {}, t = BAG.t;   /* whole-bag item effects (bag3d/items2.js gx) */
   if (X.blink && src && d >= H.max * .08 && !(BAG.blT > t)) { BAG.blT = t + X.blink; mfx('blink', P0.x, P0.z, 2.2, { pri: 1 }); const a = Math.atan2(P0.z - src.z, P0.x - src.x); let x = P0.x + Math.cos(a) * 3.2, z = P0.z + Math.sin(a) * 3.2; const L = Math.hypot(x, z), mx = ARENA - .8; if (L > mx) { x *= mx / L; z *= mx / L; } P0.x = x; P0.z = z; mfx('blink', x, z, 2.2, { pri: 1 }); H.inv = .4; sfx('whoosh', .6, 1.6); return 0; }   /* blink cloak: out of a heavy hit */
   if (X.sshield && d >= H.max * .05 && !(BAG.ssT > t)) { BAG.ssT = t + X.sshield; mfx('guard', P0.x, P0.z, 2.4, { pri: 1 }); num(P0.x, 1.8, P0.z, 'กันเวท', '#bfe4ff'); H.inv = .3; return 0; }   /* spell shield: one big hit every few seconds */
@@ -197,7 +229,8 @@ function bagHurt(d, src) {   /* before armour: magic resist for shots, dodge, th
   if (BAG.blk > 0) { const a = Math.min(BAG.blk, d); BAG.blk -= a; d -= a; if (d < .5) { H.inv = .3; num(P0.x, 1.8, P0.z, 'กัน', '#8fc8ff'); spark(P0.x, 1, P0.z, { n: 4, color: 0x8fc8ff, spd: 2.5, size: .22, life: .25 }); sfx('tick', .3, 1.6); return 0; } }
   if (d >= 1) bagSwing('hurt', null); if (X.potion && !BAG.potion && H.hp - d < H.max * .3) { BAG.potion = 1; after(.05, () => { if (!HERO.dead) { healHero(H.max * X.potion); num(P0.x, 2, P0.z, '+' + Math.round(H.max * X.potion), '#9fe870', true); mfx('heal', P0.x, P0.z, 2.2, { pri: 1, follow: P0 }); } }); }   /* emergency potion, once a round */
   return d; }
-function bagKill(m) { const X = BAG.st.gx || {}; if (X.skull) BAG.skull = Math.min(X.skull, (BAG.skull | 0) + 1);   /* hunter skull: +1 damage a kill this round */
+function bagKill(m) { if (m.spread) { let n = 0; inCircle(m.x, m.z, 3, q => { if (n < 2 && q !== m && !q.dead && !q.spread) { n++; q.spread = 1; q.poi = (q.poi || 0) + (m.poi || 3) * .8; mfx('poisoncloud', q.x, q.z, 1.8); } }); }
+  const X = BAG.st.gx || {}; if (X.skull) BAG.skull = Math.min(X.skull, (BAG.skull | 0) + 1);   /* hunter skull: +1 damage a kill this round */
   bagKill0(m); }
 function bagKill0(m) {   /* no xp gems in this mode: a few coins (bonus gold for the shop), a rare heart */
   bagCheer(m.boss ? 1.6 : m.elite ? .35 : .025, m.boss);   /* the arena crowd: louder with every kill, wild for a boss */
