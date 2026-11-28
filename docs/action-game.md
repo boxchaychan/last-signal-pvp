@@ -3789,7 +3789,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - a prettier arena / map with Gemini target pictures first.
 - Build order proposed for when the owner says go: (1) type shops + materials + crafting book; (2) shooting and melee items; (3) elements and reactions; (4) magic and general items, boots; (5) duels in the arena + movement rules (melee never flees, ranged backs off a little) + melee-vs-ranged bot balance; (6) the demon knight as the knight.
 
-## BAG 3D: BIG ITEM REDESIGN, BUILD IN PROGRESS (2026-11-28, PC chat). Branch `claude/item-system-3d-field-c2fb8c`, NOT on main yet
+## BAG 3D: BIG ITEM REDESIGN, BUILD IN PROGRESS (2026-11-28, PC chat). Built on `claude/item-system-3d-field-c2fb8c`, merged to main 13:33 the same day (checks bag3d_horde / fit / class OK)
 - Owner on the PC: "ทำเลย" (build it), then:
   - "ทำเกมส์ให้สวยเลยนะ 3D ทำให้ดูดีมีชาติตระกูล รวมถึงเอฟเฟคด้วย UI ทำทุกอย่างให้สวย" = the 3D arena, the effects and the UI must all be made beautiful;
   - "ไมไม่สั่งเอง gpt มี codex" = Claude orders the pictures from Codex itself;
