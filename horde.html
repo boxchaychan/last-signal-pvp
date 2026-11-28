@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=13"></script><script src="bag3d/classes.js?v=3"></script><script src="bag3d/itemskills.js?v=1"></script>
+<script src="bag3d/arena.js?v=14"></script><script src="bag3d/classes.js?v=3"></script><script src="bag3d/itemskills.js?v=1"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -710,6 +710,8 @@ const LOWER = /^(root|hips|upperleg|lowerleg|foot|toes)/;
 /* the classes of the backpack game (bag3d/classes.js): KayKit bodies, bag mode only (horde.html?bag=1&cls=knight) */
 if (typeof BAGCLS !== 'undefined') for (const k in BAGCLS) { const C = BAGCLS[k], W = HEROES.wolf; HEROES['kk_' + k] = { name: C.n, role: C.r, kk: C.kk, wp: C.wp, cls: 'kk', start: 'arrow', hp: C.base.hp, spd: 3.5, perk: '', bonus: {}, idle: C.anim.idle, run: C.anim.run, col: C.col,
   atks: [...new Set(W.atks.concat([C.anim.melee, C.anim.shoot, C.anim.magic, ...C.anim.skill, C.anim.hit || 'Hit_A', 'Melee_2H_Attack_Chop', 'Melee_2H_Attack_Slice', 'Melee_2H_Attack_Spinning', 'Dodge_Forward', 'Melee_Block_Attack']))] }; }
+if (HEROES.kk_knight && Q.get('kk') !== 'knight') Object.assign(HEROES.kk_knight, { kk: null, file: HEROES.demon.file, cls: 'sword', ss: false, hp: HEROES.kk_knight.hp, idle: 'Melee_2H_Idle', run: 'Running_A',   /* the knight class is the demon knight (Tripo, rigged onto the KayKit skeleton by rigTripo); ?kk=knight = the old KayKit knight */
+  atks: [...new Set(HEROES.kk_knight.atks.concat(['Melee_2H_Attack_Spin', 'Melee_2H_Attack_Slice', 'Melee_2H_Attack_Chop', 'Melee_2H_Idle']))], col: ['#ff9a8a', '#8a1c2a'] });
 async function kkModel(D, used) {   /* a KayKit body as it is (already on our skeleton) + its own weapons on the hand slots, painted with the body's own texture */
   const G = await new THREE.GLTFLoader().loadAsync('art/tribe3d/people/' + D.kk + '.glb'), root = THREE.SkeletonUtils.clone(G.scene), bone = {}, meshes = {}; let mat = null;
   root.traverse(o => { if (o.isBone) bone[o.name] = o; if (o.isSkinnedMesh || o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (o.isSkinnedMesh) { mat = mat || o.material; meshes[/body/i.test(o.name) ? 'body' : o.name] = o; } } });
