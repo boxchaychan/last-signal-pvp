@@ -3704,3 +3704,41 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - tapping "เริ่มศึก" also asks for full screen and turns the phone sideways (Android / PC Chrome; `goFull()`).
 - iPhone Safari has no full screen for web pages: the button explains "แชร์ → เพิ่มไปยังหน้าจอโฮม". The page now has `bag3d.webmanifest` (fullscreen, landscape) + Apple web-app tags + an icon (`art/bag3d/app192.png` / `app512.png`, the knight), so from the home-screen icon it opens without browser bars.
 - Check `node tools/qa/bag3d_fit.js [out]` = FIT OK. It tests 844x390, 844x340, 800x330, 740x300, 667x320 and 640x280: the start button is on screen and tappable, every shop button is inside after start, the full-screen button and start tap work, and the manifest and icon load.
+
+## BAG 3D: BIG ITEM DESIGN, talked through with the owner 2026-11-28 (to be BUILT while the owner sleeps; pictures later in ONE generation pass)
+- Owner: "เอาคุณสมบัติไอเทมแบบ Dota มาเลย ... คนละรูป" → item MECHANICS may follow Dota / HoN (game rules are not protected); our own names, pictures, text and numbers; no character, item name, icon or description copied. "เดี๋ยวค่อยเจนทีเดียว รูป เอาอาวุธก่อน": until the picture pass, new items use recoloured copies of our icons (`tools/art/bag_craft_icons.py`, free). "คิดอาวุธก่อน พวกนี้ทำตอนฉันนอนได้": design first, build at night.
+- Rules agreed:
+  - shooting items work ONLY for ranged heroes (ranger, mage; rivals archer / hood) and only on ranged shots; melee items only for melee heroes;
+  - physical ranged items lean AGI, magic items lean INT; spell items can be used by everyone but their damage counts INT (a mage hits much harder);
+  - a chance effect of the same kind does not stack (two lightning bows = still 10 %); extra-arrow counts stack with a cap (+4);
+  - crit must FEEL big (owner "คริอยากให้ออกเวิร์ค ... ไอเทมนับฮิตจะไม่เด่น"): chance crits with a big number, flash, shake; no "every Nth hit" crit items except the charge bow below;
+  - lifesteal: only a few items, small numbers ("อย่าให้เยอะเกิน").
+- SHOOTING (ranged only, 8):
+  1. spread bow: 3 arrows a shot (extras at 40 %);
+  2. lightning bow: 10 % an arrow becomes lightning that chains to 5;
+  3. double-shot bow: 20 % two shots;
+  4. piercing arrows: an arrow goes through several in a row (duel: ignores 50 % armour / shield);
+  5. quiver: bows placed next to it shoot +1 arrow;
+  6. rapid bow: shooting the SAME target speeds up +10 % a shot, 5 stacks (+50 %), resets on a new target;
+  7. charge bow: every 6th shot is a sure crit;
+  8. shock bow: 25 % a short mini-stun (a jolt) ("ธนูยิงมินิสตัน ... แบบกระตุก").
+  - cut by the owner: bounce, explosive arrows; "fatal shot" moved to crit; homing moved to accuracy; fire / ice / poison tips moved to status.
+- MELEE (melee only, 7):
+  1. spin sword: 15 % to spin and hit all round (owner: a sweep on every hit would be too strong);
+  2. double-strike sword: 20 % two hits;
+  3. bash hammer: 15 % stun 1 s;
+  4. ramp sword: the same target +8 % damage a hit, 5 stacks;
+  5. wave sword: every 4th hit sends a long sword wave forward;
+  6. dash blade: leaps to a far enemy;
+  7. counter: 25 % to strike back when hit (melee only).
+  - the "fighter's glove" became a general attack-speed item.
+- MAGIC (everyone can use, damage from INT, 22 = "เอาหมด"):
+  - multicast tome 20 % casts again; exploding staff (small area); beam staff (pierces the line); soul orb (15 % of magic damage back as life);
+  - spirit staff (every 3rd cast a spirit flies in); magic-pierce stone (ignores 30 % magic resist); haste tome (hero skill 20 % sooner);
+  - owner's own: storm push (a storm round the hero knocks monsters back); guard stones (stones circle the hero and take hits, stone life from INT);
+  - owner's own: blink cloak (blinks away when about to be hit, 8 s cooldown); lightning ball (a ball that hits many times and pushes back; own name, NOT the RO skill name);
+  - summons: skeleton staff (2 skeletons for 10 s), fire sprite (circles and shoots), magic totem (planted, shoots);
+  - disrupt: time stop (1.5 s round the hero), hex (turns the strongest into a frog 3 s), vines (2 s cannot move), silence (duel: rival skill blocked);
+  - curses: weakness (-25 % damage dealt), brittle (+20 % damage taken), death mark (below 15 % life dies), spreading curse (spreads on death);
+  - the meteor item exists already (no copy).
+- STATUS / ELEMENTS (owner's idea, to design in full): element gems placed next to a weapon; a weapon with TWO elements ALTERNATES (hit 1 fire, hit 2 ice ...); same element stacks on the enemy; two elements meeting make a REACTION with its own name and a heavy effect (owner examples: fire + ice = wet, wet + lightning = a heavy shock, fire + lightning = overload). Claude's proposal: see the next lines once the owner answers.
