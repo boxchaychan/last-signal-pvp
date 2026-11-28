@@ -1,7 +1,7 @@
 // bag3d.html HORDE FIGHT (owner 2026-11-27 "ตัวเดียวสู้กับฝูงมอนตามไอเทมในกระเป๋าเรา"): monster / boss rounds are fought in horde.html?bag=1 (bag3d/arena.js) inside an iframe.
 // python3 -m http.server 8000 ; node tools/qa/bag3d_horde.js [out=/tmp/bag3d_horde] [device scale 1]
 //   flow: start -> round 1 fight in the iframe (AUTO) -> result pop -> shop; a round-5 boss fight; a duel round still uses the side view; 844 x 390 and 740 x 360.
-// node tools/qa/bag3d_horde.js bal [games per round 12] [last round 15]   = balance: bot-filled bags of each round against that round's horde, no drawing (in the arena; MAP=forest = old land, CLS=<class>)
+// node tools/qa/bag3d_horde.js bal [games per round 12] [last round 15]   = balance: bot-filled bags of each round against that round's horde, no drawing (in the arena; MAP=forest = old land, CLS=<class>, ISK=0 = no item skills)
 const { chromium } = require('playwright');
 const mode = process.argv[2] === 'bal' ? 'bal' : 'flow';
 (async () => {
@@ -10,7 +10,7 @@ const mode = process.argv[2] === 'bal' ? 'bal' : 'flow';
   if (mode === 'bal') {
     const n = +(process.argv[3] || 12), last = +(process.argv[4] || 15), ctx = await b.newContext({ viewport: { width: 844, height: 390 } }), shop = await ctx.newPage(), are = await ctx.newPage(); watch(shop); watch(are);
     await shop.goto('http://localhost:8000/bag3d.html?mute=1&fight=side'); await shop.waitForTimeout(1500); await shop.click('#start'); await shop.waitForTimeout(300); if (process.env.CLS) await shop.evaluate(c => { HK = c; }, process.env.CLS);
-    await are.goto('http://localhost:8000/horde.html?bag=1&nopause=1&snd=0&norender=1&' + (process.env.MAP ? 'map=' + process.env.MAP : 'map=arena&land=forest') + (process.env.CLS ? '&cls=' + process.env.CLS : ''));   /* the game fights in the arena since 2026-11-28; MAP=forest = the old open land, CLS=<class> = that class's body */ await are.waitForFunction(() => window.BAGAPI && BAGAPI.BAG.ready, null, { timeout: 60000 });
+    await are.goto('http://localhost:8000/horde.html?bag=1&nopause=1&snd=0&norender=1&' + (process.env.MAP ? 'map=' + process.env.MAP : 'map=arena&land=forest') + (process.env.CLS ? '&cls=' + process.env.CLS : '') + (process.env.ISK === '0' ? '&isk=0' : ''));   /* ISK=0 = without the item skills */   /* the game fights in the arena since 2026-11-28; MAP=forest = the old open land, CLS=<class> = that class's body */ await are.waitForFunction(() => window.BAGAPI && BAGAPI.BAG.ready, null, { timeout: 60000 });
     for (let round = 1; round <= last; round++) { let w = 0, t = 0, hp = 0, left = 0, tk = 0;
       for (let i = 0; i < n; i++) {
         const cfg = await shop.evaluate(round => { const save = G; QUIET++; G = { round: 1, hp: 5, gold: 12, open: {}, items: [], shop: [], best: 0, buys: 0, wins: 0, cups: 0 }; for (let y = 1; y < 4; y++) for (let x = 2; x < 6; x++) G.open[x + ',' + y] = 1; give('sword', 3, 1, 0); give('apple', 4, 1, 0); roll(true);

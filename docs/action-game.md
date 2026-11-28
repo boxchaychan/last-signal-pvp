@@ -3660,3 +3660,30 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
 - Check `node tools/qa/rigforge_check.js [out]` (1280 x 720 and 844 x 390: three rigs, play, game test, export downloads, sample sheet import = 20 parts) = RIGFORGE OK, no page errors. Best on a PC: on a phone in landscape the page stacks (viewport, timeline, then the bone list below) and must be scrolled.
 - Not decided: what to use it for (the 2D bone rig work was paused by the owner; the bag game is 3D KayKit now). Ask.
 - Owner "ผ่านไหม" (2026-11-28): every clip of the 3 rigs exported at 512 px x 12 frames and looked at (frames + zoom on shoulders / elbows / hips in the biggest moves). Parts rigs (Zeus 16, Poseidon 17) PASS: no torn armpits, no seams (shoulder pads / bracers cover the joints, as the manual says), moves read clearly (throw with the bolt flying off, slash arc, ultimate light pillar, idle, hop walk, hit); moves are on the small / stiff side. One-picture mesh mode is weak: the body barely moves, only the effects carry it. Bug fixed: export file names were always `poseidon_*`, now `zeus_*` / `poseidon_*` / `zeus_mesh_*` by the chosen rig. Phone layout is cramped (scroll).
+
+## BAG 3D: ITEM SIGNATURE SKILLS (owner 2026-11-28 "กลับไปเกมส์กระเป๋า ภาพยังไม่สวยเลย vfx สวยๆ บ้าง ไอเทมมีสกิลเฉพาะ")
+- Every item that fires again and again (52: weapons, shields and food with a cooldown) has its OWN named skill: `bag3d/itemskills.js` (`ITEMSK[id]` = name, what it does, kind, colour, effect sheets, numbers; an item made from another one with no skill of its own uses its base's). Start-of-fight items (bomb, meteor, comet, lanterns) fire once and have no skill.
+- When: every N uses of that item (`iskEvery`: fast items 6, medium 4, slow 3) on top of its normal hit. The bottom item bar of the swarm fight shows a thin bar in the skill's colour under each item that fills with every use; when it is full the skill goes off.
+- 16 kinds (the full skills run in the swarm arena, `BAGISK` in `bag3d/arena.js`):
+  - meteor, thunder chain (stun), nova round the champion, light pillars, a line of spikes, a tornado that drags monsters;
+  - spinning blades, a rain of strikes, a black hole that pulls then bursts, an earthquake (stun);
+  - blood bite (heals), blizzard (freeze), poison cloud, a sure killing crit on the strongest monster;
+  - holy shield (big shield + thorns), feast (a big heal over time; it waits while life is almost full).
+- How each one is drawn:
+  - CC0 pixel effects from `art/pvfx` (PVFX Foundry), drawn bigger than normal attacks (`ipfx`: size x1.3, cap .075 a pixel), plus the arena's rings, beams, lightning, decals and sparks;
+  - every skill adds a ring and a sign at the champion's feet, the class's skill move (at most every 1.6 s, so the champion keeps walking) and the crowd's cheer;
+  - a callout above the item bar (the item's icon + "✦ name" in its colour) and the item slot glows.
+- Duel (side view):
+  - a skill is ONE extra blow of item damage x `BAGISK_DUEL[kind]` (1-1.4; crit = a sure crit), with its extra effect: stun, freeze, a little poison or life steal. Shields give a big shield (+ thorns), food a big heal;
+  - the blow does NOT lay the item's burn / poison again, because those stack in a duel: a fire wand did x2.5 damage before this fix;
+  - on screen: a big effect per kind made in code (`castIsk` / `castIskSelf` in `bag3d/cast.js`) and a label over the one who used it (icon + "✦ name"). With `?fx=pixel` the skill's pixel sheet plays instead.
+- Damage added in a duel, against a dummy for 30 s:
+  - most single items gain x1.13-1.3, the scythe's black hole x1.5 (now 1.3);
+  - a 5-item bag gains x1.2 with about 10 skills;
+  - both sides have skills, so duels stay even.
+- The item info has a tag "✦ name" on its first line and a line with what the skill does and how often. On a phone the info strip shows one line, so it now says "แตะดูเต็ม ▸" and a tap opens all of it (skill, recipes). No tag on the shop cards: they are too small on a phone.
+- Checks:
+  - `node tools/qa/bag3d_isk.js [out]` = ISK OK. It tests: every item has a skill, every sheet exists, the info and the tap work, the duel gain is in range, all 16 kinds set off in the arena, skills go off by themselves;
+  - frames for a look: `python3 tools/qa/bag3d_isk_sheet.py <out>` makes `sheet_arena_*` and `sheet_duel_*`;
+  - `horde.html` `pfx()` takes `o.pri` (plays even when 22 are on screen) and `o.max` (size cap) for the skills.
+- Script versions: `arena.js?v=7`, `itemskills.js?v=1`, iframe `&v=7`.

@@ -296,3 +296,44 @@ function castSkillHit(b, e) { const K = castKit(b, e.s), { u } = K, k = e.sk;
   else if (k === 'demon') { cutMark(K, '255,70,50', e.crit ? 76 : 54, cR(-1.2, 1.2), 0, 6); vfx(b, 'blood', K.T); shake(b, e.crit ? .2 : .1); }
   else { hitSpark(K, k === 'archer' ? '150,255,170' : '255,225,120', e.crit ? 14 : 8, 1); if (e.crit) { column(K, K.tx, '255,225,120', 16, 0, .3); shake(b, .2, .5); } }
   if (e.crit) vfx(b, 'crit', K.T); }
+/* ITEM SIGNATURE SKILLS in the duel (owner 2026-11-28 "ไอเทมมีสกิลเฉพาะ", list in bag3d/itemskills.js): the big effect of a skill blow
+   (hit event with e.ik = the kind) -> seconds until it lands; shields and food (guard / feast) come with their 'isk' event (castIskSelf). */
+const iskRGB = c => [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',');
+function iskFor(id) { return id && typeof iskOf === 'function' ? iskOf(id, IT[id] && IT[id].base) : null; }
+function castIsk(b, e, it) {
+  const K = castKit(b, e.s), { u, d } = K, S = iskFor(it && it.id), c = S ? iskRGB(S.c) : '255,220,140', T = K.T; if (b.px.length > 460) return .05;
+  const rune = (r, n, life) => cFn(b, { life: life || .7, fn(g, p, q) { drawRune(g, K.tx, K.fy, r * u, q * 2, c, q < .2 ? q * 5 : (1 - q) / .8, n || 5); } });
+  switch (e.ik) {
+    case 'meteor': { const n = Math.min(3, (S && S.count) || 1); rune(96, 5, .9); for (let i = 0; i < n; i++) cAt(b, i * .13, () => vfx(b, 'comet', T)); const t1 = .38 + (n - 1) * .13;
+      cAt(b, t1, () => { groundCrack(K, c, 110); cFlare(b, K.tx, K.by, 30 * u, 170 * u, .32, c, .3); cRing(b, K.tx, K.fy, 150 * u, .5, c, 6 * u); shake(b, .32, 1); b.flash = Math.max(b.flash, .3); }); return t1; }
+    case 'thunder': for (let i = 0; i < 3; i++) cAt(b, i * .08, () => { column(K, K.tx + cR(-16, 16) * u, c, 22 - i * 4, 0, .3); vfx(b, 'bolt', T, { big: 1 }); cSparks(b, K.tx, K.by, 8, c, 380 * u, .35, -1.57, 3.14, u); });
+      cAt(b, .2, () => { cFlare(b, K.tx, K.by, 30 * u, 140 * u, .25, c, 0); shake(b, .22, .6); b.flash = Math.max(b.flash, .25); }); return .06;
+    case 'nova': cGlow(b, K.cx, K.by, 30 * u, 150 * u, .32, c); cRing(b, K.cx, K.fy, K.W * .55, .5, c, 9 * u); cRing(b, K.cx, K.by, K.W * .5, .42, c, 5 * u, .05); cFlare(b, K.cx, K.by, 30 * u, 150 * u, .28, c, .4);
+      cAt(b, .24, () => { vfx(b, 'boom', T, { big: 1 }); shake(b, .25, .7); }); return .24;
+    case 'pillar': rune(84, 6, .8); column(K, K.tx, c, 52, .08, .65); column(K, K.tx, '255,255,255', 16, .1, .5);
+      cAt(b, .14, () => { vfx(b, 'arcane', T, { big: 1 }); cFlare(b, K.tx, K.by - 20 * u, 30 * u, 150 * u, .3, c, 0); for (let i = 0; i < 16; i++) cGlow(b, K.tx + cR(-30, 30) * u, K.fy - cR(0, 30) * u, cR(5, 9) * u, 1, cR(.5, .9), c, i * .02, { vy: cR(-260, -110) * u }); shake(b, .2, .6); }); return .14;
+    case 'spikes': for (let i = 0; i < 6; i++) spikes(K, c, 2, 34 + i * 9, i * .05, K.cx + (K.tx - K.cx) * (i + 1) / 7, 'rgba(255,255,255,.9)');
+      spikes(K, c, 6, 100, .32, K.tx, 'rgba(255,255,255,.95)'); cAt(b, .32, () => { vfx(b, 'smash', T, { big: 1 }); groundCrack(K, c, 80); shake(b, .26, .8); }); return .32;
+    case 'tornado': { const dur = .5; cFn(b, { life: dur + .25, fn(g, p, q) { const k2 = Math.min(1, q * (dur + .25) / dur), x = K.cx + (K.tx - K.cx) * k2, al = q > .8 ? (1 - q) / .2 : 1; g.globalCompositeOperation = 'lighter'; g.lineWidth = 3 * u;
+        for (let j = 0; j < 8; j++) { const y = K.fy - j * 15 * u, rx = (10 + j * 7) * u, ph = q * 40 + j; g.globalAlpha = al * (.35 + .08 * j); g.strokeStyle = j % 2 ? `rgb(${c})` : '#fff'; g.beginPath(); g.ellipse(x + Math.sin(ph) * 6 * u, y, rx, (4 + j) * u, 0, 0, 6.283); g.stroke(); } } });
+      cAt(b, dur, () => { vfx(b, 'phys', T, { big: 1 }); cSparks(b, K.tx, K.by, 14, c, 360 * u, .4, -1.57, 3.14, u, 100); shake(b, .2, .5); }); return dur; }
+    case 'blades': for (let i = 0; i < 3; i++) fly(K, { x0: K.cx + d * 20 * u, y0: K.by + (i - 1) * 22 * u, x1: K.tx, y1: K.by + (i - 1) * 10 * u, dur: .24, t0: i * .08, arc: (i - 1) * 30 * u, draw(g, x, y, a, q) { drawCres(g, x, y, 30 * u, q * 18, d, 10 * u, c, 1, 1); } });
+      for (let i = 0; i < 3; i++) cutMark(K, c, 90, (i - 1) * .9 + cR(-.2, .2), .24 + i * .08, 7); cAt(b, .3, () => { cFlare(b, K.tx, K.by, 20 * u, 120 * u, .22, c, .8); shake(b, .18, .5); }); return .24;
+    case 'rain': for (let i = 0; i < 10; i++) { const x = K.tx + cR(-46, 46) * u, t0 = .04 + i * .045; column(K, x, c, 7, t0, .18); cAt(b, t0 + .06, () => { cGlow(b, x, K.fy - 4 * u, 6 * u, 30 * u, .16, c); cSparks(b, x, K.fy - 4 * u, 3, c, 200 * u, .25, -1.57, 1.2, u); }); }
+      cAt(b, .3, () => { vfx(b, 'phys', T); shake(b, .16, .4); }); return .1;
+    case 'void': { const dl = CASTFX.implode(K, { c }, e, 1); rune(110, 6, dl + .4); cAt(b, dl, () => { vfx(b, 'arcane', T, { big: 1 }); cRing(b, K.tx, K.fy, 170 * u, .5, c, 7 * u); shake(b, .3, .9); b.flash = Math.max(b.flash, .2); }); return dl; }
+    case 'quake': cRing(b, K.cx, K.fy, K.W * .5, .5, '200,170,120', 8 * u); groundCrack(K, c, 130, .1); spikes(K, '150,120,90', 7, 70, .1, K.tx, 'rgba(60,40,20,.9)');
+      cAt(b, .12, () => { vfx(b, 'smash', T, { big: 1 }); cSmoke(b, K.tx, K.fy, 6, 70, .6, u); shake(b, .38, 1); }); return .12;
+    case 'blood': cutMark(K, c, 130, .8, 0, 10); cutMark(K, c, 130, -.8, .08, 10); cAt(b, .1, () => { vfx(b, 'blood', T, { big: 1 }); drainBack(K, '255,70,90', 9); cGlow(b, K.cx, K.by, 30 * u, 90 * u, .4, '255,80,100', .4); shake(b, .2, .6); }); return .1;
+    case 'frost': spikes(K, '200,235,255', 7, 80, .04, K.tx); cAt(b, .06, () => { vfx(b, 'ice', T, { big: 1 }); cGlow(b, K.tx, K.by, 30 * u, 140 * u, .35, '220,245,255'); cRing(b, K.tx, K.fy, 140 * u, .5, c, 6 * u); shake(b, .2, .5); }); return .06;
+    case 'poison': vfx(b, 'poison', T, { big: 1 }); for (let i = 0; i < 18; i++) cGlow(b, K.tx + cR(-36, 36) * u, K.fy - cR(0, 46) * u, cR(6, 12) * u, 2 * u, cR(.5, 1), c, i * .02, { vy: cR(-170, -60) * u }); cRing(b, K.tx, K.fy, 120 * u, .55, c, 5 * u); shake(b, .12); return .08;
+    case 'crit': b.slow = Math.max(b.slow || 0, .28); cutMark(K, '255,255,255', 170, d > 0 ? -.55 : .55, 0, 13); cutMark(K, c, 150, d > 0 ? -.55 : .55, .02, 8);
+      cAt(b, .05, () => { vfx(b, 'crit', T, { big: 1 }); cFlare(b, K.tx, K.by, 40 * u, 200 * u, .3, c, .5); b.flash = Math.max(b.flash, .38); shake(b, .35, 1); }); return .05;
+    case 'guard': hitSpark(K, c, 10, 1); cutMark(K, c, 60, cR(-.6, .6), 0, 5); return .04;
+    default: hitSpark(K, c, 12, 1); return .04;
+  } }
+function castIskSelf(b, e) {   /* the 'isk' event: a shield's or a food's own skill on its owner (the label is drawn by bag3d.html) */
+  const K = castKit(b, e.s), { u } = K, S = iskFor(e.id), c = S ? iskRGB(S.c) : '255,220,140'; if (b.px.length > 460) return;
+  if (e.kind === 'guard') { SELFFX.dome(K, { c, spikes: !!(S && S.thorn) }); cRing(b, K.cx, K.fy, 120 * u, .5, c, 6 * u); cGlow(b, K.cx, K.by, 30 * u, 110 * u, .4, c, 0, { a: .6 }); shake(b, .1); }
+  else if (e.kind === 'feast') { healGlow(K, c, 1.6); vfx(b, 'heal', e.s, { big: 1 }); for (let i = 0; i < 14; i++) cGlow(b, K.cx + cR(-30, 30) * u, K.fy - cR(0, 20) * u, cR(5, 9) * u, 1, cR(.6, 1.1), c, i * .04, { vy: cR(-150, -60) * u }); }
+  else cGlow(b, K.cx, K.by, 20 * u, 80 * u, .35, c, 0, { a: .5 }); }
