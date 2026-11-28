@@ -3788,3 +3788,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - skill / element effects from Meta AI clips, cut with our tools (`vfxcut.html`, sprite-importer skill);
   - a prettier arena / map with Gemini target pictures first.
 - Build order proposed for when the owner says go: (1) type shops + materials + crafting book; (2) shooting and melee items; (3) elements and reactions; (4) magic and general items, boots; (5) duels in the arena + movement rules (melee never flees, ranged backs off a little) + melee-vs-ranged bot balance; (6) the demon knight as the knight.
+
+## BAG 3D: BIG ITEM REDESIGN, BUILD IN PROGRESS (2026-11-28, PC chat): on the branch `claude/item-system-3d-field-c2fb8c`, NOT on main
+- The owner said "ทำเลย". The work (generated art + the first part of the code) is pushed to the branch `claude/item-system-3d-field-c2fb8c`; main still has the game as it was, because the code is half done.
+- The full notes (what was generated and how, what the code does, what is not built yet, the owner's new words about beauty) are in THAT branch's `docs/action-game.md`, same section title. Read it there and continue on top of that branch; merge to main only when the game plays right.
