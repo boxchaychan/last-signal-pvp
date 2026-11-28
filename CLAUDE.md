@@ -104,7 +104,7 @@ Long chats cost a lot: when the subject changes, suggest a new chat; every decis
   - every fight in the 3D arena (duels too, no side view); the demon knight replaces the knight class;
   - the owner moves to the PC for the art (GPT pictures in one pass, Meta AI effects, Gemini, a prettier map);
   - notes and the build order: the BIG ITEM DESIGN section at the end of `docs/action-game.md`.
-- NEWEST of all (owner 2026-11-28, latest): the owner's GPT tool RigForge 2D is on the site as `rigforge.html` (2D bones + mesh + timeline + game test + sprite-sheet export; CDN scripts made local in `vendor/rigforge/`; check `tools/qa/rigforge_check.js`; notes: RIGFORGE 2D section at the end of `docs/action-game.md`). What to use it for is not decided: ask.
+- NEWEST of all (owner 2026-11-28, latest): the owner's GPT tool RigForge 2D is on the site as `rigforge.html` (2D bones + mesh + timeline + game test + sprite-sheet export; CDN scripts made local in `vendor/rigforge/`; check `tools/qa/rigforge_check.js`; notes: RIGFORGE 2D section at the end of `docs/action-game.md`). What to use it for is not decided: ask. Owner 2026-11-28 "จะให้ gpt รับต่อ": GPT / Codex develops it from now on (brief `docs/codex/rigforge/TAKEOVER.md`); Claude only merges its pull requests after `rigforge_check.js` passes.
 - NEWEST of all (owner 2026-11-28, latest): every repeating item has its OWN named skill ("ไอเทมมีสกิลเฉพาะ", `bag3d/itemskills.js`, 16 kinds), set off every few uses of that item:
   - in the arena: full skills with big pixel effects (`BAGISK` in `bag3d/arena.js`), a callout over the item bar and a charge bar under each item;
   - in a duel: one big blow with its effect (`castIsk` in `bag3d/cast.js`);
