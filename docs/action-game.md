@@ -3687,3 +3687,10 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - frames for a look: `python3 tools/qa/bag3d_isk_sheet.py <out>` makes `sheet_arena_*` and `sheet_duel_*`;
   - `horde.html` `pfx()` takes `o.pri` (plays even when 22 are on screen) and `o.max` (size cap) for the skills.
 - Script versions: `arena.js?v=7`, `itemskills.js?v=1`, iframe `&v=7`.
+- Swarm balance (`bag3d_horde.js bal 6 15`, bot-filled best bags, arena):
+  - without skills (`ISK=0`): round 10 boss won 67 %, 11 83 %, 13 83 %, 15 boss 83 %;
+  - with the skills at full power: EVERY round to 15 was won with 90 %+ life left, so in the swarm the skills deal x.7 (`BAG_ISKP`) and the feast heals x1.8;
+  - still all won, so monsters from round 6 up get +3 % life and +2 % damage a round (x1.3 / x1.2 by round 15) and bosses +15 % life;
+  - now: rounds 1-12 won, 13 83 %, 14 67 %, 15 boss 83 %, close to the curve before the skills (14 83 %, 15 67 %);
+  - real bags are weaker than the bots', so this is the top end.
+- `?isk=0` on horde.html / `ISK=0` in the balance run = no item skills, to compare.

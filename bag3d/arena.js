@@ -127,7 +127,7 @@ function bagKill(m) {   /* no xp gems in this mode: a few coins (bonus gold for 
 function bagWave(round, boss) {   /* how many monsters, how strong, when they come. ALL of them must die */
   const N = Math.min(120, Math.round(16 + round * 5)), dur = 16 + Math.min(16, round * 1.1), plan = [], tier = Math.min(3, Math.floor((round - 1) / 4)), R = rng((G.seed | 0) + round * 131);
   const L = MAP.mobs[tier].filter(k => MOBS[k]).slice(); for (let i = L.length - 1; i > 0; i--) { const j = R() * (i + 1) | 0;[L[i], L[j]] = [L[j], L[i]]; } const kinds = L.slice(0, 3); if (tier > 0) { const O = MAP.mobs[tier - 1].filter(k => MOBS[k]); kinds.push(O[R() * O.length | 0]); }
-  BAG.mhp = 4 + round * 1.6 + round * round * .1; BAG.mdmg = 2.2 + round * .42; G.spdMul = 1.2 + Math.min(.4, round * .025); BAG.dur = dur + 12;   /* monsters are faster here than in the survival game: the champion cannot simply outrun them */ BAG.kinds = kinds;
+  const up = Math.max(0, round - 5); BAG.mhp = (4 + round * 1.6 + round * round * .1) * (1 + up * .03); BAG.mdmg = (2.2 + round * .42) * (1 + up * .02);   /* x1.3 life / x1.2 hits by round 15: the item skills (2026-11-28) made rounds 10-15 always won */ G.spdMul = 1.2 + Math.min(.4, round * .025); BAG.dur = dur + 12;   /* monsters are faster here than in the survival game: the champion cannot simply outrun them */ BAG.kinds = kinds;
   const n0 = Math.round(N * .34); let left = N - n0; for (let i = 0; i < n0;) { const c = Math.min(n0 - i, 2 + (R() * 3 | 0)), a = R() * TAU; plan.push({ t: .3, n: c, a, d: 7.5 + R() * 4, k: kinds[R() * kinds.length | 0] }); i += c; }
   const sw = round >= 3 ? Math.min(left, Math.min(26, 6 + round)) : 0; left -= sw;
   /* PACKS (owner 2026-11-28 "ให้มอนวิ่งมารุมตามรอบ"): the rest come as packs that RUN IN from one side at a time (a red arrow at the screen edge warns
@@ -136,7 +136,7 @@ function bagWave(round, boss) {   /* how many monsters, how strong, when they co
   for (let i = 0, j = 0; i < left; j++) { const c = Math.min(left - i, pk), t = 2.5 + (dur - 2.5) * (j / np); a0 += 1.9 + R() * 1.4; plan.push({ t, n: c, a: a0, d: 0, pack: 1, k: kinds[R() * kinds.length | 0] }); if (c >= 4) plan.push({ t: Math.max(.6, t - .9), n: 0, warn: a0 }); i += c; }
   if (sw) plan.push({ t: dur * .55, n: sw, ring: 1, k: kinds[0], o: { hp: .55, spd: .85 } });
   if (!boss && round >= 4) for (let e = 0; e < (round >= 9 ? 2 : 1); e++) plan.push({ t: dur * (.4 + e * .3), n: 1, a: R() * TAU, d: 0, k: kinds[R() * kinds.length | 0], o: { hp: 5 + round * .3, sc: 1.65, dmg: 1.5, elite: true, tint: [1.45, 1.2, .5] }, note: 'มอนหัวหน้าฝูงปรากฏ' });
-  plan.sort((p, q) => p.t - q.t); BAG.warn = []; BAG.plan = plan; BAG.pi = 0; BAG.total = plan.reduce((s, p) => s + p.n, 0) + (boss ? 1 : 0); BAG.bossHp = Math.round(110 + round * round * 8 + round * 20); return kinds;
+  plan.sort((p, q) => p.t - q.t); BAG.warn = []; BAG.plan = plan; BAG.pi = 0; BAG.total = plan.reduce((s, p) => s + p.n, 0) + (boss ? 1 : 0); BAG.bossHp = Math.round((110 + round * round * 8 + round * 20) * 1.15); return kinds;
 }
 /* THE ARENA (horde.html map=arena): every pack runs out of the gate nearest its side; the boss comes through the main gate (far side) */
 const bagIsArena = () => typeof MAPK !== 'undefined' && MAPK === 'arena' && typeof ARENA_GATES !== 'undefined' && ARENA_GATES;
