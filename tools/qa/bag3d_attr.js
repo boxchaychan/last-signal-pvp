@@ -26,8 +26,8 @@ const { chromium } = require('playwright'), fs = require('fs');
     /* INT: the mage (main INT) with a fire wand (INT 3) */
     { const { f0, f1 } = run('mage', [['wand', 0, 0]], 'wand'), w0 = f0.its.find(w => w.d.id === 'wand'), w1 = f1.its.find(w => w.d.id === 'wand');
       o.int = { at: f1.at.int, dmg: +(w1.dmg / w0.dmg).toFixed(4), pw: +(f1.pw / f0.pw).toFixed(4), cd: +(f1.sk.cd / f0.sk.cd).toFixed(4), want: { dmg: (1 + 3 * K.int.mdmg) * (1 + 3 * K.main), pw: 1 + 3 * K.int.skill, cd: 1 - 3 * K.int.skcd } }; }
-    /* a non-main attribute gives no main bonus: the knight with a wand (INT) */
-    { const { f0, f1 } = run('knight', [['wand', 0, 0]], 'wand'), w0 = f0.its.find(w => w.d.id === 'wand'), w1 = f1.its.find(w => w.d.id === 'wand'); o.off = { dmg: +(w1.dmg / w0.dmg).toFixed(4), want: 1 + 3 * K.int.mdmg }; }
+    /* a non-main attribute gives no main bonus: the knight with the lightning ball (a spell item, INT 3; spells count INT .03 a point; since the type shops a knight cannot use a wand) */
+    { const { f0, f1 } = run('knight', [['sp_ball', 0, 0]], 'sp_ball'), w0 = f0.its.find(w => w.d.id === 'sp_ball'), w1 = f1.its.find(w => w.d.id === 'sp_ball'); o.off = { dmg: +(w1.dmg / w0.dmg).toFixed(4), want: 1 + 3 * .03 }; }
     /* the UI: a bag, the stats bar, a shop card with chips, the item info */
     G.items = []; give('plate', 2, 1, 0); give('sword', 4, 1, 0); give('wand', 5, 1, 0); G.shop = [{ id: 'plate' }, { id: 'bow' }, { id: 'wand' }, { id: 'crown' }, { id: 'pig' }, { id: 'feather' }, { id: 'katana' }, { id: 'book' }]; draw();
     const st = [...document.querySelectorAll('#stats .at')].map(e => e.textContent.trim()), chips = document.querySelectorAll('#shop .atc i').length, info = desc(G.items[0]);
@@ -38,7 +38,7 @@ const { chromium } = require('playwright'), fs = require('fs');
   say(`stars: plate ★★ = STR ${o.star.at} (want ${o.star.want})`, close(o.star.at, o.star.want));
   say(`AGI: bow AGI ${o.agi.at} -> bow damage x${o.agi.dmg} (want x${o.agi.want.dmg.toFixed(4)}), attack speed +${o.agi.haste} (want +${o.agi.want.haste})`, o.agi.at === 3 && close(o.agi.dmg, o.agi.want.dmg) && close(o.agi.haste, o.agi.want.haste));
   say(`INT: wand INT ${o.int.at} -> magic x${o.int.dmg} (want x${o.int.want.dmg.toFixed(4)}), skill power x${o.int.pw} (want x${o.int.want.pw} or a little more: it is built from the weapon damage INT raised), skill cooldown x${o.int.cd} (want x${o.int.want.cd})`, o.int.at === 3 && close(o.int.dmg, o.int.want.dmg) && o.int.pw >= o.int.want.pw - 1e-3 && o.int.pw <= o.int.want.pw * o.int.dmg + 1e-3 && close(o.int.cd, o.int.want.cd));
-  say(`not the main attribute: the knight's wand x${o.off.dmg} (want x${o.off.want}, no main bonus)`, close(o.off.dmg, o.off.want));
+  say(`not the main attribute: the knight's lightning ball x${o.off.dmg} (want x${o.off.want}, no main bonus)`, close(o.off.dmg, o.off.want));
   say(`stats bar shows ${r.st.join(' | ')}`, r.st.length === 3 && /★STR/.test(r.st[0]));
   say(`shop cards show ${r.chips} attribute chips, item info shows STR +4`, r.chips >= 8 && r.info);
   await pg.screenshot({ path: out + '/bag.png' });

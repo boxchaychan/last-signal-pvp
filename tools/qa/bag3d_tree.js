@@ -1,4 +1,6 @@
 // bag3d.html MOBA build tree (owner 2026-11-27 "ทำเลยโมบ้ากระเป๋า"): build shop, partial prices, joining by drop, unique ultimates, a fight with tree items.
+// Since the BIG ITEM REDESIGN (2026-11-28) the 7 old parts are MATERIALS: bought into the pouch G.mats (not the bag), used up by a recipe; two crafted
+// items dropped on each other make the biggest ones (m_mail + m_charm = f_bastion).
 // python3 -m http.server 8000 ; node tools/qa/bag3d_tree.js [out=/tmp/bag3d_tree] [device scale 1]
 const { chromium } = require('playwright');
 (async () => {
@@ -11,14 +13,15 @@ const { chromium } = require('playwright');
     await pg.evaluate(() => { G.gold = 80; for (let y = 0; y < 5; y++) for (let x = 0; x < 8; x++) G.open[x + ',' + y] = 1; draw(); $('#bk').click(); });
     await pg.waitForTimeout(300); await pg.screenshot({ path: `${out}/${W}_1_shop.png` });
     const r = await pg.evaluate(() => { const R = {}, g0 = G.gold;
-      treeBuy('p_blade'); treeBuy('p_fang'); R.edge_cost_with_parts = treeCost('m_edge').cost; treeBuy('m_edge'); R.after_edge = G.items.map(o => o.id).filter(k => IT[k].tree).join(',');
+      treeBuy('p_blade'); treeBuy('p_fang'); R.pouch = (G.mats.p_blade | 0) + (G.mats.p_fang | 0); R.parts_in_bag = G.items.filter(o => IT[o.id].mat).length; R.edge_cost_with_parts = treeCost('m_edge').cost; treeBuy('m_edge'); R.pouch_after_edge = (G.mats.p_blade | 0) + (G.mats.p_fang | 0); R.after_edge = G.items.map(o => o.id).filter(k => IT[k].tree).join(',');
       treeBuy('p_feather'); R.claws_cost = treeCost('m_claws').cost; treeBuy('m_claws'); R.king_cost = treeCost('f_kingslayer').cost; treeBuy('f_kingslayer'); R.king2 = treeBuy('f_kingslayer');
       R.tree_items = G.items.map(o => o.id).filter(k => IT[k].tree).join(','); R.spent = g0 - G.gold;
-      const h = give('p_hide', 0, 4, 0), p = give('p_plate', 1, 4, 0), g1 = G.gold; R.join = tryBuild(p, h); R.join_fee = g1 - G.gold; R.after_join = G.items.map(o => o.id).filter(k => IT[k].tree).join(',');
+      const h = give('m_mail', 0, 4, 0), p = give('m_charm', 2, 4, 0), g1 = G.gold; R.join = tryBuild(p, h); R.join_fee = g1 - G.gold;   /* two crafted items dropped on each other */
+      mats().p_hide = 1; mats().p_plate = 1; R.mail_cost_pouch = treeCost('m_mail').cost; R.mail_buy = treeBuy('m_mail'); R.pouch_after_mail = (G.mats.p_hide | 0) + (G.mats.p_plate | 0);   /* both materials in the pouch: only the fee */ R.after_join = G.items.map(o => o.id).filter(k => IT[k].tree).join(',');
       const f = build(G.items.filter(o => o.bag), 100, {}, {}); R.all = +f.all.toFixed(2); R.gcrit = +f.crit.toFixed(2); R.hp = f.max; R.inShop = G.shop.some(s => IT[s.id].tree);
       draw(); pop(treeHtml()); return R; });
     console.log(W, JSON.stringify(r));
-    ok = ok && r.edge_cost_with_parts === 3 && r.claws_cost === 6 && r.king_cost === 6 && r.king2 === false && r.join === true && r.join_fee === 3 && !r.inShop && /f_kingslayer/.test(r.tree_items) && /m_mail/.test(r.after_join);
+    const pass = r.pouch === 2 && r.parts_in_bag === 0 && r.pouch_after_edge === 0 && r.edge_cost_with_parts === 3 && r.claws_cost === 6 && r.king_cost === 6 && r.king2 === false && r.join === true && r.join_fee === 6 && /f_bastion/.test(r.after_join) && r.mail_cost_pouch === 3 && r.mail_buy === true && r.pouch_after_mail === 0 && !r.inShop && /f_kingslayer/.test(r.tree_items); console.log(W, pass ? 'ok  ' : 'FAIL', 'materials in the pouch, recipes, two-item join, unique ultimate'); ok = ok && pass;
     await pg.waitForTimeout(300); await pg.screenshot({ path: `${out}/${W}_2_after.png` });
     const bx = await pg.evaluate(() => { closePop(); sel = G.items.find(o => o.id === 'f_kingslayer'); draw(); return [...document.querySelectorAll('#btns button')].filter(e => e.offsetParent).map(e => { const q = e.getBoundingClientRect(); return [e.id, Math.round(q.right), Math.round(q.bottom)]; }); });
     console.log(W, 'buttons inside:', bx.every(([, x, y]) => x <= W && y <= H)); await pg.screenshot({ path: `${out}/${W}_3_bag.png` });

@@ -1,4 +1,6 @@
 // bag3d.html balance: BG.sim(n) with the smart and the random shop bot (rounds reached). python3 -m http.server 8000 ; node tools/qa/bag3d_sim.js [games 60]
+// NOTE (2026-11-28): BG.sim fights with the OLD side-view model (simFight / foe) for every round, so it measures the shop and the bags, not the arena.
+// The arena itself: node tools/qa/bag3d_horde.js bal 6 15 (CLS=<class>, swarm rounds) and node tools/qa/bag3d_duel.js bal (duels).
 const { chromium } = require('playwright');
 (async () => { const b = await chromium.launch(); const pg = await (await b.newContext({ viewport: { width: 844, height: 390 } })).newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
   await pg.goto('http://localhost:8000/bag3d.html?fight=side'); await pg.waitForTimeout(1500); await pg.click('#start'); await pg.waitForTimeout(500);

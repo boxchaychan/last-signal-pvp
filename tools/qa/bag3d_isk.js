@@ -15,7 +15,7 @@ const { chromium } = require('playwright'), fs = require('fs'), path = require('
   await shop.goto('http://localhost:8000/bag3d.html?mute=1&fight=side'); await shop.waitForTimeout(2000); await shop.evaluate(() => localStorage.clear()); await shop.reload(); await shop.waitForTimeout(2000); await shop.click('#start'); await shop.waitForTimeout(400);
   /* 1 + 2: coverage, item info, shop cards, the duel */
   const r = await shop.evaluate(() => {
-    const fires = Object.keys(IT).filter(k => (IT[k].t === 'w' || IT[k].cd) && !IT[k].start)   /* start-of-fight items fire once: no skill */, none = fires.filter(k => !iskOf(k, IT[k].base)), kinds = {};
+    const fires = Object.keys(IT).filter(k => (IT[k].t === 'w' || IT[k].cd) && !IT[k].start && !IT[k].sp)   /* start-of-fight items fire once: no skill; the spell items of the redesign (sp: storm, stones, ball, skeletons ...) ARE skills, their move is the spell */, none = fires.filter(k => !iskOf(k, IT[k].base)), kinds = {};
     for (const k of fires) { const S = iskOf(k, IT[k].base); if (S && !kinds[S.k]) kinds[S.k] = k; }
     const info = desc({ id: 'sword', lv: 1, u: 1 }); G.shop = ['sword', 'bow', 'shield', 'apple', 'wand', 'feather', 'crown', 'axe'].map(id => ({ id })); draw(); const skn = (info.match(/class="iskt"/g) || []).length + (info.match(/class="iskl"/g) || []).length;
     /* the duel: a mid bag against a dummy, skills on and off */
@@ -32,7 +32,7 @@ const { chromium } = require('playwright'), fs = require('fs'), path = require('
   await shop.screenshot({ path: out + '/shop.png' }); await shop.evaluate(() => { const o = give('sword', 3, 1, 0); draw(); say(desc(o)); }); await shop.waitForTimeout(150); await shop.screenshot({ path: out + '/info.png' }); await shop.click('#info'); await shop.waitForTimeout(200); await shop.screenshot({ path: out + '/info_pop.png' }); say('a tap on the info strip opens all of it', await shop.evaluate(() => $('#pop').style.display === 'flex' && /สกิลเฉพาะ/.test($('#pop div').textContent))); await shop.evaluate(() => closePop());
   /* 3: the swarm arena, every kind once */
   const ids = Object.values(r.kinds), cfg = await shop.evaluate(ids => { const H = HEROES[HK], its = []; let c0 = null;
-    for (const id of ids) { G.items = []; give(id, 0, 0, 0); const f = build(G.items.filter(o => o.bag), 200, H.aff, H.base), c = BG.hordeCfg(f, 6); c0 = c0 || c; its.push(...c.items.map(q => Object.assign(q, { cd: 99 }))); }
+    for (const id of ids) { G.items = []; give(id, 0, 0, 0); const f = build(G.items.filter(o => o.bag), 200, H.aff, Object.assign({}, H.base, { cls: null, sk: null })), c = BG.hordeCfg(f, 6);   /* no class: since the type shops (2026-11-28) a knight cannot use a bow or a wand, the test wants every skill kind */ c0 = c0 || c; its.push(...c.items.map(q => Object.assign(q, { cd: 99 }))); }
     return Object.assign(c0, { items: its, hp: 99999, round: 6, boss: false }); }, ids);
   const are = await ctx.newPage(); watch(are); await are.goto('http://localhost:8000/horde.html?bag=1&nopause=1&snd=0&map=arena&land=forest&cls=' + await shop.evaluate(() => HK));
   await are.waitForFunction(() => window.BAGAPI && BAGAPI.BAG.ready, null, { timeout: 60000 }); await are.evaluate(c => BAGAPI.start(c), cfg);
