@@ -1,6 +1,6 @@
 // bag3d.html HORDE FIGHT (owner 2026-11-27 "ตัวเดียวสู้กับฝูงมอนตามไอเทมในกระเป๋าเรา"): monster / boss rounds are fought in horde.html?bag=1 (bag3d/arena.js) inside an iframe.
 // python3 -m http.server 8000 ; node tools/qa/bag3d_horde.js [out=/tmp/bag3d_horde] [device scale 1]
-//   flow: start -> round 1 fight in the iframe (AUTO) -> result pop -> shop; a round-5 boss fight; a duel round still uses the side view; 844 x 390 and 740 x 360.
+//   flow: start -> round 1 fight in the iframe (AUTO) -> result pop -> shop; a round-5 boss fight; a duel round goes to the arena too (2026-11-28); 844 x 390 and 740 x 360.
 // node tools/qa/bag3d_horde.js bal [games per round 12] [last round 15]   = balance: bot-filled bags of each round against that round's horde, no drawing (in the arena; MAP=forest = old land, CLS=<class>, ISK=0 = no item skills)
 const { chromium } = require('playwright');
 const mode = process.argv[2] === 'bal' ? 'bal' : 'flow';
@@ -39,7 +39,7 @@ const mode = process.argv[2] === 'bal' ? 'bal' : 'flow';
       await fr.waitForFunction(() => GAME.G.state === 'play' && GAME.G.boss, null, { timeout: 60000 }); await pg.waitForTimeout(3500); await pg.screenshot({ path: `${out}/${W}_4_boss.png` }); say('round 5 has a boss', await fr.evaluate(() => !!GAME.G.boss && BAGAPI.BAG.cfg.boss));
       await pg.waitForTimeout(3000); await pg.screenshot({ path: `${out}/${W}_5_boss.png` }); await fr.evaluate(() => { BAGAPI.BAG.spd = 2; for (const m of GAME.MON) m.hp = Math.min(m.hp, 20); });
       await pg.waitForFunction(() => !BT && $('#pop').style.display === 'flex', null, { timeout: 180000 }); say('boss round ends: ' + (await pg.evaluate(() => $('#pop div').textContent)).slice(0, 50).replace(/\s+/g, ' '), true); await pg.evaluate(() => closePop());
-      await pg.evaluate(() => { G.round = 6; G.hp = 5; nextOpp(); draw(); $('#go').click(); }); await pg.waitForTimeout(1500); say('a duel round keeps the side view', await pg.evaluate(() => !!BT && !BT.horde && BT.B.pvp === 1 && getComputedStyle(document.getElementById('hz')).display === 'none'));
+      await pg.evaluate(() => { G.round = 6; G.hp = 5; nextOpp(); draw(); $('#go').click(); }); await pg.waitForTimeout(1500); say('a duel round is fought in the arena too (bag3d_duel.js tests it in full)', await pg.evaluate(() => !!BT && BT.horde === 1 && BT.duel === 1 && BT.B.pvp === 1 && getComputedStyle(document.getElementById('hz')).display === 'block'));
     }
     await pg.close();
   }

@@ -28,7 +28,7 @@
 <script src="vendor/threejs/three.min.js"></script>
 <script src="vendor/threejs/GLTFLoader.js"></script>
 <script src="vendor/threejs/SkeletonUtils.js"></script>
-<script src="bag3d/arena.js?v=14"></script><script src="bag3d/classes.js?v=3"></script><script src="bag3d/itemskills.js?v=1"></script>
+<script src="bag3d/arena.js?v=15"></script><script src="bag3d/classes.js?v=3"></script><script src="bag3d/itemskills.js?v=1"></script>
 <script>
 'use strict';
 const Q = new URLSearchParams(location.search), V3 = THREE.Vector3, TAU = Math.PI * 2, UP = new V3(0, 1, 0);
@@ -379,7 +379,7 @@ async function loadScenery(ld) {
 const FX = [], TIMERS = [];
 function addFx(o, life, upd, end) { scene.add(o); const f = { o, t: 0, life, upd, end }; FX.push(f); return f; }
 function updFx(dt) { for (let i = FX.length - 1; i >= 0; i--) { const f = FX[i]; f.t += dt; const k = f.t / f.life; if (k >= 1 || (f.upd && f.upd(f.o, Math.min(1, k), dt, f) === true)) { scene.remove(f.o); f.end && f.end(); FX.splice(i, 1); } } }
-function after(t, fn) { TIMERS.push({ t, fn }); }
+function after(t, fn) { TIMERS.push({ t, fn: BAGM && BAG.duel ? bagOnSide(fn) : fn }); }   /* a bag duel: the timer runs on the side that set it */
 function updTimers(dt) { for (let i = TIMERS.length - 1; i >= 0; i--) { const q = TIMERS[i]; if ((q.t -= dt) <= 0) { TIMERS.splice(i, 1); q.fn(); } } }
 const GEO = { ring: new THREE.RingGeometry(.86, 1, 48).rotateX(-Math.PI / 2), plane: new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), col: new THREE.CylinderGeometry(1, 1, 1, 20, 1, true) };
 const BRIGHT = MAPK === 'forest' || MAPK === 'snow';
@@ -563,7 +563,7 @@ const BLOBN = 560, BLOBS = (() => { const g = new THREE.InstancedBufferGeometry(
     vertexShader: 'attribute vec4 aB; varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * viewMatrix * vec4(aB.x + position.x * aB.z, .03, aB.y + position.z * aB.w, 1.0); }',
     fragmentShader: 'uniform sampler2D map; varying vec2 vUv; void main(){ gl_FragColor = texture2D(map, vUv); }' })); m.frustumCulled = false; m.renderOrder = 1; scene.add(m); return { g, a, n: 0 }; })();
 
-const MON = [], GRID = new Map(), GC = 2;   /* GRID: monsters by 2-unit cell, rebuilt every tick (who is near what) */
+let MON = [];   /* let: a bag duel swaps the list of what an item can hit (bag3d/arena.js bagWith) */ const GRID = new Map(), GC = 2;   /* GRID: monsters by 2-unit cell, rebuilt every tick (who is near what) */
 const gk = (x, z) => (Math.floor(x / GC) + 512) * 1024 + Math.floor(z / GC) + 512;
 function regrid() { GRID.clear(); for (const m of MON) { if (m.dead) continue; const k = gk(m.x, m.z); let a = GRID.get(k); if (!a) GRID.set(k, a = []); a.push(m); } }
 function inCircle(x, z, r, f) {   /* every living monster whose body touches the circle */
@@ -583,7 +583,7 @@ function spawnMon(k, x, z, o = {}) {
 function ringPos(d, a = Math.random() * TAU) { let x = HERO.pos.x + Math.cos(a) * d, z = HERO.pos.z + Math.sin(a) * d; const L = Math.hypot(x, z), mx = MAPK === 'arena' ? ARENA - .8 : ARENA + 2.5; if (L > mx) { x *= mx / L; z *= mx / L; } return [x, z]; }
 const NUMS = []; function num(x, y, z, text, color, big) { if (NUMS.length > 46) { if (!big) return; NUMS.shift(); } NUMS.push({ x: x + rnd(-.2, .2), y, z, text: typeof text === 'number' ? fmtN(text) : String(text), color, t: 0, big, dx: rnd(-.25, .25) }); }
 function hitMon(m, dmg, o = {}) {
-  if (m.dead) return 0; let d = dmg * P.pow * (G.rage > 0 ? 1.5 : 1) * (m.boss && o.w === 'ult' ? .5 : 1), crit = !!o.crit; if (!crit && Math.random() < P.crit) { d *= P.critX; crit = true; } d = Math.max(1, Math.round(d * rnd(.9, 1.1)));
+  if (m.champ) return bagChampHit(m, dmg, o);   /* a bag duel: the other champion */ if (m.dead) return 0; let d = dmg * P.pow * (G.rage > 0 ? 1.5 : 1) * (m.boss && o.w === 'ult' ? .5 : 1), crit = !!o.crit; if (!crit && Math.random() < P.crit) { d *= P.critX; crit = true; } d = Math.max(1, Math.round(d * rnd(.9, 1.1)));
   m.hp -= d; m.flash = 1; G.dealt += d; if (o.w) STATS[o.w] = (STATS[o.w] || 0) + d;
   if (o.kb && !m.boss) { const dx = m.x - (o.fx !== undefined ? o.fx : HERO.pos.x), dz = m.z - (o.fz !== undefined ? o.fz : HERO.pos.z), L = Math.hypot(dx, dz) || 1, kk = o.kb / (m.elite ? 3 : 1); m.kx += dx / L * kk; m.kz += dz / L * kk; }
   if (o.slow) { m.slowT = Math.max(m.slowT, o.slowT || 2); m.slowK = Math.min(m.slowK, 1 - o.slow); } if (o.frz && !m.boss) m.frzT = Math.max(m.frzT, o.frz * (m.elite ? .4 : 1)); if (o.burn) { m.burnT = 3; m.burnD = Math.max(m.burnD || 0, o.burn); }
@@ -802,7 +802,7 @@ function heroSwing(ang, ts = 1.3) {   /* the hero's own weapon fired: play the a
 /* ---------- weapons: all of them fire by themselves (owner picked "ยิงเองทั้งหมด"). s = numbers per level 1..6; level 6 is the full form,
    and a level-6 weapon whose partner passive is owned can be AWAKENED (evo: x1.6 damage, faster, bigger, +1) from a level-up card or a chest.
    a direction angle a = atan2(dx, dz); the vector is (sin a, cos a) */
-const STATS = {}, PROJ = [], ZONES = [], BUL = [];
+const STATS = {}, BUL = []; let PROJ = [], ZONES = [];   /* let: each side of a bag duel has its own shots and zones */
 const H2 = () => HERO.pos, dirTo = (m, x = HERO.pos.x, z = HERO.pos.z) => Math.atan2(m.x - x, m.z - z);
 function shootP(type, a, o) { const sp = o.spd || 12, p = Object.assign({ type, x: HERO.pos.x, z: HERO.pos.z, y: .8, vx: Math.sin(a) * sp, vz: Math.cos(a) * sp, a, t: 0, life: 1, r: .3, hit: new Set() }, o); PROJ.push(p); return p; }
 function boom(x, z, r, dmg, o = {}) {   /* an explosion: everything in the circle */
@@ -1074,7 +1074,7 @@ function bossDown(m) {
 }
 function updMons(dt) {
   const H = HERO.pos, hx = H.x, hz = H.z, walkR = 0;
-  for (let i = MON.length - 1; i >= 0; i--) { const m = MON[i];
+  for (let i = MON.length - 1; i >= 0; i--) { const m = MON[i]; if (m.champ) continue;   /* a bag duel champion moves by itself (bag3d/arena.js) */
     if (m.dead) { m.deadT += dt; if (m.lvy !== undefined) { m.x += m.lx * dt; m.z += m.lz * dt; m.y += m.lvy * dt; m.lvy -= 24 * dt; } if (m.deadT > (m.lvy !== undefined ? .75 : .16)) { MON[i] = MON[MON.length - 1]; MON.pop(); } continue; }
     m.flash = Math.max(0, m.flash - dt * 7); m.atkT -= dt; if (m.slowT > 0) { m.slowT -= dt; if (m.slowT <= 0) m.slowK = 1; } if (m.frzT > 0) m.frzT -= dt;
     if (m.burnT > 0) { m.burnT -= dt; m.burnK = (m.burnK || 0) - dt; if (m.burnK <= 0) { m.burnK = .5; hitMon(m, m.burnD, { w: 'burn', color: '#ffb070' }); if (m.dead) continue; } }
@@ -1536,7 +1536,7 @@ function botInp(dt) {
 function botPick() { if (G.state === 'relic') { G.cardT = 1; pickRelic(Math.random() * 3 | 0); } else if (G.state === 'levelup') { G.cardT = 1; let best = 0, bs = -1; G.cards.forEach((c, i) => { const s = (c.type === 'evo' ? 10 : c.type === 'u' ? 5.5 : c.type === 'w' ? (c.isNew ? 3 : 5) : c.type === 'p' ? (['pow', 'haste', 'area', 'hp', 'armor', 'multi'].includes(c.k) ? 4 : 2) : 0) + Math.random(); if (s > bs) { bs = s; best = i; } }); pickCard(best); } else if (G.state === 'chest') { G.state = 'play'; G.chest = null; } }
 function tick(dt) {
   NOW += dt; if (!HERO.dead && G.endT <= 0) G.t += dt; G.pickT -= dt; if (G.pickT <= 0) G.pickN = 0; if (BAGM) bagInp(dt); else if (BOT.on) botInp(dt); else keysInp();
-  regrid(); updHero(dt); if (G.rage > 0) { G.rage -= dt; G.rageFx = (G.rageFx || 0) - dt; if (G.rageFx <= 0) { G.rageFx = .75; pfx('status/power-up-aura', HERO.pos.x, HERO.pos.z, 2, { follow: HERO.pos, speed: 1.3 }); } } if (!HERO.dead && G.endT <= 0) { if (BAGM) bagUpd(dt); else { updWeapons(dt); updDirector(dt); updShrines(dt); updUlt(dt); } } updProj(dt); updMons(dt); updGems(dt); updParts(dt); updFx(dt); updTimers(dt);
+  regrid(); updHero(dt); if (BAGM && BAG.duel) bagHero2(dt); if (G.rage > 0) { G.rage -= dt; G.rageFx = (G.rageFx || 0) - dt; if (G.rageFx <= 0) { G.rageFx = .75; pfx('status/power-up-aura', HERO.pos.x, HERO.pos.z, 2, { follow: HERO.pos, speed: 1.3 }); } } if (!HERO.dead && G.endT <= 0) { if (BAGM) bagUpd(dt); else { updWeapons(dt); updDirector(dt); updShrines(dt); updUlt(dt); } } updProj(dt); updMons(dt); updGems(dt); updParts(dt); updFx(dt); updTimers(dt);
   if (G.streakT > 0) { G.streakT -= dt; if (G.streakT <= 0) { if (G.streak >= 30) { const c = Math.min(30, Math.floor(G.streak / 30)); G.coins += c; note('คอมโบ ' + G.streak + ' ตัว: ทอง +' + c, '#ffd65a'); } G.streak = 0; } } if (G.streakPop > 0) G.streakPop -= dt;
   if (G.endT > 0) { G.endT -= dt; if (G.endT <= 0) (BAGM ? bagFinish : finishRun)(); } else if (G.pend > 0 && !HERO.dead && G.state === 'play' && !(G.ultHold > 0)) openLevelUp(); if (G.ultHold > 0) G.ultHold -= dt;
 }
@@ -1547,7 +1547,7 @@ const clock = new THREE.Clock();
 function frame() {
   requestAnimationFrame(frame); const raw = clock.getDelta(), dt = Math.min(.05, raw); RT += dt; SFXN = 0; if (!NORENDER && raw < 1) watchFps(raw);
   if (G.state === 'play') { if (G.stop > 0) { G.stop -= raw; tick(dt * .05); } else { if (G.slow > 0) G.slow -= raw; tick(G.slow > 0 ? dt * .3 : dt); if (BAGM && BAG.spd > 1 && G.slow <= 0 && G.state === 'play') tick(dt); } } else if ((TITLEST[G.state]) && HERO) { HERO.M.mixer.update(dt); HERO.M.T.root.position.set(0, 0, 0); HERO.M.T.root.rotation.y = .35 * Math.sin(RT * .5); HERO.M.T.root.visible = true; updString(HERO.M); HRING.position.set(0, .05, 0); }
-  if (BOT.on) botPick(); if (HERO) updCam(dt); TIMEU.value = RT; if (!NORENDER) { updPers(); if (HERO && G.state !== 'load') fillBatches(); else { GLOW.g.instanceCount = 0; GLOW.n = 0; } renderer.render(scene, camera); drawUI(dt); }
+  if (BOT.on) botPick(); if (HERO) updCam(dt); TIMEU.value = RT; if (!NORENDER) { updPers(); if (HERO && G.state !== 'load') { if (BAGM && BAG.duel) bagDrawAll(fillBatches); else fillBatches(); } else { GLOW.g.instanceCount = 0; GLOW.n = 0; } renderer.render(scene, camera); drawUI(dt); }
 }
 async function boot() {
   resize(); try { await document.fonts.load('800 20px Kanit', 'ก'); } catch (_) { }
