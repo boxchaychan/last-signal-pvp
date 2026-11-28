@@ -48,10 +48,11 @@ const BAGATTR = {
 /* the bag's totals: items = the bag, mul(o) = an item's star multiplier -> { str, agi, int } */
 function bagAttrs(items, mul) { const t = { str: 0, agi: 0, int: 0 }; for (const o of items) { const a = BAGATTR[o.id]; if (!a) continue; const L = mul(o); t.str += a[0] * L; t.agi += a[1] * L; t.int += a[2] * L; } for (const k in t) t[k] = Math.round(t[k] * 10) / 10; return t; }
 const BAGCLS = {
-  knight: { main: 'str', n: 'อัศวินโล่เหล็ก', e: '🛡️', kk: 'Knight', wp: [['sword_1handed', 'handslotr'], ['shield_round', 'handslotl']], col: ['#bfe0ff', '#2a4a7a'],
-    r: 'แนวหน้า · ดาบและโล่', at: 'กายภาพ +10% · เกราะหนา', aff: { phy: 1.1 }, base: { hp: 84, armor: 1.5, critd: .05 }, start: ['sword', 'buckler'],
+  knight: { main: 'str', n: 'อัศวินดำ', e: '⚔️', kk: 'Knight',   /* the body is the owner's Tripo DEMON KNIGHT (horde.html HEROES.kk_knight, portrait tools/art/cls_portraits.html); kk / wp / anim = the old KayKit knight, still used by ?fight=side and ?kk=knight */
+    wp: [['sword_1handed', 'handslotr'], ['shield_round', 'handslotl']], col: ['#bfe0ff', '#2a4a7a'],
+    r: 'แนวหน้า · ดาบใหญ่สองมือ', at: 'กายภาพ +10% · เกราะหนา', aff: { phy: 1.1 }, base: { hp: 84, armor: 1.5, critd: .05 }, start: ['sword', 'buckler'],
     anim: { idle: 'Idle', run: 'Running_A', melee: 'Melee_1H_Attack_Slice_Horizontal', shoot: 'Melee_1H_Attack_Chop', magic: 'Melee_1H_Attack_Chop', skill: ['Melee_Block_Attack'], hit: 'Melee_Block_Hit' },
-    sk: { n: 'โล่ทลายพสุธา', d: 'กระแทกโล่ใส่ศัตรูรอบตัว มึน 1 วิ และได้โล่กันดาเมจ', cd: 8, blk: 1, kind: 'bash', w: { ty: 'phy', stun: 1 }, h: [[.45, 1.4]] },
+    sk: { n: 'ดาบทมิฬทลายพสุธา', d: 'ฟาดดาบใหญ่ลงพื้น ศัตรูรอบตัวมึน 1 วิ และได้โล่กันดาเมจ', cd: 8, blk: 1, kind: 'bash', w: { ty: 'phy', stun: 1 }, h: [[.45, 1.4]] },
     link: { n: 'ดาบคู่เกราะ', a: 'w_phy', b: 'def', per: { dmg: .1 }, pd: 'แรง +10%', tiers: [[2, { armor: 2 }, 'เกราะ +2'], [4, { thorn: 3 }, 'สะท้อนดาเมจ +3'], [6, { hpm: .2 }, 'เลือดสูงสุด +20%']] } },
   barbarian: { main: 'str', n: 'นักรบขวานคลั่ง', e: '🪓', kk: 'Barbarian', wp: [['axe_2handed', 'handslotr']], col: ['#ffc89a', '#7a3a1a'],
     r: 'บุกตะลุย · ขวานสองมือ', at: 'กายภาพ +15% · เลือดหนา', aff: { phy: 1.15 }, base: { hp: 96, regen: .3, haste: -.05 }, start: ['club', 'meat'],

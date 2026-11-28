@@ -1,24 +1,66 @@
 <!doctype html><meta charset="utf-8"><title>class portraits</title>
-<!-- Renders the KayKit class bodies of bag3d/classes.js (with their weapons, in 3 poses) to transparent 450 x 150 sheets (3 cells of 150) for the
-     title cards and top bar of bag3d.html. Free, no generated art. Run: python3 -m http.server 8000 ; node tools/art/cls_portraits.js -->
+<!-- Renders the class bodies of bag3d/classes.js (with their weapons, in 3 poses) to transparent 450 x 150 sheets (3 cells of 150) for the
+     title cards and top bar of bag3d.html. Free, no generated art. Run: python3 -m http.server 8000 ; node tools/art/cls_portraits.js [class ...]
+     The knight class is the owner's Tripo DEMON KNIGHT (2026-11-28 "เอาอัศวินปีศาจเข้าแทนคลาสอัศวินเลย"): it is put on the KayKit skeleton by
+     rigTripo (copied from horde.html) with its two-handed sword, the same body the arena shows; the other classes are KayKit bodies as they are. -->
 <body style="margin:0;background:#333">
 <script src="../../vendor/threejs/three.min.js"></script><script src="../../vendor/threejs/GLTFLoader.js"></script><script src="../../vendor/threejs/SkeletonUtils.js"></script>
 <script src="../../bag3d/classes.js"></script>
 <script>
 const R = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); R.setSize(150 * 2, 150 * 2); R.setPixelRatio(1); R.outputEncoding = THREE.sRGBEncoding; document.body.appendChild(R.domElement);
 const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 50); S.add(new THREE.HemisphereLight(0xfff2e0, 0x404060, 1.1)); const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(2, 4, 3); S.add(sun);
-const ld = new THREE.GLTFLoader();
-window.render = async () => {
-  const [AN, WP] = await Promise.all([ld.loadAsync('../../art/grind3d/hero_anims.glb'), ld.loadAsync('../../art/tribe3d/people/weapons.glb')]);
+const ld = new THREE.GLTFLoader(), V3 = THREE.Vector3;
+/* the Tripo body of a class (horde.html HEROES.kk_knight = demon_knight.glb): file, weapon, its own moves */
+const TRIPO = (() => { const q = new URLSearchParams(location.search); return q.has('at') ? (T => { T.knight.at = q.get('at').split(',').map(Number); T.knight.rot = +(q.get('rot') || .5); T.knight.dx = +(q.get('dx') || 0); return T; }) : T => T; })()({ knight: { file: '../../art/tribe3d/people/demon_knight.glb', wp: 'sword_2handed_color', tex: '../../art/tribe3d/people/tex_knigh_2.png', poses: ['Melee_2H_Idle', 'Melee_2H_Attack_Slice', 'Melee_2H_Attack_Spin'], at: [.15, .3, .2], rot: .1, dx: -.32 } });   /* ?at=.3,.45,.5&rot=.5 tries other pose times / turns */
+function rigTripo(gl, kscene, clips) {
+  let J = null; const sms = []; gl.scene.traverse(o => { if (o.userData && o.userData.joints && !J) J = JSON.parse(o.userData.joints); if (o.isSkinnedMesh) sms.push(o); });
+  const r = THREE.SkeletonUtils.clone(kscene); let ks = null; const bare = [];
+  r.traverse(o => { if (o.isSkinnedMesh) { bare.push(o); ks = ks || o.skeleton; } }); bare.forEach(o => o.parent.remove(o)); r.updateMatrixWorld(true);
+  const bone = {}, kw = {}, kq = {}, ksc = {}; for (const b of ks.bones) { bone[b.name] = b; kw[b.name] = new V3(); kq[b.name] = new THREE.Quaternion(); ksc[b.name] = new V3(); b.matrixWorld.decompose(kw[b.name], kq[b.name], ksc[b.name]); }
+  const kkHips = bone.hips.position.clone(), k = J.hips[1] / kw.hips.y;
+  const DIR = { hips: 'spine', spine: 'chest', chest: 'head', upperarml: 'lowerarml', lowerarml: 'wristl', wristl: 'handl', handl: 'handslotl', upperarmr: 'lowerarmr', lowerarmr: 'wristr', wristr: 'handr', handr: 'handslotr', upperlegl: 'lowerlegl', lowerlegl: 'footl', footl: 'toesl', upperlegr: 'lowerlegr', lowerlegr: 'footr', footr: 'toesr' };
+  const R = {}, inv = new THREE.Matrix4(), W = new THREE.Matrix4();
+  r.traverse(o => {
+    if (!o.isBone) return; const n = o.name, pn = o.parent && o.parent.isBone ? o.parent.name : null, rot = new THREE.Quaternion();
+    if (DIR[n] && J[n] && J[DIR[n]]) rot.setFromUnitVectors(kw[DIR[n]].clone().sub(kw[n]).normalize(), new V3(...J[DIR[n]]).sub(new V3(...J[n])).normalize());
+    else if (pn && n !== 'head') rot.copy(R[pn]);
+    R[n] = rot; W.compose(J[n] ? new V3(...J[n]) : new V3(), rot.clone().multiply(kq[n]), ksc[n]);
+    o.parent.updateMatrixWorld(); inv.copy(o.parent.matrixWorld).invert(); inv.multiply(W).decompose(o.position, o.quaternion, o.scale); o.updateMatrixWorld(true);
+  });
+  const src = sms[0].material, rmM = src.roughnessMap || src.metalnessMap || null;
+  const m = new THREE.MeshStandardMaterial({ map: src.map || null, normalMap: src.normalMap || null, roughnessMap: rmM, metalnessMap: rmM, roughness: rmM ? 1 : .72, metalness: rmM ? 1 : 0, envMapIntensity: .6 });
+  const skel = new THREE.Skeleton(ks.bones), meshes = {};
+  for (const sm of sms) {
+    const g = sm.geometry.clone(), names = sm.skeleton.bones.map(b => b.name), si = g.attributes.skinIndex, map = j => ks.bones.indexOf(bone[names[j]]);
+    for (let i = 0; i < si.count; i++) si.setXYZW(i, map(si.getX(i)), map(si.getY(i)), map(si.getZ(i)), map(si.getW(i)));
+    const me = new THREE.SkinnedMesh(g, m); me.name = sm.name; me.castShadow = true; me.frustumCulled = false; r.add(me); r.updateMatrixWorld(true); me.bind(skel, new THREE.Matrix4()); meshes[sm.name] = me;
+  }
+  const herHips = bone.hips.position.clone();
+  const mine = clips.map(c => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(t => !/\.scale$/.test(t.name) && (!/\.position$/.test(t.name) || t.name === 'hips.position')).map(t => {
+    if (t.name !== 'hips.position') return t; const v = t.values.slice();
+    for (let i = 0; i < v.length; i += 3) { v[i] = herHips.x + (v[i] - kkHips.x) * k; v[i + 1] = herHips.y + (v[i + 1] - kkHips.y) * k; v[i + 2] = herHips.z + (v[i + 2] - kkHips.z) * k; }
+    return new THREE.VectorKeyframeTrack(t.name, t.times, v);
+  })));
+  const body = meshes.body || Object.values(meshes)[0]; body.geometry.computeBoundingBox(); const bb = body.geometry.boundingBox;
+  return { root: r, h: bb.max.y - bb.min.y, meshes, bone, mat: m, clips: mine, k };
+}
+
+window.render = async (only, px = 150) => { R.setSize(px * 2, px * 2);   /* px = the cell size (150 for the cards, bigger for the app icon) */
+  const [AN, WP, KN] = await Promise.all([ld.loadAsync('../../art/grind3d/hero_anims.glb'), ld.loadAsync('../../art/tribe3d/people/weapons.glb'), ld.loadAsync('../../art/tribe3d/people/Knight.glb')]);
   for (const c of AN.animations) for (const t of c.tracks) t.name = t.name.replace(/^([A-Za-z]+)_\d+\./, '$1.'); const W = {}; for (const c of WP.scene.children) W[c.name] = c; const out = {};
-  for (const k in BAGCLS) { const C = BAGCLS[k], G = await ld.loadAsync('../../art/tribe3d/people/' + C.kk + '.glb'), root = THREE.SkeletonUtils.clone(G.scene), bone = {}; let mat = null;
-    root.traverse(o => { if (o.isBone) bone[o.name] = o; if (o.isSkinnedMesh) mat = mat || o.material; if (o.isMesh) o.frustumCulled = false; });
-    for (const [w, b] of C.wp) { const c = W[w] && W[w].clone(); if (!c || !bone[b]) continue; c.traverse(o => { if (o.isMesh) o.material = mat; }); bone[b].add(c); }
-    S.add(root); root.rotation.y = .5; const mix = new THREE.AnimationMixer(root), clip = n => AN.animations.find(c => c.name === n);
-    const sheet = document.createElement('canvas'); sheet.width = 450; sheet.height = 150; const g = sheet.getContext('2d');
-    const poses = [[C.anim.idle, .3], [C.anim.melee, .45], [C.anim.skill[C.anim.skill.length - 1], .5]];
-    for (let i = 0; i < 3; i++) { mix.stopAllAction(); const c = clip(poses[i][0]) || clip('Idle'), a = mix.clipAction(c); a.play(); mix.setTime(c.duration * poses[i][1]); root.updateMatrixWorld(true);
-      cam.position.set(0, 1.25, 6.2); cam.lookAt(0, 1.05, 0); R.setClearColor(0, 0); R.render(S, cam); g.drawImage(R.domElement, i * 150, 0, 150, 150); }
+  const kh = (() => { const r = THREE.SkeletonUtils.clone(KN.scene); r.updateMatrixWorld(true); const bb = new THREE.Box3(); r.traverse(o => { if (o.isSkinnedMesh) { o.geometry.computeBoundingBox(); bb.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } }); return bb.max.y - bb.min.y; })();   /* the KayKit body height: a Tripo body is drawn as tall */
+  for (const k in BAGCLS) { if (only && only.length && !only.includes(k)) continue; const C = BAGCLS[k], TR = TRIPO[k]; let root, clips = AN.animations, poses;
+    if (TR) { const [HU, WT] = await Promise.all([ld.loadAsync(TR.file), new THREE.TextureLoader().loadAsync(TR.tex)]); const T = rigTripo(HU, KN.scene, AN.animations.filter(c => TR.poses.includes(c.name)));
+      WT.flipY = false; WT.encoding = THREE.sRGBEncoding; const sm = new THREE.MeshStandardMaterial({ map: WT, roughness: .45, metalness: .4 }), w = W[TR.wp].clone(); w.traverse(o => { if (o.isMesh) o.material = sm; }); w.scale.setScalar(T.k * .5); T.bone.handslotr.add(w);
+      root = new THREE.Group(); root.add(T.root); T.root.scale.setScalar(kh / (T.h / 1.12) * .86);   /* a little smaller: the two-handed sword must stay inside its cell */ root.traverse(o => { if (o.isMesh) o.frustumCulled = false; }); clips = T.clips; poses = TR.at.map((t, i) => [TR.poses[i], t]); }
+    else { const G = await ld.loadAsync('../../art/tribe3d/people/' + C.kk + '.glb'), bone = {}; let mat = null; root = THREE.SkeletonUtils.clone(G.scene);
+      root.traverse(o => { if (o.isBone) bone[o.name] = o; if (o.isSkinnedMesh) mat = mat || o.material; if (o.isMesh) o.frustumCulled = false; });
+      for (const [w, b] of C.wp) { const c = W[w] && W[w].clone(); if (!c || !bone[b]) continue; c.traverse(o => { if (o.isMesh) o.material = mat; }); bone[b].add(c); }
+      poses = [[C.anim.idle, .3], [C.anim.melee, .45], [C.anim.skill[C.anim.skill.length - 1], .5]]; }
+    S.add(root); root.rotation.y = TR ? TR.rot : .5; root.position.x = TR ? TR.dx || 0 : 0;   /* the sword sticks out to the right: the body a little left */ const mixRoot = TR ? root.children[0] : root, mix = new THREE.AnimationMixer(mixRoot), clip = n => clips.find(c => c.name === n);
+    const sheet = document.createElement('canvas'); sheet.width = px * 3; sheet.height = px; const g = sheet.getContext('2d');
+    for (let i = 0; i < 3; i++) { mix.stopAllAction(); const c = clip(poses[i][0]) || clip('Idle') || clips[0], a = mix.clipAction(c); a.play(); mix.setTime(c.duration * poses[i][1]); root.updateMatrixWorld(true);
+      cam.position.set(0, 1.25, 6.2); cam.lookAt(0, 1.05, 0); R.setClearColor(0, 0); R.render(S, cam); g.drawImage(R.domElement, i * px, 0, px, px); }
     S.remove(root); out[k] = sheet.toDataURL('image/png'); }
   return out;
 };
