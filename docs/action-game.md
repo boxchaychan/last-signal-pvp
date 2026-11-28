@@ -3759,7 +3759,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - where materials are kept: asked (a) a separate materials pouch (recommended) or (b) in the bag; no answer yet, so (a) by default;
   - owner "ของในร้านจะมีของปกติที่ราคาถูกกว่าการซื้อ", read as: buying the pieces and crafting is cheaper than buying a finished item outright; plain items stay cheap.
 - DUELS like the monster rounds (owner "รอบคนสู้กัน ให้ทำแบบมอนเลย"): the player-vs-player rounds move into the 3D arena too: our champion vs the rival champion, both auto, every bag item firing on both sides (no side view).
-- Starting class (owner "อาชีพเริ่มต้น เอาอัศวินดำเข้าเลย ตัวอื่นฉันจะเจนเพิ่มถ้าว่าง"): the BLACK KNIGHT is the first playable champion; the owner will generate the others later. Read as the black horned knight (rival `dark`), to confirm.
+- Starting class (owner "อาชีพเริ่มต้น เอาอัศวินดำเข้าเลย ตัวอื่นฉันจะเจนเพิ่มถ้าว่าง"): the BLACK KNIGHT is the first playable champion; the owner will generate the others later. CONFIRMED 2026-11-28 (PC chat): "อัศวินดำ" = the Tripo DEMON KNIGHT, not the black horned knight (rival `dark` stays a rival).
 - Auto-fight movement (owner noticed the axe hero "runs away then comes back" while the archer walks and shoots): today every hero dashes out of a crowd at < 50 % life with 4+ monsters close, wanders to coins when nothing is close, and dodges bosses and shots; melee is surrounded more, so it flees more.
 - Decided (owner "สายใกล้ไม่ควรหนีไหม ... เจอยิงไกลมันก็แพ้ 100 %"):
   - melee never flees; ranged steps back only a little, to stay in range, and walks slower while shooting;
@@ -3781,7 +3781,7 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - everyone: the other 15 spell items (INT-scaled: storm push, guard stones, blink cloak, lightning ball, 3 summons, 4 disrupts, 4 curses), boots, armour, crit, accuracy, survival, element stones, lifesteal.
 - Shop rolls stay as they are (owner "ทำสุ่มแบบเดิมได้แล้วถูกไหม"): 8 slots, re-roll, locks, rarer items by round; the pool is only what the player's type can use + the everyone items + 2-3 material slots a roll + a finished crafted item now and then at a higher price.
 - Every fight in the 3D arena (owner "ระบบต่อสู้เป็นแบบมอน ไม่ใช้ด้านข้าง"): monster rounds, boss rounds AND player duels; the side view goes away.
-- The knight class changes body (owner "เอาอัศวินปีศาจเข้าแทนคลาสอัศวินเลย"): the Tripo DEMON KNIGHT (`art/tribe3d/people/demon_knight.glb`, rival `demon` today) replaces the KayKit knight. Still to confirm: the earlier "อัศวินดำ เป็นอาชีพเริ่มต้น" = this same demon knight, or the black horned knight (`art/grind3d/dark_knight.glb`, rival `dark`)?
+- The knight class changes body (owner "เอาอัศวินปีศาจเข้าแทนคลาสอัศวินเลย"): the Tripo DEMON KNIGHT (`art/tribe3d/people/demon_knight.glb`, rival `demon` today) replaces the KayKit knight. Confirmed 2026-11-28 (owner "ใช่ แทนคลาสอัศวินตัวแรกเลย"): the starting class "อัศวินดำ" IS this demon knight; it takes the place of the first class (knight), so the KayKit knight is no longer a playable class. No open question is left in this section.
 - STATE on 2026-11-28 night: NOTHING of this section is built (owner "อย่าเพิ่งทำนะ"). Wait for "ทำเลย".
 - The owner moves to the PC for it (owner "ย้ายไป PC จะได้เจนรูปจาก GPT, VFX Meta, Gemini ละก็ทำแมพให้สวยได้"):
   - item pictures from GPT in ONE pass once the item list is final (give the owner the list + prompts in the chat; Codex can be started from the PC chat);
