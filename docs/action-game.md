@@ -3768,3 +3768,9 @@ Owner: "แยกพาทฟรีเหมือนกันนิ", "ฟร�
   - balance with bot duels melee vs ranged to about 50 / 50.
 - BOOTS line (owner "เพิ่มไอเทมรองเท้าด้วย"), only ONE pair worn:
   - plain boots (+10 % speed, buy) → wind boots (+20 %, 10 % dodge), sprint boots (a hit gives a 2 s burst), leap boots (every 8 s leap at the enemy), armoured boots (speed + armour), magic boots (speed + INT, skill sooner), retreat boots (ranged: when an enemy is close, back off fast).
+- CLASS SHOPS (owner "ไอเทมเฉพาะ ไกล ใกล้ ให้เปลี่ยนเป็นของคลาสตัวเอง ... สายประชิดไม่ต้องให้มันมีไอเทมของตีไกล"):
+  - weapons and type items belong to classes: melee classes never see ranged weapons / shooting items (they get melee ones instead), ranged classes never see melee weapons;
+  - knight: swords, shields + melee items; barbarian: axes, hammers, heavy weapons + melee items; rogue: daggers, poison, crit + melee items;
+  - ranger: bows + the shooting items; mage: staffs, wands + magic items;
+  - for every class: boots, armour, crit, survival, element stones, lifesteal and the INT-scaled spell items;
+  - rivals follow their own class the same way.
